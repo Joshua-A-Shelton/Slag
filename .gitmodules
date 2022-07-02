@@ -1,0 +1,9 @@
+[submodule "ThirdParty/vkbootstrap"]
+	path = ThirdParty/vkbootstrap
+	url = https://github.com/charles-lunarg/vk-bootstrap
+[submodule "ThirdParty/vma"]
+	path = ThirdParty/vma
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+[submodule "ThirdParty/spriv-reflect"]
+	path = ThirdParty/spriv-reflect
+	url = https://github.com/KhronosGroup/SPIRV-Reflect
