@@ -2,6 +2,7 @@
 #define SLAGLIB_FRAMEBUFFER_H
 #include "RenderAttachment.h"
 #include <vector>
+#include <array>
 namespace slag
 {
     class SwapChain;
