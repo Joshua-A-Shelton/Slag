@@ -126,7 +126,6 @@ namespace slag
         vkCmdSetViewport(commandBuffer,0,1,&viewport);
         vkCmdSetScissor(commandBuffer,0,1,&scissor);
 
-
     }
 
     void Renderer::unBindCurrentFrameBuffer()
@@ -145,6 +144,12 @@ namespace slag
     {
         auto commandBuffer = static_cast<VkCommandBuffer>(_currentSwapchainCommandBuffer);
         vkCmdDraw(commandBuffer,vertexCount,instanceCount,firstVertex,firstInstance);
+    }
+
+    void Renderer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance)
+    {
+        auto commandBuffer = static_cast<VkCommandBuffer>(_currentSwapchainCommandBuffer);
+        vkCmdDrawIndexed(commandBuffer,indexCount,instanceCount,firstIndex,vertexOffset,firstInstance);
     }
 
 
