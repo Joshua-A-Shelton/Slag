@@ -13,13 +13,10 @@ add_subdirectory(ThirdParty/spriv-reflect)
 
 add_library(SlagLib src/SlagLib.cpp src/SlagLib.h src/GraphicsCard.cpp src/GraphicsCard.h src/Surface.cpp src/Surface.h src/BackEnd/VulkanBackEnd.h src/BackEnd/SwapChain.cpp src/BackEnd/SwapChain.h src/RenderAttachment.cpp src/RenderAttachment.h src/FrameBuffer.cpp src/FrameBuffer.h src/BackEnd/VulkanBackEnd.cpp src/Renderer.cpp src/Renderer.h src/Shader.cpp src/Shader.h)
 target_include_directories(SlagLib PRIVATE ThirdParty/vkbootstrap/src ThirdParty/vma/include ThirdParty/spriv-reflect)
+target_include_directories(SlagLib PUBLIC src)
 
 if(UNIX)
     find_package(X11)
     target_link_libraries(SlagLib ${X11_xcb_LIB})
 endif(UNIX)
 target_link_libraries(SlagLib vk-bootstrap vulkan spirv-reflect-static)
-
-execute_process(COMMAND glslc -c ${CMAKE_SOURCE_DIR}/SlagTest/Shaders/triangle.vert -o ${CMAKE_SOURCE_DIR}/SlagTest/Shaders/triangle.vert.spv)
-execute_process(COMMAND glslc -c ${CMAKE_SOURCE_DIR}/SlagTest/Shaders/triangle.frag -o ${CMAKE_SOURCE_DIR}/SlagTest/Shaders/triangle.frag.spv)
-
