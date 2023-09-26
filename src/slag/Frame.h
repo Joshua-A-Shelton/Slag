@@ -11,16 +11,14 @@ namespace slag
     {
     public:
         virtual ~Frame();
-        void begin();
-        void end();
+        virtual void begin()=0;
+        virtual void end()=0;
         virtual CommandBuffer* getCommandBuffer()=0;
         ///Internal use only, automatically called for resources
         void queueResourceForDeletion(boost::uuids::uuid resourceID);
     protected:
-        virtual void beginFrame()=0;
-        virtual void endFrame()=0;
-    private:
         void freeResourceReferences();
+    private:
         std::mutex _freedResourcesMutex;
         std::vector<boost::uuids::uuid> _freedResourceReferences;
     };

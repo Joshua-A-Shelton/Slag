@@ -22,16 +22,6 @@ namespace slag
         }
     }
 
-    void Frame::begin()
-    {
-        freeResourceReferences();
-        beginFrame();
-    }
-
-    void Frame::end()
-    {
-        endFrame();
-    }
 
 
 }

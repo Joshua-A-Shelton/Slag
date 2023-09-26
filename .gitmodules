@@ -1,0 +1,6 @@
+[submodule "third-party/vma"]
+	path = third-party/vma
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+[submodule "third-party/vk-bootstrap"]
+	path = third-party/vk-bootstrap
+	url = https://github.com/charles-lunarg/vk-bootstrap
