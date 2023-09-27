@@ -11,6 +11,10 @@ namespace slag
         {
         public:
             VulkanTexture(VkImage image, VkImageView view, VkFormat format, VkImageAspectFlags usage, uint32_t width, uint32_t height);
+            VulkanTexture(const VulkanTexture&)=delete;
+            VulkanTexture& operator=(const VulkanTexture&)=delete;
+            VulkanTexture(VulkanTexture&& from);
+            VulkanTexture& operator=(VulkanTexture&& from);
             ~VulkanTexture()override;
             PixelFormat format()override;
             uint32_t mipLevels()override;
@@ -19,7 +23,9 @@ namespace slag
             Usage usage()override;
             static PixelFormat formatFromNative(VkFormat format);
             static VkFormat formatFromCrossPlatform(PixelFormat format);
+            static VkImageLayout layoutFromCrossPlatform(Texture::Layout layout);
         private:
+            void move(VulkanTexture&& from);
             VkFormat _baseFormat = VK_FORMAT_UNDEFINED;
             VkImageAspectFlags _usage=0;
             VkImage _image = nullptr;

@@ -1,3 +1,4 @@
+#include <iostream>
 #include "VulkanSwapchain.h"
 #include "VulkanFrame.h"
 #include "VulkanLib.h"
@@ -19,6 +20,7 @@ namespace slag
                 vkDestroySemaphore(VulkanLib::graphicsCard()->device(),_imageAvailable, nullptr);
                 vkDestroySemaphore(VulkanLib::graphicsCard()->device(),_renderFinished, nullptr);
             }
+            freeResourceReferences();
         }
 
         VulkanFrame::VulkanFrame(VulkanFrame&& from)
@@ -42,13 +44,22 @@ namespace slag
             _descriptorAllocator = std::move(from._descriptorAllocator);
             _virtualUniformBuffer = std::move(from._virtualUniformBuffer);
 
+
         }
 
         void VulkanFrame::waitTillFinished()
         {
             auto result = vkWaitForFences(VulkanLib::graphicsCard()->device(),1,&_inFlight, true, 1000000000);
             assert(result == VK_SUCCESS && "render fence wait timed out");
-            result = vkResetFences(VulkanLib::graphicsCard()->device(),1,&_inFlight);
+            //result = vkResetFences(VulkanLib::graphicsCard()->device(),1,&_inFlight);
+            //assert(result == VK_SUCCESS && "render fence could not be reset");
+
+
+        }
+
+        void VulkanFrame::resetWait()
+        {
+            auto result = vkResetFences(VulkanLib::graphicsCard()->device(),1,&_inFlight);
             assert(result == VK_SUCCESS && "render fence could not be reset");
             //kinda a weird spot for it, but it's technically right....
             freeResourceReferences();
@@ -155,6 +166,8 @@ namespace slag
         {
             return _virtualUniformBuffer.virtualSize();
         }
+
+
 
 
     } // slag

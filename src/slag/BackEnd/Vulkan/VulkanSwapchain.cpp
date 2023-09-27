@@ -80,6 +80,7 @@ namespace slag
 
             _frames[_currentFrameIndex].waitTillFinished();
 
+
             VkResult result = vkAcquireNextImageKHR(VulkanLib::graphicsCard()->device(), _swapchain, 1000000000, _frames[_currentFrameIndex].imageAvailableSemaphore(), nullptr, &_swapchainImageIndex);
             if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _needsRebuild)
             {
@@ -90,6 +91,7 @@ namespace slag
             {
                 throw std::runtime_error("Failed to acquire next image in swap chain");
             }
+            _frames[_currentFrameIndex].resetWait();
             _frames[_currentFrameIndex].setSwapchainImageTexture(&_swapchainImages[_swapchainImageIndex]);
             return &_frames[_currentFrameIndex];
         }
@@ -185,10 +187,11 @@ namespace slag
             auto format = vkbSwapchain.image_format;
             auto images = vkbSwapchain.get_images().value();
             auto views = vkbSwapchain.get_image_views().value();
+            _swapchainImages.clear();
 
             for(auto i=0; i< images.size(); i++)
             {
-                _swapchainImages.emplace_back(VulkanTexture(images[i],views[i],format,VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT,_width,_height));
+                _swapchainImages.emplace_back(std::move(VulkanTexture(images[i],views[i],format,VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT,_width,_height)));
             }
 
             if(_frames.size()>_swapchainImages.size())
@@ -211,16 +214,16 @@ namespace slag
                 }
             }
             vkResetCommandPool(VulkanLib::graphicsCard()->device(),_commandPool,0);
+            _needsRebuild = false;
 
         }
 
         void VulkanSwapchain::cleanup()
         {
-            auto& card = VulkanLib::graphicsCard;
-            _frames[_currentFrameIndex].waitTillFinished();
+            vkDeviceWaitIdle(VulkanLib::graphicsCard()->device());
 
             //destroying the swapchain automatically destroys the images
-            vkDestroySwapchainKHR(card()->device(),_swapchain, nullptr);
+            vkDestroySwapchainKHR(VulkanLib::graphicsCard()->device(),_swapchain, nullptr);
             _swapchain = nullptr;
             _currentFrameIndex = 0;
         }

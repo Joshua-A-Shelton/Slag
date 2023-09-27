@@ -6,16 +6,47 @@ namespace slag
     {
         VulkanTexture::VulkanTexture(VkImage image, VkImageView view, VkFormat format, VkImageAspectFlags usage, uint32_t width, uint32_t height)
         {
-
+            _image = image;
+            _view = view;
+            _baseFormat = format;
+            _usage = usage;
+            _width = width;
+            _height = height;
+            freeResources = [=]()
+            {
+                vkDestroyImageView(VulkanLib::graphicsCard()->device(),view, nullptr);
+            };
         }
 
         VulkanTexture::~VulkanTexture()
         {
-            //we're a swapchain image, so all other resources are managed at the swapchain level except the view
-            if(!_allocation)
-            {
-                vkDestroyImageView(VulkanLib::graphicsCard()->device(),_view, nullptr);
-            }
+
+        }
+
+        VulkanTexture::VulkanTexture(VulkanTexture&& from)
+        {
+            move(std::move(from));
+        }
+
+        VulkanTexture& VulkanTexture::operator=(VulkanTexture&& from)
+        {
+            move(std::move(from));
+            return *this;
+        }
+
+        void VulkanTexture::move(VulkanTexture&& from)
+        {
+            freeResources = from.freeResources;
+            from.freeResources = nullptr;
+
+            std::swap(_baseFormat,from._baseFormat);
+            std::swap(_usage,from._usage);
+            std::swap(_image, from._image);
+            std::swap(_allocation,from._allocation);
+            std::swap(_view, from._view);
+            std::swap(_width, from._width);
+            std::swap(_height, from._height);
+            std::swap(_mipLevels, from._mipLevels);
         }
 
         PixelFormat VulkanTexture::format()
@@ -79,5 +110,18 @@ namespace slag
             }
             return VK_FORMAT_UNDEFINED;
         }
+
+        VkImageLayout VulkanTexture::layoutFromCrossPlatform(Texture::Layout layout)
+        {
+            switch (layout)
+            {
+#define DEFINITION(slagName, vulkanName, directXName) case slagName: return vulkanName;
+                TEXTURE_LAYOUT_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            return VK_IMAGE_LAYOUT_UNDEFINED;
+        }
+
+
     } // slag
 } // Texture

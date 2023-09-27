@@ -32,6 +32,7 @@ namespace slag
             VkDeviceSize uniformBufferSize();
 
             void waitTillFinished();
+            void resetWait();
         private:
             //is the command buffer done
             VkCommandBuffer _commandBuffer = nullptr;

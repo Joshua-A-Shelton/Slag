@@ -20,6 +20,7 @@ namespace slag
         {
             backend::ResourceManager::freeResourceUsage(_freedResourceReferences[i]);
         }
+        _freedResourceReferences.clear();
     }
 
 
