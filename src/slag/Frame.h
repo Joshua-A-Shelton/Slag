@@ -2,7 +2,6 @@
 #define SLAG_FRAME_H
 #include <vector>
 #include <mutex>
-#include <boost/uuid/uuid.hpp>
 #include "CommandBuffer.h"
 
 namespace slag
@@ -15,12 +14,12 @@ namespace slag
         virtual void end()=0;
         virtual CommandBuffer* getCommandBuffer()=0;
         ///Internal use only, automatically called for resources
-        void queueResourceForDeletion(boost::uuids::uuid resourceID);
+        void queueResourceForDeletion(void* gpuID);
     protected:
         void freeResourceReferences();
     private:
         std::mutex _freedResourcesMutex;
-        std::vector<boost::uuids::uuid> _freedResourceReferences;
+        std::vector<void*> _freedResourceReferences;
     };
 }
 #endif //SLAG_FRAME_H

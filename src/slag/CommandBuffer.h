@@ -8,8 +8,6 @@ namespace slag
     {
     public:
         virtual ~CommandBuffer()=default;
-        virtual void transitionImageLayout(Texture* texture, Texture::Layout toLayout)=0;
-        virtual void transitionImageLayout(Texture* texture, Texture::Layout fromLayout, Texture::Layout toLayout)=0;
 
     };
 }

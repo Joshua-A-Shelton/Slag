@@ -9,8 +9,10 @@ namespace slag
     class Resource
     {
     public:
-        virtual ~Resource();
+        virtual ~Resource() = default;
+        virtual void* GPUID()=0;
     protected:
+        void destroyDeferred();
         bool destroyImmediately = false;
         std::function<void()> freeResources = nullptr;
     };

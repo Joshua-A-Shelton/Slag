@@ -6,7 +6,7 @@
 namespace slag
 {
 
-    Resource::~Resource()
+    void Resource::destroyDeferred()
     {
         if(destroyImmediately)
         {

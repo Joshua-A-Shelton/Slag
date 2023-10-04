@@ -7,10 +7,10 @@ namespace slag
         freeResourceReferences();
     }
 
-    void Frame::queueResourceForDeletion(boost::uuids::uuid resourceID)
+    void Frame::queueResourceForDeletion(void* gpuID)
     {
         std::lock_guard<std::mutex> swapchainGuard(_freedResourcesMutex);
-        _freedResourceReferences.push_back(resourceID);
+        _freedResourceReferences.push_back(gpuID);
     }
 
     void Frame::freeResourceReferences()

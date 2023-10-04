@@ -165,6 +165,7 @@ namespace slag
                 _frames[_currentFrameIndex].waitTillFinished();
             }
             vkb::SwapchainBuilder swapchainBuilder{card->physicalDevice(),card->device(),_surface};
+
             auto vkbSwapchain = swapchainBuilder
                     .use_default_format_selection()
                     .set_desired_present_mode(_presentMode)

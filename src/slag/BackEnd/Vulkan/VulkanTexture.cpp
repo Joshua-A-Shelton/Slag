@@ -20,7 +20,7 @@ namespace slag
 
         VulkanTexture::~VulkanTexture()
         {
-
+            destroyDeferred();
         }
 
         VulkanTexture::VulkanTexture(VulkanTexture&& from)
@@ -93,7 +93,7 @@ namespace slag
         {
             switch (format)
             {
-#define DEFINITION(slagName, texelSize, channelCount, alphaChannel, baseType, mipable, srgb, vulkanName, directXName) case vulkanName: return slagName;
+#define DEFINITION(slagName, texelSize, channelCount, alphaChannel, baseType, mipable, srgb, vulkanName, directXName) case vulkanName: return PixelFormat::slagName;
                 TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
             }
@@ -120,6 +120,16 @@ namespace slag
 #undef DEFINITION
             }
             return VK_IMAGE_LAYOUT_UNDEFINED;
+        }
+
+        VkImage VulkanTexture::vulkanImage()
+        {
+            return _image;
+        }
+
+        void *VulkanTexture::GPUID()
+        {
+            return _view;
         }
 
 

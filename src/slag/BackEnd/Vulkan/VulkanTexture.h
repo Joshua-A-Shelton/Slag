@@ -16,11 +16,13 @@ namespace slag
             VulkanTexture(VulkanTexture&& from);
             VulkanTexture& operator=(VulkanTexture&& from);
             ~VulkanTexture()override;
+            void* GPUID()override;
             PixelFormat format()override;
             uint32_t mipLevels()override;
             uint32_t width()override;
             uint32_t height()override;
             Usage usage()override;
+            VkImage vulkanImage();
             static PixelFormat formatFromNative(VkFormat format);
             static VkFormat formatFromCrossPlatform(PixelFormat format);
             static VkImageLayout layoutFromCrossPlatform(Texture::Layout layout);

@@ -18,14 +18,14 @@ int main()
     SDL_SysWMinfo wmInfo;
     SDL_VERSION(&wmInfo.version);
     SDL_GetWindowWMInfo(window, &wmInfo);
-#ifdef __WIN32
+#ifdef _WIN32
     pd.nativeWindowHandle = wmInfo.info.win.window;
 #elif __linux
     pd.nativeWindowHandle = reinterpret_cast<void*>(wmInfo.info.x11.window);
     pd.nativeDisplayType = wmInfo.info.x11.display;
 #endif
 
-    slag::SlagLib::initialize({backend:slag::VULKAN});
+    slag::SlagLib::initialize({slag::VULKAN});
 
     slag::Swapchain* swapchain = slag::Swapchain::create(pd,500, 500, 2, true);
 

@@ -4,7 +4,6 @@ namespace slag
 {
     namespace backend
     {
-        boost::uuids::random_generator generator;
         void ResourceManager::queueDeleteResource(Resource *resource, std::function<void()>& deletion)
         {
             std::lock_guard<std::mutex> swapchainGuard(_activeSwapchainsMutex);
@@ -14,23 +13,22 @@ namespace slag
                 deletion();
                 return;
             }
-            boost::uuids::uuid deletionId = generator();
-            _deletionTracker[deletionId] = {deletion,activeSwapchainCount};
-            auto i = _deletionTracker.size();
+            void* key = resource->GPUID();
+            _deletionTracker[resource->GPUID()] = {deletion,activeSwapchainCount};
             for(auto& swapchain: _activeSwapchains)
             {
-                swapchain->currentFrame()->queueResourceForDeletion(deletionId);
+                swapchain->currentFrame()->queueResourceForDeletion(resource->GPUID());
             }
         }
 
-        void ResourceManager::freeResourceUsage(boost::uuids::uuid deletionUUID)
+        void ResourceManager::freeResourceUsage(void* resource)
         {
-            auto& element = _deletionTracker[deletionUUID];
+            auto element = _deletionTracker[resource];
             element.usageCount--;
             if(element.usageCount <= 0 )
             {
                 element.resourceFreeFunction();
-                _deletionTracker.erase(deletionUUID);
+                _deletionTracker.erase(resource);
             }
         }
 

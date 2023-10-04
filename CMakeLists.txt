@@ -3,7 +3,6 @@ project(Slag)
 
 set(CMAKE_CXX_STANDARD 20)
 
-find_package(Boost REQUIRED)
 SET(VULKAN_SOURCES)
 SET(DX12_SOURCES test/Main.cpp)
 
@@ -27,7 +26,7 @@ endif()
 OPTION(BUILD_VULKAN_TEST_EXECUTABLE "Build test executable" ON)
 
 
-add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES} src/slag/UniformSet.h src/slag/UniformBuffer.h src/slag/Resource.h src/slag/Resource.cpp src/slag/Frame.h src/slag/Frame.h src/slag/Frame.cpp src/slag/Swapchain.h src/slag/Swapchain.cpp src/slag/BackEnd/ResourceManager.cpp src/slag/BackEnd/ResourceManager.h src/slag/Uniform.h src/slag/SlagLib.cpp src/slag/SlagLib.h src/slag/CommandBuffer.h src/slag/Texture.h src/slag/PixelFormat.h src/slag/GraphicsCard.h src/slag/PlatformData.h)
+add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES} src/slag/UniformSet.h src/slag/UniformBuffer.h src/slag/Resource.h src/slag/Resource.cpp src/slag/Frame.h src/slag/Frame.h src/slag/Frame.cpp src/slag/Swapchain.h src/slag/Swapchain.cpp src/slag/BackEnd/ResourceManager.cpp src/slag/BackEnd/ResourceManager.h src/slag/Uniform.h src/slag/SlagLib.cpp src/slag/SlagLib.h src/slag/CommandBuffer.h src/slag/Texture.h src/slag/PixelFormat.h src/slag/GraphicsCard.h src/slag/PlatformData.h src/slag/GPUMemoryBarrier.h)
 target_include_directories(Slag PRIVATE ${Boost_INCLUDE_DIRS})
 
 
