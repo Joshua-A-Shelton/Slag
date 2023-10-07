@@ -54,6 +54,9 @@ namespace slag
         VulkanSwapchain::~VulkanSwapchain()
         {
             vkDeviceWaitIdle(VulkanLib::graphicsCard()->device());
+            //anything that gets deferred deleted must be deleted before the frames are destroyed
+            _swapchainImages.clear();
+            _frames.clear();
             vkDestroySwapchainKHR(VulkanLib::graphicsCard()->device(),_swapchain, nullptr);
             _swapchain = nullptr;
             vkDestroyCommandPool(VulkanLib::graphicsCard()->device(),_commandPool, nullptr);
@@ -192,7 +195,7 @@ namespace slag
 
             for(auto i=0; i< images.size(); i++)
             {
-                _swapchainImages.emplace_back(std::move(VulkanTexture(images[i],views[i],format,VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT,_width,_height)));
+                _swapchainImages.emplace_back(std::move(VulkanTexture(images[i],views[i],format,VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT,_width,_height,true)));
             }
 
             if(_frames.size()>_swapchainImages.size())

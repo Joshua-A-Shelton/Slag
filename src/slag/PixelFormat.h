@@ -136,11 +136,14 @@ DEFINITION(D32_SFLOAT_S8_UINT,24,2,-1,UINT8,false,false,VK_FORMAT_D32_SFLOAT_S8_
 
 namespace slag
 {
-    enum PixelFormat
+    struct Pixels
     {
+        enum PixelFormat
+        {
 #define DEFINITION(slagName, texelSize, channelCount, alphaChannel, baseType, mipable, srgb, vulkanName, directXName) slagName,
-        TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
+            TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
+        };
     };
 }
 

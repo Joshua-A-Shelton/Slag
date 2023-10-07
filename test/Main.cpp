@@ -44,6 +44,9 @@ int main()
         if(auto frame = swapchain->next())
         {
             frame->begin();
+            auto commandBuffer = frame->getCommandBuffer();
+            slag::ImageMemoryBarrier imageBarrier{.oldLayout = slag::Texture::Layout::UNDEFINED, .newLayout = slag::Texture::Layout::PRESENT, .texture=frame->getBackBuffer()};
+            commandBuffer->insertImageBarrier(imageBarrier,slag::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,slag::PipelineStageFlags::BOTTOM);
             frame->end();
         }
     }

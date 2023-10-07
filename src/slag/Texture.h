@@ -39,7 +39,7 @@ namespace slag
 
         virtual ~Texture()=default;
 
-        virtual PixelFormat format()=0;
+        virtual Pixels::PixelFormat format()=0;
         virtual uint32_t mipLevels()=0;
         virtual uint32_t width()=0;
         virtual uint32_t height()=0;

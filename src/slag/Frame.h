@@ -13,6 +13,7 @@ namespace slag
         virtual void begin()=0;
         virtual void end()=0;
         virtual CommandBuffer* getCommandBuffer()=0;
+        virtual Texture* getBackBuffer()=0;
         ///Internal use only, automatically called for resources
         void queueResourceForDeletion(void* gpuID);
     protected:

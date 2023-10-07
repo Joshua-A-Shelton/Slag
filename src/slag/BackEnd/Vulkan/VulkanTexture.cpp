@@ -4,7 +4,7 @@ namespace slag
 {
     namespace vulkan
     {
-        VulkanTexture::VulkanTexture(VkImage image, VkImageView view, VkFormat format, VkImageAspectFlags usage, uint32_t width, uint32_t height)
+        VulkanTexture::VulkanTexture(VkImage image, VkImageView view, VkFormat format, VkImageAspectFlags usage, uint32_t width, uint32_t height, bool destroyImmediate)
         {
             _image = image;
             _view = view;
@@ -12,6 +12,7 @@ namespace slag
             _usage = usage;
             _width = width;
             _height = height;
+            destroyImmediately = destroyImmediate;
             freeResources = [=]()
             {
                 vkDestroyImageView(VulkanLib::graphicsCard()->device(),view, nullptr);
@@ -47,9 +48,10 @@ namespace slag
             std::swap(_width, from._width);
             std::swap(_height, from._height);
             std::swap(_mipLevels, from._mipLevels);
+            std::swap(destroyImmediately,from.destroyImmediately);
         }
 
-        PixelFormat VulkanTexture::format()
+        Pixels::PixelFormat VulkanTexture::format()
         {
             return formatFromNative(_baseFormat);
         }
@@ -89,22 +91,22 @@ namespace slag
             }
         }
 
-        PixelFormat VulkanTexture::formatFromNative(VkFormat format)
+        Pixels::PixelFormat VulkanTexture::formatFromNative(VkFormat format)
         {
             switch (format)
             {
-#define DEFINITION(slagName, texelSize, channelCount, alphaChannel, baseType, mipable, srgb, vulkanName, directXName) case vulkanName: return PixelFormat::slagName;
+#define DEFINITION(slagName, texelSize, channelCount, alphaChannel, baseType, mipable, srgb, vulkanName, directXName) case vulkanName: return Pixels::PixelFormat::slagName;
                 TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
             }
-            return PixelFormat::UNDEFINED;
+            return Pixels::PixelFormat::UNDEFINED;
         }
 
-        VkFormat VulkanTexture::formatFromCrossPlatform(PixelFormat format)
+        VkFormat VulkanTexture::formatFromCrossPlatform(Pixels::PixelFormat format)
         {
             switch (format)
             {
-#define DEFINITION(slagName, texelSize, channelCount, alphaChannel, baseType, mipable, srgb, vulkanName, directXName) case slagName: return vulkanName;
+#define DEFINITION(slagName, texelSize, channelCount, alphaChannel, baseType, mipable, srgb, vulkanName, directXName) case Pixels::slagName: return vulkanName;
                 TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
             }
@@ -130,6 +132,11 @@ namespace slag
         void *VulkanTexture::GPUID()
         {
             return _view;
+        }
+
+        VkImageAspectFlags VulkanTexture::usageVulkan()
+        {
+            return _usage;
         }
 
 

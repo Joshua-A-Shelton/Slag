@@ -4,3 +4,6 @@
 [submodule "third-party/vk-bootstrap"]
 	path = third-party/vk-bootstrap
 	url = https://github.com/charles-lunarg/vk-bootstrap
+[submodule "third-party/spirv-reflect"]
+	path = third-party/spirv-reflect
+	url = https://github.com/KhronosGroup/SPIRV-Reflect

@@ -2,6 +2,7 @@
 #define SLAG_VULKANFRAME_H
 #include "../../Frame.h"
 #include "VulkanTexture.h"
+#include "VulkanCommandBuffer.h"
 #include "VulkanDescriptorAllocator.h"
 #include "VulkanVirtualUniformBuffer.h"
 #include <vulkan/vulkan.h>
@@ -23,6 +24,7 @@ namespace slag
             void begin() override;
             void end() override;
             CommandBuffer* getCommandBuffer() override;
+            Texture* getBackBuffer()override;
 
             VkSemaphore renderFinishedSemaphore();
             VkSemaphore imageAvailableSemaphore();
@@ -35,7 +37,6 @@ namespace slag
             void resetWait();
         private:
             //is the command buffer done
-            VkCommandBuffer _commandBuffer = nullptr;
             VkFence _inFlight = nullptr;
             VkSemaphore _renderFinished = nullptr;
             VkSemaphore _imageAvailable = nullptr;
@@ -43,6 +44,7 @@ namespace slag
             VulkanDescriptorAllocator _descriptorAllocator;
             VulkanVirtualUniformBuffer _virtualUniformBuffer;
             VulkanTexture* _swapchainImageTexture;
+            VulkanCommandBuffer _commandBuffer;
             void move(VulkanFrame&& from);
         };
     } // slag

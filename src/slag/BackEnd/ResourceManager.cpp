@@ -13,7 +13,6 @@ namespace slag
                 deletion();
                 return;
             }
-            void* key = resource->GPUID();
             _deletionTracker[resource->GPUID()] = {deletion,activeSwapchainCount};
             for(auto& swapchain: _activeSwapchains)
             {

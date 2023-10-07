@@ -4,7 +4,7 @@ project(Slag)
 set(CMAKE_CXX_STANDARD 20)
 
 SET(VULKAN_SOURCES)
-SET(DX12_SOURCES test/Main.cpp)
+SET(DX12_SOURCES)
 
 OPTION(SLAG_VULKAN_BACKEND "Include Vulkan backend" ON)
 OPTION(SLAG_DX12_BACKEND "Include DX12 backend" ON)
@@ -15,6 +15,7 @@ endif()
 if(SLAG_VULKAN_BACKEND)
     find_package(Vulkan REQUIRED)
     add_definitions(-DSLAG_VULKAN_BACKEND=1)
+    add_subdirectory(third-party/spirv-reflect)
     message("adding vulkan backend")
     file(GLOB_RECURSE VULKAN_SOURCES CONFIGURE_DEPENDS "src/slag/BackEnd/Vulkan/*.h" "src/slag/BackEnd/Vulkan/*.cpp")
 endif()
@@ -26,15 +27,15 @@ endif()
 OPTION(BUILD_VULKAN_TEST_EXECUTABLE "Build test executable" ON)
 
 
-add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES} src/slag/UniformSet.h src/slag/UniformBuffer.h src/slag/Resource.h src/slag/Resource.cpp src/slag/Frame.h src/slag/Frame.h src/slag/Frame.cpp src/slag/Swapchain.h src/slag/Swapchain.cpp src/slag/BackEnd/ResourceManager.cpp src/slag/BackEnd/ResourceManager.h src/slag/Uniform.h src/slag/SlagLib.cpp src/slag/SlagLib.h src/slag/CommandBuffer.h src/slag/Texture.h src/slag/PixelFormat.h src/slag/GraphicsCard.h src/slag/PlatformData.h src/slag/GPUMemoryBarrier.h)
+add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES} src/slag/UniformSet.h src/slag/UniformBuffer.h src/slag/Resource.h src/slag/Resource.cpp src/slag/Frame.h src/slag/Frame.h src/slag/Frame.cpp src/slag/Swapchain.h src/slag/Swapchain.cpp src/slag/BackEnd/ResourceManager.cpp src/slag/BackEnd/ResourceManager.h src/slag/Uniform.h src/slag/SlagLib.cpp src/slag/SlagLib.h src/slag/CommandBuffer.h src/slag/Texture.h src/slag/PixelFormat.h src/slag/GraphicsCard.h src/slag/PlatformData.h src/slag/GPUMemoryBarriers.h src/slag/Shader.h src/slag/GPUTypes.h src/slag/VertexDescription.cpp src/slag/VertexDescription.h)
 target_include_directories(Slag PRIVATE ${Boost_INCLUDE_DIRS})
 
 
 if(SLAG_VULKAN_BACKEND)
     add_subdirectory(third-party/vma)
     add_subdirectory(third-party/vk-bootstrap)
-    target_include_directories(Slag PRIVATE ${Vulkan_INCLUDE_DIR})
-    target_link_libraries(Slag ${Vulkan_LIBRARIES} vk-bootstrap VulkanMemoryAllocator)
+    target_include_directories(Slag PRIVATE ${Vulkan_INCLUDE_DIR} third-party/spirv-reflect)
+    target_link_libraries(Slag ${Vulkan_LIBRARIES} vk-bootstrap VulkanMemoryAllocator spirv-reflect-static)
 endif()
 
 if(BUILD_VULKAN_TEST_EXECUTABLE)
