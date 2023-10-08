@@ -4,29 +4,29 @@
 #include <vector>
 #include "VulkanUniformBuffer.h"
 #include "VulkanDescriptorAllocator.h"
+#include "../../UniformBuffer.h"
 namespace slag
 {
     namespace vulkan
     {
-        struct VulkanUniformBufferWriteData
-        {
-        public:
-            VkBuffer buffer;
-            VkDeviceSize startingOffset;
-            VkDeviceSize writtenSize;
-        };
 
-        class VulkanVirtualUniformBuffer
+        class VulkanVirtualUniformBuffer: public UniformBuffer
         {
         private:
-            VkDeviceSize _virtualSize=0;
+            uint64_t _virtualSize=0;
             std::vector<VulkanUniformBuffer> _backingBuffers;
             size_t _currentBufferIndex = 0;
+            bool _destroyImmediately = false;
+            void move(VulkanVirtualUniformBuffer&& from);
         public:
-            explicit VulkanVirtualUniformBuffer(VkDeviceSize defaultSize = 1250000);
-            VulkanUniformBufferWriteData write(void* data, size_t size);
-            void reset();
-            VkDeviceSize virtualSize();
+            explicit VulkanVirtualUniformBuffer(VkDeviceSize defaultSize,bool destroyImmediate);
+            VulkanVirtualUniformBuffer(const VulkanUniformBuffer&)=delete;
+            VulkanVirtualUniformBuffer& operator=(const VulkanUniformBuffer&)=delete;
+            VulkanVirtualUniformBuffer(VulkanVirtualUniformBuffer&& from);
+            VulkanVirtualUniformBuffer& operator=(VulkanVirtualUniformBuffer&& from);
+            WriteLocation write(void* data, size_t size);
+            void reset()override;
+            uint64_t virtualSize()override;
         };
     } // slag
 } // vulkan

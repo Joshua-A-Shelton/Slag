@@ -10,7 +10,15 @@ namespace slag
 {
     namespace vulkan
     {
-        VulkanSwapchain::VulkanSwapchain(PlatformData platformData, uint32_t width, uint32_t height, size_t desiredBackbuffers, bool vsync)
+        VulkanSwapchain::VulkanSwapchain(PlatformData platformData,
+                                         uint32_t width,
+                                         uint32_t height,
+                                         size_t desiredBackbuffers,
+                                         bool vsync,
+                                         std::unordered_map<std::string,TextureResourceDescription>& textureDescriptions,
+                                         std::unordered_set<std::string>& commandBufferNames,
+                                         std::unordered_map<std::string, UniformBufferResourceDescription>& uniformBufferDescriptions
+                                        )
         {
             _surface = createNativeSurface(platformData);
             _width = width;
@@ -32,6 +40,9 @@ namespace slag
             {
                 _presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
             }
+            _textureDescriptions = textureDescriptions;
+            _commandBufferNames = commandBufferNames;
+            _uniformBufferDescriptions = uniformBufferDescriptions;
 
             VkCommandPoolCreateInfo commandPoolInfo{};
             commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -214,7 +225,7 @@ namespace slag
                 }
                 while(_frames.size()<_swapchainImages.size())
                 {
-                    _frames.emplace_back(this,bufferSize);
+                    _frames.emplace_back(this,bufferSize,_textureDescriptions,_commandBufferNames,_uniformBufferDescriptions);
                 }
             }
             vkResetCommandPool(VulkanLib::graphicsCard()->device(),_commandPool,0);

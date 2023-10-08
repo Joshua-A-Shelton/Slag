@@ -6,9 +6,11 @@ namespace slag
 {
     namespace vulkan
     {
-        VulkanCommandBuffer::VulkanCommandBuffer(VkCommandPool pool)
+        VulkanCommandBuffer::VulkanCommandBuffer(VkCommandPool pool, bool primary, bool destroyImmediately)
         {
             _pool = pool;
+            _primary = primary;
+            this->destroyImmediately = destroyImmediately;
             if(pool)
             {
                 //command buffer
@@ -17,10 +19,66 @@ namespace slag
                 allocInfo.pNext = nullptr;
 
                 allocInfo.commandPool = pool;
-                allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+
                 allocInfo.commandBufferCount = 1;
+                if(primary)
+                {
+                    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+                }
+                else
+                {
+                    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+                }
                 auto result = vkAllocateCommandBuffers(VulkanLib::graphicsCard()->device(), &allocInfo, &_cmdBuffer);
                 assert(result == VK_SUCCESS && "failed to allocate command buffer!");
+                freeResources = [=]()
+                {
+                    vkFreeCommandBuffers(VulkanLib::graphicsCard()->device(),_pool,1,&_cmdBuffer);
+                };
+            }
+        }
+
+        VulkanCommandBuffer::VulkanCommandBuffer(bool primary, bool destroyImmediately)
+        {
+            _primary = primary;
+            this->destroyImmediately = destroyImmediately;
+            VkCommandPoolCreateInfo commandPoolInfo{};
+            commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+            commandPoolInfo.pNext = nullptr;
+
+            //the command pool will be one that can submit graphics commands
+            commandPoolInfo.queueFamilyIndex = VulkanLib::graphicsCard()->graphicsQueueFamily();
+            //we also want the pool to allow for resetting of individual command buffers
+            commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+            if(vkCreateCommandPool(VulkanLib::graphicsCard()->device(), &commandPoolInfo, nullptr, &_pool)!=VK_SUCCESS)
+            {
+                throw std::runtime_error("Unable to initialize local Command Pool");
+            }
+            if(_pool)
+            {
+                //command buffer
+                VkCommandBufferAllocateInfo allocInfo = {};
+                allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+                allocInfo.pNext = nullptr;
+
+                allocInfo.commandPool = _pool;
+
+                allocInfo.commandBufferCount = 1;
+                if(primary)
+                {
+                    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+                }
+                else
+                {
+                    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+                }
+                auto result = vkAllocateCommandBuffers(VulkanLib::graphicsCard()->device(), &allocInfo, &_cmdBuffer);
+                assert(result == VK_SUCCESS && "failed to allocate command buffer!");
+                freeResources = [=]()
+                {
+                    vkDestroyCommandPool(VulkanLib::graphicsCard()->device(),_pool, nullptr);
+                };
             }
         }
 
@@ -39,14 +97,20 @@ namespace slag
         {
             std::swap(_cmdBuffer, from._cmdBuffer);
             std::swap(_pool,from._pool);
+            std::swap(_primary,from._primary);
         }
 
         VulkanCommandBuffer::~VulkanCommandBuffer()
         {
             if(_cmdBuffer)
             {
-                vkFreeCommandBuffers(VulkanLib::graphicsCard()->device(),_pool,1,&_cmdBuffer);
+                destroyDeferred();
             }
+        }
+
+        void* VulkanCommandBuffer::GPUID()
+        {
+            return _cmdBuffer;
         }
 
         VkCommandBuffer& VulkanCommandBuffer::vulkanCommandBuffer()
@@ -57,6 +121,15 @@ namespace slag
         void VulkanCommandBuffer::reset()
         {
             vkResetCommandBuffer(_cmdBuffer,0);
+        }
+
+        CommandBuffer::Level VulkanCommandBuffer::level()
+        {
+            if(_primary)
+            {
+                return CommandBuffer::PRIMARY;
+            }
+            return CommandBuffer::SECONDARY;
         }
 
         void VulkanCommandBuffer::insertMemoryBarrier(const GPUMemoryBarrier &barrier, PipelineStageFlags source, PipelineStageFlags destination)
@@ -176,6 +249,15 @@ namespace slag
             auto result = vkQueueSubmit(VulkanLib::graphicsCard()->graphicsQueue(), 1, &submit, fence);
             assert(result == VK_SUCCESS && "Unable to submit render queue");
         }
+
+        void VulkanCommandBuffer::executeSecondaryCommands(CommandBuffer* subBuffer)
+        {
+            assert(subBuffer->level() == SECONDARY && "subBuffer must be a secondary level command buffer");
+            VulkanCommandBuffer* sub = static_cast<VulkanCommandBuffer*>(subBuffer);
+            vkCmdExecuteCommands(_cmdBuffer,1,&sub->_cmdBuffer);
+        }
+
+
 
 
     } // slag

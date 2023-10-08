@@ -2,6 +2,7 @@
 #define SLAG_VULKANGRAPHICSCARD_H
 #include "../../GraphicsCard.h"
 #include <vulkan/vulkan.h>
+#include <functional>
 #include "vk_mem_alloc.h"
 #include "VkBootstrap.h"
 
@@ -25,14 +26,19 @@ namespace slag
             VkDevice device();
             VmaAllocator memoryAllocator();
             VkQueue graphicsQueue();
+            VkQueue transferQueue();
+            VkQueue computeQueue();
             uint32_t graphicsQueueFamily();
             const VkPhysicalDeviceProperties& properties();
+            void runOneTimeCommands(VkQueue submissionQueue,std::function<void(VkCommandBuffer commandBuffer)>);
 
         private:
             void move(VulkanGraphicsCard&& from);
             VkPhysicalDevice _physicalDevice = nullptr;
             VkDevice _device = nullptr;
             VkQueue _graphicsQueue = nullptr;
+            VkQueue _transferQueue = nullptr;
+            VkQueue _computeQueue = nullptr;
             uint32_t _graphicsQueueFamily = 0;
             VmaAllocator _allocator = nullptr;
             VkPhysicalDeviceProperties _properties;

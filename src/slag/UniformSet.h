@@ -1,6 +1,6 @@
 #ifndef SLAGNEXT_UNIFORMSET_H
 #define SLAGNEXT_UNIFORMSET_H
-#include "UniformBuffer.h"
+#include "UniformDescriptorSet.h"
 namespace slag
 {
     class UniformSet
@@ -9,7 +9,7 @@ namespace slag
         virtual ~UniformSet()=default;
         virtual size_t index()=0;
         virtual size_t bufferCount()=0;
-        virtual UniformBuffer* operator[](size_t index)=0;
+        virtual UniformDescriptorSet* operator[](size_t index)=0;
     };
 }
 #endif //SLAGNEXT_UNIFORMSET_H

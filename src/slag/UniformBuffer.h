@@ -1,25 +1,36 @@
 #ifndef SLAG_UNIFORMBUFFER_H
 #define SLAG_UNIFORMBUFFER_H
-#include <string>
-#include "Uniform.h"
+
+#include <cstdint>
+
 namespace slag
 {
+    class WriteLocation
+    {
+    private:
+        void* _backingBuffer = nullptr;
+        uint64_t _location = 0;
+        uint64_t _size = 0;
+
+    public:
+        WriteLocation(void* backingBuffer,uint64_t location, uint64_t size)
+        {
+            _backingBuffer = backingBuffer;
+            _location = location;
+            _size = size;
+        }
+        void* backingBuffer()const{return _backingBuffer;}
+        uint64_t location()const{return _location;}
+        uint64_t size()const{return _size;}
+
+    };
     class UniformBuffer
     {
     public:
         virtual ~UniformBuffer()=default;
-
-        enum BufferType
-        {
-            TEXTURE,
-            UNIFORM,
-            STORAGE
-        };
-
-        virtual BufferType bufferType()=0;
-        virtual size_t uniformCount()=0;
-        virtual std::string name()=0;
-
+        virtual void reset()=0;
+        virtual WriteLocation write(void* data, uint64_t size)=0;
+        virtual uint64_t virtualSize()=0;
     };
 }
 #endif //SLAG_UNIFORMBUFFER_H

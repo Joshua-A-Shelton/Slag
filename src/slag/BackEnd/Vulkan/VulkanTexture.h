@@ -3,14 +3,18 @@
 #include "../../Texture.h"
 #include <vulkan/vulkan.h>
 #include "vk_mem_alloc.h"
+#include "../Resource.h"
+
 namespace slag
 {
     namespace vulkan
     {
-        class VulkanTexture: public Texture
+        class VulkanTexture: public Texture, Resource
         {
         public:
             VulkanTexture(VkImage image, VkImageView view, VkFormat format, VkImageAspectFlags usage, uint32_t width, uint32_t height, bool destroyImmediate);
+            VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels,VkImageAspectFlags usage, Pixels::PixelFormat format, bool destroyImmediate);
+            VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels,VkImageAspectFlags usage, Pixels::PixelFormat format, void* pixelData, bool destroyImmediate);
             VulkanTexture(const VulkanTexture&)=delete;
             VulkanTexture& operator=(const VulkanTexture&)=delete;
             VulkanTexture(VulkanTexture&& from);
@@ -27,8 +31,11 @@ namespace slag
             static Pixels::PixelFormat formatFromNative(VkFormat format);
             static VkFormat formatFromCrossPlatform(Pixels::PixelFormat format);
             static VkImageLayout layoutFromCrossPlatform(Texture::Layout layout);
+            static VkImageAspectFlags usageFromCrossPlatform(Texture::Usage usage);
         private:
             void move(VulkanTexture&& from);
+            void create(uint32_t width, uint32_t height, uint32_t mipLevels, VkImageAspectFlags usage, Pixels::PixelFormat format, void* pixelData, VkDeviceSize bufferSize, bool destroyImmdediate);
+            void updateMipMaps();
             VkFormat _baseFormat = VK_FORMAT_UNDEFINED;
             VkImageAspectFlags _usage=0;
             VkImage _image = nullptr;

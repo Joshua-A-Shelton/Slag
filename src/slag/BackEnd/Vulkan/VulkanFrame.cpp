@@ -8,16 +8,20 @@ namespace slag
 {
     namespace vulkan
     {
-        VulkanFrame::VulkanFrame(VulkanSwapchain* from, VkDeviceSize uniformBufferStartSize): _commandBuffer(nullptr)
+        VulkanFrame::VulkanFrame(VulkanSwapchain* from,
+                                 VkDeviceSize uniformBufferStartSize,
+                                 const std::unordered_map<std::string,TextureResourceDescription>& textureDescriptions,
+                                 const std::unordered_set<std::string>& commandBufferNames,
+                                 const std::unordered_map<std::string,UniformBufferResourceDescription>& uniformBufferDescriptions)
+                                 : _commandBuffer(nullptr, true, true), _virtualUniformBuffer(uniformBufferStartSize, true)
         {
             assert(from != nullptr && "From swapchain cannot be null!");
             _fromSwapChain = from;
             auto commandPool = _fromSwapChain->commandPool();
 
-            _commandBuffer = std::move(VulkanCommandBuffer(commandPool));
+            _commandBuffer = std::move(VulkanCommandBuffer(commandPool, true, true));
 
             //in flight fence, render and image available semaphores
-
             VkSemaphoreCreateInfo semaphoreInfo{};
             semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -31,6 +35,31 @@ namespace slag
             assert(result == VK_SUCCESS && "failed to create semaphore!");
             result = vkCreateFence(VulkanLib::graphicsCard()->device(), &fenceInfo, nullptr,&_inFlight);
             assert(result == VK_SUCCESS && "failed to create fence!");
+
+            for(auto& kvpair : textureDescriptions)
+            {
+                uint32_t w=0;
+                uint32_t h=0;
+                if(kvpair.second.sizingMode == TextureResourceDescription::FRAME_RELATIVE)
+                {
+                    w = from->width() * kvpair.second.width;
+                    h = from->height() * kvpair.second.height;
+                }
+                else
+                {
+                    w = kvpair.second.width;
+                    h = kvpair.second.height;
+                }
+                _textureResources.insert(std::make_pair(kvpair.first, VulkanTexture(w,h,1,VulkanTexture::usageFromCrossPlatform(kvpair.second.usage),kvpair.second.format, true)));
+            }
+            for(auto& name : commandBufferNames)
+            {
+                _commandBufferResources.insert(std::make_pair(name,VulkanCommandBuffer(false, true)));
+            }
+            for(auto& kvpair : uniformBufferDescriptions)
+            {
+                _uniformBufferResources.insert(std::make_pair(kvpair.first, VulkanVirtualUniformBuffer(kvpair.second.defaultSize, true)));
+            }
         }
 
         VulkanFrame::~VulkanFrame()
@@ -45,7 +74,7 @@ namespace slag
 
         }
 
-        VulkanFrame::VulkanFrame(VulkanFrame&& from): _commandBuffer(nullptr)
+        VulkanFrame::VulkanFrame(VulkanFrame&& from): _commandBuffer(nullptr, true, true), _virtualUniformBuffer(0, true)
         {
             move(std::move(from));
         }

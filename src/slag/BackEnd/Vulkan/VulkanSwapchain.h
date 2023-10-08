@@ -12,7 +12,15 @@ namespace slag
         class VulkanSwapchain: public Swapchain
         {
         public:
-            VulkanSwapchain(PlatformData platformData ,uint32_t width, uint32_t height, size_t desiredBackbuffers, bool vsync);
+            VulkanSwapchain(PlatformData platformData,
+                            uint32_t width,
+                            uint32_t height,
+                            size_t desiredBackbuffers,
+                            bool vsync,
+                            std::unordered_map<std::string,TextureResourceDescription>& textureDescriptions,
+                            std::unordered_set<std::string>& commandBufferNames,
+                            std::unordered_map<std::string, UniformBufferResourceDescription>& uniformBufferDescriptions
+                            );
             ~VulkanSwapchain() override;
             Frame* currentFrame()override;
             Frame* next()override;
@@ -40,6 +48,9 @@ namespace slag
             uint32_t _width=0;
             uint32_t _height=0;
             bool _needsRebuild= false;
+            std::unordered_map<std::string,TextureResourceDescription> _textureDescriptions;
+            std::unordered_set<std::string> _commandBufferNames;
+            std::unordered_map<std::string, UniformBufferResourceDescription> _uniformBufferDescriptions;
             void rebuild();
             void cleanup();
             VkSurfaceKHR createNativeSurface(PlatformData platformData);

@@ -5,7 +5,7 @@ namespace slag
 {
     namespace vulkan
     {
-        VulkanShader::VulkanShader(const std::vector<char> &vertexCode, const std::vector<char> &fragmentCode)
+        VulkanShader::VulkanShader(const std::vector<char> &vertexCode, const std::vector<char> &fragmentCode, VertexDescription& vertexDescription)
         {
             VkShaderModuleCreateInfo createVertexInfo = {};
             createVertexInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -50,6 +50,7 @@ namespace slag
             vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
             vertexInputInfo.pNext = nullptr;
 
+            _vertexDescription = VulkanVertexDescription(vertexDescription);
             //set vertex description
             vertexInputInfo.pVertexBindingDescriptions = _vertexDescription.bindings();
             vertexInputInfo.vertexBindingDescriptionCount = _vertexDescription.bindingsCount();
@@ -229,6 +230,7 @@ namespace slag
 
             vkDestroyShaderModule(static_cast<VkDevice>(VulkanLib::graphicsCard()->device()),vshaderModule, nullptr);
             vkDestroyShaderModule(static_cast<VkDevice>(VulkanLib::graphicsCard()->device()),fshaderModule, nullptr);
+
         }
     } // slag
 } // vulkan

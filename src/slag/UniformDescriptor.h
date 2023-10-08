@@ -1,0 +1,7 @@
+#ifndef SLAG_UNIFORMDESCRIPTOR_H
+#define SLAG_UNIFORMDESCRIPTOR_H
+namespace slag
+{
+
+}
+#endif //SLAG_UNIFORMDESCRIPTOR_H

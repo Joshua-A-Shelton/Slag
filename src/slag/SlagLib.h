@@ -5,11 +5,10 @@
 #include "GraphicsCard.h"
 #include "PixelFormat.h"
 #include "PlatformData.h"
-#include "Resource.h"
 #include "Swapchain.h"
 #include "Texture.h"
-#include "Uniform.h"
-#include "UniformBuffer.h"
+#include "UniformDescriptor.h"
+#include "UniformDescriptorSet.h"
 #include "UniformSet.h"
 
 namespace slag

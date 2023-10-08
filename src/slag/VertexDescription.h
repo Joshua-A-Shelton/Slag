@@ -2,6 +2,8 @@
 #define SLAG_VERTEXDESCRIPTION_H
 #include "GPUTypes.h"
 #include <vector>
+#include <cstdint>
+
 namespace slag
 {
 

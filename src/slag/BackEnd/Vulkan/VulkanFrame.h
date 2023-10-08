@@ -15,7 +15,12 @@ namespace slag
         class VulkanFrame: public Frame
         {
         public:
-            VulkanFrame(VulkanSwapchain* from, VkDeviceSize uniformBufferStartSize);
+            VulkanFrame(
+                    VulkanSwapchain* from,
+                    VkDeviceSize uniformBufferStartSize,
+                    const std::unordered_map<std::string,TextureResourceDescription>& textureDescriptions,
+                    const std::unordered_set<std::string>& commandBufferNames,
+                    const std::unordered_map<std::string,UniformBufferResourceDescription>& uniformBufferDescriptions);
             VulkanFrame(const VulkanFrame&)=delete;
             VulkanFrame(VulkanFrame&& from);
             VulkanFrame& operator=(VulkanFrame&& from);
@@ -36,7 +41,7 @@ namespace slag
             void waitTillFinished();
             void resetWait();
         private:
-            //is the command buffer done
+            //is the command buffer done (null doesn't mean not done, it means the synchronization object doesn't exist)
             VkFence _inFlight = nullptr;
             VkSemaphore _renderFinished = nullptr;
             VkSemaphore _imageAvailable = nullptr;
@@ -45,7 +50,11 @@ namespace slag
             VulkanVirtualUniformBuffer _virtualUniformBuffer;
             VulkanTexture* _swapchainImageTexture;
             VulkanCommandBuffer _commandBuffer;
+            std::unordered_map<std::string,VulkanTexture> _textureResources;
+            std::unordered_map<std::string,VulkanCommandBuffer> _commandBufferResources;
+            std::unordered_map<std::string,VulkanVirtualUniformBuffer> _uniformBufferResources;
             void move(VulkanFrame&& from);
+
         };
     } // slag
 } // vulkan

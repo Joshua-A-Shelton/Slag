@@ -1,12 +1,11 @@
 #ifndef SLAG_SHADER_H
 #define SLAG_SHADER_H
 
-#include "Resource.h"
 #include "UniformSet.h"
 
 namespace slag
 {
-    class Shader: public Resource
+    class Shader
     {
     public:
         virtual ~Shader()=default;

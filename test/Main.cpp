@@ -27,7 +27,8 @@ int main()
 
     slag::SlagLib::initialize({slag::VULKAN});
 
-    slag::Swapchain* swapchain = slag::Swapchain::create(pd,500, 500, 2, true);
+    slag::SwapchainBuilder builder(pd);
+    slag::Swapchain* swapchain = builder.setWidth(500).setHeight(500).setDesiredBackBuffers(2).setVSyncEnabled(true).create();
 
     bool quit = false;
     while(!quit)

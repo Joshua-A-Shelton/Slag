@@ -1,7 +1,7 @@
 #ifndef SLAG_RESOURCEMANAGER_H
 #define SLAG_RESOURCEMANAGER_H
 
-#include "../Resource.h"
+#include "Resource.h"
 #include "../Swapchain.h"
 #include <unordered_map>
 #include <mutex>

@@ -5,8 +5,10 @@ namespace slag
 {
     namespace vulkan
     {
-        VulkanUniformBuffer::VulkanUniformBuffer(VkDeviceSize defaultSize)
+        VulkanUniformBuffer::VulkanUniformBuffer(VkDeviceSize defaultSize, bool destroyImmediate)
         {
+            destroyImmediately = destroyImmediate;
+
             _create(defaultSize);
         }
 
@@ -49,14 +51,21 @@ namespace slag
                             &_allocation,
                             nullptr);
             vmaMapMemory(VulkanLib::graphicsCard()->memoryAllocator(),_allocation,&_memoryLocation);
+
+            auto alloc = _allocation;
+            auto back = _backingBuffer;
+            freeResources = [=]()
+            {
+                vmaUnmapMemory(VulkanLib::graphicsCard()->memoryAllocator(),alloc);
+                vmaDestroyBuffer(VulkanLib::graphicsCard()->memoryAllocator(), back, alloc);
+            };
         }
 
         void VulkanUniformBuffer::_destroy()
         {
             if(_allocation)
             {
-                vmaUnmapMemory(VulkanLib::graphicsCard()->memoryAllocator(),_allocation);
-                vmaDestroyBuffer(VulkanLib::graphicsCard()->memoryAllocator(), _backingBuffer, _allocation);
+                destroyDeferred();
             }
         }
 
@@ -73,18 +82,7 @@ namespace slag
 
         VulkanUniformBuffer::VulkanUniformBuffer(VulkanUniformBuffer &&from)
         {
-            _backingBuffer = from._backingBuffer;
-            _allocation = from._allocation;
-            _memoryLocation = from._memoryLocation;
-            _size = from._size;
-            _offset = from._offset;
-            _minUniformBufferOffsetAlignment=from._minUniformBufferOffsetAlignment;
-
-            from._backingBuffer = nullptr;
-            from._allocation = nullptr;
-            from._memoryLocation = nullptr;
-            from._size = 0;
-            from._offset = 0;
+            move(std::move(from));
         }
 
         VkDeviceSize VulkanUniformBuffer::size()
@@ -94,18 +92,7 @@ namespace slag
 
         VulkanUniformBuffer &VulkanUniformBuffer::operator=(VulkanUniformBuffer &&from)
         {
-            _backingBuffer = from._backingBuffer;
-            _allocation = from._allocation;
-            _memoryLocation = from._memoryLocation;
-            _size = from._size;
-            _offset = from._offset;
-            _minUniformBufferOffsetAlignment=from._minUniformBufferOffsetAlignment;
-
-            from._backingBuffer = nullptr;
-            from._allocation = nullptr;
-            from._memoryLocation = nullptr;
-            from._size = 0;
-            from._offset = 0;
+            move(std::move(from));
             return *this;
         }
 
@@ -124,6 +111,30 @@ namespace slag
         VkBuffer VulkanUniformBuffer::backingBuffer()
         {
             return _backingBuffer;
+        }
+
+        void* VulkanUniformBuffer::GPUID()
+        {
+            return _backingBuffer;
+        }
+
+        void VulkanUniformBuffer::move(VulkanUniformBuffer&& from)
+        {
+            _backingBuffer = from._backingBuffer;
+            _allocation = from._allocation;
+            _memoryLocation = from._memoryLocation;
+            _size = from._size;
+            _offset = from._offset;
+            _minUniformBufferOffsetAlignment=from._minUniformBufferOffsetAlignment;
+            freeResources = from.freeResources;
+            destroyImmediately = from.destroyImmediately;
+
+            from._backingBuffer = nullptr;
+            from._allocation = nullptr;
+            from._memoryLocation = nullptr;
+            from._size = 0;
+            from._offset = 0;
+            from.freeResources = nullptr;
         }
     } // slag
 } // vulkan

@@ -3,12 +3,13 @@
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
 #include <optional>
+#include "../Resource.h"
 
 namespace slag
 {
     namespace vulkan
     {
-        class VulkanUniformBuffer
+        class VulkanUniformBuffer: public Resource
         {
         private:
             VkBuffer _backingBuffer = nullptr;
@@ -17,9 +18,10 @@ namespace slag
             VkDeviceSize _size = 0;
             size_t _offset = 0;
             size_t _minUniformBufferOffsetAlignment=0;
-            VulkanUniformBuffer(VkDeviceSize defaultSize);
+            VulkanUniformBuffer(VkDeviceSize defaultSize, bool destroyImmediate);
             void _create(VkDeviceSize size);
             void _destroy();
+            void move(VulkanUniformBuffer&& from);
             size_t paddedSize(size_t originalSize);
         public:
             ~VulkanUniformBuffer();
@@ -35,6 +37,7 @@ namespace slag
 
             std::optional<size_t> write(void* data, size_t dataSize);
             VkBuffer backingBuffer();
+            void* GPUID()override;
             friend class VulkanVirtualUniformBuffer;
         };
     } // slag

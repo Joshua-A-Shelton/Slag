@@ -1,6 +1,6 @@
 #include "Resource.h"
-#include "Swapchain.h"
-#include "BackEnd/ResourceManager.h"
+#include "../Swapchain.h"
+#include "ResourceManager.h"
 
 
 namespace slag

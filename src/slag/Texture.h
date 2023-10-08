@@ -14,12 +14,11 @@ DEFINITION(COPY_SOURCE,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,D3D12_RESOURCE_STATE
 DEFINITION(PRESENT,VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,D3D12_RESOURCE_STATE_PRESENT) \
 
 #include <cstdint>
-#include "Resource.h"
 #include "PixelFormat.h"
 
 namespace slag
 {
-    class Texture: public Resource
+    class Texture
     {
 
     public:

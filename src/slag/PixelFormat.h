@@ -1,6 +1,6 @@
 #ifndef SLAG_PIXELFORMAT_H
 #define SLAG_PIXELFORMAT_H
-//slagName, texelSizeinBits, channelCount, alphaChannel basetype, mipable, srgb, vulkanName, directXName
+//slagName, texelSizeinBytes, channelCount, alphaChannel basetype, mipable, srgb, vulkanName, directXName
 #define TEXTURE_FORMAT_DEFINTITIONS(DEFINITION) \
 DEFINITION(UNDEFINED,0,0,-1,UNAVAILABLE,false,false,VK_FORMAT_UNDEFINED,TODO) \
 DEFINITION(R4G4_UNORM_PACK8,8,2,-1,UNAVAILABLE,false,false,VK_FORMAT_R4G4_UNORM_PACK8,TODO) \
@@ -144,6 +144,16 @@ namespace slag
             TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
         };
+
+        static uint32_t pixelBytes(PixelFormat format)
+        {
+            switch (format)
+            {
+#define DEFINITION(slagName, texelSize, channelCount, alphaChannel, baseType, mipable, srgb, vulkanName, directXName) case slagName: return texelSize;
+                TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+        }
     };
 }
 

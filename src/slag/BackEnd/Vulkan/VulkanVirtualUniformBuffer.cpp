@@ -1,13 +1,41 @@
+#include <cassert>
 #include "VulkanVirtualUniformBuffer.h"
 
 namespace slag
 {
     namespace vulkan
     {
-        VulkanVirtualUniformBuffer::VulkanVirtualUniformBuffer(VkDeviceSize defaultSize)
+        VulkanVirtualUniformBuffer::VulkanVirtualUniformBuffer(VkDeviceSize defaultSize, bool destroyImmediate)
         {
-            _backingBuffers.push_back(VulkanUniformBuffer(defaultSize));
-            _virtualSize = _backingBuffers[0]._size;
+            if(defaultSize > 0)
+            {
+                _backingBuffers.push_back(VulkanUniformBuffer(defaultSize, destroyImmediate));
+                _virtualSize = _backingBuffers[0]._size;
+            }
+            else
+            {
+                _virtualSize = 0;
+            }
+            _destroyImmediately = destroyImmediate;
+        }
+
+        VulkanVirtualUniformBuffer::VulkanVirtualUniformBuffer(VulkanVirtualUniformBuffer&& from)
+        {
+            move(std::move(from));
+        }
+
+        VulkanVirtualUniformBuffer& VulkanVirtualUniformBuffer::operator=(VulkanVirtualUniformBuffer&& from)
+        {
+            move(std::move(from));
+            return *this;
+        }
+
+        void VulkanVirtualUniformBuffer::move(VulkanVirtualUniformBuffer&& from)
+        {
+            std::swap(_virtualSize,from._virtualSize);
+            _backingBuffers.swap(from._backingBuffers);
+            std::swap(_currentBufferIndex,from._currentBufferIndex);
+            std::swap(_destroyImmediately,from._destroyImmediately);
         }
 
         void VulkanVirtualUniformBuffer::reset()
@@ -34,24 +62,20 @@ namespace slag
             _currentBufferIndex = 0;
         }
 
-        VulkanUniformBufferWriteData VulkanVirtualUniformBuffer::write(void *data, size_t size)
+        WriteLocation VulkanVirtualUniformBuffer::write(void *data, size_t size)
         {
+            assert(_backingBuffers.size()>0 && "Use of invalid virtual buffer, no buffers have been assigned");
             auto writeLocation = _backingBuffers[_currentBufferIndex].write(data,size);
             if(writeLocation)
             {
-                return VulkanUniformBufferWriteData
-                        {
-                                _backingBuffers[_currentBufferIndex]._backingBuffer,
-                                writeLocation.value(),
-                                size
-                        };
+                return WriteLocation(_backingBuffers[_currentBufferIndex]._backingBuffer,writeLocation.value(),size);
             }
             else
             {
 
                 auto growth = std::max(_backingBuffers[_currentBufferIndex].size()/2,2*size);
                 _currentBufferIndex++;
-                _backingBuffers.push_back(VulkanUniformBuffer(growth));
+                _backingBuffers.push_back(VulkanUniformBuffer(growth,_destroyImmediately));
                 _virtualSize+= _backingBuffers.end()->size();
                 return write(data,size);
             }
@@ -61,5 +85,9 @@ namespace slag
         {
             return _virtualSize;
         }
+
+
+
+
     } // slag
 } // vulkan
