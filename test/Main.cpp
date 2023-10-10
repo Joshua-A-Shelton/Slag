@@ -29,6 +29,9 @@ int main()
 
     slag::SwapchainBuilder builder(pd);
     slag::Swapchain* swapchain = builder.setWidth(500).setHeight(500).setDesiredBackBuffers(2).setVSyncEnabled(true).create();
+    slag::FramebufferDescription description;
+    description.addColorTarget(swapchain->imageFormat());
+    slag::Shader* shader = slag::Shader::create("resources/basic.vert.spv","resources/basic.frag.spv",description);
 
     bool quit = false;
     while(!quit)
@@ -51,6 +54,8 @@ int main()
             frame->end();
         }
     }
+
+    delete shader;
     delete swapchain;
 
     slag::SlagLib::cleanup();

@@ -31,6 +31,7 @@ namespace slag
             uint32_t width()override;
             uint32_t height()override;
             void resize(uint32_t width, uint32_t height)override;
+            Pixels::PixelFormat imageFormat()override;
             VkCommandPool commandPool();
             void queueToPresent(VulkanFrame* frame);
 
@@ -44,6 +45,7 @@ namespace slag
             std::vector<VulkanFrame> _frames;
             std::vector<VulkanTexture> _swapchainImages;
             VkPresentModeKHR _presentMode;
+            VkFormat _defaultImageFormat;
             size_t _desiredBackbufferCount = 0;
             uint32_t _width=0;
             uint32_t _height=0;

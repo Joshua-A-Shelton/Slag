@@ -2,13 +2,19 @@
 #define SLAG_SLAGLIB_H
 #include "CommandBuffer.h"
 #include "Frame.h"
+#include "FramebufferDescription.h"
+#include "GPUMemoryBarriers.h"
+#include "GPUTypes.h"
 #include "GraphicsCard.h"
 #include "PixelFormat.h"
 #include "PlatformData.h"
+#include "ResourceDescriptions.h"
+#include "Shader.h"
 #include "Swapchain.h"
 #include "Texture.h"
-#include "UniformDescriptor.h"
 #include "Uniform.h"
+#include "UniformBuffer.h"
+#include "UniformDescriptor.h"
 #include "UniformSet.h"
 
 namespace slag

@@ -4,8 +4,9 @@
 #include "../Resource.h"
 #include <vector>
 #include <vulkan/vulkan.h>
-#include "VulkanVertexDescription.h"
 #include "VulkanUniformSet.h"
+#include "../../FramebufferDescription.h"
+
 namespace slag
 {
     namespace vulkan
@@ -14,16 +15,16 @@ namespace slag
         class VulkanShader: public Shader, Resource
         {
         public:
-            VulkanShader(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, VertexDescription& vertexDescription);
+            VulkanShader(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, FramebufferDescription& framebufferDescription);
             ~VulkanShader()override;
+            void* GPUID()override;
+            UniformSet* getUniformSet(size_t index)override;
         private:
-            VkPipelineLayout _pipelineLayout;
-            VkPipeline _pipeline;
-            VulkanVertexDescription _vertexDescription;
+            VkPipelineLayout _pipelineLayout = nullptr;
+            VkPipeline _pipeline = nullptr;
             std::vector<VulkanUniformSet> _uniformSets;
-            void generateReflectionData(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, VkVertexInputBindingDescription& vertexInput);
-        };
-
+            std::vector<VkPushConstantRange> _pushConstantRanges;
+            void generateReflectionData(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, std::vector<VkVertexInputAttributeDescription>& attributes,VkVertexInputBindingDescription& binding, std::vector<VulkanUniformSet>& overwrites);
         };
 
     } // slag

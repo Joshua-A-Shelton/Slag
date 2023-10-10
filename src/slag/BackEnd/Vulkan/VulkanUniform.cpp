@@ -109,13 +109,13 @@ namespace slag
                 }
 
                 //TODO: I'm not positive this is the right way to do alignment.... double check on this
-                auto memberSize = GraphicsTypes::typeSize(type);
-                auto paddedSize = GraphicsTypes::paddedTypeSize(type);
+                auto memberSize = GraphicsTypes::typeSize(static_cast<GraphicsTypes::GraphicsType>(type));
+                auto paddedSize = GraphicsTypes::paddedTypeSize(static_cast<GraphicsTypes::GraphicsType>(type));
                 auto additionalPadding = (offsetLocation+paddedSize) % paddedSize;
                 offsetLocation+=additionalPadding;
 
                 _descriptors.push_back(UniformDescriptor(i,offsetLocation,memberSize,static_cast<GraphicsTypes::GraphicsType>(type),memberName));
-                offsetLocation+=paddedSize;
+                offsetLocation+=memberSize;
             }
             _bufferSize = offsetLocation;
         }
@@ -131,7 +131,8 @@ namespace slag
                 case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
                     return UniformType::UNIFORM;
             }
-            assert("Unimplemented");
+            assert(false && "Unimplemented");
+            return UniformType::UNIFORM;
         }
 
         size_t VulkanUniform::descriptorCount()
@@ -159,7 +160,7 @@ namespace slag
                 if(memberOffsetIndex < originalSize)
                 {
                     //same member or sub member
-                    if (_descriptors[memberOffsetIndex].offset >= mergeMember.offset && _descriptors[memberOffsetIndex].offset+_descriptors[memberOffsetIndex].size)
+                    if (_descriptors[memberOffsetIndex].offset() >= mergeMember.offset() && _descriptors[memberOffsetIndex].offset()+_descriptors[memberOffsetIndex].size())
                     {
                         memberOffsetIndex++;
                         continue;
@@ -168,7 +169,7 @@ namespace slag
                     {
                         memberOffsetIndex++;
                         //is member in padding
-                        if (_descriptors[memberOffsetIndex].offset > mergeMember.offset)
+                        if (_descriptors[memberOffsetIndex].offset() > mergeMember.offset())
                         {
                             _descriptors.push_back(std::move(mergeMember));
                         }
@@ -190,9 +191,29 @@ namespace slag
             std::sort(_descriptors.begin(), _descriptors.end(), UniformDescriptor::compareBinding);
         }
 
+        VkDescriptorSetLayoutBinding VulkanUniform::vulkanBindingInfo()
+        {
+            VkDescriptorSetLayoutBinding vulkanBinding{};
+            vulkanBinding.binding = _binding;
+            vulkanBinding.stageFlags = _accessibleFrom;
+            vulkanBinding.descriptorType = _descriptorType;
+            vulkanBinding.descriptorCount = _descriptors.size();
+            if(vulkanBinding.descriptorCount == 0)
+            {
+                vulkanBinding.descriptorCount = 1;
+            }
+            vulkanBinding.pImmutableSamplers = nullptr;
+            return vulkanBinding;
+        }
+
         bool VulkanUniform::compareBinding(Uniform &uniform1, Uniform &uniform2)
         {
             return uniform1.binding() < uniform2.binding();
+        }
+
+        VkDescriptorType VulkanUniform::vulkanDescriptorType()
+        {
+            return _descriptorType;
         }
     } // slag
 } // vulkan

@@ -23,6 +23,7 @@ namespace slag
         virtual uint32_t width()=0;
         virtual uint32_t height()=0;
         virtual void resize(uint32_t width, uint32_t height)=0;
+        virtual Pixels::PixelFormat imageFormat()=0;
     };
 
     class SwapchainBuilder

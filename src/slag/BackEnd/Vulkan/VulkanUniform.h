@@ -19,6 +19,8 @@ namespace slag
             const std::string& name()override;
             uint32_t binding()override;
             void merge(VulkanUniform&& with);
+            VkDescriptorSetLayoutBinding vulkanBindingInfo();
+            VkDescriptorType vulkanDescriptorType();
             static bool compareBinding(Uniform& uniform1, Uniform& uniform2);
         private:
             uint32_t _binding=0;

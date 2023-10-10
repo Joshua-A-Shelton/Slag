@@ -1,5 +1,6 @@
 #ifndef SLAG_GPUTYPES_H
 #define SLAG_GPUTYPES_H
+#include <cstdint>
 namespace slag
 {
     struct GraphicsTypes
@@ -65,7 +66,7 @@ namespace slag
             DOUBLE_MATRIX_4X4 = MATRIX4N_BIT | VECTOR4_BIT | DOUBLE_BIT,
         };
 
-        static uint32_t typeSize(GraphicsType type)
+        static uint32_t typeSize(GraphicsTypes::GraphicsType type)
         {
             uint32_t dim1 = 1;
             uint32_t dim2 = 1;
@@ -113,7 +114,7 @@ namespace slag
             return size * dim1 * dim2;
         }
 
-        static uint32_t paddedTypeSize(GraphicsType type)
+        static uint32_t paddedTypeSize(GraphicsTypes::GraphicsType type)
         {
             uint32_t dim1=1;
             uint32_t dim2=1;
@@ -152,23 +153,6 @@ namespace slag
             }
             return size*dim1*dim2;
         }
-    };
-
-    struct VertexAttributes
-    {
-        enum VertexAttributeType
-        {
-            INT_8,
-            UINT_8,
-            INT_16,
-            UINT_16,
-            INT_32,
-            UINT_32,
-            INT_64,
-            UINT_64,
-            FLOAT,
-            DOUBLE
-        };
     };
 }
 #endif //SLAG_GPUTYPES_H

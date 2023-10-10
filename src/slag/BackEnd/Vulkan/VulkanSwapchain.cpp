@@ -171,6 +171,11 @@ namespace slag
             rebuild();
         }
 
+        Pixels::PixelFormat VulkanSwapchain::imageFormat()
+        {
+            return VulkanTexture::formatFromNative(_defaultImageFormat);
+        }
+
         void VulkanSwapchain::rebuild()
         {
             VulkanGraphicsCard* card = VulkanLib::graphicsCard();
