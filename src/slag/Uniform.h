@@ -18,7 +18,7 @@ namespace slag
 
         virtual UniformType uniformType()=0;
         virtual size_t descriptorCount()=0;
-        const virtual std::string& name()=0;
+        virtual const std::string& name()=0;
         virtual uint32_t binding()=0;
 
     };

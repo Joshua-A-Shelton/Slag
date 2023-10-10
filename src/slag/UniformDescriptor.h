@@ -15,7 +15,7 @@ namespace slag
         uint32_t size()const;
         GraphicsTypes::GraphicsType type()const;
         const std::string& name()const;
-
+        static bool compareBinding(UniformDescriptor& descriptor1, UniformDescriptor descriptor2);
     private:
         uint32_t _binding=0;
         uint32_t _offset=0;

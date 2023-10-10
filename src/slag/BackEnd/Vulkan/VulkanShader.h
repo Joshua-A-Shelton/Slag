@@ -5,6 +5,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 #include "VulkanVertexDescription.h"
+#include "VulkanUniformSet.h"
 namespace slag
 {
     namespace vulkan
@@ -19,6 +20,7 @@ namespace slag
             VkPipelineLayout _pipelineLayout;
             VkPipeline _pipeline;
             VulkanVertexDescription _vertexDescription;
+            std::vector<VulkanUniformSet> _uniformSets;
             void generateReflectionData(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, VkVertexInputBindingDescription& vertexInput);
         };
 

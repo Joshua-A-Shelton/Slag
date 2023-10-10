@@ -1,11 +1,13 @@
 #include <stdexcept>
+#include <algorithm>
+#include <cassert>
 #include "VulkanUniform.h"
 
 namespace slag
 {
     namespace vulkan
     {
-        VulkanUniform::VulkanUniform(SpvReflectDescriptorBinding* binding)
+        VulkanUniform::VulkanUniform(SpvReflectDescriptorBinding* binding, VkShaderStageFlagBits shaderStage)
         {
             _binding = binding->binding;
             _descriptorType = static_cast<VkDescriptorType>(binding->descriptor_type);
@@ -18,7 +20,7 @@ namespace slag
                 _descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
             }
             _name = binding->name;
-            _accessibleFrom = inStage;
+            _accessibleFrom = shaderStage;
 
             auto& description = *binding->type_description;
             uint32_t offsetLocation = 0;
@@ -105,40 +107,92 @@ namespace slag
                             type |= GraphicsTypes::VECTOR4_BIT;
                     }
                 }
-                uint32_t baseSize = 0;
-                switch (member.type)
-                {
-                    case BOOLEAN:
-                    case INT:
-                    case U_INT:
-                        baseSize = sizeof(int);
-                        break;
-                    case FLOAT:
-                        baseSize = sizeof(float);
-                        break;
-                    case DOUBLE:
-                        baseSize = sizeof(double);
-                        break;
-                }
-                uint32_t cols = member.dimensionOneLength;
-                if(cols == 3)
-                {
-                    cols = 4;
-                }
-                uint32_t rows = member.dimensionTwoLength;
-                if(rows == 3)
-                {
-                    rows = 4;
-                }
-                auto requiredAlignment = baseSize * cols * rows;
-                offsetLocation += offsetLocation % requiredAlignment;
 
-                uint32_t membersize = baseSize * member.dimensionOneLength * member.dimensionTwoLength;
-                offsetLocation += membersize;
+                //TODO: I'm not positive this is the right way to do alignment.... double check on this
+                auto memberSize = GraphicsTypes::typeSize(type);
+                auto paddedSize = GraphicsTypes::paddedTypeSize(type);
+                auto additionalPadding = (offsetLocation+paddedSize) % paddedSize;
+                offsetLocation+=additionalPadding;
 
-                _members.push_back(UniformDescriptor(i,offsetLocation,membersize,static_cast<GraphicsTypes::GraphicsType>(type),memberName));
+                _descriptors.push_back(UniformDescriptor(i,offsetLocation,memberSize,static_cast<GraphicsTypes::GraphicsType>(type),memberName));
+                offsetLocation+=paddedSize;
             }
             _bufferSize = offsetLocation;
+        }
+
+        Uniform::UniformType VulkanUniform::uniformType()
+        {
+            switch (_descriptorType)
+            {
+                case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+                    return UniformType::TEXTURE;
+                case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+                    return UniformType::STORAGE;
+                case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+                    return UniformType::UNIFORM;
+            }
+            assert("Unimplemented");
+        }
+
+        size_t VulkanUniform::descriptorCount()
+        {
+            return _descriptors.size();
+        }
+
+        const std::string& VulkanUniform::name()
+        {
+            return _name;
+        }
+
+        uint32_t VulkanUniform::binding()
+        {
+            return _binding;
+        }
+
+        void VulkanUniform::merge(VulkanUniform&& with)
+        {
+            _accessibleFrom = static_cast<VkShaderStageFlagBits>(_accessibleFrom | with._accessibleFrom);
+            size_t memberOffsetIndex = 0;
+            size_t originalSize = _descriptors.size();
+            for(auto& mergeMember: with._descriptors)
+            {
+                if(memberOffsetIndex < originalSize)
+                {
+                    //same member or sub member
+                    if (_descriptors[memberOffsetIndex].offset >= mergeMember.offset && _descriptors[memberOffsetIndex].offset+_descriptors[memberOffsetIndex].size)
+                    {
+                        memberOffsetIndex++;
+                        continue;
+                    }
+                    else if(memberOffsetIndex < originalSize-1)
+                    {
+                        memberOffsetIndex++;
+                        //is member in padding
+                        if (_descriptors[memberOffsetIndex].offset > mergeMember.offset)
+                        {
+                            _descriptors.push_back(std::move(mergeMember));
+                        }
+                    }
+                        //is member in padding, we've gone beyond the original uniform
+                    else
+                    {
+                        _descriptors.push_back(std::move(mergeMember));
+                    }
+                    memberOffsetIndex++;
+                }
+                else
+                {
+                    _descriptors.push_back(std::move(mergeMember));
+                }
+            }
+
+            _bufferSize = std::max(_bufferSize,with._bufferSize);
+            std::sort(_descriptors.begin(), _descriptors.end(), UniformDescriptor::compareBinding);
+        }
+
+        bool VulkanUniform::compareBinding(Uniform &uniform1, Uniform &uniform2)
+        {
+            return uniform1.binding() < uniform2.binding();
         }
     } // slag
 } // vulkan

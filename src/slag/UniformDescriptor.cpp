@@ -1,3 +1,4 @@
+#include <cstdint>
 #include "UniformDescriptor.h"
 namespace slag
 {
@@ -34,6 +35,11 @@ namespace slag
     const std::string &UniformDescriptor::name() const
     {
         return _name;
+    }
+
+    bool UniformDescriptor::compareBinding(UniformDescriptor& descriptor1, UniformDescriptor descriptor2)
+    {
+        return descriptor1._binding < descriptor2._binding;
     }
 
 }
