@@ -158,6 +158,17 @@ namespace slag
             }
         }
 
+        uint32_t VulkanTexture::formatSize(VkFormat format)
+        {
+            switch(format)
+            {
+#define DEFINITION(slagName, texelSize, channelCount, alphaChannel, baseType, mipable, srgb, vulkanName, directXName) case vulkanName: return texelSize;
+                TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            return 0;
+        }
+
         VkImage VulkanTexture::vulkanImage()
         {
             return _image;
@@ -352,6 +363,8 @@ namespace slag
             });
 
         }
+
+
 
 
     } // slag

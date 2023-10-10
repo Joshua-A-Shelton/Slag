@@ -32,6 +32,7 @@ namespace slag
             static VkFormat formatFromCrossPlatform(Pixels::PixelFormat format);
             static VkImageLayout layoutFromCrossPlatform(Texture::Layout layout);
             static VkImageAspectFlags usageFromCrossPlatform(Texture::Usage usage);
+            static uint32_t formatSize(VkFormat format);
         private:
             void move(VulkanTexture&& from);
             void create(uint32_t width, uint32_t height, uint32_t mipLevels, VkImageAspectFlags usage, Pixels::PixelFormat format, void* pixelData, VkDeviceSize bufferSize, bool destroyImmdediate);

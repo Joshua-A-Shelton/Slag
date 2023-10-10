@@ -6,6 +6,7 @@ namespace slag
     {
         enum GraphicsTypeBits
         {
+            NONE_BIT                = 0b0000000000000000,
             BOOLEAN_BIT             = 0b0000000000000001,
             INTEGER_BIT             = 0b0000000000000010,
             UNSIGNED_INTEGER_BIT    = 0b0000000000000100,
@@ -23,6 +24,7 @@ namespace slag
         };
         enum GraphicsType
         {
+            UNKNOWN = NONE_BIT,
             BOOLEAN = BOOLEAN_BIT,
             INTEGER = INTEGER_BIT,
             UNSIGNED_INTEGER = UNSIGNED_INTEGER_BIT,
@@ -62,6 +64,46 @@ namespace slag
             DOUBLE_MATRIX_4X3 = MATRIX4N_BIT | VECTOR3_BIT | DOUBLE_BIT,
             DOUBLE_MATRIX_4X4 = MATRIX4N_BIT | VECTOR4_BIT | DOUBLE_BIT,
         };
+
+        uint32_t typeSize(GraphicsType type)
+        {
+            uint32_t dim1=1;
+            uint32_t dim2=1;
+            if(type & (MATRIX4N_BIT | MATRIX3N_BIT))
+            {
+                dim1=4;
+            }
+            else if(type & MATRIX2N_BIT)
+            {
+                dim1=2;
+            }
+            if(type & (VECTOR4_BIT | VECTOR3_BIT))
+            {
+                dim2=4;
+            }
+            else if(type & VECTOR2_BIT)
+            {
+                dim2=2;
+            }
+            uint32_t size = 0;
+            switch (type & ANY_PRIMITIVE_BIT)
+            {
+                case BOOLEAN_BIT:
+                    size = sizeof(bool);
+                    break;
+                case UNSIGNED_INTEGER_BIT:
+                case INTEGER_BIT:
+                    size = sizeof(int);
+                    break;
+                case FLOAT_BIT:
+                    size = sizeof(float);
+                    break;
+                case DOUBLE_BIT:
+                    size = sizeof(double);
+                    break;
+            }
+            return size*dim1*dim2;
+        }
     };
 
     struct VertexAttributes

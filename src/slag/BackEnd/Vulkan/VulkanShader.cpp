@@ -1,11 +1,12 @@
 #include "VulkanShader.h"
 #include "VulkanLib.h"
 #include <stdexcept>
+#include <spirv_reflect.h>
 namespace slag
 {
     namespace vulkan
     {
-        VulkanShader::VulkanShader(const std::vector<char> &vertexCode, const std::vector<char> &fragmentCode, VertexDescription& vertexDescription)
+        VulkanShader::VulkanShader(const std::vector<char> &vertexCode, const std::vector<char> &fragmentCode, VertexDescription& vertexDescription):
         {
             VkShaderModuleCreateInfo createVertexInfo = {};
             createVertexInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -44,18 +45,6 @@ namespace slag
             shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
             shaderStages[1].pName = "main";
             shaderStages[1].module = fshaderModule;
-
-
-            VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-            vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-            vertexInputInfo.pNext = nullptr;
-
-            _vertexDescription = VulkanVertexDescription(vertexDescription);
-            //set vertex description
-            vertexInputInfo.pVertexBindingDescriptions = _vertexDescription.bindings();
-            vertexInputInfo.vertexBindingDescriptionCount = _vertexDescription.bindingsCount();
-            vertexInputInfo.pVertexAttributeDescriptions = _vertexDescription.attributes();
-            vertexInputInfo.vertexAttributeDescriptionCount = _vertexDescription.attributeCount();
 
             VkPipelineInputAssemblyStateCreateInfo assemblyStateInfo = {};
             assemblyStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -151,7 +140,12 @@ namespace slag
             depthStencilInfo.front = {};  // Optional
             depthStencilInfo.back = {};   // Optional
 
-            generateReflectionData(vertexCode,fragmentCode,std::move(overwrites));
+
+            VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+            vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+            vertexInputInfo.pNext = nullptr;
+
+            generateReflectionData(vertexCode,fragmentCode,vertexInputInfo,std::move(overwrites));
 
             std::vector<VkDescriptorSetLayout> setLayouts;
             for(int i=0; i< _uniformGroups.size(); i++)
@@ -174,7 +168,7 @@ namespace slag
             pipelineLayoutInfo.pPushConstantRanges = _pushConstantRanges.data();
 
 
-            if(vkCreatePipelineLayout(static_cast<VkDevice>(SlagLib::graphicsCard()->device()),&pipelineLayoutInfo, nullptr,&_vkPipelineLayout)!= VK_SUCCESS)
+            if(vkCreatePipelineLayout(static_cast<VkDevice>(VulkanLib::graphicsCard()->device()),&pipelineLayoutInfo, nullptr,&_vkPipelineLayout)!= VK_SUCCESS)
             {
                 throw std::runtime_error("Unable to create shader layout");
             }
@@ -231,6 +225,105 @@ namespace slag
             vkDestroyShaderModule(static_cast<VkDevice>(VulkanLib::graphicsCard()->device()),vshaderModule, nullptr);
             vkDestroyShaderModule(static_cast<VkDevice>(VulkanLib::graphicsCard()->device()),fshaderModule, nullptr);
 
+        }
+
+        void VulkanShader::generateReflectionData(const std::vector<char> &vertexCode, const std::vector<char> &fragmentCode, VkVertexInputBindingDescription& vertexInput)
+        {
+            SpvReflectShaderModule vertexModule, fragmentModule;
+            spvReflectCreateShaderModule(vertexCode.size(),vertexCode.data(),&vertexModule);
+            spvReflectCreateShaderModule(fragmentCode.size(),fragmentCode.data(),&fragmentModule);
+            try
+            {
+                std::vector<UniformGroup> vertexGroups, fragmentGroups;
+                uint32_t vertGroupCount = 0;
+                auto result = spvReflectEnumerateDescriptorSets(&vertexModule,&vertGroupCount, nullptr);
+                assert(result == SPV_REFLECT_RESULT_SUCCESS && "Unable to get reflection data");
+                for(uint32_t i =0; i< vertGroupCount; i++)
+                {
+                    auto set = spvReflectGetDescriptorSet(&vertexModule,i,&result);
+                    if(set!= nullptr)
+                    {
+                        vertexGroups.push_back(UniformGroup(set, VK_SHADER_STAGE_VERTEX_BIT,&_pipelineLayout));
+                    }
+                }
+
+
+                uint32_t fragGroupCount = 0;
+                result = spvReflectEnumerateDescriptorSets(&fragmentModule,&fragGroupCount, nullptr);
+                assert(result == SPV_REFLECT_RESULT_SUCCESS && "Unable to get reflection data");
+                for(uint32_t i =0; i< fragGroupCount; i++)
+                {
+                    auto set = spvReflectGetDescriptorSet(&fragmentModule,i,&result);
+                    if(set != nullptr)
+                    {
+                        fragmentGroups.push_back(UniformGroup(set, VK_SHADER_STAGE_FRAGMENT_BIT,&_vkPipelineLayout));
+                    }
+                }
+
+                for(int i=0; i<4; i++)
+                {
+                    UniformGroup fullGroup(i,&_vkPipelineLayout);
+                    for(auto vertexIterator = vertexGroups.begin(); vertexIterator < vertexGroups.end(); vertexIterator++)
+                    {
+                        if(vertexIterator->set()==i)
+                        {
+                            fullGroup = std::move(*vertexIterator);
+                        }
+                    }
+
+                    for(auto fragmentIterator = fragmentGroups.begin(); fragmentIterator < fragmentGroups.end(); fragmentIterator++)
+                    {
+                        if(fragmentIterator->set()==i)
+                        {
+                            fullGroup.merge(std::move(*fragmentIterator));
+                        }
+                    }
+
+                    _uniformGroups.push_back(std::move(fullGroup));
+                }
+
+                //emplace overwrites
+                for(auto& overwrite : overwrites)
+                {
+                    _uniformGroups[overwrite.set()] = std::move(overwrite);
+                }
+
+                //push constants
+                uint32_t blockCount = 0;
+                result = spvReflectEnumeratePushConstantBlocks(&vertexModule,&blockCount, nullptr);
+                assert(result == SPV_REFLECT_RESULT_SUCCESS && "Unable to get push constant data");
+                for(uint32_t i=0; i< blockCount; i++)
+                {
+                    auto& pushConstantRangeData = *spvReflectGetPushConstantBlock(&vertexModule,i,&result);
+                    VkPushConstantRange range{};
+                    range.size = pushConstantRangeData.size;
+                    range.offset = pushConstantRangeData.offset;
+                    range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+                    _pushConstantRanges.push_back(range);
+                }
+
+                result = spvReflectEnumeratePushConstantBlocks(&fragmentModule,&blockCount, nullptr);
+                assert(result == SPV_REFLECT_RESULT_SUCCESS && "Unable to get push constant data");
+                for(uint32_t i=0; i< blockCount; i++)
+                {
+                    auto& pushConstantRangeData = *spvReflectGetPushConstantBlock(&fragmentModule,i,&result);
+                    VkPushConstantRange range{};
+                    range.size = pushConstantRangeData.size;
+                    range.offset = pushConstantRangeData.offset;
+                    range.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+                    _pushConstantRanges.push_back(range);
+                }
+            }
+            catch (std::runtime_error err)
+            {
+                //cleanup
+                spvReflectDestroyShaderModule(&vertexModule);
+                spvReflectDestroyShaderModule(&fragmentModule);
+                //throw
+                throw err;
+            }
+            spvReflectDestroyShaderModule(&vertexModule);
+            spvReflectDestroyShaderModule(&fragmentModule);
         }
     } // slag
 } // vulkan

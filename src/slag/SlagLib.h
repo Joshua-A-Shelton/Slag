@@ -8,7 +8,7 @@
 #include "Swapchain.h"
 #include "Texture.h"
 #include "UniformDescriptor.h"
-#include "UniformDescriptorSet.h"
+#include "Uniform.h"
 #include "UniformSet.h"
 
 namespace slag

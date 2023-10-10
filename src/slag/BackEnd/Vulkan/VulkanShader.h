@@ -19,6 +19,8 @@ namespace slag
             VkPipelineLayout _pipelineLayout;
             VkPipeline _pipeline;
             VulkanVertexDescription _vertexDescription;
+            void generateReflectionData(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, VkVertexInputBindingDescription& vertexInput);
+        };
 
         };
 
