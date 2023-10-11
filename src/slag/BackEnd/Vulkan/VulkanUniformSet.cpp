@@ -64,6 +64,17 @@ namespace slag
             }
         }
 
+        VulkanUniformSet::VulkanUniformSet(VulkanUniformSet&& from)
+        {
+            move(std::move(from));
+        }
+
+        VulkanUniformSet& VulkanUniformSet::operator=(VulkanUniformSet&& from)
+        {
+            move(std::move(from));
+            return *this;
+        }
+
         VulkanUniformSet::~VulkanUniformSet()
         {
             if(_descriptorSetLayout)
@@ -116,6 +127,15 @@ namespace slag
             layout = layoutInfo();
             _descriptorSetLayout = VulkanDescriptorSetLayoutCache::getLayout(layout);
             setDynamicOffsets();
+        }
+
+        void VulkanUniformSet::move(VulkanUniformSet&& from)
+        {
+            std::swap(_index,from._index);
+            std::swap(_accessibleFrom,from._accessibleFrom);
+            std::swap(_descriptorSetLayout, from._descriptorSetLayout);
+            _uniforms.swap(from._uniforms);
+            _dynamicOffsets.swap(from._dynamicOffsets);
         }
     } // slag
 } // vulkan

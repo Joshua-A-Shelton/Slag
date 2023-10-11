@@ -204,14 +204,14 @@ namespace slag
             _swapchain = vkbSwapchain.swapchain;
             _width = vkbSwapchain.extent.width;
             _height = vkbSwapchain.extent.height;
-            auto format = vkbSwapchain.image_format;
+            _defaultImageFormat = vkbSwapchain.image_format;
             auto images = vkbSwapchain.get_images().value();
             auto views = vkbSwapchain.get_image_views().value();
             _swapchainImages.clear();
 
             for(auto i=0; i< images.size(); i++)
             {
-                _swapchainImages.emplace_back(std::move(VulkanTexture(images[i],views[i],format,VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT,_width,_height,true)));
+                _swapchainImages.emplace_back(std::move(VulkanTexture(images[i],views[i],_defaultImageFormat,VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT,_width,_height,true)));
             }
 
             if(_frames.size()>_swapchainImages.size())

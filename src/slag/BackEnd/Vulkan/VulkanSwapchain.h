@@ -45,7 +45,7 @@ namespace slag
             std::vector<VulkanFrame> _frames;
             std::vector<VulkanTexture> _swapchainImages;
             VkPresentModeKHR _presentMode;
-            VkFormat _defaultImageFormat;
+            VkFormat _defaultImageFormat = VK_FORMAT_UNDEFINED;
             size_t _desiredBackbufferCount = 0;
             uint32_t _width=0;
             uint32_t _height=0;

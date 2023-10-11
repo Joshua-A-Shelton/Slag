@@ -17,6 +17,10 @@ namespace slag
         public:
             VulkanUniformSet(uint32_t index);
             VulkanUniformSet(const SpvReflectDescriptorSet* description, VkShaderStageFlagBits stage);
+            VulkanUniformSet(const VulkanUniformSet&)=delete;
+            VulkanUniformSet& operator=(const VulkanUniformSet&)=delete;
+            VulkanUniformSet(VulkanUniformSet&& from);
+            VulkanUniformSet& operator=(VulkanUniformSet&& from);
             ~VulkanUniformSet()override;
             uint32_t index()override;
             size_t bufferCount()override;
@@ -31,6 +35,7 @@ namespace slag
             std::vector<uint32_t> _dynamicOffsets{};
             VulkanUniformLayoutInfo layoutInfo();
             void setDynamicOffsets();
+            void move(VulkanUniformSet&& from);
 
         };
 

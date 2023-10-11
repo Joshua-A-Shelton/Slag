@@ -207,7 +207,6 @@ namespace slag
             VkGraphicsPipelineCreateInfo pipelineInfo = {};
             pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 
-            //THESE TWO LINES!!!! WHAT?????
             pipelineInfo.stageCount = 2;
             pipelineInfo.pStages = shaderStages.data();
 
