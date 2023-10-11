@@ -1,6 +1,8 @@
 #include "VulkanCommandBuffer.h"
 #include "VulkanTexture.h"
+#include "VulkanBuffer.h"
 #include "VulkanLib.h"
+#include "VulkanShader.h"
 
 namespace slag
 {
@@ -104,7 +106,7 @@ namespace slag
         {
             if(_cmdBuffer)
             {
-                destroyDeferred();
+                smartDestroy();
             }
         }
 
@@ -298,7 +300,45 @@ namespace slag
             vkCmdExecuteCommands(_cmdBuffer,1,&sub->_cmdBuffer);
         }
 
+        void VulkanCommandBuffer::bindVertexBuffer(Buffer* vertexBuffer)
+        {
+            VulkanBuffer* vBuffer = static_cast<VulkanBuffer*>(vertexBuffer);
+            VkDeviceSize offset = 0;
+            vkCmdBindVertexBuffers(_cmdBuffer,0,1,&vBuffer->underlyingBuffer(),&offset);
+        }
 
+        void VulkanCommandBuffer::bindIndexBuffer(Buffer* indexBuffer, GraphicsTypes::IndexType indexType)
+        {
+            VkIndexType itype;
+            switch (indexType)
+            {
+                case GraphicsTypes::IndexType::UINT32:
+                    itype = VK_INDEX_TYPE_UINT32;
+                    break;
+                case GraphicsTypes::IndexType::UINT16:
+                    itype = VK_INDEX_TYPE_UINT16;
+                    break;
+
+            }
+            VulkanBuffer* iBuffer = static_cast<VulkanBuffer*>(indexBuffer);
+            vkCmdBindIndexBuffer(_cmdBuffer,iBuffer->underlyingBuffer(),0,itype);
+        }
+
+        void VulkanCommandBuffer::bindShader(Shader* shader)
+        {
+            VulkanShader* vshader = static_cast<VulkanShader*>(shader);
+            vkCmdBindPipeline(_cmdBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,vshader->pipeline());
+        }
+
+        void VulkanCommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
+        {
+            vkCmdDraw(_cmdBuffer,vertexCount,instanceCount,firstVertex,firstInstance);
+        }
+
+        void VulkanCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstVertex, int32_t vertexOffset, uint32_t firstInstance)
+        {
+            vkCmdDrawIndexed(_cmdBuffer,indexCount,instanceCount,firstVertex,vertexOffset,firstInstance);
+        }
 
 
     } // slag

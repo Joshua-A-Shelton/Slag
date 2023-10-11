@@ -38,6 +38,11 @@ namespace slag
             void insertBufferBarriers(const BufferMemoryBarrier* barriers, size_t count, PipelineStageFlags source, PipelineStageFlags destination)override;
             void insertBarriers(const GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount, const ImageMemoryBarrier* imageBarriers, size_t imageBarrierCount, const BufferMemoryBarrier* bufferBarriers, size_t bufferBarrierCount, PipelineStageFlags source, PipelineStageFlags destination)override;
             void executeSecondaryCommands(CommandBuffer* subBuffer)override;
+            void bindVertexBuffer(Buffer* vertexBuffer)override;
+            void bindIndexBuffer(Buffer* indexBuffer, GraphicsTypes::IndexType indexType)override;
+            void bindShader(Shader* shader)override;
+            void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)override;
+            void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstVertex, int32_t vertexOffset, uint32_t firstInstance)override;
 
             //TODO: move this out from here. It's used here most frequently, (possibly exclusively), but has nothing to do with command buffers directly
             static VkPipelineStageFlags pipelineStageFromCrossPlatform(PipelineStageFlags flags);

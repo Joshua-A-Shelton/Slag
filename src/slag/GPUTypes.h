@@ -153,6 +153,12 @@ namespace slag
             }
             return size*dim1*dim2;
         }
+
+        enum IndexType
+        {
+            UINT16,
+            UINT32
+        };
     };
 }
 #endif //SLAG_GPUTYPES_H

@@ -19,6 +19,7 @@ namespace slag
             ~VulkanShader()override;
             void* GPUID()override;
             UniformSet* getUniformSet(size_t index)override;
+            VkPipeline pipeline();
         private:
             VkPipelineLayout _pipelineLayout = nullptr;
             VkPipeline _pipeline = nullptr;

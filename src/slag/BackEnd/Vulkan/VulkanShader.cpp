@@ -13,7 +13,7 @@ namespace slag
         {
             if(_pipeline)
             {
-                destroyDeferred();
+                smartDestroy();
             }
         }
 
@@ -413,6 +413,11 @@ namespace slag
         UniformSet *VulkanShader::getUniformSet(size_t index)
         {
             return &_uniformSets[index];
+        }
+
+        VkPipeline VulkanShader::pipeline()
+        {
+            return _pipeline;
         }
 
     } // slag

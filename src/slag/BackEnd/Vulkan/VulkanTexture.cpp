@@ -57,7 +57,7 @@ namespace slag
 
         VulkanTexture::~VulkanTexture()
         {
-            destroyDeferred();
+            smartDestroy();
         }
 
         VulkanTexture::VulkanTexture(VulkanTexture&& from)

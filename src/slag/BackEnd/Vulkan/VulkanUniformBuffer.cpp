@@ -65,7 +65,7 @@ namespace slag
         {
             if(_allocation)
             {
-                destroyDeferred();
+                smartDestroy();
             }
         }
 

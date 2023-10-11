@@ -2,8 +2,11 @@
 #define SLAG_COMMANDBUFFER_H
 
 #include <cstdlib>
+#include "GPUTypes.h"
 #include "GPUMemoryBarriers.h"
-
+#include "Buffer.h"
+#include "Shader.h"
+#include "UniformBuffer.h"
 
 namespace slag
 {
@@ -25,6 +28,11 @@ namespace slag
         virtual void insertBufferBarriers(const BufferMemoryBarrier* barriers, size_t count, PipelineStageFlags source, PipelineStageFlags destination)=0;
         virtual void insertBarriers(const GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount, const ImageMemoryBarrier* imageBarriers, size_t imageBarrierCount, const BufferMemoryBarrier* bufferBarriers, size_t bufferBarrierCount, PipelineStageFlags source, PipelineStageFlags destination)=0;
         virtual void executeSecondaryCommands(CommandBuffer* subBuffer)=0;
+        virtual void bindVertexBuffer(Buffer* vertexBuffer)=0;
+        virtual void bindIndexBuffer(Buffer* indexBuffer, GraphicsTypes::IndexType indexType)=0;
+        virtual void bindShader(Shader* shader)=0;
+        virtual void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)=0;
+        virtual void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstVertex, int32_t vertexOffset, uint32_t firstInstance)=0;
 
     };
 }

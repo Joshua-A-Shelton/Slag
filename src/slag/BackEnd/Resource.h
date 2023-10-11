@@ -12,7 +12,7 @@ namespace slag
         virtual ~Resource() = default;
         virtual void* GPUID()=0;
     protected:
-        void destroyDeferred();
+        void smartDestroy();
         bool destroyImmediately = false;
         std::function<void()> freeResources = nullptr;
     };
