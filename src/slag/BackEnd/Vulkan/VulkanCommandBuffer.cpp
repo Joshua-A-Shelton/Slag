@@ -181,7 +181,6 @@ namespace slag
                 imBarriers[i]=VkImageMemoryBarrier
                 {
                         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                        .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                         .oldLayout = VulkanTexture::layoutFromCrossPlatform(curBarrier->oldLayout),
                         .newLayout = VulkanTexture::layoutFromCrossPlatform(curBarrier->newLayout),
                         .image = texture->vulkanImage(),
@@ -193,6 +192,48 @@ namespace slag
                                 .layerCount = 1,
                         }
                 };
+                switch (imBarriers[i].oldLayout) {
+                    case VK_IMAGE_LAYOUT_PREINITIALIZED:
+                        imBarriers[i].srcAccessMask =
+                                VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+                        break;
+                    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+                        imBarriers[i].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                        break;
+                    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+                        imBarriers[i].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                        break;
+                    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+                        imBarriers[i].srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+                        break;
+                    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+                        imBarriers[i].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                        break;
+                }
+
+                switch (imBarriers[i].newLayout) {
+                    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+                        imBarriers[i].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                        break;
+                    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+                        imBarriers[i].srcAccessMask |= VK_ACCESS_TRANSFER_READ_BIT;
+                        imBarriers[i].dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+                        break;
+                    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+                        imBarriers[i].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                        imBarriers[i].srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+                        break;
+                    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+                        imBarriers[i].dstAccessMask |=
+                                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                        break;
+                    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+                        imBarriers[i].srcAccessMask =
+                                VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+                        imBarriers[i].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                        break;
+                }
+
             }
             //TODO buffer barriers
             for(int i=0; i< bufferBarrierCount; i++)

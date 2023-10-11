@@ -29,8 +29,10 @@ namespace slag
             VkQueue transferQueue();
             VkQueue computeQueue();
             uint32_t graphicsQueueFamily();
+            uint32_t transferQueueFamily();
+            uint32_t computeQueueFamily();
             const VkPhysicalDeviceProperties& properties();
-            void runOneTimeCommands(VkQueue submissionQueue,std::function<void(VkCommandBuffer commandBuffer)>);
+            void runOneTimeCommands(VkQueue submissionQueue, uint32_t queueFamily, std::function<void(VkCommandBuffer commandBuffer)>);
 
         private:
             void move(VulkanGraphicsCard&& from);
@@ -40,6 +42,8 @@ namespace slag
             VkQueue _transferQueue = nullptr;
             VkQueue _computeQueue = nullptr;
             uint32_t _graphicsQueueFamily = 0;
+            uint32_t _transferQueueFamily = 0;
+            uint32_t _computeQueueFamily = 0;
             VmaAllocator _allocator = nullptr;
             VkPhysicalDeviceProperties _properties;
         };

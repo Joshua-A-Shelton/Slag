@@ -14,6 +14,8 @@ namespace slag
             _transferQueue = device.get_queue(vkb::QueueType::transfer).value();
             _computeQueue = device.get_queue(vkb::QueueType::compute).value();
             _graphicsQueueFamily = device.get_queue_index(vkb::QueueType::graphics).value();
+            _transferQueueFamily = device.get_queue_index(vkb::QueueType::transfer).value();
+            _computeQueueFamily = device.get_queue_index(vkb::QueueType::compute).value();
             _properties = device.physical_device.properties;
 
             VmaAllocatorCreateInfo allocatorInfo = {};
@@ -52,6 +54,8 @@ namespace slag
             std::swap(_transferQueue, from._transferQueue);
             std::swap(_computeQueue, from._computeQueue);
             std::swap(_graphicsQueueFamily,from._graphicsQueueFamily);
+            std::swap(_transferQueueFamily, from._transferQueueFamily);
+            std::swap(_computeQueue,from._computeQueue);
             std::swap(_allocator,from._allocator);
             std::swap(_properties,from._properties);
         }
@@ -101,12 +105,22 @@ namespace slag
             return _graphicsQueueFamily;
         }
 
+        uint32_t VulkanGraphicsCard::transferQueueFamily()
+        {
+            return _transferQueueFamily;
+        }
+
+        uint32_t VulkanGraphicsCard::computeQueueFamily()
+        {
+            return _transferQueueFamily;
+        }
+
         const VkPhysicalDeviceProperties& VulkanGraphicsCard::properties()
         {
             return _properties;
         }
 
-        void VulkanGraphicsCard::runOneTimeCommands(VkQueue submissionQueue,std::function<void(VkCommandBuffer)> commands)
+        void VulkanGraphicsCard::runOneTimeCommands(VkQueue submissionQueue, uint32_t queueFamily,std::function<void(VkCommandBuffer)> commands)
         {
 
             VkCommandPool pool;
@@ -115,7 +129,7 @@ namespace slag
             commandPoolInfo.pNext = nullptr;
 
             //the command pool will be one that can submit graphics commands
-            commandPoolInfo.queueFamilyIndex = VulkanLib::graphicsCard()->graphicsQueueFamily();
+            commandPoolInfo.queueFamilyIndex = queueFamily;
             //we also want the pool to allow for resetting of individual command buffers
             commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
@@ -136,6 +150,8 @@ namespace slag
             VkCommandBufferBeginInfo beginInfo{};
             beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
             beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+            vkBeginCommandBuffer(commandBuffer,&beginInfo);
 
             commands(commandBuffer);
 
@@ -159,7 +175,6 @@ namespace slag
             vkDestroyCommandPool(_device,pool, nullptr);
 
         }
-
 
     } // slag
 } // vulkan

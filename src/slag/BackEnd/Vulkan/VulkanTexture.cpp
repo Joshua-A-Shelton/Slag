@@ -13,9 +13,32 @@ namespace slag
             _width = width;
             _height = height;
             destroyImmediately = destroyImmediate;
+            VulkanLib::graphicsCard()->runOneTimeCommands(VulkanLib::graphicsCard()->transferQueue(),VulkanLib::graphicsCard()->transferQueueFamily(),[=](VkCommandBuffer cmdBuffer){
+                VkImageMemoryBarrier barrier{};
+                barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                barrier.image = _image;
+                barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                barrier.subresourceRange.baseArrayLayer = 0;
+                barrier.subresourceRange.layerCount = 1;
+                barrier.subresourceRange.levelCount = 1;
+                barrier.subresourceRange.baseMipLevel = 0;
+                barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+                barrier.srcAccessMask = VK_ACCESS_NONE;
+                barrier.dstAccessMask = VK_ACCESS_NONE;
+
+                vkCmdPipelineBarrier(cmdBuffer,
+                                     VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+                                     0, nullptr,
+                                     0, nullptr,
+                                     1, &barrier);
+            });
             freeResources = [=]()
             {
                 vkDestroyImageView(VulkanLib::graphicsCard()->device(),view, nullptr);
+
             };
         }
 
@@ -286,7 +309,7 @@ namespace slag
                 throw std::runtime_error("texture image format does not support linear blitting!");
             }
 
-            VulkanLib::graphicsCard()->runOneTimeCommands(VulkanLib::graphicsCard()->transferQueue(),[=](VkCommandBuffer cmdBuffer)
+            VulkanLib::graphicsCard()->runOneTimeCommands(VulkanLib::graphicsCard()->transferQueue(),VulkanLib::graphicsCard()->transferQueueFamily(),[=](VkCommandBuffer cmdBuffer)
             {
                 VkImageMemoryBarrier barrier{};
                 barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
