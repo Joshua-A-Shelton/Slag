@@ -33,6 +33,8 @@ namespace slag
         virtual void bindShader(Shader* shader)=0;
         virtual void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)=0;
         virtual void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstVertex, int32_t vertexOffset, uint32_t firstInstance)=0;
+        virtual void bindUniformData(Shader* shader,UniformSet* set, uint32_t uniformIndex, UniformBuffer* writeToBuffer, void* data, size_t dataSize)=0;
+        virtual void bindUniformData(Shader* shader, UniformSet* set, uint32_t uniformIndex, UniformData writeLocation)=0;
 
     };
 }

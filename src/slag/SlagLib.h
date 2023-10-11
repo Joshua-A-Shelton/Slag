@@ -1,5 +1,6 @@
 #ifndef SLAG_SLAGLIB_H
 #define SLAG_SLAGLIB_H
+#include "Buffer.h"
 #include "CommandBuffer.h"
 #include "Frame.h"
 #include "FramebufferDescription.h"

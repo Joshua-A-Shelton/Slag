@@ -33,6 +33,11 @@ int main()
     description.addColorTarget(swapchain->imageFormat());
     slag::Shader* shader = slag::Shader::create("resources/basic.vert.spv","resources/basic.frag.spv",description);
 
+
+    float colors[8]{1.0f,0.0f,0.0f,1.0f,0.2f,0.6f,0.4f,1.0f};
+    float verts[15]{ 1.f, 1.f, 0.0f,.5,.5,   -1.f, 1.f, 0.0f,.5,.5,  0.f,-1.f, 0.0f,.5,.5};
+    auto buffer = slag::Buffer::create(verts,sizeof(verts),slag::Buffer::CPU_TO_GPU);
+
     bool quit = false;
     while(!quit)
     {
@@ -49,12 +54,20 @@ int main()
         {
             frame->begin();
             auto commandBuffer = frame->getCommandBuffer();
-            //slag::ImageMemoryBarrier imageBarrier{.oldLayout = slag::Texture::Layout::UNDEFINED, .newLayout = slag::Texture::Layout::PRESENT, .texture=frame->getBackBuffer()};
-            //commandBuffer->insertImageBarrier(imageBarrier,slag::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,slag::PipelineStageFlags::BOTTOM);
+            slag::ImageMemoryBarrier imageBarrier{.oldLayout = slag::Texture::Layout::PRESENT, .newLayout = slag::Texture::Layout::RENDER_TARGET, .texture=frame->getBackBuffer()};
+            commandBuffer->insertImageBarrier(imageBarrier,slag::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,slag::PipelineStageFlags::BOTTOM);
+
+            //commandBuffer->bindShader(shader);
+            //commandBuffer->bindUniformData(shader,shader->getUniformSet(0),0,frame->getUniformBuffer(),colors,sizeof(colors));
+            //commandBuffer->bindVertexBuffer(buffer);
+            //commandBuffer->draw(3,1,0,0);
+
+            slag::ImageMemoryBarrier imageBarrier2{.oldLayout = slag::Texture::Layout::RENDER_TARGET, .newLayout = slag::Texture::Layout::PRESENT, .texture=frame->getBackBuffer()};
+            commandBuffer->insertImageBarrier(imageBarrier2,slag::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,slag::PipelineStageFlags::BOTTOM);
             frame->end();
         }
     }
-
+    delete buffer;
     delete shader;
     delete swapchain;
 

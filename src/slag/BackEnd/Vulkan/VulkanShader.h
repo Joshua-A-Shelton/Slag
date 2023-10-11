@@ -20,6 +20,7 @@ namespace slag
             void* GPUID()override;
             UniformSet* getUniformSet(size_t index)override;
             VkPipeline pipeline();
+            VkPipelineLayout layout();
         private:
             VkPipelineLayout _pipelineLayout = nullptr;
             VkPipeline _pipeline = nullptr;

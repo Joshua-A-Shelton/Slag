@@ -25,10 +25,10 @@ namespace slag
                 case Usage::GPU_ONLY:
                     vmaallocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
                     break;
-                case Usage::GPU_TO_CPU:
+                case Usage::CPU_TO_GPU:
                     vmaallocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
                     break;
-                case Usage::CPU_TO_GPU:
+                case Usage::GPU_TO_CPU:
                     vmaallocInfo.usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
                     break;
             }
@@ -38,7 +38,9 @@ namespace slag
 
             assert(result == VK_SUCCESS && "Unable to allocate buffer");
 
-            vmaMapMemory(VulkanLib::graphicsCard()->memoryAllocator(),_allocation,&_mappedLocation);
+            result =vmaMapMemory(VulkanLib::graphicsCard()->memoryAllocator(),_allocation,&_mappedLocation);
+            assert(result == VK_SUCCESS && "Unable to map buffer memory");
+
             memcpy(_mappedLocation,data,bufferSize);
 
             auto allocation = _allocation;

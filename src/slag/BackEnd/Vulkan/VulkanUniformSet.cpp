@@ -137,5 +137,10 @@ namespace slag
             _uniforms.swap(from._uniforms);
             _dynamicOffsets.swap(from._dynamicOffsets);
         }
+
+        const std::vector<uint32_t> &VulkanUniformSet::dynamicOffsets()
+        {
+            return _dynamicOffsets;
+        }
     } // slag
 } // vulkan

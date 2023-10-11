@@ -125,12 +125,26 @@ namespace slag
             currentPool = VK_NULL_HANDLE;
         }
 
+        VulkanDescriptorAllocator::VulkanDescriptorAllocator(VulkanDescriptorAllocator &&from)
+        {
+            move(std::move(from));
+        }
+
         VulkanDescriptorAllocator &VulkanDescriptorAllocator::operator=(VulkanDescriptorAllocator &&from)
         {
-            descriptorSizes = from.descriptorSizes;
-            usedPools.swap(from.usedPools);
-            freePools.swap(from.usedPools);
+            move(std::move(from));
             return *this;
         }
+
+        void VulkanDescriptorAllocator::move(VulkanDescriptorAllocator &&from)
+        {
+            std::swap(currentPool,from.currentPool);
+            std::swap(descriptorSizes,from.descriptorSizes);
+            usedPools.swap(from.usedPools);
+            freePools.swap(from.freePools);
+
+        }
+
+
     } // slag
 } // vulkan

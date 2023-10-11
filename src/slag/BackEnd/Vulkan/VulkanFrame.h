@@ -30,6 +30,7 @@ namespace slag
             void end() override;
             CommandBuffer* getCommandBuffer() override;
             Texture* getBackBuffer()override;
+            UniformBuffer* getUniformBuffer()override;
 
             VkSemaphore renderFinishedSemaphore();
             VkSemaphore imageAvailableSemaphore();
@@ -46,7 +47,6 @@ namespace slag
             VkSemaphore _renderFinished = nullptr;
             VkSemaphore _imageAvailable = nullptr;
             VulkanSwapchain* _fromSwapChain = nullptr;
-            VulkanDescriptorAllocator _descriptorAllocator;
             VulkanVirtualUniformBuffer _virtualUniformBuffer;
             VulkanTexture* _swapchainImageTexture;
             VulkanCommandBuffer _commandBuffer;

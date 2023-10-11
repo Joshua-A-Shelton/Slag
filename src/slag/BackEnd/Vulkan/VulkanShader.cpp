@@ -420,5 +420,10 @@ namespace slag
             return _pipeline;
         }
 
+        VkPipelineLayout VulkanShader::layout()
+        {
+            return _pipelineLayout;
+        }
+
     } // slag
 } // vulkan

@@ -5,6 +5,8 @@
 #include "VulkanUniformBuffer.h"
 #include "VulkanDescriptorAllocator.h"
 #include "../../UniformBuffer.h"
+#include "../../UniformSet.h"
+
 namespace slag
 {
     namespace vulkan
@@ -16,6 +18,7 @@ namespace slag
             uint64_t _virtualSize=0;
             std::vector<VulkanUniformBuffer> _backingBuffers;
             size_t _currentBufferIndex = 0;
+            VulkanDescriptorAllocator _descriptorAllocator;
             bool _destroyImmediately = false;
             void move(VulkanVirtualUniformBuffer&& from);
         public:
@@ -24,7 +27,7 @@ namespace slag
             VulkanVirtualUniformBuffer& operator=(const VulkanUniformBuffer&)=delete;
             VulkanVirtualUniformBuffer(VulkanVirtualUniformBuffer&& from);
             VulkanVirtualUniformBuffer& operator=(VulkanVirtualUniformBuffer&& from);
-            WriteLocation write(void* data, size_t size);
+            UniformData write(UniformSet* set, uint32_t uniformIndex, void* data, uint64_t size);
             void reset()override;
             uint64_t virtualSize()override;
         };

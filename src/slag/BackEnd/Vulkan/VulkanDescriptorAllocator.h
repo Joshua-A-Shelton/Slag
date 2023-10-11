@@ -12,6 +12,7 @@ namespace slag
             VulkanDescriptorAllocator();
             VulkanDescriptorAllocator(const VulkanDescriptorAllocator&)=delete;
             VulkanDescriptorAllocator& operator=(const VulkanDescriptorAllocator&)=delete;
+            VulkanDescriptorAllocator(VulkanDescriptorAllocator&& from);
             VulkanDescriptorAllocator& operator=(VulkanDescriptorAllocator&& from);
             ~VulkanDescriptorAllocator();
 
@@ -43,6 +44,7 @@ namespace slag
             PoolSizes descriptorSizes;
             std::vector<VkDescriptorPool> usedPools;
             std::vector<VkDescriptorPool> freePools;
+            void move(VulkanDescriptorAllocator&& from);
         };
     } // slag
 } // vulkan

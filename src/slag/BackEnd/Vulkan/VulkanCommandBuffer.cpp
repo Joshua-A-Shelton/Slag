@@ -3,15 +3,17 @@
 #include "VulkanBuffer.h"
 #include "VulkanLib.h"
 #include "VulkanShader.h"
+#include "VulkanVirtualUniformBuffer.h"
 
 namespace slag
 {
     namespace vulkan
     {
-        VulkanCommandBuffer::VulkanCommandBuffer(VkCommandPool pool, bool primary, bool destroyImmediately)
+        VulkanCommandBuffer::VulkanCommandBuffer(VkCommandPool pool, bool primary,VkQueue submissionQueue, bool destroyImmediately)
         {
             _pool = pool;
             _primary = primary;
+            _submissionQueue = submissionQueue;
             this->destroyImmediately = destroyImmediately;
             if(pool)
             {
@@ -40,17 +42,19 @@ namespace slag
             }
         }
 
-        VulkanCommandBuffer::VulkanCommandBuffer(bool primary, bool destroyImmediately)
+        VulkanCommandBuffer::VulkanCommandBuffer(bool primary,VkQueue submissionQueue, uint32_t queueFamily, bool destroyImmediately)
         {
             _primary = primary;
+            if(primary)
+            {
+                _submissionQueue = submissionQueue;
+            }
             this->destroyImmediately = destroyImmediately;
             VkCommandPoolCreateInfo commandPoolInfo{};
             commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
             commandPoolInfo.pNext = nullptr;
 
-            //the command pool will be one that can submit graphics commands
-            commandPoolInfo.queueFamilyIndex = VulkanLib::graphicsCard()->graphicsQueueFamily();
-            //we also want the pool to allow for resetting of individual command buffers
+            commandPoolInfo.queueFamilyIndex = queueFamily;
             commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
             if(vkCreateCommandPool(VulkanLib::graphicsCard()->device(), &commandPoolInfo, nullptr, &_pool)!=VK_SUCCESS)
@@ -100,6 +104,7 @@ namespace slag
             std::swap(_cmdBuffer, from._cmdBuffer);
             std::swap(_pool,from._pool);
             std::swap(_primary,from._primary);
+            std::swap(_submissionQueue, from._submissionQueue);
         }
 
         VulkanCommandBuffer::~VulkanCommandBuffer()
@@ -194,6 +199,8 @@ namespace slag
                                 .layerCount = 1,
                         }
                 };
+                //TODO: this doesn't exactly work as is... commented out throws no errors, but I think it's technically inefficient
+                /*
                 switch (imBarriers[i].oldLayout) {
                     case VK_IMAGE_LAYOUT_PREINITIALIZED:
                         imBarriers[i].srcAccessMask =
@@ -235,6 +242,7 @@ namespace slag
                         imBarriers[i].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
                         break;
                 }
+                 */
 
             }
             //TODO buffer barriers
@@ -270,7 +278,7 @@ namespace slag
             assert(result==VK_SUCCESS && "Unable to end command buffer");
         }
 
-        void VulkanCommandBuffer::submit(VkSemaphore *waitSemaphores, uint32_t waitCount, VkSemaphore* signalSemaphores, uint32_t signalCount, VkQueue submitQueue, VkFence fence)
+        void VulkanCommandBuffer::submit(VkSemaphore *waitSemaphores, uint32_t waitCount, VkSemaphore* signalSemaphores, uint32_t signalCount, VkFence fence)
         {
             VkSubmitInfo submit = {};
             submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -289,8 +297,8 @@ namespace slag
             submit.commandBufferCount = 1;
             submit.pCommandBuffers = &_cmdBuffer;
 
-            auto result = vkQueueSubmit(VulkanLib::graphicsCard()->graphicsQueue(), 1, &submit, fence);
-            assert(result == VK_SUCCESS && "Unable to submit render queue");
+            auto result = vkQueueSubmit(_submissionQueue, 1, &submit, fence);
+            assert(result == VK_SUCCESS && "Unable to submit command buffer queue");
         }
 
         void VulkanCommandBuffer::executeSecondaryCommands(CommandBuffer* subBuffer)
@@ -338,6 +346,35 @@ namespace slag
         void VulkanCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstVertex, int32_t vertexOffset, uint32_t firstInstance)
         {
             vkCmdDrawIndexed(_cmdBuffer,indexCount,instanceCount,firstVertex,vertexOffset,firstInstance);
+        }
+
+        void VulkanCommandBuffer::bindUniformData(Shader* shader, UniformSet *set, uint32_t uniformIndex, UniformBuffer *writeToBuffer, void *data, size_t dataSize)
+        {
+            VulkanShader* activeShader = static_cast<VulkanShader*>(shader);
+
+            VulkanUniformSet* uniformSet = static_cast<VulkanUniformSet*>(set);
+            assert((*uniformSet)[uniformIndex]->uniformType() == Uniform::UNIFORM && "only uniforms can bind uniform data");
+
+
+            VulkanVirtualUniformBuffer* uniformBuffer = static_cast<VulkanVirtualUniformBuffer*>(writeToBuffer);
+
+
+            auto writeData = uniformBuffer->write(set,uniformIndex,data,dataSize);
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(writeData.descriptorData());
+
+            vkCmdBindDescriptorSets(_cmdBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,activeShader->layout(),uniformSet->index(),1,&descriptorSet, uniformSet->dynamicOffsets().size(), uniformSet->dynamicOffsets().data());
+        }
+
+        void VulkanCommandBuffer::bindUniformData(Shader *shader, UniformSet *set, uint32_t uniformIndex, UniformData writeLocation)
+        {
+            VulkanShader* activeShader = static_cast<VulkanShader*>(shader);
+
+            VulkanUniformSet* uniformSet = static_cast<VulkanUniformSet*>(set);
+            assert((*uniformSet)[uniformIndex]->uniformType() == Uniform::UNIFORM && "only uniforms can bind uniform data");
+
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(writeLocation.descriptorData());
+
+            vkCmdBindDescriptorSets(_cmdBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,activeShader->layout(),uniformSet->index(),1,&descriptorSet, uniformSet->dynamicOffsets().size(), uniformSet->dynamicOffsets().data());
         }
 
 

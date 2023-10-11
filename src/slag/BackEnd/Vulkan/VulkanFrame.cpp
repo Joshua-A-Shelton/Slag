@@ -13,13 +13,13 @@ namespace slag
                                  const std::unordered_map<std::string,TextureResourceDescription>& textureDescriptions,
                                  const std::unordered_set<std::string>& commandBufferNames,
                                  const std::unordered_map<std::string,UniformBufferResourceDescription>& uniformBufferDescriptions)
-                                 : _commandBuffer(nullptr, true, true), _virtualUniformBuffer(uniformBufferStartSize, true)
+                                 : _commandBuffer(nullptr, true, nullptr, true), _virtualUniformBuffer(uniformBufferStartSize, true)
         {
             assert(from != nullptr && "From swapchain cannot be null!");
             _fromSwapChain = from;
             auto commandPool = _fromSwapChain->commandPool();
 
-            _commandBuffer = std::move(VulkanCommandBuffer(commandPool, true, true));
+            _commandBuffer = std::move(VulkanCommandBuffer(commandPool, true, VulkanLib::graphicsCard()->graphicsQueue(), true));
 
             //in flight fence, render and image available semaphores
             VkSemaphoreCreateInfo semaphoreInfo{};
@@ -54,7 +54,7 @@ namespace slag
             }
             for(auto& name : commandBufferNames)
             {
-                _commandBufferResources.insert(std::make_pair(name,VulkanCommandBuffer(false, true)));
+                _commandBufferResources.insert(std::make_pair(name,VulkanCommandBuffer(false,VulkanLib::graphicsCard()->graphicsQueue(),VulkanLib::graphicsCard()->graphicsQueueFamily(), true)));
             }
             for(auto& kvpair : uniformBufferDescriptions)
             {
@@ -74,7 +74,7 @@ namespace slag
 
         }
 
-        VulkanFrame::VulkanFrame(VulkanFrame&& from): _commandBuffer(nullptr, true, true), _virtualUniformBuffer(0, true)
+        VulkanFrame::VulkanFrame(VulkanFrame&& from): _commandBuffer(nullptr, true, nullptr, true), _virtualUniformBuffer(0, true)
         {
             move(std::move(from));
         }
@@ -91,7 +91,6 @@ namespace slag
             std::swap(_imageAvailable, from._imageAvailable);
             std::swap(_renderFinished, from._renderFinished);
             std::swap(_fromSwapChain, from._fromSwapChain);
-            _descriptorAllocator = std::move(from._descriptorAllocator);
             _virtualUniformBuffer = std::move(from._virtualUniformBuffer);
             _commandBuffer = std::move(from._commandBuffer);
 
@@ -126,6 +125,11 @@ namespace slag
             return &_commandBuffer;
         }
 
+        UniformBuffer *VulkanFrame::getUniformBuffer()
+        {
+            return &_virtualUniformBuffer;
+        }
+
         Texture *VulkanFrame::getBackBuffer()
         {
             return _swapchainImageTexture;
@@ -133,7 +137,6 @@ namespace slag
 
         void VulkanFrame::begin()
         {
-            _descriptorAllocator.resetPools();
             _commandBuffer.reset();
             _virtualUniformBuffer.reset();
             _commandBuffer.begin();
@@ -143,7 +146,7 @@ namespace slag
         {
             _commandBuffer.end();
 
-            _commandBuffer.submit(&_imageAvailable,1,&_renderFinished,1,VulkanLib::graphicsCard()->graphicsQueue(),_inFlight);
+            _commandBuffer.submit(&_imageAvailable,1,&_renderFinished,1,_inFlight);
             _fromSwapChain->queueToPresent(this);
         }
 
@@ -156,8 +159,6 @@ namespace slag
         {
             return _virtualUniformBuffer.virtualSize();
         }
-
-
 
 
     } // slag
