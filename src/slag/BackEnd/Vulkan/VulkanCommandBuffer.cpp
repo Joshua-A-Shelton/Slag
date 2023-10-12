@@ -471,7 +471,10 @@ namespace slag
             VulkanShader* vulkanShader = static_cast<VulkanShader*>(shader);
             VulkanUniformSet* set = dynamic_cast<VulkanUniformSet *>(data.providingFor());
             VkDescriptorSet descriptorSet = (VkDescriptorSet) data.lowLevelHandle();
-            vkCmdBindDescriptorSets(_cmdBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,vulkanShader->layout(),set->index(),1,&descriptorSet,set->dynamicOffsets().size(),set->dynamicOffsets().data());
+            //this is some weird additional offset, I think for arrays, which I'm not using, but vulkan requires it.
+            //https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/vkCmdBindDescriptorSets.html
+            std::vector<uint32_t> dynamicOffsets(set->dynamicOffsets().size(),0);
+            vkCmdBindDescriptorSets(_cmdBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,vulkanShader->layout(),set->index(),1,&descriptorSet,dynamicOffsets.size(),dynamicOffsets.data());
         }
 
 

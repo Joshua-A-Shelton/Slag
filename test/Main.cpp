@@ -35,8 +35,8 @@ int main()
     slag::Shader* shader = slag::Shader::create("resources/basic.vert.spv","resources/basic.frag.spv",description);
 
 
-    float colors[8]{1.0f,0.0f,0.0f,1.0f, .2f,.1f,.7f,1.0f};
-    float colors2[4]{0.0f,1.0f,0.0f,0.0f};
+    float colors[8]{1.0f,0.0f,1.0f,1.0f, .2f,.9f,.9f,1.0f};
+    float colors2[4]{0.0f,1.0f,0.0f,1.0f};
     float verts[15]{ 1.f, 1.f, 0.0f,.5,.5,   -1.f, 1.f, 0.0f,.5,.5,  0.f,-1.f, 0.0f,.5,.5};
     auto buffer = slag::Buffer::create(verts,sizeof(verts),slag::Buffer::CPU_TO_GPU);
 
