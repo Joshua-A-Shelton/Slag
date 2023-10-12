@@ -120,6 +120,17 @@ namespace slag
             _bufferSize = offsetLocation;
         }
 
+        VulkanUniform& VulkanUniform::operator=(VulkanUniform&& from)
+        {
+            move(std::move(from));
+            return *this;
+        }
+
+        VulkanUniform::VulkanUniform(VulkanUniform&& from)
+        {
+            move(std::move(from));
+        }
+
         Uniform::UniformType VulkanUniform::uniformType()
         {
             switch (_descriptorType)
@@ -197,7 +208,8 @@ namespace slag
             vulkanBinding.binding = _binding;
             vulkanBinding.stageFlags = _accessibleFrom;
             vulkanBinding.descriptorType = _descriptorType;
-            vulkanBinding.descriptorCount = _descriptors.size();
+            //this only is higher than 1 if it's an array https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkDescriptorSetLayoutBinding.html
+            vulkanBinding.descriptorCount = 1;
             if(vulkanBinding.descriptorCount == 0)
             {
                 vulkanBinding.descriptorCount = 1;
@@ -215,5 +227,16 @@ namespace slag
         {
             return _descriptorType;
         }
+
+        void VulkanUniform::move(VulkanUniform&& from)
+        {
+            std::swap(_binding,from._binding);
+            std::swap(_bufferSize,from._bufferSize);
+            std::swap(_accessibleFrom,from._accessibleFrom);
+            _name.swap(from._name);
+            std::swap(_descriptorType,from._descriptorType);
+            _descriptors.swap(from._descriptors);
+        }
+
     } // slag
 } // vulkan

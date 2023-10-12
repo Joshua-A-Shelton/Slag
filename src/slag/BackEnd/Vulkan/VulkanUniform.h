@@ -13,6 +13,10 @@ namespace slag
         {
         public:
             VulkanUniform(SpvReflectDescriptorBinding* binding, VkShaderStageFlagBits shaderStage);
+            VulkanUniform(const VulkanUniform&)=delete;
+            VulkanUniform& operator=(const VulkanUniform&)=delete;
+            VulkanUniform(VulkanUniform&& from);
+            VulkanUniform& operator=(VulkanUniform&& from);
             ~VulkanUniform()override=default;
             UniformType uniformType()override;
             size_t descriptorCount()override;
@@ -29,6 +33,7 @@ namespace slag
             std::string _name;
             VkDescriptorType _descriptorType;
             std::vector<UniformDescriptor> _descriptors;
+            void move(VulkanUniform&& from);
         };
 
     } // slag

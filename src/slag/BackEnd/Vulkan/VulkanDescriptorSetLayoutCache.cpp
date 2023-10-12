@@ -17,6 +17,7 @@ namespace slag
                 CachedLayout cached{};
                 cached.instanceCount = 1;
                 auto result = vkCreateDescriptorSetLayout(VulkanLib::graphicsCard()->device(), &info.layoutInfo(), nullptr, &cached.layout);
+                assert(result == VK_SUCCESS && "unable to create descriptor set layout");
                 _cachedLayouts.insert(std::make_pair(hash,cached));
                 return cached.layout;
             }

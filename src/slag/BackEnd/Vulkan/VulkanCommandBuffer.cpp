@@ -4,6 +4,7 @@
 #include "VulkanLib.h"
 #include "VulkanShader.h"
 #include "VulkanVirtualUniformBuffer.h"
+#include "VulkanExtensions.h"
 
 namespace slag
 {
@@ -308,6 +309,105 @@ namespace slag
             vkCmdExecuteCommands(_cmdBuffer,1,&sub->_cmdBuffer);
         }
 
+        void VulkanCommandBuffer::setTargetFramebuffer(Rectangle bounds, Attachment* colorAttachments, size_t colorCount)
+        {
+            std::vector<VkRenderingAttachmentInfo> descriptions(colorCount);
+            for(auto i=0; i< colorCount; i++)
+            {
+                auto attachment = colorAttachments[i];
+                auto colorTexture = static_cast<VulkanTexture*>(colorAttachments->texture);
+                descriptions[i]=VkRenderingAttachmentInfo
+                        {
+                                .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
+                                .imageView = colorTexture->vulkanView(),
+                                .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR,
+                                .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+                                .clearValue = VulkanTexture::clearValueFromCrossPlatform(attachment.clear),
+                        };
+                if(attachment.clearOnLoad)
+                {
+                    descriptions[i].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+                }
+                else
+                {
+                    descriptions[i].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+                }
+            }
+            VkRenderingInfoKHR render_info{
+                    .sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+                    .renderArea = {{bounds.offset.x,bounds.offset.y},{bounds.extent.width,bounds.extent.height}},
+                    .layerCount = 1,
+                    .colorAttachmentCount = static_cast<uint32_t>(colorCount),
+                    .pColorAttachments = descriptions.data(),
+                    .pDepthAttachment = nullptr,
+                    .pStencilAttachment = nullptr
+            };
+            VulkanExtensions::vkCmdBeginRenderingKHR(_cmdBuffer,&render_info);
+        }
+
+        void VulkanCommandBuffer::setTargetFramebuffer(Rectangle bounds, Attachment* colorAttachments, size_t colorCount, Attachment depthAttachment)
+        {
+            std::vector<VkRenderingAttachmentInfo> descriptions(colorCount);
+            for(auto i=0; i< colorCount; i++)
+            {
+                auto attachment = colorAttachments[i];
+                auto colorTexture = static_cast<VulkanTexture*>(colorAttachments->texture);
+                descriptions[i]=VkRenderingAttachmentInfo
+                        {
+                                .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
+                                .imageView = colorTexture->vulkanView(),
+                                .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR,
+                                .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+                                .clearValue = VulkanTexture::clearValueFromCrossPlatform(attachment.clear),
+                        };
+                if(attachment.clearOnLoad)
+                {
+                    descriptions[i].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+                }
+                else
+                {
+                    descriptions[i].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+                }
+            }
+
+            VkRenderingAttachmentInfo depthRenderingAttachment = {
+                    .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
+                    .imageView = static_cast<VulkanTexture*>(depthAttachment.texture)->vulkanView(),
+                    .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR,
+                    .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+                    .clearValue = VulkanTexture::clearValueFromCrossPlatform(depthAttachment.clear),
+            };
+            if(depthAttachment.clearOnLoad)
+            {
+                depthRenderingAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            }
+            else
+            {
+                depthRenderingAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+            }
+            VkRenderingAttachmentInfo* stencil = nullptr;
+            if(depthAttachment.texture->usage() | Texture::Usage::STENCIL)
+            {
+                stencil = &depthRenderingAttachment;
+            }
+
+            VkRenderingInfoKHR render_info{
+                    .sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+                    .renderArea = {{bounds.offset.x,bounds.offset.y},{bounds.extent.width,bounds.extent.height}},
+                    .layerCount = 1,
+                    .colorAttachmentCount = static_cast<uint32_t>(colorCount),
+                    .pColorAttachments = descriptions.data(),
+                    .pDepthAttachment = &depthRenderingAttachment,
+                    .pStencilAttachment = stencil
+            };
+            VulkanExtensions::vkCmdBeginRenderingKHR(_cmdBuffer,&render_info);
+        }
+
+        void VulkanCommandBuffer::endTargetFramebuffer()
+        {
+            VulkanExtensions::vkCmdEndRenderingKHR(_cmdBuffer);
+        }
+
         void VulkanCommandBuffer::bindVertexBuffer(Buffer* vertexBuffer)
         {
             VulkanBuffer* vBuffer = static_cast<VulkanBuffer*>(vertexBuffer);
@@ -359,7 +459,7 @@ namespace slag
             VulkanVirtualUniformBuffer* uniformBuffer = static_cast<VulkanVirtualUniformBuffer*>(writeToBuffer);
 
 
-            auto writeData = uniformBuffer->write(set,uniformIndex,data,dataSize);
+            auto writeData = uniformBuffer->write(uniformSet,uniformIndex,data,dataSize);
             VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(writeData.descriptorData());
 
             vkCmdBindDescriptorSets(_cmdBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,activeShader->layout(),uniformSet->index(),1,&descriptorSet, uniformSet->dynamicOffsets().size(), uniformSet->dynamicOffsets().data());
@@ -375,6 +475,24 @@ namespace slag
             VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(writeLocation.descriptorData());
 
             vkCmdBindDescriptorSets(_cmdBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,activeShader->layout(),uniformSet->index(),1,&descriptorSet, uniformSet->dynamicOffsets().size(), uniformSet->dynamicOffsets().data());
+        }
+
+        void VulkanCommandBuffer::setViewport(Rectangle bounds)
+        {
+            VkViewport port {};
+            port.x = bounds.offset.x;
+            port.y = bounds.offset.y;
+            port.width = bounds.extent.width;
+            port.height = bounds.extent.height;
+            port.maxDepth = 0.0f;
+            port.minDepth = 1.0f;
+            vkCmdSetViewport(_cmdBuffer,0,1,&port);
+        }
+
+        void VulkanCommandBuffer::setScissors(Rectangle bounds)
+        {
+            VkRect2D area{{bounds.offset.x,bounds.offset.y},{bounds.extent.width,bounds.extent.height}};
+            vkCmdSetScissor(_cmdBuffer,0,1,&area);
         }
 
 

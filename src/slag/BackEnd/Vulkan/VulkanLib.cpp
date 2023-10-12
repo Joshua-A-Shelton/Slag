@@ -46,6 +46,7 @@ namespace slag
                     .add_required_extension("VK_KHR_maintenance2")
                     .add_required_extension("VK_EXT_graphics_pipeline_library")
                     .add_required_extension("VK_KHR_pipeline_library")
+                    .add_required_extension("VK_KHR_synchronization2")
                     .add_required_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME)
                     .add_required_extension_features(dynamicRenderingFeaturesKHR)
                     .add_desired_extension("VK_EXT_filter_cubic")

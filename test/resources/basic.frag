@@ -10,7 +10,12 @@ layout(set = 0, binding = 0) uniform details
 	vec4 color2;
 } Details;
 
+layout(set = 1, binding = 0) uniform secondDetails
+{
+	vec4 color3;
+}Deets;
+
 void main()
 {
-	outFragColor = Details.color1*Details.color2;
+	outFragColor = (Details.color1+Deets.color3)*Details.color2;
 }

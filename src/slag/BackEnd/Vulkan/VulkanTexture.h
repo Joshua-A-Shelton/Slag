@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.h>
 #include "vk_mem_alloc.h"
 #include "../Resource.h"
+#include "../../ClearValue.h"
 
 namespace slag
 {
@@ -28,11 +29,14 @@ namespace slag
             Usage usage()override;
             VkImageAspectFlags usageVulkan();
             VkImage vulkanImage();
+            VkImageView vulkanView();
+            VkFormat vulkanFormat();
             static Pixels::PixelFormat formatFromNative(VkFormat format);
             static VkFormat formatFromCrossPlatform(Pixels::PixelFormat format);
             static VkImageLayout layoutFromCrossPlatform(Texture::Layout layout);
             static VkImageAspectFlags usageFromCrossPlatform(Texture::Usage usage);
             static uint32_t formatSize(VkFormat format);
+            static VkClearValue clearValueFromCrossPlatform(ClearValue& value);
         private:
             void move(VulkanTexture&& from);
             void create(uint32_t width, uint32_t height, uint32_t mipLevels, VkImageAspectFlags usage, Pixels::PixelFormat format, void* pixelData, VkDeviceSize bufferSize, bool destroyImmdediate);

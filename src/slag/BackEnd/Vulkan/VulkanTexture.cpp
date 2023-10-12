@@ -197,6 +197,11 @@ namespace slag
             return _image;
         }
 
+        VkImageView VulkanTexture::vulkanView()
+        {
+            return _view;
+        }
+
         void *VulkanTexture::GPUID()
         {
             return _view;
@@ -205,6 +210,10 @@ namespace slag
         VkImageAspectFlags VulkanTexture::usageVulkan()
         {
             return _usage;
+        }
+        VkFormat VulkanTexture::vulkanFormat()
+        {
+            return _baseFormat;
         }
 
         void VulkanTexture::create(uint32_t width, uint32_t height, uint32_t mipLevels, VkImageAspectFlags usage, Pixels::PixelFormat format, void* pixelData, VkDeviceSize bufferSize, bool destroyImmdediate)
@@ -387,8 +396,12 @@ namespace slag
 
         }
 
-
-
+        VkClearValue VulkanTexture::clearValueFromCrossPlatform(ClearValue& value)
+        {
+            VkClearValue result;
+            std::memcpy(&result, &value, sizeof(VkClearValue));
+            return result;
+        }
 
     } // slag
 } // Texture

@@ -1,6 +1,8 @@
 #ifndef SLAG_SLAGLIB_H
 #define SLAG_SLAGLIB_H
+#include "Attachment.h"
 #include "Buffer.h"
+#include "ClearValue.h"
 #include "CommandBuffer.h"
 #include "Frame.h"
 #include "FramebufferDescription.h"
@@ -9,6 +11,7 @@
 #include "GraphicsCard.h"
 #include "PixelFormat.h"
 #include "PlatformData.h"
+#include "Rectangle.h"
 #include "ResourceDescriptions.h"
 #include "Shader.h"
 #include "Swapchain.h"

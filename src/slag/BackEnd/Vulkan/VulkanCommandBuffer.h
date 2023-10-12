@@ -41,6 +41,11 @@ namespace slag
             void insertBufferBarriers(const BufferMemoryBarrier* barriers, size_t count, PipelineStageFlags source, PipelineStageFlags destination)override;
             void insertBarriers(const GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount, const ImageMemoryBarrier* imageBarriers, size_t imageBarrierCount, const BufferMemoryBarrier* bufferBarriers, size_t bufferBarrierCount, PipelineStageFlags source, PipelineStageFlags destination)override;
             void executeSecondaryCommands(CommandBuffer* subBuffer)override;
+            void setTargetFramebuffer(Rectangle bounds,Attachment* colorAttachments, size_t colorCount)override;
+            void setTargetFramebuffer(Rectangle bounds,Attachment* colorAttachments, size_t colorCount, Attachment depthAttachment)override;
+            void endTargetFramebuffer();
+            void setViewport(Rectangle bounds)override;
+            void setScissors(Rectangle bounds)override;
             void bindVertexBuffer(Buffer* vertexBuffer)override;
             void bindIndexBuffer(Buffer* indexBuffer, GraphicsTypes::IndexType indexType)override;
             void bindShader(Shader* shader)override;

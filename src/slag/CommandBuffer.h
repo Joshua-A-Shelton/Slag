@@ -7,6 +7,8 @@
 #include "Buffer.h"
 #include "Shader.h"
 #include "UniformBuffer.h"
+#include "Rectangle.h"
+#include "Attachment.h"
 
 namespace slag
 {
@@ -28,6 +30,11 @@ namespace slag
         virtual void insertBufferBarriers(const BufferMemoryBarrier* barriers, size_t count, PipelineStageFlags source, PipelineStageFlags destination)=0;
         virtual void insertBarriers(const GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount, const ImageMemoryBarrier* imageBarriers, size_t imageBarrierCount, const BufferMemoryBarrier* bufferBarriers, size_t bufferBarrierCount, PipelineStageFlags source, PipelineStageFlags destination)=0;
         virtual void executeSecondaryCommands(CommandBuffer* subBuffer)=0;
+        virtual void setTargetFramebuffer(Rectangle bounds,Attachment* colorAttachments, size_t colorCount)=0;
+        virtual void setTargetFramebuffer(Rectangle bounds,Attachment* colorAttachments, size_t colorCount, Attachment depthAttachment)=0;
+        virtual void endTargetFramebuffer()=0;
+        virtual void setViewport(Rectangle bounds)=0;
+        virtual void setScissors(Rectangle bounds)=0;
         virtual void bindVertexBuffer(Buffer* vertexBuffer)=0;
         virtual void bindIndexBuffer(Buffer* indexBuffer, GraphicsTypes::IndexType indexType)=0;
         virtual void bindShader(Shader* shader)=0;
