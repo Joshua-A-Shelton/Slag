@@ -10,7 +10,7 @@ layout(set = 0, binding = 0) uniform details
 	vec4 color2;
 } Details;
 
-layout(set = 1, binding = 0) uniform secondDetails
+layout(set = 0, binding = 1) uniform secondDetails
 {
 	vec4 color3;
 }Deets;

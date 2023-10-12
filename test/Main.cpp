@@ -72,8 +72,13 @@ int main()
             commandBuffer->setScissors(rect);
 
             commandBuffer->bindShader(shader);
-            commandBuffer->bindUniformData(shader,shader->getUniformSet(0),0,frame->getUniformBuffer(),colors,sizeof(colors));
-            commandBuffer->bindUniformData(shader,shader->getUniformSet(1),0,frame->getUniformBuffer(),colors2,sizeof(colors2));
+            slag::UniformSetData slot1(shader->getUniformSet(0),frame->getUniformSetDataAllocator());
+            auto uniformBuffer = frame->getUniformBuffer();
+            auto c1 = uniformBuffer->write(colors,sizeof(colors));
+            auto c2 = uniformBuffer->write(colors2,sizeof(colors2));
+            slot1.setUniform(0,c1);
+            slot1.setUniform(1,c2);
+            commandBuffer->bindUniformSetData(shader,slot1);
             commandBuffer->bindVertexBuffer(buffer);
             commandBuffer->draw(3,1,0,0);
 

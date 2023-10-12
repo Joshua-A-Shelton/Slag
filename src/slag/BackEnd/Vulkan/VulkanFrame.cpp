@@ -91,6 +91,7 @@ namespace slag
             std::swap(_imageAvailable, from._imageAvailable);
             std::swap(_renderFinished, from._renderFinished);
             std::swap(_fromSwapChain, from._fromSwapChain);
+            std::swap(_descriptorAllocator,from._descriptorAllocator);
             _virtualUniformBuffer = std::move(from._virtualUniformBuffer);
             _commandBuffer = std::move(from._commandBuffer);
 
@@ -137,6 +138,7 @@ namespace slag
 
         void VulkanFrame::begin()
         {
+            _descriptorAllocator.resetPools();
             _commandBuffer.reset();
             _virtualUniformBuffer.reset();
             _commandBuffer.begin();
@@ -158,6 +160,11 @@ namespace slag
         VkDeviceSize VulkanFrame::uniformBufferSize()
         {
             return _virtualUniformBuffer.virtualSize();
+        }
+
+        UniformSetDataAllocator *VulkanFrame::getUniformSetDataAllocator()
+        {
+            return &_descriptorAllocator;
         }
 
 

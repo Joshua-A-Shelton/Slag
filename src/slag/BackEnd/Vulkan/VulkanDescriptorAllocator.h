@@ -2,11 +2,12 @@
 #define SLAG_VULKANDESCRIPTORALLOCATOR_H
 #include <vector>
 #include <vulkan/vulkan.h>
+#include "../../UniformSetDataAllocator.h"
 namespace slag
 {
     namespace vulkan
     {
-        class VulkanDescriptorAllocator
+        class VulkanDescriptorAllocator: public UniformSetDataAllocator
         {
         public:
             VulkanDescriptorAllocator();

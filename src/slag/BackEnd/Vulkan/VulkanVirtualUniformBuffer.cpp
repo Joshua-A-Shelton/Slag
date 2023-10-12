@@ -37,7 +37,6 @@ namespace slag
             std::swap(_virtualSize,from._virtualSize);
             _backingBuffers.swap(from._backingBuffers);
             std::swap(_currentBufferIndex,from._currentBufferIndex);
-            std::swap(_descriptorAllocator, from._descriptorAllocator);
             std::swap(_destroyImmediately,from._destroyImmediately);
         }
 
@@ -63,44 +62,16 @@ namespace slag
                 }
             }
             _currentBufferIndex = 0;
-            _descriptorAllocator.resetPools();
         }
 
-        UniformData VulkanVirtualUniformBuffer::write(UniformSet* set, uint32_t uniformIndex, void* data, uint64_t size)
+        BufferWriteData VulkanVirtualUniformBuffer::write(void* data, uint64_t size)
         {
             assert(_backingBuffers.size()>0 && "Use of invalid virtual buffer, no buffers have been assigned");
-
-            VulkanUniformSet* uniformSet = static_cast<VulkanUniformSet*>(set);
 
             auto writeLocation = _backingBuffers[_currentBufferIndex].write(data,size);
             if(writeLocation)
             {
-                VkDescriptorSet descriptorSet;
-                auto success = _descriptorAllocator.allocate(&descriptorSet, uniformSet->descriptorSetLayout());
-                assert(success == true && "unable to allocate descriptors");
-
-                VkDescriptorBufferInfo buffer_info =
-                        {
-                                _backingBuffers[_currentBufferIndex]._backingBuffer,
-                                writeLocation.value(),
-                                size
-                        };
-
-                VkWriteDescriptorSet writeSet
-                        {
-                                VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                nullptr,
-                                descriptorSet,
-                                uniformIndex,
-                                0,
-                                1,
-                                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
-                                nullptr,
-                                &buffer_info,
-                                nullptr
-                        };
-                vkUpdateDescriptorSets(VulkanLib::graphicsCard()->device(),1,&writeSet,0, nullptr);
-                return UniformData(_backingBuffers[_currentBufferIndex]._backingBuffer, descriptorSet, writeLocation.value(), size);
+                return BufferWriteData(_backingBuffers[_currentBufferIndex]._backingBuffer, writeLocation.value(), size);
             }
             else
             {
@@ -110,7 +81,7 @@ namespace slag
                 _backingBuffers.push_back(VulkanUniformBuffer(growth,_destroyImmediately));
                 _virtualSize+= _backingBuffers.end()->size();
 
-                return write(set,uniformIndex,data,size);
+                return write(data,size);
             }
         }
 

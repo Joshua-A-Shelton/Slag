@@ -3,6 +3,7 @@
 #if SLAG_VULKAN_BACKEND
 #include "BackEnd/Vulkan/VulkanLib.h"
 #endif
+#include "BackEnd/UniformDataSetHandler.h"
 
 namespace slag
 {
@@ -59,6 +60,8 @@ namespace slag
             throw std::runtime_error("DirectX12 backend not available");
         }
         SLAG_GRAPHICS_BACKEND = details.backend;
+        UniformDataSetHandler::initialize(SLAG_GRAPHICS_BACKEND);
+
         switch (SLAG_GRAPHICS_BACKEND)
         {
             case VULKAN:
@@ -71,6 +74,7 @@ namespace slag
 
     void SlagLib::cleanup()
     {
+        UniformDataSetHandler::cleanup();
         switch (SLAG_GRAPHICS_BACKEND)
         {
             case VULKAN:

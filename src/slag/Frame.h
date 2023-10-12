@@ -3,6 +3,7 @@
 #include <vector>
 #include <mutex>
 #include "CommandBuffer.h"
+#include "UniformSetDataAllocator.h"
 
 namespace slag
 {
@@ -15,6 +16,7 @@ namespace slag
         virtual CommandBuffer* getCommandBuffer()=0;
         virtual Texture* getBackBuffer()=0;
         virtual UniformBuffer* getUniformBuffer()=0;
+        virtual UniformSetDataAllocator* getUniformSetDataAllocator()=0;
         ///Internal use only, automatically called for resources
         void queueResourceForDeletion(void* gpuID);
     protected:

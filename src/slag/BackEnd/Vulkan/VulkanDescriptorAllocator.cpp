@@ -35,6 +35,7 @@ namespace slag
             pool_info.maxSets = count;
             pool_info.poolSizeCount = (uint32_t)sizes.size();
             pool_info.pPoolSizes = sizes.data();
+            pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
             VkDescriptorPool descriptorPool;
             vkCreateDescriptorPool(device, &pool_info, nullptr, &descriptorPool);

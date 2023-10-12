@@ -31,6 +31,7 @@ namespace slag
             CommandBuffer* getCommandBuffer() override;
             Texture* getBackBuffer()override;
             UniformBuffer* getUniformBuffer()override;
+            UniformSetDataAllocator* getUniformSetDataAllocator()override;
 
             VkSemaphore renderFinishedSemaphore();
             VkSemaphore imageAvailableSemaphore();
@@ -50,6 +51,7 @@ namespace slag
             VulkanVirtualUniformBuffer _virtualUniformBuffer;
             VulkanTexture* _swapchainImageTexture;
             VulkanCommandBuffer _commandBuffer;
+            VulkanDescriptorAllocator _descriptorAllocator;
             std::unordered_map<std::string,VulkanTexture> _textureResources;
             std::unordered_map<std::string,VulkanCommandBuffer> _commandBufferResources;
             std::unordered_map<std::string,VulkanVirtualUniformBuffer> _uniformBufferResources;

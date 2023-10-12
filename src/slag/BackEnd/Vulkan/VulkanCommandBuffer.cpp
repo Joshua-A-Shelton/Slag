@@ -448,35 +448,6 @@ namespace slag
             vkCmdDrawIndexed(_cmdBuffer,indexCount,instanceCount,firstVertex,vertexOffset,firstInstance);
         }
 
-        void VulkanCommandBuffer::bindUniformData(Shader* shader, UniformSet *set, uint32_t uniformIndex, UniformBuffer *writeToBuffer, void *data, size_t dataSize)
-        {
-            VulkanShader* activeShader = static_cast<VulkanShader*>(shader);
-
-            VulkanUniformSet* uniformSet = static_cast<VulkanUniformSet*>(set);
-            assert((*uniformSet)[uniformIndex]->uniformType() == Uniform::UNIFORM && "only uniforms can bind uniform data");
-
-
-            VulkanVirtualUniformBuffer* uniformBuffer = static_cast<VulkanVirtualUniformBuffer*>(writeToBuffer);
-
-
-            auto writeData = uniformBuffer->write(uniformSet,uniformIndex,data,dataSize);
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(writeData.descriptorData());
-
-            vkCmdBindDescriptorSets(_cmdBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,activeShader->layout(),uniformSet->index(),1,&descriptorSet, uniformSet->dynamicOffsets().size(), uniformSet->dynamicOffsets().data());
-        }
-
-        void VulkanCommandBuffer::bindUniformData(Shader *shader, UniformSet *set, uint32_t uniformIndex, UniformData writeLocation)
-        {
-            VulkanShader* activeShader = static_cast<VulkanShader*>(shader);
-
-            VulkanUniformSet* uniformSet = static_cast<VulkanUniformSet*>(set);
-            assert((*uniformSet)[uniformIndex]->uniformType() == Uniform::UNIFORM && "only uniforms can bind uniform data");
-
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(writeLocation.descriptorData());
-
-            vkCmdBindDescriptorSets(_cmdBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,activeShader->layout(),uniformSet->index(),1,&descriptorSet, uniformSet->dynamicOffsets().size(), uniformSet->dynamicOffsets().data());
-        }
-
         void VulkanCommandBuffer::setViewport(Rectangle bounds)
         {
             VkViewport port {};
@@ -493,6 +464,14 @@ namespace slag
         {
             VkRect2D area{{bounds.offset.x,bounds.offset.y},{bounds.extent.width,bounds.extent.height}};
             vkCmdSetScissor(_cmdBuffer,0,1,&area);
+        }
+
+        void VulkanCommandBuffer::bindUniformSetData(Shader *shader, UniformSetData &data)
+        {
+            VulkanShader* vulkanShader = static_cast<VulkanShader*>(shader);
+            VulkanUniformSet* set = dynamic_cast<VulkanUniformSet *>(data.providingFor());
+            VkDescriptorSet descriptorSet = (VkDescriptorSet) data.lowLevelHandle();
+            vkCmdBindDescriptorSets(_cmdBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,vulkanShader->layout(),set->index(),1,&descriptorSet,set->dynamicOffsets().size(),set->dynamicOffsets().data());
         }
 
 
