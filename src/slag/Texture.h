@@ -43,6 +43,7 @@ namespace slag
         virtual uint32_t width()=0;
         virtual uint32_t height()=0;
         virtual Usage usage()=0;
+        static Texture* create(const char* fileLocation);
     };
 }
 #endif //SLAG_TEXTURE_H
