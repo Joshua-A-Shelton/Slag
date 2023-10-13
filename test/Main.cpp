@@ -33,12 +33,15 @@ int main()
     slag::FramebufferDescription description;
     description.addColorTarget(swapchain->imageFormat());
     slag::Shader* shader = slag::Shader::create("resources/basic.vert.spv","resources/basic.frag.spv",description);
+    slag::Shader* shader2 = slag::Shader::create("resources/basic.vert.spv","resources/basic2.frag.spv",description);
 
 
     float colors[8]{1.0f,0.0f,1.0f,1.0f, .2f,.9f,.9f,1.0f};
     float colors2[4]{0.0f,1.0f,0.0f,1.0f};
     float verts[15]{ 1.f, 1.f, 0.0f,.5,.5,   -1.f, 1.f, 0.0f,.5,.5,  0.f,-1.f, 0.0f,.5,.5};
+    float verts2[15]{ 1.f, -1.f, 0.0f,.5,.5,   -1.f, -1.f, 0.0f,.5,.5,  0.f,1.f, 0.0f,.5,.5};
     auto buffer = slag::Buffer::create(verts,sizeof(verts),slag::Buffer::CPU_TO_GPU);
+    auto buffer2 = slag::Buffer::create(verts2,sizeof(verts2),slag::Buffer::CPU_TO_GPU);
 
     bool quit = false;
     while(!quit)
@@ -71,15 +74,37 @@ int main()
             commandBuffer->setViewport(rect);
             commandBuffer->setScissors(rect);
 
-            commandBuffer->bindShader(shader);
-            slag::UniformSetData slot1(shader->getUniformSet(0),frame->getUniformSetDataAllocator());
             auto uniformBuffer = frame->getUniformBuffer();
+
+            commandBuffer->bindShader(shader);
+            slag::UniformSetData slot0(shader->getUniformSet(0),frame->getUniformSetDataAllocator());
+            slag::UniformSetData slot1(shader->getUniformSet(1),frame->getUniformSetDataAllocator());
+
+            //shared
+            float shared[3]{.2,0,0};
+            auto slColor = uniformBuffer->write(shared,sizeof(shared));
+            slot0.setUniform(0,slColor);
+
+            //not shared
             auto c1 = uniformBuffer->write(colors,sizeof(colors));
             auto c2 = uniformBuffer->write(colors2,sizeof(colors2));
             slot1.setUniform(0,c1);
             slot1.setUniform(1,c2);
+
+            commandBuffer->bindUniformSetData(shader,slot0);
             commandBuffer->bindUniformSetData(shader,slot1);
             commandBuffer->bindVertexBuffer(buffer);
+            commandBuffer->draw(3,1,0,0);
+
+
+            commandBuffer->bindShader(shader2);
+
+            slag::UniformSetData otherslot1(shader2->getUniformSet(1),frame->getUniformSetDataAllocator());
+            float me[4]{1,0,0,1};
+            auto c3 = uniformBuffer->write(me,sizeof(me));
+            otherslot1.setUniform(0,c3);
+            commandBuffer->bindUniformSetData(shader2,otherslot1);
+            commandBuffer->bindVertexBuffer(buffer2);
             commandBuffer->draw(3,1,0,0);
 
             commandBuffer->endTargetFramebuffer();
@@ -90,7 +115,9 @@ int main()
         }
     }
     delete buffer;
+    delete buffer2;
     delete shader;
+    delete shader2;
     delete swapchain;
 
     slag::SlagLib::cleanup();

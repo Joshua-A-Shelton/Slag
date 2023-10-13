@@ -271,7 +271,8 @@ namespace slag
                 assert(result == SPV_REFLECT_RESULT_SUCCESS && "Unable to get reflection data");
                 for(uint32_t i =0; i< vertGroupCount; i++)
                 {
-                    auto set = spvReflectGetDescriptorSet(&vertexModule,i,&result);
+                    auto binding = vertexModule.descriptor_bindings[i];
+                    auto set = spvReflectGetDescriptorSet(&vertexModule,binding.set,&result);
                     if(set!= nullptr)
                     {
                         vertexGroups.push_back(VulkanUniformSet(set, VK_SHADER_STAGE_VERTEX_BIT));
@@ -284,7 +285,8 @@ namespace slag
                 assert(result == SPV_REFLECT_RESULT_SUCCESS && "Unable to get reflection data");
                 for(uint32_t i =0; i< fragGroupCount; i++)
                 {
-                    auto set = spvReflectGetDescriptorSet(&fragmentModule,i,&result);
+                    auto binding = fragmentModule.descriptor_bindings[i];
+                    auto set = spvReflectGetDescriptorSet(&fragmentModule,binding.set,&result);
                     if(set != nullptr)
                     {
                         fragmentGroups.push_back(VulkanUniformSet(set, VK_SHADER_STAGE_FRAGMENT_BIT));
