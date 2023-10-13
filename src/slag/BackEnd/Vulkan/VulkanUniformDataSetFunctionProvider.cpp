@@ -37,7 +37,7 @@ namespace slag
                     uniformIndex,
                     0,
                     1,
-                    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+                    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                     nullptr,
                     &buffer_info,
             };

@@ -23,7 +23,6 @@ namespace slag
             }
             auto layout = layoutInfo();
             _descriptorSetLayout = VulkanDescriptorSetLayoutCache::getLayout(layout);
-            setDynamicOffsets();
         }
 
         uint32_t VulkanUniformSet::index()
@@ -50,18 +49,6 @@ namespace slag
             }
 
             return VulkanUniformLayoutInfo(std::move(bindings));
-        }
-
-        void VulkanUniformSet::setDynamicOffsets()
-        {
-            _dynamicOffsets.clear();
-            for(auto& uniform: _uniforms)
-            {
-                if(uniform.vulkanDescriptorType() == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC || uniform.vulkanDescriptorType() == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
-                {
-                    _dynamicOffsets.push_back(uniform.binding());
-                }
-            }
         }
 
         VulkanUniformSet::VulkanUniformSet(VulkanUniformSet&& from)
@@ -126,7 +113,6 @@ namespace slag
             //set the new layout info
             layout = layoutInfo();
             _descriptorSetLayout = VulkanDescriptorSetLayoutCache::getLayout(layout);
-            setDynamicOffsets();
         }
 
         void VulkanUniformSet::move(VulkanUniformSet&& from)
@@ -135,12 +121,6 @@ namespace slag
             std::swap(_accessibleFrom,from._accessibleFrom);
             std::swap(_descriptorSetLayout, from._descriptorSetLayout);
             _uniforms.swap(from._uniforms);
-            _dynamicOffsets.swap(from._dynamicOffsets);
-        }
-
-        const std::vector<uint32_t> &VulkanUniformSet::dynamicOffsets()
-        {
-            return _dynamicOffsets;
         }
     } // slag
 } // vulkan

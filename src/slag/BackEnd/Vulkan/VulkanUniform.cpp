@@ -11,14 +11,6 @@ namespace slag
         {
             _binding = binding->binding;
             _descriptorType = static_cast<VkDescriptorType>(binding->descriptor_type);
-            if(_descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-            {
-                _descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-            }
-            else if(_descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-            {
-                _descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
-            }
             _name = binding->name;
             _accessibleFrom = shaderStage;
 
@@ -137,9 +129,9 @@ namespace slag
             {
                 case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
                     return UniformType::TEXTURE;
-                case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+                case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
                     return UniformType::STORAGE;
-                case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+                case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
                     return UniformType::UNIFORM;
             }
             assert(false && "Unimplemented");

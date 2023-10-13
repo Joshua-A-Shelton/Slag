@@ -26,16 +26,13 @@ namespace slag
             size_t bufferCount()override;
             Uniform* operator[](size_t index)override;
             VkDescriptorSetLayout descriptorSetLayout();
-            const std::vector<uint32_t>& dynamicOffsets();
             void merge(VulkanUniformSet&& with);
         private:
             uint32_t _index=0;
             VkShaderStageFlags _accessibleFrom=0;
             VkDescriptorSetLayout _descriptorSetLayout = nullptr;
             std::vector<VulkanUniform> _uniforms;
-            std::vector<uint32_t> _dynamicOffsets{};
             VulkanUniformLayoutInfo layoutInfo();
-            void setDynamicOffsets();
             void move(VulkanUniformSet&& from);
 
         };
