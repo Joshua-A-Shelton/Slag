@@ -106,19 +106,20 @@ namespace slag
             multisampleInfo.alphaToCoverageEnable = VK_FALSE;
             multisampleInfo.alphaToOneEnable = VK_FALSE;
 
-            //TODO: set blend state
+
+            //TODO: make this an option per shader
             VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
             colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
                                                   VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-            colorBlendAttachment.blendEnable = VK_FALSE;
-            colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
-            colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
+            colorBlendAttachment.blendEnable = VK_TRUE;
+            colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+            colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
             colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;              // Optional
             colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
             colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
             colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;              // Optional
 
-            //TODO: set up real transparency
+            //TODO: set blend state
             //setup dummy color blending. We aren't using transparent objects yet
             //the blending is just "no blend", but we do write to the color attachment
             VkPipelineColorBlendStateCreateInfo colorBlendingInfo = {};
