@@ -34,7 +34,7 @@ int main()
     description.addColorTarget(swapchain->imageFormat());
     slag::Shader* shader = slag::Shader::create("resources/basic.vert.spv","resources/basic.frag.spv",description);
     slag::Shader* shader2 = slag::Shader::create("resources/basic.vert.spv","resources/basic2.frag.spv",description);
-    slag::Texture* texture = slag::Texture::create("resources/Crucible.png");
+    slag::Texture* texture = slag::Texture::create("resources/Crucible.png",3);
     slag::TextureSampler* sampler = slag::TextureSamplerBuilder().create();
 
 

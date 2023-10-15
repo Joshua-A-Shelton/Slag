@@ -178,11 +178,8 @@ namespace slag
 
         void VulkanSwapchain::rebuild()
         {
+            vkDeviceWaitIdle(VulkanLib::graphicsCard()->device());
             VulkanGraphicsCard* card = VulkanLib::graphicsCard();
-            if(!_frames.empty())
-            {
-                _frames[_currentFrameIndex].waitTillFinished();
-            }
             vkb::SwapchainBuilder swapchainBuilder{card->physicalDevice(),card->device(),_surface};
 
             auto vkbSwapchain = swapchainBuilder
