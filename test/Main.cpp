@@ -67,8 +67,8 @@ int main()
         {
             frame->begin();
             auto commandBuffer = frame->getCommandBuffer();
-            slag::ImageMemoryBarrier imageBarrier{.oldLayout = slag::Texture::Layout::PRESENT, .newLayout = slag::Texture::Layout::RENDER_TARGET, .texture=frame->getBackBuffer()};
-            commandBuffer->insertImageBarrier(imageBarrier,slag::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,slag::PipelineStageFlags::BOTTOM);
+            slag::ImageMemoryBarrier imageBarrier{.oldLayout = slag::Texture::Layout::PRESENT, .newLayout = slag::Texture::Layout::RENDER_TARGET,.srcAccess=slag::PipelineAccess::NONE,.dstAccess=slag::PipelineAccess::ACCESS_TRANSFER_WRITE_BIT, .texture=frame->getBackBuffer()};
+            commandBuffer->insertBarriers(nullptr,0,&imageBarrier,1, nullptr,0,slag::PipelineStage::PipelineStageFlags::TOP,slag::PipelineStage::PipelineStageFlags::STAGE_TRANSFER);
 
             slag::Attachment colorAttachment{frame->getBackBuffer(), true,{0.1f,0.3f,0.7f,1.0f}};
             slag::Rectangle rect{{0,0},{swapchain->width(),swapchain->height()}};
@@ -109,8 +109,8 @@ int main()
 
             commandBuffer->endTargetFramebuffer();
 
-            slag::ImageMemoryBarrier imageBarrier2{.oldLayout = slag::Texture::Layout::RENDER_TARGET, .newLayout = slag::Texture::Layout::PRESENT, .texture=frame->getBackBuffer()};
-            commandBuffer->insertImageBarrier(imageBarrier2,slag::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,slag::PipelineStageFlags::BOTTOM);
+            slag::ImageMemoryBarrier imageBarrier2{.oldLayout = slag::Texture::Layout::RENDER_TARGET, .newLayout = slag::Texture::Layout::PRESENT,.srcAccess=slag::PipelineAccess::ACCESS_SHADER_READ_BIT,.dstAccess=slag::PipelineAccess::NONE,.texture=frame->getBackBuffer()};
+            commandBuffer->insertBarriers(nullptr,0,&imageBarrier2,1, nullptr,0,slag::PipelineStage::PipelineStageFlags::FRAGMENT_SHADER,slag::PipelineStage::PipelineStageFlags::BOTTOM);
             frame->end();
         }
     }

@@ -33,13 +33,7 @@ namespace slag
             void end();
             void submit(VkSemaphore* waitSemaphores, uint32_t waitCount, VkSemaphore* signalSemaphores, uint32_t signalCount, VkFence fence);
             Level level()override;
-            void insertMemoryBarrier(const GPUMemoryBarrier& barrier, PipelineStageFlags source, PipelineStageFlags destination)override;
-            void insertMemoryBarriers(const GPUMemoryBarrier* barriers, size_t count, PipelineStageFlags source, PipelineStageFlags destination)override;
-            void insertImageBarrier(const ImageMemoryBarrier& barrier, PipelineStageFlags source, PipelineStageFlags destination)override;
-            void insertImageBarriers(const ImageMemoryBarrier* barriers, size_t count, PipelineStageFlags source, PipelineStageFlags destination)override;
-            void insertBufferBarrier(const BufferMemoryBarrier& barrier, PipelineStageFlags source, PipelineStageFlags destination)override;
-            void insertBufferBarriers(const BufferMemoryBarrier* barriers, size_t count, PipelineStageFlags source, PipelineStageFlags destination)override;
-            void insertBarriers(const GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount, const ImageMemoryBarrier* imageBarriers, size_t imageBarrierCount, const BufferMemoryBarrier* bufferBarriers, size_t bufferBarrierCount, PipelineStageFlags source, PipelineStageFlags destination)override;
+            void insertBarriers(const GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount, const ImageMemoryBarrier* imageBarriers, size_t imageBarrierCount, const BufferMemoryBarrier* bufferBarriers, size_t bufferBarrierCount, PipelineStage::PipelineStageFlags source, PipelineStage::PipelineStageFlags destination);
             void executeSecondaryCommands(CommandBuffer* subBuffer)override;
             void setTargetFramebuffer(Rectangle bounds,Attachment* colorAttachments, size_t colorCount)override;
             void setTargetFramebuffer(Rectangle bounds,Attachment* colorAttachments, size_t colorCount, Attachment depthAttachment)override;
@@ -54,7 +48,8 @@ namespace slag
             void bindUniformSetData(Shader* shader, UniformSetData& data)override;
 
             //TODO: move this out from here. It's used here most frequently, (possibly exclusively), but has nothing to do with command buffers directly
-            static VkPipelineStageFlags pipelineStageFromCrossPlatform(PipelineStageFlags flags);
+            static VkPipelineStageFlags pipelineStageFromCrossPlatform(PipelineStage::PipelineStageFlags flags);
+            static VkAccessFlags accessFlagsFromCrossPlatform(PipelineAccess::PipeLineAccessFlags access);
 
         };
     } // slag

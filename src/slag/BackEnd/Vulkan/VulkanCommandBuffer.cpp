@@ -142,39 +142,10 @@ namespace slag
             return CommandBuffer::SECONDARY;
         }
 
-        void VulkanCommandBuffer::insertMemoryBarrier(const GPUMemoryBarrier &barrier, PipelineStageFlags source, PipelineStageFlags destination)
-        {
-            insertBarriers(&barrier,1, nullptr,0, nullptr,0,source,destination);
-        }
 
-        void VulkanCommandBuffer::insertMemoryBarriers(const GPUMemoryBarrier *barriers, size_t count, PipelineStageFlags source, PipelineStageFlags destination)
-        {
-            insertBarriers(barriers,count, nullptr,0, nullptr,0,source,destination);
-        }
 
-        void VulkanCommandBuffer::insertImageBarrier(const ImageMemoryBarrier &barrier, PipelineStageFlags source, PipelineStageFlags destination)
-        {
-            insertBarriers(nullptr,0, &barrier,1, nullptr,0,source,destination);
-        }
-
-        void VulkanCommandBuffer::insertImageBarriers(const ImageMemoryBarrier *barriers, size_t count, PipelineStageFlags source, PipelineStageFlags destination)
-        {
-            insertBarriers(nullptr,0, barriers,count, nullptr,0,source,destination);
-        }
-
-        void VulkanCommandBuffer::insertBufferBarrier(const BufferMemoryBarrier &barrier, PipelineStageFlags source, PipelineStageFlags destination)
-        {
-            insertBarriers(nullptr,0, nullptr,0, &barrier,1,source,destination);
-        }
-
-        void VulkanCommandBuffer::insertBufferBarriers(const BufferMemoryBarrier *barriers, size_t count, PipelineStageFlags source, PipelineStageFlags destination)
-        {
-            insertBarriers(nullptr,0, nullptr,0, barriers,count,source,destination);
-        }
-
-        void
-        VulkanCommandBuffer::insertBarriers(const GPUMemoryBarrier *memoryBarriers, size_t memoryBarrierCount, const ImageMemoryBarrier *imageBarriers, size_t imageBarrierCount, const BufferMemoryBarrier *bufferBarriers,
-                                            size_t bufferBarrierCount, PipelineStageFlags source, PipelineStageFlags destination)
+        void VulkanCommandBuffer::insertBarriers(const GPUMemoryBarrier *memoryBarriers, size_t memoryBarrierCount, const ImageMemoryBarrier *imageBarriers, size_t imageBarrierCount, const BufferMemoryBarrier *bufferBarriers,
+                                            size_t bufferBarrierCount, PipelineStage::PipelineStageFlags source, PipelineStage::PipelineStageFlags destination)
         {
             std::vector<VkMemoryBarrier> memBarriers(memoryBarrierCount);
             std::vector<VkImageMemoryBarrier> imBarriers(imageBarrierCount);
@@ -191,6 +162,8 @@ namespace slag
                 imBarriers[i]=VkImageMemoryBarrier
                 {
                         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                        .srcAccessMask = accessFlagsFromCrossPlatform(curBarrier->srcAccess),
+                        .dstAccessMask = accessFlagsFromCrossPlatform(curBarrier->dstAccess),
                         .oldLayout = VulkanTexture::layoutFromCrossPlatform(curBarrier->oldLayout),
                         .newLayout = VulkanTexture::layoutFromCrossPlatform(curBarrier->newLayout),
                         .image = texture->vulkanImage(),
@@ -202,50 +175,6 @@ namespace slag
                                 .layerCount = 1,
                         }
                 };
-                //TODO: this doesn't exactly work as is... commented out throws no errors, but I think it's technically inefficient
-                /*
-                switch (imBarriers[i].oldLayout) {
-                    case VK_IMAGE_LAYOUT_PREINITIALIZED:
-                        imBarriers[i].srcAccessMask =
-                                VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
-                        break;
-                    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-                        imBarriers[i].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-                        break;
-                    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-                        imBarriers[i].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-                        break;
-                    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-                        imBarriers[i].srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-                        break;
-                    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-                        imBarriers[i].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-                        break;
-                }
-
-                switch (imBarriers[i].newLayout) {
-                    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-                        imBarriers[i].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-                        break;
-                    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-                        imBarriers[i].srcAccessMask |= VK_ACCESS_TRANSFER_READ_BIT;
-                        imBarriers[i].dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-                        break;
-                    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-                        imBarriers[i].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-                        imBarriers[i].srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-                        break;
-                    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-                        imBarriers[i].dstAccessMask |=
-                                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-                        break;
-                    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-                        imBarriers[i].srcAccessMask =
-                                VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
-                        imBarriers[i].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-                        break;
-                }
-                 */
 
             }
             //TODO buffer barriers
@@ -258,10 +187,6 @@ namespace slag
             vkCmdPipelineBarrier(_cmdBuffer,src,dst,0,memoryBarrierCount,memBarriers.data(),bufferBarrierCount,bufBarriers.data(),imageBarrierCount,imBarriers.data());
         }
 
-        VkPipelineStageFlags VulkanCommandBuffer::pipelineStageFromCrossPlatform(PipelineStageFlags flags)
-        {
-            return static_cast<VkPipelineStageFlags>(flags);
-        }
 
         void VulkanCommandBuffer::begin()
         {
@@ -474,6 +399,23 @@ namespace slag
             VulkanUniformSet* set = dynamic_cast<VulkanUniformSet *>(data.providingFor());
             VkDescriptorSet descriptorSet = (VkDescriptorSet) data.lowLevelHandle();
             vkCmdBindDescriptorSets(_cmdBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,vulkanShader->layout(),set->index(),1,&descriptorSet,0, nullptr);
+        }
+
+        VkPipelineStageFlags VulkanCommandBuffer::pipelineStageFromCrossPlatform(PipelineStage::PipelineStageFlags flags)
+        {
+            return static_cast<VkPipelineStageFlags>(flags);
+        }
+
+        VkAccessFlags VulkanCommandBuffer::accessFlagsFromCrossPlatform(PipelineAccess::PipeLineAccessFlags access)
+        {
+
+            switch (access)
+            {
+#define DEFINITION(slagName,  vulkanName, directXName) case PipelineAccess::PipeLineAccessFlags::slagName: return vulkanName;
+                PIPELINE_ACCESS_DEFINITIONS(DEFINITION)
+#undef DEFINITION
+            }
+
         }
 
 
