@@ -34,12 +34,14 @@ int main()
     description.addColorTarget(swapchain->imageFormat());
     slag::Shader* shader = slag::Shader::create("resources/basic.vert.spv","resources/basic.frag.spv",description);
     slag::Shader* shader2 = slag::Shader::create("resources/basic.vert.spv","resources/basic2.frag.spv",description);
+    slag::Texture* texture = slag::Texture::create("resources/Crucible.png");
+    slag::TextureSampler* sampler = slag::TextureSamplerBuilder().create();
 
 
     float colors[8]{1.0f,0.0f,1.0f,1.0f, .2f,.9f,.9f,1.0f};
     float colors2[4]{0.0f,1.0f,0.0f,1.0f};
     float verts[15]{ 1.f, 1.f, 0.0f,.5,.5,   -1.f, 1.f, 0.0f,.5,.5,  0.f,-1.f, 0.0f,.5,.5};
-    float verts2[15]{ 1.f, -1.f, 0.0f,.5,.5,   -1.f, -1.f, 0.0f,.5,.5,  0.f,1.f, 0.0f,.5,.5};
+    float verts2[15]{ 1.f, -1.f, 0.0f,0,0,   -1.f, -1.f, 0.0f,1,0,  0.f,1.f, 0.0f,.5,1};
     auto buffer = slag::Buffer::create(verts,sizeof(verts),slag::Buffer::CPU_TO_GPU);
     auto buffer2 = slag::Buffer::create(verts2,sizeof(verts2),slag::Buffer::CPU_TO_GPU);
 
@@ -100,9 +102,7 @@ int main()
             commandBuffer->bindShader(shader2);
 
             slag::UniformSetData otherslot1(shader2->getUniformSet(1),frame->getUniformSetDataAllocator());
-            float me[4]{1,0,0,1};
-            auto c3 = uniformBuffer->write(me,sizeof(me));
-            otherslot1.setUniform(0,c3);
+            otherslot1.setTexture(0,texture,sampler,slag::Texture::Layout::SHADER_RESOURCE);
             commandBuffer->bindUniformSetData(shader2,otherslot1);
             commandBuffer->bindVertexBuffer(buffer2);
             commandBuffer->draw(3,1,0,0);
@@ -114,6 +114,8 @@ int main()
             frame->end();
         }
     }
+    delete sampler;
+    delete texture;
     delete buffer;
     delete buffer2;
     delete shader;

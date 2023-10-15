@@ -78,6 +78,7 @@ namespace slag
 
         void VulkanTexture::move(VulkanTexture&& from)
         {
+
             std::swap(_baseFormat,from._baseFormat);
             std::swap(_usage,from._usage);
             std::swap(_image, from._image);
@@ -278,6 +279,43 @@ namespace slag
             //allocate and create the image
             vmaCreateImage(VulkanLib::graphicsCard()->memoryAllocator(), &dimg_info, &dimg_allocinfo, &_image, &_allocation, nullptr);
 
+            VulkanLib::graphicsCard()->runOneTimeCommands(VulkanLib::graphicsCard()->transferQueue(),VulkanLib::graphicsCard()->transferQueueFamily(),[=](VkCommandBuffer commandBuffer)
+            {
+                VkImageSubresourceRange range;
+                range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                range.baseMipLevel = 0;
+                range.levelCount = 1;
+                range.baseArrayLayer = 0;
+                range.layerCount = 1;
+
+                VkImageMemoryBarrier imageBarrier_toTransfer = {};
+                imageBarrier_toTransfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+
+                imageBarrier_toTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                imageBarrier_toTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                imageBarrier_toTransfer.image = _image;
+                imageBarrier_toTransfer.subresourceRange = range;
+
+                imageBarrier_toTransfer.srcAccessMask = 0;
+                imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+                //barrier the image into the transfer-receive layout
+                vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
+                VkBufferImageCopy copyRegion = {};
+                copyRegion.bufferOffset = 0;
+                copyRegion.bufferRowLength = 0;
+                copyRegion.bufferImageHeight = 0;
+
+                copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                copyRegion.imageSubresource.mipLevel = 0;
+                copyRegion.imageSubresource.baseArrayLayer = 0;
+                copyRegion.imageSubresource.layerCount = 1;
+                copyRegion.imageExtent = imageExtent;
+
+                //copy the buffer into the image
+                vkCmdCopyBufferToImage(commandBuffer, buffer, _image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+            });
+
             //create default image view
             VkImageViewCreateInfo info = {};
             info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -297,7 +335,7 @@ namespace slag
             //clean up temporary resources
             vmaDestroyBuffer(VulkanLib::graphicsCard()->memoryAllocator(),buffer,tempAllocation);
 
-            auto oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            auto oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
             if(_mipLevels>1)
             {
                 updateMipMaps();
