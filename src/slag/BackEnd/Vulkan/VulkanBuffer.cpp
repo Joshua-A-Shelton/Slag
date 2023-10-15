@@ -61,13 +61,14 @@ namespace slag
             }
         }
 
-        VulkanBuffer::VulkanBuffer(VulkanBuffer&& from)
+        VulkanBuffer::VulkanBuffer(VulkanBuffer&& from): Resource(std::move(from))
         {
             move(std::move(from));
         }
 
         VulkanBuffer& VulkanBuffer::operator=(VulkanBuffer&& from)
         {
+            Resource::operator=(std::move(from));
             move(std::move(from));
             return *this;
         }

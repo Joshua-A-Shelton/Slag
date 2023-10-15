@@ -427,5 +427,25 @@ namespace slag
             return _pipelineLayout;
         }
 
+        VulkanShader::VulkanShader(VulkanShader&& from): Resource(std::move(from))
+        {
+            move(std::move(from));
+        }
+
+        VulkanShader& VulkanShader::operator=(VulkanShader&& from)
+        {
+            Resource::operator=(std::move(from));
+            move(std::move(from));
+            return *this;
+        }
+
+        void VulkanShader::move(VulkanShader&& from)
+        {
+            std::swap(_pipelineLayout,from._pipelineLayout);
+            std::swap(_pipeline, from._pipeline);
+            _uniformSets.swap(from._uniformSets);
+            _pushConstantRanges.swap(from._pushConstantRanges);
+        }
+
     } // slag
 } // vulkan

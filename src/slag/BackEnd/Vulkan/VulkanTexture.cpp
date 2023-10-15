@@ -51,32 +51,33 @@ namespace slag
 
         VulkanTexture::VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels, VkImageAspectFlags usage, Pixels::PixelFormat format, void* pixelData, bool destroyImmediate)
         {
-            VkDeviceSize bufferSize= Pixels::pixelBytes(format)*width*height;
+            auto size = Pixels::pixelBytes(format)/8;
+            VkDeviceSize bufferSize= size*width*height;
             create(width,height,mipLevels,usage,format,pixelData,bufferSize,destroyImmediate);
         }
 
         VulkanTexture::~VulkanTexture()
         {
-            smartDestroy();
+            if(_view)
+            {
+                smartDestroy();
+            }
         }
 
-        VulkanTexture::VulkanTexture(VulkanTexture&& from)
+        VulkanTexture::VulkanTexture(VulkanTexture&& from): Resource(std::move(from))
         {
             move(std::move(from));
         }
 
         VulkanTexture& VulkanTexture::operator=(VulkanTexture&& from)
         {
+            Resource::operator=(std::move(from));
             move(std::move(from));
             return *this;
         }
 
         void VulkanTexture::move(VulkanTexture&& from)
         {
-            freeResources = from.freeResources;
-            from.freeResources = nullptr;
-            std::swap(destroyImmediately,from.destroyImmediately);
-
             std::swap(_baseFormat,from._baseFormat);
             std::swap(_usage,from._usage);
             std::swap(_image, from._image);
@@ -237,7 +238,7 @@ namespace slag
             VkBuffer buffer;
             VmaAllocation tempAllocation;
 
-            vmaCreateBuffer(VulkanLib::graphicsCard()->memoryAllocator(),&bufferCreateInfo,&allocationCreateInfo,&buffer,&tempAllocation, nullptr);
+            auto success = vmaCreateBuffer(VulkanLib::graphicsCard()->memoryAllocator(),&bufferCreateInfo,&allocationCreateInfo,&buffer,&tempAllocation, nullptr);
 
             //copy data into temp resources
             void* data;
@@ -291,19 +292,49 @@ namespace slag
             info.subresourceRange.baseArrayLayer = 0;
             info.subresourceRange.aspectMask = usage;
 
-            vkCreateImageView(VulkanLib::graphicsCard()->device(),&info, nullptr,&_view);
+            success = vkCreateImageView(VulkanLib::graphicsCard()->device(),&info, nullptr,&_view);
 
             //clean up temporary resources
             vmaDestroyBuffer(VulkanLib::graphicsCard()->memoryAllocator(),buffer,tempAllocation);
 
-            updateMipMaps();
+            auto oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            if(_mipLevels>1)
+            {
+                updateMipMaps();
+                oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            }
+
+            VulkanLib::graphicsCard()->runOneTimeCommands(VulkanLib::graphicsCard()->transferQueue(),VulkanLib::graphicsCard()->transferQueueFamily(),[=](VkCommandBuffer commandBuffer)
+            {
+                VkImageMemoryBarrier barrier{};
+                barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                barrier.image = _image;
+                barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                barrier.subresourceRange.baseArrayLayer = 0;
+                barrier.subresourceRange.layerCount = 1;
+                barrier.subresourceRange.baseMipLevel = 0;
+                barrier.subresourceRange.levelCount = _mipLevels;
+                barrier.oldLayout = oldLayout;
+                barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+
+                vkCmdPipelineBarrier(commandBuffer,
+                                     VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+                                     0, nullptr,
+                                     0, nullptr,
+                                     1, &barrier);
+            });
 
             auto img = _image;
+            auto allocoation = _allocation;
             auto view = _view;
 
             freeResources = [=]()
             {
-                vkDestroyImage(VulkanLib::graphicsCard()->device(),img, nullptr);
+                vmaDestroyImage(VulkanLib::graphicsCard()->memoryAllocator(),img,allocoation);
                 vkDestroyImageView(VulkanLib::graphicsCard()->device(),view, nullptr);
             };
         }
@@ -333,7 +364,8 @@ namespace slag
                 int32_t mipWidth = _width;
                 int32_t mipHeight = _height;
 
-                for (uint32_t i = 1; i < _mipLevels; i++) {
+                for (uint32_t i = 1; i < _mipLevels; i++)
+                {
                     barrier.subresourceRange.baseMipLevel = i - 1;
                     barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
                     barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
@@ -381,7 +413,7 @@ namespace slag
                     if (mipHeight > 1) mipHeight /= 2;
                 }
 
-                barrier.subresourceRange.baseMipLevel = _mipLevels - 1;
+                /*barrier.subresourceRange.baseMipLevel = _mipLevels - 1;
                 barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
                 barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                 barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -391,7 +423,7 @@ namespace slag
                                      VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
                                      0, nullptr,
                                      0, nullptr,
-                                     1, &barrier);
+                                     1, &barrier);*/
             });
 
         }

@@ -80,9 +80,16 @@ namespace slag
             return alignedSize;
         }
 
-        VulkanUniformBuffer::VulkanUniformBuffer(VulkanUniformBuffer &&from)
+        VulkanUniformBuffer::VulkanUniformBuffer(VulkanUniformBuffer &&from): Resource(std::move(from))
         {
             move(std::move(from));
+        }
+
+        VulkanUniformBuffer &VulkanUniformBuffer::operator=(VulkanUniformBuffer &&from)
+        {
+            Resource::operator=(std::move(from));
+            move(std::move(from));
+            return *this;
         }
 
         VkDeviceSize VulkanUniformBuffer::size()
@@ -90,11 +97,6 @@ namespace slag
             return _size;
         }
 
-        VulkanUniformBuffer &VulkanUniformBuffer::operator=(VulkanUniformBuffer &&from)
-        {
-            move(std::move(from));
-            return *this;
-        }
 
         std::optional<size_t> VulkanUniformBuffer::write(void *data, size_t dataSize)
         {
@@ -126,8 +128,6 @@ namespace slag
             _size = from._size;
             _offset = from._offset;
             _minUniformBufferOffsetAlignment=from._minUniformBufferOffsetAlignment;
-            freeResources = from.freeResources;
-            destroyImmediately = from.destroyImmediately;
 
             from._backingBuffer = nullptr;
             from._allocation = nullptr;

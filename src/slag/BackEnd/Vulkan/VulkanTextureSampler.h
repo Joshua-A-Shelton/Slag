@@ -13,6 +13,10 @@ namespace slag
         public:
             VulkanTextureSampler(TextureSampler::Filter minFilter, TextureSampler::Filter magFilter, TextureSampler::AddressMode u, TextureSampler::AddressMode v, TextureSampler::AddressMode w, bool destroyImmediate);
             ~VulkanTextureSampler()override;
+            VulkanTextureSampler(VulkanTextureSampler&& from);
+            VulkanTextureSampler& operator=(VulkanTextureSampler&& from);
+            VulkanTextureSampler(VulkanTextureSampler&)=delete;
+            VulkanTextureSampler& operator=(VulkanTextureSampler&)=delete;
             Filter magFilter()override;
             Filter minFilter()override;
             AddressMode addressU()override;
@@ -26,6 +30,7 @@ namespace slag
             VkSampler _sampler= nullptr;
             TextureSampler::Filter _min,_mag;
             TextureSampler::AddressMode _u,_v,_w;
+            void move(VulkanTextureSampler&& from);
         };
 
     } // slag

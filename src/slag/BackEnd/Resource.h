@@ -9,12 +9,17 @@ namespace slag
     class Resource
     {
     public:
-        virtual ~Resource() = default;
+        virtual ~Resource()=default;
         virtual void* GPUID()=0;
+        Resource()=default;
     protected:
-        void smartDestroy();
         bool destroyImmediately = false;
         std::function<void()> freeResources = nullptr;
+        Resource(Resource&& from);
+        Resource& operator=(Resource&& from);
+        Resource(const Resource&)=delete;
+        Resource& operator=(const Resource&)=delete;
+        void smartDestroy();
     };
 }
 #endif //SLAG_RESOURCE_H

@@ -21,4 +21,17 @@ namespace slag
         }
     }
 
+    Resource::Resource(Resource&& from)
+    {
+        std::swap(destroyImmediately,from.destroyImmediately);
+        std::swap(freeResources,from.freeResources);
+    }
+
+    Resource& Resource::operator=(Resource&& from)
+    {
+        std::swap(destroyImmediately,from.destroyImmediately);
+        std::swap(freeResources,from.freeResources);
+        return *this;
+    }
+
 }

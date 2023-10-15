@@ -97,5 +97,27 @@ namespace slag
         {
             return _sampler;
         }
+
+        VulkanTextureSampler::VulkanTextureSampler(VulkanTextureSampler&& from):Resource(std::move(from))
+        {
+            move(std::move(from));
+        }
+
+        VulkanTextureSampler& VulkanTextureSampler::operator=(VulkanTextureSampler&& from)
+        {
+            Resource::operator=(std::move(from));
+            move(std::move(from));
+            return *this;
+        }
+
+        void VulkanTextureSampler::move(VulkanTextureSampler&& from)
+        {
+            std::swap(_sampler,from._sampler);
+            std::swap(_min,from._min);
+            std::swap(_mag,from._mag);
+            std::swap(_u,from._u);
+            std::swap(_v,from._v);
+            std::swap(_w,from._w);
+        }
     } // slag
 } // vulkan

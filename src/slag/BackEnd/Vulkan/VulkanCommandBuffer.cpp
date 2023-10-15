@@ -36,9 +36,10 @@ namespace slag
                 }
                 auto result = vkAllocateCommandBuffers(VulkanLib::graphicsCard()->device(), &allocInfo, &_cmdBuffer);
                 assert(result == VK_SUCCESS && "failed to allocate command buffer!");
+                auto cmdBuffer = _cmdBuffer;
                 freeResources = [=]()
                 {
-                    vkFreeCommandBuffers(VulkanLib::graphicsCard()->device(),_pool,1,&_cmdBuffer);
+                    vkFreeCommandBuffers(VulkanLib::graphicsCard()->device(),pool,1,&cmdBuffer);
                 };
             }
         }
@@ -89,13 +90,14 @@ namespace slag
             }
         }
 
-        VulkanCommandBuffer::VulkanCommandBuffer(VulkanCommandBuffer &&from)
+        VulkanCommandBuffer::VulkanCommandBuffer(VulkanCommandBuffer &&from): Resource(std::move(from))
         {
             move(std::move(from));
         }
 
         VulkanCommandBuffer &VulkanCommandBuffer::operator=(VulkanCommandBuffer &&from)
         {
+            Resource::operator=(std::move(from));
             move(std::move(from));
             return *this;
         }
@@ -471,8 +473,6 @@ namespace slag
             VulkanShader* vulkanShader = static_cast<VulkanShader*>(shader);
             VulkanUniformSet* set = dynamic_cast<VulkanUniformSet *>(data.providingFor());
             VkDescriptorSet descriptorSet = (VkDescriptorSet) data.lowLevelHandle();
-            //this is some weird additional offset, I think for arrays, which I'm not using, but vulkan requires it.
-            //https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/vkCmdBindDescriptorSets.html
             vkCmdBindDescriptorSets(_cmdBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,vulkanShader->layout(),set->index(),1,&descriptorSet,0, nullptr);
         }
 

@@ -17,6 +17,10 @@ namespace slag
         public:
             VulkanShader(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, FramebufferDescription& framebufferDescription);
             ~VulkanShader()override;
+            VulkanShader(const VulkanShader&)=delete;
+            VulkanShader& operator=(const VulkanShader&)=delete;
+            VulkanShader(VulkanShader&& from);
+            VulkanShader& operator=(VulkanShader&& from);
             void* GPUID()override;
             UniformSet* getUniformSet(size_t index)override;
             VkPipeline pipeline();
@@ -27,6 +31,7 @@ namespace slag
             std::vector<VulkanUniformSet> _uniformSets;
             std::vector<VkPushConstantRange> _pushConstantRanges;
             void generateReflectionData(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, std::vector<VkVertexInputAttributeDescription>& attributes,VkVertexInputBindingDescription& binding, std::vector<VulkanUniformSet>& overwrites);
+            void move(VulkanShader&& from);
         };
 
     } // slag

@@ -16,10 +16,12 @@
 #include "Shader.h"
 #include "Swapchain.h"
 #include "Texture.h"
+#include "TextureSampler.h"
 #include "Uniform.h"
 #include "UniformBuffer.h"
 #include "UniformDescriptor.h"
 #include "UniformSet.h"
+#include "UniformSetDataAllocator.h"
 
 namespace slag
 {
