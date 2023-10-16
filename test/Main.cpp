@@ -34,14 +34,14 @@ int main()
     description.addColorTarget(swapchain->imageFormat());
     slag::Shader* shader = slag::Shader::create("resources/basic.vert.spv","resources/basic.frag.spv",description);
     slag::Shader* shader2 = slag::Shader::create("resources/basic.vert.spv","resources/basic2.frag.spv",description);
-    slag::Texture* texture = slag::Texture::create("resources/Crucible.png",3);
+    slag::Texture* texture = slag::Texture::create("resources/Crucible.png",1);
     slag::TextureSampler* sampler = slag::TextureSamplerBuilder().create();
 
 
     float colors[8]{1.0f,0.0f,1.0f,1.0f, .2f,.9f,.9f,1.0f};
     float colors2[4]{0.0f,1.0f,0.0f,1.0f};
     float verts[15]{ 1.f, 1.f, 0.0f,.5,.5,   -1.f, 1.f, 0.0f,.5,.5,  0.f,-1.f, 0.0f,.5,.5};
-    float verts2[15]{ 1.f, -1.f, 0.0f,0,0,   -1.f, -1.f, 0.0f,1,0,  0.f,1.f, 0.0f,.5,1};
+    float verts2[15]{ -1.f, -1.f, 0.0f,0,0,   1.f, -1.f, 0.0f,1,0,  0.f,1.f, 0.0f,.5,1};
     auto buffer = slag::Buffer::create(verts,sizeof(verts),slag::Buffer::CPU_TO_GPU);
     auto buffer2 = slag::Buffer::create(verts2,sizeof(verts2),slag::Buffer::CPU_TO_GPU);
 
@@ -67,7 +67,7 @@ int main()
         {
             frame->begin();
             auto commandBuffer = frame->getCommandBuffer();
-            slag::ImageMemoryBarrier imageBarrier{.oldLayout = slag::Texture::Layout::PRESENT, .newLayout = slag::Texture::Layout::RENDER_TARGET,.srcAccess=slag::PipelineAccess::NONE,.dstAccess=slag::PipelineAccess::ACCESS_SHADER_WRITE_BIT, .texture=frame->getBackBuffer()};
+            slag::ImageMemoryBarrier imageBarrier{.oldLayout = slag::Texture::Layout::PRESENT, .newLayout = slag::Texture::Layout::RENDER_TARGET,.requireCachesFinish=slag::PipelineAccess::NONE,.usingCaches=slag::PipelineAccess::ACCESS_SHADER_WRITE_BIT, .texture=frame->getBackBuffer()};
             commandBuffer->insertBarriers(nullptr,0,&imageBarrier,1, nullptr,0,slag::PipelineStage::PipelineStageFlags::TOP,slag::PipelineStage::PipelineStageFlags::ALL_GRAPHICS);
 
             slag::Attachment colorAttachment{frame->getBackBuffer(), true,{0.1f,0.3f,0.7f,1.0f}};
@@ -109,7 +109,7 @@ int main()
 
             commandBuffer->endTargetFramebuffer();
 
-            slag::ImageMemoryBarrier imageBarrier2{.oldLayout = slag::Texture::Layout::RENDER_TARGET, .newLayout = slag::Texture::Layout::PRESENT,.srcAccess=slag::PipelineAccess::ACCESS_SHADER_READ_BIT,.dstAccess=slag::PipelineAccess::NONE,.texture=frame->getBackBuffer()};
+            slag::ImageMemoryBarrier imageBarrier2{.oldLayout = slag::Texture::Layout::RENDER_TARGET, .newLayout = slag::Texture::Layout::PRESENT,.requireCachesFinish=slag::PipelineAccess::ACCESS_SHADER_READ_BIT,.usingCaches=slag::PipelineAccess::NONE,.texture=frame->getBackBuffer()};
             commandBuffer->insertBarriers(nullptr,0,&imageBarrier2,1, nullptr,0,slag::PipelineStage::PipelineStageFlags::FRAGMENT_SHADER,slag::PipelineStage::PipelineStageFlags::BOTTOM);
             frame->end();
         }

@@ -21,17 +21,21 @@ namespace slag
         int width, height, channels;
         unsigned char* data = stbi_load(imagePath.c_str(),&width,&height,&channels,4);
         Texture* tex = nullptr;
-        switch (SlagLib::usingBackEnd())
+        if(data)
         {
-            case BackEnd::VULKAN:
+            switch (SlagLib::usingBackEnd())
+            {
+                case BackEnd::VULKAN:
 #ifdef SLAG_VULKAN_BACKEND
-            tex= new vulkan::VulkanTexture(width,height,mipLevels,VK_IMAGE_ASPECT_COLOR_BIT,Pixels::PixelFormat::R8G8B8A8_SRGB,data, false);
+                    tex= new vulkan::VulkanTexture(width,height,mipLevels,VK_IMAGE_ASPECT_COLOR_BIT,Pixels::PixelFormat::R8G8B8A8_SRGB,data, false);
 #endif
-                break;
-            case BackEnd::DX12:
-                break;
+                    break;
+                case BackEnd::DX12:
+                    break;
+            }
+            stbi_image_free(data);
         }
-        stbi_image_free(data);
+        assert(data && "image could not be loaded");
         return tex;
     }
 }

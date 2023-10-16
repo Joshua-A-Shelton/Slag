@@ -162,8 +162,8 @@ namespace slag
                 imBarriers[i]=VkImageMemoryBarrier
                 {
                         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                        .srcAccessMask = accessFlagsFromCrossPlatform(curBarrier->srcAccess),
-                        .dstAccessMask = accessFlagsFromCrossPlatform(curBarrier->dstAccess),
+                        .srcAccessMask = accessFlagsFromCrossPlatform(curBarrier->requireCachesFinish),
+                        .dstAccessMask = accessFlagsFromCrossPlatform(curBarrier->usingCaches),
                         .oldLayout = VulkanTexture::layoutFromCrossPlatform(curBarrier->oldLayout),
                         .newLayout = VulkanTexture::layoutFromCrossPlatform(curBarrier->newLayout),
                         .image = texture->vulkanImage(),
@@ -408,13 +408,7 @@ namespace slag
 
         VkAccessFlags VulkanCommandBuffer::accessFlagsFromCrossPlatform(PipelineAccess::PipeLineAccessFlags access)
         {
-
-            switch (access)
-            {
-#define DEFINITION(slagName,  vulkanName, directXName) case PipelineAccess::PipeLineAccessFlags::slagName: return vulkanName;
-                PIPELINE_ACCESS_DEFINITIONS(DEFINITION)
-#undef DEFINITION
-            }
+            return static_cast<VkPipelineStageFlags>(access);
 
         }
 
