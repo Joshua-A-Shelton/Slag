@@ -52,3 +52,5 @@ if(BUILD_VULKAN_TEST_EXECUTABLE)
     target_link_libraries(SlagTest Slag SDL2::SDL2)
     file(COPY test/resources DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 endif()
+
+include_directories(src)
