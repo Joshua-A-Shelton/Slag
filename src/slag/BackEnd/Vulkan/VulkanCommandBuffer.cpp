@@ -412,6 +412,11 @@ namespace slag
 
         }
 
+        CommandBuffer* VulkanCommandBuffer::createSubCommandBuffer()
+        {
+            return new VulkanCommandBuffer(false,VulkanLib::graphicsCard()->graphicsQueue(),VulkanLib::graphicsCard()->graphicsQueueFamily(), false);
+        }
+
 
     } // slag
 } // vulkan
