@@ -53,4 +53,4 @@ if(BUILD_VULKAN_TEST_EXECUTABLE)
     file(COPY test/resources DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 endif()
 
-include_directories(src)
+target_include_directories(Slag PUBLIC src)
