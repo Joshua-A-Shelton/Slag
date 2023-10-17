@@ -38,10 +38,47 @@ namespace slag
 
             assert(result == VK_SUCCESS && "Unable to allocate buffer");
 
-            result =vmaMapMemory(VulkanLib::graphicsCard()->memoryAllocator(),_allocation,&_mappedLocation);
-            assert(result == VK_SUCCESS && "Unable to map buffer memory");
+            //directly copy the data
+            if(vmaallocInfo.usage == VMA_MEMORY_USAGE_CPU_TO_GPU)
+            {
+                result = vmaMapMemory(VulkanLib::graphicsCard()->memoryAllocator(), _allocation, &_mappedLocation);
+                assert(result == VK_SUCCESS && "Unable to map buffer memory");
 
-            memcpy(_mappedLocation,data,bufferSize);
+                memcpy(_mappedLocation, data, bufferSize);
+            }
+            //create temp buffer and transfer
+            else if(vmaallocInfo.usage == VMA_MEMORY_USAGE_GPU_ONLY)
+            {
+                VkBuffer buffer;
+                VmaAllocation tempAllocation;
+
+                VkBufferCreateInfo bufferCreateInfo{};
+                bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+                bufferCreateInfo.size = bufferSize;
+                bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+
+                VmaAllocationCreateInfo allocationCreateInfo{};
+                allocationCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
+
+                auto success = vmaCreateBuffer(VulkanLib::graphicsCard()->memoryAllocator(),&bufferCreateInfo,&allocationCreateInfo,&buffer,&tempAllocation, nullptr);
+
+                //copy data into temp resources
+                void* data;
+                vmaMapMemory(VulkanLib::graphicsCard()->memoryAllocator(),tempAllocation,&data);
+                memcpy(data,data,static_cast<size_t>(bufferSize));
+                vmaUnmapMemory(VulkanLib::graphicsCard()->memoryAllocator(),tempAllocation);
+                VulkanLib::graphicsCard()->runOneTimeCommands(VulkanLib::graphicsCard()->transferQueue(),VulkanLib::graphicsCard()->transferQueueFamily(),[=](VkCommandBuffer commandBuffer)
+                {
+                    VkBufferCopy copy{.srcOffset=0,.dstOffset=0, .size=bufferSize};
+                    vkCmdCopyBuffer(commandBuffer,buffer,_buffer,1,&copy);
+                });
+
+                vmaDestroyBuffer(VulkanLib::graphicsCard()->memoryAllocator(),buffer,tempAllocation);
+            }
+            else
+            {
+                assert(false && "Not Implemented");
+            }
 
             auto allocation = _allocation;
             auto buffer = _buffer;
