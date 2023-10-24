@@ -20,6 +20,7 @@ if(SLAG_VULKAN_BACKEND)
 endif()
 
 if(SLAG_DX12_BACKEND)
+    message("adding direct x 12 backend")
     file(GLOB_RECURSE DX12_SOURCES CONFIGURE_DEPENDS "src/slag/BackEnd/DX12/*.h" "src/slag/BackEnd/DX12/*.cpp")
 endif()
 
@@ -42,6 +43,10 @@ if(SLAG_VULKAN_BACKEND)
     target_include_directories(Slag PRIVATE ${Vulkan_INCLUDE_DIR} third-party/spirv-reflect)
 
     target_link_libraries(Slag ${Vulkan_LIBRARIES} vk-bootstrap VulkanMemoryAllocator spirv-reflect-static)
+endif()
+if(SLAG_DX12_BACKEND)
+    add_subdirectory(third-party/dx12-headers)
+    target_link_libraries(Slag d3d12.lib dxgi.lib d3dcompiler.lib dxguid.lib)
 endif()
 
 if(BUILD_VULKAN_TEST_EXECUTABLE)
