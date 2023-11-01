@@ -183,7 +183,7 @@ namespace slag
             vkb::SwapchainBuilder swapchainBuilder{card->physicalDevice(),card->device(),_surface};
 
             auto vkbSwapchain = swapchainBuilder
-                    .set_desired_format(VkSurfaceFormatKHR{VK_FORMAT_R8G8B8A8_UNORM,VK_COLORSPACE_SRGB_NONLINEAR_KHR})
+                    .use_default_format_selection()
                     .set_desired_present_mode(_presentMode)
                     .set_desired_extent(_width,_height)
                     .set_desired_min_image_count(_desiredBackbufferCount)
