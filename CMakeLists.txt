@@ -8,7 +8,7 @@ SET(DX12_SOURCES)
 
 OPTION(SLAG_VULKAN_BACKEND "Include Vulkan backend" ON)
 OPTION(SLAG_DX12_BACKEND "Include DX12 backend" ON)
-if(!WIN32)
+if(NOT WIN32)
     set(SLAG_DX12_BACKEND OFF)
 endif()
 
