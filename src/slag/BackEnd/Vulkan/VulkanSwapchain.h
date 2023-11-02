@@ -16,6 +16,7 @@ namespace slag
                             uint32_t width,
                             uint32_t height,
                             size_t desiredBackbuffers,
+                            Pixels::PixelFormat desiredFormat,
                             bool vsync,
                             std::unordered_map<std::string,TextureResourceDescription>& textureDescriptions,
                             std::unordered_set<std::string>& commandBufferNames,

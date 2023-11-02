@@ -14,6 +14,7 @@ namespace slag
                                          uint32_t width,
                                          uint32_t height,
                                          size_t desiredBackbuffers,
+                                         Pixels::PixelFormat desiredFormat,
                                          bool vsync,
                                          std::unordered_map<std::string,TextureResourceDescription>& textureDescriptions,
                                          std::unordered_set<std::string>& commandBufferNames,
@@ -24,6 +25,7 @@ namespace slag
             _width = width;
             _height = height;
             _desiredBackbufferCount = std::clamp(static_cast<int>(desiredBackbuffers),1,3);
+            _defaultImageFormat = VulkanTexture::formatFromCrossPlatform(desiredFormat);
             if(vsync && _desiredBackbufferCount > 1)
             {
                 if(_desiredBackbufferCount == 2)
@@ -183,7 +185,7 @@ namespace slag
             vkb::SwapchainBuilder swapchainBuilder{card->physicalDevice(),card->device(),_surface};
 
             auto vkbSwapchain = swapchainBuilder
-                    .use_default_format_selection()
+                    .set_desired_format(VkSurfaceFormatKHR{_defaultImageFormat, VK_COLORSPACE_SRGB_NONLINEAR_KHR})
                     .set_desired_present_mode(_presentMode)
                     .set_desired_extent(_width,_height)
                     .set_desired_min_image_count(_desiredBackbufferCount)

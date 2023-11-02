@@ -83,4 +83,10 @@ namespace slag
         }
         return nullptr;
     }
+
+    SwapchainBuilder& SwapchainBuilder::setDesiredPixelFormat(Pixels::PixelFormat format)
+    {
+        _defaultFormat = format;
+        return *this;
+    }
 }

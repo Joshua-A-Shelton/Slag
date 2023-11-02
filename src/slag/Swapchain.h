@@ -37,12 +37,14 @@ namespace slag
         SwapchainBuilder& addTextureResource(std::string name, TextureResourceDescription description);
         SwapchainBuilder& addCommandBufferResource(std::string name);
         SwapchainBuilder& addUniformBufferResource(std::string name, UniformBufferResourceDescription description);
+        SwapchainBuilder& setDesiredPixelFormat(Pixels::PixelFormat  format);
         Swapchain* create();
     private:
         PlatformData _platformData;
         uint32_t _width = 500;
         uint32_t _height = 500;
         uint8_t _backBufferCount = 2;
+        Pixels::PixelFormat _defaultFormat = Pixels::PixelFormat::B8G8R8A8_UNORM;
         bool _vsyncEnabled = true;
         std::unordered_map<std::string,TextureResourceDescription> _textureDescriptions;
         std::unordered_set<std::string> _commandBufferNames;
