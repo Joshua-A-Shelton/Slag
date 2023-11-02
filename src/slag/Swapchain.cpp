@@ -74,7 +74,7 @@ namespace slag
         {
             case VULKAN:
 #ifdef SLAG_VULKAN_BACKEND
-                return new vulkan::VulkanSwapchain(_platformData,_width,_height,_backBufferCount,_vsyncEnabled,_textureDescriptions,_commandBufferNames,_uniformBufferDescriptions);
+                return new vulkan::VulkanSwapchain(_platformData,_width,_height,_backBufferCount,_defaultFormat,_vsyncEnabled,_textureDescriptions,_commandBufferNames,_uniformBufferDescriptions);
 #else
                 return nullptr;
 #endif
