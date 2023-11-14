@@ -44,17 +44,19 @@ namespace slag
         Texture* tex = nullptr;
         if(mipLevels == 0)
         {
-            switch (SlagLib::usingBackEnd())
-            {
-                case BackEnd::VULKAN:
-#ifdef SLAG_VULKAN_BACKEND
-                    tex= new vulkan::VulkanTexture(width,height,mipLevels,VK_IMAGE_ASPECT_COLOR_BIT,format,pixelData, false);
-#endif
-                    break;
-                case BackEnd::DX12:
-                    break;
-            }
+            mipLevels = 1;
         }
+        switch (SlagLib::usingBackEnd())
+        {
+            case BackEnd::VULKAN:
+#ifdef SLAG_VULKAN_BACKEND
+                tex= new vulkan::VulkanTexture(width,height,mipLevels,VK_IMAGE_ASPECT_COLOR_BIT,format,pixelData, false);
+#endif
+                break;
+            case BackEnd::DX12:
+                break;
+        }
+
         return tex;
     }
 }
