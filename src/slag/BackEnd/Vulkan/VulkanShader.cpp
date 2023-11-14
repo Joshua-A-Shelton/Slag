@@ -179,6 +179,12 @@ namespace slag
                 }
             }
 
+            std::vector<VkPushConstantRange> setPushConstants;
+            for(int i=0; i< _pushConstantRanges.size(); i++)
+            {
+                setPushConstants.push_back(_pushConstantRanges[i].range());
+            }
+
             VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
             pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             pipelineLayoutInfo.pNext = nullptr;
@@ -186,8 +192,8 @@ namespace slag
             pipelineLayoutInfo.flags = 0;
             pipelineLayoutInfo.setLayoutCount = setLayouts.size();
             pipelineLayoutInfo.pSetLayouts = setLayouts.data();
-            pipelineLayoutInfo.pushConstantRangeCount = _pushConstantRanges.size();
-            pipelineLayoutInfo.pPushConstantRanges = _pushConstantRanges.data();
+            pipelineLayoutInfo.pushConstantRangeCount = setPushConstants.size();
+            pipelineLayoutInfo.pPushConstantRanges = setPushConstants.data();
 
 
             if(vkCreatePipelineLayout(static_cast<VkDevice>(VulkanLib::graphicsCard()->device()),&pipelineLayoutInfo, nullptr,&_pipelineLayout)!= VK_SUCCESS)
@@ -333,7 +339,7 @@ namespace slag
                     range.size = pushConstantRangeData.size;
                     range.offset = pushConstantRangeData.offset;
                     range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-                    _pushConstantRanges.push_back(range);
+                    _pushConstantRanges.push_back(VulkanPushConstantRange(range));
                 }
 
                 result = spvReflectEnumeratePushConstantBlocks(&fragmentModule,&blockCount, nullptr);
@@ -416,6 +422,16 @@ namespace slag
         UniformSet *VulkanShader::getUniformSet(size_t index)
         {
             return &_uniformSets[index];
+        }
+
+        PushConstantRange *VulkanShader::getPushConstantRange(size_t index)
+        {
+            return &_pushConstantRanges[index];
+        }
+
+        size_t VulkanShader::pushConstantRanges()
+        {
+            return _pushConstantRanges.size();
         }
 
         VkPipeline VulkanShader::pipeline()
