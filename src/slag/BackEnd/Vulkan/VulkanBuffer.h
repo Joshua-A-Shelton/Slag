@@ -11,13 +11,14 @@ namespace slag
         class VulkanBuffer: public Buffer, Resource
         {
         public:
-            VulkanBuffer(void* data, size_t bufferSize, Usage usage);
+            VulkanBuffer(void* data, size_t bufferSize, Type type, Usage usage);
             VulkanBuffer(const VulkanBuffer&)=delete;
             VulkanBuffer& operator=(const VulkanBuffer&)=delete;
             VulkanBuffer(VulkanBuffer&& from);
             VulkanBuffer& operator=(VulkanBuffer&& from);
             Usage usage()override;
             virtual size_t size()override;
+            Type type()override;
             void update(size_t offset,void* data, size_t dataSize)override;
             void* GPUID()override;
             VkBuffer& underlyingBuffer();
@@ -28,6 +29,7 @@ namespace slag
             VmaAllocation _allocation = nullptr;
             size_t _size;
             Usage _usage;
+            Type _type;
             void move(VulkanBuffer&& from);
         };
     } // slag
