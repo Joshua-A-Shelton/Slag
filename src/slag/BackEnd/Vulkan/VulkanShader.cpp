@@ -429,7 +429,7 @@ namespace slag
             return &_pushConstantRanges[index];
         }
 
-        size_t VulkanShader::pushConstantRanges()
+        size_t VulkanShader::pushConstantRangeCount()
         {
             return _pushConstantRanges.size();
         }

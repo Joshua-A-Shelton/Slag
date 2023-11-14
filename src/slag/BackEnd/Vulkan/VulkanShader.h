@@ -25,7 +25,7 @@ namespace slag
             void* GPUID()override;
             UniformSet* getUniformSet(size_t index)override;
             PushConstantRange* getPushConstantRange(size_t index)override;
-            size_t pushConstantRanges()override;
+            size_t pushConstantRangeCount()override;
             VkPipeline pipeline();
             VkPipelineLayout layout();
         private:
