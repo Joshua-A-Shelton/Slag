@@ -6,6 +6,7 @@
 #include <vulkan/vulkan.h>
 #include "VulkanUniformSet.h"
 #include "../../FramebufferDescription.h"
+#include "VulkanPushConstantRange.h"
 
 namespace slag
 {
@@ -23,13 +24,15 @@ namespace slag
             VulkanShader& operator=(VulkanShader&& from);
             void* GPUID()override;
             UniformSet* getUniformSet(size_t index)override;
+            PushConstantRange* getPushConstantRange(size_t index)override;
+            size_t pushConstantRangeCount()override;
             VkPipeline pipeline();
             VkPipelineLayout layout();
         private:
             VkPipelineLayout _pipelineLayout = nullptr;
             VkPipeline _pipeline = nullptr;
             std::vector<VulkanUniformSet> _uniformSets;
-            std::vector<VkPushConstantRange> _pushConstantRanges;
+            std::vector<VulkanPushConstantRange> _pushConstantRanges;
             void generateReflectionData(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, std::vector<VkVertexInputAttributeDescription>& attributes,VkVertexInputBindingDescription& binding, std::vector<VulkanUniformSet>& overwrites);
             void move(VulkanShader&& from);
         };

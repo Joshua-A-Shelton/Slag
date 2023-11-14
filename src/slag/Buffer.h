@@ -15,11 +15,18 @@ namespace slag
             CPU_TO_GPU,
             GPU_TO_CPU
         };
+        enum Type
+        {
+            VERTEX,
+            INDEX,
+            STORAGE
+        };
         virtual ~Buffer()=default;
         virtual Usage usage()=0;
         virtual size_t size()=0;
+        virtual Type type()=0;
         virtual void update(size_t offset,void* data, size_t dataSize)=0;
-        static Buffer* create(void* data, size_t bufferSize, Usage usage);
+        static Buffer* create(void* data, size_t bufferSize, Type bufferType, Usage usage);
 
     };
 }

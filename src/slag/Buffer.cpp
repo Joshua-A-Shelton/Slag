@@ -4,13 +4,13 @@
 namespace slag
 {
 
-    Buffer* Buffer::create(void* data, size_t bufferSize, Usage usage)
+    Buffer* Buffer::create(void* data, size_t bufferSize, Type type, Usage usage)
     {
         switch (SlagLib::usingBackEnd())
         {
             case VULKAN:
 #ifdef SLAG_VULKAN_BACKEND
-                return new vulkan::VulkanBuffer(data,bufferSize,usage);
+                return new vulkan::VulkanBuffer(data,bufferSize,type,usage);
 #endif
                 break;
         }

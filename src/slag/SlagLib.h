@@ -11,6 +11,7 @@
 #include "GraphicsCard.h"
 #include "PixelFormat.h"
 #include "PlatformData.h"
+#include "PushConstantRange.h"
 #include "Rectangle.h"
 #include "ResourceDescriptions.h"
 #include "Shader.h"

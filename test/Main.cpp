@@ -42,8 +42,8 @@ int main()
     float colors2[4]{0.0f,1.0f,0.0f,1.0f};
     float verts[15]{ 1.f, 1.f, 0.0f,.5,.5,   -1.f, 1.f, 0.0f,.5,.5,  0.f,-1.f, 0.0f,.5,.5};
     float verts2[15]{ -1.f, -1.f, 0.0f,0,0,   1.f, -1.f, 0.0f,1,0,  0.f,1.f, 0.0f,.5,1};
-    auto buffer = slag::Buffer::create(verts,sizeof(verts),slag::Buffer::CPU_TO_GPU);
-    auto buffer2 = slag::Buffer::create(verts2,sizeof(verts2),slag::Buffer::CPU_TO_GPU);
+    auto buffer = slag::Buffer::create(verts,sizeof(verts),slag::Buffer::VERTEX,slag::Buffer::CPU_TO_GPU);
+    auto buffer2 = slag::Buffer::create(verts2,sizeof(verts2),slag::Buffer::VERTEX,slag::Buffer::CPU_TO_GPU);
 
     bool quit = false;
     while(!quit)
