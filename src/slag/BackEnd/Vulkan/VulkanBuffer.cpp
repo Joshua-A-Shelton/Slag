@@ -4,7 +4,7 @@ namespace slag
 {
     namespace vulkan
     {
-        VulkanBuffer::VulkanBuffer(void* data, size_t bufferSize, Buffer::Usage usage)
+        VulkanBuffer::VulkanBuffer(void* data, size_t bufferSize, Type type, Buffer::Usage usage)
         {
             _usage = usage;
             //allocate vertex buffer
@@ -12,8 +12,23 @@ namespace slag
             bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
             //this is the total size, in bytes, of the buffer we are allocating
             bufferInfo.size = bufferSize;
-            //this buffer is going to be used as a Vertex VertexBuffer
-            bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+            switch (type)
+            {
+                case Type::VERTEX:
+                    //this buffer is going to be used as a Vertex VertexBuffer
+                    bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+                    break;
+                case Type::INDEX:
+                    //this buffer is going to be used as an index buffer
+                    bufferInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+                    break;
+                case Type::STORAGE:
+                    //this buffer is going to be used as a Vertex VertexBuffer
+                    bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+                    break;
+            }
+            _type = type;
+
 
             //let the VMA library know that this data should be writeable by CPU, but also readable by GPU
             VmaAllocationCreateInfo vmaallocInfo = {};
@@ -142,6 +157,11 @@ namespace slag
         VkBuffer& VulkanBuffer::underlyingBuffer()
         {
             return _buffer;
+        }
+
+        Buffer::Type VulkanBuffer::type()
+        {
+            return _type;
         }
     } // slag
 } // vulkan
