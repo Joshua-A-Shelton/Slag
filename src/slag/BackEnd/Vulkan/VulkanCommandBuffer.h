@@ -40,8 +40,8 @@ namespace slag
             void endTargetFramebuffer();
             void setViewport(Rectangle bounds)override;
             void setScissors(Rectangle bounds)override;
-            void bindVertexBuffer(Buffer* vertexBuffer)override;
-            void bindIndexBuffer(Buffer* indexBuffer, GraphicsTypes::IndexType indexType)override;
+            void bindVertexBuffer(VertexBuffer* vertexBuffer)override;
+            void bindIndexBuffer(IndexBuffer* indexBuffer, GraphicsTypes::IndexType indexType)override;
             void bindShader(Shader* shader)override;
             void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)override;
             void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstVertex, int32_t vertexOffset, uint32_t firstInstance)override;
