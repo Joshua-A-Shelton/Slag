@@ -4,7 +4,8 @@
 #include <cstdlib>
 #include "GPUTypes.h"
 #include "GPUMemoryBarriers.h"
-#include "Buffer.h"
+#include "VertexBuffer.h"
+#include "IndexBuffer.h"
 #include "Shader.h"
 #include "UniformBuffer.h"
 #include "Rectangle.h"
@@ -31,8 +32,8 @@ namespace slag
         virtual void endTargetFramebuffer()=0;
         virtual void setViewport(Rectangle bounds)=0;
         virtual void setScissors(Rectangle bounds)=0;
-        virtual void bindVertexBuffer(Buffer* vertexBuffer)=0;
-        virtual void bindIndexBuffer(Buffer* indexBuffer, GraphicsTypes::IndexType indexType)=0;
+        virtual void bindVertexBuffer(VertexBuffer* vertexBuffer)=0;
+        virtual void bindIndexBuffer(IndexBuffer* indexBuffer, GraphicsTypes::IndexType indexType)=0;
         virtual void bindShader(Shader* shader)=0;
         virtual void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)=0;
         virtual void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstVertex, int32_t vertexOffset, uint32_t firstInstance)=0;
