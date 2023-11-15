@@ -7,3 +7,6 @@
 [submodule "third-party/spirv-reflect"]
 	path = third-party/spirv-reflect
 	url = https://github.com/KhronosGroup/SPIRV-Reflect
+[submodule "third-party/dx12-headers"]
+	path = third-party/dx12-headers
+	url = https://github.com/microsoft/DirectX-Headers

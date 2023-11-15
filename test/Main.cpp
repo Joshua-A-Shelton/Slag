@@ -42,8 +42,10 @@ int main()
     float colors2[4]{0.0f,1.0f,0.0f,1.0f};
     float verts[15]{ 1.f, 1.f, 0.0f,.5,.5,   -1.f, 1.f, 0.0f,.5,.5,  0.f,-1.f, 0.0f,.5,.5};
     float verts2[15]{ -1.f, -1.f, 0.0f,0,0,   1.f, -1.f, 0.0f,1,0,  0.f,1.f, 0.0f,.5,1};
-    auto buffer = slag::Buffer::create(verts,sizeof(verts),slag::Buffer::CPU_TO_GPU);
-    auto buffer2 = slag::Buffer::create(verts2,sizeof(verts2),slag::Buffer::CPU_TO_GPU);
+    uint16_t indexes[3]{0,1,2};
+    auto buffer = slag::VertexBuffer::create(verts,sizeof(verts),slag::Buffer::CPU);
+    auto buffer2 = slag::VertexBuffer::create(verts2,sizeof(verts2),slag::Buffer::GPU);
+    auto idxbuffer = slag::IndexBuffer::create(indexes,sizeof(indexes),slag::Buffer::CPU);
 
     bool quit = false;
     while(!quit)
@@ -105,7 +107,9 @@ int main()
             otherslot1.setTexture(0,texture,sampler,slag::Texture::Layout::SHADER_RESOURCE);
             commandBuffer->bindUniformSetData(shader2,otherslot1);
             commandBuffer->bindVertexBuffer(buffer2);
-            commandBuffer->draw(3,1,0,0);
+            commandBuffer->bindIndexBuffer(idxbuffer,slag::GraphicsTypes::UINT16);
+            //commandBuffer->draw(3,1,0,0);
+            commandBuffer->drawIndexed(3,1,0,0,0);
 
             commandBuffer->endTargetFramebuffer();
 
@@ -118,6 +122,7 @@ int main()
     delete texture;
     delete buffer;
     delete buffer2;
+    delete idxbuffer;
     delete shader;
     delete shader2;
     delete swapchain;

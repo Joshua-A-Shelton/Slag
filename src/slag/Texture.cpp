@@ -38,4 +38,25 @@ namespace slag
         assert(data && "image could not be loaded");
         return tex;
     }
+
+    Texture *Texture::create(uint32_t width, uint32_t height, Pixels::PixelFormat format, void *pixelData, uint32_t mipLevels)
+    {
+        Texture* tex = nullptr;
+        if(mipLevels == 0)
+        {
+            mipLevels = 1;
+        }
+        switch (SlagLib::usingBackEnd())
+        {
+            case BackEnd::VULKAN:
+#ifdef SLAG_VULKAN_BACKEND
+                tex= new vulkan::VulkanTexture(width,height,mipLevels,VK_IMAGE_ASPECT_COLOR_BIT,format,pixelData, false);
+#endif
+                break;
+            case BackEnd::DX12:
+                break;
+        }
+
+        return tex;
+    }
 }

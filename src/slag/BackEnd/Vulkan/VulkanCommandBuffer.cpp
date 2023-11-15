@@ -5,6 +5,8 @@
 #include "VulkanShader.h"
 #include "VulkanVirtualUniformBuffer.h"
 #include "VulkanExtensions.h"
+#include "VulkanVertexBuffer.h"
+#include "VulkanIndexBuffer.h"
 
 namespace slag
 {
@@ -335,14 +337,15 @@ namespace slag
             VulkanExtensions::vkCmdEndRenderingKHR(_cmdBuffer);
         }
 
-        void VulkanCommandBuffer::bindVertexBuffer(Buffer* vertexBuffer)
+        void VulkanCommandBuffer::bindVertexBuffer(VertexBuffer* vertexBuffer)
         {
-            VulkanBuffer* vBuffer = static_cast<VulkanBuffer*>(vertexBuffer);
+            VulkanVertexBuffer* vBuffer = static_cast<VulkanVertexBuffer*>(vertexBuffer);
             VkDeviceSize offset = 0;
-            vkCmdBindVertexBuffers(_cmdBuffer,0,1,&vBuffer->underlyingBuffer(),&offset);
+            auto buffer = vBuffer->underlyingBuffer();
+            vkCmdBindVertexBuffers(_cmdBuffer,0,1,&buffer,&offset);
         }
 
-        void VulkanCommandBuffer::bindIndexBuffer(Buffer* indexBuffer, GraphicsTypes::IndexType indexType)
+        void VulkanCommandBuffer::bindIndexBuffer(IndexBuffer* indexBuffer, GraphicsTypes::IndexType indexType)
         {
             VkIndexType itype;
             switch (indexType)
@@ -355,7 +358,7 @@ namespace slag
                     break;
 
             }
-            VulkanBuffer* iBuffer = static_cast<VulkanBuffer*>(indexBuffer);
+            VulkanIndexBuffer* iBuffer = static_cast<VulkanIndexBuffer*>(indexBuffer);
             vkCmdBindIndexBuffer(_cmdBuffer,iBuffer->underlyingBuffer(),0,itype);
         }
 
@@ -401,6 +404,13 @@ namespace slag
             vkCmdBindDescriptorSets(_cmdBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,vulkanShader->layout(),set->index(),1,&descriptorSet,0, nullptr);
         }
 
+        void VulkanCommandBuffer::pushConstants(Shader *shader, PushConstantRange *pushRange, void *data)
+        {
+            VulkanShader* vulkanShader = static_cast<VulkanShader*>(shader);
+            auto range = static_cast<VulkanPushConstantRange*>(pushRange)->range();
+            vkCmdPushConstants(_cmdBuffer,vulkanShader->layout(),range.stageFlags,range.offset,range.size, data);
+        }
+
         VkPipelineStageFlags VulkanCommandBuffer::pipelineStageFromCrossPlatform(PipelineStage::PipelineStageFlags flags)
         {
             return static_cast<VkPipelineStageFlags>(flags);
@@ -416,7 +426,6 @@ namespace slag
         {
             return new VulkanCommandBuffer(false,VulkanLib::graphicsCard()->graphicsQueue(),VulkanLib::graphicsCard()->graphicsQueueFamily(), false);
         }
-
 
     } // slag
 } // vulkan
