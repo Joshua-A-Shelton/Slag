@@ -25,4 +25,10 @@ namespace slag
         }
         return buffer;
     }
+
+    VertexBuffer *VertexBuffer::create(size_t size, Buffer::Usage usage)
+    {
+        std::vector<unsigned char> empty(size,0);
+        return create(empty.data(),size,usage);
+    }
 } // slag

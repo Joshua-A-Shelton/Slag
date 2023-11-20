@@ -17,6 +17,7 @@ namespace slag
         virtual Usage usage()=0;
         virtual size_t size()=0;
         virtual void update(size_t offset,void* data, size_t dataSize)=0;
+        virtual void rebuild(size_t newSize)=0;
     };
 }
 

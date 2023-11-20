@@ -20,7 +20,9 @@ namespace slag
                             bool vsync,
                             std::unordered_map<std::string,TextureResourceDescription>& textureDescriptions,
                             std::unordered_set<std::string>& commandBufferNames,
-                            std::unordered_map<std::string, UniformBufferResourceDescription>& uniformBufferDescriptions
+                            std::unordered_map<std::string, UniformBufferResourceDescription>& uniformBufferDescriptions,
+                            std::unordered_map<std::string, VertexBufferResourceDescription>& vertexBufferDescriptions,
+                            std::unordered_map<std::string, IndexBufferResourceDescription>& indexBufferDescriptions
                             );
             ~VulkanSwapchain() override;
             Frame* currentFrame()override;
@@ -54,6 +56,8 @@ namespace slag
             std::unordered_map<std::string,TextureResourceDescription> _textureDescriptions;
             std::unordered_set<std::string> _commandBufferNames;
             std::unordered_map<std::string, UniformBufferResourceDescription> _uniformBufferDescriptions;
+            std::unordered_map<std::string, VertexBufferResourceDescription> _vertexBufferDescriptions;
+            std::unordered_map<std::string, IndexBufferResourceDescription> _indexBufferDescriptions;
             void rebuild();
             void cleanup();
             VkSurfaceKHR createNativeSurface(PlatformData platformData);

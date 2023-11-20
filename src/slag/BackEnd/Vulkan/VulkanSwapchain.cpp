@@ -18,7 +18,9 @@ namespace slag
                                          bool vsync,
                                          std::unordered_map<std::string,TextureResourceDescription>& textureDescriptions,
                                          std::unordered_set<std::string>& commandBufferNames,
-                                         std::unordered_map<std::string, UniformBufferResourceDescription>& uniformBufferDescriptions
+                                         std::unordered_map<std::string, UniformBufferResourceDescription>& uniformBufferDescriptions,
+                                         std::unordered_map<std::string, VertexBufferResourceDescription>& vertexBufferDescriptions,
+                                         std::unordered_map<std::string, IndexBufferResourceDescription>& indexBufferDescriptions
                                         )
         {
             _surface = createNativeSurface(platformData);
@@ -45,6 +47,8 @@ namespace slag
             _textureDescriptions = textureDescriptions;
             _commandBufferNames = commandBufferNames;
             _uniformBufferDescriptions = uniformBufferDescriptions;
+            _vertexBufferDescriptions = vertexBufferDescriptions;
+            _indexBufferDescriptions = indexBufferDescriptions;
 
             VkCommandPoolCreateInfo commandPoolInfo{};
             commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -229,7 +233,7 @@ namespace slag
                 }
                 while(_frames.size()<_swapchainImages.size())
                 {
-                    _frames.emplace_back(this,bufferSize,_textureDescriptions,_commandBufferNames,_uniformBufferDescriptions);
+                    _frames.emplace_back(this,bufferSize,_textureDescriptions,_commandBufferNames,_uniformBufferDescriptions,_vertexBufferDescriptions,_indexBufferDescriptions);
                 }
             }
             vkResetCommandPool(VulkanLib::graphicsCard()->device(),_commandPool,0);

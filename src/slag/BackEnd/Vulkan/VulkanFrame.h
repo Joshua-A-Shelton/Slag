@@ -5,6 +5,8 @@
 #include "VulkanCommandBuffer.h"
 #include "VulkanDescriptorAllocator.h"
 #include "VulkanVirtualUniformBuffer.h"
+#include "VulkanIndexBuffer.h"
+#include "VulkanVertexBuffer.h"
 #include <vulkan/vulkan.h>
 
 namespace slag
@@ -20,7 +22,9 @@ namespace slag
                     VkDeviceSize uniformBufferStartSize,
                     const std::unordered_map<std::string,TextureResourceDescription>& textureDescriptions,
                     const std::unordered_set<std::string>& commandBufferNames,
-                    const std::unordered_map<std::string,UniformBufferResourceDescription>& uniformBufferDescriptions);
+                    const std::unordered_map<std::string,UniformBufferResourceDescription>& uniformBufferDescriptions,
+                    const std::unordered_map<std::string, VertexBufferResourceDescription>& vertexBufferDescriptions,
+                    const std::unordered_map<std::string, IndexBufferResourceDescription>& indexBufferDescriptions);
             VulkanFrame(const VulkanFrame&)=delete;
             VulkanFrame(VulkanFrame&& from);
             VulkanFrame& operator=(VulkanFrame&& from);
@@ -55,6 +59,8 @@ namespace slag
             std::unordered_map<std::string,VulkanTexture> _textureResources;
             std::unordered_map<std::string,VulkanCommandBuffer> _commandBufferResources;
             std::unordered_map<std::string,VulkanVirtualUniformBuffer> _uniformBufferResources;
+            std::unordered_map<std::string,VulkanVertexBuffer*> _vertexBufferResources;
+            std::unordered_map<std::string,VulkanIndexBuffer*> _indexBufferResources;
             void move(VulkanFrame&& from);
 
         };

@@ -2,6 +2,10 @@
 #include "VulkanSwapchain.h"
 #include "VulkanFrame.h"
 #include "VulkanLib.h"
+#include "VulkanCPUVertexBuffer.h"
+#include "VulkanGPUVertexBuffer.h"
+#include "VulkanCPUIndexBuffer.h"
+#include "VulkanGPUIndexBuffer.h"
 
 
 namespace slag
@@ -12,7 +16,9 @@ namespace slag
                                  VkDeviceSize uniformBufferStartSize,
                                  const std::unordered_map<std::string,TextureResourceDescription>& textureDescriptions,
                                  const std::unordered_set<std::string>& commandBufferNames,
-                                 const std::unordered_map<std::string,UniformBufferResourceDescription>& uniformBufferDescriptions)
+                                 const std::unordered_map<std::string,UniformBufferResourceDescription>& uniformBufferDescriptions,
+                                 const std::unordered_map<std::string, VertexBufferResourceDescription>& vertexBufferDescriptions,
+                                 const std::unordered_map<std::string, IndexBufferResourceDescription>& indexBufferDescriptions)
                                  : _commandBuffer(nullptr, true, nullptr, true), _virtualUniformBuffer(uniformBufferStartSize, true)
         {
             assert(from != nullptr && "From swapchain cannot be null!");
@@ -60,10 +66,48 @@ namespace slag
             {
                 _uniformBufferResources.insert(std::make_pair(kvpair.first, VulkanVirtualUniformBuffer(kvpair.second.defaultSize, true)));
             }
+            for(auto& kvpair : vertexBufferDescriptions)
+            {
+                VulkanVertexBuffer* vb = nullptr;
+                std::vector<unsigned char> empty(kvpair.second.defaultSize,0);
+                if(kvpair.second.usage == Buffer::CPU)
+                {
+                    vb = new VulkanCPUVertexBuffer(empty.data(),empty.size());
+                }
+                else
+                {
+                    vb = new VulkanGPUVertexBuffer(empty.data(),empty.size());
+                }
+                _vertexBufferResources.insert(std::make_pair(kvpair.first, vb));
+            }
+            for(auto kvpair: indexBufferDescriptions)
+            {
+                VulkanIndexBuffer* ib = nullptr;
+                std::vector<unsigned char> empty(kvpair.second.defaultSize,0);
+                if(kvpair.second.usage == Buffer::CPU)
+                {
+                    ib = new VulkanCPUIndexBuffer(empty.data(),empty.size());
+                }
+                else
+                {
+                    ib = new VulkanGPUIndexBuffer(empty.data(),empty.size());
+                }
+                _indexBufferResources.insert(std::make_pair(kvpair.first, ib));
+            }
         }
 
         VulkanFrame::~VulkanFrame()
         {
+            //these are pointers to objects in memory, not the objects themselves, so we have to delete here
+            for(auto& buffer : _vertexBufferResources)
+            {
+                delete buffer.second;
+            }
+            //these are pointers to objects in memory, not the objects themselves, so we have to delete here
+            for(auto& buffer : _indexBufferResources)
+            {
+                delete buffer.second;
+            }
             if(_inFlight)
             {
                 vkDestroyFence(VulkanLib::graphicsCard()->device(),_inFlight, nullptr);
@@ -94,7 +138,11 @@ namespace slag
             std::swap(_descriptorAllocator,from._descriptorAllocator);
             _virtualUniformBuffer = std::move(from._virtualUniformBuffer);
             _commandBuffer = std::move(from._commandBuffer);
-
+            _textureResources.swap(from._textureResources);
+            _commandBufferResources.swap(from._commandBufferResources);
+            _uniformBufferResources.swap(from._uniformBufferResources);
+            _vertexBufferResources.swap(from._vertexBufferResources);
+            _indexBufferResources.swap(from._indexBufferResources);
         }
 
         void VulkanFrame::waitTillFinished()

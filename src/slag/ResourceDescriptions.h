@@ -24,6 +24,18 @@ namespace slag
     {
         uint64_t defaultSize = 1250000;
     };
+
+    struct VertexBufferResourceDescription
+    {
+        uint64_t defaultSize = 1250000;
+        Buffer::Usage usage = Buffer::Usage::GPU;
+    };
+
+    struct IndexBufferResourceDescription
+    {
+        uint64_t defaultSize = 1250000;
+        Buffer::Usage usage = Buffer::Usage::GPU;
+    };
 }
 
 #endif //SLAG_RESOURCEDESCRIPTIONS_H

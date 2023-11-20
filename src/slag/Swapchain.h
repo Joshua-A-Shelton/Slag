@@ -37,6 +37,8 @@ namespace slag
         SwapchainBuilder& addTextureResource(std::string name, TextureResourceDescription description);
         SwapchainBuilder& addCommandBufferResource(std::string name);
         SwapchainBuilder& addUniformBufferResource(std::string name, UniformBufferResourceDescription description);
+        SwapchainBuilder& addVertexBufferResource(std::string name, VertexBufferResourceDescription description);
+        SwapchainBuilder& addIndexBufferResource(std::string name, IndexBufferResourceDescription description);
         SwapchainBuilder& setDesiredPixelFormat(Pixels::PixelFormat  format);
         Swapchain* create();
     private:
@@ -49,6 +51,8 @@ namespace slag
         std::unordered_map<std::string,TextureResourceDescription> _textureDescriptions;
         std::unordered_set<std::string> _commandBufferNames;
         std::unordered_map<std::string, UniformBufferResourceDescription> _uniformBufferDescriptions;
+        std::unordered_map<std::string, VertexBufferResourceDescription> _vertexBufferDescriptions;
+        std::unordered_map<std::string, IndexBufferResourceDescription> _indexBufferDescriptions;
     };
 }
 #endif //SLAG_SWAPCHAIN_H

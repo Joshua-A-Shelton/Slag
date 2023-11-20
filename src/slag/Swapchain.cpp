@@ -68,13 +68,25 @@ namespace slag
         return *this;
     }
 
+    SwapchainBuilder &SwapchainBuilder::addVertexBufferResource(std::string name, VertexBufferResourceDescription description)
+    {
+        _vertexBufferDescriptions[name] = description;
+        return *this;
+    }
+
+    SwapchainBuilder &SwapchainBuilder::addIndexBufferResource(std::string name, IndexBufferResourceDescription description)
+    {
+        _indexBufferDescriptions[name] = description;
+        return *this;
+    }
+
     Swapchain* SwapchainBuilder::create()
     {
         switch (SlagLib::usingBackEnd())
         {
             case VULKAN:
 #ifdef SLAG_VULKAN_BACKEND
-                return new vulkan::VulkanSwapchain(_platformData,_width,_height,_backBufferCount,_defaultFormat,_vsyncEnabled,_textureDescriptions,_commandBufferNames,_uniformBufferDescriptions);
+                return new vulkan::VulkanSwapchain(_platformData,_width,_height,_backBufferCount,_defaultFormat,_vsyncEnabled,_textureDescriptions,_commandBufferNames,_uniformBufferDescriptions,_vertexBufferDescriptions,_indexBufferDescriptions);
 #else
                 return nullptr;
 #endif
@@ -89,4 +101,6 @@ namespace slag
         _defaultFormat = format;
         return *this;
     }
+
+
 }

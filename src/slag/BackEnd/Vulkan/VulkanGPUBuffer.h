@@ -22,13 +22,16 @@ namespace slag
             size_t size()override;
             Usage usage()override;
             void update(size_t offset, void* data, size_t dataLength)override;
+            void rebuild(size_t newSize)override;
             void* GPUID()override;
             VkBuffer underlyingBuffer()override;
         private:
             VkBuffer _buffer= nullptr;
             VmaAllocation _allocation = nullptr;
             size_t _bufferSize=0;
+            VkBufferUsageFlags _flags;
             void move(VulkanGPUBuffer& from);
+            void build(void* data, size_t dataLength, VkBufferUsageFlags usageFlags);
         };
     } // slag
 } // vulkan
