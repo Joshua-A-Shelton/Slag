@@ -8,7 +8,7 @@ namespace slag
     {
         VulkanGPUBuffer::VulkanGPUBuffer(void* data, size_t dataLength, VkBufferUsageFlags usageFlags)
         {
-
+            build(data,dataLength,usageFlags);
         }
 
         VulkanGPUBuffer::~VulkanGPUBuffer()
