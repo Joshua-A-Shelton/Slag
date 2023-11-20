@@ -215,6 +215,30 @@ namespace slag
             return &_descriptorAllocator;
         }
 
+        Texture *VulkanFrame::getTextureResource(std::string resourceName)
+        {
+            return &_textureResources.at(resourceName);
+        }
+
+        CommandBuffer *VulkanFrame::getCommandBufferResource(std::string resourceName)
+        {
+            return &_commandBufferResources.at(resourceName);
+        }
+
+        UniformBuffer *VulkanFrame::getUniformBufferResource(std::string resourceName)
+        {
+            return &_uniformBufferResources.at(resourceName);
+        }
+
+        VertexBuffer *VulkanFrame::getVertexBufferResource(std::string resourceName)
+        {
+            return _vertexBufferResources.at(resourceName);
+        }
+
+        IndexBuffer *VulkanFrame::getIndexBufferResource(std::string resourceName)
+        {
+            return _indexBufferResources.at(resourceName);
+        }
 
     } // slag
 } // vulkan

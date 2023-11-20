@@ -36,6 +36,11 @@ namespace slag
             Texture* getBackBuffer()override;
             UniformBuffer* getUniformBuffer()override;
             UniformSetDataAllocator* getUniformSetDataAllocator()override;
+            Texture* getTextureResource(std::string resourceName)override;
+            CommandBuffer* getCommandBufferResource(std::string resourceName)override;
+            UniformBuffer* getUniformBufferResource(std::string resourceName)override;
+            VertexBuffer* getVertexBufferResource(std::string resourceName)override;
+            IndexBuffer* getIndexBufferResource(std::string resourceName)override;
 
             VkSemaphore renderFinishedSemaphore();
             VkSemaphore imageAvailableSemaphore();
