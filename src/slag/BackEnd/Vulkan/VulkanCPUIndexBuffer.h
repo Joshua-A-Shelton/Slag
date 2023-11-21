@@ -11,7 +11,7 @@ namespace slag
         class VulkanCPUIndexBuffer: public virtual VulkanIndexBuffer, virtual VulkanCPUBuffer
         {
         public:
-            VulkanCPUIndexBuffer(void* data, size_t dataLength);
+            VulkanCPUIndexBuffer(void* data, size_t dataLength, bool destroyImmediate);
             ~VulkanCPUIndexBuffer()=default;
             VulkanCPUIndexBuffer(VulkanCPUIndexBuffer&)=delete;
             VulkanCPUIndexBuffer& operator=(VulkanCPUIndexBuffer&)=delete;

@@ -4,7 +4,7 @@ namespace slag
 {
     namespace vulkan
     {
-        VulkanGPUIndexBuffer::VulkanGPUIndexBuffer(void* data, size_t dataLength): VulkanGPUBuffer(data,dataLength,VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
+        VulkanGPUIndexBuffer::VulkanGPUIndexBuffer(void* data, size_t dataLength, bool destroyImmediate): VulkanGPUBuffer(data,dataLength,VK_BUFFER_USAGE_INDEX_BUFFER_BIT,destroyImmediate)
         {
         }
 

@@ -13,11 +13,11 @@ namespace slag
             case BackEnd::VULKAN:
                 if(usage == Usage::CPU)
                 {
-                    buffer = new vulkan::VulkanCPUVertexBuffer(data,dataLength);
+                    buffer = new vulkan::VulkanCPUVertexBuffer(data,dataLength, false);
                 }
                 else
                 {
-                    buffer = new vulkan::VulkanGPUVertexBuffer(data,dataLength);
+                    buffer = new vulkan::VulkanGPUVertexBuffer(data,dataLength,false);
                 }
                 break;
             case BackEnd::DX12:

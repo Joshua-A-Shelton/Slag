@@ -4,7 +4,7 @@ namespace slag
 {
     namespace vulkan
     {
-        VulkanGPUVertexBuffer::VulkanGPUVertexBuffer(void* data, size_t dataLength): VulkanGPUBuffer(data,dataLength,VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
+        VulkanGPUVertexBuffer::VulkanGPUVertexBuffer(void* data, size_t dataLength,bool destroyImmediate): VulkanGPUBuffer(data,dataLength,VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, destroyImmediate)
         {
         }
 
