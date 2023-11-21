@@ -22,7 +22,7 @@ namespace slag
 
         void ResourceManager::freeResourceUsage(void* resource)
         {
-            auto element = _deletionTracker[resource];
+            auto& element = _deletionTracker[resource];
             element.usageCount--;
             if(element.usageCount <= 0 )
             {
