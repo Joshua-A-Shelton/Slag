@@ -6,8 +6,9 @@ namespace slag
 {
     namespace vulkan
     {
-        VulkanCPUBuffer::VulkanCPUBuffer(void* data, size_t dataLength, VkBufferUsageFlags usageFlags)
+        VulkanCPUBuffer::VulkanCPUBuffer(void* data, size_t dataLength, VkBufferUsageFlags usageFlags, bool destroyImmediate)
         {
+            destroyImmediately = destroyImmediate;
             build(data,dataLength,usageFlags);
         }
 

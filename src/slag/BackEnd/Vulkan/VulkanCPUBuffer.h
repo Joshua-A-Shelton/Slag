@@ -11,7 +11,7 @@ namespace slag
         class VulkanCPUBuffer: public virtual VulkanBuffer, Resource
         {
         public:
-            VulkanCPUBuffer(void* data, size_t dataLength, VkBufferUsageFlags usageFlags);
+            VulkanCPUBuffer(void* data, size_t dataLength, VkBufferUsageFlags usageFlags, bool destroyImmediate);
             ~VulkanCPUBuffer()override;
             VulkanCPUBuffer(const VulkanCPUBuffer&)=delete;
             VulkanCPUBuffer& operator=(const VulkanCPUBuffer&)=delete;

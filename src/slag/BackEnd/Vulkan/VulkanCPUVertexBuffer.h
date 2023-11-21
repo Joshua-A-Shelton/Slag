@@ -10,7 +10,7 @@ namespace slag{
         class VulkanCPUVertexBuffer: public virtual VulkanVertexBuffer, virtual VulkanCPUBuffer
         {
         public:
-            VulkanCPUVertexBuffer(void* data, size_t dataLength);
+            VulkanCPUVertexBuffer(void* data, size_t dataLength, bool destroyImmediate);
             ~VulkanCPUVertexBuffer()=default;
             VulkanCPUVertexBuffer(VulkanCPUVertexBuffer&)=delete;
             VulkanCPUVertexBuffer& operator=(VulkanCPUVertexBuffer&)=delete;

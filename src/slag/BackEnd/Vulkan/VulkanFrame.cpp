@@ -72,11 +72,11 @@ namespace slag
                 std::vector<unsigned char> empty(kvpair.second.defaultSize,0);
                 if(kvpair.second.usage == Buffer::CPU)
                 {
-                    vb = new VulkanCPUVertexBuffer(empty.data(),empty.size());
+                    vb = new VulkanCPUVertexBuffer(empty.data(),empty.size(), true);
                 }
                 else
                 {
-                    vb = new VulkanGPUVertexBuffer(empty.data(),empty.size());
+                    vb = new VulkanGPUVertexBuffer(empty.data(),empty.size(), true);
                 }
                 _vertexBufferResources.insert(std::make_pair(kvpair.first, vb));
             }
@@ -86,11 +86,11 @@ namespace slag
                 std::vector<unsigned char> empty(kvpair.second.defaultSize,0);
                 if(kvpair.second.usage == Buffer::CPU)
                 {
-                    ib = new VulkanCPUIndexBuffer(empty.data(),empty.size());
+                    ib = new VulkanCPUIndexBuffer(empty.data(),empty.size(), true);
                 }
                 else
                 {
-                    ib = new VulkanGPUIndexBuffer(empty.data(),empty.size());
+                    ib = new VulkanGPUIndexBuffer(empty.data(),empty.size(), true);
                 }
                 _indexBufferResources.insert(std::make_pair(kvpair.first, ib));
             }
