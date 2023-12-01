@@ -264,7 +264,7 @@ namespace slag
             createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
             createInfo.hwnd = static_cast<HWND>(platformData.nativeWindowHandle);
             //kinda messy, but apparently correct?
-            createInfo.hinstance = reinterpret_cast<HINSTANCE>(GetWindowLongPtr(createInfo.hwnd, -6));
+            createInfo.hinstance = static_cast<HINSTANCE>(platformData.nativeDisplayType);
             vkCreateWin32SurfaceKHR(VulkanLib::instance(),&createInfo, nullptr,&surface);
 #elif __linux
             VkXlibSurfaceCreateInfoKHR createInfo{};

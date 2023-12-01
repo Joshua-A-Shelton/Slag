@@ -21,6 +21,7 @@ int main()
     SDL_GetWindowWMInfo(window, &wmInfo);
 #ifdef _WIN32
     pd.nativeWindowHandle = wmInfo.info.win.window;
+    pd.nativeDisplayType = wmInfo.info.win.hinstance;
 #elif __linux
     pd.nativeWindowHandle = reinterpret_cast<void*>(wmInfo.info.x11.window);
     pd.nativeDisplayType = wmInfo.info.x11.display;
