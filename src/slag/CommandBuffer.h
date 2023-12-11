@@ -40,6 +40,7 @@ namespace slag
         virtual void bindUniformSetData(Shader* shader, UniformSetData& data)=0;
         virtual void pushConstants(Shader* shader,PushConstantRange* pushRange, void* data)=0;
         virtual CommandBuffer* createSubCommandBuffer()=0;
+        virtual void addSubCommandBuffer(CommandBuffer* buffer)=0;
 
     };
 }

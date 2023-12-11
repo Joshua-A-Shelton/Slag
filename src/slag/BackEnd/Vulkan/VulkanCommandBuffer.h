@@ -48,6 +48,7 @@ namespace slag
             void bindUniformSetData(Shader* shader, UniformSetData& data)override;
             void pushConstants(Shader* shader,PushConstantRange* pushRange, void* data)override;
             CommandBuffer* createSubCommandBuffer()override;
+            virtual void addSubCommandBuffer(CommandBuffer* buffer)override;
 
             //TODO: move this out from here. It's used here most frequently, (possibly exclusively), but has nothing to do with command buffers directly
             static VkPipelineStageFlags pipelineStageFromCrossPlatform(PipelineStage::PipelineStageFlags flags);
