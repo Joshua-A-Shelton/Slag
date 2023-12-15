@@ -56,7 +56,7 @@ namespace slag
                     w = kvpair.second.width;
                     h = kvpair.second.height;
                 }
-                _textureResources.insert(std::make_pair(kvpair.first, VulkanTexture(w,h,1,VulkanTexture::usageFromCrossPlatform(kvpair.second.usage),kvpair.second.format, true)));
+                _textureResources.insert(std::make_pair(kvpair.first, VulkanTexture(w,h,1,VulkanTexture::usageFromCrossPlatform(kvpair.second.usage),kvpair.second.format,kvpair.second.renderToCapable, true)));
             }
             for(auto& name : commandBufferNames)
             {

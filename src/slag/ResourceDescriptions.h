@@ -17,6 +17,7 @@ namespace slag
         float height = 1.0f;
         Pixels::PixelFormat format = Pixels::R32G32B32A32_SFLOAT;
         Texture::Usage usage = Texture::Usage::COLOR;
+        bool renderToCapable = false;
     };
 
 

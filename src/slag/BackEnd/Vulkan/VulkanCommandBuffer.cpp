@@ -315,7 +315,7 @@ namespace slag
                 depthRenderingAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
             }
             VkRenderingAttachmentInfo* stencil = nullptr;
-            if(depthAttachment.texture->usage() | Texture::Usage::STENCIL)
+            if(depthAttachment.texture->usage() & Texture::Usage::STENCIL)
             {
                 stencil = &depthRenderingAttachment;
             }

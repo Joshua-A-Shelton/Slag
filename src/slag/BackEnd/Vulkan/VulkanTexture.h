@@ -14,8 +14,8 @@ namespace slag
         {
         public:
             VulkanTexture(VkImage image, VkImageView view, VkFormat format, VkImageAspectFlags usage, uint32_t width, uint32_t height, bool destroyImmediate);
-            VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels,VkImageAspectFlags usage, Pixels::PixelFormat format, bool destroyImmediate);
-            VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels,VkImageAspectFlags usage, Pixels::PixelFormat format, void* pixelData, bool destroyImmediate);
+            VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels,VkImageAspectFlags usage, Pixels::PixelFormat format, bool renderTargetCapable, bool destroyImmediate);
+            VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels,VkImageAspectFlags usage, Pixels::PixelFormat format, void* pixelData, bool renderTargetCapable, bool destroyImmediate);
             VulkanTexture(const VulkanTexture&)=delete;
             VulkanTexture& operator=(const VulkanTexture&)=delete;
             VulkanTexture(VulkanTexture&& from);
@@ -39,7 +39,7 @@ namespace slag
             static VkClearValue clearValueFromCrossPlatform(ClearValue& value);
         private:
             void move(VulkanTexture&& from);
-            void create(uint32_t width, uint32_t height, uint32_t mipLevels, VkImageAspectFlags usage, Pixels::PixelFormat format, void* pixelData, VkDeviceSize bufferSize, bool destroyImmdediate);
+            void create(uint32_t width, uint32_t height, uint32_t mipLevels, VkImageAspectFlags usage, Pixels::PixelFormat format, void* pixelData, VkDeviceSize bufferSize, bool renderTargetCapable, bool destroyImmdediate);
             void updateMipMaps();
             VkFormat _baseFormat = VK_FORMAT_UNDEFINED;
             VkImageAspectFlags _usage=0;

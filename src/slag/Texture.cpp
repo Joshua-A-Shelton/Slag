@@ -11,7 +11,7 @@
 namespace slag
 {
 
-    Texture *Texture::create(const char *fileLocation, unsigned int mipLevels)
+    Texture *Texture::create(const char *fileLocation, unsigned int mipLevels, bool renderTargetCapable)
     {
         if(mipLevels == 0)
         {
@@ -39,7 +39,7 @@ namespace slag
         return tex;
     }
 
-    Texture *Texture::create(uint32_t width, uint32_t height, Pixels::PixelFormat format, void *pixelData, uint32_t mipLevels)
+    Texture *Texture::create(uint32_t width, uint32_t height, Pixels::PixelFormat format, void *pixelData, uint32_t mipLevels, bool renderTargetCapable)
     {
         Texture* tex = nullptr;
         if(mipLevels == 0)
@@ -50,7 +50,7 @@ namespace slag
         {
             case BackEnd::VULKAN:
 #ifdef SLAG_VULKAN_BACKEND
-                tex= new vulkan::VulkanTexture(width,height,mipLevels,VK_IMAGE_ASPECT_COLOR_BIT,format,pixelData, false);
+                tex= new vulkan::VulkanTexture(width,height,mipLevels,VK_IMAGE_ASPECT_COLOR_BIT,format,pixelData, renderTargetCapable, false);
 #endif
                 break;
             case BackEnd::DX12:
