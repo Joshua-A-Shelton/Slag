@@ -256,12 +256,27 @@ namespace slag
             VkImageCreateInfo dimg_info{};
             dimg_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
             dimg_info.format = _baseFormat;
+            VkImageLayout toLayout;
             if(usage & DEPTH_STENCIL)
             {
-                dimg_info.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+                if(usage == DEPTH_STENCIL)
+                {
+                    toLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                }
+                else if(usage == DEPTH)
+                {
+                    toLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+                }
+                else
+                {
+                    toLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
+                }
+
+                dimg_info.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
             }
             else
             {
+                toLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                 dimg_info.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
             }
 
@@ -282,7 +297,7 @@ namespace slag
             VulkanLib::graphicsCard()->runOneTimeCommands(VulkanLib::graphicsCard()->transferQueue(),VulkanLib::graphicsCard()->transferQueueFamily(),[=](VkCommandBuffer commandBuffer)
             {
                 VkImageSubresourceRange range;
-                range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                range.aspectMask = _usage;
                 range.baseMipLevel = 0;
                 range.levelCount = 1;
                 range.baseArrayLayer = 0;
@@ -349,13 +364,13 @@ namespace slag
                 barrier.image = _image;
                 barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                 barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                barrier.subresourceRange.aspectMask = _usage;
                 barrier.subresourceRange.baseArrayLayer = 0;
                 barrier.subresourceRange.layerCount = 1;
                 barrier.subresourceRange.baseMipLevel = 0;
                 barrier.subresourceRange.levelCount = _mipLevels;
                 barrier.oldLayout = oldLayout;
-                barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                barrier.newLayout = toLayout;
                 barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
                 barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
 
