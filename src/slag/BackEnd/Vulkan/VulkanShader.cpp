@@ -164,7 +164,7 @@ namespace slag
             {
                 for(auto& att : vertexDescription->attributes())
                 {
-                    attributes.push_back({.location = att.binding, .binding = 0, .format = VulkanTexture::formatFromCrossPlatform(att.storageType), .offset = att.offset});
+                    attributes.push_back({.location = att.location, .binding = 0, .format = VulkanTexture::formatFromCrossPlatform(att.storageType), .offset = att.offset});
                 }
             }
 
