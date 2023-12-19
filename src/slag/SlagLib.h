@@ -23,6 +23,7 @@
 #include "UniformDescriptor.h"
 #include "UniformSet.h"
 #include "UniformSetDataAllocator.h"
+#include "VertexDescription.h"
 
 namespace slag
 {

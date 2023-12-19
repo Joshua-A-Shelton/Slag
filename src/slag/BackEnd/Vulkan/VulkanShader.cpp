@@ -17,7 +17,7 @@ namespace slag
             }
         }
 
-        VulkanShader::VulkanShader(const std::vector<char> &vertexCode, const std::vector<char> &fragmentCode, FramebufferDescription& framebufferDescription)
+        VulkanShader::VulkanShader(const std::vector<char> &vertexCode, const std::vector<char> &fragmentCode, FramebufferDescription& framebufferDescription, VertexDescription* vertexDescription)
         {
             VkShaderModuleCreateInfo createVertexInfo = {};
             createVertexInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -159,6 +159,15 @@ namespace slag
 
             std::vector<VkVertexInputAttributeDescription> attributes;
             VkVertexInputBindingDescription bindingDescription{};
+
+            if(vertexDescription != nullptr)
+            {
+                for(auto& att : vertexDescription->attributes())
+                {
+                    attributes.push_back({.location = att.binding, .binding = 0, .format = VulkanTexture::formatFromCrossPlatform(att.storageType), .offset = att.offset});
+                }
+            }
+
 
             //TODO: add overwrites
             std::vector<VulkanUniformSet> overwrites;
@@ -361,43 +370,52 @@ namespace slag
 
 
                 //vertex attributes
+                //only get attributes via reflection if they weren't supplied automatically
+                if(attributes.empty())
+                {
 
-                std::vector<SpvReflectInterfaceVariable*> input_vars(count);
-                result =
-                        spvReflectEnumerateInputVariables(&vertexModule, &count, input_vars.data());
-                assert(result == SPV_REFLECT_RESULT_SUCCESS);
+                    std::vector<SpvReflectInterfaceVariable *> input_vars(count);
+                    result =
+                            spvReflectEnumerateInputVariables(&vertexModule, &count, input_vars.data());
+                    assert(result == SPV_REFLECT_RESULT_SUCCESS);
 
-                count = 0;
-                result = spvReflectEnumerateOutputVariables(&vertexModule, &count, NULL);
-                assert(result == SPV_REFLECT_RESULT_SUCCESS);
+                    count = 0;
+                    result = spvReflectEnumerateOutputVariables(&vertexModule, &count, NULL);
+                    assert(result == SPV_REFLECT_RESULT_SUCCESS);
 
-                binding.binding = 0;
-                binding.stride = 0;  // computed below
-                binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-                attributes.reserve(input_vars.size());
-                for (size_t i_var = 0; i_var < input_vars.size(); ++i_var) {
-                    const SpvReflectInterfaceVariable& refl_var = *(input_vars[i_var]);
-                    // ignore built-in variables
-                    if (refl_var.decoration_flags & SPV_REFLECT_DECORATION_BUILT_IN) {
-                        continue;
+                    binding.binding = 0;
+                    binding.stride = 0;  // computed below
+                    binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+                    attributes.reserve(input_vars.size());
+                    for (size_t i_var = 0; i_var < input_vars.size(); ++i_var)
+                    {
+                        const SpvReflectInterfaceVariable &refl_var = *(input_vars[i_var]);
+                        // ignore built-in variables
+                        if (refl_var.decoration_flags & SPV_REFLECT_DECORATION_BUILT_IN)
+                        {
+                            continue;
+                        }
+                        VkVertexInputAttributeDescription attr_desc{};
+                        attr_desc.location = refl_var.location;
+                        attr_desc.binding = binding.binding;
+                        attr_desc.format = static_cast<VkFormat>(refl_var.format);
+                        attr_desc.offset = 0;  // final offset computed below after sorting.
+                        attributes.push_back(attr_desc);
                     }
-                    VkVertexInputAttributeDescription attr_desc{};
-                    attr_desc.location = refl_var.location;
-                    attr_desc.binding = binding.binding;
-                    attr_desc.format = static_cast<VkFormat>(refl_var.format);
-                    attr_desc.offset = 0;  // final offset computed below after sorting.
-                    attributes.push_back(attr_desc);
+                    // Sort attributes by location
+                    std::sort(std::begin(attributes),
+                              std::end(attributes),
+                              [](const VkVertexInputAttributeDescription &a,
+                                 const VkVertexInputAttributeDescription &b)
+                              {
+                                  return a.location < b.location;
+                              });
                 }
-                // Sort attributes by location
-                std::sort(std::begin(attributes),
-                          std::end(attributes),
-                          [](const VkVertexInputAttributeDescription& a,
-                             const VkVertexInputAttributeDescription& b) {
-                              return a.location < b.location;
-                          });
+
                 // Compute final offsets of each attribute, and total vertex stride.
-                for (auto& attribute : attributes) {
-                    uint32_t format_size = VulkanTexture::formatSize(attribute.format)/8;
+                for (auto &attribute: attributes)
+                {
+                    uint32_t format_size = VulkanTexture::formatSize(attribute.format) / 8;
                     attribute.offset = binding.stride;
                     binding.stride += format_size;
                 }

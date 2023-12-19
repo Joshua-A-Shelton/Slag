@@ -16,7 +16,12 @@ namespace slag
         class VulkanShader: public Shader, Resource
         {
         public:
-            VulkanShader(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, FramebufferDescription& framebufferDescription);
+            ///
+            /// \param vertexCode
+            /// \param fragmentCode
+            /// \param framebufferDescription what the framebuffer that this shader outputs to looks like
+            /// \param vertexAttributes optional, manually define what the vertexes will look like instead of getting them through shader reflection
+            VulkanShader(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, FramebufferDescription& framebufferDescription, VertexDescription* vertexDescription = nullptr);
             ~VulkanShader()override;
             VulkanShader(const VulkanShader&)=delete;
             VulkanShader& operator=(const VulkanShader&)=delete;

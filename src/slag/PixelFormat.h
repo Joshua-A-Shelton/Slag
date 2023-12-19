@@ -146,7 +146,7 @@ namespace slag
 #undef DEFINITION
         };
 
-        static uint32_t pixelBytes(PixelFormat format)
+        static uint32_t pixelBits(PixelFormat format)
         {
             switch (format)
             {
@@ -154,6 +154,11 @@ namespace slag
                 TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
             }
+        }
+
+        static uint32_t pixelBytes(PixelFormat format)
+        {
+            return pixelBits(format)/8;
         }
     };
 }

@@ -44,14 +44,14 @@ namespace slag
 
         VulkanTexture::VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels, VkImageAspectFlags usage, Pixels::PixelFormat format, bool renderTargetCapable, bool destroyImmediate)
         {
-            VkDeviceSize bufferSize= Pixels::pixelBytes(format)*width*height;
+            VkDeviceSize bufferSize= Pixels::pixelBits(format) * width * height;
             std::vector<unsigned char>pixelBuffer(bufferSize);
             create(width,height,mipLevels,usage,format,pixelBuffer.data(),bufferSize,renderTargetCapable,destroyImmediate);
         }
 
         VulkanTexture::VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels, VkImageAspectFlags usage, Pixels::PixelFormat format, void* pixelData, bool renderTargetCapable, bool destroyImmediate)
         {
-            auto size = Pixels::pixelBytes(format)/8;
+            auto size = Pixels::pixelBytes(format);
             VkDeviceSize bufferSize= size*width*height;
             create(width,height,mipLevels,usage,format,pixelData,bufferSize,renderTargetCapable,destroyImmediate);
         }
