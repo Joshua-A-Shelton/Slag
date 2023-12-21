@@ -46,7 +46,7 @@ namespace slag
             {
                 uint32_t w=0;
                 uint32_t h=0;
-                if(kvpair.second.sizingMode == TextureResourceDescription::FRAME_RELATIVE)
+                if(kvpair.second.sizingMode == TextureResourceDescription::FrameRelative)
                 {
                     w = from->width() * kvpair.second.width;
                     h = from->height() * kvpair.second.height;

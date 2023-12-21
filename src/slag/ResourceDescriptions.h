@@ -9,10 +9,10 @@ namespace slag
     {
         enum SizingMode
         {
-            ABSOLUTE,
-            FRAME_RELATIVE
+            Absolute,
+            FrameRelative
         };
-        SizingMode sizingMode = FRAME_RELATIVE;
+        SizingMode sizingMode = FrameRelative;
         float width = 1.0f;
         float height = 1.0f;
         Pixels::PixelFormat format = Pixels::R32G32B32A32_SFLOAT;

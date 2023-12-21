@@ -182,6 +182,43 @@ namespace slag
             return VulkanTexture::formatFromNative(_defaultImageFormat);
         }
 
+        void VulkanSwapchain::setResource(const char *name, TextureResourceDescription description)
+        {
+            _textureDescriptions[name] = description;
+            rebuild();
+        }
+
+        void VulkanSwapchain::setResource(const char *name, VertexBufferResourceDescription description)
+        {
+            _vertexBufferDescriptions[name] = description;
+            rebuild();
+        }
+
+        void VulkanSwapchain::setResource(const char *name, IndexBufferResourceDescription description)
+        {
+            _indexBufferDescriptions[name] = description;
+            rebuild();
+        }
+
+        void VulkanSwapchain::setResources(const char **textureNames, TextureResourceDescription *textureDescriptions, size_t textureCount, const char **vertexBufferNames,
+                                           VertexBufferResourceDescription *vertexBufferDescriptions, size_t vertexBufferCount, const char **indexBufferNames,
+                                           IndexBufferResourceDescription *indexBufferDescriptions, size_t indexBufferCount)
+        {
+            for(size_t i=0; i< textureCount; i++)
+            {
+                _textureDescriptions[textureNames[i]] = textureDescriptions[i];
+            }
+            for(size_t i=0; i< vertexBufferCount; i++)
+            {
+                _vertexBufferDescriptions[vertexBufferNames[i]] = vertexBufferDescriptions[i];
+            }
+            for(size_t i=0; i< indexBufferCount; i++)
+            {
+                _indexBufferDescriptions[indexBufferNames[i]] = indexBufferDescriptions[i];
+            }
+            rebuild();
+        }
+
         void VulkanSwapchain::rebuild()
         {
             vkDeviceWaitIdle(VulkanLib::graphicsCard()->device());
@@ -304,7 +341,6 @@ namespace slag
             //increment frame index
             _currentFrameIndex = (_currentFrameIndex + 1) % _frames.size();
         }
-
 
     } // slag
 } // vulkan

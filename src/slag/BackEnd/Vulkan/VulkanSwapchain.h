@@ -35,6 +35,12 @@ namespace slag
             uint32_t height()override;
             void resize(uint32_t width, uint32_t height)override;
             Pixels::PixelFormat imageFormat()override;
+            void setResource(const char* name, TextureResourceDescription description)override;
+            void setResource(const char* name, VertexBufferResourceDescription description)override;
+            void setResource(const char* name, IndexBufferResourceDescription description)override;
+            void setResources(const char** textureNames, TextureResourceDescription* textureDescriptions, size_t textureCount,
+                              const char** vertexBufferNames, VertexBufferResourceDescription* vertexBufferDescriptions, size_t vertexBufferCount,
+                              const char** indexBufferNames, IndexBufferResourceDescription* indexBufferDescriptions, size_t indexBufferCount)override;
             VkCommandPool commandPool();
             void queueToPresent(VulkanFrame* frame);
 

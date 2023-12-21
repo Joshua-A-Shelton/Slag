@@ -24,6 +24,12 @@ namespace slag
         virtual uint32_t height()=0;
         virtual void resize(uint32_t width, uint32_t height)=0;
         virtual Pixels::PixelFormat imageFormat()=0;
+        virtual void setResource(const char* name, TextureResourceDescription description)=0;
+        virtual void setResource(const char* name, VertexBufferResourceDescription description)=0;
+        virtual void setResource(const char* name, IndexBufferResourceDescription description)=0;
+        virtual void setResources(const char** textureNames, TextureResourceDescription* textureDescriptions, size_t textureCount,
+                                     const char** vertexBufferNames, VertexBufferResourceDescription* vertexBufferDescriptions, size_t vertexBufferCount,
+                                     const char** indexBufferNames, IndexBufferResourceDescription* indexBufferDescriptions, size_t indexBufferCount)=0;
     };
 
     class SwapchainBuilder
