@@ -378,6 +378,18 @@ namespace slag
             vkCmdDrawIndexed(_cmdBuffer,indexCount,instanceCount,firstVertex,vertexOffset,firstInstance);
         }
 
+        void VulkanCommandBuffer::setViewport(Viewport bounds)
+        {
+            VkViewport port {};
+            port.x = bounds.view.offset.x;
+            port.y = bounds.view.offset.y;
+            port.width = bounds.view.extent.width;
+            port.height = bounds.view.extent.height;
+            port.maxDepth = bounds.maxDepth;
+            port.minDepth = bounds.minDepth;
+            vkCmdSetViewport(_cmdBuffer,0,1,&port);
+        }
+
         void VulkanCommandBuffer::setViewport(Rectangle bounds)
         {
             VkViewport port {};

@@ -38,6 +38,7 @@ namespace slag
             void setTargetFramebuffer(Rectangle bounds,Attachment* colorAttachments, size_t colorCount)override;
             void setTargetFramebuffer(Rectangle bounds,Attachment* colorAttachments, size_t colorCount, Attachment depthAttachment)override;
             void endTargetFramebuffer();
+            void setViewport(Viewport bounds)override;
             void setViewport(Rectangle bounds)override;
             void setScissors(Rectangle bounds)override;
             void bindVertexBuffer(VertexBuffer* vertexBuffer)override;
