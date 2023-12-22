@@ -95,7 +95,7 @@ namespace slag
         {
             if(_width == 0 || _height == 0)
             {
-                return nullptr;
+                //return nullptr;
             }
 
             _frames[_currentFrameIndex].waitTillFinished();
