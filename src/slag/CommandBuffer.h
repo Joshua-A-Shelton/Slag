@@ -9,6 +9,7 @@
 #include "Shader.h"
 #include "UniformBuffer.h"
 #include "Rectangle.h"
+#include "Viewport.h"
 #include "Attachment.h"
 #include "UniformSetData.h"
 #include "PushConstantRange.h"
@@ -30,6 +31,7 @@ namespace slag
         virtual void setTargetFramebuffer(Rectangle bounds,Attachment* colorAttachments, size_t colorCount)=0;
         virtual void setTargetFramebuffer(Rectangle bounds,Attachment* colorAttachments, size_t colorCount, Attachment depthAttachment)=0;
         virtual void endTargetFramebuffer()=0;
+        virtual void setViewport(Viewport bounds)=0;
         virtual void setViewport(Rectangle bounds)=0;
         virtual void setScissors(Rectangle bounds)=0;
         virtual void bindVertexBuffer(VertexBuffer* vertexBuffer)=0;
