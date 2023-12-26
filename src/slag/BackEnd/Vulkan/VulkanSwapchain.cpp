@@ -16,6 +16,7 @@ namespace slag
                                          size_t desiredBackbuffers,
                                          Pixels::PixelFormat desiredFormat,
                                          bool vsync,
+                                         bool drawOnMinimized,
                                          std::unordered_map<std::string,TextureResourceDescription>& textureDescriptions,
                                          std::unordered_set<std::string>& commandBufferNames,
                                          std::unordered_map<std::string, UniformBufferResourceDescription>& uniformBufferDescriptions,
@@ -44,6 +45,7 @@ namespace slag
             {
                 _presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
             }
+            _drawOnMinimized = drawOnMinimized;
             _textureDescriptions = textureDescriptions;
             _commandBufferNames = commandBufferNames;
             _uniformBufferDescriptions = uniformBufferDescriptions;
@@ -93,9 +95,9 @@ namespace slag
 
         Frame* VulkanSwapchain::next()
         {
-            if(_width == 0 || _height == 0)
+            if((_width == 0 || _height == 0) && !_drawOnMinimized)
             {
-                //return nullptr;
+                return nullptr;
             }
 
             _frames[_currentFrameIndex].waitTillFinished();

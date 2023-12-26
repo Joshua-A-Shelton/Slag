@@ -46,6 +46,7 @@ namespace slag
         SwapchainBuilder& addVertexBufferResource(std::string name, VertexBufferResourceDescription description);
         SwapchainBuilder& addIndexBufferResource(std::string name, IndexBufferResourceDescription description);
         SwapchainBuilder& setDesiredPixelFormat(Pixels::PixelFormat  format);
+        SwapchainBuilder& setDrawOnMinimized(bool draw);
         Swapchain* create();
     private:
         PlatformData _platformData;
@@ -54,6 +55,7 @@ namespace slag
         uint8_t _backBufferCount = 2;
         Pixels::PixelFormat _defaultFormat = Pixels::PixelFormat::B8G8R8A8_UNORM;
         bool _vsyncEnabled = true;
+        bool _drawOnMinimized = false;
         std::unordered_map<std::string,TextureResourceDescription> _textureDescriptions;
         std::unordered_set<std::string> _commandBufferNames;
         std::unordered_map<std::string, UniformBufferResourceDescription> _uniformBufferDescriptions;

@@ -86,7 +86,7 @@ namespace slag
         {
             case VULKAN:
 #ifdef SLAG_VULKAN_BACKEND
-                return new vulkan::VulkanSwapchain(_platformData,_width,_height,_backBufferCount,_defaultFormat,_vsyncEnabled,_textureDescriptions,_commandBufferNames,_uniformBufferDescriptions,_vertexBufferDescriptions,_indexBufferDescriptions);
+                return new vulkan::VulkanSwapchain(_platformData,_width,_height,_backBufferCount,_defaultFormat,_vsyncEnabled,_drawOnMinimized,_textureDescriptions,_commandBufferNames,_uniformBufferDescriptions,_vertexBufferDescriptions,_indexBufferDescriptions);
 #else
                 return nullptr;
 #endif
@@ -99,6 +99,12 @@ namespace slag
     SwapchainBuilder& SwapchainBuilder::setDesiredPixelFormat(Pixels::PixelFormat format)
     {
         _defaultFormat = format;
+        return *this;
+    }
+
+    SwapchainBuilder &SwapchainBuilder::setDrawOnMinimized(bool draw)
+    {
+        _drawOnMinimized = draw;
         return *this;
     }
 

@@ -18,6 +18,7 @@ namespace slag
                             size_t desiredBackbuffers,
                             Pixels::PixelFormat desiredFormat,
                             bool vsync,
+                            bool drawOnMinimized,
                             std::unordered_map<std::string,TextureResourceDescription>& textureDescriptions,
                             std::unordered_set<std::string>& commandBufferNames,
                             std::unordered_map<std::string, UniformBufferResourceDescription>& uniformBufferDescriptions,
@@ -59,6 +60,7 @@ namespace slag
             uint32_t _width=0;
             uint32_t _height=0;
             bool _needsRebuild= false;
+            bool _drawOnMinimized = false;
             std::unordered_map<std::string,TextureResourceDescription> _textureDescriptions;
             std::unordered_set<std::string> _commandBufferNames;
             std::unordered_map<std::string, UniformBufferResourceDescription> _uniformBufferDescriptions;
