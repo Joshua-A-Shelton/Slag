@@ -6,6 +6,8 @@
 #include "VulkanSwapchain.h"
 #include "VulkanLib.h"
 #include <algorithm>
+#include <iostream>
+
 namespace slag
 {
     namespace vulkan
@@ -113,6 +115,7 @@ namespace slag
             {
                 throw std::runtime_error("Failed to acquire next image in swap chain");
             }
+            _inFrame = true;
             _frames[_currentFrameIndex].resetWait();
             _frames[_currentFrameIndex].setSwapchainImageTexture(&_swapchainImages[_swapchainImageIndex]);
             return &_frames[_currentFrameIndex];
@@ -125,16 +128,18 @@ namespace slag
 
         void VulkanSwapchain::backBufferCount(size_t count)
         {
-            if(count > 3)
+            if(_desiredBackbufferCount != count)
             {
-                count = 3;
+                if (count > 3)
+                {
+                    count = 3;
+                } else if (count == 0)
+                {
+                    count = 1;
+                }
+                _desiredBackbufferCount = count;
+                updateParameters();
             }
-            else if(count == 0)
-            {
-                count = 1;
-            }
-            _desiredBackbufferCount = count;
-            rebuild();
         }
 
         bool VulkanSwapchain::vsyncEnabled()
@@ -143,23 +148,25 @@ namespace slag
             {
                 return true;
             }
-            return false;
+            updateParameters();
         }
 
         void VulkanSwapchain::vsyncEnabled(bool enabled)
         {
-            if(enabled && _desiredBackbufferCount > 1)
+            if(vsyncEnabled() != enabled)
             {
-                if(_desiredBackbufferCount == 2)
+                if (enabled && _desiredBackbufferCount > 1)
                 {
-                    _presentMode = VK_PRESENT_MODE_FIFO_KHR;
+                    if (_desiredBackbufferCount == 2)
+                    {
+                        _presentMode = VK_PRESENT_MODE_FIFO_KHR;
+                    } else
+                    {
+                        _presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+                    }
                 }
-                else
-                {
-                    _presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
-                }
+                updateParameters();
             }
-            rebuild();
         }
 
         uint32_t VulkanSwapchain::width()
@@ -176,7 +183,7 @@ namespace slag
         {
             _width = width;
             _height = height;
-            rebuild();
+            updateParameters();
         }
 
         Pixels::PixelFormat VulkanSwapchain::imageFormat()
@@ -187,19 +194,22 @@ namespace slag
         void VulkanSwapchain::setResource(const char *name, TextureResourceDescription description)
         {
             _textureDescriptions[name] = description;
-            rebuild();
+            _requiredTextureUpdates.insert(name);
+            updateParameters();
         }
 
         void VulkanSwapchain::setResource(const char *name, VertexBufferResourceDescription description)
         {
             _vertexBufferDescriptions[name] = description;
-            rebuild();
+            _requiredVertexBufferUpdates.insert(name);
+            updateParameters();
         }
 
         void VulkanSwapchain::setResource(const char *name, IndexBufferResourceDescription description)
         {
             _indexBufferDescriptions[name] = description;
-            rebuild();
+            _requiredIndexBufferUpdates.insert(name);
+            updateParameters();
         }
 
         void VulkanSwapchain::setResources(const char **textureNames, TextureResourceDescription *textureDescriptions, size_t textureCount, const char **vertexBufferNames,
@@ -209,16 +219,19 @@ namespace slag
             for(size_t i=0; i< textureCount; i++)
             {
                 _textureDescriptions[textureNames[i]] = textureDescriptions[i];
+                _requiredTextureUpdates.insert(textureNames[i]);
             }
             for(size_t i=0; i< vertexBufferCount; i++)
             {
                 _vertexBufferDescriptions[vertexBufferNames[i]] = vertexBufferDescriptions[i];
+                _requiredVertexBufferUpdates.insert(vertexBufferNames[i]);
             }
             for(size_t i=0; i< indexBufferCount; i++)
             {
                 _indexBufferDescriptions[indexBufferNames[i]] = indexBufferDescriptions[i];
+                _requiredIndexBufferUpdates.insert(indexBufferNames[i]);
             }
-            rebuild();
+            updateParameters();
         }
 
         void VulkanSwapchain::rebuild()
@@ -249,7 +262,29 @@ namespace slag
             _defaultImageFormat = vkbSwapchain.image_format;
             auto images = vkbSwapchain.get_images().value();
             auto views = vkbSwapchain.get_image_views().value();
+            int oldSize = _swapchainImages.size();
             _swapchainImages.clear();
+
+            //update the frames that will still exist
+            for(auto i=0; i< oldSize; i++)
+            {
+                for(auto& name: _requiredTextureUpdates)
+                {
+                    _frames[i].updateTextureResource(name,_textureDescriptions[name]);
+                }
+                for(auto& name: _requiredVertexBufferUpdates)
+                {
+                    _frames[i].updateVertexBufferResource(name,_vertexBufferDescriptions[name]);
+                }
+                for(auto& name: _requiredIndexBufferUpdates)
+                {
+                    _frames[i].updateIndexBufferResource(name,_indexBufferDescriptions[name]);
+                }
+
+            }
+            _requiredTextureUpdates.clear();
+            _requiredVertexBufferUpdates.clear();
+            _requiredIndexBufferUpdates.clear();
 
             for(auto i=0; i< images.size(); i++)
             {
@@ -336,12 +371,23 @@ namespace slag
             if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _needsRebuild)
             {
                 _needsRebuild = true;
+                rebuild();
             }
             else if (result != VK_SUCCESS) {
                 throw std::runtime_error("failed to present swap chain image!");
             }
             //increment frame index
             _currentFrameIndex = (_currentFrameIndex + 1) % _frames.size();
+            _inFrame = false;
+        }
+
+        void VulkanSwapchain::updateParameters()
+        {
+            _needsRebuild = true;
+            if(!_inFrame)
+            {
+                rebuild();
+            }
         }
 
     } // slag

@@ -44,19 +44,7 @@ namespace slag
 
             for(auto& kvpair : textureDescriptions)
             {
-                uint32_t w=0;
-                uint32_t h=0;
-                if(kvpair.second.sizingMode == TextureResourceDescription::FrameRelative)
-                {
-                    w = from->width() * kvpair.second.width;
-                    h = from->height() * kvpair.second.height;
-                }
-                else
-                {
-                    w = kvpair.second.width;
-                    h = kvpair.second.height;
-                }
-                _textureResources.insert(std::make_pair(kvpair.first, VulkanTexture(w,h,1,VulkanTexture::usageFromCrossPlatform(kvpair.second.usage),kvpair.second.format,kvpair.second.renderToCapable, true)));
+                insertTexture(kvpair.first,kvpair.second);
             }
             for(auto& name : commandBufferNames)
             {
@@ -68,31 +56,11 @@ namespace slag
             }
             for(auto& kvpair : vertexBufferDescriptions)
             {
-                VulkanVertexBuffer* vb = nullptr;
-                std::vector<unsigned char> empty(kvpair.second.defaultSize,0);
-                if(kvpair.second.usage == Buffer::CPU)
-                {
-                    vb = new VulkanCPUVertexBuffer(empty.data(),empty.size(), true);
-                }
-                else
-                {
-                    vb = new VulkanGPUVertexBuffer(empty.data(),empty.size(), true);
-                }
-                _vertexBufferResources.insert(std::make_pair(kvpair.first, vb));
+                insertVertexBufferResource(kvpair.first,kvpair.second);
             }
             for(auto kvpair: indexBufferDescriptions)
             {
-                VulkanIndexBuffer* ib = nullptr;
-                std::vector<unsigned char> empty(kvpair.second.defaultSize,0);
-                if(kvpair.second.usage == Buffer::CPU)
-                {
-                    ib = new VulkanCPUIndexBuffer(empty.data(),empty.size(), true);
-                }
-                else
-                {
-                    ib = new VulkanGPUIndexBuffer(empty.data(),empty.size(), true);
-                }
-                _indexBufferResources.insert(std::make_pair(kvpair.first, ib));
+                insertIndexBufferResource(kvpair.first,kvpair.second);
             }
         }
 
@@ -239,6 +207,83 @@ namespace slag
         {
             return _indexBufferResources.at(resourceName);
         }
+
+        void VulkanFrame::updateTextureResource(const std::string resourceName, const TextureResourceDescription &description)
+        {
+            if(_textureResources.contains(resourceName))
+            {
+                _textureResources.erase(resourceName);
+            }
+            insertTexture(resourceName,description);
+        }
+
+        void VulkanFrame::updateVertexBufferResource(const std::string resourceName, const VertexBufferResourceDescription &description)
+        {
+            if(_vertexBufferResources.contains(resourceName))
+            {
+                _vertexBufferResources.erase(resourceName);
+            }
+            insertVertexBufferResource(resourceName,description);
+        }
+
+        void VulkanFrame::updateIndexBufferResource(const std::string resourceName, const IndexBufferResourceDescription &description)
+        {
+            if(_indexBufferResources.contains(resourceName))
+            {
+                _indexBufferResources.erase(resourceName);
+            }
+            insertIndexBufferResource(resourceName,description);
+        }
+
+        void VulkanFrame::insertTexture(std::string name, TextureResourceDescription description)
+        {
+            uint32_t w=0;
+            uint32_t h=0;
+            if(description.sizingMode == TextureResourceDescription::FrameRelative)
+            {
+                w = _fromSwapChain->width() * description.width;
+                h = _fromSwapChain->height() * description.height;
+            }
+            else
+            {
+                w = description.width;
+                h = description.height;
+            }
+            _textureResources.insert(std::make_pair(name, VulkanTexture(w,h,1,VulkanTexture::usageFromCrossPlatform(description.usage),description.format,description.renderToCapable, true)));
+        }
+
+        void VulkanFrame::insertVertexBufferResource(std::string name, VertexBufferResourceDescription description)
+        {
+            VulkanVertexBuffer* vb = nullptr;
+            std::vector<unsigned char> empty(description.defaultSize,0);
+            if(description.usage == Buffer::CPU)
+            {
+                vb = new VulkanCPUVertexBuffer(empty.data(),empty.size(), true);
+            }
+            else
+            {
+                vb = new VulkanGPUVertexBuffer(empty.data(),empty.size(), true);
+            }
+            _vertexBufferResources.insert(std::make_pair(name, vb));
+        }
+
+        void VulkanFrame::insertIndexBufferResource(std::string name, IndexBufferResourceDescription description)
+        {
+            VulkanIndexBuffer* ib = nullptr;
+            std::vector<unsigned char> empty(description.defaultSize,0);
+            if(description.usage == Buffer::CPU)
+            {
+                ib = new VulkanCPUIndexBuffer(empty.data(),empty.size(), true);
+            }
+            else
+            {
+                ib = new VulkanGPUIndexBuffer(empty.data(),empty.size(), true);
+            }
+            _indexBufferResources.insert(std::make_pair(name, ib));
+        }
+
+
+
 
     } // slag
 } // vulkan

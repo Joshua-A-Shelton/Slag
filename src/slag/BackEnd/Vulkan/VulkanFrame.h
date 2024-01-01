@@ -51,6 +51,11 @@ namespace slag
 
             void waitTillFinished();
             void resetWait();
+
+            void updateTextureResource(const std::string resourceName,const TextureResourceDescription& description);
+            void updateVertexBufferResource(const std::string resourceName, const VertexBufferResourceDescription& description);
+            void updateIndexBufferResource(const std::string resourceName, const IndexBufferResourceDescription& description);
+
         private:
             //is the command buffer done (null doesn't mean not done, it means the synchronization object doesn't exist)
             VkFence _inFlight = nullptr;
@@ -67,6 +72,10 @@ namespace slag
             std::unordered_map<std::string,VulkanVertexBuffer*> _vertexBufferResources;
             std::unordered_map<std::string,VulkanIndexBuffer*> _indexBufferResources;
             void move(VulkanFrame&& from);
+
+            void insertTexture(std::string name, TextureResourceDescription description);
+            void insertVertexBufferResource(std::string name, VertexBufferResourceDescription description);
+            void insertIndexBufferResource(std::string name, IndexBufferResourceDescription description);
 
         };
     } // slag

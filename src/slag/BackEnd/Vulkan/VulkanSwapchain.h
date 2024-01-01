@@ -61,11 +61,18 @@ namespace slag
             uint32_t _height=0;
             bool _needsRebuild= false;
             bool _drawOnMinimized = false;
+            bool _inFrame = false;
             std::unordered_map<std::string,TextureResourceDescription> _textureDescriptions;
             std::unordered_set<std::string> _commandBufferNames;
             std::unordered_map<std::string, UniformBufferResourceDescription> _uniformBufferDescriptions;
             std::unordered_map<std::string, VertexBufferResourceDescription> _vertexBufferDescriptions;
             std::unordered_map<std::string, IndexBufferResourceDescription> _indexBufferDescriptions;
+
+            std::unordered_set<std::string> _requiredTextureUpdates;
+            std::unordered_set<std::string> _requiredVertexBufferUpdates;
+            std::unordered_set<std::string> _requiredIndexBufferUpdates;
+
+            void updateParameters();
             void rebuild();
             void cleanup();
             VkSurfaceKHR createNativeSurface(PlatformData platformData);
