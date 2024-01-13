@@ -36,9 +36,8 @@ namespace slag
 
                     };
 
-            vkb::PhysicalDevice physicalDevice = physicalDeviceSelector.set_minimum_version(1,3)
+            auto dev = physicalDeviceSelector.set_minimum_version(1,3)
                     .defer_surface_initialization()
-                    .require_dedicated_transfer_queue()
                     .add_required_extension("VK_KHR_dynamic_rendering")
                     .add_required_extension("VK_KHR_depth_stencil_resolve")
                     .add_required_extension("VK_KHR_create_renderpass2")
@@ -50,7 +49,13 @@ namespace slag
                     .add_required_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME)
                     .add_required_extension_features(dynamicRenderingFeaturesKHR)
                     .add_desired_extension("VK_EXT_filter_cubic")
-                    .select().value();
+                    .prefer_gpu_device_type(vkb::PreferredDeviceType::discrete)
+                    .select();
+            if(!dev.has_value())
+            {
+                return false;
+            }
+            vkb::PhysicalDevice physicalDevice = dev.value();
             vkb::DeviceBuilder deviceBuilder {physicalDevice};
             vkb::Device vkbDevice = deviceBuilder.build().value();
             _vulkangraphicsCard = new VulkanGraphicsCard(vkbDevice);
