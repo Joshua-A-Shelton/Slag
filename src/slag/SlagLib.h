@@ -13,6 +13,8 @@
 #include "PlatformData.h"
 #include "PushConstantRange.h"
 #include "Rectangle.h"
+#include "RenderGraph.h"
+#include "RenderPass.h"
 #include "ResourceDescriptions.h"
 #include "Shader.h"
 #include "Swapchain.h"

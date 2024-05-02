@@ -4,7 +4,9 @@ project(Slag)
 set(CMAKE_CXX_STANDARD 20)
 
 SET(VULKAN_SOURCES)
-SET(DX12_SOURCES)
+SET(DX12_SOURCES
+        src/slag/RenderPass.cpp
+        src/slag/RenderPass.h)
 
 OPTION(SLAG_VULKAN_BACKEND "Include Vulkan backend" ON)
 OPTION(SLAG_DX12_BACKEND "Include DX12 backend" ON)
@@ -26,7 +28,10 @@ endif()
 OPTION(BUILD_VULKAN_TEST_EXECUTABLE "Build test executable" ON)
 
 
-add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES} src/slag/UniformSet.h src/slag/Uniform.h src/slag/BackEnd/Resource.h src/slag/BackEnd/Resource.cpp src/slag/Frame.h src/slag/Frame.h src/slag/Frame.cpp src/slag/Swapchain.h src/slag/Swapchain.cpp src/slag/BackEnd/ResourceManager.cpp src/slag/BackEnd/ResourceManager.h src/slag/UniformDescriptor.h src/slag/SlagLib.cpp src/slag/SlagLib.h src/slag/CommandBuffer.h src/slag/Texture.h src/slag/PixelFormat.h src/slag/GraphicsCard.h src/slag/PlatformData.h src/slag/GPUMemoryBarriers.h src/slag/Shader.h src/slag/GPUTypes.h src/slag/UniformBuffer.h src/slag/ResourceDescriptions.h src/slag/UniformDescriptor.cpp src/slag/FramebufferDescription.cpp src/slag/FramebufferDescription.h src/slag/Shader.cpp src/slag/Buffer.h src/slag/Rectangle.h src/slag/Attachment.h src/slag/ClearValue.h src/slag/UniformSetData.h src/slag/UniformSetData.cpp src/slag/BackEnd/UniformDataSetFunctionProvider.h src/slag/BackEnd/UniformDataSetHandler.cpp src/slag/BackEnd/UniformDataSetHandler.h src/slag/UniformSetDataAllocator.h src/slag/TextureSampler.h src/slag/TextureSampler.cpp src/slag/Texture.cpp src/slag/PushConstantRange.h src/slag/VertexBuffer.cpp src/slag/VertexBuffer.h src/slag/IndexBuffer.cpp src/slag/IndexBuffer.h src/slag/VertexDescription.cpp src/slag/VertexDescription.h src/slag/Viewport.h)
+add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES} src/slag/UniformSet.h src/slag/Uniform.h src/slag/BackEnd/Resource.h src/slag/BackEnd/Resource.cpp src/slag/Frame.h src/slag/Frame.h src/slag/Frame.cpp src/slag/Swapchain.h src/slag/Swapchain.cpp src/slag/BackEnd/ResourceManager.cpp src/slag/BackEnd/ResourceManager.h src/slag/UniformDescriptor.h src/slag/SlagLib.cpp src/slag/SlagLib.h src/slag/CommandBuffer.h src/slag/Texture.h src/slag/PixelFormat.h src/slag/GraphicsCard.h src/slag/PlatformData.h src/slag/GPUMemoryBarriers.h src/slag/Shader.h src/slag/GPUTypes.h src/slag/UniformBuffer.h src/slag/ResourceDescriptions.h src/slag/UniformDescriptor.cpp src/slag/FramebufferDescription.cpp src/slag/FramebufferDescription.h src/slag/Shader.cpp src/slag/Buffer.h src/slag/Rectangle.h src/slag/Attachment.h src/slag/ClearValue.h src/slag/UniformSetData.h src/slag/UniformSetData.cpp src/slag/BackEnd/UniformDataSetFunctionProvider.h src/slag/BackEnd/UniformDataSetHandler.cpp src/slag/BackEnd/UniformDataSetHandler.h src/slag/UniformSetDataAllocator.h src/slag/TextureSampler.h src/slag/TextureSampler.cpp src/slag/Texture.cpp src/slag/PushConstantRange.h src/slag/VertexBuffer.cpp src/slag/VertexBuffer.h src/slag/IndexBuffer.cpp src/slag/IndexBuffer.h src/slag/VertexDescription.cpp src/slag/VertexDescription.h src/slag/Viewport.h
+        src/slag/RenderGraph.cpp
+        src/slag/RenderGraph.h
+        src/slag/RenderPass.cpp)
 target_include_directories(Slag PRIVATE ${Boost_INCLUDE_DIRS} third-party/stb)
 
 
