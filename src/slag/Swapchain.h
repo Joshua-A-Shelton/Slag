@@ -2,7 +2,7 @@
 #define SLAG_SWAPCHAIN_H
 #include "Frame.h"
 #include "PlatformData.h"
-#include "ResourceDescriptions.h"
+#include "FrameResourceDescriptions.h"
 #include <string>
 #include <unordered_map>
 #include <unordered_set>

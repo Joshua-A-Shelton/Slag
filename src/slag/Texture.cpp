@@ -39,6 +39,26 @@ namespace slag
         return tex;
     }
 
+    Texture *Texture::create(uint32_t width, uint32_t height, Pixels::PixelFormat format, uint32_t mipLevels, bool renderTargetCapable)
+    {
+        Texture* tex = nullptr;
+        if(mipLevels == 0)
+        {
+            mipLevels = 1;
+        }
+        switch (SlagLib::usingBackEnd())
+        {
+            case BackEnd::VULKAN:
+#ifdef SLAG_VULKAN_BACKEND
+                tex= new vulkan::VulkanTexture(width,height,mipLevels,VK_IMAGE_ASPECT_COLOR_BIT,format, renderTargetCapable, false);
+#endif
+                break;
+            case BackEnd::DX12:
+                break;
+        }
+        return tex;
+    }
+
     Texture *Texture::create(uint32_t width, uint32_t height, Pixels::PixelFormat format, void *pixelData, uint32_t mipLevels, bool renderTargetCapable)
     {
         Texture* tex = nullptr;
@@ -59,4 +79,6 @@ namespace slag
 
         return tex;
     }
+
+
 }

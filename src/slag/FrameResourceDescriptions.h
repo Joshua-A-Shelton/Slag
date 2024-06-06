@@ -1,10 +1,13 @@
-#ifndef SLAG_RESOURCEDESCRIPTIONS_H
-#define SLAG_RESOURCEDESCRIPTIONS_H
+#ifndef SLAG_FRAMERESOURCEDESCRIPTIONS_H
+#define SLAG_FRAMERESOURCEDESCRIPTIONS_H
 #include "PixelFormat.h"
-#include "CommandBuffer.h"
 #include "Texture.h"
+#include "Buffer.h"
+#include "GPUMemoryBarriers.h"
+
 namespace slag
 {
+
     struct TextureResourceDescription
     {
         enum SizingMode
@@ -27,6 +30,26 @@ namespace slag
             }
             return false;
         }
+    };
+    struct TextureResource
+    {
+        std::string name;
+        TextureResourceDescription description;
+    };
+    struct TextureResourceUsage
+    {
+        Texture::Layout layout;
+        TextureResource resource;
+    };
+    struct GlobablTextureUsage
+    {
+        //The texture's name
+        std::string name;
+        //what the layout needs to be
+        Texture::Layout layout;
+        Texture::Usage type = Texture::Usage::COLOR;
+        //what the texture will be used for
+        PipelineAccess::PipeLineAccessFlags usageFlags = PipelineAccess::PipeLineAccessFlags::NONE;
     };
 
 
@@ -64,5 +87,4 @@ namespace slag
         }
     };
 }
-
-#endif //SLAG_RESOURCEDESCRIPTIONS_H
+#endif //CRUCIBLEEDITOR_FRAMERESOURCEDESCRIPTIONS_H

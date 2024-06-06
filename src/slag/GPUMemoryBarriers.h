@@ -2,6 +2,7 @@
 #define SLAG_GPUMEMORYBARRIERS_H
 
 #define PIPELINE_STAGE_DEFINTITIONS(DEFINITION) \
+DEFINITION(NONE,0x00000000,VK_PIPELINE_STAGE_NONE, UNDEFINED) \
 DEFINITION(TOP,0x00000001,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, UNDEFINED) \
 DEFINITION(DRAW_INDIRECT ,0x00000002,VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, UNDEFINED) \
 DEFINITION(VERTEX_INPUT ,0x00000004,VK_PIPELINE_STAGE_VERTEX_INPUT_BIT , UNDEFINED) \
@@ -41,6 +42,7 @@ DEFINITION(ACCESS_MEMORY_READ_BIT,0x00008000,VK_ACCESS_MEMORY_READ_BIT,UNDEFINED
 DEFINITION(ACCESS_MEMORY_WRITE_BIT,0x00010000,VK_ACCESS_MEMORY_WRITE_BIT,UNDEFINED)                       \
 
 #include "Texture.h"
+#include <string>
 namespace slag
 {
     struct PipelineStage
@@ -60,7 +62,13 @@ namespace slag
             PIPELINE_ACCESS_DEFINITIONS(DEFINITION)
 #undef DEFINITION
         };
+
     };
+
+    inline PipelineAccess::PipeLineAccessFlags operator|(PipelineAccess::PipeLineAccessFlags a,PipelineAccess::PipeLineAccessFlags b)
+    {
+        return static_cast<PipelineAccess::PipeLineAccessFlags>(static_cast<unsigned int>(a) | static_cast<unsigned int>(b));
+    }
 
     struct GPUMemoryBarrier
     {
@@ -78,6 +86,18 @@ namespace slag
     {
 
     };
+
+    namespace framegraph
+    {
+        struct VirtualImageMemoryBarrier
+        {
+            Texture::Layout oldLayout;
+            Texture::Layout newLayout;
+            PipelineAccess::PipeLineAccessFlags requireCachesFinish;
+            PipelineAccess::PipeLineAccessFlags usingCaches;
+            std::string textureName;
+        };
+    }
 
 }
 #endif //SLAG_GPUMEMORYBARRIERS_H

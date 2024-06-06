@@ -149,6 +149,7 @@ namespace slag
                 return true;
             }
             updateParameters();
+            return false;
         }
 
         void VulkanSwapchain::vsyncEnabled(bool enabled)
