@@ -74,17 +74,7 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/VertexDescription.cpp
         src/slag/VertexDescription.h
         src/slag/Viewport.h
-        src/slag/FrameGraphBuilder.h
-        src/slag/FrameGraphBuilder.cpp
-        src/slag/GraphicsPass.cpp
-        src/slag/GraphicsPass.h
         src/slag/FrameResourceDescriptions.h
-        src/slag/FrameGraph.cpp
-        src/slag/FrameGraph.h
-        src/slag/FrameGraphStage.cpp
-        src/slag/FrameGraphStage.h
-        src/slag/FrameResourceDictionary.cpp
-        src/slag/FrameResourceDictionary.h
 )
 target_include_directories(Slag PRIVATE ${Boost_INCLUDE_DIRS} third-party/stb)
 

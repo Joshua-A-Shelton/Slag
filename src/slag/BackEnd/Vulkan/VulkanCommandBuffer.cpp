@@ -1,5 +1,6 @@
 #include "VulkanCommandBuffer.h"
 #include "VulkanTexture.h"
+#include "VulkanTextureSampler.h"
 #include "VulkanBuffer.h"
 #include "VulkanLib.h"
 #include "VulkanShader.h"
@@ -443,6 +444,31 @@ namespace slag
         {
             VulkanCommandBuffer* vcmd = static_cast<VulkanCommandBuffer*>(buffer);
             vkCmdExecuteCommands(_cmdBuffer,1,&vcmd->_cmdBuffer);
+        }
+
+        void VulkanCommandBuffer::blitImage(Texture *source, Rectangle sourceArea, Texture::Layout sourceLayout, Texture *destination, Rectangle destinationArea, Texture::Layout destinationLayout,
+                                            TextureSampler::Filter filter)
+        {
+            VulkanTexture* src = static_cast<VulkanTexture*>(source);
+            VulkanTexture* dst = static_cast<VulkanTexture*>(destination);
+            auto dx1 = destinationArea.offset.x;
+            auto dx2 = destinationArea.offset.x+destinationArea.extent.width;
+
+            auto dy1 = destinationArea.offset.y;
+            auto dy2 = destinationArea.offset.y+destinationArea.extent.height;
+
+            VkImageBlit blitData
+            {
+                .srcSubresource = {.aspectMask = src->usageVulkan(), .mipLevel = 0,.baseArrayLayer = 1, .layerCount = 1},
+                .srcOffsets = {{sourceArea.offset.x,sourceArea.offset.y,0},{static_cast<int32_t>(sourceArea.offset.x+sourceArea.extent.width),static_cast<int32_t>(sourceArea.offset.y+sourceArea.extent.height),0}},
+            };
+            for(uint32_t i=0; i<destination->mipLevels(); i++)
+            {
+                blitData.dstSubresource = {.aspectMask = dst->usageVulkan(), .mipLevel = i,.baseArrayLayer = 1, .layerCount = 1};
+                blitData.dstOffsets[0] = {dx1,dy1,0};
+                blitData.dstOffsets[1] = {static_cast<int32_t>(dx2),static_cast<int32_t>(dy2),0};
+                vkCmdBlitImage(_cmdBuffer,src->vulkanImage(),VulkanTexture::layoutFromCrossPlatform(sourceLayout),dst->vulkanImage(),VulkanTexture::layoutFromCrossPlatform(destinationLayout),1,&blitData,VulkanTextureSampler::filterFromCrossPlatform(filter));
+            }
         }
 
     } // slag

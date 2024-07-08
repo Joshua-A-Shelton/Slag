@@ -13,8 +13,14 @@ DEFINITION(COPY_DESTINATION,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,D3D12_RESOURCE_
 DEFINITION(COPY_SOURCE,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,D3D12_RESOURCE_STATE_COPY_SOURCE) \
 DEFINITION(PRESENT,VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,D3D12_RESOURCE_STATE_PRESENT) \
 
+
+
+
+
 #include <cstdint>
 #include "PixelFormat.h"
+#include "Rectangle.h"
+#include "TextureSampler.h"
 
 namespace slag
 {
@@ -43,9 +49,15 @@ namespace slag
         virtual uint32_t width()=0;
         virtual uint32_t height()=0;
         virtual Usage usage()=0;
+        //performs a texture blit, but will stall graphics card until it's finished
+        virtual void blitImmediate(Texture* source,Rectangle sourceArea, Texture::Layout sourceLayout, Rectangle destinationArea, Texture::Layout destinationLayout,TextureSampler::Filter filter = TextureSampler::Filter::NEAREST)=0;
         static Texture* create(const char* fileLocation, unsigned int mipLevels=1, bool renderTargetCapable = false);
         static Texture* create(uint32_t width, uint32_t height, Pixels::PixelFormat format, uint32_t mipLevels = 1, bool renderTargetCapable = false);
         static Texture* create(uint32_t width, uint32_t height, Pixels::PixelFormat format, void* pixelData, uint32_t mipLevels = 1, bool renderTargetCapable = false);
+
+        static Texture* create(const char* fileLocation, Texture::Layout layout, unsigned int mipLevels=1, bool renderTargetCapable = false);
+        static Texture* create(uint32_t width, uint32_t height, Pixels::PixelFormat format, Texture::Layout layout, uint32_t mipLevels = 1, bool renderTargetCapable = false);
+        static Texture* create(uint32_t width, uint32_t height, Pixels::PixelFormat format, Texture::Layout layout, void* pixelData, uint32_t mipLevels = 1, bool renderTargetCapable = false);
     };
 }
 #endif //SLAG_TEXTURE_H

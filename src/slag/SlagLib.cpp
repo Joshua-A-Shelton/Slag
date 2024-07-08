@@ -90,4 +90,19 @@ namespace slag
     {
         return SLAG_GRAPHICS_BACKEND;
     }
+
+    GraphicsCard *SlagLib::graphicsCard()
+    {
+        GraphicsCard* card = nullptr;
+        switch (SLAG_GRAPHICS_BACKEND)
+        {
+            case VULKAN:
+                card = vulkan::VulkanLib::graphicsCard();
+                break;
+            case DX12:
+                throw std::runtime_error("not implemented");
+                break;
+        }
+        return card;
+    }
 } // slag

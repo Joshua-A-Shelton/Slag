@@ -2,6 +2,7 @@
 #define SLAG_ATTACHMENT_H
 #include "Texture.h"
 #include "ClearValue.h"
+
 namespace slag
 {
     struct Attachment

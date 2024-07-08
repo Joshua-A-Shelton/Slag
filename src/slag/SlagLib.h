@@ -6,13 +6,10 @@
 #include "CommandBuffer.h"
 #include "Frame.h"
 #include "FramebufferDescription.h"
-#include "FrameGraphBuilder.h"
-#include "FrameGraph.h"
 #include "FrameResourceDescriptions.h"
 #include "GPUMemoryBarriers.h"
 #include "GPUTypes.h"
 #include "GraphicsCard.h"
-#include "GraphicsPass.h"
 #include "PixelFormat.h"
 #include "PlatformData.h"
 #include "PushConstantRange.h"
@@ -47,6 +44,7 @@ namespace slag
         static bool initialize(SlagInitDetails initDetails);
         static void cleanup();
         static BackEnd usingBackEnd();
+        static GraphicsCard* graphicsCard();
     };
 
 } // slag

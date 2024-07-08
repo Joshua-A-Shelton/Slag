@@ -43,6 +43,7 @@ namespace slag
         virtual void pushConstants(Shader* shader,PushConstantRange* pushRange, void* data)=0;
         virtual CommandBuffer* createSubCommandBuffer()=0;
         virtual void addSubCommandBuffer(CommandBuffer* buffer)=0;
+        virtual void blitImage(Texture* source, Rectangle sourceArea, Texture::Layout sourceLayout, Texture* destination, Rectangle destinationArea, Texture::Layout destinationLayout,TextureSampler::Filter filter)=0;
 
     };
 }

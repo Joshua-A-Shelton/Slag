@@ -34,6 +34,9 @@ namespace slag
             const VkPhysicalDeviceProperties& properties();
             void runOneTimeCommands(VkQueue submissionQueue, uint32_t queueFamily, std::function<void(VkCommandBuffer commandBuffer)>);
 
+            void executeArbitrary(std::function<void(CommandBuffer* commandBuffer)> execution,QueueType queue)override;
+
+
         private:
             void move(VulkanGraphicsCard&& from);
             VkPhysicalDevice _physicalDevice = nullptr;

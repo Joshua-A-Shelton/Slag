@@ -1,6 +1,7 @@
 #define VMA_IMPLEMENTATION
 #include "VulkanGraphicsCard.h"
 #include "VulkanLib.h"
+#include "VulkanCommandBuffer.h"
 
 namespace slag
 {
@@ -174,6 +175,49 @@ namespace slag
             vkDestroyFence(_device,finished, nullptr);
             vkDestroyCommandPool(_device,pool, nullptr);
 
+        }
+
+        void VulkanGraphicsCard::executeArbitrary(std::function<void(CommandBuffer *)> execution, GraphicsCard::QueueType queue)
+        {
+            VkQueue submissionQueue = nullptr;
+            uint32_t submissionQueueFamily = 0;
+            switch (queue)
+            {
+                case QueueType::GRAPHICS:
+                    submissionQueue = VulkanGraphicsCard::_graphicsQueue;
+                    submissionQueueFamily = VulkanGraphicsCard::_graphicsQueueFamily;
+                    break;
+                case QueueType::TRANSFER:
+                    submissionQueue = VulkanGraphicsCard::_transferQueue;
+                    submissionQueueFamily = VulkanGraphicsCard::_transferQueueFamily;
+                    break;
+                case QueueType::COMPUTE:
+                    submissionQueue = VulkanGraphicsCard::_computeQueue;
+                    submissionQueueFamily = VulkanGraphicsCard::_computeQueueFamily;
+                    break;
+            }
+
+            VulkanCommandBuffer cb(true,submissionQueue,submissionQueueFamily,true);
+            cb.begin();
+
+            execution(&cb);
+
+            cb.end();
+
+            VkFence finished;
+            VkFenceCreateInfo fenceInfo{};
+            fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+            vkCreateFence(VulkanLib::graphicsCard()->device(), &fenceInfo, nullptr,&finished);
+
+            VkSubmitInfo submitInfo{};
+            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            submitInfo.commandBufferCount = 1;
+            submitInfo.pCommandBuffers = &cb.vulkanCommandBuffer();
+
+            vkQueueSubmit(submissionQueue, 1, &submitInfo, finished);
+            vkWaitForFences(_device,1,&finished,true, 1000000000);
+
+            vkDestroyFence(_device,finished, nullptr);
         }
 
     } // slag
