@@ -15,6 +15,7 @@ namespace slag
             void initializeLowLevelHandle(void** lowLevelHandle, UniformSet* set, UniformSetDataAllocator* allocator)override;
             void setUniformBufferData(void* lowLevelHandle, uint32_t uniformIndex,BufferWriteData* writtenData)override;
             void setTexture(void* lowLevelHandle, uint32_t uniformIndex, Texture* texture, TextureSampler* sampler, Texture::Layout layout)override;
+            void setImage(void* lowLevelHandle, uint32_t uniformIndex, Texture* texture, Texture::Layout layout)override;
         };
 
     } // slag

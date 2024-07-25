@@ -7,6 +7,7 @@
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
 #include "Shader.h"
+#include "ComputeShader.h"
 #include "UniformBuffer.h"
 #include "Rectangle.h"
 #include "Viewport.h"
@@ -41,6 +42,10 @@ namespace slag
         virtual void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstVertex, int32_t vertexOffset, uint32_t firstInstance)=0;
         virtual void bindUniformSetData(Shader* shader, UniformSetData& data)=0;
         virtual void pushConstants(Shader* shader,PushConstantRange* pushRange, void* data)=0;
+        virtual void bindShader(ComputeShader* shader)=0;
+        virtual void bindUniformSetData(ComputeShader* shader, UniformSetData& data)=0;
+        virtual void pushConstants(ComputeShader* shader,PushConstantRange* pushRange, void* data)=0;
+        virtual void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)=0;
         virtual CommandBuffer* createSubCommandBuffer()=0;
         virtual void addSubCommandBuffer(CommandBuffer* buffer)=0;
         virtual void blitImage(Texture* source, Rectangle sourceArea, Texture::Layout sourceLayout, Texture* destination, Rectangle destinationArea, Texture::Layout destinationLayout,TextureSampler::Filter filter)=0;

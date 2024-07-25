@@ -13,8 +13,13 @@ DEFINITION(COPY_DESTINATION,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,D3D12_RESOURCE_
 DEFINITION(COPY_SOURCE,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,D3D12_RESOURCE_STATE_COPY_SOURCE) \
 DEFINITION(PRESENT,VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,D3D12_RESOURCE_STATE_PRESENT) \
 
-
-
+//Technically, other options are defined, but I'm sticking with these for now
+#define TEXTURE_FEATURE_DEFINITIONS(DEFINITION) \
+DEFINITION(SAMPLED_IMAGE,0x00000001,VK_IMAGE_USAGE_SAMPLED_BIT,UNDEFINED) \
+DEFINITION(STORAGE,0x00000010,VK_IMAGE_USAGE_STORAGE_BIT,UNDEFINED)  \
+DEFINITION(COLOR_ATTACHMENT,0x00000100,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,UNDEFINED) \
+DEFINITION(DEPTH_ATTACHMENT,0x00001000,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,UNDEFINED) \
+DEFINITION(INPUT_ATTACHMENT,0x00010000,VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,UNDEFINED) \
 
 
 #include <cstdint>
@@ -26,7 +31,6 @@ namespace slag
 {
     class Texture
     {
-
     public:
         enum Usage
         {
@@ -41,6 +45,12 @@ namespace slag
             TEXTURE_LAYOUT_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
         };
+        enum Features
+        {
+#define DEFINITION(slagName, slagValue, vulkanName, dirextXName) slagName = slagValue,
+            TEXTURE_FEATURE_DEFINITIONS(DEFINITION)
+#undef DEFINITION
+        };
 
         virtual ~Texture()=default;
 
@@ -51,13 +61,15 @@ namespace slag
         virtual Usage usage()=0;
         //performs a texture blit, but will stall graphics card until it's finished
         virtual void blitImmediate(Texture* source,Rectangle sourceArea, Texture::Layout sourceLayout, Rectangle destinationArea, Texture::Layout destinationLayout,TextureSampler::Filter filter = TextureSampler::Filter::NEAREST)=0;
-        static Texture* create(const char* fileLocation, unsigned int mipLevels=1, bool renderTargetCapable = false);
-        static Texture* create(uint32_t width, uint32_t height, Pixels::PixelFormat format, uint32_t mipLevels = 1, bool renderTargetCapable = false);
-        static Texture* create(uint32_t width, uint32_t height, Pixels::PixelFormat format, void* pixelData, uint32_t mipLevels = 1, bool renderTargetCapable = false);
 
-        static Texture* create(const char* fileLocation, Texture::Layout layout, unsigned int mipLevels=1, bool renderTargetCapable = false);
-        static Texture* create(uint32_t width, uint32_t height, Pixels::PixelFormat format, Texture::Layout layout, uint32_t mipLevels = 1, bool renderTargetCapable = false);
-        static Texture* create(uint32_t width, uint32_t height, Pixels::PixelFormat format, Texture::Layout layout, void* pixelData, uint32_t mipLevels = 1, bool renderTargetCapable = false);
+        static Texture* create(const char* fileLocation, unsigned int mipLevels=1, Texture::Layout layout = Texture::Layout::SHADER_RESOURCE, Features features=Features::SAMPLED_IMAGE);
+        static Texture* create(uint32_t width, uint32_t height, Pixels::PixelFormat format, Texture::Layout layout, uint32_t mipLevels = 1, Features features=Features::SAMPLED_IMAGE);
+        static Texture* create(uint32_t width, uint32_t height, Pixels::PixelFormat format, void* pixelData, uint32_t mipLevels = 1,Layout layout=Layout::SHADER_RESOURCE, Features features=Features::SAMPLED_IMAGE);
     };
+
+    inline Texture::Features operator|(Texture::Features a, Texture::Features b)
+    {
+        return static_cast<Texture::Features>(static_cast<int>(a) | static_cast<int>(b));
+    }
 }
 #endif //SLAG_TEXTURE_H

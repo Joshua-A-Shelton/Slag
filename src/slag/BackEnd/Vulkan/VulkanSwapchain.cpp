@@ -184,6 +184,13 @@ namespace slag
         {
             _width = width;
             _height = height;
+            for(auto& textureDescPair: _textureDescriptions)
+            {
+                if(textureDescPair.second.sizingMode == TextureResourceDescription::SizingMode::FrameRelative)
+                {
+                    _requiredTextureUpdates.insert(textureDescPair.first);
+                }
+            }
             updateParameters();
         }
 
@@ -247,6 +254,7 @@ namespace slag
                     .set_desired_extent(_width,_height)
                     .set_desired_min_image_count(_desiredBackbufferCount)
                     .set_old_swapchain(_swapchain)
+                    .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
                     .build().value();
             if(_swapchain)
             {

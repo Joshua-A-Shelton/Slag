@@ -154,6 +154,7 @@ namespace slag
                 TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
             }
+            return 0;
         }
 
         static uint32_t pixelBytes(PixelFormat format)

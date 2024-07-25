@@ -8,6 +8,7 @@
 #include "VulkanExtensions.h"
 #include "VulkanVertexBuffer.h"
 #include "VulkanIndexBuffer.h"
+#include "VulkanComputeShader.h"
 
 namespace slag
 {
@@ -161,7 +162,7 @@ namespace slag
             for(int i=0; i< imageBarrierCount; i++)
             {
                 auto curBarrier = imageBarriers+i;
-                VulkanTexture* texture = static_cast<VulkanTexture*>(curBarrier->texture);
+                VulkanTexture* texture = dynamic_cast<VulkanTexture*>(curBarrier->texture);
                 imBarriers[i]=VkImageMemoryBarrier
                 {
                         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -340,7 +341,7 @@ namespace slag
 
         void VulkanCommandBuffer::bindVertexBuffer(VertexBuffer* vertexBuffer)
         {
-            VulkanVertexBuffer* vBuffer = static_cast<VulkanVertexBuffer*>(vertexBuffer);
+            VulkanVertexBuffer* vBuffer = dynamic_cast<VulkanVertexBuffer*>(vertexBuffer);
             VkDeviceSize offset = 0;
             auto buffer = vBuffer->underlyingBuffer();
             vkCmdBindVertexBuffers(_cmdBuffer,0,1,&buffer,&offset);
@@ -359,14 +360,20 @@ namespace slag
                     break;
 
             }
-            VulkanIndexBuffer* iBuffer = static_cast<VulkanIndexBuffer*>(indexBuffer);
+            VulkanIndexBuffer* iBuffer = dynamic_cast<VulkanIndexBuffer*>(indexBuffer);
             vkCmdBindIndexBuffer(_cmdBuffer,iBuffer->underlyingBuffer(),0,itype);
         }
 
         void VulkanCommandBuffer::bindShader(Shader* shader)
         {
-            VulkanShader* vshader = static_cast<VulkanShader*>(shader);
+            VulkanShader* vshader = dynamic_cast<VulkanShader*>(shader);
             vkCmdBindPipeline(_cmdBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,vshader->pipeline());
+        }
+
+        void VulkanCommandBuffer::bindShader(ComputeShader* shader)
+        {
+            VulkanComputeShader* vshader = dynamic_cast<VulkanComputeShader*>(shader);
+            vkCmdBindPipeline(_cmdBuffer,VK_PIPELINE_BIND_POINT_COMPUTE,vshader->pipeline());
         }
 
         void VulkanCommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
@@ -411,17 +418,37 @@ namespace slag
 
         void VulkanCommandBuffer::bindUniformSetData(Shader *shader, UniformSetData &data)
         {
-            VulkanShader* vulkanShader = static_cast<VulkanShader*>(shader);
+            VulkanShader* vulkanShader = dynamic_cast<VulkanShader*>(shader);
             VulkanUniformSet* set = dynamic_cast<VulkanUniformSet *>(data.providingFor());
             VkDescriptorSet descriptorSet = (VkDescriptorSet) data.lowLevelHandle();
             vkCmdBindDescriptorSets(_cmdBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,vulkanShader->layout(),set->index(),1,&descriptorSet,0, nullptr);
         }
 
+        void VulkanCommandBuffer::bindUniformSetData(ComputeShader* shader, UniformSetData& data)
+        {
+            VulkanComputeShader* vulkanShader = dynamic_cast<VulkanComputeShader*>(shader);
+            VulkanUniformSet* set = dynamic_cast<VulkanUniformSet *>(data.providingFor());
+            VkDescriptorSet descriptorSet = (VkDescriptorSet) data.lowLevelHandle();
+            vkCmdBindDescriptorSets(_cmdBuffer,VK_PIPELINE_BIND_POINT_COMPUTE,vulkanShader->layout(),set->index(),1,&descriptorSet,0, nullptr);
+        }
+
         void VulkanCommandBuffer::pushConstants(Shader *shader, PushConstantRange *pushRange, void *data)
         {
-            VulkanShader* vulkanShader = static_cast<VulkanShader*>(shader);
-            auto range = static_cast<VulkanPushConstantRange*>(pushRange)->range();
+            VulkanShader* vulkanShader = dynamic_cast<VulkanShader*>(shader);
+            auto range = dynamic_cast<VulkanPushConstantRange*>(pushRange)->range();
             vkCmdPushConstants(_cmdBuffer,vulkanShader->layout(),range.stageFlags,range.offset,range.size, data);
+        }
+
+        void VulkanCommandBuffer::pushConstants(ComputeShader* shader, PushConstantRange* pushRange, void* data)
+        {
+            VulkanComputeShader* vulkanShader = dynamic_cast<VulkanComputeShader*>(shader);
+            auto range = dynamic_cast<VulkanPushConstantRange*>(pushRange)->range();
+            vkCmdPushConstants(_cmdBuffer,vulkanShader->layout(),range.stageFlags,range.offset,range.size, data);
+        }
+
+        void VulkanCommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+        {
+            vkCmdDispatch(_cmdBuffer,groupCountX,groupCountY,groupCountZ);
         }
 
         VkPipelineStageFlags VulkanCommandBuffer::pipelineStageFromCrossPlatform(PipelineStage::PipelineStageFlags flags)
@@ -442,15 +469,15 @@ namespace slag
 
         void VulkanCommandBuffer::addSubCommandBuffer(CommandBuffer *buffer)
         {
-            VulkanCommandBuffer* vcmd = static_cast<VulkanCommandBuffer*>(buffer);
+            VulkanCommandBuffer* vcmd = dynamic_cast<VulkanCommandBuffer*>(buffer);
             vkCmdExecuteCommands(_cmdBuffer,1,&vcmd->_cmdBuffer);
         }
 
         void VulkanCommandBuffer::blitImage(Texture *source, Rectangle sourceArea, Texture::Layout sourceLayout, Texture *destination, Rectangle destinationArea, Texture::Layout destinationLayout,
                                             TextureSampler::Filter filter)
         {
-            VulkanTexture* src = static_cast<VulkanTexture*>(source);
-            VulkanTexture* dst = static_cast<VulkanTexture*>(destination);
+            VulkanTexture* src = dynamic_cast<VulkanTexture*>(source);
+            VulkanTexture* dst = dynamic_cast<VulkanTexture*>(destination);
             auto dx1 = destinationArea.offset.x;
             auto dx2 = destinationArea.offset.x+destinationArea.extent.width;
 
@@ -459,14 +486,14 @@ namespace slag
 
             VkImageBlit blitData
             {
-                .srcSubresource = {.aspectMask = src->usageVulkan(), .mipLevel = 0,.baseArrayLayer = 1, .layerCount = 1},
-                .srcOffsets = {{sourceArea.offset.x,sourceArea.offset.y,0},{static_cast<int32_t>(sourceArea.offset.x+sourceArea.extent.width),static_cast<int32_t>(sourceArea.offset.y+sourceArea.extent.height),0}},
+                .srcSubresource = {.aspectMask = src->usageVulkan(), .mipLevel = 0,.baseArrayLayer = 0, .layerCount = 1},
+                .srcOffsets = {{sourceArea.offset.x,sourceArea.offset.y,0},{static_cast<int32_t>(sourceArea.offset.x+sourceArea.extent.width),static_cast<int32_t>(sourceArea.offset.y+sourceArea.extent.height),1}},
             };
             for(uint32_t i=0; i<destination->mipLevels(); i++)
             {
-                blitData.dstSubresource = {.aspectMask = dst->usageVulkan(), .mipLevel = i,.baseArrayLayer = 1, .layerCount = 1};
+                blitData.dstSubresource = {.aspectMask = dst->usageVulkan(), .mipLevel = i,.baseArrayLayer = 0, .layerCount = 1};
                 blitData.dstOffsets[0] = {dx1,dy1,0};
-                blitData.dstOffsets[1] = {static_cast<int32_t>(dx2),static_cast<int32_t>(dy2),0};
+                blitData.dstOffsets[1] = {static_cast<int32_t>(dx2),static_cast<int32_t>(dy2),1};
                 vkCmdBlitImage(_cmdBuffer,src->vulkanImage(),VulkanTexture::layoutFromCrossPlatform(sourceLayout),dst->vulkanImage(),VulkanTexture::layoutFromCrossPlatform(destinationLayout),1,&blitData,VulkanTextureSampler::filterFromCrossPlatform(filter));
             }
         }

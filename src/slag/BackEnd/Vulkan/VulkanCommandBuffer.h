@@ -33,11 +33,11 @@ namespace slag
             void end();
             void submit(VkSemaphore* waitSemaphores, uint32_t waitCount, VkSemaphore* signalSemaphores, uint32_t signalCount, VkFence fence);
             Level level()override;
-            void insertBarriers(const GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount, const ImageMemoryBarrier* imageBarriers, size_t imageBarrierCount, const BufferMemoryBarrier* bufferBarriers, size_t bufferBarrierCount, PipelineStage::PipelineStageFlags source, PipelineStage::PipelineStageFlags destination);
+            void insertBarriers(const GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount, const ImageMemoryBarrier* imageBarriers, size_t imageBarrierCount, const BufferMemoryBarrier* bufferBarriers, size_t bufferBarrierCount, PipelineStage::PipelineStageFlags source, PipelineStage::PipelineStageFlags destination)override;
             void executeSecondaryCommands(CommandBuffer* subBuffer)override;
             void setTargetFramebuffer(Rectangle bounds,Attachment* colorAttachments, size_t colorCount)override;
             void setTargetFramebuffer(Rectangle bounds,Attachment* colorAttachments, size_t colorCount, Attachment depthAttachment)override;
-            void endTargetFramebuffer();
+            void endTargetFramebuffer()override;
             void setViewport(Viewport bounds)override;
             void setViewport(Rectangle bounds)override;
             void setScissors(Rectangle bounds)override;
@@ -48,6 +48,10 @@ namespace slag
             void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstVertex, int32_t vertexOffset, uint32_t firstInstance)override;
             void bindUniformSetData(Shader* shader, UniformSetData& data)override;
             void pushConstants(Shader* shader,PushConstantRange* pushRange, void* data)override;
+            void bindShader(ComputeShader* shader)override;
+            void bindUniformSetData(ComputeShader* shader, UniformSetData& data)override;
+            void pushConstants(ComputeShader* shader,PushConstantRange* pushRange, void* data)override;
+            void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)override;
             CommandBuffer* createSubCommandBuffer()override;
             void addSubCommandBuffer(CommandBuffer* buffer)override;
             void blitImage(Texture* source, Rectangle sourceArea, Texture::Layout sourceLayout, Texture* destination, Rectangle destinationArea, Texture::Layout destinationLayout,TextureSampler::Filter filter)override;

@@ -14,11 +14,10 @@ namespace slag
         {
         public:
             VulkanTexture(VkImage image, VkImageView view, VkFormat format, VkImageAspectFlags usage, uint32_t width, uint32_t height, bool destroyImmediate);
-            VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels,VkImageAspectFlags usage, Pixels::PixelFormat format, bool renderTargetCapable, bool destroyImmediate);
-            VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels,VkImageAspectFlags usage, Pixels::PixelFormat format, Texture::Layout layout, bool renderTargetCapable, bool destroyImmediate);
 
-            VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels,VkImageAspectFlags usage, Pixels::PixelFormat format, void* pixelData, bool renderTargetCapable, bool destroyImmediate);
-            VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels,VkImageAspectFlags usage, Pixels::PixelFormat format, Texture::Layout layout, void* pixelData, bool renderTargetCapable, bool destroyImmediate);
+            VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels,VkImageAspectFlags usage, Pixels::PixelFormat format, Texture::Layout layout, Features features, bool destroyImmediate);
+
+            VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels,VkImageAspectFlags usage, Pixels::PixelFormat format, void* pixelData, Texture::Layout layout, Features features, bool destroyImmediate);
 
             VulkanTexture(const VulkanTexture&)=delete;
             VulkanTexture& operator=(const VulkanTexture&)=delete;
@@ -40,6 +39,7 @@ namespace slag
             static VkFormat formatFromCrossPlatform(Pixels::PixelFormat format);
             static VkImageLayout layoutFromCrossPlatform(Texture::Layout layout);
             static VkImageAspectFlags usageFromCrossPlatform(Texture::Usage usage);
+            static VkImageUsageFlags featuresFromCrossPlatform(Texture::Features features);
             static uint32_t formatSize(VkFormat format);
             static VkClearValue clearValueFromCrossPlatform(ClearValue& value);
         private:

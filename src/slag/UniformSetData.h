@@ -15,6 +15,7 @@ namespace slag
         UniformSetData(UniformSet* provideFor, UniformSetDataAllocator* allocator);
         void setUniform(uint32_t index, BufferWriteData& writeData);
         void setTexture(uint32_t index, Texture* texture, TextureSampler* sampler,Texture::Layout layout);
+        void setImage(uint32_t index, Texture* texture,Texture::Layout layout);
         UniformSet* providingFor()const;
         const void* lowLevelHandle()const;
     private:

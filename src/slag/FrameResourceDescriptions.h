@@ -21,11 +21,11 @@ namespace slag
         int mipLevels = 1;
         Pixels::PixelFormat format = Pixels::R32G32B32A32_SFLOAT;
         Texture::Usage usage = Texture::Usage::COLOR;
-        bool renderToCapable = false;
+        Texture::Features features = Texture::Features::SAMPLED_IMAGE;
 
         bool equivelentTo(const TextureResourceDescription& to)
         {
-            if(sizingMode == to.sizingMode && width == to.width && height == to.height && format == to.format && usage == to.usage && mipLevels == to.mipLevels && renderToCapable == to.renderToCapable)
+            if(sizingMode == to.sizingMode && width == to.width && height == to.height && format == to.format && usage == to.usage && mipLevels == to.mipLevels && features == to.features)
             {
                 return true;
             }

@@ -8,13 +8,6 @@
 
 namespace slag
 {
-    size_t CURRENT_SHADER_HASH = 0;
-    Shader::Shader()
-    {
-        _hash = CURRENT_SHADER_HASH;
-        CURRENT_SHADER_HASH++;
-    }
-
     Shader *Shader::create(const char *vertexFile, const char *fragmentFile, FramebufferDescription& framebufferDescription)
     {
         auto vertexPath = std::filesystem::absolute(vertexFile);
@@ -113,15 +106,5 @@ namespace slag
                 break;
         }
         return nullptr;
-    }
-
-    bool Shader::operator==(const Shader &other) const
-    {
-        return this == &other;
-    }
-
-    size_t Shader::operator()(const Shader &other) const
-    {
-        return _hash;
     }
 }

@@ -75,6 +75,8 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/VertexDescription.h
         src/slag/Viewport.h
         src/slag/FrameResourceDescriptions.h
+        src/slag/ComputeShader.cpp
+        src/slag/ComputeShader.h
 )
 target_include_directories(Slag PRIVATE ${Boost_INCLUDE_DIRS} third-party/stb)
 

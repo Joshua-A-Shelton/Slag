@@ -71,5 +71,32 @@ namespace slag
                     };
             vkUpdateDescriptorSets(VulkanLib::graphicsCard()->device(),1,&writeSet,0, nullptr);
         }
+
+        void VulkanUniformDataSetFunctionProvider::setImage(void* lowLevelHandle, uint32_t uniformIndex, Texture* texture, Texture::Layout layout)
+        {
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(lowLevelHandle);
+            auto image = static_cast<VulkanTexture*>(texture);
+            auto vulkanLayout = VulkanTexture::layoutFromCrossPlatform(layout);
+            VkDescriptorImageInfo image_info =
+                    {
+                            nullptr,
+                            image->vulkanView(),
+                            vulkanLayout
+                    };
+            VkWriteDescriptorSet writeSet
+                    {
+                            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                            nullptr,
+                            descriptorSet,
+                            uniformIndex,
+                            0,
+                            1,
+                            VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                            &image_info,
+                            nullptr,
+                            nullptr
+                    };
+            vkUpdateDescriptorSets(VulkanLib::graphicsCard()->device(),1,&writeSet,0, nullptr);
+        }
     } // slag
 } // vulkan

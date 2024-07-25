@@ -4,6 +4,7 @@
 #include "Buffer.h"
 #include "ClearValue.h"
 #include "CommandBuffer.h"
+#include "ComputeShader.h"
 #include "Frame.h"
 #include "FramebufferDescription.h"
 #include "FrameResourceDescriptions.h"

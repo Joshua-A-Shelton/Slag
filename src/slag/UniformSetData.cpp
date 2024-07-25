@@ -19,6 +19,11 @@ namespace slag
         UniformDataSetHandler::dataProvider()->setTexture(_lowLevelHandle,index,texture,sampler,layout);
     }
 
+    void UniformSetData::setImage(uint32_t index, Texture* texture, Texture::Layout layout)
+    {
+        UniformDataSetHandler::dataProvider()->setImage(_lowLevelHandle,index,texture,layout);
+    }
+
     UniformSet *UniformSetData::providingFor() const
     {
         return _provideFor;

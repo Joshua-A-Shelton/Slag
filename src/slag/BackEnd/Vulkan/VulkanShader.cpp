@@ -197,7 +197,6 @@ namespace slag
             VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
             pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             pipelineLayoutInfo.pNext = nullptr;
-            //TODO: this is where we set the information from spir-v reflect I think
             pipelineLayoutInfo.flags = 0;
             pipelineLayoutInfo.setLayoutCount = setLayouts.size();
             pipelineLayoutInfo.pSetLayouts = setLayouts.data();

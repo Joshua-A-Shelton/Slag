@@ -44,114 +44,18 @@ namespace slag
             };
         }
 
-        VulkanTexture::VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels, VkImageAspectFlags usage, Pixels::PixelFormat format, bool renderTargetCapable, bool destroyImmediate)
+        VulkanTexture::VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels, VkImageAspectFlags usage, Pixels::PixelFormat format, Texture::Layout layout, Features features, bool destroyImmediate)
         {
             VkDeviceSize bufferSize= Pixels::pixelBits(format) * width * height;
             std::vector<unsigned char>pixelBuffer(bufferSize);
-            VkImageAspectFlags features = 0;
-            VkImageLayout toLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            if(usage & DEPTH_STENCIL)
-            {
-                if(usage == DEPTH_STENCIL)
-                {
-                    toLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-                }
-                else if(usage == DEPTH)
-                {
-                    toLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-                }
-                else
-                {
-                    toLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
-                }
-
-                 features = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-            }
-            else
-            {
-                toLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                features = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-                if(renderTargetCapable)
-                {
-                    features |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-                }
-            }
-            create(width,height,mipLevels,usage,format,toLayout,pixelBuffer.data(),bufferSize,features,destroyImmediate);
+            create(width,height,mipLevels,usage,format, layoutFromCrossPlatform(layout),pixelBuffer.data(),bufferSize, featuresFromCrossPlatform(features),destroyImmediate);
         }
 
-        VulkanTexture::VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels, VkImageAspectFlags usage, Pixels::PixelFormat format, Texture::Layout layout, bool renderTargetCapable, bool destroyImmediate)
-        {
-            VkDeviceSize bufferSize= Pixels::pixelBits(format) * width * height;
-            std::vector<unsigned char>pixelBuffer(bufferSize);
-            VkImageAspectFlags features = 0;
-            if(usage & DEPTH_STENCIL)
-            {
-                features = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-            }
-            else
-            {
-                features = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-                if(renderTargetCapable)
-                {
-                    features |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-                }
-            }
-            create(width,height,mipLevels,usage,format, layoutFromCrossPlatform(layout),pixelBuffer.data(),bufferSize,features,destroyImmediate);
-        }
-
-        VulkanTexture::VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels, VkImageAspectFlags usage, Pixels::PixelFormat format, void* pixelData, bool renderTargetCapable, bool destroyImmediate)
+        VulkanTexture::VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels, VkImageAspectFlags usage, Pixels::PixelFormat format, void* pixelData, Texture::Layout layout, Features features, bool destroyImmediate)
         {
             auto size = Pixels::pixelBytes(format);
             VkDeviceSize bufferSize= size*width*height;
-            VkImageAspectFlags features = 0;
-            VkImageLayout toLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            if(usage & DEPTH_STENCIL)
-            {
-                if(usage == DEPTH_STENCIL)
-                {
-                    toLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-                }
-                else if(usage == DEPTH)
-                {
-                    toLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-                }
-                else
-                {
-                    toLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
-                }
-
-                features = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-            }
-            else
-            {
-                toLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                features = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-                if(renderTargetCapable)
-                {
-                    features |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-                }
-            }
-            create(width,height,mipLevels,usage,format,toLayout,pixelData,bufferSize,features,destroyImmediate);
-        }
-
-        VulkanTexture::VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels, VkImageAspectFlags usage, Pixels::PixelFormat format, Texture::Layout layout, void* pixelData, bool renderTargetCapable, bool destroyImmediate)
-        {
-            auto size = Pixels::pixelBytes(format);
-            VkDeviceSize bufferSize= size*width*height;
-            VkImageAspectFlags features = 0;
-            if(usage & DEPTH_STENCIL)
-            {
-                features = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-            }
-            else
-            {
-                features = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-                if(renderTargetCapable)
-                {
-                    features |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-                }
-            }
-            create(width,height,mipLevels,usage,format, layoutFromCrossPlatform(layout),pixelData,bufferSize,features,destroyImmediate);
+            create(width,height,mipLevels,usage,format, layoutFromCrossPlatform(layout),pixelData,bufferSize, featuresFromCrossPlatform(features),destroyImmediate);
         }
 
         VulkanTexture::~VulkanTexture()
@@ -308,6 +212,15 @@ namespace slag
             }
         }
 
+        VkImageUsageFlags VulkanTexture::featuresFromCrossPlatform(Texture::Features features)
+        {
+            VkImageUsageFlags bits = static_cast<VkImageUsageFlagBits>(0);
+#define DEFINITION(slagName, slagValue, vulkanName, dirextXName) if(features &slagName){bits=bits|vulkanName;}
+            TEXTURE_FEATURE_DEFINITIONS(DEFINITION)
+#undef DEFINITION
+            return bits;
+        }
+
         uint32_t VulkanTexture::formatSize(VkFormat format)
         {
             switch(format)
@@ -345,6 +258,9 @@ namespace slag
 
         void VulkanTexture::create(uint32_t width, uint32_t height, uint32_t mipLevels, VkImageAspectFlags usage, Pixels::PixelFormat format, VkImageLayout toLayout, void* pixelData, VkDeviceSize bufferSize, VkImageUsageFlags features, bool destroyImmdediate)
         {
+
+            VkImageAspectFlags featureFlags = features | VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL | VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
             _baseFormat = VulkanTexture::formatFromCrossPlatform(format);
             _width = width;
             _height = height;
@@ -354,7 +270,7 @@ namespace slag
             VkImageCreateInfo dimg_info{};
             dimg_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
             dimg_info.format = _baseFormat;
-            dimg_info.usage = features;
+            dimg_info.usage = featureFlags;
 
             VkExtent3D imageExtent;
             imageExtent.width = static_cast<uint32_t>(_width);

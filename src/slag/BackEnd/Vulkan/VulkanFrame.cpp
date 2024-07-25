@@ -249,7 +249,7 @@ namespace slag
                 w = description.width;
                 h = description.height;
             }
-            _textureResources.insert(std::make_pair(name, VulkanTexture(w,h,1,VulkanTexture::usageFromCrossPlatform(description.usage),description.format,description.renderToCapable, true)));
+            _textureResources.insert(std::make_pair(name, VulkanTexture(w,h,1,VulkanTexture::usageFromCrossPlatform(description.usage),description.format,Texture::Layout::SHADER_RESOURCE,description.features,true)));
         }
 
         void VulkanFrame::insertVertexBufferResource(std::string name, VertexBufferResourceDescription description)
