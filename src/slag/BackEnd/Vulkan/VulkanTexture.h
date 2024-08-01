@@ -31,12 +31,14 @@ namespace slag
             uint32_t height()override;
             Usage usage()override;
             void blitImmediate(Texture* source,Rectangle sourceArea, Texture::Layout sourceLayout, Rectangle destinationArea, Texture::Layout destinationLayout,TextureSampler::Filter filter = TextureSampler::Filter::NEAREST)override;
+            RawPixelStream pixels(Texture::Layout layout)override;
             VkImageAspectFlags usageVulkan();
             VkImage vulkanImage();
             VkImageView vulkanView();
             VkFormat vulkanFormat();
             static Pixels::PixelFormat formatFromNative(VkFormat format);
             static VkFormat formatFromCrossPlatform(Pixels::PixelFormat format);
+            static Texture::Layout layoutFromNative(VkImageLayout layout);
             static VkImageLayout layoutFromCrossPlatform(Texture::Layout layout);
             static VkImageAspectFlags usageFromCrossPlatform(Texture::Usage usage);
             static VkImageUsageFlags featuresFromCrossPlatform(Texture::Features features);

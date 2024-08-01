@@ -159,6 +159,130 @@ namespace slag
             });
         }
 
+        RawPixelStream VulkanTexture::pixels(Texture::Layout layout)
+        {
+            VkImageAspectFlags featureFlags =  VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+
+            VkImageCreateInfo dimg_info{};
+            dimg_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+            dimg_info.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+            dimg_info.usage = featureFlags;
+
+            VkExtent3D imageExtent;
+            imageExtent.width = static_cast<uint32_t>(_width);
+            imageExtent.height = static_cast<uint32_t>(_height);
+            imageExtent.depth = 1;
+
+            dimg_info.extent = imageExtent;
+            dimg_info.imageType = VK_IMAGE_TYPE_2D;
+            dimg_info.mipLevels = 1;
+            dimg_info.arrayLayers = 1;
+            dimg_info.samples = VK_SAMPLE_COUNT_1_BIT;
+            dimg_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+            dimg_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+            VmaAllocationCreateInfo dimg_allocinfo = {};
+            dimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+            //dimg_allocinfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+            VkImage formattedImage = nullptr;
+            VmaAllocation formattedAllocation = nullptr;
+
+            //allocate and create the image
+            auto success = vmaCreateImage(VulkanLib::graphicsCard()->memoryAllocator(), &dimg_info, &dimg_allocinfo, &formattedImage, &formattedAllocation, nullptr);
+
+
+            VkBuffer pixelBuffer= nullptr;
+            VmaAllocation pixelAllocation= nullptr;
+
+            VkBufferCreateInfo bufferInfo = {};
+            bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+            //this is the total size, in bytes, of the buffer we are allocating
+            bufferInfo.size = _width*_height*sizeof(float)*4;
+            bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            VmaAllocationCreateInfo vmaallocInfo = {};
+            vmaallocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+            auto result = vmaCreateBuffer(VulkanLib::graphicsCard()->memoryAllocator(), &bufferInfo, &vmaallocInfo,&pixelBuffer,&pixelAllocation,nullptr);
+
+            auto originalLayout = layoutFromCrossPlatform(layout);
+            auto source = _image;
+            auto width = _width;
+            auto height = _height;
+
+            VulkanLib::graphicsCard()->runOneTimeCommands(VulkanLib::graphicsCard()->graphicsQueue(),VulkanLib::graphicsCard()->graphicsQueueFamily(),[=](VkCommandBuffer commandBuffer)
+            {
+                VkImageMemoryBarrier barriers[2];
+                VkImageMemoryBarrier& sourceBarrier = barriers[0];
+                VkImageMemoryBarrier& destBarrier = barriers[1];
+
+                sourceBarrier = VkImageMemoryBarrier{};
+                sourceBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                sourceBarrier.oldLayout = originalLayout;
+                sourceBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                sourceBarrier.image = source;
+                sourceBarrier.subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+                sourceBarrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
+                sourceBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+                destBarrier = VkImageMemoryBarrier{};
+                destBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                destBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                destBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                destBarrier.image = formattedImage;
+                destBarrier.subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+                destBarrier.srcAccessMask = 0;
+                destBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+                vkCmdPipelineBarrier(commandBuffer,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT,0,0, nullptr,0, nullptr,2,barriers);
+
+                VkImageBlit blit
+                {
+                    .srcSubresource = {.aspectMask=VK_IMAGE_ASPECT_COLOR_BIT,.mipLevel=0,.baseArrayLayer=0,.layerCount=1},
+                    .srcOffsets = {{0,0,0},{static_cast<int32_t>(width),static_cast<int32_t>(height),1}},
+                    .dstSubresource = {.aspectMask=VK_IMAGE_ASPECT_COLOR_BIT,.mipLevel=0,.baseArrayLayer=0,.layerCount=1},
+                    .dstOffsets = {{0,0,0},{static_cast<int32_t>(width),static_cast<int32_t>(height),1}}
+                };
+
+                vkCmdBlitImage(commandBuffer,source,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,formattedImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,1,&blit,VK_FILTER_LINEAR);
+
+
+                sourceBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                sourceBarrier.newLayout = originalLayout;
+                sourceBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+                sourceBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+                destBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                destBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                destBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                destBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+
+                vkCmdPipelineBarrier(commandBuffer,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT,0,0, nullptr,0, nullptr,2,barriers);
+
+
+                VkBufferImageCopy copy
+                        {
+                                .bufferOffset = 0,
+                                .bufferRowLength = 0,
+                                .bufferImageHeight = 0,
+                                .imageSubresource = {.aspectMask=VK_IMAGE_ASPECT_COLOR_BIT,.mipLevel=0,.baseArrayLayer=0,.layerCount=1},
+                                .imageOffset = {0,0,0},
+                                .imageExtent = {width,height,1}
+                        };
+                vkCmdCopyImageToBuffer(commandBuffer,formattedImage,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,pixelBuffer,1,&copy);
+
+            });
+
+            vmaDestroyImage(VulkanLib::graphicsCard()->memoryAllocator(),formattedImage,formattedAllocation);
+
+            void* dataLocation = nullptr;
+            success = vmaMapMemory(VulkanLib::graphicsCard()->memoryAllocator(),pixelAllocation,&dataLocation);
+            std::vector<RawPixel> pixelData(_width*_height);
+            memcpy(pixelData.data(), dataLocation, _width*_height*sizeof(RawPixel));
+            vmaUnmapMemory(VulkanLib::graphicsCard()->memoryAllocator(),pixelAllocation);
+            vmaDestroyBuffer(VulkanLib::graphicsCard()->memoryAllocator(),pixelBuffer,pixelAllocation);
+            return RawPixelStream(std::move(pixelData),_width,_height);
+        }
+
         Pixels::PixelFormat VulkanTexture::formatFromNative(VkFormat format)
         {
             switch (format)
@@ -179,6 +303,17 @@ namespace slag
 #undef DEFINITION
             }
             return VK_FORMAT_UNDEFINED;
+        }
+
+        Texture::Layout VulkanTexture::layoutFromNative(VkImageLayout layout)
+        {
+            switch (layout)
+            {
+#define DEFINITION(slagName, vulkanName, directXName) case vulkanName: return slagName;
+                TEXTURE_LAYOUT_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            return Texture::Layout::UNDEFINED;
         }
 
         VkImageLayout VulkanTexture::layoutFromCrossPlatform(Texture::Layout layout)
