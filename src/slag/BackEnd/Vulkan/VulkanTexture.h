@@ -19,6 +19,8 @@ namespace slag
 
             VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels,VkImageAspectFlags usage, Pixels::PixelFormat format, void* pixelData, Texture::Layout layout, Features features, bool destroyImmediate);
 
+            VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels,VkImageAspectFlags usage, Pixels::PixelFormat pixelDataFormat, void* pixelData, Pixels::PixelFormat textureFormat, Texture::Layout layout, Features features, bool destroyImmediate);
+
             VulkanTexture(const VulkanTexture&)=delete;
             VulkanTexture& operator=(const VulkanTexture&)=delete;
             VulkanTexture(VulkanTexture&& from);
@@ -31,7 +33,7 @@ namespace slag
             uint32_t height()override;
             Usage usage()override;
             void blitImmediate(Texture* source,Rectangle sourceArea, Texture::Layout sourceLayout, Rectangle destinationArea, Texture::Layout destinationLayout,TextureSampler::Filter filter = TextureSampler::Filter::NEAREST)override;
-            RawPixelStream pixels(Texture::Layout layout)override;
+            ColorArray pixels(Texture::Layout layout)override;
             VkImageAspectFlags usageVulkan();
             VkImage vulkanImage();
             VkImageView vulkanView();

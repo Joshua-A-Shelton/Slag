@@ -3,6 +3,7 @@
 #include "Attachment.h"
 #include "Buffer.h"
 #include "ClearValue.h"
+#include "Color.h"
 #include "CommandBuffer.h"
 #include "ComputeShader.h"
 #include "Frame.h"

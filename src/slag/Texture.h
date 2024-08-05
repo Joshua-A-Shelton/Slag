@@ -26,7 +26,7 @@ DEFINITION(INPUT_ATTACHMENT,0x00010000,VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,UNDEF
 #include "PixelFormat.h"
 #include "Rectangle.h"
 #include "TextureSampler.h"
-#include "Utils/RawPixelStream.h"
+#include "Color.h"
 
 namespace slag
 {
@@ -63,11 +63,15 @@ namespace slag
         //performs a texture blit, but will stall graphics card until it's finished
         virtual void blitImmediate(Texture* source,Rectangle sourceArea, Texture::Layout sourceLayout, Rectangle destinationArea, Texture::Layout destinationLayout,TextureSampler::Filter filter = TextureSampler::Filter::NEAREST)=0;
         //creates a copy of the pixels in the texture
-        virtual RawPixelStream pixels(Texture::Layout layout)=0;
+        virtual ColorArray pixels(Texture::Layout layout)=0;
 
         static Texture* create(const char* fileLocation, unsigned int mipLevels=1, Texture::Layout layout = Texture::Layout::SHADER_RESOURCE, Features features=Features::SAMPLED_IMAGE);
-        static Texture* create(uint32_t width, uint32_t height, Pixels::PixelFormat format, Texture::Layout layout, uint32_t mipLevels = 1, Features features=Features::SAMPLED_IMAGE);
-        static Texture* create(uint32_t width, uint32_t height, Pixels::PixelFormat format, void* pixelData, uint32_t mipLevels = 1,Layout layout=Layout::SHADER_RESOURCE, Features features=Features::SAMPLED_IMAGE);
+        static Texture* create(const char* fileLocation, Pixels::PixelFormat textureFormat, unsigned int mipLevels=1, Texture::Layout layout = Texture::Layout::SHADER_RESOURCE, Features features=Features::SAMPLED_IMAGE);
+        static Texture* create(uint32_t width, uint32_t height, Pixels::PixelFormat textureFormat, Texture::Layout layout, uint32_t mipLevels = 1, Features features=Features::SAMPLED_IMAGE);
+        static Texture* create(uint32_t width, uint32_t height, Pixels::PixelFormat pixelFormat, void* pixelData, uint32_t mipLevels = 1, Layout layout=Layout::SHADER_RESOURCE, Features features=Features::SAMPLED_IMAGE);
+        static Texture* create(uint32_t width, uint32_t height, Pixels::PixelFormat textureFormat, Pixels::PixelFormat pixelFormat, void* pixelData, uint32_t mipLevels = 1, Layout layout=Layout::SHADER_RESOURCE, Features features=Features::SAMPLED_IMAGE);
+        static Texture* create(ColorArray& colors, uint32_t mipLevels =1,Layout layout=Layout::SHADER_RESOURCE,Features features=Features::SAMPLED_IMAGE);
+        static Texture* create(ColorArray& colors, Pixels::PixelFormat textureFormat, uint32_t mipLevels =1,Layout layout=Layout::SHADER_RESOURCE,Features features=Features::SAMPLED_IMAGE);
     };
 
     inline Texture::Features operator|(Texture::Features a, Texture::Features b)

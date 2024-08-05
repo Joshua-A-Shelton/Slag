@@ -159,7 +159,7 @@ namespace slag
             });
         }
 
-        RawPixelStream VulkanTexture::pixels(Texture::Layout layout)
+        ColorArray VulkanTexture::pixels(Texture::Layout layout)
         {
             VkImageAspectFlags featureFlags =  VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
@@ -276,11 +276,11 @@ namespace slag
 
             void* dataLocation = nullptr;
             success = vmaMapMemory(VulkanLib::graphicsCard()->memoryAllocator(),pixelAllocation,&dataLocation);
-            std::vector<RawPixel> pixelData(_width*_height);
-            memcpy(pixelData.data(), dataLocation, _width*_height*sizeof(RawPixel));
+            std::vector<Color> pixelData(_width*_height);
+            memcpy(pixelData.data(), dataLocation, _width*_height*sizeof(Color));
             vmaUnmapMemory(VulkanLib::graphicsCard()->memoryAllocator(),pixelAllocation);
             vmaDestroyBuffer(VulkanLib::graphicsCard()->memoryAllocator(),pixelBuffer,pixelAllocation);
-            return RawPixelStream(std::move(pixelData),_width,_height);
+            return ColorArray(std::move(pixelData),_width,_height);
         }
 
         Pixels::PixelFormat VulkanTexture::formatFromNative(VkFormat format)
@@ -394,7 +394,7 @@ namespace slag
         void VulkanTexture::create(uint32_t width, uint32_t height, uint32_t mipLevels, VkImageAspectFlags usage, Pixels::PixelFormat format, VkImageLayout toLayout, void* pixelData, VkDeviceSize bufferSize, VkImageUsageFlags features, bool destroyImmdediate)
         {
 
-            VkImageAspectFlags featureFlags = features | VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL | VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            VkImageUsageFlags featureFlags =  features | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
             _baseFormat = VulkanTexture::formatFromCrossPlatform(format);
             _width = width;
@@ -646,6 +646,134 @@ namespace slag
             VkClearValue result;
             std::memcpy(&result, &value, sizeof(VkClearValue));
             return result;
+        }
+
+        VulkanTexture::VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels, VkImageAspectFlags usage, Pixels::PixelFormat pixelDataFormat, void* pixelData,
+                                     Pixels::PixelFormat textureFormat, Texture::Layout layout, Features features, bool destroyImmediate)
+        {
+
+            VulkanTexture unformattedTexture(width,height,1,usage,pixelDataFormat,pixelData,Texture::Layout::COPY_SOURCE,features, true);
+
+            VkImageUsageFlags featureFlags = featuresFromCrossPlatform(features) | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+            _baseFormat = VulkanTexture::formatFromCrossPlatform(textureFormat);
+            _width = width;
+            _height = height;
+            _usage = static_cast<VkImageAspectFlagBits>(usage);
+            destroyImmediately = destroyImmediate;
+
+            VkImageCreateInfo dimg_info{};
+            dimg_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+            dimg_info.format = _baseFormat;
+            dimg_info.usage = featureFlags;
+
+            VkExtent3D imageExtent;
+            imageExtent.width = static_cast<uint32_t>(_width);
+            imageExtent.height = static_cast<uint32_t>(_height);
+            imageExtent.depth = 1;
+
+            dimg_info.extent = imageExtent;
+            dimg_info.imageType = VK_IMAGE_TYPE_2D;
+            dimg_info.mipLevels = mipLevels;
+            dimg_info.arrayLayers = 1;
+            dimg_info.samples = VK_SAMPLE_COUNT_1_BIT;
+            dimg_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+
+            VmaAllocationCreateInfo dimg_allocinfo = {};
+            dimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+            //allocate and create the image
+            vmaCreateImage(VulkanLib::graphicsCard()->memoryAllocator(), &dimg_info, &dimg_allocinfo, &_image, &_allocation, nullptr);
+
+            //create default image view
+            VkImageViewCreateInfo info = {};
+            info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            info.pNext = nullptr;
+
+            info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+            info.image = _image;
+            info.format = _baseFormat;
+            info.subresourceRange.layerCount = 1;
+            info.subresourceRange.baseMipLevel = 0;
+            info.subresourceRange.levelCount = _mipLevels;
+            info.subresourceRange.baseArrayLayer = 0;
+            info.subresourceRange.aspectMask = usage;
+
+            auto success = vkCreateImageView(VulkanLib::graphicsCard()->device(),&info, nullptr,&_view);
+
+            auto img = _image;
+            auto allocoation = _allocation;
+            auto view = _view;
+
+            freeResources = [=]()
+            {
+                vmaDestroyImage(VulkanLib::graphicsCard()->memoryAllocator(),img,allocoation);
+                vkDestroyImageView(VulkanLib::graphicsCard()->device(),view, nullptr);
+            };
+
+            VulkanLib::graphicsCard()->runOneTimeCommands(VulkanLib::graphicsCard()->graphicsQueue(),VulkanLib::graphicsCard()->graphicsQueueFamily(),[&](VkCommandBuffer commandBuffer)
+            {
+                VkImageSubresourceRange range;
+                range.aspectMask = _usage;
+                range.baseMipLevel = 0;
+                range.levelCount = 1;
+                range.baseArrayLayer = 0;
+                range.layerCount = 1;
+
+                VkImageMemoryBarrier imageBarrier_toTransfer = {};
+                imageBarrier_toTransfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+
+                imageBarrier_toTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                imageBarrier_toTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                imageBarrier_toTransfer.image = _image;
+                imageBarrier_toTransfer.subresourceRange = range;
+
+                imageBarrier_toTransfer.srcAccessMask = 0;
+                imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+                //barrier the image into the transfer-receive layout
+                vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
+
+                VkImageBlit blitData
+                        {
+                                .srcSubresource = {.aspectMask=usage,.mipLevel=0,.baseArrayLayer=0,.layerCount=1},
+                                .srcOffsets = {{0,0,0},{static_cast<int32_t>(width),static_cast<int32_t>(height),1}},
+                                .dstSubresource = {.aspectMask=usage,.mipLevel=0,.baseArrayLayer=0,.layerCount=1},
+                                .dstOffsets = {{0,0,0},{static_cast<int32_t>(width),static_cast<int32_t>(height),1}}
+                        };
+                vkCmdBlitImage(commandBuffer,unformattedTexture._image,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,_image,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,1,&blitData,VK_FILTER_LINEAR);
+            });
+            auto oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            if(_mipLevels>1)
+            {
+                updateMipMaps();
+                oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            }
+
+            VulkanLib::graphicsCard()->runOneTimeCommands(VulkanLib::graphicsCard()->transferQueue(),VulkanLib::graphicsCard()->transferQueueFamily(),[&](VkCommandBuffer commandBuffer)
+            {
+                VkImageMemoryBarrier barrier{};
+                barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                barrier.image = _image;
+                barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                barrier.subresourceRange.aspectMask = _usage;
+                barrier.subresourceRange.baseArrayLayer = 0;
+                barrier.subresourceRange.layerCount = 1;
+                barrier.subresourceRange.baseMipLevel = 0;
+                barrier.subresourceRange.levelCount = _mipLevels;
+                barrier.oldLayout = oldLayout;
+                barrier.newLayout = layoutFromCrossPlatform(layout);
+                barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+
+                vkCmdPipelineBarrier(commandBuffer,
+                                     VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+                                     0, nullptr,
+                                     0, nullptr,
+                                     1, &barrier);
+            });
+
         }
 
     } // slag
