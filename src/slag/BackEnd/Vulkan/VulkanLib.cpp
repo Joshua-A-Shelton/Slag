@@ -1,74 +1,67 @@
 #include "VulkanLib.h"
-#include "VulkanExtensions.h"
+#include "VkBootstrap.h"
+#include "VulkanSemaphore.h"
 
 namespace slag
 {
     namespace vulkan
     {
 
-        VkDebugUtilsMessengerEXT  _debugMessenger = nullptr;
-        VkInstance _instance = nullptr;
-        VulkanGraphicsCard* _vulkangraphicsCard = nullptr;
+        bool _includeVulkanLayers = true;
 
-        bool includeVulkanLayers = true;
-
-
-        bool VulkanLib::initialize()
+        VulkanLib* VulkanLib::initialize()
         {
 #if NDEBUG
-            includeVulkanLayers = false;
+            _includeVulkanLayers = false;
 #endif
-            vkb::InstanceBuilder instanceBuilder;
-            auto instance_ret = instanceBuilder.set_app_name("Crucible Application").request_validation_layers(includeVulkanLayers).use_default_debug_messenger().build();
-            if(!instance_ret.has_value())
+            vkb::InstanceBuilder builder;
+            auto inst = builder.set_app_name("Slag Application")
+                               .request_validation_layers(_includeVulkanLayers)
+                               .use_default_debug_messenger()
+                               .require_api_version(1,3,0)
+                               .build();
+
+            if(!inst.has_value())
             {
-                return false;
+                return nullptr;
             }
-            _instance = instance_ret->instance;
-            _debugMessenger = instance_ret->debug_messenger;
+            auto instance = inst->instance;
+            auto debugMessenger = inst->debug_messenger;
 
-            vkb::PhysicalDeviceSelector physicalDeviceSelector{instance_ret.value()};
+            VkPhysicalDeviceVulkan13Features features1_3{.sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
+            features1_3.dynamicRendering = true;
+            features1_3.synchronization2 = true;
 
-            VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR
-                    {
-                            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
-                            .dynamicRendering = VK_TRUE
+            VkPhysicalDeviceVulkan12Features features1_2{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
+            features1_2.bufferDeviceAddress = true;
+            features1_2.descriptorIndexing = true;
 
-                    };
+            vkb::PhysicalDeviceSelector selector{inst.value()};
+            auto physicalDevice = selector.set_minimum_version(1,3)
+                                          .set_required_features_13(features1_3)
+                                          .set_required_features_12(features1_2)
+                                          .defer_surface_initialization()
+                                          .select();
+            if(!physicalDevice.has_value())
+            {
+                return nullptr;
+            }
+            vkb::DeviceBuilder deviceBuilder{physicalDevice.value()};
+            auto device = deviceBuilder.build();
+            if(!device.has_value())
+            {
+                return nullptr;
+            }
+            auto card = new VulkanGraphicsCard(instance,device.value());
+            return new VulkanLib(instance,debugMessenger,card);;
 
-            vkb::PhysicalDevice physicalDevice = physicalDeviceSelector.set_minimum_version(1,3)
-                    .defer_surface_initialization()
-                    .add_required_extension("VK_KHR_dynamic_rendering")
-                    .add_required_extension("VK_KHR_depth_stencil_resolve")
-                    .add_required_extension("VK_KHR_create_renderpass2")
-                    .add_required_extension("VK_KHR_multiview")
-                    .add_required_extension("VK_KHR_maintenance2")
-                    .add_required_extension("VK_EXT_graphics_pipeline_library")
-                    .add_required_extension("VK_KHR_pipeline_library")
-                    .add_required_extension("VK_KHR_synchronization2")
-                    .add_required_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME)
-                    .add_required_extension_features(dynamicRenderingFeaturesKHR)
-                    .select().value();
-            vkb::DeviceBuilder deviceBuilder {physicalDevice};
-            vkb::Device vkbDevice = deviceBuilder.build().value();
-            _vulkangraphicsCard = new VulkanGraphicsCard(vkbDevice);
-            VulkanExtensions::initExtensions(_vulkangraphicsCard);
-            return true;
         }
 
-        void VulkanLib::cleanup()
+        void VulkanLib::cleanup(lib::BackEndLib* library)
         {
-            if(_debugMessenger)
+            if(get())
             {
-                vkb::destroy_debug_utils_messenger(_instance,_debugMessenger);
-            }
-            if(graphicsCard())
-            {
-                delete _vulkangraphicsCard;
-            }
-            if(instance())
-            {
-                vkDestroyInstance(_instance, nullptr);
+                delete library;
             }
         }
 
@@ -77,9 +70,75 @@ namespace slag
             return _instance;
         }
 
-        VulkanGraphicsCard* VulkanLib::graphicsCard()
+        VulkanLib* VulkanLib::get()
         {
-            return _vulkangraphicsCard;
+            return dynamic_cast<VulkanLib*>(lib::BackEndLib::get());
         }
-    } // slag
-} // vulkan
+
+        VulkanGraphicsCard* VulkanLib::card()
+        {
+            return get()->vulkanGraphicsCard();
+        }
+
+        VulkanLib::VulkanLib(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VulkanGraphicsCard* card)
+        {
+            _instance = instance;
+            _debugMessenger = messenger;
+            _graphicsCard = card;
+        }
+
+        VulkanLib::~VulkanLib()
+        {
+            if(_debugMessenger)
+            {
+                vkb::destroy_debug_utils_messenger(_instance,_debugMessenger);
+            }
+            if(graphicsCard())
+            {
+                delete _graphicsCard;
+            }
+            if(instance())
+            {
+                vkDestroyInstance(_instance, nullptr);
+            }
+        }
+
+        BackEnd VulkanLib::identifier()
+        {
+            return Vulkan;
+        }
+
+        GraphicsCard* VulkanLib::graphicsCard()
+        {
+            return _graphicsCard;
+        }
+        VulkanGraphicsCard* VulkanLib::vulkanGraphicsCard()
+        {
+            return _graphicsCard;
+        }
+
+        Semaphore* VulkanLib::newSemaphore(uint64_t startingValue)
+        {
+            return new VulkanSemaphore(startingValue);
+        }
+
+        void VulkanLib::waitFor(SemaphoreValue* values, size_t count)
+        {
+            VulkanSemaphore::waitFor(values,count);
+        }
+
+        Texture* VulkanLib::newTexture(GpuQueue* queue, void* data, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage,
+                                       Texture::Layout initializedLayout)
+        {
+            if(dataFormat == textureFormat)
+            {
+            }
+            else
+            {
+
+            }
+            throw std::runtime_error("implement");
+        }
+
+    } // vulkan
+} // slag

@@ -2,7 +2,7 @@
 
 namespace slag
 {
-    namespace dx12
+    namespace dx
     {
-    } // slag
-} // dx12
+    } // dx
+} // slag

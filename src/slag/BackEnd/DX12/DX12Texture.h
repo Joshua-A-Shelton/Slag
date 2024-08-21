@@ -1,27 +1,23 @@
 #ifndef SLAG_DX12TEXTURE_H
 #define SLAG_DX12TEXTURE_H
-#include "../../Texture.h"
-#include "../Resource.h"
+
+#include <wrl/client.h>
 #include <d3d12.h>
 
 namespace slag
 {
-    namespace dx12
+    namespace dx
     {
 
-        class DX12Texture: public Texture, Resource
+        class DX12Texture
         {
         public:
-            ~DX12Texture()override;
-            DX12Texture(DX12Texture&)=delete;
-            DX12Texture& operator=(DX12Texture&)=delete;
-            DX12Texture(DX12Texture&& from);
-            DX12Texture& operator=(DX12Texture&& from);
+
         private:
-            void move(DX12Texture&& from);
+            Microsoft::WRL::ComPtr<ID3D12Resource> _dxTexture;
         };
 
-    } // slag
-} // dx12
+    } // dx
+} // slag
 
 #endif //SLAG_DX12TEXTURE_H

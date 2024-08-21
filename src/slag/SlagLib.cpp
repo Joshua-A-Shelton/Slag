@@ -1,108 +1,61 @@
 #include "SlagLib.h"
-#include <stdexcept>
+#include "BackEnd/BackEndLib.h"
 #if SLAG_VULKAN_BACKEND
 #include "BackEnd/Vulkan/VulkanLib.h"
 #endif
-#include "BackEnd/UniformDataSetHandler.h"
-
+#if SLAG_DX12_BACKEND
+#include "BackEnd/DX12/DX12Lib.h"
+#endif
 namespace slag
 {
-    bool SLAG_VULKAN_AVAILABLE = false;
-    bool SLAG_DIRECTX_AVAILABLE = false;
 
-    BackEnd SLAG_GRAPHICS_BACKEND;
+    BackEnd _usingBackend = Vulkan;
 
-    bool initVulkan()
+    bool SlagLib::initialize(const SlagInitDetails& details)
     {
+
+        _usingBackend = details.backend;
+        switch (_usingBackend)
+        {
+            case BackEnd::Vulkan:
 #if SLAG_VULKAN_BACKEND
-        return vulkan::VulkanLib::initialize();
+                lib::BackEndLib::set(vulkan::VulkanLib::initialize());
 #endif
-        return false;
-    }
-    void cleanupVulkan()
-    {
-#if SLAG_VULKAN_BACKEND
-        vulkan::VulkanLib::cleanup();
-#endif
-    }
-    void initOpenGL()
-    {
-
-    }
-    void cleanupOpenGL()
-    {
-
-    }
-    bool initDirectX()
-    {
-        return false;
-    }
-    void cleanupDirectX()
-    {
-
-    }
-
-
-    bool SlagLib::initialize(SlagInitDetails details)
-    {
-#if SLAG_VULKAN_BACKEND
-        SLAG_VULKAN_AVAILABLE = true;
-#endif
+                break;
+            case BackEnd::DirectX12:
 #if SLAG_DX12_BACKEND
-        SLAG_DIRECTX_AVAILABLE = true;
+                lib::BackEndLib::set(dx::DX12Lib::initialize());
 #endif
-        if(details.backend == VULKAN && !SLAG_VULKAN_AVAILABLE)
-        {
-            throw std::runtime_error("Vulkan backend not available");
+                break;
         }
-        else if(details.backend == DX12 && !SLAG_DIRECTX_AVAILABLE)
-        {
-            throw std::runtime_error("DirectX12 backend not available");
-        }
-        SLAG_GRAPHICS_BACKEND = details.backend;
-        UniformDataSetHandler::initialize(SLAG_GRAPHICS_BACKEND);
-
-        switch (SLAG_GRAPHICS_BACKEND)
-        {
-            case VULKAN:
-                return initVulkan();
-            case DX12:
-                return initDirectX();
-        }
-        return false;
+        return lib::BackEndLib::get()!=nullptr;
     }
 
     void SlagLib::cleanup()
     {
-        UniformDataSetHandler::cleanup();
-        switch (SLAG_GRAPHICS_BACKEND)
+        switch (_usingBackend)
         {
-            case VULKAN:
-                cleanupVulkan();
+            case BackEnd::Vulkan:
+#if SLAG_VULKAN_BACKEND
+                vulkan::VulkanLib::cleanup(lib::BackEndLib::get());
+#endif
                 break;
-            case DX12:
-                cleanupDirectX();
+            case BackEnd::DirectX12:
+#if SLAG_DX12_BACKEND
+                dx::DX12Lib::cleanup(lib::BackEndLib::get());
+#endif
                 break;
         }
+        lib::BackEndLib::set(nullptr);
     }
 
     BackEnd SlagLib::usingBackEnd()
     {
-        return SLAG_GRAPHICS_BACKEND;
+        return lib::BackEndLib::get()->identifier();
     }
 
-    GraphicsCard *SlagLib::graphicsCard()
+    GraphicsCard* SlagLib::graphicsCard()
     {
-        GraphicsCard* card = nullptr;
-        switch (SLAG_GRAPHICS_BACKEND)
-        {
-            case VULKAN:
-                card = vulkan::VulkanLib::graphicsCard();
-                break;
-            case DX12:
-                throw std::runtime_error("not implemented");
-                break;
-        }
-        return card;
+        return lib::BackEndLib::get()->graphicsCard();
     }
 } // slag

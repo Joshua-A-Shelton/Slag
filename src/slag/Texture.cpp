@@ -1,85 +1,18 @@
-#include <filesystem>
+#include <cassert>
 #include "Texture.h"
-#include "SlagLib.h"
-#ifdef SLAG_VULKAN_BACKEND
-#include "BackEnd/Vulkan/VulkanTexture.h"
-#endif
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "BackEnd/BackEndLib.h"
 
 namespace slag
 {
 
-
-    Texture *Texture::create(const char *fileLocation, unsigned int mipLevels,Texture::Layout layout, Features features)
+    Texture* Texture::newTexture(void* data, Pixels::Format dataFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage, Texture::Layout initializedLayout)
     {
-        if(mipLevels == 0)
-        {
-            mipLevels = 1;
-        }
-        auto imagePath = std::filesystem::absolute(fileLocation).string();
-        int width, height, channels;
-        unsigned char* data = stbi_load(imagePath.c_str(),&width,&height,&channels,4);
-        Texture* tex = nullptr;
-        if(data)
-        {
-            switch (SlagLib::usingBackEnd())
-            {
-                case BackEnd::VULKAN:
-#ifdef SLAG_VULKAN_BACKEND
-                    tex= new vulkan::VulkanTexture(width,height,mipLevels,VK_IMAGE_ASPECT_COLOR_BIT,Pixels::PixelFormat::R8G8B8A8_SRGB,data,layout,features, false);
-#endif
-                    break;
-                case BackEnd::DX12:
-                    break;
-            }
-            stbi_image_free(data);
-        }
-        assert(data && "image could not be loaded");
-        return tex;
+        return lib::BackEndLib::get()->newTexture(nullptr,data,dataFormat,dataFormat,width,height,mipLevels,usage,initializedLayout);
     }
 
-    Texture *Texture::create(uint32_t width, uint32_t height, Pixels::PixelFormat format, Texture::Layout layout, uint32_t mipLevels, Features features)
+    Texture* Texture::newTexture(void* data, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage,
+                                 Texture::Layout initializedLayout)
     {
-        Texture* tex = nullptr;
-        if(mipLevels == 0)
-        {
-            mipLevels = 1;
-        }
-        switch (SlagLib::usingBackEnd())
-        {
-            case BackEnd::VULKAN:
-#ifdef SLAG_VULKAN_BACKEND
-                tex= new vulkan::VulkanTexture(width,height,mipLevels,VK_IMAGE_ASPECT_COLOR_BIT,format,layout, features, false);
-#endif
-                break;
-            case BackEnd::DX12:
-                break;
-        }
-        return tex;
+        return lib::BackEndLib::get()->newTexture(nullptr,data,dataFormat,textureFormat,width,height,mipLevels,usage,initializedLayout);
     }
-
-    Texture *Texture::create(uint32_t width, uint32_t height, Pixels::PixelFormat format, void *pixelData, uint32_t mipLevels,Texture::Layout layout, Features features)
-    {
-        Texture* tex = nullptr;
-        if(mipLevels == 0)
-        {
-            mipLevels = 1;
-        }
-        switch (SlagLib::usingBackEnd())
-        {
-            case BackEnd::VULKAN:
-#ifdef SLAG_VULKAN_BACKEND
-                tex= new vulkan::VulkanTexture(width,height,mipLevels,VK_IMAGE_ASPECT_COLOR_BIT,format,pixelData,layout,features, false);
-#endif
-                break;
-            case BackEnd::DX12:
-                break;
-        }
-
-        return tex;
-    }
-
-
-}
+} // slag

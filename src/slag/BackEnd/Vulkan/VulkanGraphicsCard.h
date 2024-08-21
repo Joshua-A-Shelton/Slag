@@ -5,6 +5,7 @@
 #include <functional>
 #include "vk_mem_alloc.h"
 #include "VkBootstrap.h"
+#include "VulkanQueue.h"
 
 namespace slag
 {
@@ -13,7 +14,7 @@ namespace slag
         class VulkanGraphicsCard: public GraphicsCard
         {
         public:
-            VulkanGraphicsCard(vkb::Device& device);
+            VulkanGraphicsCard(VkInstance instance,vkb::Device& device);
             VulkanGraphicsCard(const VulkanGraphicsCard&)=delete;
             VulkanGraphicsCard& operator=(const VulkanGraphicsCard&)=delete;
             VulkanGraphicsCard(VulkanGraphicsCard&& from);
@@ -32,24 +33,28 @@ namespace slag
             uint32_t transferQueueFamily();
             uint32_t computeQueueFamily();
             const VkPhysicalDeviceProperties& properties();
-            void runOneTimeCommands(VkQueue submissionQueue, uint32_t queueFamily, std::function<void(VkCommandBuffer commandBuffer)>);
 
-            void executeArbitrary(std::function<void(CommandBuffer* commandBuffer)> execution,QueueType queue)override;
 
+            GpuQueue* RenderQueue()override;
+            GpuQueue* GraphicsQueue()override;
+            GpuQueue* TransferQueue()override;
+            GpuQueue* ComputeQueue()override;
 
         private:
             void move(VulkanGraphicsCard&& from);
             VkPhysicalDevice _physicalDevice = nullptr;
             VkDevice _device = nullptr;
-            VkQueue _graphicsQueue = nullptr;
-            VkQueue _transferQueue = nullptr;
-            VkQueue _computeQueue = nullptr;
+            VulkanQueue* _renderQueue = nullptr;
+            VulkanQueue* _graphicsQueue = nullptr;
+            VulkanQueue* _transferQueue = nullptr;
+            VulkanQueue* _computeQueue = nullptr;
             uint32_t _graphicsQueueFamily = 0;
             uint32_t _transferQueueFamily = 0;
             uint32_t _computeQueueFamily = 0;
             VmaAllocator _allocator = nullptr;
             VkPhysicalDeviceProperties _properties;
         };
-    } // slag
-} // vulkan
-#endif //SLAG_VULKANGRAPHICSCARD_H
+    } // vulkan
+} // slag
+
+#endif //CRUCIBLEEDITOR_VULKANGRAPHICSCARD_H
