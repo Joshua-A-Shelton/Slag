@@ -24,7 +24,7 @@ namespace slag
 
     CommandBuffer* CommandBuffer::newCommandBuffer(GpuQueue::QueueType acceptsCommands)
     {
-        return lib::BackEndLib::get()->;
+        return lib::BackEndLib::get()->newCommandBuffer(acceptsCommands);
     }
 
 } // slag

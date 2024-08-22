@@ -52,22 +52,22 @@ namespace slag
 
 
             ID3D12CommandQueue* render = nullptr;
-            DX12Lib::card()->device()->CreateCommandQueue(&desc, IID_PPV_ARGS(&render));
+            _device->CreateCommandQueue(&desc, IID_PPV_ARGS(&render));
             _render = new DX12Queue(render,slag::GpuQueue::QueueType::Graphics);
 
             desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
             ID3D12CommandQueue* graphics = nullptr;
-            DX12Lib::card()->device()->CreateCommandQueue(&desc, IID_PPV_ARGS(&graphics));
+            _device->CreateCommandQueue(&desc, IID_PPV_ARGS(&graphics));
             _graphics = new DX12Queue(graphics,slag::GpuQueue::QueueType::Graphics);
 
             desc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
             ID3D12CommandQueue* transfer = nullptr;
-            DX12Lib::card()->device()->CreateCommandQueue(&desc, IID_PPV_ARGS(&transfer));
+            _device->CreateCommandQueue(&desc, IID_PPV_ARGS(&transfer));
             _graphics = new DX12Queue(transfer,slag::GpuQueue::QueueType::Transfer);
 
             desc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
             ID3D12CommandQueue* compute = nullptr;
-            DX12Lib::card()->device()->CreateCommandQueue(&desc, IID_PPV_ARGS(&compute));
+            _device->CreateCommandQueue(&desc, IID_PPV_ARGS(&compute));
             _graphics = new DX12Queue(compute,slag::GpuQueue::QueueType::Compute);
 
         }

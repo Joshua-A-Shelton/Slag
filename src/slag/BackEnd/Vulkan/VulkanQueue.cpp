@@ -35,7 +35,7 @@ namespace slag
 
         void VulkanQueue::submit(CommandBuffer* commands)
         {
-            VulkanCommandBufferPrimary* buffer = dynamic_cast<VulkanCommandBufferPrimary*>(commands);
+            VulkanCommandBuffer* buffer = dynamic_cast<VulkanCommandBuffer*>(commands);
             //started
             buffer->_finished->signal(0);
 
@@ -66,7 +66,7 @@ namespace slag
                 uint32_t waitSemaphoreCount = 0;
                 for(size_t i=0; i< bufferCount; i++)
                 {
-                    VulkanCommandBufferPrimary* buffer = dynamic_cast<VulkanCommandBufferPrimary*>(commandBuffers[i]);
+                    VulkanCommandBuffer* buffer = dynamic_cast<VulkanCommandBuffer*>(commandBuffers[i]);
                     //started
                     buffer->_finished->signal(0);
 
@@ -108,7 +108,7 @@ namespace slag
                 for(size_t i=0; i< bufferCount; i++)
                 {
 
-                    VulkanCommandBufferPrimary* buffer = dynamic_cast<VulkanCommandBufferPrimary*>(commandBuffers[i]);
+                    VulkanCommandBuffer* buffer = dynamic_cast<VulkanCommandBuffer*>(commandBuffers[i]);
                     //started
                     buffer->_finished->signal(0);
                     signals[i].semaphore = buffer->_finished->semaphore();
@@ -127,7 +127,7 @@ namespace slag
 
         void VulkanQueue::submit(CommandBuffer* commands, SemaphoreValue& signalFinished)
         {
-            VulkanCommandBufferPrimary* buffer = dynamic_cast<VulkanCommandBufferPrimary*>(commands);
+            VulkanCommandBuffer* buffer = dynamic_cast<VulkanCommandBuffer*>(commands);
             //started
             buffer->_finished->signal(0);
 
@@ -175,7 +175,7 @@ namespace slag
 
                 for(size_t i=0; i< bufferCount; i++)
                 {
-                    VulkanCommandBufferPrimary* buffer = dynamic_cast<VulkanCommandBufferPrimary*>(commandBuffers[i]);
+                    VulkanCommandBuffer* buffer = dynamic_cast<VulkanCommandBuffer*>(commandBuffers[i]);
                     //started
                     buffer->_finished->signal(0);
 
@@ -220,7 +220,7 @@ namespace slag
                 for(size_t i=0; i< bufferCount; i++)
                 {
 
-                    VulkanCommandBufferPrimary* buffer = dynamic_cast<VulkanCommandBufferPrimary*>(commandBuffers[i]);
+                    VulkanCommandBuffer* buffer = dynamic_cast<VulkanCommandBuffer*>(commandBuffers[i]);
                     //started
                     buffer->_finished->signal(0);
                     signals[i].semaphore = buffer->_finished->semaphore();

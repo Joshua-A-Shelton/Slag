@@ -103,7 +103,7 @@ if(SLAG_DX12_BACKEND)
 endif()
 
 
-#OPTION(BUILD_VULKAN_TESTS "Build tests" ON)
+OPTION(BUILD_VULKAN_TESTS "Build tests" ON)
 if(BUILD_VULKAN_TESTS)
     message("building tests")
     include(FetchContent)
@@ -121,7 +121,9 @@ if(BUILD_VULKAN_TESTS)
             test/SlagTestsMain.cpp
             test/DX12Environment.cpp
             test/DX12Environment.h
-            test/tests/CommandBufferTests.cpp
+            test/tests/CommandBufferTest.cc
+            test/VulkanEnvironment.cpp
+            test/VulkanEnvironment.h
     )
     target_link_libraries(SlagTests GTest::gtest Slag)
     target_include_directories(SlagTests PRIVATE src)

@@ -5,7 +5,6 @@
 #include "CommandBuffer.h"
 #include "GpuQueue.h"
 #include "GraphicsCard.h"
-#include "Pipeline.h"
 #include "Pixel.h"
 #include "Semaphore.h"
 #include "Texture.h"
