@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include "slag/Resources/ResourceManager.h"
 #include "Semaphore.h"
+#include "GpuQueue.h"
 
 namespace slag
 {
@@ -18,6 +19,8 @@ namespace slag
         virtual void end()=0;
         virtual void waitUntilFinished()=0;
         virtual bool isFinished()=0;
+
+        static CommandBuffer* newCommandBuffer(GpuQueue::QueueType acceptsCommands);
     protected:
         void freeResourceReferences();
     private:

@@ -1,5 +1,7 @@
 #include "DX12Lib.h"
 #include "DX12Semaphore.h"
+#include "DX12CommandBuffer.h"
+#include "DX12Queue.h"
 #include <wrl.h>
 #include <dxgi1_4.h>
 #include <dxgi1_6.h>
@@ -102,10 +104,30 @@ namespace slag
             return nullptr;
         }
 
+        CommandBuffer* DX12Lib::newCommandBuffer(GpuQueue::QueueType acceptsCommands)
+        {
+            D3D12_COMMAND_LIST_TYPE type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+            switch (acceptsCommands)
+            {
+                case GpuQueue::Graphics:
+                    type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+                    break;
+                case GpuQueue::Transfer:
+                    type = D3D12_COMMAND_LIST_TYPE_COPY;
+                    break;
+                case GpuQueue::Compute:
+                    type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+                    break;
+
+            }
+            return new DX12CommandBuffer(type);
+        }
+
         Semaphore* DX12Lib::newSemaphore(uint64_t startingValue)
         {
             return new DX12Semaphore(startingValue);
         }
+
 
 
     } // dx

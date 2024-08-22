@@ -103,7 +103,7 @@ if(SLAG_DX12_BACKEND)
 endif()
 
 
-#[[OPTION(BUILD_VULKAN_TESTS "Build tests" ON)
+#OPTION(BUILD_VULKAN_TESTS "Build tests" ON)
 if(BUILD_VULKAN_TESTS)
     message("building tests")
     include(FetchContent)
@@ -117,14 +117,16 @@ if(BUILD_VULKAN_TESTS)
 
     enable_testing()
 
-    add_executable(SlagTests test/CommandBufferTest.cc
+    add_executable(SlagTests
             test/SlagTestsMain.cpp
-            test/VulkanEnvironment.h
-            test/DX12Environment.h)
+            test/DX12Environment.cpp
+            test/DX12Environment.h
+            test/tests/CommandBufferTests.cpp
+    )
     target_link_libraries(SlagTests GTest::gtest Slag)
     target_include_directories(SlagTests PRIVATE src)
     include(GoogleTest)
     gtest_discover_tests(SlagTests)
-endif()]]
+endif()
 
 target_include_directories(Slag PUBLIC src)

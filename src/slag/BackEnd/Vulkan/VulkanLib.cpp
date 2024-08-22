@@ -1,6 +1,8 @@
 #include "VulkanLib.h"
 #include "VkBootstrap.h"
 #include "VulkanSemaphore.h"
+#include "VulkanCommandBuffer.h"
+#include "VulkanQueue.h"
 
 namespace slag
 {
@@ -138,6 +140,25 @@ namespace slag
 
             }
             throw std::runtime_error("implement");
+        }
+
+        CommandBuffer* VulkanLib::newCommandBuffer(GpuQueue::QueueType acceptsCommands)
+        {
+            uint32_t family = VulkanLib::_graphicsCard->graphicsQueueFamily();
+            switch (acceptsCommands)
+            {
+                case GpuQueue::Graphics:
+                    family = VulkanLib::_graphicsCard->graphicsQueueFamily();
+                    break;
+                case GpuQueue::Transfer:
+                    family = VulkanLib::_graphicsCard->transferQueueFamily();
+                    break;
+                case GpuQueue::Compute:
+                    family = VulkanLib::_graphicsCard->computeQueueFamily();
+                    break;
+
+            }
+            return new VulkanCommandBuffer(family);
         }
 
     } // vulkan

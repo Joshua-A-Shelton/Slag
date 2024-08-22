@@ -1,10 +1,11 @@
 #ifndef SLAG_GPUQUEUE_H
 #define SLAG_GPUQUEUE_H
-#include "CommandBuffer.h"
+
 #include "Semaphore.h"
 namespace slag
 {
 
+    class CommandBuffer;
     class GpuQueue
     {
     public:

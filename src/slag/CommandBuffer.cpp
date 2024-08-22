@@ -1,4 +1,5 @@
 #include "CommandBuffer.h"
+#include "BackEnd/BackEndLib.h"
 
 namespace slag
 {
@@ -19,6 +20,11 @@ namespace slag
     {
         std::lock_guard<std::mutex> resourceLock(_referencesMutex);
         _resourceReferences.insert(gpuID);
+    }
+
+    CommandBuffer* CommandBuffer::newCommandBuffer(GpuQueue::QueueType acceptsCommands)
+    {
+        return lib::BackEndLib::get()->;
     }
 
 } // slag

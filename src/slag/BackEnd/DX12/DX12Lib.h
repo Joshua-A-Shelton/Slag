@@ -9,7 +9,7 @@ namespace slag
     namespace dx
     {
 
-    class DX12Lib:public lib::BackEndLib
+        class DX12Lib:public lib::BackEndLib
         {
         public:
             static DX12Lib* initialize();
@@ -21,6 +21,8 @@ namespace slag
             GraphicsCard* graphicsCard()override;
             //Textures
             Texture* newTexture(GpuQueue* queue,void* data, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage, Texture::Layout initializedLayout);
+            //CommandBuffers
+            CommandBuffer* newCommandBuffer(GpuQueue::QueueType acceptsCommands);
             //Semaphores
             Semaphore* newSemaphore(uint64_t startingValue);
             void waitFor(SemaphoreValue* values, size_t count)override;
