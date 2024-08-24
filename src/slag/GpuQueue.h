@@ -33,6 +33,9 @@ namespace slag
          * @param forceDependency require each submitted command buffer to finish before starting the next one. If false, the entire submission is treated as if it was a single command buffer
          */
         virtual void submit(CommandBuffer** commandBuffers, size_t bufferCount, SemaphoreValue& signalFinished, bool forceDependency)=0;
+
+        virtual void submit(CommandBuffer** commandBuffers, size_t bufferCount, SemaphoreValue* waitOnSemaphores, size_t waitCount, SemaphoreValue* signalSemaphores, size_t signalCount)=0;
+
         virtual QueueType type()=0;
     };
 

@@ -26,16 +26,13 @@ namespace slag
             VkPhysicalDevice physicalDevice();
             VkDevice device();
             VmaAllocator memoryAllocator();
-            VkQueue graphicsQueue();
-            VkQueue transferQueue();
-            VkQueue computeQueue();
+
             uint32_t graphicsQueueFamily();
             uint32_t transferQueueFamily();
             uint32_t computeQueueFamily();
             const VkPhysicalDeviceProperties& properties();
 
 
-            GpuQueue* RenderQueue()override;
             GpuQueue* GraphicsQueue()override;
             GpuQueue* TransferQueue()override;
             GpuQueue* ComputeQueue()override;
@@ -44,7 +41,6 @@ namespace slag
             void move(VulkanGraphicsCard&& from);
             VkPhysicalDevice _physicalDevice = nullptr;
             VkDevice _device = nullptr;
-            VulkanQueue* _renderQueue = nullptr;
             VulkanQueue* _graphicsQueue = nullptr;
             VulkanQueue* _transferQueue = nullptr;
             VulkanQueue* _computeQueue = nullptr;

@@ -22,6 +22,8 @@ namespace slag
             void submit(CommandBuffer** commandBuffers, size_t bufferCount, bool forceDependency)override;
             void submit(CommandBuffer* commands, SemaphoreValue& signalFinished)override;
             void submit(CommandBuffer** commandBuffers, size_t bufferCount, SemaphoreValue& signalFinished,bool forceDependency)override;
+            void submit(CommandBuffer** commandBuffers, size_t bufferCount, SemaphoreValue* waitOnSemaphores, size_t waitCount, SemaphoreValue* signalSemaphores, size_t signalCount)override;
+
             QueueType type()override;
         private:
             VkQueue _queue;

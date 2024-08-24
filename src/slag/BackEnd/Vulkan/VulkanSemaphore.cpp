@@ -6,14 +6,14 @@ namespace slag
     {
         VulkanSemaphore::VulkanSemaphore(uint64_t initialValue, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
-            VkSemaphoreTypeCreateInfo semaphoreCreateInfo{};
-            semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-            semaphoreCreateInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
-            semaphoreCreateInfo.initialValue = initialValue;
+            VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo{};
+            semaphoreTypeCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+            semaphoreTypeCreateInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+            semaphoreTypeCreateInfo.initialValue = initialValue;
 
             VkSemaphoreCreateInfo createInfo{};
             createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-            createInfo.pNext = &semaphoreCreateInfo;
+            createInfo.pNext = &semaphoreTypeCreateInfo;
 
             vkCreateSemaphore(VulkanLib::card()->device(),&createInfo, nullptr,&_semaphore);
             auto semaphore = _semaphore;

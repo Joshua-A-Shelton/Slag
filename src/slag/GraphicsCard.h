@@ -8,7 +8,6 @@ namespace slag
     {
     public:
         virtual ~GraphicsCard()=default;
-        virtual GpuQueue* RenderQueue()=0;
         virtual GpuQueue* GraphicsQueue()=0;
         virtual GpuQueue* TransferQueue()=0;
         virtual GpuQueue* ComputeQueue()=0;

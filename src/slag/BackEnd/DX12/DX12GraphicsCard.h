@@ -18,13 +18,11 @@ namespace slag
             ~DX12GraphicsCard();
             Microsoft::WRL::ComPtr<ID3D12Device2>& device();
 
-            GpuQueue* RenderQueue()override;
             GpuQueue* GraphicsQueue()override;
             GpuQueue* TransferQueue()override;
             GpuQueue* ComputeQueue()override;
         private:
             Microsoft::WRL::ComPtr<ID3D12Device2> _device = nullptr;
-            DX12Queue* _render = nullptr;
             DX12Queue* _graphics = nullptr;
             DX12Queue* _transfer = nullptr;
             DX12Queue* _compute = nullptr;

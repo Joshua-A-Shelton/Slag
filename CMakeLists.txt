@@ -113,6 +113,7 @@ if(BUILD_VULKAN_TESTS)
     )
     # For Windows: Prevent overriding the parent project's compiler/linker settings
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    add_definitions(-Dgtest_disable_pthreads=ON)
     FetchContent_MakeAvailable(googletest)
 
     enable_testing()

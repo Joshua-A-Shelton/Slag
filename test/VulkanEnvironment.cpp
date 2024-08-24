@@ -1,5 +1,6 @@
 #include "VulkanEnvironment.h"
 #include <slag/SlagLib.h>
+
 using namespace slag;
 namespace slag
 {
@@ -15,6 +16,7 @@ namespace slag
         void VulkanEnvironment::TearDown()
         {
             slag::SlagLib::cleanup();
+
         }
     }
 }

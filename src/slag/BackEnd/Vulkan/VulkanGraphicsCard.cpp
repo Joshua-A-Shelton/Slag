@@ -15,15 +15,8 @@ namespace slag
             _transferQueueFamily = device.get_queue_index(vkb::QueueType::transfer).value();
             _computeQueueFamily = device.get_queue_index(vkb::QueueType::compute).value();
 
-            VkQueue render = nullptr;
-            vkGetDeviceQueue(_device,_graphicsQueueFamily,0,&render);
-            if(render)
-            {
-                _renderQueue = new VulkanQueue(render, slag::GpuQueue::QueueType::Graphics);
-            }
-
             VkQueue graphics = nullptr;
-            vkGetDeviceQueue(_device,_graphicsQueueFamily,1,&graphics);
+            vkGetDeviceQueue(_device,_graphicsQueueFamily,0,&graphics);
             if(graphics)
             {
                 _graphicsQueue = new VulkanQueue(graphics, slag::GpuQueue::QueueType::Graphics);
@@ -67,10 +60,6 @@ namespace slag
         {
             if(_device)
             {
-                if(_renderQueue)
-                {
-                    delete _renderQueue;
-                }
                 if(_graphicsQueue)
                 {
                     delete _graphicsQueue;
@@ -94,7 +83,6 @@ namespace slag
         {
             std::swap(_physicalDevice,from._physicalDevice);
             std::swap(_device,from._device);
-            std::swap(_renderQueue,from._renderQueue);
             std::swap(_graphicsQueue,from._graphicsQueue);
             std::swap(_transferQueue, from._transferQueue);
             std::swap(_computeQueue, from._computeQueue);
@@ -143,17 +131,12 @@ namespace slag
 
         uint32_t VulkanGraphicsCard::computeQueueFamily()
         {
-            return _transferQueueFamily;
+            return _computeQueueFamily;
         }
 
         const VkPhysicalDeviceProperties& VulkanGraphicsCard::properties()
         {
             return _properties;
-        }
-
-        GpuQueue* VulkanGraphicsCard::RenderQueue()
-        {
-            return _renderQueue;
         }
 
         GpuQueue* VulkanGraphicsCard::GraphicsQueue()

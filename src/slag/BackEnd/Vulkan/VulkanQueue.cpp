@@ -224,6 +224,7 @@ namespace slag
                     //started
                     buffer->_finished->signal(0);
                     signals[i].semaphore = buffer->_finished->semaphore();
+                    signals[i].value = 1;
                     commands[i].commandBuffer = buffer->_buffer;
 
                 }
@@ -235,6 +236,45 @@ namespace slag
                 submitInfo.pSignalSemaphoreInfos = signals.data();
                 vkQueueSubmit2(_queue,1,&submitInfo, nullptr);
             }
+        }
+
+        void VulkanQueue::submit(CommandBuffer** commandBuffers, size_t bufferCount, SemaphoreValue* waitOnSemaphores, size_t waitCount, SemaphoreValue* signalSemaphores, size_t signalCount)
+        {
+            std::vector<VkSemaphoreSubmitInfo> signals(bufferCount + signalCount,{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,.semaphore = nullptr,.value =1, .stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT});
+            std::vector<VkCommandBufferSubmitInfo> commands(bufferCount, {.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO, .commandBuffer = nullptr});
+            for(size_t i=0; i< bufferCount; i++)
+            {
+
+                VulkanCommandBuffer* buffer = dynamic_cast<VulkanCommandBuffer*>(commandBuffers[i]);
+                //started
+                buffer->_finished->signal(0);
+                signals[i].semaphore = buffer->_finished->semaphore();
+                signals[i].value = 1;
+                commands[i].commandBuffer = buffer->_buffer;
+
+            }
+            for(size_t i= 0; i< signalCount; i++)
+            {
+                VulkanSemaphore* semaphore = dynamic_cast<VulkanSemaphore*>(signalSemaphores[i].semaphore);
+                signals[bufferCount+i].semaphore = semaphore->semaphore();
+                signals[bufferCount+i].value = signalSemaphores[i].value;
+            }
+            std::vector<VkSemaphoreSubmitInfo> wait(waitCount,{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,.semaphore = nullptr,.value =1, .stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT});
+
+            for(size_t i =0; i< waitCount; i++)
+            {
+                wait[i].semaphore = dynamic_cast<VulkanSemaphore*>(signalSemaphores[i].semaphore)->semaphore();
+                wait[i].value = signalSemaphores[i].value;
+            }
+            VkSubmitInfo2 submitInfo{};
+            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+            submitInfo.commandBufferInfoCount = bufferCount;
+            submitInfo.pCommandBufferInfos = commands.data();
+            submitInfo.signalSemaphoreInfoCount = bufferCount+signalCount;
+            submitInfo.pSignalSemaphoreInfos = signals.data();
+            submitInfo.waitSemaphoreInfoCount = waitCount;
+            submitInfo.pWaitSemaphoreInfos = wait.data();
+            vkQueueSubmit2(_queue,1,&submitInfo, nullptr);
         }
     } // vulkan
 } // slag

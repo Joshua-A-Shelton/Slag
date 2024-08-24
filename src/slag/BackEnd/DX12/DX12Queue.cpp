@@ -94,5 +94,25 @@ namespace slag
             auto semaphore = dynamic_cast<DX12Semaphore*>(signalFinished.semaphore);
             _queue->Signal(semaphore->fence(),signalFinished.value);
         }
+
+        void DX12Queue::submit(CommandBuffer** commandBuffers, size_t bufferCount, SemaphoreValue* waitOnSemaphores, size_t waitCount, SemaphoreValue* signalSemaphores, size_t signalCount)
+        {
+            for(size_t i=0; i < waitCount; i++)
+            {
+                auto semaphore = dynamic_cast<DX12Semaphore*>(waitOnSemaphores[i].semaphore);
+                _queue->Wait(semaphore->fence(),waitOnSemaphores[i].value);
+            }
+            std::vector<ID3D12CommandList*> buffers(bufferCount, nullptr);
+            for(size_t i=0; i< bufferCount; i++)
+            {
+                buffers[i] = dynamic_cast<DX12CommandBuffer*>(commandBuffers[i])->_buffer;
+            }
+            _queue->ExecuteCommandLists(bufferCount,buffers.data());
+            for(size_t i=0; i< signalCount; i++)
+            {
+                auto semaphore = dynamic_cast<DX12Semaphore*>(signalSemaphores[i].semaphore);
+                _queue->Signal(semaphore->fence(),signalSemaphores[i].value);
+            }
+        }
     } // dx
 } // slag

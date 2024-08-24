@@ -6,6 +6,7 @@ TEST(CommandBuffer, Creation)
 {
     auto buffer = CommandBuffer::newCommandBuffer(GpuQueue::Graphics);
     delete buffer;
+    int i=0;
 }
 
 TEST(CommandBuffer, ReplaceMe)

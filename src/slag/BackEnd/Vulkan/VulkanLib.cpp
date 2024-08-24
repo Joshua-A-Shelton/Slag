@@ -37,6 +37,7 @@ namespace slag
             VkPhysicalDeviceVulkan12Features features1_2{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
             features1_2.bufferDeviceAddress = true;
             features1_2.descriptorIndexing = true;
+            features1_2.timelineSemaphore = true;
 
             vkb::PhysicalDeviceSelector selector{inst.value()};
             auto physicalDevice = selector.set_minimum_version(1,3)

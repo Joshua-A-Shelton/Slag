@@ -51,15 +51,11 @@ namespace slag
             desc.NodeMask = 0;
 
 
-            ID3D12CommandQueue* render = nullptr;
-            _device->CreateCommandQueue(&desc, IID_PPV_ARGS(&render));
-            _render = new DX12Queue(render,slag::GpuQueue::QueueType::Graphics);
-
-            desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
             ID3D12CommandQueue* graphics = nullptr;
             _device->CreateCommandQueue(&desc, IID_PPV_ARGS(&graphics));
             _graphics = new DX12Queue(graphics,slag::GpuQueue::QueueType::Graphics);
 
+            desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
             desc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
             ID3D12CommandQueue* transfer = nullptr;
             _device->CreateCommandQueue(&desc, IID_PPV_ARGS(&transfer));
@@ -74,10 +70,6 @@ namespace slag
 
         DX12GraphicsCard::~DX12GraphicsCard()
         {
-            if(_render)
-            {
-                delete _render;
-            }
             if(_graphics)
             {
                 delete _graphics;
@@ -95,11 +87,6 @@ namespace slag
         Microsoft::WRL::ComPtr<ID3D12Device2>& DX12GraphicsCard::device()
         {
             return _device;
-        }
-
-        GpuQueue* DX12GraphicsCard::RenderQueue()
-        {
-            return _render;
         }
 
         GpuQueue* DX12GraphicsCard::GraphicsQueue()

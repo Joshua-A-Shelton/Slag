@@ -4,8 +4,32 @@
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
-    GTEST_FLAG_SET(death_test_style, "fast");
-    ::testing::AddGlobalTestEnvironment(new slag::tests::DX12Environment());
-    ::testing::AddGlobalTestEnvironment(new slag::tests::VulkanEnvironment());
+    bool useVulkan = true;
+#if _WIN32
+    useVulkan = false;
+#endif
+    for(int i=0; i< argc; i++)
+    {
+        char* arg = argv[i];
+        std::string argument(arg);
+        if(argument == "vulkan")
+        {
+            useVulkan = true;
+            break;
+        }
+        else if(argument == "dx12")
+        {
+            useVulkan = false;
+        }
+    }
+    if(useVulkan)
+    {
+        ::testing::AddGlobalTestEnvironment(new slag::tests::VulkanEnvironment());
+    }
+    else
+    {
+        ::testing::AddGlobalTestEnvironment(new slag::tests::DX12Environment());
+    }
+
     return RUN_ALL_TESTS();
 }
