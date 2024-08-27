@@ -15,25 +15,37 @@ namespace slag
             _transferQueueFamily = device.get_queue_index(vkb::QueueType::transfer).value();
             _computeQueueFamily = device.get_queue_index(vkb::QueueType::compute).value();
 
-            VkQueue graphics = nullptr;
-            vkGetDeviceQueue(_device,_graphicsQueueFamily,0,&graphics);
-            if(graphics)
+            auto gqueue = device.get_dedicated_queue(vkb::QueueType::graphics);
+            if(gqueue.has_value())
             {
-                _graphicsQueue = new VulkanQueue(graphics, slag::GpuQueue::QueueType::Graphics);
+                _graphicsQueue = new VulkanQueue(gqueue.value(), slag::GpuQueue::QueueType::Graphics);
+            }
+            else
+            {
+                gqueue = device.get_queue(vkb::QueueType::graphics);
+                _graphicsQueue = new VulkanQueue(gqueue.value(),slag::GpuQueue::QueueType::Graphics);
             }
 
-            VkQueue transfer = nullptr;
-            vkGetDeviceQueue(_device,_graphicsQueueFamily,0,&transfer);
-            if(transfer)
+            auto tqueue = device.get_dedicated_queue(vkb::QueueType::transfer);
+            if(tqueue.has_value())
             {
-                _graphicsQueue = new VulkanQueue(transfer, slag::GpuQueue::QueueType::Transfer);
+                _transferQueue = new VulkanQueue(tqueue.value(), slag::GpuQueue::QueueType::Transfer);
+            }
+            else
+            {
+                tqueue = device.get_queue(vkb::QueueType::transfer);
+                _transferQueue = new VulkanQueue(tqueue.value(), slag::GpuQueue::QueueType::Transfer);
             }
 
-            VkQueue compute = nullptr;
-            vkGetDeviceQueue(_device,_graphicsQueueFamily,0,&compute);
-            if(compute)
+            auto cqueue = device.get_dedicated_queue(vkb::QueueType::compute);
+            if(cqueue.has_value())
             {
-                _graphicsQueue = new VulkanQueue(compute, slag::GpuQueue::QueueType::Compute);
+                _computeQueue = new VulkanQueue(cqueue.value(), slag::GpuQueue::QueueType::Compute);
+            }
+            else
+            {
+                cqueue = device.get_queue(vkb::QueueType::compute);
+                _computeQueue = new VulkanQueue(tqueue.value(), slag::GpuQueue::QueueType::Compute);
             }
 
             _properties = device.physical_device.properties;

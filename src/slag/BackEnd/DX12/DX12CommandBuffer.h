@@ -12,7 +12,7 @@ namespace slag
         {
         public:
             DX12CommandBuffer(D3D12_COMMAND_LIST_TYPE type);
-            ~DX12CommandBuffer();
+            ~DX12CommandBuffer()override;
             DX12CommandBuffer(const DX12CommandBuffer&)=delete;
             DX12CommandBuffer& operator=(const DX12CommandBuffer&)=delete;
             DX12CommandBuffer(DX12CommandBuffer&& from);

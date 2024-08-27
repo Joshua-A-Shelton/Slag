@@ -3,6 +3,7 @@
 #include "VulkanSemaphore.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanQueue.h"
+#include "VulkanTexture.h"
 
 namespace slag
 {
@@ -83,6 +84,51 @@ namespace slag
             return get()->vulkanGraphicsCard();
         }
 
+        VulkanizedFormat VulkanLib::format(Pixels::Format format)
+        {
+            switch (format)
+            {
+#define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits) case Pixels::SlagName: return {.format = VulkanName, .mapping = {.r = VkComponentSwizzle_r, .g = VkComponentSwizzle_g, .b = VkComponentSwizzle_b, .a = VkComponentSwizzle_a} };
+                TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+
+            return VulkanizedFormat{};
+        }
+
+        VkImageLayout VulkanLib::layout(Texture::Layout layout)
+        {
+            switch(layout)
+            {
+#define DEFINITION(slagName, vulkanName, directXName) case Texture::slagName: return vulkanName;
+                TEXTURE_LAYOUT_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            return VK_IMAGE_LAYOUT_UNDEFINED;
+        }
+
+        VkImageUsageFlags VulkanLib::imageUsage(Texture::Usage usage)
+        {
+            VkImageUsageFlags flags = 0;
+            if(usage & Texture::SAMPLED_IMAGE)
+            {
+                flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
+            }
+            if(usage & Texture::STORAGE)
+            {
+                flags |= VK_IMAGE_USAGE_STORAGE_BIT;
+            }
+            if(usage & Texture::RENDER_TARGET_ATTACHMENT)
+            {
+                flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            }
+            if(usage & Texture::DEPTH_STENCIL_ATTACHMENT)
+            {
+                flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+            }
+            return flags;
+        }
+
         VulkanLib::VulkanLib(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VulkanGraphicsCard* card)
         {
             _instance = instance;
@@ -130,17 +176,14 @@ namespace slag
             VulkanSemaphore::waitFor(values,count);
         }
 
-        Texture* VulkanLib::newTexture(GpuQueue* queue, void* data, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage,
-                                       Texture::Layout initializedLayout)
+        Texture* VulkanLib::newTexture(void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage, Texture::Layout initializedLayout, bool generateMips)
         {
-            if(dataFormat == textureFormat)
-            {
-            }
-            else
-            {
+            return new VulkanTexture(texelData,dataSize, format(dataFormat).format, format(textureFormat),width,height,mipLevels,imageUsage(usage),layout(initializedLayout),generateMips,false);
+        }
 
-            }
-            throw std::runtime_error("implement");
+        Texture* VulkanLib::newTexture(CommandBuffer* onBuffer, void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage, Texture::Layout initializedLayout, bool generateMips)
+        {
+            return new VulkanTexture(dynamic_cast<VulkanCommandBuffer*>(onBuffer),texelData,dataSize, format(dataFormat).format, format(textureFormat),width,height,mipLevels,imageUsage(usage),layout(initializedLayout),generateMips,false);
         }
 
         CommandBuffer* VulkanLib::newCommandBuffer(GpuQueue::QueueType acceptsCommands)

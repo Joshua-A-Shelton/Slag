@@ -12,7 +12,7 @@ namespace slag
         {
         public:
             VulkanSemaphore(uint64_t initialValue, bool destroyImmediately = false);
-            ~VulkanSemaphore();
+            ~VulkanSemaphore()override;
             VulkanSemaphore(const VulkanSemaphore&)=delete;
             VulkanSemaphore& operator=(const VulkanSemaphore&)=delete;
             VulkanSemaphore(VulkanSemaphore&& from);

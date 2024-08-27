@@ -16,7 +16,7 @@ namespace slag
         {
         public:
             DX12Semaphore(uint64_t initialValue, bool destroyImmediately = false);
-            ~DX12Semaphore();
+            ~DX12Semaphore()override;
             DX12Semaphore(const DX12Semaphore&)=delete;
             DX12Semaphore& operator=(const DX12Semaphore&)=delete;
             DX12Semaphore(DX12Semaphore&& from);

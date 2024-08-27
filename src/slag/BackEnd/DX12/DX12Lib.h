@@ -20,7 +20,8 @@ namespace slag
             BackEnd identifier()override;
             GraphicsCard* graphicsCard()override;
             //Textures
-            Texture* newTexture(GpuQueue* queue,void* data, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage, Texture::Layout initializedLayout);
+            Texture* newTexture(void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage, Texture::Layout initializedLayout, bool generateMips)override;
+            Texture* newTexture(CommandBuffer* onBuffer, void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage, Texture::Layout initializedLayout, bool generateMips)override;
             //CommandBuffers
             CommandBuffer* newCommandBuffer(GpuQueue::QueueType acceptsCommands);
             //Semaphores

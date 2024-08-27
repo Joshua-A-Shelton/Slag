@@ -15,7 +15,7 @@ namespace slag
         {
         public:
             DX12GraphicsCard(const Microsoft::WRL::ComPtr<IDXGIAdapter4>& adapter);
-            ~DX12GraphicsCard();
+            ~DX12GraphicsCard()override;
             Microsoft::WRL::ComPtr<ID3D12Device2>& device();
 
             GpuQueue* GraphicsQueue()override;

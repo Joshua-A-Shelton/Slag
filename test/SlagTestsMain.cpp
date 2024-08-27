@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "DX12Environment.h"
 #include "VulkanEnvironment.h"
+#include <slag/SlagLib.h>
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
@@ -30,6 +31,6 @@ int main(int argc, char **argv)
     {
         ::testing::AddGlobalTestEnvironment(new slag::tests::DX12Environment());
     }
-
-    return RUN_ALL_TESTS();
+    auto run = RUN_ALL_TESTS();
+    return run;
 }

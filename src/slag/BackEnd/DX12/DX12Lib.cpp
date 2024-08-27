@@ -97,8 +97,13 @@ namespace slag
             return _graphicsCard;
         }
 
-        Texture* DX12Lib::newTexture(GpuQueue* queue, void* data, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage,
-                                     Texture::Layout initializedLayout)
+        Texture* DX12Lib::newTexture(void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage, Texture::Layout initializedLayout, bool generateMips)
+        {
+            throw std::runtime_error("implement");
+            return nullptr;
+        }
+
+        Texture* DX12Lib::newTexture(CommandBuffer* onBuffer, void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage, Texture::Layout initializedLayout, bool generateMips)
         {
             throw std::runtime_error("implement");
             return nullptr;
@@ -127,8 +132,6 @@ namespace slag
         {
             return new DX12Semaphore(startingValue);
         }
-
-
 
     } // dx
 } // slag

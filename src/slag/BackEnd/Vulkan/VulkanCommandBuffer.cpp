@@ -116,5 +116,21 @@ namespace slag
             }
 
         }
+
+        GpuQueue::QueueType VulkanCommandBuffer::commandType()
+        {
+            if(_family == VulkanLib::card()->graphicsQueueFamily())
+            {
+                return GpuQueue::Graphics;
+            }
+            else if(_family == VulkanLib::card()->computeQueueFamily())
+            {
+                return GpuQueue::Compute;
+            }
+            else
+            {
+                return GpuQueue::Transfer;
+            }
+        }
     } // vulkan
 } // slag

@@ -22,6 +22,7 @@ DEFINITION(DEPTH_STENCIL_ATTACHMENT,0x00001000,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTA
 
 #include "Pixel.h"
 #include "Color.h"
+#include <filesystem>
 
 namespace slag
 {
@@ -43,8 +44,10 @@ namespace slag
         };
 
         virtual ~Texture()=default;
-        Texture* newTexture(void* data, Pixels::Format dataFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Usage usage, Layout initializedLayout);
-        Texture* newTexture(void* data, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Usage usage, Layout initializedLayout);
+        static Texture* newTexture(void* data, size_t dataSize, Pixels::Format dataFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Usage usage, Layout initializedLayout, bool generateMipMaps);
+        static Texture* newTexture(void* data, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Usage usage, Layout initializedLayout, bool generateMipMaps);
+        static Texture* newTexture(const std::filesystem::path& imagePath, Pixels::Format textureFormat, uint32_t mipLevels, Usage usage, Layout initializedLayout, bool generateMipMaps);
+        static Texture* newTexture(Color* colorArray, size_t colorCount, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Usage usage, Layout initializedLayout, bool generateMipMaps);
     };
 
 } // slag

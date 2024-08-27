@@ -14,7 +14,7 @@ namespace slag
         {
         public:
             VulkanCommandBuffer(uint32_t queueFamily);
-            ~VulkanCommandBuffer();
+            ~VulkanCommandBuffer()override;
             VulkanCommandBuffer(const VulkanCommandBuffer&)=delete;
             VulkanCommandBuffer& operator=(const VulkanCommandBuffer&)=delete;
             VulkanCommandBuffer(VulkanCommandBuffer&& from);
@@ -24,6 +24,7 @@ namespace slag
             void end()override;
             void waitUntilFinished()override;
             bool isFinished()override;
+            GpuQueue::QueueType commandType();
             friend class VulkanQueue;
         private:
             void move(VulkanCommandBuffer&& from);

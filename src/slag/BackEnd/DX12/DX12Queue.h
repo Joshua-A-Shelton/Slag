@@ -11,7 +11,7 @@ namespace slag
         {
         public:
             DX12Queue(ID3D12CommandQueue* queue,GpuQueue::QueueType type);
-            ~DX12Queue();
+            ~DX12Queue()override;
             DX12Queue(const DX12Queue&)=delete;
             DX12Queue& operator=(DX12Queue&)=delete;
             DX12Queue(DX12Queue&& from);

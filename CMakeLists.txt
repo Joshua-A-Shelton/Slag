@@ -125,11 +125,14 @@ if(BUILD_VULKAN_TESTS)
             test/tests/CommandBufferTest.cc
             test/VulkanEnvironment.cpp
             test/VulkanEnvironment.h
+            test/tests/TextureTest.cpp
     )
     target_link_libraries(SlagTests GTest::gtest Slag)
     target_include_directories(SlagTests PRIVATE src)
     include(GoogleTest)
     gtest_discover_tests(SlagTests)
+
+    add_custom_command(TARGET SlagTests COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/test/resources ${CMAKE_CURRENT_BINARY_DIR}/resources)
 endif()
 
 target_include_directories(Slag PUBLIC src)

@@ -9,6 +9,11 @@ namespace slag
     namespace vulkan
     {
 
+        struct VulkanizedFormat
+        {
+            VkFormat format = VK_FORMAT_UNDEFINED;
+            VkComponentMapping mapping{};
+        };
         class VulkanLib: public lib::BackEndLib
         {
         public:
@@ -16,6 +21,10 @@ namespace slag
             static VulkanLib* get();
             static void cleanup(lib::BackEndLib* library);
             static VulkanGraphicsCard* card();
+
+            static VulkanizedFormat format(Pixels::Format format);
+            static VkImageLayout layout(Texture::Layout layout);
+            static VkImageUsageFlags imageUsage(Texture::Usage usage);
 
             VulkanLib(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VulkanGraphicsCard* card);
             ~VulkanLib();
@@ -29,7 +38,8 @@ namespace slag
             GraphicsCard* graphicsCard()override;
             VulkanGraphicsCard* vulkanGraphicsCard();
             //Textures
-            Texture* newTexture(GpuQueue* queue,void* data, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage, Texture::Layout initializedLayout)override;
+            Texture* newTexture(void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage, Texture::Layout initializedLayout, bool generateMips)override;
+            Texture* newTexture(CommandBuffer* onBuffer, void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage, Texture::Layout initializedLayout, bool generateMips)override;
             //CommandBuffers
             CommandBuffer* newCommandBuffer(GpuQueue::QueueType acceptsCommands);
             //Semaphores

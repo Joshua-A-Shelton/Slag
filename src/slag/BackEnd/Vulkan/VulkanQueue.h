@@ -12,7 +12,7 @@ namespace slag
         {
         public:
             VulkanQueue(VkQueue queue, GpuQueue::QueueType type);
-            ~VulkanQueue();
+            ~VulkanQueue()override;
             VulkanQueue(const VulkanQueue&)=delete;
             VulkanQueue& operator=(const VulkanQueue&)=delete;
             VulkanQueue(VulkanQueue&& from);
