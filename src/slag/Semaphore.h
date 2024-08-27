@@ -1,6 +1,7 @@
 #ifndef SLAG_FENCE_H
 #define SLAG_FENCE_H
 #include <cstdint>
+#include <cstddef>
 
 namespace slag
 {

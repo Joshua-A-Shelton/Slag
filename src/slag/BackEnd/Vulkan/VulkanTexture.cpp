@@ -12,6 +12,8 @@ namespace slag
             //every texture should support copy
             _usage = usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
             _baseFormat = textureFormat;
+            _width = width;
+            _height = height;
 
             VkImageCreateInfo dimg_info{};
             dimg_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -62,6 +64,7 @@ namespace slag
                 vkDestroyImageView(VulkanLib::card()->device(),view, nullptr);
             };
 
+            //copy texel data into buffer
             if(texelData && dataSize)
             {
                 //copy image data
