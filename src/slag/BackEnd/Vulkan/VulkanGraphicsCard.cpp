@@ -45,7 +45,7 @@ namespace slag
             else
             {
                 cqueue = device.get_queue(vkb::QueueType::compute);
-                _computeQueue = new VulkanQueue(tqueue.value(), slag::GpuQueue::QueueType::Compute);
+                _computeQueue = new VulkanQueue(cqueue.value(), slag::GpuQueue::QueueType::Compute);
             }
 
             _properties = device.physical_device.properties;
