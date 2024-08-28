@@ -32,7 +32,6 @@ namespace slag
 
             auto result = vkAllocateCommandBuffers(VulkanLib::card()->device(), &allocInfo, &_buffer);
             assert(result == VK_SUCCESS && "failed to allocate command buffer!");
-            _finished = new VulkanSemaphore(2, true);
         }
 
         VulkanCommandBuffer::~VulkanCommandBuffer()
@@ -40,7 +39,7 @@ namespace slag
             if(_pool)
             {
                 //there's the possibility we started recording commands, but never submitted. Force clear resources just in case
-                if(_finished->value() == 2)
+                if(_finished == nullptr)
                 {
                     resources::ResourceManager::removeBufferFromActive(this);
                     freeResourceReferences();
@@ -48,9 +47,9 @@ namespace slag
                 else
                 {
                     _waitUntilFinished();
+                    delete _finished;
                 }
                 vkDestroyCommandPool(VulkanLib::card()->device(), _pool, nullptr);
-                delete _finished;
             }
         }
 
@@ -77,7 +76,6 @@ namespace slag
         {
             _waitUntilFinished();
             resources::ResourceManager::setBufferAsActive(this);
-            vkResetCommandBuffer(_buffer,0);
             VkCommandBufferBeginInfo cmdBeginInfo = {};
             cmdBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
             cmdBeginInfo.pNext = nullptr;
@@ -99,22 +97,23 @@ namespace slag
 
         bool VulkanCommandBuffer::isFinished()
         {
-            return _finished->value()>=1;
+            if(_finished)
+            {
+                return _finished->value()>=1;
+            }
+            return true;
         }
 
         void VulkanCommandBuffer::_waitUntilFinished()
         {
-            if(_finished->value()==0)
+            if(_finished)
             {
                 _finished->waitForValue(1);
-            }
-            else if(_finished->value()==1)
-            {
                 resources::ResourceManager::removeBufferFromActive(this);
                 freeResourceReferences();
-                _finished->signal(2);
+                delete _finished;
+                _finished = nullptr;
             }
-
         }
 
         GpuQueue::QueueType VulkanCommandBuffer::commandType()

@@ -37,7 +37,7 @@ namespace slag
         {
             VulkanCommandBuffer* buffer = dynamic_cast<VulkanCommandBuffer*>(commands);
             //started
-            buffer->_finished->signal(0);
+            buffer->_finished = new VulkanSemaphore(0, true);
 
             VkSemaphoreSubmitInfo signalInfo{};
             signalInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
