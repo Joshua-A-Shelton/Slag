@@ -126,7 +126,7 @@ namespace slag
             //copy texel data into buffer
             if(texelData && dataSize)
             {
-                /*
+
                 //copy image data
                 VkBufferCreateInfo bufferCreateInfo{};
                 bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -161,7 +161,7 @@ namespace slag
                 {
                     updateMipMaps(onBuffer);
                 }
-                */
+
             }
         }
 
