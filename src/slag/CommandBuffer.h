@@ -21,6 +21,7 @@ namespace slag
         virtual bool isFinished()=0;
 
         static CommandBuffer* newCommandBuffer(GpuQueue::QueueType acceptsCommands);
+
     protected:
         void freeResourceReferences();
     private:

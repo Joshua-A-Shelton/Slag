@@ -46,7 +46,7 @@ namespace slag
         void DX12Queue::submit(CommandBuffer* commands)
         {
             auto buffer = dynamic_cast<DX12CommandBuffer*>(commands);
-            buffer->_finished->signal(0);
+            buffer->_finished = new DX12Semaphore(0,true);
             ID3D12CommandList* lists[1]{buffer->_buffer};
             _queue->ExecuteCommandLists(1,lists);
             _queue->Signal(buffer->_finished->fence(),1);
@@ -68,7 +68,7 @@ namespace slag
                 for(size_t  i =0; i< bufferCount; i++)
                 {
                     auto buffer = dynamic_cast<DX12CommandBuffer*>(commandBuffers[i]);
-                    buffer->_finished->signal(0);
+                    buffer->_finished = new DX12Semaphore(0,true);
                     commands[i] = buffer->_buffer;
                     signals[i] = buffer->_finished->fence();
                 }

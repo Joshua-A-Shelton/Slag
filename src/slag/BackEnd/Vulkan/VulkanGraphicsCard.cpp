@@ -1,6 +1,8 @@
 #define VMA_IMPLEMENTATION
 #include "VulkanGraphicsCard.h"
 #include "VulkanLib.h"
+#include "VulkanTexture.h"
+#include "VulkanGPUMemoryReference.h"
 
 namespace slag
 {
@@ -151,19 +153,28 @@ namespace slag
             return _properties;
         }
 
-        GpuQueue* VulkanGraphicsCard::GraphicsQueue()
+        GpuQueue* VulkanGraphicsCard::graphicsQueue()
         {
             return _graphicsQueue;
         }
 
-        GpuQueue* VulkanGraphicsCard::TransferQueue()
+        GpuQueue* VulkanGraphicsCard::transferQueue()
         {
             return _transferQueue;
         }
 
-        GpuQueue* VulkanGraphicsCard::ComputeQueue()
+        GpuQueue* VulkanGraphicsCard::computeQueue()
         {
             return _computeQueue;
+        }
+
+        void VulkanGraphicsCard::defragmentMemory()
+        {
+            //see https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/defragmentation.html
+            //https://www.khronos.org/blog/copying-images-on-the-host-in-vulkan
+            //https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_EXT_host_image_copy.html
+            throw std::runtime_error("not implemented");
+
         }
 
     } // vulkan

@@ -33,9 +33,11 @@ namespace slag
             const VkPhysicalDeviceProperties& properties();
 
 
-            GpuQueue* GraphicsQueue()override;
-            GpuQueue* TransferQueue()override;
-            GpuQueue* ComputeQueue()override;
+            GpuQueue* graphicsQueue()override;
+            GpuQueue* transferQueue()override;
+            GpuQueue* computeQueue()override;
+
+            void defragmentMemory()override;
 
         private:
             void move(VulkanGraphicsCard&& from);

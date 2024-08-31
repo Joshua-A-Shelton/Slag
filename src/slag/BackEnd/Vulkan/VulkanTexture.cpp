@@ -5,6 +5,38 @@ namespace slag
 {
     namespace vulkan
     {
+        VulkanTexture::VulkanTexture(VkImage image, bool ownImage, VkImageView view, bool ownView, VulkanizedFormat format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, bool destroyImmediately): resources::Resource(destroyImmediately)
+        {
+            _image = image;
+            _view = view;
+            _baseFormat = format;
+            _usage = usage;
+            _width = width;
+            _height = height;
+            _mipLevels = mipLevels;
+            if(ownImage && ownView)
+            {
+                _disposeFunction = [=]
+                {
+                    vkDestroyImageView(VulkanLib::card()->device(),view, nullptr);
+                    vkDestroyImage(VulkanLib::card()->device(),image, nullptr);
+                };
+            }
+            else if(ownView)
+            {
+                _disposeFunction = [=]
+                {
+                    vkDestroyImageView(VulkanLib::card()->device(),view, nullptr);
+                };
+            }
+            else if(ownImage)
+            {
+                _disposeFunction = [=]
+                {
+                    vkDestroyImage(VulkanLib::card()->device(),image, nullptr);
+                };
+            }
+        }
 
         VulkanTexture::VulkanTexture(void* texelData, VkDeviceSize dataSize, VkFormat dataFormat, VulkanizedFormat textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage,
                                      VkImageLayout initializedLayout, bool generateMips, bool destroyImmediately): resources::Resource(destroyImmediately)
@@ -13,7 +45,7 @@ namespace slag
             buildBuffer.begin();
             build(buildBuffer,texelData,dataSize,dataFormat,textureFormat,width,height,mipLevels,usage,initializedLayout,generateMips);
             buildBuffer.end();
-            VulkanLib::card()->ComputeQueue()->submit(&buildBuffer);
+            VulkanLib::card()->computeQueue()->submit(&buildBuffer);
             buildBuffer.waitUntilFinished();
         }
 
@@ -24,7 +56,7 @@ namespace slag
 
         VulkanTexture::~VulkanTexture()
         {
-            if(_allocation)
+            if(_image)
             {
                 smartDestroy();
             }
@@ -52,6 +84,10 @@ namespace slag
             _width = from._width;
             _height = from._height;
             _mipLevels = from._mipLevels;
+            if(_allocation)
+            {
+                vmaSetAllocationUserData(VulkanLib::card()->memoryAllocator(),_allocation,&_selfReference);
+            }
         }
 
         void VulkanTexture::build(VulkanCommandBuffer& onBuffer, void* texelData, VkDeviceSize dataSize, VkFormat dataFormat, VulkanizedFormat textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageLayout initializedLayout, bool generateMips)
@@ -92,6 +128,8 @@ namespace slag
 
             VmaAllocationCreateInfo dimg_allocinfo = {};
             dimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+            //reference this texture to allow for GPU memory defragmentation
+            dimg_allocinfo.pUserData = &_selfReference;
 
             //allocate and create the image
             vmaCreateImage(VulkanLib::card()->memoryAllocator(), &dimg_info, &dimg_allocinfo, &_image, &_allocation, nullptr);
@@ -116,7 +154,6 @@ namespace slag
             auto img = _image;
             auto allocation = _allocation;
             auto view = _view;
-
             _disposeFunction = [=]()
             {
                 vmaDestroyImage(VulkanLib::card()->memoryAllocator(),img,allocation);
@@ -169,7 +206,7 @@ namespace slag
         {
             VulkanCommandBuffer commandBuffer(VulkanLib::card()->computeQueueFamily());
             updateMipMaps(commandBuffer);
-            VulkanLib::card()->ComputeQueue()->submit(&commandBuffer);
+            VulkanLib::card()->computeQueue()->submit(&commandBuffer);
             commandBuffer.waitUntilFinished();
         }
 
@@ -192,6 +229,30 @@ namespace slag
         void* VulkanTexture::gpuID()
         {
             return _allocation;
+        }
+
+        VkImage VulkanTexture::copyVkImage()
+        {
+            VkImageCreateInfo dimg_info{};
+            dimg_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+            dimg_info.format = _baseFormat.format;
+            dimg_info.usage = _usage;
+
+            VkExtent3D imageExtent;
+            imageExtent.width = static_cast<uint32_t>(_width);
+            imageExtent.height = static_cast<uint32_t>(_height);
+            imageExtent.depth = 1;
+
+            dimg_info.extent = imageExtent;
+            dimg_info.imageType = VK_IMAGE_TYPE_2D;
+            dimg_info.mipLevels = _mipLevels;
+            dimg_info.arrayLayers = 1;
+            dimg_info.samples = VK_SAMPLE_COUNT_1_BIT;
+            dimg_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+
+            VkImage copy;
+            vkCreateImage(VulkanLib::card()->device(),&dimg_info, nullptr,&copy);
+            return copy;
         }
     }
 } // slag

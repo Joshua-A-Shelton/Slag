@@ -5,6 +5,7 @@
 #include <wrl/client.h>
 #include "../../GraphicsCard.h"
 #include "DX12Queue.h"
+#include "D3D12MemAlloc.h"
 
 namespace slag
 {
@@ -18,14 +19,19 @@ namespace slag
             ~DX12GraphicsCard()override;
             Microsoft::WRL::ComPtr<ID3D12Device2>& device();
 
-            GpuQueue* GraphicsQueue()override;
-            GpuQueue* TransferQueue()override;
-            GpuQueue* ComputeQueue()override;
+            GpuQueue* graphicsQueue()override;
+            GpuQueue* transferQueue()override;
+            GpuQueue* computeQueue()override;
+
+            D3D12MA::Allocator* allocator();
+
+            void defragmentMemory()override;
         private:
             Microsoft::WRL::ComPtr<ID3D12Device2> _device = nullptr;
             DX12Queue* _graphics = nullptr;
             DX12Queue* _transfer = nullptr;
             DX12Queue* _compute = nullptr;
+            D3D12MA::Allocator* _allocator = nullptr;
         };
 
     } // dx

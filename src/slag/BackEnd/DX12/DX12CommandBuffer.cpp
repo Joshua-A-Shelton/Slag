@@ -8,7 +8,6 @@ namespace slag
         {
             DX12Lib::card()->device()->CreateCommandAllocator(type, IID_PPV_ARGS(&_pool));
             DX12Lib::card()->device()->CreateCommandList(0,type,_pool, nullptr, IID_PPV_ARGS(&_buffer));
-            _finished = new DX12Semaphore(2,true);
         }
 
         DX12CommandBuffer::~DX12CommandBuffer()
@@ -17,7 +16,7 @@ namespace slag
             if(_buffer)
             {
                 //there's the possibility we started recording commands, but never submitted. Force clear resources just in case
-                if(_finished->value() == 2)
+                if(_finished == nullptr)
                 {
                     resources::ResourceManager::removeBufferFromActive(this);
                     freeResourceReferences();
@@ -69,20 +68,22 @@ namespace slag
 
         bool DX12CommandBuffer::isFinished()
         {
-            return _finished->value() >=1;
+            if(_finished)
+            {
+                return _finished->value() >=1;
+            }
+            return true;
         }
 
         void DX12CommandBuffer::_waitUntilFinished()
         {
-            if(_finished->value()==0)
+            if(_finished)
             {
                 _finished->waitForValue(1);
-            }
-            else if(_finished->value()==1)
-            {
                 resources::ResourceManager::removeBufferFromActive(this);
                 freeResourceReferences();
-                _finished->signal(2);
+                delete _finished;
+                _finished = nullptr;
             }
         }
     } // dx

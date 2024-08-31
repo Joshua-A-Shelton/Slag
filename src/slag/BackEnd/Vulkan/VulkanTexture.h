@@ -6,7 +6,9 @@
 #include "vk_mem_alloc.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanLib.h"
+#include "VulkanGPUMemoryReference.h"
 #include <vulkan/vulkan.h>
+
 namespace slag
 {
     namespace vulkan
@@ -14,6 +16,7 @@ namespace slag
         class VulkanTexture: public Texture, resources::Resource
         {
         public:
+            VulkanTexture(VkImage image, bool ownImage, VkImageView view, bool ownView, VulkanizedFormat format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, bool destroyImmediately);
             VulkanTexture(void* texelData, VkDeviceSize dataSize, VkFormat dataFormat, VulkanizedFormat textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageLayout initializedLayout, bool generateMips, bool destroyImmediately);
             VulkanTexture(VulkanCommandBuffer* onBuffer, void* texelData, VkDeviceSize dataSize, VkFormat dataFormat, VulkanizedFormat textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageLayout initializedLayout, bool generateMips, bool destroyImmediately);
             ~VulkanTexture()override;
@@ -24,9 +27,11 @@ namespace slag
             void updateMipMaps();
             void updateMipMaps(VulkanCommandBuffer& onBuffer);
             void* gpuID()override;
+            friend class VulkanGraphicsCard;
         private:
             void move(VulkanTexture&& from);
             void build(VulkanCommandBuffer& onBuffer, void* texelData, VkDeviceSize dataSize, VkFormat dataFormat, VulkanizedFormat textureFormat, uint32_t  width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageLayout initializedLayout, bool generateMips);
+            VkImage copyVkImage();
             VulkanizedFormat _baseFormat{};
             VkImageAspectFlags _usage=0;
             VkImage _image = nullptr;
@@ -35,6 +40,7 @@ namespace slag
             uint32_t _width = 0;
             uint32_t _height = 0;
             uint32_t _mipLevels=1;
+            VulkanGPUMemoryReference _selfReference{.memoryType = VulkanGPUMemoryReference::Texture, .reference={this}};
         };
     }//vulkan
 } // slag

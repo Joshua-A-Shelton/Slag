@@ -66,6 +66,15 @@ namespace slag
             _device->CreateCommandQueue(&desc, IID_PPV_ARGS(&compute));
             _graphics = new DX12Queue(compute,slag::GpuQueue::QueueType::Compute);
 
+
+            D3D12MA::ALLOCATOR_DESC allocatorDesc = {};
+            allocatorDesc.pDevice = _device.Get();
+            allocatorDesc.pAdapter = adapter.Get();
+            // These flags are optional but recommended.
+            allocatorDesc.Flags = D3D12MA::ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED |
+                                  D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED;
+            D3D12MA::CreateAllocator(&allocatorDesc,&_allocator);
+
         }
 
         DX12GraphicsCard::~DX12GraphicsCard()
@@ -82,6 +91,10 @@ namespace slag
             {
                 delete _compute;
             }
+            if(_allocator)
+            {
+                _allocator->Release();
+            }
         }
 
         Microsoft::WRL::ComPtr<ID3D12Device2>& DX12GraphicsCard::device()
@@ -89,19 +102,29 @@ namespace slag
             return _device;
         }
 
-        GpuQueue* DX12GraphicsCard::GraphicsQueue()
+        GpuQueue* DX12GraphicsCard::graphicsQueue()
         {
             return _graphics;
         }
 
-        GpuQueue* DX12GraphicsCard::TransferQueue()
+        GpuQueue* DX12GraphicsCard::transferQueue()
         {
             return _transfer;
         }
 
-        GpuQueue* DX12GraphicsCard::ComputeQueue()
+        GpuQueue* DX12GraphicsCard::computeQueue()
         {
             return _compute;
+        }
+
+        D3D12MA::Allocator* DX12GraphicsCard::allocator()
+        {
+            return _allocator;
+        }
+
+        void DX12GraphicsCard::defragmentMemory()
+        {
+            throw std::runtime_error("not implemented");
         }
 
     } // dx

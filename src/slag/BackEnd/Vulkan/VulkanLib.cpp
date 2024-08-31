@@ -4,6 +4,7 @@
 #include "VulkanCommandBuffer.h"
 #include "VulkanQueue.h"
 #include "VulkanTexture.h"
+#include "Extensions.h"
 
 namespace slag
 {
@@ -35,6 +36,7 @@ namespace slag
             features1_3.dynamicRendering = true;
             features1_3.synchronization2 = true;
 
+
             VkPhysicalDeviceVulkan12Features features1_2{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
             features1_2.bufferDeviceAddress = true;
             features1_2.descriptorIndexing = true;
@@ -44,6 +46,7 @@ namespace slag
             auto physicalDevice = selector.set_minimum_version(1,3)
                                           .set_required_features_13(features1_3)
                                           .set_required_features_12(features1_2)
+                                          .add_required_extension("VK_EXT_host_image_copy")
                                           .defer_surface_initialization()
                                           .select();
             if(!physicalDevice.has_value())
@@ -57,6 +60,7 @@ namespace slag
                 return nullptr;
             }
             auto card = new VulkanGraphicsCard(instance,device.value());
+            Extensions::mapExtensions(card->device());
             return new VulkanLib(instance,debugMessenger,card);;
 
         }

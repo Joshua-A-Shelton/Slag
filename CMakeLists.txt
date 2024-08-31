@@ -34,6 +34,13 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/BackEnd/Vulkan/VulkanQueue.h
             src/slag/BackEnd/Vulkan/VulkanCommandBuffer.cpp
             src/slag/BackEnd/Vulkan/VulkanCommandBuffer.h
+            src/slag/BackEnd/Vulkan/VulkanGPUMemoryReference.h
+            src/slag/BackEnd/Vulkan/Extensions.cpp
+            src/slag/BackEnd/Vulkan/Extensions.h
+            src/slag/BackEnd/Vulkan/VulkanFrame.cpp
+            src/slag/BackEnd/Vulkan/VulkanFrame.h
+            src/slag/BackEnd/Vulkan/VulkanSwapchain.cpp
+            src/slag/BackEnd/Vulkan/VulkanSwapchain.h
     )
 endif()
 
@@ -80,6 +87,10 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/Semaphore.h
         src/slag/BackEnd/BackEndLib.h
         src/slag/BackEnd/BackEndLib.cpp
+        src/slag/Swapchain.cpp
+        src/slag/Swapchain.h
+        src/slag/Frame.cpp
+        src/slag/Frame.h
 )
 target_include_directories(Slag PRIVATE ${Boost_INCLUDE_DIRS} third-party/stb)
 
@@ -98,8 +109,9 @@ if(SLAG_VULKAN_BACKEND)
     target_link_libraries(Slag ${Vulkan_LIBRARIES} vk-bootstrap GPUOpen::VulkanMemoryAllocator spirv-reflect-static)
 endif()
 if(SLAG_DX12_BACKEND)
+    add_subdirectory(third-party/d3dma)
     add_subdirectory(third-party/dx12-headers)
-    target_link_libraries(Slag d3d12.lib dxgi.lib d3dcompiler.lib dxguid.lib)
+    target_link_libraries(Slag d3d12.lib dxgi.lib d3dcompiler.lib dxguid.lib D3D12MemoryAllocator)
 endif()
 
 
