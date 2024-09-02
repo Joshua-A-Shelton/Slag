@@ -86,5 +86,10 @@ namespace slag
                 _finished = nullptr;
             }
         }
+
+        void DX12CommandBuffer::ClearColorImage(Texture* texture, ClearColor color, Texture::Layout layout)
+        {
+            throw std::runtime_error("not implemented");
+        }
     } // dx
 } // slag

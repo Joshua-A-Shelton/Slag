@@ -23,6 +23,8 @@ namespace slag
             void waitUntilFinished()override;
             bool isFinished()override;
             friend class DX12Queue;
+
+            void ClearColorImage(Texture* texture, ClearColor color, Texture::Layout layout)override;
         private:
             void move(DX12CommandBuffer&& from);
             void _waitUntilFinished();

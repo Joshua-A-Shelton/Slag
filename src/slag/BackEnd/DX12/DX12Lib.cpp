@@ -133,5 +133,11 @@ namespace slag
             return new DX12Semaphore(startingValue);
         }
 
+        Swapchain* DX12Lib::newSwapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode, Pixels::Format imageFormat)
+        {
+            throw new std::runtime_error("not implemented");
+            return nullptr;
+        }
+
     } // dx
 } // slag

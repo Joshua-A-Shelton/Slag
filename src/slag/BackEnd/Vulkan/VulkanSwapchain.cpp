@@ -71,7 +71,7 @@ namespace slag
             createInfo.hwnd = static_cast<HWND>(platformData.nativeWindowHandle);
             //kinda messy, but apparently correct?
             createInfo.hinstance = static_cast<HINSTANCE>(platformData.nativeDisplayType);
-            vkCreateWin32SurfaceKHR(VulkanLib::instance(),&createInfo, nullptr,&surface);
+            vkCreateWin32SurfaceKHR(VulkanLib::get()->instance(),&createInfo, nullptr,&surface);
 #elif __linux
             //TODO: include wayland
             VkXlibSurfaceCreateInfoKHR createInfo{};
@@ -107,7 +107,7 @@ namespace slag
                     .set_desired_min_image_count(_backBufferCount)
                     //.set_desired_min_image_count()
                     .set_old_swapchain(_swapchain)
-                    .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT)
+                    .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
                     .build();
             if(_swapchain)
             {
