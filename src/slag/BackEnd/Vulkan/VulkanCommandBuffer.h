@@ -26,6 +26,11 @@ namespace slag
             bool isFinished()override;
             GpuQueue::QueueType commandType();
             friend class VulkanQueue;
+            friend class VulkanFrame;
+
+
+            void ClearColorImage(Texture* texture, ClearColor color,Texture::Layout layout)override;
+
         private:
             void move(VulkanCommandBuffer&& from);
             void _waitUntilFinished();

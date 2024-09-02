@@ -6,6 +6,8 @@
 #include "slag/Resources/ResourceManager.h"
 #include "Semaphore.h"
 #include "GpuQueue.h"
+#include "Texture.h"
+#include "Clear.h"
 
 namespace slag
 {
@@ -21,6 +23,8 @@ namespace slag
         virtual bool isFinished()=0;
 
         static CommandBuffer* newCommandBuffer(GpuQueue::QueueType acceptsCommands);
+
+        virtual void ClearColorImage(Texture* texture, ClearColor color, Texture::Layout layout)=0;
 
     protected:
         void freeResourceReferences();

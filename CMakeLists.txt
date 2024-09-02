@@ -91,6 +91,8 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/Swapchain.h
         src/slag/Frame.cpp
         src/slag/Frame.h
+        src/slag/PlatformData.h
+        src/slag/Clear.h
 )
 target_include_directories(Slag PRIVATE ${Boost_INCLUDE_DIRS} third-party/stb)
 
@@ -117,6 +119,7 @@ endif()
 
 OPTION(BUILD_VULKAN_TESTS "Build tests" ON)
 if(BUILD_VULKAN_TESTS)
+    find_package(SDL2 REQUIRED)
     message("building tests")
     include(FetchContent)
     FetchContent_Declare(
@@ -138,9 +141,10 @@ if(BUILD_VULKAN_TESTS)
             test/VulkanEnvironment.cpp
             test/VulkanEnvironment.h
             test/tests/TextureTest.cpp
+            test/tests/SwapchainTest.cpp
     )
-    target_link_libraries(SlagTests GTest::gtest Slag)
-    target_include_directories(SlagTests PRIVATE src)
+    target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 Slag)
+    target_include_directories(SlagTests PRIVATE src ${SDL2_LIBRARIES})
     include(GoogleTest)
     gtest_discover_tests(SlagTests)
 

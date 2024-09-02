@@ -44,6 +44,11 @@ namespace slag
         };
 
         virtual ~Texture()=default;
+
+        virtual uint32_t width()=0;
+        virtual uint32_t height()=0;
+        virtual uint32_t mipLevels()=0;
+
         static Texture* newTexture(void* data, size_t dataSize, Pixels::Format dataFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Usage usage, Layout initializedLayout, bool generateMipMaps);
         static Texture* newTexture(void* data, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Usage usage, Layout initializedLayout, bool generateMipMaps);
         static Texture* newTexture(const std::filesystem::path& imagePath, Pixels::Format textureFormat, uint32_t mipLevels, Usage usage, Layout initializedLayout, bool generateMipMaps);

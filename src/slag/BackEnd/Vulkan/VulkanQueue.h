@@ -25,6 +25,7 @@ namespace slag
             void submit(CommandBuffer** commandBuffers, size_t bufferCount, SemaphoreValue* waitOnSemaphores, size_t waitCount, SemaphoreValue* signalSemaphores, size_t signalCount)override;
 
             QueueType type()override;
+            VkQueue underlyingQueue();
         private:
             VkQueue _queue;
             GpuQueue::QueueType _type;

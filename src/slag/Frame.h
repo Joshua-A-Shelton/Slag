@@ -14,6 +14,7 @@ namespace slag
         virtual Texture* backBuffer()=0;
         virtual CommandBuffer* commandBuffer()=0;
         virtual void present()=0;
+        virtual void present(SemaphoreValue* signals, size_t signalCount)=0;
 
     };
 

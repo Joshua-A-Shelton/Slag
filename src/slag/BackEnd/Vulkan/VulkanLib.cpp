@@ -2,6 +2,7 @@
 #include "VkBootstrap.h"
 #include "VulkanSemaphore.h"
 #include "VulkanCommandBuffer.h"
+#include "VulkanSwapchain.h"
 #include "VulkanQueue.h"
 #include "VulkanTexture.h"
 #include "Extensions.h"
@@ -178,6 +179,11 @@ namespace slag
         void VulkanLib::waitFor(SemaphoreValue* values, size_t count)
         {
             VulkanSemaphore::waitFor(values,count);
+        }
+
+        Swapchain* VulkanLib::newSwapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode, Pixels::Format imageFormat)
+        {
+            return new VulkanSwapchain(platformData,width,height,backBuffers,mode, format(imageFormat));
         }
 
         Texture* VulkanLib::newTexture(void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage, Texture::Layout initializedLayout, bool generateMips)

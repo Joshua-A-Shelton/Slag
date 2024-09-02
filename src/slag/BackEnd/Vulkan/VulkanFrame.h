@@ -13,7 +13,7 @@ namespace slag
         class VulkanFrame: public Frame
         {
         public:
-            VulkanFrame(VkImage backBuffer, VkImageView view, VulkanSwapchain* from);
+            VulkanFrame(VkImage backBuffer, uint32_t width, uint32_t height, uint32_t imageIndex, VkImageUsageFlags flags, VulkanSwapchain* from);
             ~VulkanFrame()override;
             VulkanFrame(const VulkanFrame&)=delete;
             VulkanFrame& operator=(const VulkanFrame&)=delete;
@@ -22,11 +22,15 @@ namespace slag
             Texture* backBuffer()override;
             CommandBuffer* commandBuffer()override;
             void present()override;
+            void present(SemaphoreValue* signals, size_t signalCount)override;
+            friend class VulkanSwapchain;
+
         private:
             void move(VulkanFrame&& from);
-            VulkanSwapchain* _from;
-            VulkanTexture* _backBuffer;
-            VulkanCommandBuffer* _commandBuffer;
+            VulkanSwapchain* _from = nullptr;
+            VulkanTexture* _backBuffer = nullptr;
+            VulkanCommandBuffer* _commandBuffer = nullptr;
+            uint32_t _imageIndex = 0;
 
         };
 

@@ -276,5 +276,10 @@ namespace slag
             submitInfo.pWaitSemaphoreInfos = wait.data();
             vkQueueSubmit2(_queue,1,&submitInfo, nullptr);
         }
+
+        VkQueue VulkanQueue::underlyingQueue()
+        {
+            return _queue;
+        }
     } // vulkan
 } // slag

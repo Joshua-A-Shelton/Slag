@@ -1,6 +1,7 @@
 #include "VulkanCommandBuffer.h"
 #include "VulkanLib.h"
 #include "../../Resources/ResourceManager.h"
+#include "VulkanTexture.h"
 
 namespace slag
 {
@@ -130,6 +131,19 @@ namespace slag
             {
                 return GpuQueue::Transfer;
             }
+        }
+
+        void VulkanCommandBuffer::ClearColorImage(Texture* texture, ClearColor color,Texture::Layout layout)
+        {
+            auto tex = dynamic_cast<VulkanTexture*>(texture);
+            VkImageSubresourceRange range{};
+            range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            range.baseArrayLayer = 0;
+            range.baseMipLevel = 0;
+            range.layerCount = 1;
+            range.levelCount = tex->mipLevels();
+            vkCmdClearColorImage(_buffer, tex->image(), VulkanLib::layout(layout),
+                                 reinterpret_cast<const VkClearColorValue*>(&color), 1, &range);
         }
     } // vulkan
 } // slag

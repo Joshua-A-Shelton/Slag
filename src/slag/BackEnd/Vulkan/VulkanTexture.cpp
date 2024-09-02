@@ -38,6 +38,62 @@ namespace slag
             }
         }
 
+        VulkanTexture::VulkanTexture(VkImage image, bool ownImage, VulkanizedFormat format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, bool destroyImmediately): resources::Resource(destroyImmediately)
+        {
+            _image = image;
+            _baseFormat = format;
+            _usage = usage;
+            _width = width;
+            _height = height;
+            _mipLevels = mipLevels;
+
+            VkImageAspectFlags aspectFlags = 0;
+            if(_usage & (VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT))
+            {
+                aspectFlags |= VK_IMAGE_ASPECT_COLOR_BIT;
+            }
+            if(_usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+            {
+                //TODO: I think i may need to separate the depth and stencil based on the texture format
+                aspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+            }
+
+            //create default image view
+            VkImageViewCreateInfo info = {};
+            info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            info.pNext = nullptr;
+
+            info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+            info.image = _image;
+            info.format = _baseFormat.format;
+            info.subresourceRange.layerCount = 1;
+            info.subresourceRange.baseMipLevel = 0;
+            info.subresourceRange.levelCount = _mipLevels;
+            info.subresourceRange.baseArrayLayer = 0;
+            info.subresourceRange.aspectMask = aspectFlags;
+            info.components = _baseFormat.mapping;
+
+            auto success = vkCreateImageView(VulkanLib::card()->device(),&info, nullptr,&_view);
+
+
+            auto view = _view;
+            if(ownImage)
+            {
+                _disposeFunction = [=]
+                {
+                    vkDestroyImageView(VulkanLib::card()->device(),view, nullptr);
+                    vkDestroyImage(VulkanLib::card()->device(),image, nullptr);
+                };
+            }
+            else
+            {
+                _disposeFunction = [=]
+                {
+                    vkDestroyImageView(VulkanLib::card()->device(),view, nullptr);
+                };
+            }
+        }
+
         VulkanTexture::VulkanTexture(void* texelData, VkDeviceSize dataSize, VkFormat dataFormat, VulkanizedFormat textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage,
                                      VkImageLayout initializedLayout, bool generateMips, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
@@ -254,5 +310,31 @@ namespace slag
             vkCreateImage(VulkanLib::card()->device(),&dimg_info, nullptr,&copy);
             return copy;
         }
+
+        uint32_t VulkanTexture::width()
+        {
+            return _width;
+        }
+
+        uint32_t VulkanTexture::height()
+        {
+            return _height;
+        }
+
+        uint32_t VulkanTexture::mipLevels()
+        {
+            return _mipLevels;
+        }
+
+        VkImage VulkanTexture::image()
+        {
+            return _image;
+        }
+
+        VkImageView VulkanTexture::view()
+        {
+            return _view;
+        }
+
     }
 } // slag

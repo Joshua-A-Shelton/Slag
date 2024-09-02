@@ -36,6 +36,7 @@ namespace slag
             GpuQueue* graphicsQueue()override;
             GpuQueue* transferQueue()override;
             GpuQueue* computeQueue()override;
+            VkQueue presentQueue();
 
             void defragmentMemory()override;
 
@@ -46,11 +47,14 @@ namespace slag
             VulkanQueue* _graphicsQueue = nullptr;
             VulkanQueue* _transferQueue = nullptr;
             VulkanQueue* _computeQueue = nullptr;
+            VkQueue _presentQueue = nullptr;
             uint32_t _graphicsQueueFamily = 0;
             uint32_t _transferQueueFamily = 0;
             uint32_t _computeQueueFamily = 0;
             VmaAllocator _allocator = nullptr;
             VkPhysicalDeviceProperties _properties;
+            bool _seperateTransfer = true;
+            bool _seperateCompute = true;
         };
     } // vulkan
 } // slag

@@ -14,8 +14,24 @@ namespace slag
             this->_physicalDevice = device.physical_device;
 
             _graphicsQueueFamily = device.get_queue_index(vkb::QueueType::graphics).value();
-            _transferQueueFamily = device.get_queue_index(vkb::QueueType::transfer).value();
-            _computeQueueFamily = device.get_queue_index(vkb::QueueType::compute).value();
+            auto tqf = device.get_queue_index(vkb::QueueType::transfer);
+            if(tqf.has_value())
+            {
+                _transferQueueFamily = tqf.value();
+            }
+            else
+            {
+                _transferQueueFamily = _graphicsQueueFamily;
+            }
+            auto cqf = device.get_queue_index(vkb::QueueType::compute);
+            if(cqf.has_value())
+            {
+                _computeQueueFamily = cqf.value();
+            }
+            else
+            {
+                _computeQueueFamily = _graphicsQueueFamily;
+            }
 
             auto gqueue = device.get_dedicated_queue(vkb::QueueType::graphics);
             if(gqueue.has_value())
@@ -28,17 +44,6 @@ namespace slag
                 _graphicsQueue = new VulkanQueue(gqueue.value(),slag::GpuQueue::QueueType::Graphics);
             }
 
-            auto tqueue = device.get_dedicated_queue(vkb::QueueType::transfer);
-            if(tqueue.has_value())
-            {
-                _transferQueue = new VulkanQueue(tqueue.value(), slag::GpuQueue::QueueType::Transfer);
-            }
-            else
-            {
-                tqueue = device.get_queue(vkb::QueueType::transfer);
-                _transferQueue = new VulkanQueue(tqueue.value(), slag::GpuQueue::QueueType::Transfer);
-            }
-
             auto cqueue = device.get_dedicated_queue(vkb::QueueType::compute);
             if(cqueue.has_value())
             {
@@ -47,7 +52,52 @@ namespace slag
             else
             {
                 cqueue = device.get_queue(vkb::QueueType::compute);
-                _computeQueue = new VulkanQueue(cqueue.value(), slag::GpuQueue::QueueType::Compute);
+                if(cqueue.has_value())
+                {
+                    _computeQueue = new VulkanQueue(cqueue.value(), slag::GpuQueue::QueueType::Compute);
+                }
+                else
+                {
+                    _computeQueue = _graphicsQueue;
+                    _seperateCompute = false;
+                }
+            }
+
+            auto tqueue = device.get_dedicated_queue(vkb::QueueType::transfer);
+            if(tqueue.has_value())
+            {
+                _transferQueue = new VulkanQueue(tqueue.value(), slag::GpuQueue::QueueType::Transfer);
+            }
+            else
+            {
+                tqueue = device.get_queue(vkb::QueueType::transfer);
+                if(tqueue.has_value())
+                {
+                    _transferQueue = new VulkanQueue(tqueue.value(), slag::GpuQueue::QueueType::Transfer);
+                }
+                else
+                {
+                    _transferQueue = _computeQueue;
+                    _seperateTransfer = false;
+                }
+            }
+
+            auto pqueue = device.get_dedicated_queue(vkb::QueueType::present);
+            if(pqueue.has_value())
+            {
+                _presentQueue = pqueue.value();
+            }
+            else
+            {
+                pqueue = device.get_queue(vkb::QueueType::present);
+                if(pqueue.has_value())
+                {
+                    _presentQueue = pqueue.value();
+                }
+                else
+                {
+                    _presentQueue = _transferQueue->underlyingQueue();
+                }
             }
 
             _properties = device.physical_device.properties;
@@ -78,11 +128,11 @@ namespace slag
                 {
                     delete _graphicsQueue;
                 }
-                if(_transferQueue)
+                if(_transferQueue && _seperateTransfer)
                 {
                     delete _transferQueue;
                 }
-                if(_computeQueue)
+                if(_computeQueue && _seperateCompute)
                 {
                     delete _computeQueue;
                 }
@@ -166,6 +216,11 @@ namespace slag
         GpuQueue* VulkanGraphicsCard::computeQueue()
         {
             return _computeQueue;
+        }
+
+        VkQueue VulkanGraphicsCard::presentQueue()
+        {
+            return _presentQueue;
         }
 
         void VulkanGraphicsCard::defragmentMemory()
