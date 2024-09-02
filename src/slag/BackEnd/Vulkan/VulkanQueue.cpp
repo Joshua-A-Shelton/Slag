@@ -58,6 +58,49 @@ namespace slag
             vkQueueSubmit2(_queue,1,&submitInfo, nullptr);
         }
 
+        void VulkanQueue::submit(CommandBuffer* commands,VkSemaphore imageAcquiredSemaphore, VkSemaphore renderFinishedSemaphore)
+        {
+            VulkanCommandBuffer* buffer = dynamic_cast<VulkanCommandBuffer*>(commands);
+            //started
+            buffer->_finished = new VulkanSemaphore(0, true);
+
+            VkSemaphoreSubmitInfo waitInfo{};
+            waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+            waitInfo.semaphore = imageAcquiredSemaphore;
+            waitInfo.value = 1;
+            waitInfo.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+
+            VkSemaphoreSubmitInfo signalInfo{};
+            signalInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+            signalInfo.semaphore = buffer->_finished->semaphore();
+            signalInfo.value = 1;
+            signalInfo.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+
+            VkSemaphoreSubmitInfo signalInfo2{};
+            signalInfo2.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+            signalInfo2.semaphore = renderFinishedSemaphore;
+            signalInfo2.value = 1;
+            signalInfo2.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+
+            VkSemaphoreSubmitInfo submits[2] = {signalInfo,signalInfo2};
+
+            VkCommandBufferSubmitInfo bInfo{};
+            bInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+            bInfo.commandBuffer = buffer->_buffer;
+
+            VkSubmitInfo2 submitInfo{};
+            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+            submitInfo.commandBufferInfoCount = 1;
+            submitInfo.pCommandBufferInfos = &bInfo;
+            submitInfo.waitSemaphoreInfoCount = 1;
+            submitInfo.pWaitSemaphoreInfos = &waitInfo;
+            submitInfo.signalSemaphoreInfoCount = 2;
+            submitInfo.pSignalSemaphoreInfos = submits;
+
+
+            vkQueueSubmit2(_queue,1,&submitInfo, nullptr);
+        }
+
         void VulkanQueue::submit(CommandBuffer** commandBuffers, size_t bufferCount, bool forceDependency)
         {
             if(forceDependency)

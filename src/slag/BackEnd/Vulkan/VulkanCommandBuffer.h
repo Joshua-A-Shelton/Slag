@@ -28,8 +28,8 @@ namespace slag
             friend class VulkanQueue;
             friend class VulkanFrame;
 
-
-            void ClearColorImage(Texture* texture, ClearColor color,Texture::Layout layout)override;
+            void insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount)override;
+            void clearColorImage(Texture* texture, ClearColor color, Texture::Layout layout)override;
 
         private:
             void move(VulkanCommandBuffer&& from);

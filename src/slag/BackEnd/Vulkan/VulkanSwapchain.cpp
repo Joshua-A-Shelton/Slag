@@ -24,13 +24,20 @@ namespace slag
 
         VulkanSwapchain::~VulkanSwapchain()
         {
-            for(int i=0; i< _frames.size(); i++)
+            if(_swapchain)
             {
-                _frames[i].commandBuffer()->waitUntilFinished();
+                for (int i = 0; i < _frames.size(); i++)
+                {
+                    _frames[i].commandBuffer()->waitUntilFinished();
+                }
+                _frames.clear();
+                vkDestroySwapchainKHR(VulkanLib::card()->device(), _swapchain, nullptr);
+                vkDestroySurfaceKHR(VulkanLib::get()->instance(), _surface, nullptr);
+                for(auto i=0; i<_imageAcquiredSemaphores.size(); i++)
+                {
+                    vkDestroySemaphore(VulkanLib::card()->device(),_imageAcquiredSemaphores[i], nullptr);
+                }
             }
-            _frames.clear();
-            vkDestroySwapchainKHR(VulkanLib::card()->device(),_swapchain, nullptr);
-            vkDestroySurfaceKHR(VulkanLib::get()->instance(),_surface, nullptr);
         }
 
         VulkanSwapchain::VulkanSwapchain(VulkanSwapchain&& from)
@@ -54,8 +61,10 @@ namespace slag
             _presentMode = from._presentMode;
 
             _currentFrameIndex = from._currentFrameIndex;
+            _currentSemaphoreIndex = from._currentSemaphoreIndex;
             _needsRebuild = from._needsRebuild;
             _frames.swap(from._frames);
+            _imageAcquiredSemaphores.swap(from._imageAcquiredSemaphores);
             for(auto i=0; i<_frames.size(); i++)
             {
                 _frames[i]._from = this;
@@ -113,6 +122,11 @@ namespace slag
             {
                 vkDestroySwapchainKHR(VulkanLib::card()->device(),_swapchain, nullptr);
                 _frames.clear();
+                for(auto i=0; i<_imageAcquiredSemaphores.size(); i++)
+                {
+                    vkDestroySemaphore(VulkanLib::card()->device(),_imageAcquiredSemaphores[i], nullptr);
+                }
+                _imageAcquiredSemaphores.clear();
             }
             _swapchain = chain.value();
             if(chain->present_mode == VK_PRESENT_MODE_FIFO_KHR)
@@ -128,8 +142,17 @@ namespace slag
             {
                 VulkanFrame frame(images[i],_width,_height,i,chain->image_usage_flags,this);
                 _frames.push_back(std::move(frame));
+
+                VkSemaphoreCreateInfo semaphoreCreateInfo{};
+                semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+                VkSemaphore semaphore = nullptr;
+                auto value = vkCreateSemaphore(VulkanLib::card()->device(),&semaphoreCreateInfo, nullptr,&semaphore);
+                _imageAcquiredSemaphores.push_back(semaphore);
+
             }
+
             _currentFrameIndex = 0;
+            _currentSemaphoreIndex = 0;
             _needsRebuild = false;
         }
 
@@ -142,12 +165,13 @@ namespace slag
 
             _frames[_currentFrameIndex].commandBuffer()->waitUntilFinished();
 
-            auto result = vkAcquireNextImageKHR(VulkanLib::card()->device(),_swapchain,100000000, nullptr, nullptr,&_currentFrameIndex);
+            auto result = vkAcquireNextImageKHR(VulkanLib::card()->device(), _swapchain, 100000000, _imageAcquiredSemaphores[_currentSemaphoreIndex], nullptr, &_currentFrameIndex);
+
 
             if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _needsRebuild)
             {
                 rebuild();
-                vkAcquireNextImageKHR(VulkanLib::card()->device(),_swapchain,1000000000, nullptr, nullptr,&_currentFrameIndex);
+                vkAcquireNextImageKHR(VulkanLib::card()->device(), _swapchain, 100000000, _imageAcquiredSemaphores[_currentSemaphoreIndex], nullptr, &_currentFrameIndex);
             }
             else if(result != VK_SUCCESS)
             {
@@ -219,6 +243,16 @@ namespace slag
         VkSwapchainKHR VulkanSwapchain::vulkanSwapchain()
         {
             return _swapchain;
+        }
+
+        VkSemaphore VulkanSwapchain::currentImageAcquiredSemaphore()
+        {
+            return _imageAcquiredSemaphores[_currentSemaphoreIndex];
+        }
+
+        void VulkanSwapchain::finishedFrame()
+        {
+            _currentSemaphoreIndex = (_currentSemaphoreIndex + 1) % _imageAcquiredSemaphores.size();
         }
 
     } // vulkan

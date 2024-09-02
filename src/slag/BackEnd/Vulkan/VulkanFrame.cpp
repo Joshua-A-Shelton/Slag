@@ -8,8 +8,11 @@ namespace slag
         VulkanFrame::VulkanFrame(VkImage backBuffer, uint32_t width, uint32_t height, uint32_t imageIndex, VkImageUsageFlags flags, VulkanSwapchain* from)
         {
             _from = from;
-            _backBuffer = new VulkanTexture(backBuffer, false,_from->imageFormat(),width,height,1,flags, true);
+            _backBuffer = new VulkanTexture(backBuffer, false,_from->imageFormat(),width,height,1,flags, VK_IMAGE_ASPECT_COLOR_BIT, true);
             _commandBuffer = new VulkanCommandBuffer(VulkanLib::card()->graphicsQueueFamily());
+            VkSemaphoreCreateInfo semaphoreCreateInfo{};
+            semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+            vkCreateSemaphore(VulkanLib::card()->device(),&semaphoreCreateInfo, nullptr,&_commandsFinished);
             _imageIndex = imageIndex;
         }
 
@@ -19,6 +22,7 @@ namespace slag
             {
                 delete _backBuffer;
                 delete _commandBuffer;
+                vkDestroySemaphore(VulkanLib::card()->device(),_commandsFinished, nullptr);
             }
         }
 
@@ -38,6 +42,7 @@ namespace slag
             std::swap(_backBuffer,from._backBuffer);
             std::swap(_commandBuffer,from._commandBuffer);
             std::swap(_from,from._from);
+            std::swap(_commandsFinished,from._commandsFinished);
             _imageIndex = from._imageIndex;
         }
 
@@ -51,43 +56,26 @@ namespace slag
             return _commandBuffer;
         }
 
-        void VulkanFrame::present()
+        void VulkanFrame::begin()
         {
-            present(nullptr,0);
+            _commandBuffer->begin();
         }
 
-        void VulkanFrame::present(SemaphoreValue* signals, size_t signalCount)
+        void VulkanFrame::end()
         {
-            uint64_t waitValue = 1;
-            std::vector<VkSemaphore> signalsArray(signalCount);
-            std::vector<uint64_t> signalsValues(signalCount);
-            for(auto i=0; i< signalCount; i++)
-            {
-                signalsArray[i] = dynamic_cast<VulkanSemaphore*>(signals[i].semaphore)->semaphore();
-                signalsValues[i] = signals[i].value;
-            }
-            VkTimelineSemaphoreSubmitInfo timelineInfo;
-            timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
-            timelineInfo.pNext = nullptr;
-            timelineInfo.waitSemaphoreValueCount = 1;
-            timelineInfo.pWaitSemaphoreValues = &waitValue;
-            timelineInfo.signalSemaphoreValueCount = signalCount;
-            timelineInfo.pSignalSemaphoreValues = signalsValues.data();
-
-
-            auto sem = _commandBuffer->_finished->semaphore();
-            auto chain = _from->vulkanSwapchain();
+            _commandBuffer->end();
+            dynamic_cast<VulkanQueue*>(VulkanLib::card()->graphicsQueue())->submit(_commandBuffer,_from->currentImageAcquiredSemaphore(),_commandsFinished);
+            auto swapchain = _from->vulkanSwapchain();
             VkPresentInfoKHR presentInfo{};
-            presentInfo.pNext = &timelineInfo;
             presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
             presentInfo.pImageIndices = &_imageIndex;
             presentInfo.waitSemaphoreCount = 1;
-            presentInfo.pWaitSemaphores = &sem;
+            presentInfo.pWaitSemaphores = &_commandsFinished;
+            presentInfo.pSwapchains = &swapchain;
             presentInfo.swapchainCount = 1;
-            presentInfo.pSwapchains = &chain;
-
 
             auto result = vkQueuePresentKHR(VulkanLib::card()->presentQueue(),&presentInfo);
+            _from->finishedFrame();
             if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _from->needsRebuild())
             {
                 _from->rebuild();

@@ -16,8 +16,8 @@ namespace slag
         class VulkanTexture: public Texture, resources::Resource
         {
         public:
-            VulkanTexture(VkImage image, bool ownImage, VkImageView view, bool ownView, VulkanizedFormat format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, bool destroyImmediately);
-            VulkanTexture(VkImage image, bool ownImage, VulkanizedFormat format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, bool destroyImmediately);
+            VulkanTexture(VkImage image, bool ownImage, VkImageView view, bool ownView, VulkanizedFormat format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageAspectFlags aspects, bool destroyImmediately);
+            VulkanTexture(VkImage image, bool ownImage, VulkanizedFormat format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageAspectFlags aspects, bool destroyImmediately);
 
             VulkanTexture(void* texelData, VkDeviceSize dataSize, VkFormat dataFormat, VulkanizedFormat textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageLayout initializedLayout, bool generateMips, bool destroyImmediately);
             VulkanTexture(VulkanCommandBuffer* onBuffer, void* texelData, VkDeviceSize dataSize, VkFormat dataFormat, VulkanizedFormat textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageLayout initializedLayout, bool generateMips, bool destroyImmediately);
@@ -35,13 +35,15 @@ namespace slag
 
             VkImage image();
             VkImageView view();
+            VkImageAspectFlags aspectFlags();
             friend class VulkanGraphicsCard;
         private:
             void move(VulkanTexture&& from);
             void build(VulkanCommandBuffer& onBuffer, void* texelData, VkDeviceSize dataSize, VkFormat dataFormat, VulkanizedFormat textureFormat, uint32_t  width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageLayout initializedLayout, bool generateMips);
             VkImage copyVkImage();
             VulkanizedFormat _baseFormat{};
-            VkImageAspectFlags _usage=0;
+            VkImageUsageFlags _usage;
+            VkImageAspectFlags _aspects=0;
             VkImage _image = nullptr;
             VmaAllocation _allocation = nullptr;
             VkImageView _view = nullptr;

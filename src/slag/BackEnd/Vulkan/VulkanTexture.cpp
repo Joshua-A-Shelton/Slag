@@ -5,7 +5,7 @@ namespace slag
 {
     namespace vulkan
     {
-        VulkanTexture::VulkanTexture(VkImage image, bool ownImage, VkImageView view, bool ownView, VulkanizedFormat format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, bool destroyImmediately): resources::Resource(destroyImmediately)
+        VulkanTexture::VulkanTexture(VkImage image, bool ownImage, VkImageView view, bool ownView, VulkanizedFormat format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageAspectFlags aspects, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
             _image = image;
             _view = view;
@@ -14,6 +14,9 @@ namespace slag
             _width = width;
             _height = height;
             _mipLevels = mipLevels;
+
+            _aspects = aspects;
+
             if(ownImage && ownView)
             {
                 _disposeFunction = [=]
@@ -38,7 +41,7 @@ namespace slag
             }
         }
 
-        VulkanTexture::VulkanTexture(VkImage image, bool ownImage, VulkanizedFormat format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, bool destroyImmediately): resources::Resource(destroyImmediately)
+        VulkanTexture::VulkanTexture(VkImage image, bool ownImage, VulkanizedFormat format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageAspectFlags aspects, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
             _image = image;
             _baseFormat = format;
@@ -47,16 +50,7 @@ namespace slag
             _height = height;
             _mipLevels = mipLevels;
 
-            VkImageAspectFlags aspectFlags = 0;
-            if(_usage & (VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT))
-            {
-                aspectFlags |= VK_IMAGE_ASPECT_COLOR_BIT;
-            }
-            if(_usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-            {
-                //TODO: I think i may need to separate the depth and stencil based on the texture format
-                aspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-            }
+            _aspects = aspects;
 
             //create default image view
             VkImageViewCreateInfo info = {};
@@ -70,7 +64,7 @@ namespace slag
             info.subresourceRange.baseMipLevel = 0;
             info.subresourceRange.levelCount = _mipLevels;
             info.subresourceRange.baseArrayLayer = 0;
-            info.subresourceRange.aspectMask = aspectFlags;
+            info.subresourceRange.aspectMask = _aspects;
             info.components = _baseFormat.mapping;
 
             auto success = vkCreateImageView(VulkanLib::card()->device(),&info, nullptr,&_view);
@@ -133,7 +127,7 @@ namespace slag
         {
             resources::Resource::move(from);
             _baseFormat = from._baseFormat;
-            _usage = from._usage;
+            _aspects = from._aspects;
             std::swap(_image,from._image);
             std::swap(_allocation, from._allocation);
             std::swap(_view,from._view);
@@ -155,20 +149,21 @@ namespace slag
             _height = height;
 
             VkImageAspectFlags aspectFlags = 0;
-            if(_usage & (VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT))
+            if(_aspects & (VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT))
             {
                 aspectFlags |= VK_IMAGE_ASPECT_COLOR_BIT;
             }
-            if(_usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+            if(_aspects & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
             {
                 //TODO: I think i may need to separate the depth and stencil based on the texture format
                 aspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
             }
+            _aspects = aspectFlags;
 
             VkImageCreateInfo dimg_info{};
             dimg_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
             dimg_info.format = _baseFormat.format;
-            dimg_info.usage = _usage;
+            dimg_info.usage = _aspects;
 
             VkExtent3D imageExtent;
             imageExtent.width = static_cast<uint32_t>(_width);
@@ -292,7 +287,7 @@ namespace slag
             VkImageCreateInfo dimg_info{};
             dimg_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
             dimg_info.format = _baseFormat.format;
-            dimg_info.usage = _usage;
+            dimg_info.usage = _aspects;
 
             VkExtent3D imageExtent;
             imageExtent.width = static_cast<uint32_t>(_width);
@@ -334,6 +329,11 @@ namespace slag
         VkImageView VulkanTexture::view()
         {
             return _view;
+        }
+
+        VkImageAspectFlags VulkanTexture::aspectFlags()
+        {
+            return _aspects;
         }
 
     }

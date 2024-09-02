@@ -30,13 +30,15 @@ TEST(Swapchain, Creation)
     pd.nativeDisplayType = wmInfo.info.x11.display;
 #endif
 
-    auto swapchain = Swapchain::newSwapchain(pd,500,500,2,Swapchain::PresentMode::Sequential,Pixels::Format::R8G8B8A8_UNORM_SRGB);
+    auto swapchain = Swapchain::newSwapchain(pd,500,500,2,Swapchain::PresentMode::Sequential,Pixels::Format::B8G8R8A8_UNORM_SRGB);
+    std::cout.flush();
     Uint64 NOW = SDL_GetPerformanceCounter();
     Uint64 LAST = 0;
     double deltaTime = 0;
     Uint64 totalStart = SDL_GetPerformanceCounter();
-    for(int i=0; i< 300; i++)
+    for(int i=0; i< 3000; i++)
     {
+        std::cout << "frame: "<< i<< "\n";
         if(auto frame = swapchain->next())
         {
             /*LAST = NOW;
@@ -44,15 +46,17 @@ TEST(Swapchain, Creation)
 
             deltaTime = (double)((NOW - LAST)*1000 / (double)SDL_GetPerformanceFrequency() );
             total += deltaTime;*/
+            frame->begin();
 
             size_t thing = swapchain->currentFrameIndex();
-            std::cout << "frame: " << thing << std::endl;
             auto cb = frame->commandBuffer();
-            cb->begin();
-            cb->ClearColorImage(frame->backBuffer(),{.uints={1,0,0,1}},Texture::Layout::PRESENT);
-            cb->end();
-            SlagLib::graphicsCard()->graphicsQueue()->submit(cb);
-            frame->present();
+            ImageBarrier barrier{.texture=frame->backBuffer(),.oldLayout=Texture::Layout::UNDEFINED, .newLayout = Texture::Layout::TRANSFER_DESTINATION};
+            cb->insertBarriers(&barrier,1, nullptr,0);
+            cb->clearColorImage(frame->backBuffer(), {.uints={255, 0, 0, 255}}, Texture::Layout::TRANSFER_DESTINATION);
+            barrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
+            barrier.newLayout = Texture::Layout::PRESENT;
+            cb->insertBarriers(&barrier,1, nullptr,0);
+            frame->end();
         }
     }
     Uint64 totalEnd = SDL_GetPerformanceCounter();

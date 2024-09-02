@@ -21,8 +21,8 @@ namespace slag
             VulkanFrame& operator=(VulkanFrame&& from);
             Texture* backBuffer()override;
             CommandBuffer* commandBuffer()override;
-            void present()override;
-            void present(SemaphoreValue* signals, size_t signalCount)override;
+            void begin()override;
+            void end()override;
             friend class VulkanSwapchain;
 
         private:
@@ -30,6 +30,7 @@ namespace slag
             VulkanSwapchain* _from = nullptr;
             VulkanTexture* _backBuffer = nullptr;
             VulkanCommandBuffer* _commandBuffer = nullptr;
+            VkSemaphore _commandsFinished = nullptr;
             uint32_t _imageIndex = 0;
 
         };
