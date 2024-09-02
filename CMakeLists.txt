@@ -93,6 +93,7 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/Frame.h
         src/slag/PlatformData.h
         src/slag/Clear.h
+        src/slag/GpuMemoryBarriers.h
 )
 target_include_directories(Slag PRIVATE ${Boost_INCLUDE_DIRS} third-party/stb)
 

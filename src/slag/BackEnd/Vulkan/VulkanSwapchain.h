@@ -34,6 +34,8 @@ namespace slag
             void rebuild();
             bool needsRebuild();
             VkSwapchainKHR vulkanSwapchain();
+            VkSemaphore currentImageAcquiredSemaphore();
+            void finishedFrame();
         private:
             void move(VulkanSwapchain&& from);
 
@@ -47,8 +49,10 @@ namespace slag
             PresentMode _presentMode = PresentMode::Discard;
 
             uint32_t _currentFrameIndex=0;
+            uint32_t _currentSemaphoreIndex=0;
             bool _needsRebuild=false;
             std::vector<VulkanFrame> _frames;
+            std::vector<VkSemaphore> _imageAcquiredSemaphores;
         };
 
     } // vulkan

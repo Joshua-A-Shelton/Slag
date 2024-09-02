@@ -133,7 +133,7 @@ namespace slag
             }
         }
 
-        void VulkanCommandBuffer::ClearColorImage(Texture* texture, ClearColor color,Texture::Layout layout)
+        void VulkanCommandBuffer::clearColorImage(Texture* texture, ClearColor color, Texture::Layout layout)
         {
             auto tex = dynamic_cast<VulkanTexture*>(texture);
             VkImageSubresourceRange range{};
@@ -144,6 +144,27 @@ namespace slag
             range.levelCount = tex->mipLevels();
             vkCmdClearColorImage(_buffer, tex->image(), VulkanLib::layout(layout),
                                  reinterpret_cast<const VkClearColorValue*>(&color), 1, &range);
+        }
+
+        void VulkanCommandBuffer::insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount,BufferBarrier* bufferBarriers, size_t bufferBarrierCount)
+        {
+            std::vector<VkImageMemoryBarrier> imageMemoryBarriers(imageBarrierCount,VkImageMemoryBarrier{});
+            for(int i=0; i< imageBarrierCount; i++)
+            {
+                auto& vkbarrier = imageMemoryBarriers[i];
+                auto barrier = imageBarriers[i];
+                auto texture = dynamic_cast<VulkanTexture*>(barrier.texture);
+                vkbarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                vkbarrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+                vkbarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+                vkbarrier.image = texture->image();
+                vkbarrier.oldLayout = VulkanLib::layout(barrier.oldLayout);
+                vkbarrier.newLayout = VulkanLib::layout(barrier.newLayout);
+                vkbarrier.subresourceRange = {.aspectMask = texture->aspectFlags(), .baseMipLevel = 0, .levelCount = texture->mipLevels(), .baseArrayLayer = 0, .layerCount = 1};
+
+            }
+            std::vector<VkBufferMemoryBarrier> bufferMemoryBarriers(bufferBarrierCount,VkBufferMemoryBarrier{});
+            vkCmdPipelineBarrier(_buffer,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,0,0,nullptr,bufferBarrierCount,bufferMemoryBarriers.data(),imageBarrierCount,imageMemoryBarriers.data());
         }
     } // vulkan
 } // slag

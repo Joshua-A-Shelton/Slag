@@ -7,8 +7,8 @@ namespace slag
     {
         void Extensions::mapExtensions(VkDevice fromDevice)
         {
-            vkCopyImageToImageEXT = reinterpret_cast<PFN_vkCopyImageToImageEXT>(vkGetDeviceProcAddr(fromDevice, "vkCopyImageToImageEXT"));
-            assert(vkCopyImageToImageEXT != nullptr && "unable to get image to image copy extension");
+            //vkCopyImageToImageEXT = reinterpret_cast<PFN_vkCopyImageToImageEXT>(vkGetDeviceProcAddr(fromDevice, "vkCopyImageToImageEXT"));
+            //assert(vkCopyImageToImageEXT != nullptr && "unable to get image to image copy extension");
         }
     } // vulkan
 } // slag

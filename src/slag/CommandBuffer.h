@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include "slag/Resources/ResourceManager.h"
 #include "Semaphore.h"
+#include "GpuMemoryBarriers.h"
 #include "GpuQueue.h"
 #include "Texture.h"
 #include "Clear.h"
@@ -24,7 +25,8 @@ namespace slag
 
         static CommandBuffer* newCommandBuffer(GpuQueue::QueueType acceptsCommands);
 
-        virtual void ClearColorImage(Texture* texture, ClearColor color, Texture::Layout layout)=0;
+        virtual void insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount)=0;
+        virtual void clearColorImage(Texture* texture, ClearColor color, Texture::Layout layout)=0;
 
     protected:
         void freeResourceReferences();

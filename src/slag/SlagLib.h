@@ -5,6 +5,7 @@
 #include "Color.h"
 #include "CommandBuffer.h"
 #include "Frame.h"
+#include "GpuMemoryBarriers.h"
 #include "GpuQueue.h"
 #include "GraphicsCard.h"
 #include "Pixel.h"
