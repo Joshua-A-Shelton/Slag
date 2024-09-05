@@ -117,7 +117,7 @@ namespace slag
 
         void VulkanBuffer::updateCPU(size_t offset, void* data, size_t dataLength)
         {
-            memcpy_s(((char*)_memoryLocation)+offset,_size-offset,data,dataLength);
+            memcpy(((char*)_memoryLocation)+offset,data,dataLength);
         }
 
         void VulkanBuffer::updateGPU(size_t offset, void* data, size_t dataLength)

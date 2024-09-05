@@ -70,6 +70,10 @@ namespace slag
 
             auto success = vkCreateImageView(VulkanLib::card()->device(),&info, nullptr,&_view);
 
+            if(success != VK_SUCCESS)
+            {
+                throw std::runtime_error("unable to create image view");
+            }
 
             auto view = _view;
             if(ownImage)
@@ -185,7 +189,11 @@ namespace slag
             dimg_allocinfo.pUserData = &_selfReference;
 
             //allocate and create the image
-            vmaCreateImage(VulkanLib::card()->memoryAllocator(), &dimg_info, &dimg_allocinfo, &_image, &_allocation, nullptr);
+             auto result = vmaCreateImage(VulkanLib::card()->memoryAllocator(), &dimg_info, &dimg_allocinfo, &_image, &_allocation, nullptr);
+             if(result!= VK_SUCCESS)
+             {
+                 throw std::runtime_error("unable to create image");
+             }
 
             //create default image view
             VkImageViewCreateInfo info = {};
@@ -202,7 +210,7 @@ namespace slag
             info.subresourceRange.aspectMask = _aspects;
             info.components = _baseFormat.mapping;
 
-            auto success = vkCreateImageView(VulkanLib::card()->device(),&info, nullptr,&_view);
+            result = vkCreateImageView(VulkanLib::card()->device(),&info, nullptr,&_view);
 
             auto img = _image;
             auto allocation = _allocation;
@@ -212,6 +220,11 @@ namespace slag
                 vmaDestroyImage(VulkanLib::card()->memoryAllocator(),img,allocation);
                 vkDestroyImageView(VulkanLib::card()->device(),view, nullptr);
             };
+            if(result != VK_SUCCESS)
+            {
+                smartDestroy();
+                throw std::runtime_error("unable to create image view");
+            }
 
             //copy texel data into buffer
             if(texelData && dataSize)
@@ -309,12 +322,15 @@ namespace slag
             switch (onBuffer->commandType())
             {
                 case GpuQueue::Graphics:
+                    smartDestroy();
                     throw std::runtime_error("Generating mip maps on Graphics Queue not implemented yet");
                     break;
                 case GpuQueue::Compute:
+                    smartDestroy();
                     throw std::runtime_error("Generating mip maps on Compute Queue not implemented yet");
                     break;
                 case GpuQueue::Transfer:
+                    smartDestroy();
                     throw std::runtime_error("Cannot generate mip maps on Transfer Queue");
                     break;
             }

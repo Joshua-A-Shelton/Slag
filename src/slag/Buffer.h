@@ -2,6 +2,8 @@
 #define SLAG_BUFFER_H
 
 
+#include <cstddef>
+
 namespace slag
 {
     class Buffer
