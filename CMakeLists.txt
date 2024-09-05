@@ -41,6 +41,8 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/BackEnd/Vulkan/VulkanFrame.h
             src/slag/BackEnd/Vulkan/VulkanSwapchain.cpp
             src/slag/BackEnd/Vulkan/VulkanSwapchain.h
+            src/slag/BackEnd/Vulkan/VulkanBuffer.cpp
+            src/slag/BackEnd/Vulkan/VulkanBuffer.h
     )
 endif()
 
@@ -94,6 +96,8 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/PlatformData.h
         src/slag/Clear.h
         src/slag/GpuMemoryBarriers.h
+        src/slag/Buffer.cpp
+        src/slag/Buffer.h
 )
 target_include_directories(Slag PRIVATE ${Boost_INCLUDE_DIRS} third-party/stb)
 

@@ -7,8 +7,10 @@ namespace slag
     {
         DX12Texture::DX12Texture(void* texelData, size_t dataSize, DXGI_FORMAT dataFormat, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, D3D12_RESOURCE_STATES initializedLayout, bool generateMips, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
-            DX12CommandBuffer commandBuffer(D3D12_COMMAND_LIST_TYPE_COMPUTE);
+            DX12CommandBuffer commandBuffer(GpuQueue::QueueType::Compute);
+            commandBuffer.begin();
             build(&commandBuffer,texelData,dataSize,dataFormat,textureFormat,width,height,mipLevels,usage,initializedLayout,generateMips);
+            commandBuffer.end();
             DX12Lib::card()->computeQueue()->submit(&commandBuffer);
             commandBuffer.waitUntilFinished();
         }
@@ -87,11 +89,59 @@ namespace slag
 
             _texture->Unmap(0, nullptr);
 
+            if(generateMips &&  mipLevels > 1)
+            {
+                updateMipMaps(onBuffer);
+            }
+
+        }
+
+        uint32_t DX12Texture::width()
+        {
+            return _width;
+        }
+
+        uint32_t DX12Texture::height()
+        {
+            return _height;
+        }
+
+        uint32_t DX12Texture::mipLevels()
+        {
+            return _mipLevels;
         }
 
         ID3D12Resource* DX12Texture::texture()
         {
             return _texture;
         }
+
+        void DX12Texture::updateMipMaps()
+        {
+            DX12CommandBuffer commandBuffer(GpuQueue::Compute);
+            commandBuffer.begin();
+            updateMipMaps(&commandBuffer);
+            commandBuffer.end();
+            DX12Lib::card()->computeQueue()->submit(&commandBuffer);
+            commandBuffer.waitUntilFinished();
+        }
+
+        void DX12Texture::updateMipMaps(DX12CommandBuffer* onBuffer)
+        {
+            switch (onBuffer->commandType())
+            {
+                case GpuQueue::Graphics:
+                    throw std::runtime_error("Generating mip maps on Graphics Queue not implemented yet");
+                    break;
+                case GpuQueue::Compute:
+                    throw std::runtime_error("Generating mip maps on Compute Queue not implemented yet");
+                    break;
+                case GpuQueue::Transfer:
+                    throw std::runtime_error("Cannot generate mip maps on Transfer Queue");
+                    break;
+            }
+        }
+
+
     } // dx
 } // slag

@@ -26,8 +26,8 @@ namespace slag
             VulkanTexture& operator=(const VulkanTexture&)=delete;
             VulkanTexture(VulkanTexture&& from);
             VulkanTexture& operator=(VulkanTexture&& from);
-            void updateMipMaps();
-            void updateMipMaps(VulkanCommandBuffer& onBuffer);
+            void updateMipMaps(VkImageLayout startingLayout, VkImageLayout endingLayout);
+            void updateMipMaps(VulkanCommandBuffer* onBuffer,VkImageLayout startingLayout, VkImageLayout endingLayout);
             void* gpuID()override;
             uint32_t width()override;
             uint32_t height()override;
@@ -39,7 +39,7 @@ namespace slag
             friend class VulkanGraphicsCard;
         private:
             void move(VulkanTexture&& from);
-            void build(VulkanCommandBuffer& onBuffer, void* texelData, VkDeviceSize dataSize, VkFormat dataFormat, VulkanizedFormat textureFormat, uint32_t  width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageLayout initializedLayout, bool generateMips);
+            void build(VulkanCommandBuffer* onBuffer, void* texelData, VkDeviceSize dataSize, VkFormat dataFormat, VulkanizedFormat textureFormat, uint32_t  width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageLayout initializedLayout, bool generateMips);
             VkImage copyVkImage();
             VulkanizedFormat _baseFormat{};
             VkImageUsageFlags _usage;

@@ -22,6 +22,7 @@ namespace slag
         virtual void end()=0;
         virtual void waitUntilFinished()=0;
         virtual bool isFinished()=0;
+        virtual GpuQueue::QueueType commandType()=0;
 
         static CommandBuffer* newCommandBuffer(GpuQueue::QueueType acceptsCommands);
 

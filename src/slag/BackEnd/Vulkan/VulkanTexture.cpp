@@ -1,5 +1,6 @@
 #include "VulkanTexture.h"
 #include "VulkanLib.h"
+#include "VulkanBuffer.h"
 
 namespace slag
 {
@@ -93,15 +94,16 @@ namespace slag
         {
             VulkanCommandBuffer buildBuffer(VulkanLib::card()->computeQueueFamily());
             buildBuffer.begin();
-            build(buildBuffer,texelData,dataSize,dataFormat,textureFormat,width,height,mipLevels,usage,initializedLayout,generateMips);
+            build(&buildBuffer,texelData,dataSize,dataFormat,textureFormat,width,height,mipLevels,usage,initializedLayout,generateMips);
             buildBuffer.end();
             VulkanLib::card()->computeQueue()->submit(&buildBuffer);
             buildBuffer.waitUntilFinished();
+
         }
 
         VulkanTexture::VulkanTexture(VulkanCommandBuffer* onBuffer, void* texelData, VkDeviceSize dataSize, VkFormat dataFormat, VulkanizedFormat textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageLayout initializedLayout, bool generateMips, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
-            build(*onBuffer,texelData,dataSize,dataFormat,textureFormat,width,height,mipLevels,usage,initializedLayout,generateMips);
+            build(onBuffer,texelData,dataSize,dataFormat,textureFormat,width,height,mipLevels,usage,initializedLayout,generateMips);
         }
 
         VulkanTexture::~VulkanTexture()
@@ -140,7 +142,7 @@ namespace slag
             }
         }
 
-        void VulkanTexture::build(VulkanCommandBuffer& onBuffer, void* texelData, VkDeviceSize dataSize, VkFormat dataFormat, VulkanizedFormat textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageLayout initializedLayout, bool generateMips)
+        void VulkanTexture::build(VulkanCommandBuffer* onBuffer, void* texelData, VkDeviceSize dataSize, VkFormat dataFormat, VulkanizedFormat textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageLayout initializedLayout, bool generateMips)
         {
             //every texture should support copy and compute operations
             _usage = usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
@@ -149,11 +151,11 @@ namespace slag
             _height = height;
 
             VkImageAspectFlags aspectFlags = 0;
-            if(_aspects & (VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT))
+            if(_usage & (VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT))
             {
                 aspectFlags |= VK_IMAGE_ASPECT_COLOR_BIT;
             }
-            if(_aspects & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+            if(_usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
             {
                 //TODO: I think i may need to separate the depth and stencil based on the texture format
                 aspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
@@ -163,7 +165,7 @@ namespace slag
             VkImageCreateInfo dimg_info{};
             dimg_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
             dimg_info.format = _baseFormat.format;
-            dimg_info.usage = _aspects;
+            dimg_info.usage = _usage;
 
             VkExtent3D imageExtent;
             imageExtent.width = static_cast<uint32_t>(_width);
@@ -197,7 +199,7 @@ namespace slag
             info.subresourceRange.baseMipLevel = 0;
             info.subresourceRange.levelCount = _mipLevels;
             info.subresourceRange.baseArrayLayer = 0;
-            info.subresourceRange.aspectMask = aspectFlags;
+            info.subresourceRange.aspectMask = _aspects;
             info.components = _baseFormat.mapping;
 
             auto success = vkCreateImageView(VulkanLib::card()->device(),&info, nullptr,&_view);
@@ -214,56 +216,97 @@ namespace slag
             //copy texel data into buffer
             if(texelData && dataSize)
             {
+                //TODO: use fully built buffer class for this, so the resource can outlive the command buffer
+                VulkanBuffer dataBuffer(texelData,dataSize,slag::Buffer::CPU,VK_BUFFER_USAGE_TRANSFER_SRC_BIT,false);
 
-                //copy image data
-                VkBufferCreateInfo bufferCreateInfo{};
-                bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-                bufferCreateInfo.size = dataSize;
-                bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-
-                VmaAllocationCreateInfo allocationCreateInfo{};
-                allocationCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
-
-                //temporary resources
-                VkBuffer buffer;
-                VmaAllocation tempAllocation;
-
-                success = vmaCreateBuffer(VulkanLib::card()->memoryAllocator(), &bufferCreateInfo, &allocationCreateInfo, &buffer, &tempAllocation, nullptr);
-
-                //copy data into temp resources
-                void* data;
-                vmaMapMemory(VulkanLib::card()->memoryAllocator(), tempAllocation, &data);
-                memcpy(data, texelData, static_cast<size_t>(dataSize));
-                vmaUnmapMemory(VulkanLib::card()->memoryAllocator(), tempAllocation);
+                auto commandBuffer = onBuffer->underlyingCommandBuffer();
 
                 if(dataFormat != textureFormat.format)
                 {
                     //TODO must implement this...
-                    int i=0;
+                    throw std::runtime_error("not implemented");
+                }
+                else
+                {
+                    VkImageSubresourceRange range;
+                    range.aspectMask = _aspects;
+                    range.baseMipLevel = 0;
+                    range.levelCount = _mipLevels;
+                    range.baseArrayLayer = 0;
+                    range.layerCount = 1;
+
+                    VkImageMemoryBarrier imageBarrier_toTransfer = {};
+                    imageBarrier_toTransfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+
+                    imageBarrier_toTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                    imageBarrier_toTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                    imageBarrier_toTransfer.image = _image;
+                    imageBarrier_toTransfer.subresourceRange = range;
+
+                    imageBarrier_toTransfer.srcAccessMask = 0;
+                    imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+                    //barrier the image into the transfer-receive layout
+                    vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
+                    VkBufferImageCopy copyRegion = {};
+                    copyRegion.bufferOffset = 0;
+                    copyRegion.bufferRowLength = 0;
+                    copyRegion.bufferImageHeight = 0;
+
+                    copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                    copyRegion.imageSubresource.mipLevel = 0;
+                    copyRegion.imageSubresource.baseArrayLayer = 0;
+                    copyRegion.imageSubresource.layerCount = 1;
+                    copyRegion.imageExtent = imageExtent;
+
+                    //copy the buffer into the image
+                    vkCmdCopyBufferToImage(commandBuffer, dataBuffer.underlyingBuffer(), _image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
                 }
 
-                //clean up temporary resources
-                vmaDestroyBuffer(VulkanLib::card()->memoryAllocator(),buffer,tempAllocation);
-
-                if(generateMips)
+                if(generateMips && mipLevels > 1)
                 {
-                    updateMipMaps(onBuffer);
+                    updateMipMaps(onBuffer,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,initializedLayout);
+                }
+                //transition into starting layout because we didn't in mip maps
+                else
+                {
+                    VkImageSubresourceRange range;
+                    range.aspectMask = _aspects;
+                    range.baseMipLevel = 0;
+                    range.levelCount = _mipLevels;
+                    range.baseArrayLayer = 0;
+                    range.layerCount = 1;
+
+                    VkImageMemoryBarrier imageBarrier_toTransfer = {};
+                    imageBarrier_toTransfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+
+                    imageBarrier_toTransfer.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                    imageBarrier_toTransfer.newLayout = initializedLayout;
+                    imageBarrier_toTransfer.image = _image;
+                    imageBarrier_toTransfer.subresourceRange = range;
+
+                    imageBarrier_toTransfer.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                    imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+                    vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
                 }
 
             }
         }
 
-        void VulkanTexture::updateMipMaps()
+        void VulkanTexture::updateMipMaps(VkImageLayout startingLayout, VkImageLayout endingLayout)
         {
             VulkanCommandBuffer commandBuffer(VulkanLib::card()->computeQueueFamily());
-            updateMipMaps(commandBuffer);
+            commandBuffer.begin();
+            updateMipMaps(&commandBuffer,startingLayout,endingLayout);
+            commandBuffer.end();
             VulkanLib::card()->computeQueue()->submit(&commandBuffer);
             commandBuffer.waitUntilFinished();
         }
 
-        void VulkanTexture::updateMipMaps(VulkanCommandBuffer& onBuffer)
+        void VulkanTexture::updateMipMaps(VulkanCommandBuffer* onBuffer,VkImageLayout startingLayout, VkImageLayout endingLayout)
         {
-            switch (onBuffer.commandType())
+            assert(onBuffer && "buffer cannot be null");
+            switch (onBuffer->commandType())
             {
                 case GpuQueue::Graphics:
                     throw std::runtime_error("Generating mip maps on Graphics Queue not implemented yet");

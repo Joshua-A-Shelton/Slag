@@ -4,10 +4,25 @@ namespace slag
 {
     namespace dx
     {
-        DX12CommandBuffer::DX12CommandBuffer(D3D12_COMMAND_LIST_TYPE type)
+        DX12CommandBuffer::DX12CommandBuffer(GpuQueue::QueueType commandType)
         {
-            DX12Lib::card()->device()->CreateCommandAllocator(type, IID_PPV_ARGS(&_pool));
-            DX12Lib::card()->device()->CreateCommandList(0,type,_pool, nullptr, IID_PPV_ARGS(&_buffer));
+            _commandType = commandType;
+            D3D12_COMMAND_LIST_TYPE comType = D3D12_COMMAND_LIST_TYPE_DIRECT;
+            switch (_commandType)
+            {
+                case GpuQueue::Graphics:
+                    comType = D3D12_COMMAND_LIST_TYPE_DIRECT;
+                    break;
+                case GpuQueue::Transfer:
+                    comType = D3D12_COMMAND_LIST_TYPE_COPY;
+                    break;
+                case GpuQueue::Compute:
+                    comType = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+                    break;
+
+            }
+            DX12Lib::card()->device()->CreateCommandAllocator(comType, IID_PPV_ARGS(&_pool));
+            DX12Lib::card()->device()->CreateCommandList(0,comType,_pool, nullptr, IID_PPV_ARGS(&_buffer));
         }
 
         DX12CommandBuffer::~DX12CommandBuffer()
@@ -87,9 +102,20 @@ namespace slag
             }
         }
 
-        void DX12CommandBuffer::ClearColorImage(Texture* texture, ClearColor color, Texture::Layout layout)
+        GpuQueue::QueueType DX12CommandBuffer::commandType()
+        {
+            return GpuQueue::Graphics;
+        }
+
+        void DX12CommandBuffer::insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount)
         {
             throw std::runtime_error("not implemented");
         }
+
+        void DX12CommandBuffer::clearColorImage(slag::Texture* texture, slag::ClearColor color, Texture::Layout layout)
+        {
+            throw std::runtime_error("not implemented");
+        }
+
     } // dx
 } // slag

@@ -24,13 +24,13 @@ namespace slag
             void end()override;
             void waitUntilFinished()override;
             bool isFinished()override;
-            GpuQueue::QueueType commandType();
+            GpuQueue::QueueType commandType()override;
             friend class VulkanQueue;
             friend class VulkanFrame;
 
             void insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount)override;
             void clearColorImage(Texture* texture, ClearColor color, Texture::Layout layout)override;
-
+            VkCommandBuffer underlyingCommandBuffer();
         private:
             void move(VulkanCommandBuffer&& from);
             void _waitUntilFinished();

@@ -74,7 +74,7 @@ namespace slag
             presentInfo.pSwapchains = &swapchain;
             presentInfo.swapchainCount = 1;
 
-            auto result = vkQueuePresentKHR(VulkanLib::card()->presentQueue(),&presentInfo);
+            auto result = vkQueuePresentKHR(dynamic_cast<VulkanQueue*>(VulkanLib::card()->graphicsQueue())->underlyingQueue(),&presentInfo);
             _from->finishedFrame();
             if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _from->needsRebuild())
             {

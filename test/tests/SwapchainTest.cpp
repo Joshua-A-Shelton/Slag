@@ -30,22 +30,13 @@ TEST(Swapchain, Creation)
     pd.nativeDisplayType = wmInfo.info.x11.display;
 #endif
 
-    auto swapchain = Swapchain::newSwapchain(pd,500,500,2,Swapchain::PresentMode::Sequential,Pixels::Format::B8G8R8A8_UNORM_SRGB);
+    auto swapchain = Swapchain::newSwapchain(pd,500,500,3,Swapchain::PresentMode::Discard,Pixels::Format::B8G8R8A8_UNORM_SRGB);
     std::cout.flush();
-    Uint64 NOW = SDL_GetPerformanceCounter();
-    Uint64 LAST = 0;
-    double deltaTime = 0;
     Uint64 totalStart = SDL_GetPerformanceCounter();
-    for(int i=0; i< 3000; i++)
+    for(int i=0; i< 300; i++)
     {
-        std::cout << "frame: "<< i<< "\n";
         if(auto frame = swapchain->next())
         {
-            /*LAST = NOW;
-            NOW = SDL_GetPerformanceCounter();
-
-            deltaTime = (double)((NOW - LAST)*1000 / (double)SDL_GetPerformanceFrequency() );
-            total += deltaTime;*/
             frame->begin();
 
             size_t thing = swapchain->currentFrameIndex();

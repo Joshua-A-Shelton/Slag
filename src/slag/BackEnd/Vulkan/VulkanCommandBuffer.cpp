@@ -133,6 +133,11 @@ namespace slag
             }
         }
 
+        VkCommandBuffer VulkanCommandBuffer::underlyingCommandBuffer()
+        {
+            return _buffer;
+        }
+
         void VulkanCommandBuffer::clearColorImage(Texture* texture, ClearColor color, Texture::Layout layout)
         {
             auto tex = dynamic_cast<VulkanTexture*>(texture);

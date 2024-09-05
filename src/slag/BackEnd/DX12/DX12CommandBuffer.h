@@ -11,7 +11,7 @@ namespace slag
         class DX12CommandBuffer: public CommandBuffer
         {
         public:
-            DX12CommandBuffer(D3D12_COMMAND_LIST_TYPE type);
+            DX12CommandBuffer(GpuQueue::QueueType commandType);
             ~DX12CommandBuffer()override;
             DX12CommandBuffer(const DX12CommandBuffer&)=delete;
             DX12CommandBuffer& operator=(const DX12CommandBuffer&)=delete;
@@ -22,12 +22,16 @@ namespace slag
             void end()override;
             void waitUntilFinished()override;
             bool isFinished()override;
+            GpuQueue::QueueType commandType()override;
             friend class DX12Queue;
 
-            void ClearColorImage(Texture* texture, ClearColor color, Texture::Layout layout)override;
+            void insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount)override;
+            void clearColorImage(Texture* texture, ClearColor color, Texture::Layout layout)override;
+
         private:
             void move(DX12CommandBuffer&& from);
             void _waitUntilFinished();
+            GpuQueue::QueueType _commandType = GpuQueue::Graphics;
             ID3D12GraphicsCommandList* _buffer = nullptr;
             ID3D12CommandAllocator* _pool = nullptr;
             DX12Semaphore* _finished = nullptr;

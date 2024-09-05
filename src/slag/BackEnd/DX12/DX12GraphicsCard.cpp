@@ -71,8 +71,7 @@ namespace slag
             allocatorDesc.pDevice = _device.Get();
             allocatorDesc.pAdapter = adapter.Get();
             // These flags are optional but recommended.
-            allocatorDesc.Flags = D3D12MA::ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED |
-                                  D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED;
+            allocatorDesc.Flags = static_cast<D3D12MA::ALLOCATOR_FLAGS>(D3D12MA::ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED | D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED);
             D3D12MA::CreateAllocator(&allocatorDesc,&_allocator);
 
         }

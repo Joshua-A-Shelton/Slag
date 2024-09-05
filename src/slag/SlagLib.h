@@ -1,6 +1,7 @@
 #ifndef SLAG_SLAGLIB_H
 #define SLAG_SLAGLIB_H
 
+#include "Buffer.h"
 #include "Clear.h"
 #include "Color.h"
 #include "CommandBuffer.h"

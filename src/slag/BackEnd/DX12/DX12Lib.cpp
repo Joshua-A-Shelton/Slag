@@ -2,6 +2,7 @@
 #include "DX12Semaphore.h"
 #include "DX12CommandBuffer.h"
 #include "DX12Queue.h"
+#include "DX12Texture.h"
 #include <wrl.h>
 #include <dxgi1_4.h>
 #include <dxgi1_6.h>
@@ -62,6 +63,50 @@ namespace slag
             delete library;
         }
 
+        DXGI_FORMAT DX12Lib::format(Pixels::Format pixelFormat)
+        {
+            switch(pixelFormat)
+            {
+#define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits) case Pixels::SlagName: return DxName;
+                TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            return DXGI_FORMAT_UNKNOWN;
+        }
+
+        D3D12_RESOURCE_STATES DX12Lib::layout(Texture::Layout texLayout)
+        {
+            switch(texLayout)
+            {
+#define DEFINITION(slagName, vulkanName, directXName) case Texture::Layout::slagName: return directXName;
+                TEXTURE_LAYOUT_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            return  D3D12_RESOURCE_STATE_COMMON;
+        }
+
+        D3D12_RESOURCE_FLAGS DX12Lib::usage(Texture::Usage texUsage)
+        {
+            D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
+            if(!(texUsage & Texture::SAMPLED_IMAGE))
+            {
+                flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+            }
+            if(texUsage & Texture::STORAGE)
+            {
+                flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+            }
+            if(texUsage & Texture::RENDER_TARGET_ATTACHMENT)
+            {
+                flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+            }
+            if(texUsage & Texture::DEPTH_STENCIL_ATTACHMENT)
+            {
+                flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+            }
+            return flags;
+        }
+
         DX12Lib* DX12Lib::get()
         {
             return dynamic_cast<DX12Lib*>(lib::BackEndLib::get());
@@ -97,35 +142,19 @@ namespace slag
             return _graphicsCard;
         }
 
-        Texture* DX12Lib::newTexture(void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage, Texture::Layout initializedLayout, bool generateMips)
+        Texture* DX12Lib::newTexture(void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage texUsage, Texture::Layout initializedLayout, bool generateMips)
         {
-            throw std::runtime_error("implement");
-            return nullptr;
+            return new DX12Texture(texelData,dataFormat, format(dataFormat), format(textureFormat),width, height, mipLevels,usage(texUsage), layout(initializedLayout),generateMips,false);
         }
 
-        Texture* DX12Lib::newTexture(CommandBuffer* onBuffer, void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage, Texture::Layout initializedLayout, bool generateMips)
+        Texture* DX12Lib::newTexture(CommandBuffer* onBuffer, void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage texUsage, Texture::Layout initializedLayout, bool generateMips)
         {
-            throw std::runtime_error("implement");
-            return nullptr;
+            return new DX12Texture(dynamic_cast<DX12CommandBuffer*>(onBuffer),texelData,dataFormat, format(dataFormat), format(textureFormat),width, height, mipLevels,usage(texUsage), layout(initializedLayout),generateMips,false);
         }
 
         CommandBuffer* DX12Lib::newCommandBuffer(GpuQueue::QueueType acceptsCommands)
         {
-            D3D12_COMMAND_LIST_TYPE type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-            switch (acceptsCommands)
-            {
-                case GpuQueue::Graphics:
-                    type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-                    break;
-                case GpuQueue::Transfer:
-                    type = D3D12_COMMAND_LIST_TYPE_COPY;
-                    break;
-                case GpuQueue::Compute:
-                    type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
-                    break;
-
-            }
-            return new DX12CommandBuffer(type);
+            return new DX12CommandBuffer(acceptsCommands);
         }
 
         Semaphore* DX12Lib::newSemaphore(uint64_t startingValue)
