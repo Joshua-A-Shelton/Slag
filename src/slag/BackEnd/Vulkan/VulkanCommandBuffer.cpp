@@ -171,5 +171,34 @@ namespace slag
             std::vector<VkBufferMemoryBarrier> bufferMemoryBarriers(bufferBarrierCount,VkBufferMemoryBarrier{});
             vkCmdPipelineBarrier(_buffer,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,0,0,nullptr,bufferBarrierCount,bufferMemoryBarriers.data(),imageBarrierCount,imageMemoryBarriers.data());
         }
+
+        void VulkanCommandBuffer::transitionImageSubResource(VulkanTexture* texture, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t startingMipLevel, uint32_t levelCount, uint32_t startingLayer, uint32_t layerCount)
+        {
+            VkImageMemoryBarrier vkbarrier{};
+            vkbarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            vkbarrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+            vkbarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+            vkbarrier.image = texture->image();
+            vkbarrier.oldLayout = oldLayout;
+            vkbarrier.newLayout = newLayout;
+            vkbarrier.subresourceRange = {.aspectMask = texture->aspectFlags(), .baseMipLevel = startingMipLevel, .levelCount = levelCount, .baseArrayLayer = startingLayer, .layerCount = layerCount};
+            vkCmdPipelineBarrier(_buffer,srcStageMask,dstStageMask,0,0, nullptr,0, nullptr,1,&vkbarrier);
+        }
+
+        void VulkanCommandBuffer::blitSubResource(VkImageAspectFlags aspects, VulkanTexture* source, VkImageLayout sourceLayout, Rectangle sourceArea, uint32_t sourceMipLevel, VulkanTexture* destination, VkImageLayout destImageLayout, Rectangle destArea, uint32_t  destMipLevel, VkFilter filter)
+        {
+            VkImageBlit blit{};
+            blit.srcOffsets[0] = {sourceArea.offset.x,sourceArea.offset.y,0};
+            blit.srcOffsets[1] = {static_cast<int32_t>(sourceArea.extent.width),static_cast<int32_t>(sourceArea.extent.height),1};
+            blit.srcSubresource.aspectMask = aspects;
+            blit.srcSubresource.mipLevel = sourceMipLevel;
+            blit.srcSubresource.baseArrayLayer = 0;
+            blit.srcSubresource.layerCount = 1;
+            blit.dstSubresource.aspectMask = aspects;
+            blit.dstSubresource.mipLevel = destMipLevel;
+            blit.dstSubresource.baseArrayLayer = 0;
+            blit.dstSubresource.layerCount = 1;
+            vkCmdBlitImage(_buffer,source->image(),sourceLayout,destination->image(),destImageLayout,1,&blit,filter);
+        }
     } // vulkan
 } // slag

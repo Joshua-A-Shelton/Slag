@@ -10,6 +10,7 @@ namespace slag
     namespace vulkan
     {
 
+        class VulkanTexture;
         class VulkanCommandBuffer: public CommandBuffer
         {
         public:
@@ -31,6 +32,9 @@ namespace slag
             void insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount)override;
             void clearColorImage(Texture* texture, ClearColor color, Texture::Layout layout)override;
             VkCommandBuffer underlyingCommandBuffer();
+            //vulkan only operations
+            void transitionImageSubResource(VulkanTexture* texture, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t startingMipLevel, uint32_t levelCount, uint32_t startingLayer = 0, uint32_t layerCount =1);
+            void blitSubResource(VkImageAspectFlags aspects, VulkanTexture* source, VkImageLayout sourceLayout, Rectangle sourceArea, uint32_t sourceMipLevel, VulkanTexture* destination, VkImageLayout destImageLayout, Rectangle destArea, uint32_t  destMipLevel, VkFilter filter);
         private:
             void move(VulkanCommandBuffer&& from);
             void _waitUntilFinished();

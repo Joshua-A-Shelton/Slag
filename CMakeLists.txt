@@ -98,6 +98,7 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/GpuMemoryBarriers.h
         src/slag/Buffer.cpp
         src/slag/Buffer.h
+        src/slag/Rectangle.h
 )
 target_include_directories(Slag PRIVATE ${Boost_INCLUDE_DIRS} third-party/stb)
 

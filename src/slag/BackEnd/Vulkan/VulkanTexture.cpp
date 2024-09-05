@@ -105,8 +105,9 @@ namespace slag
 
         }
 
-        VulkanTexture::VulkanTexture(VulkanCommandBuffer* onBuffer, void* texelData, VkDeviceSize dataSize, VkFormat dataFormat, VulkanizedFormat textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageLayout initializedLayout, bool generateMips, bool destroyImmediately): resources::Resource(destroyImmediately)
+        VulkanTexture::VulkanTexture(VulkanCommandBuffer* onBuffer, void* texelData, VkDeviceSize dataSize, VkFormat dataFormat, VulkanizedFormat textureFormat,uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageLayout initializedLayout, bool generateMips, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
+            assert(generateMips && mipLevels > 1 && !(onBuffer->commandType() == GpuQueue::Compute || onBuffer->commandType() == GpuQueue::Graphics) && "Cannot create mip maps for image on a queue not of compute or graphics type");
             build(onBuffer,texelData,dataSize,dataFormat,textureFormat,width,height,mipLevels,usage,initializedLayout,generateMips);
         }
 
@@ -283,55 +284,47 @@ namespace slag
                 //transition into starting layout because we didn't in mip maps
                 else
                 {
-                    VkImageSubresourceRange range;
-                    range.aspectMask = _aspects;
-                    range.baseMipLevel = 0;
-                    range.levelCount = _mipLevels;
-                    range.baseArrayLayer = 0;
-                    range.layerCount = 1;
-
-                    VkImageMemoryBarrier imageBarrier_toTransfer = {};
-                    imageBarrier_toTransfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-
-                    imageBarrier_toTransfer.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-                    imageBarrier_toTransfer.newLayout = initializedLayout;
-                    imageBarrier_toTransfer.image = _image;
-                    imageBarrier_toTransfer.subresourceRange = range;
-
-                    imageBarrier_toTransfer.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-                    imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-                    vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
+                    onBuffer->transitionImageSubResource(this,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,initializedLayout,0,_mipLevels);
                 }
 
             }
         }
 
-        void VulkanTexture::updateMipMaps(VkImageLayout startingLayout, VkImageLayout endingLayout)
-        {
-            VulkanCommandBuffer commandBuffer(VulkanLib::card()->computeQueueFamily());
-            commandBuffer.begin();
-            updateMipMaps(&commandBuffer,startingLayout,endingLayout);
-            commandBuffer.end();
-            VulkanLib::card()->computeQueue()->submit(&commandBuffer);
-            commandBuffer.waitUntilFinished();
-        }
-
         void VulkanTexture::updateMipMaps(VulkanCommandBuffer* onBuffer,VkImageLayout startingLayout, VkImageLayout endingLayout)
         {
             assert(onBuffer && "buffer cannot be null");
+            assert((onBuffer->commandType() == GpuQueue::Graphics || onBuffer->commandType() == GpuQueue::Compute) && "Updating mip maps are only possible on graphics or compute queues, or secondary queues that will be used in those queues");
             switch (onBuffer->commandType())
             {
                 case GpuQueue::Graphics:
-                    smartDestroy();
-                    throw std::runtime_error("Generating mip maps on Graphics Queue not implemented yet");
+                    mipMapGenerateGraphicsQueue(onBuffer,startingLayout,endingLayout);
                     break;
                 case GpuQueue::Compute:
                     smartDestroy();
                     throw std::runtime_error("Generating mip maps on Compute Queue not implemented yet");
                     break;
-                case GpuQueue::Transfer:
-                    smartDestroy();
-                    throw std::runtime_error("Cannot generate mip maps on Transfer Queue");
+                default:
+                    if(startingLayout!=endingLayout)
+                    {
+                        VkImageSubresourceRange range;
+                        range.aspectMask = _aspects;
+                        range.baseMipLevel = 0;
+                        range.levelCount = _mipLevels;
+                        range.baseArrayLayer = 0;
+                        range.layerCount = 1;
+
+                        VkImageMemoryBarrier imageBarrier_toTransfer = {};
+                        imageBarrier_toTransfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+
+                        imageBarrier_toTransfer.oldLayout = startingLayout;
+                        imageBarrier_toTransfer.newLayout = endingLayout;
+                        imageBarrier_toTransfer.image = _image;
+                        imageBarrier_toTransfer.subresourceRange = range;
+
+                        imageBarrier_toTransfer.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                        imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+                        vkCmdPipelineBarrier(onBuffer->underlyingCommandBuffer(), VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
+                    }
                     break;
             }
         }
@@ -393,6 +386,45 @@ namespace slag
         VkImageAspectFlags VulkanTexture::aspectFlags()
         {
             return _aspects;
+        }
+
+        void VulkanTexture::mipMapGenerateGraphicsQueue(VulkanCommandBuffer* onBuffer, VkImageLayout startingLayout, VkImageLayout endingLayout)
+        {
+            if(mipLevels() > 1)
+            {
+                if (startingLayout != VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+                {
+                    onBuffer->transitionImageSubResource(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, startingLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 0, 1);
+                }
+               if(startingLayout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+               {
+                   onBuffer->transitionImageSubResource(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, startingLayout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, _mipLevels-1);
+               }
+               uint32_t mipWidth = _width;
+               uint32_t mipHeight = _height;
+               Rectangle sourceRect = {.offset={0,0},.extent={_width,_height}};
+               for(size_t i=1; i<_mipLevels; i++)
+               {
+                   mipWidth/=2;
+                   mipHeight/=2;
+
+                   Rectangle destRect = {.offset={0,0},.extent={mipWidth,mipHeight}};
+
+                   onBuffer->blitSubResource(_aspects,this,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,sourceRect,0,this,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,destRect,i,VK_FILTER_LINEAR);
+               }
+               if(endingLayout != VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+               {
+                   onBuffer->transitionImageSubResource(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, endingLayout, 0, 1);
+               }
+               if(endingLayout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+               {
+                   onBuffer->transitionImageSubResource(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, endingLayout, 0, 1);
+               }
+            }
+            else
+            {
+                onBuffer->transitionImageSubResource(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, startingLayout, endingLayout, 0, 1);
+            }
         }
 
     }

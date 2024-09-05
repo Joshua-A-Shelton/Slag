@@ -9,6 +9,7 @@
 #include "GpuQueue.h"
 #include "Texture.h"
 #include "Clear.h"
+#include "Rectangle.h"
 
 namespace slag
 {
