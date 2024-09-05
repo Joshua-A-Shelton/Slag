@@ -50,7 +50,11 @@ namespace slag
             bufferCreateInfo.size = bufferSize;
             bufferCreateInfo.usage = usageFlags | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
-            vmaCreateBuffer(VulkanLib::card()->memoryAllocator(),&bufferCreateInfo,&allocationCreateInfo,&_buffer,&_allocation, nullptr);
+            auto result = vmaCreateBuffer(VulkanLib::card()->memoryAllocator(),&bufferCreateInfo,&allocationCreateInfo,&_buffer,&_allocation, nullptr);
+            if(result != VK_SUCCESS)
+            {
+                throw std::runtime_error("unable to create buffer");
+            }
 
             auto buf = _buffer;
             auto alloc = _allocation;
