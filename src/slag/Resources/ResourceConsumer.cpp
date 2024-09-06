@@ -24,7 +24,7 @@ namespace slag
 
         void ResourceConsumer::move(ResourceConsumer& from)
         {
-            _referencesMutex = from._referencesMutex;
+            //_referencesMutex = from._referencesMutex;
             std::swap(_resourceReferences,from._resourceReferences);
         }
     } // resources
