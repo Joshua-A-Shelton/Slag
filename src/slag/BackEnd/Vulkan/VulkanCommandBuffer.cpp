@@ -67,10 +67,10 @@ namespace slag
 
         void VulkanCommandBuffer::move(VulkanCommandBuffer&& from)
         {
-            std::swap(_pool,from._pool);
-            std::swap(_buffer,from._buffer);
+            IVulkanCommandBuffer::move(from);
+            ResourceConsumer::move(from);
             std::swap(_finished,from._finished);
-            _family = from._family;
+
         }
 
         void VulkanCommandBuffer::begin()

@@ -24,6 +24,7 @@ namespace slag
             void transitionImageSubResource(VulkanTexture* texture, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t startingMipLevel, uint32_t levelCount, uint32_t startingLayer = 0, uint32_t layerCount =1);
             void blitSubResource(VkImageAspectFlags aspects, VulkanTexture* source, VkImageLayout sourceLayout, Rectangle sourceArea, uint32_t sourceMipLevel, VulkanTexture* destination, VkImageLayout destImageLayout, Rectangle destArea, uint32_t  destMipLevel, VkFilter filter);
         protected:
+            void move(IVulkanCommandBuffer& from);
             VkCommandBuffer _buffer = nullptr;
             VkCommandPool _pool = nullptr;
             uint32_t _family = 0;

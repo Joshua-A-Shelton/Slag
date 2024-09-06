@@ -60,8 +60,8 @@ namespace slag
 
         void DX12CommandBuffer::move(DX12CommandBuffer&& from)
         {
-            std::swap(_buffer,from._buffer);
-            std::swap(_pool,from._pool);
+            IDX12CommandBuffer::move(from);
+            ResourceConsumer::move(from);
             std::swap(_finished,from._finished);
         }
 
@@ -70,11 +70,6 @@ namespace slag
             _waitUntilFinished();
             resources::ResourceManager::setConsumerAsActive(this);
             _buffer->Reset(_pool, nullptr);
-        }
-
-        void DX12CommandBuffer::end()
-        {
-            _buffer->Close();
         }
 
         void DX12CommandBuffer::waitUntilFinished()
@@ -101,21 +96,6 @@ namespace slag
                 delete _finished;
                 _finished = nullptr;
             }
-        }
-
-        GpuQueue::QueueType DX12CommandBuffer::commandType()
-        {
-            return GpuQueue::Graphics;
-        }
-
-        void DX12CommandBuffer::insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount)
-        {
-            throw std::runtime_error("not implemented");
-        }
-
-        void DX12CommandBuffer::clearColorImage(slag::Texture* texture, slag::ClearColor color, Texture::Layout layout)
-        {
-            throw std::runtime_error("not implemented");
         }
 
     } // dx

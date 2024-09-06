@@ -21,5 +21,11 @@ namespace slag
             std::lock_guard<std::mutex> resourceLock(_referencesMutex);
             _resourceReferences.insert(gpuID);
         }
+
+        void ResourceConsumer::move(ResourceConsumer& from)
+        {
+            _referencesMutex = from._referencesMutex;
+            std::swap(_resourceReferences,from._resourceReferences);
+        }
     } // resources
 } // slag

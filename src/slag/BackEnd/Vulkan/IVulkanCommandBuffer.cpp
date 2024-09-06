@@ -6,6 +6,13 @@ namespace slag
 {
     namespace vulkan
     {
+        void IVulkanCommandBuffer::move(IVulkanCommandBuffer& from)
+        {
+            std::swap(_buffer,from._buffer);
+            std::swap(_pool,from._pool);
+            _family = from._family;
+        }
+
         void IVulkanCommandBuffer::end()
         {
             vkEndCommandBuffer(_buffer);

@@ -2,6 +2,7 @@
 #define SLAG_DX12COMMANDBUFFER_H
 #include "../../CommandBuffer.h"
 #include "../../Resources/ResourceConsumer.h"
+#include "IDX12CommandBuffer.h"
 #include "DX12Semaphore.h"
 #include <d3d12.h>
 namespace slag
@@ -9,7 +10,7 @@ namespace slag
     namespace dx
     {
 
-        class DX12CommandBuffer: public CommandBuffer, resources::ResourceConsumer
+        class DX12CommandBuffer: public IDX12CommandBuffer, resources::ResourceConsumer
         {
         public:
             DX12CommandBuffer(GpuQueue::QueueType commandType);
@@ -20,21 +21,14 @@ namespace slag
             DX12CommandBuffer& operator=(DX12CommandBuffer&& from);
 
             void begin()override;
-            void end()override;
             void waitUntilFinished()override;
             bool isFinished()override;
-            GpuQueue::QueueType commandType()override;
-            friend class DX12Queue;
 
-            void insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount)override;
-            void clearColorImage(Texture* texture, ClearColor color, Texture::Layout layout)override;
+            friend class DX12Queue;
 
         private:
             void move(DX12CommandBuffer&& from);
             void _waitUntilFinished();
-            GpuQueue::QueueType _commandType = GpuQueue::Graphics;
-            ID3D12GraphicsCommandList* _buffer = nullptr;
-            ID3D12CommandAllocator* _pool = nullptr;
             DX12Semaphore* _finished = nullptr;
 
         };

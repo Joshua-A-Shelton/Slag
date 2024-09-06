@@ -15,6 +15,7 @@ namespace slag
             friend class ResourceManager;
         protected:
             void freeResourceReferences();
+            void move(ResourceConsumer& from);
         private:
             std::mutex _referencesMutex;
             std::unordered_set<void*> _resourceReferences;

@@ -66,7 +66,9 @@ if(SLAG_DX12_BACKEND)
             src/slag/BackEnd/DX12/DX12CommandBuffer.h
             src/slag/BackEnd/DX12/DX12CommandBuffer.h
             src/slag/BackEnd/DX12/DX12Queue.cpp
-            src/slag/BackEnd/DX12/DX12Queue.h)
+            src/slag/BackEnd/DX12/DX12Queue.h
+            src/slag/BackEnd/DX12/IDX12CommandBuffer.cpp
+            src/slag/BackEnd/DX12/IDX12CommandBuffer.h)
 endif()
 
 add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
