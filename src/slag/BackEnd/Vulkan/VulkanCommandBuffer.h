@@ -2,6 +2,7 @@
 #define SLAG_VULKANCOMMANDBUFFER_H
 #include "../../CommandBuffer.h"
 #include "../../Resources/Resource.h"
+#include "../../Resources/ResourceConsumer.h"
 #include "VulkanSemaphore.h"
 #include <vulkan/vulkan.h>
 
@@ -11,7 +12,7 @@ namespace slag
     {
 
         class VulkanTexture;
-        class VulkanCommandBuffer: public CommandBuffer
+        class VulkanCommandBuffer: public CommandBuffer, resources::ResourceConsumer
         {
         public:
             VulkanCommandBuffer(uint32_t queueFamily);

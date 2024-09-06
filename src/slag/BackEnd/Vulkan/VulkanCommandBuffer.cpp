@@ -42,7 +42,7 @@ namespace slag
                 //there's the possibility we started recording commands, but never submitted. Force clear resources just in case
                 if(_finished == nullptr)
                 {
-                    resources::ResourceManager::removeBufferFromActive(this);
+                    resources::ResourceManager::removeConsumerFromActive(this);
                     freeResourceReferences();
                 }
                 else
@@ -76,7 +76,7 @@ namespace slag
         void VulkanCommandBuffer::begin()
         {
             _waitUntilFinished();
-            resources::ResourceManager::setBufferAsActive(this);
+            resources::ResourceManager::setConsumerAsActive(this);
             VkCommandBufferBeginInfo cmdBeginInfo = {};
             cmdBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
             cmdBeginInfo.pNext = nullptr;
@@ -110,7 +110,7 @@ namespace slag
             if(_finished)
             {
                 _finished->waitForValue(1);
-                resources::ResourceManager::removeBufferFromActive(this);
+                resources::ResourceManager::removeConsumerFromActive(this);
                 freeResourceReferences();
                 delete _finished;
                 _finished = nullptr;

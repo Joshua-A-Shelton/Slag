@@ -17,8 +17,7 @@ namespace slag
     class CommandBuffer
     {
     public:
-        virtual ~CommandBuffer();
-        friend class slag::resources::ResourceManager;
+        virtual ~CommandBuffer()=default;
         virtual void begin()=0;
         virtual void end()=0;
         virtual void waitUntilFinished()=0;
@@ -29,13 +28,6 @@ namespace slag
 
         virtual void insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount)=0;
         virtual void clearColorImage(Texture* texture, ClearColor color, Texture::Layout layout)=0;
-
-    protected:
-        void freeResourceReferences();
-    private:
-        std::mutex _referencesMutex;
-        std::unordered_set<void*> _resourceReferences;
-        void addResourceReference(void* gpuID);
 
     };
 

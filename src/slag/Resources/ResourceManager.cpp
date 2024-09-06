@@ -1,5 +1,6 @@
 #include "ResourceManager.h"
 #include "slag/CommandBuffer.h"
+#include "ResourceConsumer.h"
 
 namespace slag
 {
@@ -10,30 +11,30 @@ namespace slag
             std::lock_guard<std::mutex> bufferGuard(_activeCommandMutex);
             std::lock_guard<std::mutex> resourceGuard(_resourcesMutex);
             auto id = resource->gpuID();
-            _resources[id] = {.references = _activeCommandBuffers.size(), .disposalFunction = resource->_disposeFunction};
-            if(_activeCommandBuffers.empty())
+            _resources[id] = {.references = _activeConsumers.size(), .disposalFunction = resource->_disposeFunction};
+            if(_activeConsumers.empty())
             {
                 resource->_disposeFunction();
             }
             else
             {
-                for (auto commandBuffer: _activeCommandBuffers)
+                for (auto consumer: _activeConsumers)
                 {
-                    commandBuffer->addResourceReference(id);
+                    consumer->addResourceReference(id);
                 }
             }
         }
 
-        void ResourceManager::setBufferAsActive(CommandBuffer* buffer)
+        void ResourceManager::setConsumerAsActive(ResourceConsumer* buffer)
         {
             std::lock_guard<std::mutex> bufferGuard(_activeCommandMutex);
-            _activeCommandBuffers.insert(buffer);
+            _activeConsumers.insert(buffer);
         }
 
-        void ResourceManager::removeBufferFromActive(CommandBuffer* buffer)
+        void ResourceManager::removeConsumerFromActive(ResourceConsumer* buffer)
         {
             std::lock_guard<std::mutex> bufferGuard(_activeCommandMutex);
-            _activeCommandBuffers.erase(buffer);
+            _activeConsumers.erase(buffer);
         }
 
         void ResourceManager::removeReferences(std::unordered_set<void*>& references)

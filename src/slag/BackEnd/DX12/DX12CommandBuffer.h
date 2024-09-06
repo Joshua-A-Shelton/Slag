@@ -1,6 +1,7 @@
 #ifndef SLAG_DX12COMMANDBUFFER_H
 #define SLAG_DX12COMMANDBUFFER_H
 #include "../../CommandBuffer.h"
+#include "../../Resources/ResourceConsumer.h"
 #include "DX12Semaphore.h"
 #include <d3d12.h>
 namespace slag
@@ -8,7 +9,7 @@ namespace slag
     namespace dx
     {
 
-        class DX12CommandBuffer: public CommandBuffer
+        class DX12CommandBuffer: public CommandBuffer, resources::ResourceConsumer
         {
         public:
             DX12CommandBuffer(GpuQueue::QueueType commandType);

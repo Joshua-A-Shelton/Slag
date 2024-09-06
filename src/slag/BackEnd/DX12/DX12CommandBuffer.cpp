@@ -33,7 +33,7 @@ namespace slag
                 //there's the possibility we started recording commands, but never submitted. Force clear resources just in case
                 if(_finished == nullptr)
                 {
-                    resources::ResourceManager::removeBufferFromActive(this);
+                    resources::ResourceManager::removeConsumerFromActive(this);
                     freeResourceReferences();
                 }
                 else
@@ -67,7 +67,7 @@ namespace slag
         void DX12CommandBuffer::begin()
         {
             _waitUntilFinished();
-            resources::ResourceManager::setBufferAsActive(this);
+            resources::ResourceManager::setConsumerAsActive(this);
             _buffer->Reset(_pool, nullptr);
         }
 
@@ -95,7 +95,7 @@ namespace slag
             if(_finished)
             {
                 _finished->waitForValue(1);
-                resources::ResourceManager::removeBufferFromActive(this);
+                resources::ResourceManager::removeConsumerFromActive(this);
                 freeResourceReferences();
                 delete _finished;
                 _finished = nullptr;
