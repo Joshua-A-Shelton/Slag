@@ -1,33 +1,20 @@
 #ifndef SLAG_COMMANDBUFFER_H
 #define SLAG_COMMANDBUFFER_H
 
-#include <mutex>
-#include <unordered_set>
-#include "slag/Resources/ResourceManager.h"
-#include "Semaphore.h"
-#include "GpuMemoryBarriers.h"
-#include "GpuQueue.h"
-#include "Texture.h"
-#include "Clear.h"
-#include "Rectangle.h"
+#include "ICommandBuffer.h"
 
 namespace slag
 {
 
-    class CommandBuffer
+    class CommandBuffer: public ICommandBuffer
     {
     public:
         virtual ~CommandBuffer()=default;
-        virtual void begin()=0;
-        virtual void end()=0;
+
         virtual void waitUntilFinished()=0;
         virtual bool isFinished()=0;
-        virtual GpuQueue::QueueType commandType()=0;
 
         static CommandBuffer* newCommandBuffer(GpuQueue::QueueType acceptsCommands);
-
-        virtual void insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount)=0;
-        virtual void clearColorImage(Texture* texture, ClearColor color, Texture::Layout layout)=0;
 
     };
 

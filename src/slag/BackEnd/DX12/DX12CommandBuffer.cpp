@@ -1,5 +1,6 @@
 #include "DX12CommandBuffer.h"
 #include "DX12Lib.h"
+#include "../../Resources/ResourceManager.h"
 namespace slag
 {
     namespace dx

@@ -43,6 +43,8 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/BackEnd/Vulkan/VulkanSwapchain.h
             src/slag/BackEnd/Vulkan/VulkanBuffer.cpp
             src/slag/BackEnd/Vulkan/VulkanBuffer.h
+            src/slag/BackEnd/Vulkan/IVulkanCommandBuffer.cpp
+            src/slag/BackEnd/Vulkan/IVulkanCommandBuffer.h
     )
 endif()
 
@@ -101,6 +103,7 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/Rectangle.h
         src/slag/Resources/ResourceConsumer.h
         src/slag/Resources/ResourceConsumer.cpp
+        src/slag/ICommandBuffer.h
 )
 target_include_directories(Slag PRIVATE ${Boost_INCLUDE_DIRS} third-party/stb)
 
