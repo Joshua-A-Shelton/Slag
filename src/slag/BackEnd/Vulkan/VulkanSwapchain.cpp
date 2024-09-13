@@ -101,6 +101,10 @@ namespace slag
             {
                 _frames[i].commandBuffer()->waitUntilFinished();
             }
+            if(_imageAcquiredFences.size()>0)
+            {
+                vkWaitForFences(VulkanLib::card()->device(), _imageAcquiredFences.size(), _imageAcquiredFences.data(), true, 1000000);
+            }
             VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
             if(_presentMode == PresentMode::Sequential)
             {
@@ -185,6 +189,9 @@ namespace slag
             if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _needsRebuild)
             {
                 rebuild();
+                auto fence = currentImageAcquiredFence();
+                vkWaitForFences(VulkanLib::card()->device(),1,&fence,true,100000000);
+                vkResetFences(VulkanLib::card()->device(),1,&fence);
                 vkAcquireNextImageKHR(VulkanLib::card()->device(), _swapchain, 100000000, _imageAcquiredSemaphores[_currentSemaphoreIndex], nullptr, &_currentFrameIndex);
             }
             else if(result != VK_SUCCESS)
@@ -213,6 +220,9 @@ namespace slag
                 if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _needsRebuild)
                 {
                     rebuild();
+                    auto fence = currentImageAcquiredFence();
+                    vkWaitForFences(VulkanLib::card()->device(),1,&fence,true,100000000);
+                    vkResetFences(VulkanLib::card()->device(),1,&fence);
                     vkAcquireNextImageKHR(VulkanLib::card()->device(), _swapchain, 100000000, _imageAcquiredSemaphores[_currentSemaphoreIndex], nullptr, &_currentFrameIndex);
                 }
                 else if(result != VK_SUCCESS)

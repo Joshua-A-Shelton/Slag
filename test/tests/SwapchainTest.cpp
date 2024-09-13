@@ -10,7 +10,7 @@
 
 using namespace slag;
 
-TEST(Swapchain, Creation)
+TEST(Swapchain, PresentModes)
 {
 
     SDL_WindowFlags flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
@@ -52,7 +52,33 @@ TEST(Swapchain, Creation)
         }
     }
     Uint64 totalEnd = SDL_GetPerformanceCounter();
-    std::cout << "total time: "<< ((totalEnd-totalStart)/1000)/300 << std::endl;
+    auto discardTime = ((totalEnd-totalStart)/1000)/300;
+
+    swapchain->presentMode(Swapchain::PresentMode::Sequential);
+
+    totalStart = SDL_GetPerformanceCounter();
+    for(int i=0; i< 300; i++)
+    {
+        if(auto frame = swapchain->next())
+        {
+            auto cb = frame->commandBuffer();
+            cb->begin();
+
+            ImageBarrier barrier{.texture=frame->backBuffer(),.oldLayout=Texture::Layout::UNDEFINED, .newLayout = Texture::Layout::TRANSFER_DESTINATION};
+            cb->insertBarriers(&barrier,1, nullptr,0);
+            cb->clearColorImage(frame->backBuffer(), {.floats={1, 0, 1, 1}}, Texture::Layout::TRANSFER_DESTINATION);
+            barrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
+            barrier.newLayout = Texture::Layout::PRESENT;
+            cb->insertBarriers(&barrier,1, nullptr,0);
+            cb->end();
+            SlagLib::graphicsCard()->graphicsQueue()->submit(&cb,1, nullptr,0, nullptr,0,frame);
+
+        }
+    }
+    totalEnd = SDL_GetPerformanceCounter();
+    auto sequentialTime = ((totalEnd-totalStart)/1000)/300;
+    GTEST_ASSERT_GE(sequentialTime,discardTime);
+
     delete swapchain;
 
     SDL_DestroyWindow(window);
