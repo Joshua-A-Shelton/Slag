@@ -1,6 +1,7 @@
 #include "VulkanLib.h"
 #include "VkBootstrap.h"
 #include "VulkanSemaphore.h"
+#include "VulkanBuffer.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanSwapchain.h"
 #include "VulkanQueue.h"
@@ -47,6 +48,7 @@ namespace slag
             auto physicalDevice = selector.set_minimum_version(1,3)
                                           .set_required_features_13(features1_3)
                                           .set_required_features_12(features1_2)
+                                          .add_required_extension("VK_EXT_swapchain_maintenance1")
                                           .add_required_extension("VK_EXT_host_image_copy")
                                           .defer_surface_initialization()
                                           .select();
@@ -62,7 +64,7 @@ namespace slag
             }
             auto card = new VulkanGraphicsCard(instance,device.value());
             Extensions::mapExtensions(card->device());
-            return new VulkanLib(instance,debugMessenger,card);;
+            return new VulkanLib(instance,debugMessenger,card);
 
         }
 
@@ -213,6 +215,54 @@ namespace slag
 
             }
             return new VulkanCommandBuffer(family);
+        }
+
+        Buffer* VulkanLib::newBuffer(void* data, size_t dataSize, Buffer::Accessibility accessibility, Buffer::Usage usage)
+        {
+            VkBufferUsageFlags usageFlags = 0;
+
+            if(usage & Buffer::Usage::VertexBuffer)
+            {
+                usageFlags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+            }
+            if(usage & Buffer::Usage::IndexBuffer)
+            {
+                usageFlags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+            }
+            if(usage & Buffer::Usage::Storage)
+            {
+                usageFlags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+            }
+            if(usage & Buffer::Usage::Indirect)
+            {
+                usageFlags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+            }
+
+            return new VulkanBuffer(data,dataSize,accessibility,usageFlags, false);
+        }
+
+        Buffer* VulkanLib::newBuffer(size_t bufferSize, Buffer::Accessibility accessibility, Buffer::Usage usage)
+        {
+            VkBufferUsageFlags usageFlags = 0;
+
+            if(usage & Buffer::Usage::VertexBuffer)
+            {
+                usageFlags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+            }
+            if(usage & Buffer::Usage::IndexBuffer)
+            {
+                usageFlags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+            }
+            if(usage & Buffer::Usage::Storage)
+            {
+                usageFlags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+            }
+            if(usage & Buffer::Usage::Indirect)
+            {
+                usageFlags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+            }
+
+            return new VulkanBuffer(bufferSize,accessibility,usageFlags, false);
         }
 
     } // vulkan

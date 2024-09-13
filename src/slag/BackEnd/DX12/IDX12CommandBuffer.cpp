@@ -1,4 +1,5 @@
 #include "IDX12CommandBuffer.h"
+#include "DX12Buffer.h"
 
 namespace slag
 {
@@ -22,6 +23,13 @@ namespace slag
         void IDX12CommandBuffer::clearColorImage(slag::Texture* texture, slag::ClearColor color, Texture::Layout layout)
         {
             throw std::runtime_error("not implemented");
+        }
+
+        void IDX12CommandBuffer::copyBuffer(Buffer* source, size_t sourceOffset, size_t length, Buffer* destination, size_t destinationOffset)
+        {
+            DX12Buffer* src = dynamic_cast<DX12Buffer*>(source);
+            DX12Buffer* dst = dynamic_cast<DX12Buffer*>(destination);
+            _buffer->CopyBufferRegion(dst->underlyingBuffer(),destinationOffset,src->underlyingBuffer(),sourceOffset,length);
         }
 
         void IDX12CommandBuffer::move(IDX12CommandBuffer& from)

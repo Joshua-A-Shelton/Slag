@@ -18,6 +18,14 @@ namespace slag
         unsigned char blueByte();
         unsigned char alphaByte();
         std::string hexCode();
+        bool operator==(const Color& comp) const
+        {
+            return red == comp.red && green == comp.green && blue == comp.blue && alpha == comp.alpha;
+        }
+        bool operator!=(const Color& comp) const
+        {
+            return red != comp.red || green != comp.green || blue != comp.blue || alpha != comp.alpha;
+        }
     };
 
 } // slag

@@ -17,6 +17,7 @@ namespace slag
         };
         virtual ~Swapchain()=default;
         virtual Frame* next() = 0;
+        virtual Frame* nextIfReady()=0;
         virtual Frame* currentFrame() = 0;
         virtual uint8_t currentFrameIndex() = 0;
         virtual uint8_t backBuffers() = 0;

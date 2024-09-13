@@ -228,53 +228,30 @@ namespace slag
             }
 
             //copy texel data into buffer
+            //TODO: we currently assume that the size of the data is just for mip level 0. We should account for the possibility of having multiple mip levels sent in the texelData
             if(texelData && dataSize)
             {
-                //TODO: use fully built buffer class for this, so the resource can outlive the command buffer
-                VulkanBuffer dataBuffer(texelData,dataSize,slag::Buffer::CPU,VK_BUFFER_USAGE_TRANSFER_SRC_BIT,false);
-
-                auto commandBuffer = onBuffer->underlyingCommandBuffer();
 
                 if(dataFormat != textureFormat.format)
                 {
-                    //TODO must implement this...
-                    throw std::runtime_error("not implemented");
+                    auto tempFormat = VulkanizedFormat{.format=dataFormat};
+                    VulkanTexture transfer(texelData,dataSize,dataFormat,tempFormat,width,height,1,usage,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,false, true);
+                    Rectangle rect{.offset={0,0},.extent={width,height}};
+                    //this is cheating a bit, we're not actually using the supplied buffer to get the initial data there, but it should match the idea of a direct upload
+                    VulkanCommandBuffer commands(VulkanLib::card()->graphicsQueueFamily());
+                    commands.begin();
+                    commands.transitionImageSubResource(this,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_IMAGE_LAYOUT_UNDEFINED,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,0,_mipLevels,0,1);
+                    commands.blitSubResource(aspectFlags,&transfer,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,rect,0,this,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,rect,0,VK_FILTER_LINEAR);
+                    commands.end();
+                    VulkanLib::card()->graphicsQueue()->submit(&commands);
+                    commands.waitUntilFinished();
                 }
                 else
                 {
-                    VkImageSubresourceRange range;
-                    range.aspectMask = _aspects;
-                    range.baseMipLevel = 0;
-                    range.levelCount = _mipLevels;
-                    range.baseArrayLayer = 0;
-                    range.layerCount = 1;
+                    VulkanBuffer dataBuffer(texelData, dataSize, slag::Buffer::CPU, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, false);
 
-                    VkImageMemoryBarrier imageBarrier_toTransfer = {};
-                    imageBarrier_toTransfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-
-                    imageBarrier_toTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-                    imageBarrier_toTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-                    imageBarrier_toTransfer.image = _image;
-                    imageBarrier_toTransfer.subresourceRange = range;
-
-                    imageBarrier_toTransfer.srcAccessMask = 0;
-                    imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-                    //barrier the image into the transfer-receive layout
-                    vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
-                    VkBufferImageCopy copyRegion = {};
-                    copyRegion.bufferOffset = 0;
-                    copyRegion.bufferRowLength = 0;
-                    copyRegion.bufferImageHeight = 0;
-
-                    copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                    copyRegion.imageSubresource.mipLevel = 0;
-                    copyRegion.imageSubresource.baseArrayLayer = 0;
-                    copyRegion.imageSubresource.layerCount = 1;
-                    copyRegion.imageExtent = imageExtent;
-
-                    //copy the buffer into the image
-                    vkCmdCopyBufferToImage(commandBuffer, dataBuffer.underlyingBuffer(), _image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+                    onBuffer->transitionImageSubResource(this,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_IMAGE_LAYOUT_UNDEFINED,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,0,_mipLevels);
+                    onBuffer->copyBufferToImageMip(&dataBuffer,0,this,0,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
                 }
 
                 if(generateMips && mipLevels > 1)
@@ -282,11 +259,14 @@ namespace slag
                     updateMipMaps(onBuffer,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,initializedLayout);
                 }
                 //transition into starting layout because we didn't in mip maps
-                else
+                else if(initializedLayout!=VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
                 {
                     onBuffer->transitionImageSubResource(this,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,initializedLayout,0,_mipLevels);
                 }
-
+            }
+            else
+            {
+                onBuffer->transitionImageSubResource(this,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,VK_IMAGE_LAYOUT_UNDEFINED,initializedLayout,0,_mipLevels);
             }
         }
 

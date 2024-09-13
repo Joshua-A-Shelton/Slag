@@ -9,7 +9,7 @@ TEST(CommandBuffer, Creation)
     int i=0;
 }
 
-TEST(CommandBuffer, ReplaceMe)
+TEST(CommandBuffer, StartFinished)
 {
     auto buffer = CommandBuffer::newCommandBuffer(GpuQueue::Graphics);
     ASSERT_TRUE(buffer->isFinished());

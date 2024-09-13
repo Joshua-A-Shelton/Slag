@@ -8,10 +8,10 @@ namespace slag
     {
         VulkanBuffer::VulkanBuffer(void* data, size_t dataLength, Accessibility accessibility,VkBufferUsageFlags usageFlags, bool destroyImmediately): VulkanBuffer(dataLength,accessibility,usageFlags,destroyImmediately)
         {
-            update(0,data,dataLength);
+            VulkanBuffer::update(0,data,dataLength);
         }
 
-        VulkanBuffer::VulkanBuffer(size_t bufferSize, Buffer::Accessibility accessibility,VkBufferUsageFlags usageFlags, bool destroyImmediately): resources::Resource(destroyImmediately)
+        VulkanBuffer::VulkanBuffer(size_t bufferSize, Buffer::Accessibility accessibility, VkBufferUsageFlags usageFlags, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
             if(usageFlags & VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
             {
@@ -48,6 +48,7 @@ namespace slag
             VkBufferCreateInfo bufferCreateInfo{};
             bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
             bufferCreateInfo.size = bufferSize;
+            //every buffer should support transfer
             bufferCreateInfo.usage = usageFlags | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
             auto result = vmaCreateBuffer(VulkanLib::card()->memoryAllocator(),&bufferCreateInfo,&allocationCreateInfo,&_buffer,&_allocation, nullptr);
@@ -119,6 +120,18 @@ namespace slag
             }
         }
 
+        std::vector<std::byte> VulkanBuffer::downloadData()
+        {
+            if(_accessibility & CPU)
+            {
+                return downloadDataCPU();
+            }
+            else
+            {
+                return downloadDataGPU();
+            }
+        }
+
         void VulkanBuffer::updateCPU(size_t offset, void* data, size_t dataLength)
         {
             memcpy(((char*)_memoryLocation)+offset,data,dataLength);
@@ -126,34 +139,33 @@ namespace slag
 
         void VulkanBuffer::updateGPU(size_t offset, void* data, size_t dataLength)
         {
-            VkBuffer buffer;
-            VmaAllocation tempAllocation;
-            VkBufferCreateInfo bufferCreateInfo{};
-            bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-            bufferCreateInfo.size = dataLength;
-            bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-
-            VmaAllocationCreateInfo allocationCreateInfo{};
-            allocationCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
-
-            auto success = vmaCreateBuffer(VulkanLib::card()->memoryAllocator(),&bufferCreateInfo,&allocationCreateInfo,&buffer,&tempAllocation, nullptr);
-
-            //copy data into temp resources
-            void* dataLocation;
-            vmaMapMemory(VulkanLib::card()->memoryAllocator(),tempAllocation,&dataLocation);
-            memcpy(dataLocation,data,static_cast<size_t>(dataLength));
-            vmaUnmapMemory(VulkanLib::card()->memoryAllocator(),tempAllocation);
+            VulkanBuffer transfer(data,dataLength,Accessibility::CPU_AND_GPU,VK_BUFFER_USAGE_TRANSFER_SRC_BIT, true);
             VulkanCommandBuffer commandBuffer(VulkanLib::card()->transferQueueFamily());
             commandBuffer.begin();
+            commandBuffer.copyBuffer(&transfer,0,dataLength,this,offset);
+            commandBuffer.end();
+            VulkanLib::card()->transferQueue()->submit(&commandBuffer);
+            commandBuffer.waitUntilFinished();
+        }
 
-            VkBufferCopy copy{.srcOffset=0,.dstOffset=offset, .size=dataLength};
-            vkCmdCopyBuffer(commandBuffer.underlyingCommandBuffer(),buffer,_buffer,1,&copy);
+        std::vector<std::byte> VulkanBuffer::downloadDataCPU()
+        {
+            std::vector<std::byte> bytes(_size);
+            memcpy(bytes.data(),_memoryLocation,_size);
+            return bytes;
+        }
 
+        std::vector<std::byte> VulkanBuffer::downloadDataGPU()
+        {
+            VulkanBuffer temp(_size,Accessibility::CPU_AND_GPU,VK_BUFFER_USAGE_TRANSFER_DST_BIT, true);
+            VulkanCommandBuffer commandBuffer(VulkanLib::card()->transferQueueFamily());
+            commandBuffer.begin();
+            commandBuffer.copyBuffer(this,0,_size,&temp,0);
             commandBuffer.end();
             VulkanLib::card()->transferQueue()->submit(&commandBuffer);
             commandBuffer.waitUntilFinished();
 
-            vmaDestroyBuffer(VulkanLib::card()->memoryAllocator(),buffer,tempAllocation);
+            return temp.downloadDataCPU();
         }
 
         void* VulkanBuffer::gpuID()

@@ -23,6 +23,7 @@ namespace slag
             CommandBuffer* commandBuffer()override;
             void begin()override;
             void end()override;
+
             friend class VulkanSwapchain;
 
         private:

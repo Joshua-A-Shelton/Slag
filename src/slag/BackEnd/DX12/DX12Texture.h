@@ -15,6 +15,7 @@ namespace slag
         class DX12Texture: public Texture, resources::Resource
         {
         public:
+            DX12Texture(ID3D12Resource* dx12Texture, bool ownTexture, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t  mipLevels, D3D12_RESOURCE_FLAGS usage, bool destroyImmediately);
             DX12Texture(void* texelData, size_t dataSize, DXGI_FORMAT dataFormat, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, D3D12_RESOURCE_STATES initializedLayout, bool generateMips, bool destroyImmediately);
             DX12Texture(DX12CommandBuffer* onBuffer, void* texelData, size_t dataSize, DXGI_FORMAT dataFormat, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, D3D12_RESOURCE_STATES initializedLayout, bool generateMips, bool destroyImmediately);
             ~DX12Texture();
@@ -38,6 +39,8 @@ namespace slag
             uint32_t _width = 0;
             uint32_t _height = 0;
             uint32_t _mipLevels=1;
+            DXGI_FORMAT _format;
+            D3D12_RESOURCE_FLAGS _usage;
         };
 
     } // dx

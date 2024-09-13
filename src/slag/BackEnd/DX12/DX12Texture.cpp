@@ -1,10 +1,25 @@
 #include "DX12Texture.h"
 #include "DX12Lib.h"
+#include "DX12Buffer.h"
 
 namespace slag
 {
     namespace dx
     {
+        DX12Texture::DX12Texture(ID3D12Resource* dx12Texture, bool ownTexture, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, bool destroyImmediately): resources::Resource(destroyImmediately)
+        {
+            _texture = dx12Texture;
+            _format = textureFormat;
+            _width = width;
+            _height = height;
+            _mipLevels = mipLevels;
+            _usage = usage;
+            if(ownTexture)
+            {
+                _disposeFunction = [=]{dx12Texture->Release();};
+            }
+        }
+
         DX12Texture::DX12Texture(void* texelData, size_t dataSize, DXGI_FORMAT dataFormat, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, D3D12_RESOURCE_STATES initializedLayout, bool generateMips, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
             DX12CommandBuffer commandBuffer(GpuQueue::QueueType::Compute);
@@ -55,6 +70,8 @@ namespace slag
             _width = width;
             _height = height;
             _mipLevels = mipLevels;
+            _format = textureFormat;
+            _usage = usage;
 
             D3D12_RESOURCE_DESC resourceDesc = {};
             resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -82,18 +99,13 @@ namespace slag
                 alloc->Release();
             };
 
-            void* mappedPtr;
-            _texture->Map(0, nullptr, &mappedPtr);
-
-            memcpy(mappedPtr, texelData, dataSize);
-
-            _texture->Unmap(0, nullptr);
+            DX12Buffer tempBuffer(texelData,dataSize,Buffer::Accessibility::CPU_AND_GPU,D3D12_RESOURCE_STATE_COMMON,true);
 
             if(generateMips &&  mipLevels > 1)
             {
                 updateMipMaps(onBuffer);
             }
-
+            throw std::runtime_error("not implemented");
         }
 
         uint32_t DX12Texture::width()
@@ -141,7 +153,6 @@ namespace slag
                     break;
             }
         }
-
 
     } // dx
 } // slag

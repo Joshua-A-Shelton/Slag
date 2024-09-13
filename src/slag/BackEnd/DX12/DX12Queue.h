@@ -24,6 +24,7 @@ namespace slag
             void submit(CommandBuffer** commandBuffers, size_t bufferCount, SemaphoreValue* waitOnSemaphores, size_t waitCount, SemaphoreValue* signalSemaphores, size_t signalCount)override;
 
             QueueType type()override;
+            ID3D12CommandQueue* underlyingQueue();
         private:
             void move(DX12Queue&& from);
             ID3D12CommandQueue* _queue = nullptr;

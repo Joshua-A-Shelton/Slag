@@ -3,9 +3,12 @@
 #include "DX12CommandBuffer.h"
 #include "DX12Queue.h"
 #include "DX12Texture.h"
+#include "DX12Swapchain.h"
+#include "DX12Buffer.h"
 #include <wrl.h>
 #include <dxgi1_4.h>
 #include <dxgi1_6.h>
+#include <dxgidebug.h>
 
 namespace slag
 {
@@ -14,14 +17,20 @@ namespace slag
 
         DX12Lib* DX12Lib::initialize()
         {
-            Microsoft::WRL::ComPtr<ID3D12Debug> debugInterface;
-            D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface));
-            debugInterface->EnableDebugLayer();
+
 
             Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory;
             UINT createFactoryFlags = 0;
 #ifndef NDEBUG
+            Microsoft::WRL::ComPtr<ID3D12Debug> debugInterface = nullptr;
+            D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface));
+            Microsoft::WRL::ComPtr<ID3D12Debug1> debugController;
+            debugInterface->QueryInterface(IID_PPV_ARGS(&debugController));
+            debugController->EnableDebugLayer();
+            debugController->SetEnableGPUBasedValidation(true);
+
             createFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
+
 #endif
             CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&dxgiFactory));
 
@@ -54,13 +63,21 @@ namespace slag
                 }
             }
 
-            auto card = new DX12GraphicsCard(dxgiAdapter4);
+            auto card = new DX12GraphicsCard(dxgiAdapter4,dxgiFactory);
             return new DX12Lib(card);
         }
 
         void DX12Lib::cleanup(lib::BackEndLib* library)
         {
             delete library;
+#ifndef NDEBUG
+            Microsoft::WRL::ComPtr<IDXGIDebug1> dxgi_debug;
+            if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(dxgi_debug.GetAddressOf()))))
+            {
+                dxgi_debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_FLAGS(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL));
+            }
+#endif
+
         }
 
         DXGI_FORMAT DX12Lib::format(Pixels::Format pixelFormat)
@@ -122,6 +139,11 @@ namespace slag
             _graphicsCard = card;
         }
 
+        DX12Lib::~DX12Lib()
+        {
+            delete _graphicsCard;
+        }
+
         BackEnd DX12Lib::identifier()
         {
             return DirectX12;
@@ -157,6 +179,50 @@ namespace slag
             return new DX12CommandBuffer(acceptsCommands);
         }
 
+        Buffer* DX12Lib::newBuffer(void* data, size_t dataSize, Buffer::Accessibility accessibility, Buffer::Usage usage)
+        {
+            D3D12_RESOURCE_STATES states = D3D12_RESOURCE_STATE_COMMON;
+            if(usage & Buffer::Usage::VertexBuffer)
+            {
+                states |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER ;
+            }
+            if(usage & Buffer::Usage::IndexBuffer)
+            {
+                states |= D3D12_RESOURCE_STATE_INDEX_BUFFER;
+            }
+            if(usage & Buffer::Usage::Storage)
+            {
+                states |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+            }
+            if(usage & Buffer::Usage::Indirect)
+            {
+                states |= D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT ;
+            }
+            return new DX12Buffer(data,dataSize,accessibility,states, false);
+        }
+
+        Buffer* DX12Lib::newBuffer(size_t bufferSize, Buffer::Accessibility accessibility, Buffer::Usage usage)
+        {
+            D3D12_RESOURCE_STATES states = D3D12_RESOURCE_STATE_COMMON;
+            if(usage & Buffer::Usage::VertexBuffer)
+            {
+                states |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER ;
+            }
+            if(usage & Buffer::Usage::IndexBuffer)
+            {
+                states |= D3D12_RESOURCE_STATE_INDEX_BUFFER;
+            }
+            if(usage & Buffer::Usage::Storage)
+            {
+                states |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+            }
+            if(usage & Buffer::Usage::Indirect)
+            {
+                states |= D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT ;
+            }
+            return new DX12Buffer(bufferSize,accessibility,states, false);
+        }
+
         Semaphore* DX12Lib::newSemaphore(uint64_t startingValue)
         {
             return new DX12Semaphore(startingValue);
@@ -164,8 +230,7 @@ namespace slag
 
         Swapchain* DX12Lib::newSwapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode, Pixels::Format imageFormat)
         {
-            throw new std::runtime_error("not implemented");
-            return nullptr;
+            return new DX12Swapchain(platformData,width,height,backBuffers,mode, format(imageFormat));
         }
 
     } // dx

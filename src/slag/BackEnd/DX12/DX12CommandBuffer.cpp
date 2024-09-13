@@ -24,6 +24,7 @@ namespace slag
             }
             DX12Lib::card()->device()->CreateCommandAllocator(comType, IID_PPV_ARGS(&_pool));
             DX12Lib::card()->device()->CreateCommandList(0,comType,_pool, nullptr, IID_PPV_ARGS(&_buffer));
+            _buffer->Close();
         }
 
         DX12CommandBuffer::~DX12CommandBuffer()

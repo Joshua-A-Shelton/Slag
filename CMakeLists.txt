@@ -68,7 +68,13 @@ if(SLAG_DX12_BACKEND)
             src/slag/BackEnd/DX12/DX12Queue.cpp
             src/slag/BackEnd/DX12/DX12Queue.h
             src/slag/BackEnd/DX12/IDX12CommandBuffer.cpp
-            src/slag/BackEnd/DX12/IDX12CommandBuffer.h)
+            src/slag/BackEnd/DX12/IDX12CommandBuffer.h
+            src/slag/BackEnd/DX12/DX12Swapchain.cpp
+            src/slag/BackEnd/DX12/DX12Swapchain.h
+            src/slag/BackEnd/DX12/DX12Frame.cpp
+            src/slag/BackEnd/DX12/DX12Frame.h
+            src/slag/BackEnd/DX12/DX12Buffer.cpp
+            src/slag/BackEnd/DX12/DX12Buffer.h)
 endif()
 
 add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
@@ -155,6 +161,7 @@ if(BUILD_VULKAN_TESTS)
             test/VulkanEnvironment.h
             test/tests/TextureTest.cpp
             test/tests/SwapchainTest.cpp
+            test/tests/BufferTest.cpp
     )
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 Slag)
     target_include_directories(SlagTests PRIVATE src ${SDL2_LIBRARIES})

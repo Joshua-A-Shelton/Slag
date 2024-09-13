@@ -1,6 +1,7 @@
 #include "IVulkanCommandBuffer.h"
 #include "VulkanLib.h"
 #include "VulkanTexture.h"
+#include "VulkanBuffer.h"
 
 namespace slag
 {
@@ -72,6 +73,20 @@ namespace slag
             vkCmdPipelineBarrier(_buffer,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,0,0,nullptr,bufferBarrierCount,bufferMemoryBarriers.data(),imageBarrierCount,imageMemoryBarriers.data());
         }
 
+        void IVulkanCommandBuffer::copyBuffer(Buffer* source, size_t sourceOffset, size_t length, Buffer* destination, size_t destinationOffset)
+        {
+            VulkanBuffer* src = dynamic_cast<VulkanBuffer*>(source);
+            VulkanBuffer* dst = dynamic_cast<VulkanBuffer*>(destination);
+
+            VkBufferCopy copyRegion = {};
+            copyRegion.size = length;
+            copyRegion.srcOffset = sourceOffset;
+            copyRegion.dstOffset = destinationOffset;
+
+            //copy the buffer into the image
+            vkCmdCopyBuffer(_buffer, src->underlyingBuffer(), dst->underlyingBuffer(), 1, &copyRegion);
+        }
+
         void IVulkanCommandBuffer::transitionImageSubResource(VulkanTexture* texture, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t startingMipLevel, uint32_t levelCount, uint32_t startingLayer, uint32_t layerCount)
         {
             VkImageMemoryBarrier vkbarrier{};
@@ -99,6 +114,26 @@ namespace slag
             blit.dstSubresource.baseArrayLayer = 0;
             blit.dstSubresource.layerCount = 1;
             vkCmdBlitImage(_buffer,source->image(),sourceLayout,destination->image(),destImageLayout,1,&blit,filter);
+        }
+
+        void IVulkanCommandBuffer::copyBufferToImageMip(VulkanBuffer* buffer, VkDeviceSize bufferOffset, VulkanTexture* image, uint32_t mipLevel, VkImageLayout destinationImageLayout)
+        {
+
+            uint32_t w = std::max((uint32_t)1,image->width()>>mipLevel);
+            uint32_t h = std::max((uint32_t)1,image->height()>>mipLevel);
+
+            VkBufferImageCopy copy{};
+            copy.imageExtent = {.width=w,.height=h,.depth=1};
+            copy.bufferOffset = bufferOffset;
+            copy.imageSubresource =
+            {
+                .aspectMask = image->aspectFlags(),
+                .mipLevel = mipLevel,
+                .baseArrayLayer = 0,
+                .layerCount = 1
+            };
+
+            vkCmdCopyBufferToImage(_buffer,buffer->underlyingBuffer(),image->image(),destinationImageLayout,1,&copy);
         }
     } // vulkan
 } // slag

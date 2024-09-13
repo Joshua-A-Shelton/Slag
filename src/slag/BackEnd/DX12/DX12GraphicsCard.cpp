@@ -1,3 +1,4 @@
+#include <iostream>
 #include "DX12GraphicsCard.h"
 #include "DX12Lib.h"
 
@@ -5,8 +6,14 @@ namespace slag
 {
     namespace dx
     {
-        DX12GraphicsCard::DX12GraphicsCard(const Microsoft::WRL::ComPtr<IDXGIAdapter4>& adapter)
+        void DX12ErrorCallback(D3D12_MESSAGE_CATEGORY category,D3D12_MESSAGE_SEVERITY severity,D3D12_MESSAGE_ID id, LPCSTR pdescription, void* pcontext)
         {
+            std::cout << pdescription << std::endl;
+        }
+
+        DX12GraphicsCard::DX12GraphicsCard(const Microsoft::WRL::ComPtr<IDXGIAdapter4>& adapter, Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory)
+        {
+            _dxgiFactory = dxgiFactory;
             D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device));
 #ifndef NDEBUG
             Microsoft::WRL::ComPtr<ID3D12InfoQueue> pInfoQueue;
@@ -26,22 +33,30 @@ namespace slag
                         };
 
                 // Suppress individual messages by their ID
-                D3D12_MESSAGE_ID DenyIds[] = {
+                /*D3D12_MESSAGE_ID DenyIds[] = {
                         D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,   // I'm really not sure how to avoid this message.
-                        D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,                         // This warning occurs when using capture frame while graphics debugging.
-                        D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,                       // This warning occurs when using capture frame while graphics debugging.
-                };
+                        //D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,                         // This warning occurs when using capture frame while graphics debugging.
+                        //D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,                       // This warning occurs when using capture frame while graphics debugging.
+                };*/
 
                 D3D12_INFO_QUEUE_FILTER NewFilter = {};
                 //NewFilter.DenyList.NumCategories = _countof(Categories);
                 //NewFilter.DenyList.pCategoryList = Categories;
                 NewFilter.DenyList.NumSeverities = _countof(Severities);
                 NewFilter.DenyList.pSeverityList = Severities;
-                NewFilter.DenyList.NumIDs = _countof(DenyIds);
-                NewFilter.DenyList.pIDList = DenyIds;
+                NewFilter.DenyList.NumIDs = 0;
+                NewFilter.DenyList.pIDList = nullptr;
 
                 pInfoQueue->PushStorageFilter(&NewFilter);
             }
+
+            Microsoft::WRL::ComPtr<ID3D12InfoQueue> infoQueue = nullptr;
+            auto res = _device->QueryInterface(IID_PPV_ARGS(&infoQueue));
+            Microsoft::WRL::ComPtr<ID3D12InfoQueue1> infoQueue1 = nullptr;
+            infoQueue.As(&infoQueue1);
+            DWORD callBackCookie = 0;
+            infoQueue1->RegisterMessageCallback(DX12ErrorCallback,D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &callBackCookie);
+
 #endif
 
             D3D12_COMMAND_QUEUE_DESC desc = {};
@@ -59,12 +74,12 @@ namespace slag
             desc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
             ID3D12CommandQueue* transfer = nullptr;
             _device->CreateCommandQueue(&desc, IID_PPV_ARGS(&transfer));
-            _graphics = new DX12Queue(transfer,slag::GpuQueue::QueueType::Transfer);
+            _transfer = new DX12Queue(transfer,slag::GpuQueue::QueueType::Transfer);
 
             desc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
             ID3D12CommandQueue* compute = nullptr;
             _device->CreateCommandQueue(&desc, IID_PPV_ARGS(&compute));
-            _graphics = new DX12Queue(compute,slag::GpuQueue::QueueType::Compute);
+            _compute = new DX12Queue(compute,slag::GpuQueue::QueueType::Compute);
 
 
             D3D12MA::ALLOCATOR_DESC allocatorDesc = {};
@@ -94,12 +109,20 @@ namespace slag
             {
                 _allocator->Release();
             }
+            //_dxgiFactory->Release();
+            //_device->Release();
         }
 
         Microsoft::WRL::ComPtr<ID3D12Device2>& DX12GraphicsCard::device()
         {
             return _device;
         }
+
+        Microsoft::WRL::ComPtr<IDXGIFactory4>& DX12GraphicsCard::dxgiFactory()
+        {
+            return _dxgiFactory;
+        }
+
 
         GpuQueue* DX12GraphicsCard::graphicsQueue()
         {
@@ -125,6 +148,5 @@ namespace slag
         {
             throw std::runtime_error("not implemented");
         }
-
     } // dx
 } // slag

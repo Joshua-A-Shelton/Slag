@@ -2,6 +2,7 @@
 #define SLAG_IVULKANCOMMANDBUFFER_H
 #include "../../CommandBuffer.h"
 #include "slag/Rectangle.h"
+#include "VulkanBuffer.h"
 #include <vulkan/vulkan.h>
 namespace slag
 {
@@ -19,10 +20,14 @@ namespace slag
 
             void insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount)override;
             void clearColorImage(Texture* texture, ClearColor color, Texture::Layout layout)override;
+            void copyBuffer(Buffer* source, size_t sourceOffset, size_t length, Buffer* destination, size_t destinationOffset)override;
+
+
             VkCommandBuffer underlyingCommandBuffer();
             //vulkan only operations
             void transitionImageSubResource(VulkanTexture* texture, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t startingMipLevel, uint32_t levelCount, uint32_t startingLayer = 0, uint32_t layerCount =1);
             void blitSubResource(VkImageAspectFlags aspects, VulkanTexture* source, VkImageLayout sourceLayout, Rectangle sourceArea, uint32_t sourceMipLevel, VulkanTexture* destination, VkImageLayout destImageLayout, Rectangle destArea, uint32_t  destMipLevel, VkFilter filter);
+            void copyBufferToImageMip(VulkanBuffer* buffer,VkDeviceSize bufferOffset,VulkanTexture* image,uint32_t mipLevel,VkImageLayout destinationImageLayout);
         protected:
             void move(IVulkanCommandBuffer& from);
             VkCommandBuffer _buffer = nullptr;

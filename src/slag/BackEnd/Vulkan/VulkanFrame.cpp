@@ -74,6 +74,14 @@ namespace slag
             presentInfo.pSwapchains = &swapchain;
             presentInfo.swapchainCount = 1;
 
+            auto frameFinished = _from->currentImageAcquiredFence();
+            VkSwapchainPresentFenceInfoEXT fenceInfo{};
+            fenceInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT;
+            fenceInfo.swapchainCount = 1;
+            fenceInfo.pFences = &frameFinished;
+
+            presentInfo.pNext = &fenceInfo;
+
             auto result = vkQueuePresentKHR(dynamic_cast<VulkanQueue*>(VulkanLib::card()->graphicsQueue())->underlyingQueue(),&presentInfo);
             _from->finishedFrame();
             if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _from->needsRebuild())

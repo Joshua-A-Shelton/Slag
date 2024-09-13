@@ -36,6 +36,7 @@ namespace slag
                 for(auto i=0; i<_imageAcquiredSemaphores.size(); i++)
                 {
                     vkDestroySemaphore(VulkanLib::card()->device(),_imageAcquiredSemaphores[i], nullptr);
+                    vkDestroyFence(VulkanLib::card()->device(),_imageAcquiredFences[i], nullptr);
                 }
             }
         }
@@ -65,6 +66,7 @@ namespace slag
             _needsRebuild = from._needsRebuild;
             _frames.swap(from._frames);
             _imageAcquiredSemaphores.swap(from._imageAcquiredSemaphores);
+            _imageAcquiredFences.swap(from._imageAcquiredFences);
             for(auto i=0; i<_frames.size(); i++)
             {
                 _frames[i]._from = this;
@@ -125,8 +127,10 @@ namespace slag
                 for(auto i=0; i<_imageAcquiredSemaphores.size(); i++)
                 {
                     vkDestroySemaphore(VulkanLib::card()->device(),_imageAcquiredSemaphores[i], nullptr);
+                    vkDestroyFence(VulkanLib::card()->device(),_imageAcquiredFences[i], nullptr);
                 }
                 _imageAcquiredSemaphores.clear();
+                _imageAcquiredFences.clear();
             }
             _swapchain = chain.value();
             if(chain->present_mode == VK_PRESENT_MODE_FIFO_KHR)
@@ -149,6 +153,13 @@ namespace slag
                 auto value = vkCreateSemaphore(VulkanLib::card()->device(),&semaphoreCreateInfo, nullptr,&semaphore);
                 _imageAcquiredSemaphores.push_back(semaphore);
 
+                VkFenceCreateInfo fenceCreateInfo{};
+                fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+                fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+                VkFence fence = nullptr;
+                vkCreateFence(VulkanLib::card()->device(),&fenceCreateInfo, nullptr,&fence);
+                _imageAcquiredFences.push_back(fence);
+
             }
 
             _currentFrameIndex = 0;
@@ -163,7 +174,10 @@ namespace slag
                 return nullptr;
             }
 
-            _frames[_currentFrameIndex].commandBuffer()->waitUntilFinished();
+            //_frames[_currentFrameIndex].commandBuffer()->waitUntilFinished();
+            auto fence = currentImageAcquiredFence();
+            vkWaitForFences(VulkanLib::card()->device(),1,&fence,true,100000000);
+            vkResetFences(VulkanLib::card()->device(),1,&fence);
 
             auto result = vkAcquireNextImageKHR(VulkanLib::card()->device(), _swapchain, 100000000, _imageAcquiredSemaphores[_currentSemaphoreIndex], nullptr, &_currentFrameIndex);
 
@@ -179,6 +193,36 @@ namespace slag
             }
 
             return &_frames[_currentFrameIndex];
+        }
+
+        Frame* VulkanSwapchain::nextIfReady()
+        {
+            if(_width == 0 || _height == 0)
+            {
+                return nullptr;
+            }
+
+            auto fence = currentImageAcquiredFence();
+            if(vkGetFenceStatus(VulkanLib::card()->device(),fence) == VK_SUCCESS)
+            {
+                vkResetFences(VulkanLib::card()->device(),1,&fence);
+
+                auto result = vkAcquireNextImageKHR(VulkanLib::card()->device(), _swapchain, 100000000, _imageAcquiredSemaphores[_currentSemaphoreIndex], nullptr, &_currentFrameIndex);
+
+
+                if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _needsRebuild)
+                {
+                    rebuild();
+                    vkAcquireNextImageKHR(VulkanLib::card()->device(), _swapchain, 100000000, _imageAcquiredSemaphores[_currentSemaphoreIndex], nullptr, &_currentFrameIndex);
+                }
+                else if(result != VK_SUCCESS)
+                {
+                    throw std::runtime_error("unable to acquire next frame");
+                }
+
+                return &_frames[_currentFrameIndex];
+            }
+            return nullptr;
         }
 
         Frame* VulkanSwapchain::currentFrame()
@@ -248,6 +292,11 @@ namespace slag
         VkSemaphore VulkanSwapchain::currentImageAcquiredSemaphore()
         {
             return _imageAcquiredSemaphores[_currentSemaphoreIndex];
+        }
+
+        VkFence VulkanSwapchain::currentImageAcquiredFence()
+        {
+            return _imageAcquiredFences[_currentSemaphoreIndex];
         }
 
         void VulkanSwapchain::finishedFrame()

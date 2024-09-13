@@ -19,6 +19,7 @@ namespace slag
             VulkanSwapchain(VulkanSwapchain&& from);
             VulkanSwapchain& operator=(VulkanSwapchain&& from);
             Frame* next()override;
+            Frame* nextIfReady()override;
             Frame* currentFrame()override;
             uint8_t currentFrameIndex()override;
             uint8_t backBuffers()override;
@@ -35,6 +36,7 @@ namespace slag
             bool needsRebuild();
             VkSwapchainKHR vulkanSwapchain();
             VkSemaphore currentImageAcquiredSemaphore();
+            VkFence currentImageAcquiredFence();
             void finishedFrame();
         private:
             void move(VulkanSwapchain&& from);
@@ -53,6 +55,7 @@ namespace slag
             bool _needsRebuild=false;
             std::vector<VulkanFrame> _frames;
             std::vector<VkSemaphore> _imageAcquiredSemaphores;
+            std::vector<VkFence> _imageAcquiredFences;
         };
 
     } // vulkan

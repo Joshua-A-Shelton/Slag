@@ -12,7 +12,7 @@ using namespace slag;
 
 TEST(Swapchain, Creation)
 {
-    SDL_Init(SDL_INIT_EVERYTHING);
+
     SDL_WindowFlags flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
     auto window = SDL_CreateWindow("Hello, Slag",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,500,500,flags);
 
@@ -55,4 +55,80 @@ TEST(Swapchain, Creation)
     delete swapchain;
 
     SDL_DestroyWindow(window);
+}
+
+TEST(Swapchain, NextIfReady)
+{
+    SDL_WindowFlags flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+    auto window = SDL_CreateWindow("Hello, Slag",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,500,500,flags);
+
+
+    slag::PlatformData pd{};
+
+    SDL_SysWMinfo wmInfo;
+    SDL_VERSION(&wmInfo.version);
+    SDL_GetWindowWMInfo(window, &wmInfo);
+#ifdef _WIN32
+    pd.nativeWindowHandle = wmInfo.info.win.window;
+    pd.nativeDisplayType = wmInfo.info.win.hinstance;
+#elif __linux
+    pd.nativeWindowHandle = reinterpret_cast<void*>(wmInfo.info.x11.window);
+    pd.nativeDisplayType = wmInfo.info.x11.display;
+#endif
+
+    auto swapchain = Swapchain::newSwapchain(pd,500,500,2,Swapchain::PresentMode::Sequential,Pixels::Format::B8G8R8A8_UNORM_SRGB);
+    int frameCount = 0;
+    int i=0;
+    for(;; i++)
+    {
+        if(auto frame = swapchain->nextIfReady())
+        {
+            frame->begin();
+
+            size_t thing = swapchain->currentFrameIndex();
+            auto cb = frame->commandBuffer();
+            ImageBarrier barrier{.texture=frame->backBuffer(),.oldLayout=Texture::Layout::UNDEFINED, .newLayout = Texture::Layout::TRANSFER_DESTINATION};
+            cb->insertBarriers(&barrier,1, nullptr,0);
+            cb->clearColorImage(frame->backBuffer(), {.uints={255, 0, 0, 255}}, Texture::Layout::TRANSFER_DESTINATION);
+            barrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
+            barrier.newLayout = Texture::Layout::PRESENT;
+            cb->insertBarriers(&barrier,1, nullptr,0);
+            frame->end();
+            frameCount++;
+        }
+        if(frameCount > 16 || i == INT_MAX)
+        {
+            break;
+        }
+    }
+    int j=0;
+    int frameCount2=0;
+    for(;; j++)
+    {
+        if(auto frame = swapchain->next())
+        {
+            frame->begin();
+
+            size_t thing = swapchain->currentFrameIndex();
+            auto cb = frame->commandBuffer();
+            ImageBarrier barrier{.texture=frame->backBuffer(),.oldLayout=Texture::Layout::UNDEFINED, .newLayout = Texture::Layout::TRANSFER_DESTINATION};
+            cb->insertBarriers(&barrier,1, nullptr,0);
+            cb->clearColorImage(frame->backBuffer(), {.uints={255, 0, 0, 255}}, Texture::Layout::TRANSFER_DESTINATION);
+            barrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
+            barrier.newLayout = Texture::Layout::PRESENT;
+            cb->insertBarriers(&barrier,1, nullptr,0);
+            frame->end();
+            frameCount2++;
+        }
+        if(frameCount2 >16 || j == INT_MAX)
+        {
+            break;
+        }
+    }
+    delete swapchain;
+
+    SDL_DestroyWindow(window);
+
+    GTEST_ASSERT_GE(i,frameCount);
+    GTEST_ASSERT_EQ(j,frameCount2-1);
 }

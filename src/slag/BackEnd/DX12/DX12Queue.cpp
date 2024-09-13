@@ -114,5 +114,10 @@ namespace slag
                 _queue->Signal(semaphore->fence(),signalSemaphores[i].value);
             }
         }
+
+        ID3D12CommandQueue* DX12Queue::underlyingQueue()
+        {
+            return _queue;
+        }
     } // dx
 } // slag

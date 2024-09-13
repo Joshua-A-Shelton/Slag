@@ -2,6 +2,9 @@
 #include "DX12Environment.h"
 #include "VulkanEnvironment.h"
 #include <slag/SlagLib.h>
+#define SDL_MAIN_HANDLED
+#include <SDL.h>
+
 int main(int argc, char **argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
@@ -31,6 +34,7 @@ int main(int argc, char **argv)
     {
         ::testing::AddGlobalTestEnvironment(new slag::tests::DX12Environment());
     }
+    SDL_Init(SDL_INIT_EVERYTHING);
     auto run = RUN_ALL_TESTS();
     return run;
 }

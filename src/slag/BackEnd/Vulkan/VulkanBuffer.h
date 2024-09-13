@@ -20,8 +20,9 @@ namespace slag
             VulkanBuffer& operator=(const VulkanBuffer&)=delete;
             VulkanBuffer(VulkanBuffer&& from);
             VulkanBuffer& operator=(VulkanBuffer&& from);
-            void* gpuID();
+            void* gpuID()override;
             void update(size_t offset, void* data, size_t dataLength)override;
+            std::vector<std::byte> downloadData()override;
             size_t size()override;
             Accessibility accessibility()override;
             VkBuffer underlyingBuffer();
@@ -29,6 +30,8 @@ namespace slag
             void move(VulkanBuffer&& from);
             void updateCPU(size_t offset, void* data, size_t dataLength);
             void updateGPU(size_t offset, void* data, size_t dataLength);
+            std::vector<std::byte> downloadDataCPU();
+            std::vector<std::byte> downloadDataGPU();
             VkBuffer _buffer= nullptr;
             size_t _size = 0;
             VmaAllocation _allocation = nullptr;
