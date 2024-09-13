@@ -56,41 +56,14 @@ namespace slag
             return _commandBuffer;
         }
 
-        void VulkanFrame::begin()
+        VulkanSwapchain* VulkanFrame::from()
         {
-            _commandBuffer->begin();
+            return _from;
         }
 
-        void VulkanFrame::end()
+        VkSemaphore VulkanFrame::commandsFinishedSemaphore()
         {
-            _commandBuffer->end();
-            dynamic_cast<VulkanQueue*>(VulkanLib::card()->graphicsQueue())->submit(_commandBuffer,_from->currentImageAcquiredSemaphore(),_commandsFinished);
-            auto swapchain = _from->vulkanSwapchain();
-            VkPresentInfoKHR presentInfo{};
-            presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-            presentInfo.pImageIndices = &_imageIndex;
-            presentInfo.waitSemaphoreCount = 1;
-            presentInfo.pWaitSemaphores = &_commandsFinished;
-            presentInfo.pSwapchains = &swapchain;
-            presentInfo.swapchainCount = 1;
-
-            auto frameFinished = _from->currentImageAcquiredFence();
-            VkSwapchainPresentFenceInfoEXT fenceInfo{};
-            fenceInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT;
-            fenceInfo.swapchainCount = 1;
-            fenceInfo.pFences = &frameFinished;
-
-            presentInfo.pNext = &fenceInfo;
-
-            auto result = vkQueuePresentKHR(dynamic_cast<VulkanQueue*>(VulkanLib::card()->graphicsQueue())->underlyingQueue(),&presentInfo);
-            _from->finishedFrame();
-            if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _from->needsRebuild())
-            {
-                _from->rebuild();
-            }
-            else if (result != VK_SUCCESS) {
-                throw std::runtime_error("failed to present swap chain image!");
-            }
+            return _commandsFinished;
         }
 
     } // vulkan

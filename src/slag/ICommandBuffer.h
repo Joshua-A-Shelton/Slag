@@ -4,12 +4,12 @@
 #include "GpuQueue.h"
 #include "Clear.h"
 #include "GpuMemoryBarriers.h"
-#include "Texture.h"
-#include "Buffer.h"
 #include "Rectangle.h"
 
 namespace slag
 {
+    class Texture;
+    class Buffer;
     class ICommandBuffer
     {
     public:

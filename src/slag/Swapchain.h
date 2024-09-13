@@ -1,8 +1,10 @@
 #ifndef SLAG_SWAPCHAIN_H
 #define SLAG_SWAPCHAIN_H
 
+#include <cstdint>
 #include "Frame.h"
 #include "PlatformData.h"
+#include "Pixel.h"
 
 namespace slag
 {

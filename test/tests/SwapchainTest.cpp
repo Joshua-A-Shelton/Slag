@@ -37,17 +37,18 @@ TEST(Swapchain, Creation)
     {
         if(auto frame = swapchain->next())
         {
-            frame->begin();
-
-            size_t thing = swapchain->currentFrameIndex();
             auto cb = frame->commandBuffer();
+            cb->begin();
+
             ImageBarrier barrier{.texture=frame->backBuffer(),.oldLayout=Texture::Layout::UNDEFINED, .newLayout = Texture::Layout::TRANSFER_DESTINATION};
             cb->insertBarriers(&barrier,1, nullptr,0);
-            cb->clearColorImage(frame->backBuffer(), {.uints={255, 0, 0, 255}}, Texture::Layout::TRANSFER_DESTINATION);
+            cb->clearColorImage(frame->backBuffer(), {.floats={1, 0, 0, 1}}, Texture::Layout::TRANSFER_DESTINATION);
             barrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
             barrier.newLayout = Texture::Layout::PRESENT;
             cb->insertBarriers(&barrier,1, nullptr,0);
-            frame->end();
+            cb->end();
+            SlagLib::graphicsCard()->graphicsQueue()->submit(&cb,1, nullptr,0, nullptr,0,frame);
+
         }
     }
     Uint64 totalEnd = SDL_GetPerformanceCounter();
@@ -83,17 +84,19 @@ TEST(Swapchain, NextIfReady)
     {
         if(auto frame = swapchain->nextIfReady())
         {
-            frame->begin();
-
-            size_t thing = swapchain->currentFrameIndex();
             auto cb = frame->commandBuffer();
+            cb->begin();
+
+
             ImageBarrier barrier{.texture=frame->backBuffer(),.oldLayout=Texture::Layout::UNDEFINED, .newLayout = Texture::Layout::TRANSFER_DESTINATION};
             cb->insertBarriers(&barrier,1, nullptr,0);
-            cb->clearColorImage(frame->backBuffer(), {.uints={255, 0, 0, 255}}, Texture::Layout::TRANSFER_DESTINATION);
+            cb->clearColorImage(frame->backBuffer(), {.floats={0, 1, 0, 1}}, Texture::Layout::TRANSFER_DESTINATION);
             barrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
             barrier.newLayout = Texture::Layout::PRESENT;
             cb->insertBarriers(&barrier,1, nullptr,0);
-            frame->end();
+            cb->end();
+            SlagLib::graphicsCard()->graphicsQueue()->submit(&cb,1, nullptr,0, nullptr,0,frame);
+
             frameCount++;
         }
         if(frameCount > 16 || i == INT_MAX)
@@ -107,17 +110,18 @@ TEST(Swapchain, NextIfReady)
     {
         if(auto frame = swapchain->next())
         {
-            frame->begin();
-
-            size_t thing = swapchain->currentFrameIndex();
             auto cb = frame->commandBuffer();
+            cb->begin();
+
             ImageBarrier barrier{.texture=frame->backBuffer(),.oldLayout=Texture::Layout::UNDEFINED, .newLayout = Texture::Layout::TRANSFER_DESTINATION};
             cb->insertBarriers(&barrier,1, nullptr,0);
-            cb->clearColorImage(frame->backBuffer(), {.uints={255, 0, 0, 255}}, Texture::Layout::TRANSFER_DESTINATION);
+            cb->clearColorImage(frame->backBuffer(), {.floats={0, 0, 1, 1}}, Texture::Layout::TRANSFER_DESTINATION);
             barrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
             barrier.newLayout = Texture::Layout::PRESENT;
             cb->insertBarriers(&barrier,1, nullptr,0);
-            frame->end();
+
+            cb->end();
+            SlagLib::graphicsCard()->graphicsQueue()->submit(&cb,1, nullptr,0, nullptr,0,frame);
             frameCount2++;
         }
         if(frameCount2 >16 || j == INT_MAX)

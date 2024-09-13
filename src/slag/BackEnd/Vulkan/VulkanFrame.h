@@ -21,9 +21,9 @@ namespace slag
             VulkanFrame& operator=(VulkanFrame&& from);
             Texture* backBuffer()override;
             CommandBuffer* commandBuffer()override;
-            void begin()override;
-            void end()override;
 
+            VulkanSwapchain* from();
+            VkSemaphore commandsFinishedSemaphore();
             friend class VulkanSwapchain;
 
         private:

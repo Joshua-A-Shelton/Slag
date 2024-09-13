@@ -19,8 +19,7 @@ namespace slag
             DX12Frame& operator=(DX12Frame&& from);
             Texture* backBuffer()override;
             CommandBuffer* commandBuffer()override;
-            void begin()override;
-            void end()override;
+
         private:
             void move(DX12Frame&& from);
             DX12Texture* _backBuffer = nullptr;

@@ -48,7 +48,7 @@ namespace slag
             std::swap(_from, from._from);
         }
 
-        void DX12Frame::begin()
+        /*void DX12Frame::begin()
         {
             _commandBuffer->begin();
         }
@@ -60,6 +60,6 @@ namespace slag
             _commandBuffer->waitUntilFinished();
             //TODO: this may depend on the present mode
             _from->underlyingSwapchain()->Present(0,0);
-        }
+        }*/
     } // dx
 } // slag

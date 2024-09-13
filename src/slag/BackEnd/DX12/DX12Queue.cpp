@@ -115,9 +115,15 @@ namespace slag
             }
         }
 
+        void DX12Queue::submit(CommandBuffer** commandBuffers, size_t bufferCount, SemaphoreValue* waitOnSemaphores, size_t waitCount, SemaphoreValue* signalSemaphores, size_t signalCount, Frame* presentFrame)
+        {
+            throw std::runtime_error("not implemented");
+        }
+
         ID3D12CommandQueue* DX12Queue::underlyingQueue()
         {
             return _queue;
         }
+
     } // dx
 } // slag

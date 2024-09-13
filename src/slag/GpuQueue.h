@@ -2,6 +2,8 @@
 #define SLAG_GPUQUEUE_H
 
 #include "Semaphore.h"
+#include "Frame.h"
+
 namespace slag
 {
 
@@ -35,6 +37,9 @@ namespace slag
         virtual void submit(CommandBuffer** commandBuffers, size_t bufferCount, SemaphoreValue& signalFinished, bool forceDependency)=0;
 
         virtual void submit(CommandBuffer** commandBuffers, size_t bufferCount, SemaphoreValue* waitOnSemaphores, size_t waitCount, SemaphoreValue* signalSemaphores, size_t signalCount)=0;
+
+        //Frame Submits
+        virtual void submit(CommandBuffer** commandBuffers, size_t bufferCount, SemaphoreValue* waitOnSemaphores, size_t waitCount, SemaphoreValue* signalSemaphores, size_t signalCount, Frame* presentFrame)=0;
 
         virtual QueueType type()=0;
     };
