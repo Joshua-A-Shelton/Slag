@@ -4,7 +4,7 @@
 #include "../../Resources/ResourceConsumer.h"
 #include "IDX12CommandBuffer.h"
 #include "DX12Semaphore.h"
-#include <d3d12.h>
+#include <directx/d3d12.h>
 namespace slag
 {
     namespace dx

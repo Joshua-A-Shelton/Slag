@@ -1,6 +1,6 @@
 #ifndef SLAG_DX12SWAPCHAIN_H
 #define SLAG_DX12SWAPCHAIN_H
-#include <d3d12.h>
+#include <directx/d3d12.h>
 #include <dxgi1_5.h>
 #include <wrl/client.h>
 #include "../../Swapchain.h"
@@ -38,7 +38,7 @@ namespace slag
             PresentMode _presentMode = PresentMode::Discard;
             DXGI_FORMAT _format;
 
-            std::vector<Frame> _frames;
+            std::vector<DX12Frame> _frames;
         };
 
     } // dx

@@ -136,6 +136,15 @@ namespace slag
             return flags;
         }
 
+        VkAccessFlags VulkanLib::accessFlags(BarrierAccess barrierAccess)
+        {
+            VkAccessFlags flags = 0;
+#define DEFINITION(slagName, slagValue, vulkanName, dirextXName) if(barrierAccess & slagName){flags |= vulkanName;}
+            MEMORY_BARRIER_ACCESS_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            return flags;
+        }
+
         VulkanLib::VulkanLib(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VulkanGraphicsCard* card)
         {
             _instance = instance;
@@ -264,6 +273,7 @@ namespace slag
 
             return new VulkanBuffer(bufferSize,accessibility,usageFlags, false);
         }
+
 
     } // vulkan
 } // slag

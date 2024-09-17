@@ -1,5 +1,8 @@
 #include "IDX12CommandBuffer.h"
 #include "DX12Buffer.h"
+#include "DX12Texture.h"
+#include "DX12Buffer.h"
+#include "DX12Lib.h"
 
 namespace slag
 {
@@ -17,6 +20,20 @@ namespace slag
 
         void IDX12CommandBuffer::insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount)
         {
+            /*std::vector<D3D12_RESOURCE_BARRIER> barriers(imageBarrierCount+bufferBarrierCount);
+            for(int i =0; i< imageBarrierCount; i++)
+            {
+                auto& barrier = imageBarriers[i];
+                auto image = dynamic_cast<DX12Texture*>(barrier.texture);
+                barriers[i] = CD3DX12_RESOURCE_BARRIER::Transition(image->texture(), DX12Lib::layout(barrier.oldLayout), DX12Lib::layout(barrier.newLayout));
+            }
+            for(int i=0; i< bufferBarrierCount; i++)
+            {
+                auto& barrier = bufferBarriers[i];
+                auto buffer = dynamic_cast<DX12Buffer*>(barrier.buffer);
+                barriers[imageBarrierCount+i] = CD3DX12_RESOURCE_BARRIER::Transition(buffer->underlyingBuffer(),D3D12_RESOURCE_STATE_GENERIC_READ,D3D12_RESOURCE_STATE_GENERIC_READ);
+            }
+            _buffer->*/
             throw std::runtime_error("not implemented");
         }
 

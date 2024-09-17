@@ -1,6 +1,6 @@
 #ifndef SLAG_DX12GRAPHICSCARD_H
 #define SLAG_DX12GRAPHICSCARD_H
-#include <d3d12.h>
+#include <directx/d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl/client.h>
 #include "../../GraphicsCard.h"

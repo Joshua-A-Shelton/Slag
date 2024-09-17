@@ -1,7 +1,7 @@
 #ifndef SLAG_DX12QUEUE_H
 #define SLAG_DX12QUEUE_H
 #include "../../GpuQueue.h"
-#include <d3d12.h>
+#include <directx/d3d12.h>
 namespace slag
 {
     namespace dx

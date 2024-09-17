@@ -22,6 +22,8 @@ namespace slag
                 pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
                 pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
                 pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
+                pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_INFO,TRUE);
+                pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_MESSAGE,TRUE);
 
                 // Suppress whole categories of messages
                 //D3D12_MESSAGE_CATEGORY Categories[] = {};
@@ -42,8 +44,8 @@ namespace slag
                 D3D12_INFO_QUEUE_FILTER NewFilter = {};
                 //NewFilter.DenyList.NumCategories = _countof(Categories);
                 //NewFilter.DenyList.pCategoryList = Categories;
-                NewFilter.DenyList.NumSeverities = _countof(Severities);
-                NewFilter.DenyList.pSeverityList = Severities;
+                NewFilter.DenyList.NumSeverities = 0;
+                NewFilter.DenyList.pSeverityList = nullptr;
                 NewFilter.DenyList.NumIDs = 0;
                 NewFilter.DenyList.pIDList = nullptr;
 

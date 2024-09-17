@@ -61,8 +61,8 @@ namespace slag
                 auto barrier = imageBarriers[i];
                 auto texture = dynamic_cast<VulkanTexture*>(barrier.texture);
                 vkbarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-                vkbarrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-                vkbarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+                vkbarrier.srcAccessMask = VulkanLib::accessFlags(barrier.accessBefore);
+                vkbarrier.dstAccessMask = VulkanLib::accessFlags(barrier.accessAfter);
                 vkbarrier.image = texture->image();
                 vkbarrier.oldLayout = VulkanLib::layout(barrier.oldLayout);
                 vkbarrier.newLayout = VulkanLib::layout(barrier.newLayout);
@@ -70,6 +70,17 @@ namespace slag
 
             }
             std::vector<VkBufferMemoryBarrier> bufferMemoryBarriers(bufferBarrierCount,VkBufferMemoryBarrier{});
+            for(auto i=0; i< bufferBarrierCount; i++)
+            {
+                auto& bufferBarrier = bufferMemoryBarriers[i];
+                auto bufferBarrierDesc = bufferBarriers[i];
+                auto buffer = dynamic_cast<VulkanBuffer*>(bufferBarrierDesc.buffer);
+                bufferBarrier.buffer = buffer->underlyingBuffer();
+                bufferBarrier.srcAccessMask = VulkanLib::accessFlags(bufferBarrierDesc.accessBefore);
+                bufferBarrier.dstAccessMask = VulkanLib::accessFlags(bufferBarrierDesc.accessAfter);
+                bufferBarrier.offset = bufferBarrierDesc.offset;
+                bufferBarrier.size = bufferBarrierDesc.size != 0 ? bufferBarrierDesc.size : VK_WHOLE_SIZE;
+            }
             vkCmdPipelineBarrier(_buffer,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,0,0,nullptr,bufferBarrierCount,bufferMemoryBarriers.data(),imageBarrierCount,imageMemoryBarriers.data());
         }
 

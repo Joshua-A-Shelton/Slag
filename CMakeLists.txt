@@ -3,10 +3,6 @@ project(Slag)
 
 set(CMAKE_CXX_STANDARD 20)
 
-
-
-
-
 OPTION(SLAG_VULKAN_BACKEND "Include Vulkan backend" ON)
 OPTION(SLAG_DX12_BACKEND "Include DX12 backend" ON)
 if(NOT WIN32)
@@ -130,14 +126,16 @@ if(SLAG_VULKAN_BACKEND)
     target_link_libraries(Slag ${Vulkan_LIBRARIES} vk-bootstrap GPUOpen::VulkanMemoryAllocator spirv-reflect-static)
 endif()
 if(SLAG_DX12_BACKEND)
-    add_subdirectory(third-party/d3dma)
+
     add_subdirectory(third-party/dx12-headers)
-    target_link_libraries(Slag d3d12.lib dxgi.lib d3dcompiler.lib dxguid.lib D3D12MemoryAllocator)
+    add_subdirectory(third-party/d3dma)
+    target_include_directories(Slag SYSTEM BEFORE PUBLIC DirectX-Headers)
+    target_link_libraries(Slag DirectX-Headers D3D12MemoryAllocator)
 endif()
 
 
-OPTION(BUILD_VULKAN_TESTS "Build tests" ON)
-if(BUILD_VULKAN_TESTS)
+OPTION(BUILD_SLAG_TESTS "Build tests" ON)
+if(BUILD_SLAG_TESTS)
     find_package(SDL2 REQUIRED)
     message("building tests")
     include(FetchContent)

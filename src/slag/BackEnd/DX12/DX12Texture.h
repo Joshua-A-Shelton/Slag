@@ -1,7 +1,7 @@
 #ifndef SLAG_DX12TEXTURE_H
 #define SLAG_DX12TEXTURE_H
 
-#include <d3d12.h>
+#include <directx/d3d12.h>
 #include "../../Texture.h"
 #include "../../Resources/Resource.h"
 #include "DX12CommandBuffer.h"

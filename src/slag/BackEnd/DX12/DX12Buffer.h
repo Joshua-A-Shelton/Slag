@@ -1,7 +1,7 @@
 #ifndef SLAG_DX12BUFFER_H
 #define SLAG_DX12BUFFER_H
 
-#include <d3d12.h>
+#include <directx/d3d12.h>
 #include "../../Buffer.h"
 #include "../../Resources/Resource.h"
 #include "D3D12MemAlloc.h"

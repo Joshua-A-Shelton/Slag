@@ -1,6 +1,6 @@
 #ifndef SLAG_DX12LIB_H
 #define SLAG_DX12LIB_H
-#include <d3d12.h>
+#include <directx/d3d12.h>
 #include "DX12GraphicsCard.h"
 #include "../BackEndLib.h"
 

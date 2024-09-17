@@ -13,7 +13,10 @@ using namespace slag;
 TEST(Swapchain, PresentModes)
 {
 
-    SDL_WindowFlags flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+    SDL_WindowFlags flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE);
+#ifndef _WIN32
+    flags |= static_cast<SDL_WindowFlags>(SDL_VULKAN);
+#endif
     auto window = SDL_CreateWindow("Hello, Slag",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,500,500,flags);
 
 
@@ -30,8 +33,7 @@ TEST(Swapchain, PresentModes)
     pd.nativeDisplayType = wmInfo.info.x11.display;
 #endif
 
-    auto swapchain = Swapchain::newSwapchain(pd,500,500,3,Swapchain::PresentMode::Discard,Pixels::Format::B8G8R8A8_UNORM_SRGB);
-    std::cout.flush();
+    auto swapchain = Swapchain::newSwapchain(pd,500,500,3,Swapchain::PresentMode::Discard,Pixels::Format::B8G8R8A8_UNORM);
     Uint64 totalStart = SDL_GetPerformanceCounter();
     for(int i=0; i< 300; i++)
     {
@@ -103,7 +105,7 @@ TEST(Swapchain, NextIfReady)
     pd.nativeDisplayType = wmInfo.info.x11.display;
 #endif
 
-    auto swapchain = Swapchain::newSwapchain(pd,500,500,2,Swapchain::PresentMode::Sequential,Pixels::Format::B8G8R8A8_UNORM_SRGB);
+    auto swapchain = Swapchain::newSwapchain(pd,500,500,2,Swapchain::PresentMode::Sequential,Pixels::Format::B8G8R8A8_UNORM);
     int frameCount = 0;
     int i=0;
     for(;; i++)
