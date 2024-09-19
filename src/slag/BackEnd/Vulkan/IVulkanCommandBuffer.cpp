@@ -55,7 +55,7 @@ namespace slag
         void IVulkanCommandBuffer::insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount)
         {
             std::vector<VkImageMemoryBarrier2> imageMemoryBarriers(imageBarrierCount,VkImageMemoryBarrier2{});
-            for(int i=0; i< imageBarrierCount; i++)
+            for(size_t i=0; i< imageBarrierCount; i++)
             {
                 auto& vkbarrier = imageMemoryBarriers[i];
                 auto barrier = imageBarriers[i];
@@ -72,7 +72,7 @@ namespace slag
 
             }
             std::vector<VkBufferMemoryBarrier2> bufferMemoryBarriers(bufferBarrierCount,VkBufferMemoryBarrier2{});
-            for(auto i=0; i< bufferBarrierCount; i++)
+            for(size_t i=0; i< bufferBarrierCount; i++)
             {
                 auto& bufferBarrier = bufferMemoryBarriers[i];
                 auto bufferBarrierDesc = bufferBarriers[i];
@@ -86,9 +86,27 @@ namespace slag
                 bufferBarrier.srcStageMask = std::bit_cast<VkPipelineStageFlags>(bufferBarrierDesc.syncBefore);
                 bufferBarrier.dstStageMask = std::bit_cast<VkPipelineStageFlags>(bufferBarrierDesc.syncAfter);
             }
-            throw std::runtime_error("finish pipeline stage implementation for barriers");
-            /*vkCmdPipelineBarrier2();
-            vkCmdPipelineBarrier(_buffer,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,0,0,nullptr,bufferBarrierCount,bufferMemoryBarriers.data(),imageBarrierCount,imageMemoryBarriers.data());*/
+            std::vector<VkMemoryBarrier2> memBarriers(memoryBarrierCount,VkMemoryBarrier2{});
+            for(size_t i=0; i< memoryBarrierCount; i++)
+            {
+                auto& memoryBarrier = memBarriers[i];
+                auto& memoryBarrierDesc = memoryBarriers[i];
+                memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
+                memoryBarrier.srcAccessMask = std::bit_cast<VkAccessFlags>(memoryBarrierDesc.accessBefore);
+                memoryBarrier.dstAccessMask = std::bit_cast<VkAccessFlags>(memoryBarrierDesc.accessAfter);
+                memoryBarrier.srcStageMask = std::bit_cast<VkPipelineStageFlags>(memoryBarrierDesc.syncBefore);
+                memoryBarrier.dstStageMask = std::bit_cast<VkPipelineStageFlags>(memoryBarrierDesc.syncAfter);
+            }
+            VkDependencyInfo dependencyInfo{};
+            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+            //dependencyInfo.dependencyFlags = ;
+            dependencyInfo.memoryBarrierCount = memoryBarrierCount;
+            dependencyInfo.pMemoryBarriers = memBarriers.data();
+            dependencyInfo.bufferMemoryBarrierCount = bufferBarrierCount;
+            dependencyInfo.pBufferMemoryBarriers = bufferMemoryBarriers.data();
+            dependencyInfo.imageMemoryBarrierCount = imageBarrierCount;
+            dependencyInfo.pImageMemoryBarriers = imageMemoryBarriers.data();
+            vkCmdPipelineBarrier2(_buffer,&dependencyInfo);
         }
 
         void IVulkanCommandBuffer::copyBuffer(Buffer* source, size_t sourceOffset, size_t length, Buffer* destination, size_t destinationOffset)
