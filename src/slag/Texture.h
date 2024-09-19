@@ -15,10 +15,10 @@ DEFINITION(PRESENT,VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,D3D12_BARRIER_LAYOUT_PRESENT)
 
 //Technically, other options are defined, but I'm sticking with these for now
 #define TEXTURE_USAGE_DEFINITIONS(DEFINITION) \
-DEFINITION(SAMPLED_IMAGE,0b00000001,VK_IMAGE_USAGE_SAMPLED_BIT,0) \
-DEFINITION(STORAGE,0b00000010,VK_IMAGE_USAGE_STORAGE_BIT,D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)  \
-DEFINITION(RENDER_TARGET_ATTACHMENT,0b00000100,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) \
-DEFINITION(DEPTH_STENCIL_ATTACHMENT,0b00001000,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) \
+DEFINITION(SAMPLED_IMAGE,VK_IMAGE_USAGE_SAMPLED_BIT,0) \
+DEFINITION(STORAGE,VK_IMAGE_USAGE_STORAGE_BIT,D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)  \
+DEFINITION(RENDER_TARGET_ATTACHMENT,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) \
+DEFINITION(DEPTH_STENCIL_ATTACHMENT,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) \
 
 #include "Pixel.h"
 #include "Color.h"
@@ -26,16 +26,57 @@ DEFINITION(DEPTH_STENCIL_ATTACHMENT,0b00001000,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTA
 
 namespace slag
 {
+    class TextureUsage
+    {
+    private:
+        int _value;
+        TextureUsage(int val){_value=val;}
+    public:
+        friend class TextureUsageFlags;
+
+        TextureUsage operator| (TextureUsage b) const
+        {
+            return TextureUsage(_value | b._value);
+        }
+
+        TextureUsage& operator |=(TextureUsage b)
+        {
+            _value = _value|b._value;
+            return *this;
+        }
+
+        TextureUsage operator&(TextureUsage b) const
+        {
+            return TextureUsage(_value & b._value);
+        }
+
+        TextureUsage& operator&=(TextureUsage b)
+        {
+            _value = _value&b._value;
+            return *this;
+        }
+
+        TextureUsage operator~() const
+        {
+            return TextureUsage(~_value);
+        }
+    };
+
+    class TextureUsageFlags
+    {
+    private:
+#define DEFINITION(slagName, vulkanName, dirextXName) inline static TextureUsage _##slagName = TextureUsage(0);
+        TEXTURE_USAGE_DEFINITIONS(DEFINITION)
+#undef DEFINITION
+    public:
+#define DEFINITION(slagName, vulkanName, dirextXName) inline static const TextureUsage& slagName = _##slagName; /***Only use this if you *REALLY* know what you're doing, will override underlying library value for flag*/ static void set##slagName##Value(int value){_##slagName._value = value;}
+        TEXTURE_USAGE_DEFINITIONS(DEFINITION)
+#undef DEFINITION
+    };
 
     class Texture
     {
     public:
-        enum Usage
-        {
-#define DEFINITION(slagName, slagValue, vulkanName, dirextXName) slagName = slagValue,
-            TEXTURE_USAGE_DEFINITIONS(DEFINITION)
-#undef DEFINITION
-        };
         enum Layout
         {
 #define DEFINITION(slagName, vulkanName, directXName) slagName,
@@ -49,10 +90,10 @@ namespace slag
         virtual uint32_t height()=0;
         virtual uint32_t mipLevels()=0;
 
-        static Texture* newTexture(void* data, size_t dataSize, Pixels::Format dataFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Usage usage, Layout initializedLayout, bool generateMipMaps);
-        static Texture* newTexture(void* data, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Usage usage, Layout initializedLayout, bool generateMipMaps);
-        static Texture* newTexture(const std::filesystem::path& imagePath, Pixels::Format textureFormat, uint32_t mipLevels, Usage usage, Layout initializedLayout, bool generateMipMaps);
-        static Texture* newTexture(Color* colorArray, size_t colorCount, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Usage usage, Layout initializedLayout, bool generateMipMaps);
+        static Texture* newTexture(void* data, size_t dataSize, Pixels::Format dataFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage usage, Layout initializedLayout, bool generateMipMaps);
+        static Texture* newTexture(void* data, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage usage, Layout initializedLayout, bool generateMipMaps);
+        static Texture* newTexture(const std::filesystem::path& imagePath, Pixels::Format textureFormat, uint32_t mipLevels, TextureUsage usage, Layout initializedLayout, bool generateMipMaps);
+        static Texture* newTexture(Color* colorArray, size_t colorCount, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage usage, Layout initializedLayout, bool generateMipMaps);
     };
 
 } // slag

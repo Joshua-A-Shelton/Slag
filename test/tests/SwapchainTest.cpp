@@ -42,11 +42,13 @@ TEST(Swapchain, PresentModes)
             auto cb = frame->commandBuffer();
             cb->begin();
 
-            ImageBarrier barrier{.texture=frame->backBuffer(),.oldLayout=Texture::Layout::UNDEFINED, .newLayout = Texture::Layout::TRANSFER_DESTINATION};
+            ImageBarrier barrier{.texture=frame->backBuffer(),.oldLayout=Texture::Layout::UNDEFINED, .newLayout = Texture::Layout::TRANSFER_DESTINATION,.syncBefore=PipelineStageFlags::ALL_COMMANDS,.syncAfter=PipelineStageFlags::TRANSFER};
             cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
             cb->clearColorImage(frame->backBuffer(), {.floats={1, 0, 0, 1}}, Texture::Layout::TRANSFER_DESTINATION);
             barrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
             barrier.newLayout = Texture::Layout::PRESENT;
+            barrier.syncBefore = PipelineStageFlags::TRANSFER;
+            barrier.syncAfter = PipelineStageFlags::ALL_COMMANDS;
             cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
             cb->end();
             SlagLib::graphicsCard()->graphicsQueue()->submit(&cb,1, nullptr,0, nullptr,0,frame);

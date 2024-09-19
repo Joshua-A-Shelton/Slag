@@ -62,7 +62,7 @@ namespace slag
                     }
                 }
             }
-
+            mapFlags();
             auto card = new DX12GraphicsCard(dxgiAdapter4,dxgiFactory);
             return new DX12Lib(card);
         }
@@ -102,37 +102,6 @@ namespace slag
             return  D3D12_BARRIER_LAYOUT_UNDEFINED;
         }
 
-        D3D12_RESOURCE_FLAGS DX12Lib::usage(Texture::Usage texUsage)
-        {
-            D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
-            if(!(texUsage & Texture::SAMPLED_IMAGE))
-            {
-                flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
-            }
-            if(texUsage & Texture::STORAGE)
-            {
-                flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-            }
-            if(texUsage & Texture::RENDER_TARGET_ATTACHMENT)
-            {
-                flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-            }
-            if(texUsage & Texture::DEPTH_STENCIL_ATTACHMENT)
-            {
-                flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-            }
-            return flags;
-        }
-
-        D3D12_BARRIER_ACCESS DX12Lib::access(BarrierAccess barrierAccess)
-        {
-            D3D12_BARRIER_ACCESS flags = static_cast<D3D12_BARRIER_ACCESS>(0);
-#define DEFINITION(slagName, slagValue, vulkanName, directXName)  if (barrierAccess & slagName){ flags |= directXName;}
-            MEMORY_BARRIER_ACCESS_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-            return flags;
-        }
-
         DX12Lib* DX12Lib::get()
         {
             return dynamic_cast<DX12Lib*>(lib::BackEndLib::get());
@@ -151,6 +120,22 @@ namespace slag
         DX12Lib::~DX12Lib()
         {
             delete _graphicsCard;
+        }
+
+        void DX12Lib::mapFlags()
+        {
+
+#define DEFINITION(slagName, vulkanName, directXName) TextureUsageFlags::set##slagName##Value(static_cast<int>(directXName));
+            TEXTURE_USAGE_DEFINITIONS(DEFINITION)
+#undef DEFINITION
+
+#define DEFINITION(slagName, vulkanName, directXName) BarrierAccessFlags::set##slagName##Value(static_cast<int>(directXName));
+            MEMORY_BARRIER_ACCESS_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+
+#define DEFINITION(slagName, vulkanName, directXName) PipelineStageFlags::set##slagName##Value(static_cast<int>(directXName));
+            MEMORY_PIPELINE_STAGE_DEFINITIONS(DEFINITION)
+#undef DEFINITION
         }
 
         BackEnd DX12Lib::identifier()
@@ -173,14 +158,14 @@ namespace slag
             return _graphicsCard;
         }
 
-        Texture* DX12Lib::newTexture(void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage texUsage, Texture::Layout initializedLayout, bool generateMips)
+        Texture* DX12Lib::newTexture(void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage texUsage, Texture::Layout initializedLayout, bool generateMips)
         {
-            return new DX12Texture(texelData,dataSize, format(dataFormat), format(textureFormat),width, height, mipLevels,usage(texUsage), layout(initializedLayout),generateMips,false);
+            return new DX12Texture(texelData,dataSize, format(dataFormat), format(textureFormat),width, height, mipLevels,std::bit_cast<D3D12_RESOURCE_FLAGS>(texUsage), layout(initializedLayout),generateMips,false);
         }
 
-        Texture* DX12Lib::newTexture(CommandBuffer* onBuffer, void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage texUsage, Texture::Layout initializedLayout, bool generateMips)
+        Texture* DX12Lib::newTexture(CommandBuffer* onBuffer, void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage texUsage, Texture::Layout initializedLayout, bool generateMips)
         {
-            return new DX12Texture(dynamic_cast<DX12CommandBuffer*>(onBuffer),texelData,dataSize, format(dataFormat), format(textureFormat),width, height, mipLevels,usage(texUsage), layout(initializedLayout),generateMips,false);
+            return new DX12Texture(dynamic_cast<DX12CommandBuffer*>(onBuffer),texelData,dataSize, format(dataFormat), format(textureFormat),width, height, mipLevels,std::bit_cast<D3D12_RESOURCE_FLAGS>(texUsage), layout(initializedLayout),generateMips,false);
         }
 
         CommandBuffer* DX12Lib::newCommandBuffer(GpuQueue::QueueType acceptsCommands)

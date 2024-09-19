@@ -2,42 +2,42 @@
 #define SLAG_GPUMEMORYBARRIERS_H
 
 #define MEMORY_BARRIER_ACCESS_DEFINTITIONS(DEFINITION) \
-DEFINITION(AccessNone, 0b0000000000000000, VK_ACCESS_NONE , D3D12_BARRIER_ACCESS_NO_ACCESS) \
-DEFINITION(IndirectCommand, 0b0000000000000001, VK_ACCESS_INDIRECT_COMMAND_READ_BIT , D3D12_BARRIER_ACCESS_INDIRECT_ARGUMENT) \
-DEFINITION(Index, 0b0000000000000010, VK_ACCESS_INDEX_READ_BIT , D3D12_BARRIER_ACCESS_INDEX_BUFFER) \
-DEFINITION(VertexAttribute, 0b0000000000000100, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT , D3D12_BARRIER_ACCESS_VERTEX_BUFFER) \
-DEFINITION(Uniform, 0b0000000000001000, VK_ACCESS_UNIFORM_READ_BIT , D3D12_BARRIER_ACCESS_CONSTANT_BUFFER) \
-DEFINITION(InputAttachment, 0b0000000000010000, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT , D3D12_BARRIER_ACCESS_SHADER_RESOURCE) \
-DEFINITION(ShaderRead, 0b0000000000100000, VK_ACCESS_SHADER_READ_BIT , D3D12_BARRIER_ACCESS_UNORDERED_ACCESS) \
-DEFINITION(ShaderWrite, 0b0000000001000000, VK_ACCESS_SHADER_WRITE_BIT , D3D12_BARRIER_ACCESS_UNORDERED_ACCESS) \
-DEFINITION(ColorAttachmentRead, 0b0000000010000000, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT , D3D12_BARRIER_ACCESS_RENDER_TARGET) \
-DEFINITION(ColorAttachmentWrite, 0b0000000100000000, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT , D3D12_BARRIER_ACCESS_RENDER_TARGET) \
-DEFINITION(DepthStencilRead, 0b0000001000000000, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT , D3D12_BARRIER_ACCESS_DEPTH_STENCIL_READ) \
-DEFINITION(DepthStencilWrite, 0b0000010000000000, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT , D3D12_BARRIER_ACCESS_DEPTH_STENCIL_WRITE) \
-DEFINITION(TransferRead, 0b0000100000000000, VK_ACCESS_TRANSFER_READ_BIT , D3D12_BARRIER_ACCESS_COPY_SOURCE) \
-DEFINITION(TransferWrite, 0b0001000000000000, VK_ACCESS_TRANSFER_WRITE_BIT , D3D12_BARRIER_ACCESS_COPY_DEST) \
-DEFINITION(AllRead, 0b0010000000000000, VK_ACCESS_MEMORY_READ_BIT , D3D12_BARRIER_ACCESS_INDIRECT_ARGUMENT | D3D12_BARRIER_ACCESS_INDEX_BUFFER | D3D12_BARRIER_ACCESS_VERTEX_BUFFER | D3D12_BARRIER_ACCESS_CONSTANT_BUFFER | D3D12_BARRIER_ACCESS_SHADER_RESOURCE | D3D12_BARRIER_ACCESS_UNORDERED_ACCESS | D3D12_BARRIER_ACCESS_RENDER_TARGET | D3D12_BARRIER_ACCESS_COPY_SOURCE | D3D12_BARRIER_ACCESS_DEPTH_STENCIL_READ) \
-DEFINITION(AllWrite, 0b0100000000000000, VK_ACCESS_MEMORY_WRITE_BIT , D3D12_BARRIER_ACCESS_INDIRECT_ARGUMENT | D3D12_BARRIER_ACCESS_INDEX_BUFFER | D3D12_BARRIER_ACCESS_VERTEX_BUFFER | D3D12_BARRIER_ACCESS_CONSTANT_BUFFER | D3D12_BARRIER_ACCESS_SHADER_RESOURCE | D3D12_BARRIER_ACCESS_UNORDERED_ACCESS | D3D12_BARRIER_ACCESS_RENDER_TARGET | D3D12_BARRIER_ACCESS_DEPTH_STENCIL_WRITE | D3D12_BARRIER_ACCESS_COPY_DEST) \
+DEFINITION(NONE, VK_ACCESS_NONE , D3D12_BARRIER_ACCESS_NO_ACCESS) \
+DEFINITION(INDIRECT_COMMAND, VK_ACCESS_INDIRECT_COMMAND_READ_BIT , D3D12_BARRIER_ACCESS_INDIRECT_ARGUMENT) \
+DEFINITION(INDEX, VK_ACCESS_INDEX_READ_BIT , D3D12_BARRIER_ACCESS_INDEX_BUFFER) \
+DEFINITION(VERTEX_ATTRIBUTE, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT , D3D12_BARRIER_ACCESS_VERTEX_BUFFER) \
+DEFINITION(UNIFORM, VK_ACCESS_UNIFORM_READ_BIT , D3D12_BARRIER_ACCESS_CONSTANT_BUFFER) \
+DEFINITION(INPUT_ATTACHMENT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT , D3D12_BARRIER_ACCESS_SHADER_RESOURCE) \
+DEFINITION(SHADER_READ, VK_ACCESS_SHADER_READ_BIT , D3D12_BARRIER_ACCESS_UNORDERED_ACCESS) \
+DEFINITION(SHADER_WRITE, VK_ACCESS_SHADER_WRITE_BIT , D3D12_BARRIER_ACCESS_UNORDERED_ACCESS) \
+DEFINITION(COLOR_ATTACHMENT_READ, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT , D3D12_BARRIER_ACCESS_RENDER_TARGET) \
+DEFINITION(COLOR_ATTACHMENT_WRITE, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT , D3D12_BARRIER_ACCESS_RENDER_TARGET) \
+DEFINITION(DEPTH_STENCIL_READ, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT , D3D12_BARRIER_ACCESS_DEPTH_STENCIL_READ) \
+DEFINITION(DEPTH_STENCIL_WRITE, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT , D3D12_BARRIER_ACCESS_DEPTH_STENCIL_WRITE) \
+DEFINITION(TRANSFER_READ, VK_ACCESS_TRANSFER_READ_BIT , D3D12_BARRIER_ACCESS_COPY_SOURCE) \
+DEFINITION(TRANSFER_WRITE, VK_ACCESS_TRANSFER_WRITE_BIT , D3D12_BARRIER_ACCESS_COPY_DEST) \
+DEFINITION(ALL_READ, VK_ACCESS_MEMORY_READ_BIT , D3D12_BARRIER_ACCESS_INDIRECT_ARGUMENT | D3D12_BARRIER_ACCESS_INDEX_BUFFER | D3D12_BARRIER_ACCESS_VERTEX_BUFFER | D3D12_BARRIER_ACCESS_CONSTANT_BUFFER | D3D12_BARRIER_ACCESS_SHADER_RESOURCE | D3D12_BARRIER_ACCESS_UNORDERED_ACCESS | D3D12_BARRIER_ACCESS_RENDER_TARGET | D3D12_BARRIER_ACCESS_COPY_SOURCE | D3D12_BARRIER_ACCESS_DEPTH_STENCIL_READ) \
+DEFINITION(ALL_WRITE, VK_ACCESS_MEMORY_WRITE_BIT , D3D12_BARRIER_ACCESS_INDIRECT_ARGUMENT | D3D12_BARRIER_ACCESS_INDEX_BUFFER | D3D12_BARRIER_ACCESS_VERTEX_BUFFER | D3D12_BARRIER_ACCESS_CONSTANT_BUFFER | D3D12_BARRIER_ACCESS_SHADER_RESOURCE | D3D12_BARRIER_ACCESS_UNORDERED_ACCESS | D3D12_BARRIER_ACCESS_RENDER_TARGET | D3D12_BARRIER_ACCESS_DEPTH_STENCIL_WRITE | D3D12_BARRIER_ACCESS_COPY_DEST) \
 
 
 #define MEMORY_PIPELINE_STAGE_DEFINITIONS(DEFINITION) \
-DEFINITION(StageNone, 0b0000000000000000, VK_PIPELINE_STAGE_2_NONE, D3D12_BARRIER_SYNC_NONE) \
-DEFINITION(DrawIndirect, 0b0000000000000001, VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,D3D12_BARRIER_SYNC_EXECUTE_INDIRECT)\
-DEFINITION(InputAssembler, 0b0000000000000010, VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT,D3D12_BARRIER_SYNC_INPUT_ASSEMBLER )\
-DEFINITION(VertexShader, 0b0000000000000100, VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,D3D12_BARRIER_SYNC_VERTEX_SHADING )\
-DEFINITION(TesselationControl, 0b0000000000001000, VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT,D3D12_BARRIER_SYNC_NON_PIXEL_SHADING )\
-DEFINITION(TesselationEvaluation, 0b0000000000010000, VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT,D3D12_BARRIER_SYNC_NON_PIXEL_SHADING )\
-DEFINITION(GeometryShader, 0b0000000000100000, VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT,D3D12_BARRIER_SYNC_NON_PIXEL_SHADING ) \
-DEFINITION(FragmentShader, 0b0000000001000000, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,D3D12_BARRIER_SYNC_PIXEL_SHADING) \
-DEFINITION(EarlyDepthStencil, 0b0000000010000000, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,D3D12_BARRIER_SYNC_DEPTH_STENCIL) \
-DEFINITION(LateDepthStencil, 0b0000000100000000, VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,D3D12_BARRIER_SYNC_DEPTH_STENCIL) \
-DEFINITION(ColorAttachment, 0b0000001000000000, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,D3D12_BARRIER_SYNC_RENDER_TARGET ) \
-DEFINITION(ComputeShader, 0b0000010000000000, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,D3D12_BARRIER_SYNC_COMPUTE_SHADING) \
-DEFINITION(Transfer, 0b0000100000000000, VK_PIPELINE_STAGE_2_TRANSFER_BIT,D3D12_BARRIER_SYNC_COPY)                     \
-DEFINITION(AccelerationStructureBuild, 0b0001000000000000, VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR ,D3D12_BARRIER_SYNC_BUILD_RAYTRACING_ACCELERATION_STRUCTURE)\
-DEFINITION(RayTracing, 0b0010000000000000, VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,D3D12_BARRIER_SYNC_RAYTRACING)\
-DEFINITION(AllGraphics, 0b0100000000000000, VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,D3D12_BARRIER_SYNC_ALL_SHADING) \
-DEFINITION(AllCommands, 0b1000000000000000, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,D3D12_BARRIER_SYNC_ALL) \
+DEFINITION(NONE, VK_PIPELINE_STAGE_NONE, D3D12_BARRIER_SYNC_NONE) \
+DEFINITION(DRAW_INDIRECT, VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,D3D12_BARRIER_SYNC_EXECUTE_INDIRECT)\
+DEFINITION(INDEX_INPUT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,D3D12_BARRIER_SYNC_INDEX_INPUT )\
+DEFINITION(VERTEX_SHADER, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,D3D12_BARRIER_SYNC_VERTEX_SHADING )\
+DEFINITION(TESSELATION_CONTROL, VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT,D3D12_BARRIER_SYNC_NON_PIXEL_SHADING )\
+DEFINITION(TESSELATION_EVALUATION, VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT,D3D12_BARRIER_SYNC_NON_PIXEL_SHADING )\
+DEFINITION(GEOMETRY_SHADER, VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,D3D12_BARRIER_SYNC_NON_PIXEL_SHADING ) \
+DEFINITION(FRAGMENT_SHADER, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,D3D12_BARRIER_SYNC_PIXEL_SHADING) \
+DEFINITION(EARLY_DEPTH_STENCIL, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,D3D12_BARRIER_SYNC_DEPTH_STENCIL) \
+DEFINITION(LATE_DEPTH_STENCIL, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,D3D12_BARRIER_SYNC_DEPTH_STENCIL) \
+DEFINITION(COLOR_ATTACHMENT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,D3D12_BARRIER_SYNC_RENDER_TARGET ) \
+DEFINITION(COMPUTE_SHADER, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,D3D12_BARRIER_SYNC_COMPUTE_SHADING) \
+DEFINITION(TRANSFER, VK_PIPELINE_STAGE_TRANSFER_BIT,D3D12_BARRIER_SYNC_COPY)                     \
+DEFINITION(ACCELERATION_STRUCTURE_BUILD, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR ,D3D12_BARRIER_SYNC_BUILD_RAYTRACING_ACCELERATION_STRUCTURE)\
+DEFINITION(RAY_TRACING, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,D3D12_BARRIER_SYNC_RAYTRACING)\
+DEFINITION(ALL_GRAPHICS, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,D3D12_BARRIER_SYNC_ALL_SHADING) \
+DEFINITION(ALL_COMMANDS, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,D3D12_BARRIER_SYNC_ALL) \
 
 
 #include "Texture.h"
@@ -45,82 +45,106 @@ DEFINITION(AllCommands, 0b1000000000000000, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT
 
 namespace slag
 {
-    enum BarrierAccess
+    class BarrierAccess
     {
-#define DEFINITION(slagName, slagValue, vulkanName, dirextXName) slagName = slagValue,
+    private:
+        int _value;
+        explicit BarrierAccess(int val){ _value=val;}
+    public:
+        friend class BarrierAccessFlags;
+        BarrierAccess operator| (BarrierAccess b) const
+        {
+            return BarrierAccess(_value | b._value);
+        }
+
+        BarrierAccess& operator |=(BarrierAccess b)
+        {
+            _value = _value|b._value;
+            return *this;
+        }
+
+        BarrierAccess operator&(BarrierAccess b) const
+        {
+            return BarrierAccess(_value & b._value);
+        }
+
+        BarrierAccess& operator&=(BarrierAccess b)
+        {
+            _value = _value&b._value;
+            return *this;
+        }
+
+        BarrierAccess operator~() const
+        {
+            return BarrierAccess(~_value);
+        }
+    };
+    class BarrierAccessFlags
+    {
+#define DEFINITION(slagName, vulkanName, directXName) inline static BarrierAccess _##slagName = BarrierAccess(0);
+        MEMORY_BARRIER_ACCESS_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+    public:
+#define DEFINITION(slagName, vulkanName, directXName) inline static const BarrierAccess& slagName = (_##slagName); /***Only use this if you *REALLY* know what you're doing, will override underlying library value for flag*/static void set##slagName##Value(int val){_##slagName._value = val;}
         MEMORY_BARRIER_ACCESS_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
     };
-    inline BarrierAccess operator|(BarrierAccess a, BarrierAccess b)
-    {
-        return static_cast<BarrierAccess>(static_cast<unsigned int>(a) | static_cast<unsigned int>(b));
-    }
 
-    inline BarrierAccess operator|=(BarrierAccess& a, BarrierAccess b)
+    class PipelineStage
     {
-        a = a|b;
-        return a;
-    }
+    private:
+        int _value = 0;
+        PipelineStage(int val){ _value=val;}
+    public:
+        friend class PipelineStageFlags;
+        PipelineStage operator| (PipelineStage b) const
+        {
+            return PipelineStage(_value | b._value);
+        }
 
-    inline BarrierAccess operator&(BarrierAccess a, BarrierAccess b)
-    {
-        return static_cast<BarrierAccess>(static_cast<unsigned int>(a) & static_cast<unsigned int>(b));
-    }
+        PipelineStage& operator |=(PipelineStage b)
+        {
+            _value = _value|b._value;
+            return *this;
+        }
 
-    inline BarrierAccess operator&=(BarrierAccess& a, BarrierAccess b)
-    {
-        a = a&b;
-        return a;
-    }
+        PipelineStage operator&(PipelineStage b) const
+        {
+            return PipelineStage(_value & b._value);
+        }
 
-    inline BarrierAccess operator~(BarrierAccess a)
-    {
-        return static_cast<BarrierAccess>(~static_cast<unsigned int>(a));
-    }
+        PipelineStage& operator&=(PipelineStage b)
+        {
+            _value = _value&b._value;
+            return *this;
+        }
 
-    enum PipelineStage
+        PipelineStage operator~() const
+        {
+            return PipelineStage(~_value);
+        }
+    };
+
+    class PipelineStageFlags
     {
-#define DEFINITION(slagName, slagValue, vulkanName, dirextXName) slagName = slagValue,
+#define DEFINITION(slagName, vulkanName, directXName) inline static PipelineStage _##slagName = 0;
+        MEMORY_PIPELINE_STAGE_DEFINITIONS(DEFINITION)
+#undef DEFINITION
+    public:
+#define DEFINITION(slagName, vulkanName, directXName) inline static PipelineStage& slagName = _##slagName; /***Only use this if you *REALLY* know what you're doing, will override underlying library value for flag*/ static void set##slagName##Value(int val){_##slagName._value = val;}
         MEMORY_PIPELINE_STAGE_DEFINITIONS(DEFINITION)
 #undef DEFINITION
     };
-
-    inline PipelineStage operator|(PipelineStage a, PipelineStage b)
-    {
-        return static_cast<PipelineStage>(static_cast<unsigned int>(a) | static_cast<unsigned int>(b));
-    }
-
-    inline PipelineStage operator|=(PipelineStage& a, PipelineStage b)
-    {
-        a = a|b;
-        return a;
-    }
-
-    inline PipelineStage operator&(PipelineStage a, PipelineStage b)
-    {
-        return static_cast<PipelineStage>(static_cast<unsigned int>(a) & static_cast<unsigned int>(b));
-    }
-
-    inline PipelineStage operator&=(PipelineStage& a, PipelineStage b)
-    {
-        a = a&b;
-        return a;
-    }
-
-    inline PipelineStage operator~(PipelineStage a)
-    {
-        return static_cast<PipelineStage>(~static_cast<unsigned int>(a));
-    }
 
     struct ImageBarrier
     {
         Texture* texture = nullptr;
         Texture::Layout oldLayout = Texture::UNDEFINED;
         Texture::Layout newLayout = Texture::UNDEFINED;
-        BarrierAccess accessBefore = BarrierAccess::AllRead | BarrierAccess::AllWrite;
-        BarrierAccess accessAfter = BarrierAccess::AllRead | BarrierAccess::AllWrite;
-        PipelineStage syncBefore = PipelineStage::AllCommands;
-        PipelineStage syncAfter = PipelineStage::AllCommands;
+        BarrierAccess accessBefore = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+        BarrierAccess accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+        PipelineStage syncBefore = PipelineStageFlags::ALL_COMMANDS;
+        PipelineStage syncAfter = PipelineStageFlags::ALL_COMMANDS;
     };
 
     struct BufferBarrier
@@ -129,18 +153,18 @@ namespace slag
         size_t offset = 0;
         ///Size of section of barrier to require barrier, 0 = entire size of the buffer
         size_t size = 0;
-        BarrierAccess accessBefore = BarrierAccess::AllRead | BarrierAccess::AllWrite;
-        BarrierAccess accessAfter = BarrierAccess::AllRead | BarrierAccess::AllWrite;
-        PipelineStage syncBefore = PipelineStage::AllCommands;
-        PipelineStage syncAfter = PipelineStage::AllCommands;
+        BarrierAccess accessBefore = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+        BarrierAccess accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+        PipelineStage syncBefore = PipelineStageFlags::ALL_COMMANDS;
+        PipelineStage syncAfter = PipelineStageFlags::ALL_COMMANDS;
     };
 
     struct GPUMemoryBarrier
     {
-        BarrierAccess accessBefore = BarrierAccess::AllRead | BarrierAccess::AllWrite;
-        BarrierAccess accessAfter = BarrierAccess::AllRead | BarrierAccess::AllWrite;
-        PipelineStage syncBefore = PipelineStage::AllCommands;
-        PipelineStage syncAfter = PipelineStage::AllCommands;
+        BarrierAccess accessBefore = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+        BarrierAccess accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+        PipelineStage syncBefore = PipelineStageFlags::ALL_COMMANDS;
+        PipelineStage syncAfter = PipelineStageFlags::ALL_COMMANDS;
     };
 }
 

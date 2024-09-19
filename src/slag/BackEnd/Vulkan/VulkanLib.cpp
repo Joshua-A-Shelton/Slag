@@ -64,6 +64,9 @@ namespace slag
             }
             auto card = new VulkanGraphicsCard(instance,device.value());
             Extensions::mapExtensions(card->device());
+
+            mapFlags();
+
             return new VulkanLib(instance,debugMessenger,card);
 
         }
@@ -74,6 +77,22 @@ namespace slag
             {
                 delete library;
             }
+        }
+
+        void VulkanLib::mapFlags()
+        {
+#define DEFINITION(slagName, vulkanName, directXName) TextureUsageFlags::set##slagName##Value(static_cast<int>(vulkanName));
+            TEXTURE_USAGE_DEFINITIONS(DEFINITION)
+#undef DEFINITION
+
+#define DEFINITION(slagName, vulkanName, directXName) BarrierAccessFlags::set##slagName##Value(static_cast<int>(vulkanName));
+            MEMORY_BARRIER_ACCESS_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+
+#define DEFINITION(slagName, vulkanName, directXName) PipelineStageFlags::set##slagName##Value(static_cast<int>(vulkanName));
+            MEMORY_PIPELINE_STAGE_DEFINITIONS(DEFINITION)
+#undef DEFINITION
+
         }
 
         VkInstance VulkanLib::instance()
@@ -112,46 +131,6 @@ namespace slag
 #undef DEFINITION
             }
             return VK_IMAGE_LAYOUT_UNDEFINED;
-        }
-
-        VkImageUsageFlags VulkanLib::imageUsage(Texture::Usage usage)
-        {
-            VkImageUsageFlags flags = 0;
-            if(usage & Texture::SAMPLED_IMAGE)
-            {
-                flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
-            }
-            if(usage & Texture::STORAGE)
-            {
-                flags |= VK_IMAGE_USAGE_STORAGE_BIT;
-            }
-            if(usage & Texture::RENDER_TARGET_ATTACHMENT)
-            {
-                flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-            }
-            if(usage & Texture::DEPTH_STENCIL_ATTACHMENT)
-            {
-                flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-            }
-            return flags;
-        }
-
-        VkAccessFlags VulkanLib::accessFlags(BarrierAccess barrierAccess)
-        {
-            VkAccessFlags flags = 0;
-#define DEFINITION(slagName, slagValue, vulkanName, dirextXName) if(barrierAccess & slagName){flags |= vulkanName;}
-            MEMORY_BARRIER_ACCESS_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-            return flags;
-        }
-
-        VkPipelineStageFlags2 VulkanLib::pipelineStage(PipelineStage stage)
-        {
-            VkPipelineStageFlags2 flags = 0;
-#define DEFINITION(slagName, slagValue, vulkanName, directXName) if(stage & slagName){flags |= vulkanName;}
-            MEMORY_PIPELINE_STAGE_DEFINITIONS(DEFINITION)
-#undef DEFINITION
-            return flags;
         }
 
         VulkanLib::VulkanLib(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VulkanGraphicsCard* card)
@@ -206,14 +185,14 @@ namespace slag
             return new VulkanSwapchain(platformData,width,height,backBuffers,mode, format(imageFormat));
         }
 
-        Texture* VulkanLib::newTexture(void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage, Texture::Layout initializedLayout, bool generateMips)
+        Texture* VulkanLib::newTexture(void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage usage, Texture::Layout initializedLayout, bool generateMips)
         {
-            return new VulkanTexture(texelData,dataSize, format(dataFormat).format, format(textureFormat),width,height,mipLevels,imageUsage(usage),layout(initializedLayout),generateMips,false);
+            return new VulkanTexture(texelData,dataSize, format(dataFormat).format, format(textureFormat),width,height,mipLevels,std::bit_cast<VkImageUsageFlags>(usage),layout(initializedLayout),generateMips,false);
         }
 
-        Texture* VulkanLib::newTexture(CommandBuffer* onBuffer, void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage usage, Texture::Layout initializedLayout, bool generateMips)
+        Texture* VulkanLib::newTexture(CommandBuffer* onBuffer, void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage usage, Texture::Layout initializedLayout, bool generateMips)
         {
-            return new VulkanTexture(dynamic_cast<VulkanCommandBuffer*>(onBuffer),texelData,dataSize, format(dataFormat).format, format(textureFormat),width,height,mipLevels,imageUsage(usage),layout(initializedLayout),generateMips,false);
+            return new VulkanTexture(dynamic_cast<VulkanCommandBuffer*>(onBuffer),texelData,dataSize, format(dataFormat).format, format(textureFormat),width,height,mipLevels,std::bit_cast<VkImageUsageFlags>(usage),layout(initializedLayout),generateMips,false);
         }
 
         CommandBuffer* VulkanLib::newCommandBuffer(GpuQueue::QueueType acceptsCommands)
@@ -282,7 +261,6 @@ namespace slag
 
             return new VulkanBuffer(bufferSize,accessibility,usageFlags, false);
         }
-
 
     } // vulkan
 } // slag
