@@ -43,11 +43,11 @@ TEST(Swapchain, PresentModes)
             cb->begin();
 
             ImageBarrier barrier{.texture=frame->backBuffer(),.oldLayout=Texture::Layout::UNDEFINED, .newLayout = Texture::Layout::TRANSFER_DESTINATION};
-            cb->insertBarriers(&barrier,1, nullptr,0);
+            cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
             cb->clearColorImage(frame->backBuffer(), {.floats={1, 0, 0, 1}}, Texture::Layout::TRANSFER_DESTINATION);
             barrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
             barrier.newLayout = Texture::Layout::PRESENT;
-            cb->insertBarriers(&barrier,1, nullptr,0);
+            cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
             cb->end();
             SlagLib::graphicsCard()->graphicsQueue()->submit(&cb,1, nullptr,0, nullptr,0,frame);
 
@@ -67,11 +67,11 @@ TEST(Swapchain, PresentModes)
             cb->begin();
 
             ImageBarrier barrier{.texture=frame->backBuffer(),.oldLayout=Texture::Layout::UNDEFINED, .newLayout = Texture::Layout::TRANSFER_DESTINATION};
-            cb->insertBarriers(&barrier,1, nullptr,0);
+            cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
             cb->clearColorImage(frame->backBuffer(), {.floats={1, 0, 1, 1}}, Texture::Layout::TRANSFER_DESTINATION);
             barrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
             barrier.newLayout = Texture::Layout::PRESENT;
-            cb->insertBarriers(&barrier,1, nullptr,0);
+            cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
             cb->end();
             SlagLib::graphicsCard()->graphicsQueue()->submit(&cb,1, nullptr,0, nullptr,0,frame);
 
@@ -117,11 +117,11 @@ TEST(Swapchain, NextIfReady)
 
 
             ImageBarrier barrier{.texture=frame->backBuffer(),.oldLayout=Texture::Layout::UNDEFINED, .newLayout = Texture::Layout::TRANSFER_DESTINATION};
-            cb->insertBarriers(&barrier,1, nullptr,0);
+            cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
             cb->clearColorImage(frame->backBuffer(), {.floats={0, 1, 0, 1}}, Texture::Layout::TRANSFER_DESTINATION);
             barrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
             barrier.newLayout = Texture::Layout::PRESENT;
-            cb->insertBarriers(&barrier,1, nullptr,0);
+            cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
             cb->end();
             SlagLib::graphicsCard()->graphicsQueue()->submit(&cb,1, nullptr,0, nullptr,0,frame);
 
@@ -142,11 +142,11 @@ TEST(Swapchain, NextIfReady)
             cb->begin();
 
             ImageBarrier barrier{.texture=frame->backBuffer(),.oldLayout=Texture::Layout::UNDEFINED, .newLayout = Texture::Layout::TRANSFER_DESTINATION};
-            cb->insertBarriers(&barrier,1, nullptr,0);
+            cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
             cb->clearColorImage(frame->backBuffer(), {.floats={0, 0, 1, 1}}, Texture::Layout::TRANSFER_DESTINATION);
             barrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
             barrier.newLayout = Texture::Layout::PRESENT;
-            cb->insertBarriers(&barrier,1, nullptr,0);
+            cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
 
             cb->end();
             SlagLib::graphicsCard()->graphicsQueue()->submit(&cb,1, nullptr,0, nullptr,0,frame);

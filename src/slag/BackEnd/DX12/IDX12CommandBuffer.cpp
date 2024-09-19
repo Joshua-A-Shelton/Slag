@@ -3,6 +3,7 @@
 #include "DX12Texture.h"
 #include "DX12Buffer.h"
 #include "DX12Lib.h"
+#include <directx/d3dx12.h>
 
 namespace slag
 {
@@ -18,22 +19,41 @@ namespace slag
             return _commandType;
         }
 
-        void IDX12CommandBuffer::insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount)
+        void IDX12CommandBuffer::insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount)
         {
-            /*std::vector<D3D12_RESOURCE_BARRIER> barriers(imageBarrierCount+bufferBarrierCount);
-            for(int i =0; i< imageBarrierCount; i++)
+            std::vector<D3D12_BARRIER_GROUP> barrierGroups;
+            std::vector<D3D12_TEXTURE_BARRIER> textureBarriers(imageBarrierCount);
+            if(imageBarrierCount)
             {
-                auto& barrier = imageBarriers[i];
-                auto image = dynamic_cast<DX12Texture*>(barrier.texture);
-                barriers[i] = CD3DX12_RESOURCE_BARRIER::Transition(image->texture(), DX12Lib::layout(barrier.oldLayout), DX12Lib::layout(barrier.newLayout));
+                D3D12_BARRIER_GROUP imageGroup{};
+                imageGroup.Type = D3D12_BARRIER_TYPE::D3D12_BARRIER_TYPE_TEXTURE;
+                imageGroup.NumBarriers = imageBarrierCount;
+                for(int i =0; i< imageBarrierCount; i++)
+                {
+                    auto& barrier = imageBarriers[i];
+                    auto image = dynamic_cast<DX12Texture*>(barrier.texture);
+                    auto& dxBarrier = textureBarriers[i];
+                    dxBarrier.pResource = image->texture();
+                    dxBarrier.LayoutBefore = DX12Lib::layout(barrier.oldLayout);
+                    dxBarrier.LayoutAfter = DX12Lib::layout(barrier.newLayout);
+                    dxBarrier.AccessBefore = DX12Lib::access(barrier.accessBefore);
+                    dxBarrier.AccessAfter = DX12Lib::access(barrier.accessAfter);
+                    if(barrier.oldLayout == Texture::Layout::UNDEFINED)
+                    {
+                        dxBarrier.Flags = D3D12_TEXTURE_BARRIER_FLAG_DISCARD;
+                    }
+
+                    //barriers[i] = CD3DX12_RESOURCE_BARRIER::Transition(image->texture(), DX12Lib::layout(barrier.oldLayout), DX12Lib::layout(barrier.newLayout));
+                }
             }
+
             for(int i=0; i< bufferBarrierCount; i++)
             {
                 auto& barrier = bufferBarriers[i];
                 auto buffer = dynamic_cast<DX12Buffer*>(barrier.buffer);
-                barriers[imageBarrierCount+i] = CD3DX12_RESOURCE_BARRIER::Transition(buffer->underlyingBuffer(),D3D12_RESOURCE_STATE_GENERIC_READ,D3D12_RESOURCE_STATE_GENERIC_READ);
+                //barriers[imageBarrierCount+i] = CD3DX12_RESOURCE_BARRIER::Transition(buffer->underlyingBuffer(),D3D12_RESOURCE_STATE_GENERIC_READ,D3D12_RESOURCE_STATE_GENERIC_READ);
             }
-            _buffer->*/
+            //_buffer->Barrier()
             throw std::runtime_error("not implemented");
         }
 

@@ -18,7 +18,8 @@ namespace slag
             static DX12GraphicsCard* card();
             static DXGI_FORMAT format(Pixels::Format pixelFormat);
             static D3D12_RESOURCE_FLAGS usage(Texture::Usage texUsage);
-            static D3D12_RESOURCE_STATES layout(Texture::Layout texLayout);
+            static D3D12_BARRIER_LAYOUT layout(Texture::Layout texLayout);
+            static D3D12_BARRIER_ACCESS access(BarrierAccess barrierAccess);
             DX12Lib(DX12GraphicsCard* card);
             ~DX12Lib();
             BackEnd identifier()override;

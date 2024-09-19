@@ -20,7 +20,7 @@ namespace slag
             }
         }
 
-        DX12Texture::DX12Texture(void* texelData, size_t dataSize, DXGI_FORMAT dataFormat, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, D3D12_RESOURCE_STATES initializedLayout, bool generateMips, bool destroyImmediately): resources::Resource(destroyImmediately)
+        DX12Texture::DX12Texture(void* texelData, size_t dataSize, DXGI_FORMAT dataFormat, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, D3D12_BARRIER_LAYOUT  initializedLayout, bool generateMips, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
             DX12CommandBuffer commandBuffer(GpuQueue::QueueType::Compute);
             commandBuffer.begin();
@@ -30,7 +30,7 @@ namespace slag
             commandBuffer.waitUntilFinished();
         }
 
-        DX12Texture::DX12Texture(DX12CommandBuffer* onBuffer, void* texelData, size_t dataSize, DXGI_FORMAT dataFormat, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, D3D12_RESOURCE_STATES initializedLayout, bool generateMips, bool destroyImmediately): resources::Resource(destroyImmediately)
+        DX12Texture::DX12Texture(DX12CommandBuffer* onBuffer, void* texelData, size_t dataSize, DXGI_FORMAT dataFormat, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, D3D12_BARRIER_LAYOUT initializedLayout, bool generateMips, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
             build(onBuffer,texelData,dataSize,dataFormat,textureFormat,width,height,mipLevels,usage,initializedLayout,generateMips);
         }
@@ -65,7 +65,7 @@ namespace slag
             return _allocation;
         }
 
-        void DX12Texture::build(DX12CommandBuffer* onBuffer, void* texelData, size_t dataSize, DXGI_FORMAT dataFormat, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, D3D12_RESOURCE_STATES initializedLayout, bool generateMips)
+        void DX12Texture::build(DX12CommandBuffer* onBuffer, void* texelData, size_t dataSize, DXGI_FORMAT dataFormat, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, D3D12_BARRIER_LAYOUT initializedLayout, bool generateMips)
         {
             _width = width;
             _height = height;
@@ -89,7 +89,7 @@ namespace slag
             D3D12MA::ALLOCATION_DESC allocationDesc = {};
             allocationDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
 
-            DX12Lib::card()->allocator()->CreateResource(&allocationDesc,&resourceDesc,initializedLayout,nullptr,&_allocation, IID_PPV_ARGS(&_texture));
+            DX12Lib::card()->allocator()->CreateResource(&allocationDesc,&resourceDesc,D3D12_RESOURCE_STATE_COPY_DEST,nullptr,&_allocation, IID_PPV_ARGS(&_texture));
 
             auto tex = _texture;
             auto alloc = _allocation;

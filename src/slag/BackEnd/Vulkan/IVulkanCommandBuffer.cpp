@@ -52,36 +52,43 @@ namespace slag
                                  reinterpret_cast<const VkClearColorValue*>(&color), 1, &range);
         }
 
-        void IVulkanCommandBuffer::insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount,BufferBarrier* bufferBarriers, size_t bufferBarrierCount)
+        void IVulkanCommandBuffer::insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount)
         {
-            std::vector<VkImageMemoryBarrier> imageMemoryBarriers(imageBarrierCount,VkImageMemoryBarrier{});
+            std::vector<VkImageMemoryBarrier2> imageMemoryBarriers(imageBarrierCount,VkImageMemoryBarrier2{});
             for(int i=0; i< imageBarrierCount; i++)
             {
                 auto& vkbarrier = imageMemoryBarriers[i];
                 auto barrier = imageBarriers[i];
                 auto texture = dynamic_cast<VulkanTexture*>(barrier.texture);
-                vkbarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                vkbarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
                 vkbarrier.srcAccessMask = VulkanLib::accessFlags(barrier.accessBefore);
                 vkbarrier.dstAccessMask = VulkanLib::accessFlags(barrier.accessAfter);
                 vkbarrier.image = texture->image();
                 vkbarrier.oldLayout = VulkanLib::layout(barrier.oldLayout);
                 vkbarrier.newLayout = VulkanLib::layout(barrier.newLayout);
+                vkbarrier.srcStageMask = VulkanLib::pipelineStage(barrier.syncBefore);
+                vkbarrier.dstStageMask = VulkanLib::pipelineStage(barrier.syncAfter);
                 vkbarrier.subresourceRange = {.aspectMask = texture->aspectFlags(), .baseMipLevel = 0, .levelCount = texture->mipLevels(), .baseArrayLayer = 0, .layerCount = 1};
 
             }
-            std::vector<VkBufferMemoryBarrier> bufferMemoryBarriers(bufferBarrierCount,VkBufferMemoryBarrier{});
+            std::vector<VkBufferMemoryBarrier2> bufferMemoryBarriers(bufferBarrierCount,VkBufferMemoryBarrier2{});
             for(auto i=0; i< bufferBarrierCount; i++)
             {
                 auto& bufferBarrier = bufferMemoryBarriers[i];
                 auto bufferBarrierDesc = bufferBarriers[i];
                 auto buffer = dynamic_cast<VulkanBuffer*>(bufferBarrierDesc.buffer);
+                bufferBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
                 bufferBarrier.buffer = buffer->underlyingBuffer();
                 bufferBarrier.srcAccessMask = VulkanLib::accessFlags(bufferBarrierDesc.accessBefore);
                 bufferBarrier.dstAccessMask = VulkanLib::accessFlags(bufferBarrierDesc.accessAfter);
                 bufferBarrier.offset = bufferBarrierDesc.offset;
                 bufferBarrier.size = bufferBarrierDesc.size != 0 ? bufferBarrierDesc.size : VK_WHOLE_SIZE;
+                bufferBarrier.srcStageMask = VulkanLib::pipelineStage(bufferBarrierDesc.syncBefore);
+                bufferBarrier.dstStageMask = VulkanLib::pipelineStage(bufferBarrierDesc.syncAfter);
             }
-            vkCmdPipelineBarrier(_buffer,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,0,0,nullptr,bufferBarrierCount,bufferMemoryBarriers.data(),imageBarrierCount,imageMemoryBarriers.data());
+            throw std::runtime_error("finish pipeline stage implementation for barriers");
+            /*vkCmdPipelineBarrier2();
+            vkCmdPipelineBarrier(_buffer,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,0,0,nullptr,bufferBarrierCount,bufferMemoryBarriers.data(),imageBarrierCount,imageMemoryBarriers.data());*/
         }
 
         void IVulkanCommandBuffer::copyBuffer(Buffer* source, size_t sourceOffset, size_t length, Buffer* destination, size_t destinationOffset)

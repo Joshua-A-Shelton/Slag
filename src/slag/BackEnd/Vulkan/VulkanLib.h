@@ -26,6 +26,7 @@ namespace slag
             static VkImageLayout layout(Texture::Layout layout);
             static VkImageUsageFlags imageUsage(Texture::Usage usage);
             static VkAccessFlags accessFlags(BarrierAccess barrierAccess);
+            static VkPipelineStageFlags2 pipelineStage(PipelineStage stage);
 
             VulkanLib(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VulkanGraphicsCard* card);
             ~VulkanLib();

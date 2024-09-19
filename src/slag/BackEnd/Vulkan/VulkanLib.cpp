@@ -145,6 +145,15 @@ namespace slag
             return flags;
         }
 
+        VkPipelineStageFlags2 VulkanLib::pipelineStage(PipelineStage stage)
+        {
+            VkPipelineStageFlags2 flags = 0;
+#define DEFINITION(slagName, slagValue, vulkanName, directXName) if(stage & slagName){flags |= vulkanName;}
+            MEMORY_PIPELINE_STAGE_DEFINITIONS(DEFINITION)
+#undef DEFINITION
+            return flags;
+        }
+
         VulkanLib::VulkanLib(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VulkanGraphicsCard* card)
         {
             _instance = instance;

@@ -91,7 +91,7 @@ namespace slag
             return DXGI_FORMAT_UNKNOWN;
         }
 
-        D3D12_RESOURCE_STATES DX12Lib::layout(Texture::Layout texLayout)
+        D3D12_BARRIER_LAYOUT DX12Lib::layout(Texture::Layout texLayout)
         {
             switch(texLayout)
             {
@@ -99,7 +99,7 @@ namespace slag
                 TEXTURE_LAYOUT_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
             }
-            return  D3D12_RESOURCE_STATE_COMMON;
+            return  D3D12_BARRIER_LAYOUT_UNDEFINED;
         }
 
         D3D12_RESOURCE_FLAGS DX12Lib::usage(Texture::Usage texUsage)
@@ -121,6 +121,15 @@ namespace slag
             {
                 flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
             }
+            return flags;
+        }
+
+        D3D12_BARRIER_ACCESS DX12Lib::access(BarrierAccess barrierAccess)
+        {
+            D3D12_BARRIER_ACCESS flags = static_cast<D3D12_BARRIER_ACCESS>(0);
+#define DEFINITION(slagName, slagValue, vulkanName, directXName)  if (barrierAccess & slagName){ flags |= directXName;}
+            MEMORY_BARRIER_ACCESS_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
             return flags;
         }
 
@@ -166,12 +175,12 @@ namespace slag
 
         Texture* DX12Lib::newTexture(void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage texUsage, Texture::Layout initializedLayout, bool generateMips)
         {
-            return new DX12Texture(texelData,dataFormat, format(dataFormat), format(textureFormat),width, height, mipLevels,usage(texUsage), layout(initializedLayout),generateMips,false);
+            return new DX12Texture(texelData,dataSize, format(dataFormat), format(textureFormat),width, height, mipLevels,usage(texUsage), layout(initializedLayout),generateMips,false);
         }
 
         Texture* DX12Lib::newTexture(CommandBuffer* onBuffer, void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, Texture::Usage texUsage, Texture::Layout initializedLayout, bool generateMips)
         {
-            return new DX12Texture(dynamic_cast<DX12CommandBuffer*>(onBuffer),texelData,dataFormat, format(dataFormat), format(textureFormat),width, height, mipLevels,usage(texUsage), layout(initializedLayout),generateMips,false);
+            return new DX12Texture(dynamic_cast<DX12CommandBuffer*>(onBuffer),texelData,dataSize, format(dataFormat), format(textureFormat),width, height, mipLevels,usage(texUsage), layout(initializedLayout),generateMips,false);
         }
 
         CommandBuffer* DX12Lib::newCommandBuffer(GpuQueue::QueueType acceptsCommands)
