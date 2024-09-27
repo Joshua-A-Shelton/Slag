@@ -30,17 +30,22 @@ namespace slag
             void updateMipMaps();
             void updateMipMaps(DX12CommandBuffer* onBuffer);
             ID3D12Resource* texture();
+            D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle();
+
         private:
             void move(DX12Texture&& from);
             void build(DX12CommandBuffer* onBuffer, void* texelData, size_t dataSize, DXGI_FORMAT dataFormat, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, D3D12_BARRIER_LAYOUT initializedLayout, bool generateMips);
             ID3D12Resource* _texture = nullptr;
             D3D12MA::Allocation* _allocation = nullptr;
+            ID3D12DescriptorHeap* _heap;
+            D3D12_CPU_DESCRIPTOR_HANDLE _view{};
 
             uint32_t _width = 0;
             uint32_t _height = 0;
             uint32_t _mipLevels=1;
             DXGI_FORMAT _format;
             D3D12_RESOURCE_FLAGS _usage;
+
         };
 
     } // dx

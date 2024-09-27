@@ -112,5 +112,10 @@ namespace slag
                 _finished = nullptr;
             }
         }
+
+        void VulkanCommandBuffer::bindDescriptorPool(DescriptorPool* pool)
+        {
+            //Do nothing, vulkan doesn't require binding descriptor pools! :)
+        }
     } // vulkan
 } // slag

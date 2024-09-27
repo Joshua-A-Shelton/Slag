@@ -90,48 +90,48 @@ namespace slag
 #undef DEFINITION
     };
 
-    class PipelineStage
+    class PipelineStages
     {
     private:
         int _value = 0;
-        PipelineStage(int val){ _value=val;}
+        PipelineStages(int val){ _value=val;}
     public:
         friend class PipelineStageFlags;
-        PipelineStage operator| (PipelineStage b) const
+        PipelineStages operator| (PipelineStages b) const
         {
-            return PipelineStage(_value | b._value);
+            return PipelineStages(_value | b._value);
         }
 
-        PipelineStage& operator |=(PipelineStage b)
+        PipelineStages& operator |=(PipelineStages b)
         {
             _value = _value|b._value;
             return *this;
         }
 
-        PipelineStage operator&(PipelineStage b) const
+        PipelineStages operator&(PipelineStages b) const
         {
-            return PipelineStage(_value & b._value);
+            return PipelineStages(_value & b._value);
         }
 
-        PipelineStage& operator&=(PipelineStage b)
+        PipelineStages& operator&=(PipelineStages b)
         {
             _value = _value&b._value;
             return *this;
         }
 
-        PipelineStage operator~() const
+        PipelineStages operator~() const
         {
-            return PipelineStage(~_value);
+            return PipelineStages(~_value);
         }
     };
 
     class PipelineStageFlags
     {
-#define DEFINITION(slagName, vulkanName, directXName) inline static PipelineStage _##slagName = 0;
+#define DEFINITION(slagName, vulkanName, directXName) inline static PipelineStages _##slagName = 0;
         MEMORY_PIPELINE_STAGE_DEFINITIONS(DEFINITION)
 #undef DEFINITION
     public:
-#define DEFINITION(slagName, vulkanName, directXName) inline static PipelineStage& slagName = _##slagName; /***Only use this if you *REALLY* know what you're doing, will override underlying library value for flag*/ static void set##slagName##Value(int val){_##slagName._value = val;}
+#define DEFINITION(slagName, vulkanName, directXName) inline static PipelineStages& slagName = _##slagName; /***Only use this if you *REALLY* know what you're doing, will override underlying library value for flag*/ static void set##slagName##Value(int val){_##slagName._value = val;}
         MEMORY_PIPELINE_STAGE_DEFINITIONS(DEFINITION)
 #undef DEFINITION
     };
@@ -141,10 +141,14 @@ namespace slag
         Texture* texture = nullptr;
         Texture::Layout oldLayout = Texture::UNDEFINED;
         Texture::Layout newLayout = Texture::UNDEFINED;
+        ///Synchronize (flush from cache [cache->Memory]) this kind of memory before barrier executes
         BarrierAccess accessBefore = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+        ///Synchronize (invalidate cache [cache<-Memory]) this kind of memory after barrier executes
         BarrierAccess accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
-        PipelineStage syncBefore = PipelineStageFlags::ALL_COMMANDS;
-        PipelineStage syncAfter = PipelineStageFlags::ALL_COMMANDS;
+        ///Finish all work of this kind before barrier executes
+        PipelineStages syncBefore = PipelineStageFlags::ALL_COMMANDS;
+        ///Make all work of this kind wait until after barrier executes
+        PipelineStages syncAfter = PipelineStageFlags::ALL_COMMANDS;
     };
 
     struct BufferBarrier
@@ -153,18 +157,26 @@ namespace slag
         size_t offset = 0;
         ///Size of section of barrier to require barrier, 0 = entire size of the buffer
         size_t size = 0;
+        ///Synchronize (flush from cache [cache->Memory]) this kind of memory before barrier executes
         BarrierAccess accessBefore = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+        ///Synchronize (invalidate cache [cache<-Memory]) this kind of memory after barrier executes
         BarrierAccess accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
-        PipelineStage syncBefore = PipelineStageFlags::ALL_COMMANDS;
-        PipelineStage syncAfter = PipelineStageFlags::ALL_COMMANDS;
+        ///Finish all work of this kind before barrier executes
+        PipelineStages syncBefore = PipelineStageFlags::ALL_COMMANDS;
+        ///Make all work of this kind wait until after barrier executes
+        PipelineStages syncAfter = PipelineStageFlags::ALL_COMMANDS;
     };
 
     struct GPUMemoryBarrier
     {
+        ///Synchronize (flush from cache [cache->Memory]) this kind of memory before barrier executes
         BarrierAccess accessBefore = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+        ///Synchronize (invalidate cache [cache<-Memory]) this kind of memory after barrier executes
         BarrierAccess accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
-        PipelineStage syncBefore = PipelineStageFlags::ALL_COMMANDS;
-        PipelineStage syncAfter = PipelineStageFlags::ALL_COMMANDS;
+        ///Finish all work of this kind before barrier executes
+        PipelineStages syncBefore = PipelineStageFlags::ALL_COMMANDS;
+        ///Make all work of this kind wait until after barrier executes
+        PipelineStages syncAfter = PipelineStageFlags::ALL_COMMANDS;
     };
 }
 

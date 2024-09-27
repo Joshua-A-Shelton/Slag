@@ -15,19 +15,19 @@ namespace slag
         {
             if(usageFlags & VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
             {
-                _usage = _usage | Usage::Storage;
+                _usage = _usage | Usage::STORAGE_BUFFER;
             }
             if(usageFlags & VK_BUFFER_USAGE_INDEX_BUFFER_BIT )
             {
-                _usage = _usage | Usage::IndexBuffer;
+                _usage = _usage | Usage::INDEX_BUFFER;
             }
             if(usageFlags & VK_BUFFER_USAGE_VERTEX_BUFFER_BIT )
             {
-                _usage = _usage | Usage::VertexBuffer;
+                _usage = _usage | Usage::VERTEX_BUFFER;
             }
             if(usageFlags & VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT )
             {
-                _usage = _usage | Usage::Indirect;
+                _usage = _usage | Usage::INDIRECT_BUFFER;
             }
 
             _accessibility = accessibility;

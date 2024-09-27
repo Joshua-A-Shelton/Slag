@@ -23,6 +23,7 @@ namespace slag
             void begin()override;
             void waitUntilFinished()override;
             bool isFinished()override;
+            void bindDescriptorPool(DescriptorPool* pool)override;
 
             friend class DX12Queue;
 

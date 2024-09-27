@@ -48,7 +48,7 @@ namespace slag
             uint32_t _width=0;
             uint32_t _height=0;
             uint8_t _backBufferCount=0;
-            PresentMode _presentMode = PresentMode::Discard;
+            PresentMode _presentMode = PresentMode::MAILBOX;
 
             uint32_t _currentFrameIndex=0;
             uint32_t _currentSemaphoreIndex=0;

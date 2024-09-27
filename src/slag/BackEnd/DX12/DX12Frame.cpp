@@ -48,18 +48,9 @@ namespace slag
             std::swap(_from, from._from);
         }
 
-        /*void DX12Frame::begin()
+        DX12Swapchain* DX12Frame::from()
         {
-            _commandBuffer->begin();
+            return _from;
         }
-
-        void DX12Frame::end()
-        {
-            _commandBuffer->end();
-            DX12Lib::card()->graphicsQueue()->submit(_commandBuffer);
-            _commandBuffer->waitUntilFinished();
-            //TODO: this may depend on the present mode
-            _from->underlyingSwapchain()->Present(0,0);
-        }*/
     } // dx
 } // slag

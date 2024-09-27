@@ -6,6 +6,7 @@
 #include "../../GraphicsCard.h"
 #include "DX12Queue.h"
 #include "D3D12MemAlloc.h"
+#include <queue>
 
 namespace slag
 {
@@ -25,6 +26,7 @@ namespace slag
             GpuQueue* computeQueue()override;
 
             D3D12MA::Allocator* allocator();
+            bool supportsEnhancedBarriers();
 
             void defragmentMemory()override;
         private:
@@ -34,6 +36,8 @@ namespace slag
             DX12Queue* _transfer = nullptr;
             DX12Queue* _compute = nullptr;
             D3D12MA::Allocator* _allocator = nullptr;
+
+            bool _supportsEnhancedBarriers = false;
         };
 
     } // dx

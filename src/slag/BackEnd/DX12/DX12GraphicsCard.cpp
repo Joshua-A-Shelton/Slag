@@ -14,7 +14,10 @@ namespace slag
         DX12GraphicsCard::DX12GraphicsCard(const Microsoft::WRL::ComPtr<IDXGIAdapter4>& adapter, Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory)
         {
             _dxgiFactory = dxgiFactory;
-            D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device));
+            D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&_device));
+            D3D12_FEATURE_DATA_D3D12_OPTIONS12 features{};
+            _device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS12,&features,sizeof(features));
+            _supportsEnhancedBarriers = features.EnhancedBarriersSupported;
 #ifndef NDEBUG
             Microsoft::WRL::ComPtr<ID3D12InfoQueue> pInfoQueue;
             if (SUCCEEDED(_device.As(&pInfoQueue)))
@@ -149,6 +152,11 @@ namespace slag
         void DX12GraphicsCard::defragmentMemory()
         {
             throw std::runtime_error("not implemented");
+        }
+
+        bool DX12GraphicsCard::supportsEnhancedBarriers()
+        {
+            return _supportsEnhancedBarriers;
         }
     } // dx
 } // slag

@@ -33,32 +33,24 @@ TEST(Swapchain, PresentModes)
     pd.nativeDisplayType = wmInfo.info.x11.display;
 #endif
 
-    auto swapchain = Swapchain::newSwapchain(pd,500,500,3,Swapchain::PresentMode::Discard,Pixels::Format::B8G8R8A8_UNORM);
+    auto swapchain = Swapchain::newSwapchain(pd, 500, 500, 3, Swapchain::PresentMode::MAILBOX, Pixels::Format::B8G8R8A8_UNORM);
     Uint64 totalStart = SDL_GetPerformanceCounter();
+    Uint64 last = totalStart;
     for(int i=0; i< 300; i++)
     {
         if(auto frame = swapchain->next())
         {
             auto cb = frame->commandBuffer();
             cb->begin();
-
-            ImageBarrier barrier{.texture=frame->backBuffer(),.oldLayout=Texture::Layout::UNDEFINED, .newLayout = Texture::Layout::TRANSFER_DESTINATION,.syncBefore=PipelineStageFlags::ALL_COMMANDS,.syncAfter=PipelineStageFlags::TRANSFER};
-            cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
-            cb->clearColorImage(frame->backBuffer(), {.floats={1, 0, 0, 1}}, Texture::Layout::TRANSFER_DESTINATION);
-            barrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
-            barrier.newLayout = Texture::Layout::PRESENT;
-            barrier.syncBefore = PipelineStageFlags::TRANSFER;
-            barrier.syncAfter = PipelineStageFlags::ALL_COMMANDS;
-            cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+            cb->clearColorImage(frame->backBuffer(), {.floats={i/300.0f, 0, 0, 1}}, Texture::Layout::UNDEFINED, Texture::Layout::PRESENT,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
             cb->end();
             SlagLib::graphicsCard()->graphicsQueue()->submit(&cb,1, nullptr,0, nullptr,0,frame);
-
         }
     }
     Uint64 totalEnd = SDL_GetPerformanceCounter();
     auto discardTime = ((totalEnd-totalStart)/1000)/300;
 
-    swapchain->presentMode(Swapchain::PresentMode::Sequential);
+    swapchain->presentMode(Swapchain::PresentMode::FIFO);
 
     totalStart = SDL_GetPerformanceCounter();
     for(int i=0; i< 300; i++)
@@ -67,13 +59,7 @@ TEST(Swapchain, PresentModes)
         {
             auto cb = frame->commandBuffer();
             cb->begin();
-
-            ImageBarrier barrier{.texture=frame->backBuffer(),.oldLayout=Texture::Layout::UNDEFINED, .newLayout = Texture::Layout::TRANSFER_DESTINATION};
-            cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
-            cb->clearColorImage(frame->backBuffer(), {.floats={1, 0, 1, 1}}, Texture::Layout::TRANSFER_DESTINATION);
-            barrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
-            barrier.newLayout = Texture::Layout::PRESENT;
-            cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+            cb->clearColorImage(frame->backBuffer(), {.floats={i/300.0f, 0, i/300.0f, 1}}, Texture::Layout::UNDEFINED, Texture::Layout::PRESENT,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
             cb->end();
             SlagLib::graphicsCard()->graphicsQueue()->submit(&cb,1, nullptr,0, nullptr,0,frame);
 
@@ -81,7 +67,7 @@ TEST(Swapchain, PresentModes)
     }
     totalEnd = SDL_GetPerformanceCounter();
     auto sequentialTime = ((totalEnd-totalStart)/1000)/300;
-    GTEST_ASSERT_GE(sequentialTime,discardTime);
+    GTEST_ASSERT_GE(sequentialTime,(discardTime*1.05));
 
     delete swapchain;
 
@@ -107,7 +93,7 @@ TEST(Swapchain, NextIfReady)
     pd.nativeDisplayType = wmInfo.info.x11.display;
 #endif
 
-    auto swapchain = Swapchain::newSwapchain(pd,500,500,2,Swapchain::PresentMode::Sequential,Pixels::Format::B8G8R8A8_UNORM);
+    auto swapchain = Swapchain::newSwapchain(pd, 500, 500, 2, Swapchain::PresentMode::FIFO, Pixels::Format::B8G8R8A8_UNORM);
     int frameCount = 0;
     int i=0;
     for(;; i++)
@@ -116,14 +102,7 @@ TEST(Swapchain, NextIfReady)
         {
             auto cb = frame->commandBuffer();
             cb->begin();
-
-
-            ImageBarrier barrier{.texture=frame->backBuffer(),.oldLayout=Texture::Layout::UNDEFINED, .newLayout = Texture::Layout::TRANSFER_DESTINATION};
-            cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
-            cb->clearColorImage(frame->backBuffer(), {.floats={0, 1, 0, 1}}, Texture::Layout::TRANSFER_DESTINATION);
-            barrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
-            barrier.newLayout = Texture::Layout::PRESENT;
-            cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+            cb->clearColorImage(frame->backBuffer(), {.floats={0, 1, 0, 1}}, Texture::Layout::UNDEFINED, Texture::Layout::PRESENT,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
             cb->end();
             SlagLib::graphicsCard()->graphicsQueue()->submit(&cb,1, nullptr,0, nullptr,0,frame);
 
@@ -142,14 +121,7 @@ TEST(Swapchain, NextIfReady)
         {
             auto cb = frame->commandBuffer();
             cb->begin();
-
-            ImageBarrier barrier{.texture=frame->backBuffer(),.oldLayout=Texture::Layout::UNDEFINED, .newLayout = Texture::Layout::TRANSFER_DESTINATION};
-            cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
-            cb->clearColorImage(frame->backBuffer(), {.floats={0, 0, 1, 1}}, Texture::Layout::TRANSFER_DESTINATION);
-            barrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
-            barrier.newLayout = Texture::Layout::PRESENT;
-            cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
-
+            cb->clearColorImage(frame->backBuffer(), {.floats={0, 0, 1, 1}}, Texture::Layout::UNDEFINED, Texture::Layout::PRESENT,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
             cb->end();
             SlagLib::graphicsCard()->graphicsQueue()->submit(&cb,1, nullptr,0, nullptr,0,frame);
             frameCount2++;

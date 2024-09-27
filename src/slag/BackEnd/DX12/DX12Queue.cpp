@@ -2,6 +2,8 @@
 #include "DX12Queue.h"
 #include "DX12CommandBuffer.h"
 #include "DX12Lib.h"
+#include "DX12Frame.h"
+#include "DX12Swapchain.h"
 
 namespace slag
 {
@@ -105,7 +107,9 @@ namespace slag
             std::vector<ID3D12CommandList*> buffers(bufferCount, nullptr);
             for(size_t i=0; i< bufferCount; i++)
             {
-                buffers[i] = dynamic_cast<DX12CommandBuffer*>(commandBuffers[i])->_buffer;
+                auto cb = dynamic_cast<DX12CommandBuffer*>(commandBuffers[i]);
+                buffers[i] = cb->_buffer;
+                cb->_finished = new DX12Semaphore(0,true);
             }
             _queue->ExecuteCommandLists(bufferCount,buffers.data());
             for(size_t i=0; i< signalCount; i++)
@@ -113,11 +117,20 @@ namespace slag
                 auto semaphore = dynamic_cast<DX12Semaphore*>(signalSemaphores[i].semaphore);
                 _queue->Signal(semaphore->fence(),signalSemaphores[i].value);
             }
+            for(size_t i=0; i<bufferCount; i++)
+            {
+                auto cb = dynamic_cast<DX12CommandBuffer*>(commandBuffers[i]);
+                _queue->Signal(cb->_finished->fence(),1);
+            }
+
         }
 
         void DX12Queue::submit(CommandBuffer** commandBuffers, size_t bufferCount, SemaphoreValue* waitOnSemaphores, size_t waitCount, SemaphoreValue* signalSemaphores, size_t signalCount, Frame* presentFrame)
         {
-            throw std::runtime_error("not implemented");
+            auto frame = dynamic_cast<DX12Frame*>(presentFrame);
+            submit(commandBuffers,bufferCount,waitOnSemaphores,waitCount,signalSemaphores,signalCount);
+            UINT flags = frame->from()->presentMode() == Swapchain::MAILBOX ? DXGI_PRESENT_DO_NOT_SEQUENCE : 0;
+            frame->from()->underlyingSwapchain()->Present(0,flags);
         }
 
         ID3D12CommandQueue* DX12Queue::underlyingQueue()

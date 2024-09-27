@@ -1,6 +1,8 @@
 #include "DX12CommandBuffer.h"
 #include "DX12Lib.h"
 #include "../../Resources/ResourceManager.h"
+#include "DX12DescriptorPool.h"
+
 namespace slag
 {
     namespace dx
@@ -97,6 +99,13 @@ namespace slag
                 delete _finished;
                 _finished = nullptr;
             }
+        }
+
+        void DX12CommandBuffer::bindDescriptorPool(DescriptorPool* pool)
+        {
+            auto descriptorPool = dynamic_cast<DX12DescriptorPool*>(pool);
+            //_buffer->SetDescriptorHeaps(2,)
+            throw std::runtime_error("DX12CommandBuffer::bindDescriptorPool not implemented");
         }
 
     } // dx

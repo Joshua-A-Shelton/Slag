@@ -55,7 +55,7 @@ namespace slag
                     // creating it. The adapter with the largest dedicated video memory
                     // is favored.
                     if ((dxgiAdapterDesc1.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0 &&
-                        SUCCEEDED(D3D12CreateDevice(dxgiAdapter1.Get(),D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr)) &&dxgiAdapterDesc1.DedicatedVideoMemory > maxDedicatedVideoMemory )
+                        SUCCEEDED(D3D12CreateDevice(dxgiAdapter1.Get(),D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), nullptr)) &&dxgiAdapterDesc1.DedicatedVideoMemory > maxDedicatedVideoMemory )
                     {
                         maxDedicatedVideoMemory = dxgiAdapterDesc1.DedicatedVideoMemory;
                         dxgiAdapter1.As(&dxgiAdapter4);
@@ -95,11 +95,22 @@ namespace slag
         {
             switch(texLayout)
             {
-#define DEFINITION(slagName, vulkanName, directXName) case Texture::Layout::slagName: return directXName;
+#define DEFINITION(slagName, vulkanName, directXName, directXResourceName) case Texture::Layout::slagName: return directXName;
                 TEXTURE_LAYOUT_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
             }
             return  D3D12_BARRIER_LAYOUT_UNDEFINED;
+        }
+
+        D3D12_RESOURCE_STATES DX12Lib::stateLayout(Texture::Layout texLayout)
+        {
+            switch(texLayout)
+            {
+#define DEFINITION(slagName, vulkanName, directXName, directXResourceName) case Texture::Layout::slagName: return directXResourceName;
+                TEXTURE_LAYOUT_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            return  D3D12_RESOURCE_STATE_COMMON;
         }
 
         DX12Lib* DX12Lib::get()
@@ -176,19 +187,19 @@ namespace slag
         Buffer* DX12Lib::newBuffer(void* data, size_t dataSize, Buffer::Accessibility accessibility, Buffer::Usage usage)
         {
             D3D12_RESOURCE_STATES states = D3D12_RESOURCE_STATE_COMMON;
-            if(usage & Buffer::Usage::VertexBuffer)
+            if(usage & Buffer::Usage::VERTEX_BUFFER)
             {
                 states |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER ;
             }
-            if(usage & Buffer::Usage::IndexBuffer)
+            if(usage & Buffer::Usage::INDEX_BUFFER)
             {
                 states |= D3D12_RESOURCE_STATE_INDEX_BUFFER;
             }
-            if(usage & Buffer::Usage::Storage)
+            if(usage & Buffer::Usage::STORAGE_BUFFER)
             {
                 states |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
             }
-            if(usage & Buffer::Usage::Indirect)
+            if(usage & Buffer::Usage::INDIRECT_BUFFER)
             {
                 states |= D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT ;
             }
@@ -198,19 +209,19 @@ namespace slag
         Buffer* DX12Lib::newBuffer(size_t bufferSize, Buffer::Accessibility accessibility, Buffer::Usage usage)
         {
             D3D12_RESOURCE_STATES states = D3D12_RESOURCE_STATE_COMMON;
-            if(usage & Buffer::Usage::VertexBuffer)
+            if(usage & Buffer::Usage::VERTEX_BUFFER)
             {
                 states |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER ;
             }
-            if(usage & Buffer::Usage::IndexBuffer)
+            if(usage & Buffer::Usage::INDEX_BUFFER)
             {
                 states |= D3D12_RESOURCE_STATE_INDEX_BUFFER;
             }
-            if(usage & Buffer::Usage::Storage)
+            if(usage & Buffer::Usage::STORAGE_BUFFER)
             {
                 states |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
             }
-            if(usage & Buffer::Usage::Indirect)
+            if(usage & Buffer::Usage::INDIRECT_BUFFER)
             {
                 states |= D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT ;
             }

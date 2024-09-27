@@ -19,15 +19,15 @@ namespace slag
         enum Usage
         {
             //every buffer is implicitly a data buffer, use this when no other buffer usage flags apply
-            Data = 0b00000000,
+            DATA_BUFFER = 0b00000000,
             //Indicates the buffer contains vertex information
-            VertexBuffer = 0b00000001,
+            VERTEX_BUFFER = 0b00000001,
             //Indicates the buffer contains vertex indexes
-            IndexBuffer = 0b00000010,
+            INDEX_BUFFER = 0b00000010,
             //Indicates the buffer is shader writeable
-            Storage = 0b00000100,
+            STORAGE_BUFFER = 0b00000100,
             //Indicates the buffer is suitable as a parameter to indirect calls
-            Indirect = 0b00001000
+            INDIRECT_BUFFER = 0b00001000
         };
         virtual ~Buffer()=default;
         virtual void update(size_t offset, void* data, size_t dataLength)=0;

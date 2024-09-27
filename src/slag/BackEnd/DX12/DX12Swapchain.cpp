@@ -37,27 +37,21 @@ namespace slag
             swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHADER_INPUT | DXGI_USAGE_BACK_BUFFER;
             swapChainDesc.BufferCount = _backBuffers;
 
-            if(_presentMode == PresentMode::Discard)
-            {
-                swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
-                swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-            }
-            else
-            {
-                swapChainDesc.Scaling = DXGI_SCALING_NONE;
-                swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
-            }
+            swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
+            //this apparently doesn't have anything to do with double/triple buffering
+            swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+
             swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-            // It is recommended to always allow tearing if tearing support is available.
-            swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING | DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT | DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+            //TODO: I should allow/ disallow tearing if vsync is enabled
+            swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
             Microsoft::WRL::ComPtr<IDXGISwapChain1> swapChain1;
             //TODO: I apparently cant use sRGB formats for swapchain images, I think I need to force non sRGB as the image type, and use sRGB format as render target? see bottom of accepted answer on https://gamedev.stackexchange.com/questions/149822/direct3d-12-cant-create-a-swap-chain
             DX12Lib::card()->dxgiFactory()->CreateSwapChainForHwnd(dynamic_cast<DX12Queue*>(DX12Lib::card()->graphicsQueue())->underlyingQueue(),_surface,&swapChainDesc, nullptr, nullptr,&swapChain1);
             //this is the reason we have to wrap the swapchain in the ComPtr, I don't know how to do this without it
             swapChain1.As(&_swapchain);
-            //TODO: this may need to change based on the present mode
-            //_swapchain->SetMaximumFrameLatency(2);
+
+            _swapchain->SetMaximumFrameLatency(_backBuffers-1);
 
             _frames.clear();
             for(int i=0; i< _backBuffers; i++)
@@ -72,14 +66,18 @@ namespace slag
 
         Frame* DX12Swapchain::next()
         {
-            HANDLE waitOn = _swapchain->GetFrameLatencyWaitableObject();
-            WaitForSingleObjectEx(waitOn,1000,true);
-            return &_frames[_swapchain->GetCurrentBackBufferIndex()];
+            auto frame = &_frames[_swapchain->GetCurrentBackBufferIndex()];
+            frame->commandBuffer()->waitUntilFinished();
+            return frame;
         }
 
         Frame* DX12Swapchain::nextIfReady()
         {
-            throw std::runtime_error("not implemented");
+            auto frame = &_frames[_swapchain->GetCurrentBackBufferIndex()];
+            if(frame->commandBuffer()->isFinished())
+            {
+                return frame;
+            }
             return nullptr;
         }
 
@@ -124,6 +122,7 @@ namespace slag
             _width = width;
             _height = height;
             _swapchain->ResizeBuffers(_backBuffers,_width,_height,_format,0);
+            _swapchain->SetMaximumFrameLatency(_backBuffers-1);
         }
 
         Swapchain::PresentMode DX12Swapchain::presentMode()
@@ -133,7 +132,9 @@ namespace slag
 
         void DX12Swapchain::presentMode(Swapchain::PresentMode mode)
         {
-            throw std::runtime_error("not implemented");
+            _presentMode = mode;
         }
+
+
     } // dx
 } // slag

@@ -25,6 +25,7 @@ namespace slag
 
             void waitUntilFinished()override;
             bool isFinished()override;
+            void bindDescriptorPool(DescriptorPool* pool)override;
             friend class VulkanQueue;
             friend class VulkanFrame;
 

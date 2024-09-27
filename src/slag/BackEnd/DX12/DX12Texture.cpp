@@ -1,3 +1,4 @@
+#include <cassert>
 #include "DX12Texture.h"
 #include "DX12Lib.h"
 #include "DX12Buffer.h"
@@ -8,15 +9,40 @@ namespace slag
     {
         DX12Texture::DX12Texture(ID3D12Resource* dx12Texture, bool ownTexture, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
+            assert(!(usage & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET && usage & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) && "Texture cannot be both render target and depth stencil");
             _texture = dx12Texture;
             _format = textureFormat;
             _width = width;
             _height = height;
             _mipLevels = mipLevels;
             _usage = usage;
+
+            D3D12_DESCRIPTOR_HEAP_DESC desc = {};
+            desc.NumDescriptors = 1;
+            if(usage & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
+            {
+                desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+                DX12Lib::card()->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_heap));
+                _view = _heap->GetCPUDescriptorHandleForHeapStart();
+                DX12Lib::card()->device()->CreateRenderTargetView(_texture, nullptr,_view);
+            }
+            else if(usage & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)
+            {
+                desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+                DX12Lib::card()->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_heap));
+                _view = _heap->GetCPUDescriptorHandleForHeapStart();
+                DX12Lib::card()->device()->CreateDepthStencilView(_texture, nullptr,_view);
+            }
+
+
+            auto heap = _heap;
             if(ownTexture)
             {
-                _disposeFunction = [=]{dx12Texture->Release();};
+                _disposeFunction = [=]{dx12Texture->Release(); if(heap)(heap->Release());};
+            }
+            else
+            {
+                _disposeFunction = [=]{if(heap)(heap->Release());};
             }
         }
 
@@ -57,7 +83,16 @@ namespace slag
         void DX12Texture::move(DX12Texture&& from)
         {
             resources::Resource::move(from);
+            std::swap(_texture,from._texture);
             std::swap(_allocation,from._allocation);
+            std::swap(_heap,from._heap);
+
+            _view = from._view;
+            _width = from._width;
+            _height = from._height;
+            _mipLevels = from._mipLevels;
+            _format = from._format;
+            _usage = from._usage;
         }
 
         void* DX12Texture::gpuID()
@@ -67,6 +102,7 @@ namespace slag
 
         void DX12Texture::build(DX12CommandBuffer* onBuffer, void* texelData, size_t dataSize, DXGI_FORMAT dataFormat, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, D3D12_BARRIER_LAYOUT initializedLayout, bool generateMips)
         {
+            assert(!(usage & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET && usage & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) && "Texture cannot be both render target and depth stencil");
             _width = width;
             _height = height;
             _mipLevels = mipLevels;
@@ -91,12 +127,31 @@ namespace slag
 
             DX12Lib::card()->allocator()->CreateResource(&allocationDesc,&resourceDesc,D3D12_RESOURCE_STATE_COPY_DEST,nullptr,&_allocation, IID_PPV_ARGS(&_texture));
 
+            D3D12_DESCRIPTOR_HEAP_DESC desc = {};
+            desc.NumDescriptors = 1;
+            if(usage & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
+            {
+                desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+                DX12Lib::card()->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_heap));
+                _view = _heap->GetCPUDescriptorHandleForHeapStart();
+                DX12Lib::card()->device()->CreateRenderTargetView(_texture, nullptr,_view);
+            }
+            else if(usage & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)
+            {
+                desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+                DX12Lib::card()->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_heap));
+                _view = _heap->GetCPUDescriptorHandleForHeapStart();
+                DX12Lib::card()->device()->CreateDepthStencilView(_texture, nullptr,_view);
+            }
+
             auto tex = _texture;
             auto alloc = _allocation;
+            auto heap = _heap;
             _disposeFunction = [=]()
             {
                 tex->Release();
                 alloc->Release();
+                if(heap)(heap->Release());
             };
 
             DX12Buffer tempBuffer(texelData,dataSize,Buffer::Accessibility::CPU_AND_GPU,D3D12_RESOURCE_STATE_COMMON,true);
@@ -152,6 +207,11 @@ namespace slag
                     throw std::runtime_error("Cannot generate mip maps on Transfer Queue");
                     break;
             }
+        }
+
+        D3D12_CPU_DESCRIPTOR_HANDLE DX12Texture::descriptorHandle()
+        {
+            return _view;
         }
 
     } // dx

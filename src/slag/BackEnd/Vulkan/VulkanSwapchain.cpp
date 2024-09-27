@@ -106,11 +106,11 @@ namespace slag
                 vkWaitForFences(VulkanLib::card()->device(), _imageAcquiredFences.size(), _imageAcquiredFences.data(), true, 1000000);
             }
             VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
-            if(_presentMode == PresentMode::Sequential)
+            if(_presentMode == PresentMode::FIFO)
             {
                 presentMode = VK_PRESENT_MODE_FIFO_KHR;
             }
-            else if(_presentMode == PresentMode::Discard)
+            else if(_presentMode == PresentMode::MAILBOX)
             {
                 presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
             }
@@ -139,11 +139,11 @@ namespace slag
             _swapchain = chain.value();
             if(chain->present_mode == VK_PRESENT_MODE_FIFO_KHR)
             {
-                _presentMode = PresentMode::Sequential;
+                _presentMode = PresentMode::FIFO;
             }
             else if(chain->present_mode == VK_PRESENT_MODE_MAILBOX_KHR)
             {
-                _presentMode = PresentMode::Discard;
+                _presentMode = PresentMode::MAILBOX;
             }
             auto images = chain->get_images().value();
             for(int i=0; i< images.size(); i++)

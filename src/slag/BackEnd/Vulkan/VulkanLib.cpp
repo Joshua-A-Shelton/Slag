@@ -126,7 +126,7 @@ namespace slag
         {
             switch(layout)
             {
-#define DEFINITION(slagName, vulkanName, directXName) case Texture::slagName: return vulkanName;
+#define DEFINITION(slagName, vulkanName, directXName, directXResourceName) case Texture::slagName: return vulkanName;
                 TEXTURE_LAYOUT_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
             }
@@ -218,19 +218,19 @@ namespace slag
         {
             VkBufferUsageFlags usageFlags = 0;
 
-            if(usage & Buffer::Usage::VertexBuffer)
+            if(usage & Buffer::Usage::VERTEX_BUFFER)
             {
                 usageFlags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
             }
-            if(usage & Buffer::Usage::IndexBuffer)
+            if(usage & Buffer::Usage::INDEX_BUFFER)
             {
                 usageFlags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
             }
-            if(usage & Buffer::Usage::Storage)
+            if(usage & Buffer::Usage::STORAGE_BUFFER)
             {
                 usageFlags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
             }
-            if(usage & Buffer::Usage::Indirect)
+            if(usage & Buffer::Usage::INDIRECT_BUFFER)
             {
                 usageFlags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
             }
@@ -242,19 +242,19 @@ namespace slag
         {
             VkBufferUsageFlags usageFlags = 0;
 
-            if(usage & Buffer::Usage::VertexBuffer)
+            if(usage & Buffer::Usage::VERTEX_BUFFER)
             {
                 usageFlags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
             }
-            if(usage & Buffer::Usage::IndexBuffer)
+            if(usage & Buffer::Usage::INDEX_BUFFER)
             {
                 usageFlags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
             }
-            if(usage & Buffer::Usage::Storage)
+            if(usage & Buffer::Usage::STORAGE_BUFFER)
             {
                 usageFlags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
             }
-            if(usage & Buffer::Usage::Indirect)
+            if(usage & Buffer::Usage::INDIRECT_BUFFER)
             {
                 usageFlags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
             }

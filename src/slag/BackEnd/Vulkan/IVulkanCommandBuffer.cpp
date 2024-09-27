@@ -39,8 +39,10 @@ namespace slag
             return _buffer;
         }
 
-        void IVulkanCommandBuffer::clearColorImage(Texture* texture, ClearColor color, Texture::Layout layout)
+        void IVulkanCommandBuffer::clearColorImage(Texture* texture, ClearColor color, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore, PipelineStages syncAfter)
         {
+            ImageBarrier barrier{.texture=texture,.oldLayout=currentLayout,.newLayout=Texture::TRANSFER_DESTINATION,.accessBefore=BarrierAccessFlags::NONE,.accessAfter=BarrierAccessFlags::NONE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::TRANSFER};
+            insertBarriers(&barrier,1, nullptr,0, nullptr,0);
             auto tex = dynamic_cast<VulkanTexture*>(texture);
             VkImageSubresourceRange range{};
             range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -48,8 +50,14 @@ namespace slag
             range.baseMipLevel = 0;
             range.layerCount = 1;
             range.levelCount = tex->mipLevels();
-            vkCmdClearColorImage(_buffer, tex->image(), VulkanLib::layout(layout),
-                                 reinterpret_cast<const VkClearColorValue*>(&color), 1, &range);
+            vkCmdClearColorImage(_buffer, tex->image(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL , reinterpret_cast<const VkClearColorValue*>(&color), 1, &range);
+            barrier.oldLayout = Texture::TRANSFER_DESTINATION;
+            barrier.newLayout = endingLayout;
+            barrier.accessBefore = BarrierAccessFlags::ALL_READ;
+            barrier.accessAfter = BarrierAccessFlags::NONE;
+            barrier.syncBefore = PipelineStageFlags::TRANSFER;
+            barrier.syncAfter = syncAfter;
+            insertBarriers(&barrier,1, nullptr,0, nullptr,0);
         }
 
         void IVulkanCommandBuffer::insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount)

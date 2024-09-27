@@ -14,8 +14,8 @@ namespace slag
     public:
         enum PresentMode
         {
-            Discard,
-            Sequential
+            MAILBOX,
+            FIFO
         };
         virtual ~Swapchain()=default;
         virtual Frame* next() = 0;

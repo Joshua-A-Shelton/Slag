@@ -28,6 +28,7 @@ namespace slag
             PresentMode presentMode()override;
             void presentMode(PresentMode mode)override;
             Microsoft::WRL::ComPtr<IDXGISwapChain4>& underlyingSwapchain();
+
         private:
             void rebuild();
             HWND _surface= nullptr;
@@ -35,7 +36,7 @@ namespace slag
             uint32_t _width=0;
             uint32_t _height=0;
             uint8_t _backBuffers=0;
-            PresentMode _presentMode = PresentMode::Discard;
+            PresentMode _presentMode = PresentMode::MAILBOX;
             DXGI_FORMAT _format;
 
             std::vector<DX12Frame> _frames;
