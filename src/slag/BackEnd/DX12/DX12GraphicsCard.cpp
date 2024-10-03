@@ -1,6 +1,7 @@
 #include <iostream>
 #include "DX12GraphicsCard.h"
 #include "DX12Lib.h"
+#include "directx/d3dx12.h"
 
 namespace slag
 {
@@ -94,6 +95,11 @@ namespace slag
             allocatorDesc.Flags = static_cast<D3D12MA::ALLOCATOR_FLAGS>(D3D12MA::ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED | D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED);
             D3D12MA::CreateAllocator(&allocatorDesc,&_allocator);
 
+            D3D12_DESCRIPTOR_HEAP_DESC samplerHeapDesc = {};
+            samplerHeapDesc.NumDescriptors = 2048;
+            samplerHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+            samplerHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+            _device->CreateDescriptorHeap(&samplerHeapDesc, IID_PPV_ARGS(&_samplerHeap));
         }
 
         DX12GraphicsCard::~DX12GraphicsCard()
@@ -113,6 +119,10 @@ namespace slag
             if(_allocator)
             {
                 _allocator->Release();
+            }
+            if(_samplerHeap)
+            {
+                _samplerHeap->Release();
             }
             //_dxgiFactory->Release();
             //_device->Release();
@@ -149,14 +159,40 @@ namespace slag
             return _allocator;
         }
 
+        ID3D12DescriptorHeap* DX12GraphicsCard::samplerHeap()
+        {
+            return _samplerHeap;
+        }
+
         void DX12GraphicsCard::defragmentMemory()
         {
-            throw std::runtime_error("not implemented");
+            throw std::runtime_error("DX12GraphicsCard::defragmentMemory not implemented");
         }
 
         bool DX12GraphicsCard::supportsEnhancedBarriers()
         {
             return _supportsEnhancedBarriers;
+        }
+
+        D3D12_CPU_DESCRIPTOR_HANDLE DX12GraphicsCard::getSamplerHandle()
+        {
+            if(!_freedSamplerHandles.empty())
+            {
+                auto handle = _freedSamplerHandles.front();
+                _freedSamplerHandles.pop();
+                return handle;
+            }
+
+            auto h = _samplerHeap->GetCPUDescriptorHandleForHeapStart();
+            h.ptr+=(_samplerIndex*_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER));
+            auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(_samplerHeap->GetCPUDescriptorHandleForHeapStart(),_samplerIndex,_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER)) ;//_samplerHeap->GetCPUDescriptorHandleForHeapStart().MakeOffsetted(_samplerIndex*_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER));
+            _samplerIndex++;
+            return handle;
+        }
+
+        void DX12GraphicsCard::freeSamplerHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle)
+        {
+            _freedSamplerHandles.push(handle);
         }
     } // dx
 } // slag

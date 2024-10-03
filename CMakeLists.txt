@@ -41,6 +41,8 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/BackEnd/Vulkan/VulkanBuffer.h
             src/slag/BackEnd/Vulkan/IVulkanCommandBuffer.cpp
             src/slag/BackEnd/Vulkan/IVulkanCommandBuffer.h
+            src/slag/BackEnd/Vulkan/VulkanSampler.cpp
+            src/slag/BackEnd/Vulkan/VulkanSampler.h
     )
 endif()
 
@@ -72,7 +74,9 @@ if(SLAG_DX12_BACKEND)
             src/slag/BackEnd/DX12/DX12Buffer.cpp
             src/slag/BackEnd/DX12/DX12Buffer.h
             src/slag/BackEnd/DX12/DX12DescriptorPool.cpp
-            src/slag/BackEnd/DX12/DX12DescriptorPool.h)
+            src/slag/BackEnd/DX12/DX12DescriptorPool.h
+            src/slag/BackEnd/DX12/DX12Sampler.cpp
+            src/slag/BackEnd/DX12/DX12Sampler.h)
 endif()
 
 add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
@@ -112,6 +116,8 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/ICommandBuffer.h
         src/slag/DescriptorPool.cpp
         src/slag/DescriptorPool.h
+        src/slag/Sampler.cpp
+        src/slag/Sampler.h
 )
 target_include_directories(Slag PRIVATE ${Boost_INCLUDE_DIRS} third-party/stb)
 

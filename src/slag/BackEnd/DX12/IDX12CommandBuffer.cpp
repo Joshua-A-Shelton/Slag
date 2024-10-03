@@ -36,8 +36,8 @@ namespace slag
                         auto image = dynamic_cast<DX12Texture*>(barrier.texture);
                         auto& dxBarrier = textureBarriers[i];
                         dxBarrier.pResource = image->texture();
-                        dxBarrier.LayoutBefore = DX12Lib::layout(barrier.oldLayout);
-                        dxBarrier.LayoutAfter = DX12Lib::layout(barrier.newLayout);
+                        dxBarrier.LayoutBefore = DX12Lib::barrierLayout(barrier.oldLayout);
+                        dxBarrier.LayoutAfter = DX12Lib::barrierLayout(barrier.newLayout);
                         dxBarrier.AccessBefore = std::bit_cast<D3D12_BARRIER_ACCESS>(barrier.accessBefore);
                         dxBarrier.AccessAfter = std::bit_cast<D3D12_BARRIER_ACCESS>(barrier.accessAfter);
                         dxBarrier.SyncBefore = std::bit_cast<D3D12_BARRIER_SYNC>(barrier.syncBefore);

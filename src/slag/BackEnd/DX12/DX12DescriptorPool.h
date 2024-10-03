@@ -11,7 +11,7 @@ namespace slag
         class DX12DescriptorPool: public DescriptorPool
         {
         public:
-            DX12DescriptorPool(size_t descriptorHeapSize, size_t textureHeapSize);
+            DX12DescriptorPool(size_t descriptorHeapSize);
             ~DX12DescriptorPool()override;
             DX12DescriptorPool(const DX12DescriptorPool&)=delete;
             DX12DescriptorPool& operator=(const DX12DescriptorPool&)=delete;
@@ -20,9 +20,7 @@ namespace slag
             void reset()override;
         private:
             void move(DX12DescriptorPool&& from);
-            ID3D12DescriptorHeap* _heaps[2]{nullptr, nullptr};
-            ID3D12DescriptorHeap*& _descriptorHeap = _heaps[0];
-            ID3D12DescriptorHeap*& _textureHeap = _heaps[1];
+            ID3D12DescriptorHeap* _descriptorHeap = nullptr;
         };
 
     } // dx

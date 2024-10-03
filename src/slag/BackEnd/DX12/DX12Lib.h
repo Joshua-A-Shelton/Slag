@@ -17,10 +17,13 @@ namespace slag
             static DX12Lib* get();
             static DX12GraphicsCard* card();
             static DXGI_FORMAT format(Pixels::Format pixelFormat);
-            static D3D12_BARRIER_LAYOUT layout(Texture::Layout texLayout);
+            static D3D12_BARRIER_LAYOUT barrierLayout(Texture::Layout texLayout);
             static D3D12_RESOURCE_STATES stateLayout(Texture::Layout texLayout);
-            DX12Lib(DX12GraphicsCard* card);
-            ~DX12Lib();
+            static D3D12_TEXTURE_ADDRESS_MODE addressMode(Sampler::AddressMode mode);
+            static D3D12_FILTER filter(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, bool ansitrophyEnabled);
+            static D3D12_COMPARISON_FUNC comparisonFunction(Sampler::ComparisonFunction compFunction);
+            explicit DX12Lib(DX12GraphicsCard* card);
+            ~DX12Lib() override;
             BackEnd identifier()override;
             GraphicsCard* graphicsCard()override;
             //Swapchain
@@ -29,12 +32,15 @@ namespace slag
             Texture* newTexture(void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage texUsage, Texture::Layout initializedLayout, bool generateMips)override;
             Texture* newTexture(CommandBuffer* onBuffer, void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage texUsage, Texture::Layout initializedLayout, bool generateMips)override;
             //CommandBuffers
-            CommandBuffer* newCommandBuffer(GpuQueue::QueueType acceptsCommands);
+            CommandBuffer* newCommandBuffer(GpuQueue::QueueType acceptsCommands)override;
             //Buffers
             Buffer* newBuffer(void* data, size_t dataSize, Buffer::Accessibility accessibility, Buffer::Usage usage)override;
             Buffer* newBuffer(size_t  bufferSize, Buffer::Accessibility accessibility, Buffer::Usage usage)override;
             //Semaphores
-            Semaphore* newSemaphore(uint64_t startingValue);
+            Semaphore* newSemaphore(uint64_t startingValue)override;
+            //Samplers
+            Sampler* newSampler(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, Sampler::AddressMode u, Sampler::AddressMode v, Sampler::AddressMode w, float mipLODBias, bool enableAnisotrophy, uint8_t maxAnisotrophy,Sampler::ComparisonFunction comparisonFunction, Color borderColor, float minLOD, float maxLOD)override;
+
             void waitFor(SemaphoreValue* values, size_t count)override;
 
             DX12GraphicsCard* dx12GraphicsCard();

@@ -5,6 +5,7 @@
 #include "DX12Texture.h"
 #include "DX12Swapchain.h"
 #include "DX12Buffer.h"
+#include "DX12Sampler.h"
 #include <wrl.h>
 #include <dxgi1_4.h>
 #include <dxgi1_6.h>
@@ -91,7 +92,7 @@ namespace slag
             return DXGI_FORMAT_UNKNOWN;
         }
 
-        D3D12_BARRIER_LAYOUT DX12Lib::layout(Texture::Layout texLayout)
+        D3D12_BARRIER_LAYOUT DX12Lib::barrierLayout(Texture::Layout texLayout)
         {
             switch(texLayout)
             {
@@ -111,6 +112,88 @@ namespace slag
 #undef DEFINITION
             }
             return  D3D12_RESOURCE_STATE_COMMON;
+        }
+
+        D3D12_COMPARISON_FUNC DX12Lib::comparisonFunction(Sampler::ComparisonFunction compFunction)
+        {
+            switch (compFunction)
+            {
+#define DEFINITION(slagName, vulkanName, dx12Name) case Sampler::slagName:return dx12Name;
+                SAMPLER_COMPARISON_FUNCTION(DEFINITION)
+#undef DEFINITION
+            }
+            return D3D12_COMPARISON_FUNC_NONE;
+        }
+
+        D3D12_TEXTURE_ADDRESS_MODE DX12Lib::addressMode(Sampler::AddressMode mode)
+        {
+            switch(mode)
+            {
+#define DEFINITION(slagName, vulkanName, dx12Name) case Sampler::slagName: return dx12Name;
+                SAMPLER_ADDRESS_MODES_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        }
+
+        //TODO: this whole function is... a best guess, there's a lot of difference between how DX handles this and Vulkan handles it
+        D3D12_FILTER DX12Lib::filter(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, bool ansitrophyEnabled)
+        {
+            if(ansitrophyEnabled)
+            {
+                return D3D12_FILTER_ANISOTROPIC;
+            }
+            if(minFilter == Sampler::Filter::LINEAR)
+            {
+                if(magFilter == Sampler::Filter::LINEAR)
+                {
+                    if(mipMapFilter == Sampler::Filter::LINEAR)
+                    {
+                        return D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+                    }
+                    else if(mipMapFilter == Sampler::Filter::NEAREST)
+                    {
+                        return D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+                    }
+                }
+                else if(magFilter == Sampler::Filter::NEAREST)
+                {
+                    if(mipMapFilter == Sampler::Filter::LINEAR)
+                    {
+                        return D3D12_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
+                    }
+                    else if(mipMapFilter == Sampler::Filter::NEAREST)
+                    {
+                        return D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT;
+                    }
+                }
+            }
+            else if(minFilter == Sampler::Filter::NEAREST)
+            {
+                if(magFilter == Sampler::Filter::LINEAR)
+                {
+                    if(mipMapFilter == Sampler::Filter::LINEAR)
+                    {
+                        return D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR;
+                    }
+                    else if(mipMapFilter == Sampler::Filter::NEAREST)
+                    {
+                        return D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;
+                    }
+                }
+                else if(magFilter == Sampler::Filter::NEAREST)
+                {
+                    if(mipMapFilter == Sampler::Filter::LINEAR)
+                    {
+                        return D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR;
+                    }
+                    else if(mipMapFilter == Sampler::Filter::NEAREST)
+                    {
+                        return D3D12_FILTER_MIN_MAG_MIP_POINT;
+                    }
+                }
+            }
+            return D3D12_FILTER_ANISOTROPIC;
         }
 
         DX12Lib* DX12Lib::get()
@@ -171,12 +254,14 @@ namespace slag
 
         Texture* DX12Lib::newTexture(void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage texUsage, Texture::Layout initializedLayout, bool generateMips)
         {
-            return new DX12Texture(texelData,dataSize, format(dataFormat), format(textureFormat),width, height, mipLevels,std::bit_cast<D3D12_RESOURCE_FLAGS>(texUsage), layout(initializedLayout),generateMips,false);
+            return new DX12Texture(texelData, dataSize, format(dataFormat), format(textureFormat), width, height, mipLevels, std::bit_cast<D3D12_RESOURCE_FLAGS>(texUsage),
+                                   barrierLayout(initializedLayout), generateMips, false);
         }
 
         Texture* DX12Lib::newTexture(CommandBuffer* onBuffer, void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage texUsage, Texture::Layout initializedLayout, bool generateMips)
         {
-            return new DX12Texture(dynamic_cast<DX12CommandBuffer*>(onBuffer),texelData,dataSize, format(dataFormat), format(textureFormat),width, height, mipLevels,std::bit_cast<D3D12_RESOURCE_FLAGS>(texUsage), layout(initializedLayout),generateMips,false);
+            return new DX12Texture(dynamic_cast<DX12CommandBuffer*>(onBuffer), texelData, dataSize, format(dataFormat), format(textureFormat), width, height, mipLevels, std::bit_cast<D3D12_RESOURCE_FLAGS>(texUsage),
+                                   barrierLayout(initializedLayout), generateMips, false);
         }
 
         CommandBuffer* DX12Lib::newCommandBuffer(GpuQueue::QueueType acceptsCommands)
@@ -236,6 +321,12 @@ namespace slag
         Swapchain* DX12Lib::newSwapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode, Pixels::Format imageFormat)
         {
             return new DX12Swapchain(platformData,width,height,backBuffers,mode, format(imageFormat));
+        }
+
+        Sampler* DX12Lib::newSampler(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, Sampler::AddressMode u, Sampler::AddressMode v, Sampler::AddressMode w,
+                                     float mipLODBias, bool enableAnisotrophy, uint8_t maxAnisotrophy, Sampler::ComparisonFunction comparisonFunction, Color borderColor, float minLOD, float maxLOD)
+        {
+            return new DX12Sampler(minFilter,magFilter,mipMapFilter,u,v,w,mipLODBias,enableAnisotrophy,maxAnisotrophy,comparisonFunction,borderColor,minLOD,maxLOD,false);
         }
 
     } // dx

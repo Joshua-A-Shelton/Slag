@@ -27,6 +27,8 @@ namespace slag
             //Semaphores
             virtual Semaphore* newSemaphore(uint64_t startingValue)=0;
             virtual void waitFor(SemaphoreValue* values, size_t count)=0;
+            //Samplers
+            virtual Sampler* newSampler(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, Sampler::AddressMode u, Sampler::AddressMode v, Sampler::AddressMode w, float mipLODBias, bool enableAnisotrophy, uint8_t maxAnisotrophy,Sampler::ComparisonFunction comparisonFunction, Color borderColor, float minLOD, float maxLOD)=0;
         };
 
     }

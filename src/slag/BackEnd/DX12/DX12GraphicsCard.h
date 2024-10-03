@@ -26,6 +26,9 @@ namespace slag
             GpuQueue* computeQueue()override;
 
             D3D12MA::Allocator* allocator();
+            D3D12_CPU_DESCRIPTOR_HANDLE getSamplerHandle();
+            void freeSamplerHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle);
+            ID3D12DescriptorHeap* samplerHeap();
             bool supportsEnhancedBarriers();
 
             void defragmentMemory()override;
@@ -36,6 +39,9 @@ namespace slag
             DX12Queue* _transfer = nullptr;
             DX12Queue* _compute = nullptr;
             D3D12MA::Allocator* _allocator = nullptr;
+            ID3D12DescriptorHeap* _samplerHeap = nullptr;
+            size_t _samplerIndex = 0;
+            std::queue<D3D12_CPU_DESCRIPTOR_HANDLE> _freedSamplerHandles;
 
             bool _supportsEnhancedBarriers = false;
         };

@@ -24,6 +24,10 @@ namespace slag
 
             static VulkanizedFormat format(Pixels::Format format);
             static VkImageLayout layout(Texture::Layout layout);
+            static VkFilter filter(Sampler::Filter filter);
+            static VkSamplerMipmapMode mipMapMode(Sampler::Filter filter);
+            static VkSamplerAddressMode addressMode(Sampler::AddressMode addressMode);
+            static VkCompareOp compareOp(Sampler::ComparisonFunction comparisonFunction);
 
             VulkanLib(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VulkanGraphicsCard* card);
             ~VulkanLib();
@@ -49,6 +53,8 @@ namespace slag
             //Semaphores
             Semaphore* newSemaphore(uint64_t startingValue)override;
             void waitFor(SemaphoreValue* values, size_t count)override;
+            //Samplers
+            Sampler* newSampler(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, Sampler::AddressMode u, Sampler::AddressMode v, Sampler::AddressMode w, float mipLODBias, bool enableAnisotrophy, uint8_t maxAnisotrophy,Sampler::ComparisonFunction comparisonFunction, Color borderColor, float minLOD, float maxLOD)override;
 
         private:
             static void mapFlags();

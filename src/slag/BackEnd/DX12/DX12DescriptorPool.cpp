@@ -5,7 +5,7 @@ namespace slag
 {
     namespace dx
     {
-        DX12DescriptorPool::DX12DescriptorPool(size_t descriptorHeapSize, size_t textureHeapSize)
+        DX12DescriptorPool::DX12DescriptorPool(size_t descriptorHeapSize)
         {
             throw std::runtime_error("DX12DescriptorPool::DX12DescriptorPool not implemented");
         }

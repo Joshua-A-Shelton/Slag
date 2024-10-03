@@ -7,6 +7,7 @@
 #include "VulkanQueue.h"
 #include "VulkanTexture.h"
 #include "Extensions.h"
+#include "VulkanSampler.h"
 
 namespace slag
 {
@@ -50,6 +51,7 @@ namespace slag
                                           .set_required_features_12(features1_2)
                                           .add_required_extension("VK_EXT_swapchain_maintenance1")
                                           .add_required_extension("VK_EXT_host_image_copy")
+                                          .add_required_extension("VK_EXT_custom_border_color")
                                           .defer_surface_initialization()
                                           .select();
             if(!physicalDevice.has_value())
@@ -131,6 +133,48 @@ namespace slag
 #undef DEFINITION
             }
             return VK_IMAGE_LAYOUT_UNDEFINED;
+        }
+
+        VkFilter VulkanLib::filter(Sampler::Filter filter)
+        {
+            switch (filter)
+            {
+#define DEFINITION(slagName, vulkanName) case Sampler::slagName: return vulkanName;
+                SAMPLER_FILTER_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+        }
+
+        VkSamplerMipmapMode VulkanLib::mipMapMode(Sampler::Filter filter)
+        {
+            switch (filter)
+            {
+                case Sampler::Filter::NEAREST:
+                    return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+                case Sampler::Filter::LINEAR:
+                    return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            }
+        }
+
+        VkSamplerAddressMode VulkanLib::addressMode(Sampler::AddressMode addressMode)
+        {
+            switch (addressMode)
+            {
+#define DEFINITION(slagName, vulkanName, dx12Name) case Sampler::slagName: return vulkanName;
+                SAMPLER_ADDRESS_MODES_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+        }
+
+        VkCompareOp VulkanLib::compareOp(Sampler::ComparisonFunction comparisonFunction)
+        {
+            switch (comparisonFunction)
+            {
+#define DEFINITION(slagName, vulkanName, dx12Name) case Sampler::slagName: return vulkanName;
+                SAMPLER_COMPARISON_FUNCTION(DEFINITION)
+#undef DEFINITION
+            }
+            return VK_COMPARE_OP_NEVER;
         }
 
         VulkanLib::VulkanLib(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VulkanGraphicsCard* card)
@@ -260,6 +304,11 @@ namespace slag
             }
 
             return new VulkanBuffer(bufferSize,accessibility,usageFlags, false);
+        }
+
+        Sampler* VulkanLib::newSampler(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, Sampler::AddressMode u, Sampler::AddressMode v, Sampler::AddressMode w, float mipLODBias, bool enableAnisotrophy, uint8_t maxAnisotrophy,Sampler::ComparisonFunction comparisonFunction, Color borderColor, float minLOD, float maxLOD)
+        {
+            return new VulkanSampler(minFilter,magFilter,mipMapFilter,u,v,w,mipLODBias,enableAnisotrophy,maxAnisotrophy,comparisonFunction,minLOD,maxLOD,borderColor, false);
         }
 
     } // vulkan

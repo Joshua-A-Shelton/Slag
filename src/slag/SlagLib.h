@@ -13,6 +13,7 @@
 #include "Pixel.h"
 #include "PlatformData.h"
 #include "Rectangle.h"
+#include "Sampler.h"
 #include "Semaphore.h"
 #include "Swapchain.h"
 #include "Texture.h"
