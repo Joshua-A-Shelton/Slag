@@ -168,11 +168,6 @@ namespace slag
             return temp.downloadDataCPU();
         }
 
-        void* VulkanBuffer::gpuID()
-        {
-            return _buffer;
-        }
-
         size_t VulkanBuffer::size()
         {
             return _size;

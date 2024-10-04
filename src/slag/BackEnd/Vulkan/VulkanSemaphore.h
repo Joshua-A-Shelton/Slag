@@ -17,7 +17,6 @@ namespace slag
             VulkanSemaphore& operator=(const VulkanSemaphore&)=delete;
             VulkanSemaphore(VulkanSemaphore&& from);
             VulkanSemaphore& operator=(VulkanSemaphore&& from);
-            void* gpuID()override;
             uint64_t value()override;
             void signal(uint64_t value)override;
             void waitForValue(uint64_t value)override;

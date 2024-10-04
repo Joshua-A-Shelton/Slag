@@ -5,6 +5,7 @@
 #include <functional>
 #include <mutex>
 #include "Resource.h"
+#include <boost/container_hash/hash.hpp>
 
 namespace slag
 {
@@ -28,8 +29,8 @@ namespace slag
             static inline std::mutex _activeCommandMutex;
             static inline std::unordered_set<ResourceConsumer*> _activeConsumers;
             static inline std::mutex _resourcesMutex;
-            static inline std::unordered_map<void*,ResourceState> _resources;
-            static void removeReferences(std::unordered_set<void*>& references);
+            static inline std::unordered_map<boost::uuids::uuid,ResourceState,boost::hash<boost::uuids::uuid>> _resources;
+            static void removeReferences(std::unordered_set<boost::uuids::uuid,boost::hash<boost::uuids::uuid>>& references);
 
         };
 

@@ -28,7 +28,6 @@ namespace slag
             VulkanTexture(VulkanTexture&& from);
             VulkanTexture& operator=(VulkanTexture&& from);
             void updateMipMaps(VulkanCommandBuffer* onBuffer,VkImageLayout startingLayout, VkImageLayout endingLayout);
-            void* gpuID()override;
             uint32_t width()override;
             uint32_t height()override;
             uint32_t mipLevels()override;

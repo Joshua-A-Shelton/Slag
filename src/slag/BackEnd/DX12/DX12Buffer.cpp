@@ -94,11 +94,6 @@ namespace slag
             _accessibility = from._accessibility;
         }
 
-        void* DX12Buffer::gpuID()
-        {
-            return _buffer;
-        }
-
         void DX12Buffer::update(size_t offset, void* data, size_t dataLength)
         {
             assert(offset+dataLength <= _size && "update extends beyond bound of buffer");

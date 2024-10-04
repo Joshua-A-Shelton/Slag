@@ -9,6 +9,8 @@ if(NOT WIN32)
     set(SLAG_DX12_BACKEND OFF)
 endif()
 
+find_package(Boost REQUIRED COMPONENTS uuid)
+
 if(SLAG_VULKAN_BACKEND)
     find_package(Vulkan REQUIRED)
     add_definitions(-DSLAG_VULKAN_BACKEND=1)
@@ -119,7 +121,13 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/Sampler.cpp
         src/slag/Sampler.h
 )
+target_link_libraries(Slag ${Boost_LIBRARIES})
 target_include_directories(Slag PRIVATE ${Boost_INCLUDE_DIRS} third-party/stb)
+
+#needed for boost uuid
+if(WIN32)
+    target_link_libraries(Slag bcrypt)
+endif()
 
 
 if(SLAG_VULKAN_BACKEND)

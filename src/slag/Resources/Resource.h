@@ -1,6 +1,7 @@
 #ifndef SLAG_RESOURCE_H
 #define SLAG_RESOURCE_H
 #include <functional>
+#include <boost/uuid/uuid.hpp>
 namespace slag
 {
     namespace resources
@@ -10,11 +11,14 @@ namespace slag
         public:
             Resource(bool destroyImmediately);
             virtual ~Resource()=default;
-            virtual void* gpuID()=0;
+            boost::uuids::uuid gpuID();
             friend class ResourceManager;
+        private:
+            boost::uuids::uuid _gpuID;
         protected:
             void move(Resource& from);
             void smartDestroy();
+
             std::function<void()> _disposeFunction = nullptr;
             bool _destroyImmediately = false;
         };

@@ -39,11 +39,6 @@ namespace slag
             return *this;
         }
 
-        void* DX12Semaphore::gpuID()
-        {
-            return _fence;
-        }
-
         uint64_t DX12Semaphore::value()
         {
             return _fence->GetCompletedValue();

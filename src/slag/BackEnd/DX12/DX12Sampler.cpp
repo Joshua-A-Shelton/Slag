@@ -162,11 +162,5 @@ namespace slag
         {
             return _maxLOD;
         }
-
-        void* DX12Sampler::gpuID()
-        {
-            //TODO: this..... likely isn't safe. The ptr may or may not be a pointer to cpu memory, it's a handle, and while it may work in a lot of cases..... yeah... I may need to assign UUIDs instead of void*
-            return reinterpret_cast<void*>(_descriptorHandle.ptr);
-        }
     } // dx
 } // slag

@@ -23,7 +23,6 @@ namespace slag
             DX12Texture& operator=(const DX12Texture&)=delete;
             DX12Texture(DX12Texture&& from);
             DX12Texture& operator=(DX12Texture&& from);
-            void* gpuID()override;
             uint32_t width()override;
             uint32_t height()override;
             uint32_t mipLevels()override;

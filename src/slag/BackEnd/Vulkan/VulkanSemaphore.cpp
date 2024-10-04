@@ -45,11 +45,6 @@ namespace slag
             return *this;
         }
 
-        void* VulkanSemaphore::gpuID()
-        {
-            return _semaphore;
-        }
-
         uint64_t VulkanSemaphore::value()
         {
             uint64_t value;

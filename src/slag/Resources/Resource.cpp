@@ -1,12 +1,15 @@
 #include "Resource.h"
 #include "ResourceManager.h"
+#include <boost/uuid/uuid_generators.hpp>
 namespace slag
 {
     namespace resources
     {
+        boost::uuids::random_generator RESOURCE_UUID_GENERATOR;
         Resource::Resource(bool destroyImmediately)
         {
             _destroyImmediately = destroyImmediately;
+            _gpuID = RESOURCE_UUID_GENERATOR();
         }
 
         void Resource::smartDestroy()
@@ -30,6 +33,12 @@ namespace slag
             from._destroyImmediately = true;
             _disposeFunction = from._disposeFunction;
             from._disposeFunction = nullptr;
+            _gpuID = from._gpuID;
+        }
+
+        boost::uuids::uuid Resource::gpuID()
+        {
+            return _gpuID;
         }
     }//resources
 } // slag

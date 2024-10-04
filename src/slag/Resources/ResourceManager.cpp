@@ -37,7 +37,7 @@ namespace slag
             _activeConsumers.erase(buffer);
         }
 
-        void ResourceManager::removeReferences(std::unordered_set<void*>& references)
+        void ResourceManager::removeReferences(std::unordered_set<boost::uuids::uuid,boost::hash<boost::uuids::uuid>>& references)
         {
             std::lock_guard<std::mutex> resourceGuard(_resourcesMutex);
             for(auto& reference: references)

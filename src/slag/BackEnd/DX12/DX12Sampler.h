@@ -46,7 +46,6 @@ namespace slag
             Color borderColor()override;
             float minLOD()override;
             float maxLOD()override;
-            void* gpuID()override;
         private:
             void move(DX12Sampler&& from);
             Filter _magFilter;

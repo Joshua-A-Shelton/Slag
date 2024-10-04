@@ -95,11 +95,6 @@ namespace slag
             _usage = from._usage;
         }
 
-        void* DX12Texture::gpuID()
-        {
-            return _allocation;
-        }
-
         void DX12Texture::build(DX12CommandBuffer* onBuffer, void* texelData, size_t dataSize, DXGI_FORMAT dataFormat, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, D3D12_BARRIER_LAYOUT initializedLayout, bool generateMips)
         {
             assert(!(usage & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET && usage & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) && "Texture cannot be both render target and depth stencil");

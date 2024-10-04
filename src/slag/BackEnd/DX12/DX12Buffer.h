@@ -22,7 +22,6 @@ namespace slag
             DX12Buffer(DX12Buffer&& from);
             DX12Buffer& operator=(DX12Buffer&& from);
 
-            void* gpuID()override;
             void update(size_t offset, void* data, size_t dataLength)override;
             std::vector<std::byte> downloadData()override;
             size_t size()override;

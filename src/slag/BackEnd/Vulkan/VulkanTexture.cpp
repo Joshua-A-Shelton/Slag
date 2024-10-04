@@ -309,11 +309,6 @@ namespace slag
             }
         }
 
-        void* VulkanTexture::gpuID()
-        {
-            return _allocation;
-        }
-
         VkImage VulkanTexture::copyVkImage()
         {
             VkImageCreateInfo dimg_info{};

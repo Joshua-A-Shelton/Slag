@@ -22,8 +22,6 @@ namespace slag
             DX12Semaphore(DX12Semaphore&& from);
             DX12Semaphore& operator=(DX12Semaphore&& from);
 
-            void* gpuID()override;
-
             uint64_t value()override;
             void signal(uint64_t value)override;
             void waitForValue(uint64_t value)override;

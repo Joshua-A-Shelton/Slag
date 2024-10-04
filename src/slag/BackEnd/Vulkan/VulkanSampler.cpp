@@ -6,11 +6,6 @@ namespace slag
     namespace vulkan
     {
 
-        void *VulkanSampler::gpuID()
-        {
-            return _sampler;
-        }
-
         VulkanSampler::VulkanSampler(Sampler::Filter minFilter,
                                      Sampler::Filter magFilter,
                                      Sampler::Filter mipMapFilter,

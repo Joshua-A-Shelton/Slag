@@ -16,7 +16,7 @@ namespace slag
             _resourceReferences.clear();
         }
 
-        void ResourceConsumer::addResourceReference(void* gpuID)
+        void ResourceConsumer::addResourceReference(boost::uuids::uuid gpuID)
         {
             std::lock_guard<std::mutex> resourceLock(_referencesMutex);
             _resourceReferences.insert(gpuID);
@@ -24,7 +24,6 @@ namespace slag
 
         void ResourceConsumer::move(ResourceConsumer& from)
         {
-            //_referencesMutex = from._referencesMutex;
             std::swap(_resourceReferences,from._resourceReferences);
         }
     } // resources

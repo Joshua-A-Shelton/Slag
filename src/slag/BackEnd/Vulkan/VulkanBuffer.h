@@ -20,7 +20,6 @@ namespace slag
             VulkanBuffer& operator=(const VulkanBuffer&)=delete;
             VulkanBuffer(VulkanBuffer&& from);
             VulkanBuffer& operator=(VulkanBuffer&& from);
-            void* gpuID()override;
             void update(size_t offset, void* data, size_t dataLength)override;
             std::vector<std::byte> downloadData()override;
             size_t size()override;

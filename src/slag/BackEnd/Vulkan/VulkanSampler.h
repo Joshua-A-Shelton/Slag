@@ -45,7 +45,6 @@ namespace slag
             float minLOD()override;
             float maxLOD()override;
 
-            void* gpuID()override;
             VkSampler vulkanSampler();
         private:
             void move(VulkanSampler&& from);
