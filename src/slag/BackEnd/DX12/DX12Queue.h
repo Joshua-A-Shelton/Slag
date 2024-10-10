@@ -7,6 +7,7 @@ namespace slag
     namespace dx
     {
 
+        class DX12Semaphore;
         class DX12Queue: public GpuQueue
         {
         public:
@@ -28,6 +29,7 @@ namespace slag
 
             QueueType type()override;
             ID3D12CommandQueue* underlyingQueue();
+            void signal(DX12Semaphore* semaphore, uint64_t value);
         private:
             void move(DX12Queue&& from);
             ID3D12CommandQueue* _queue = nullptr;

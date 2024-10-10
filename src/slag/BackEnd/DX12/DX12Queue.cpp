@@ -4,6 +4,7 @@
 #include "DX12Lib.h"
 #include "DX12Frame.h"
 #include "DX12Swapchain.h"
+#include "DX12Semaphore.h"
 
 namespace slag
 {
@@ -136,6 +137,11 @@ namespace slag
         ID3D12CommandQueue* DX12Queue::underlyingQueue()
         {
             return _queue;
+        }
+
+        void DX12Queue::signal(DX12Semaphore* semaphore, uint64_t value)
+        {
+            _queue->Signal(semaphore->fence(),value);
         }
 
     } // dx

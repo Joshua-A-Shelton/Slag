@@ -23,6 +23,9 @@ namespace slag
             {
                 _frames[i].commandBuffer()->waitUntilFinished();
             }
+            DX12Semaphore semaphore(0,true);
+            dynamic_cast<DX12Queue*>(DX12Lib::card()->graphicsQueue())->signal(&semaphore,1);
+            semaphore.waitForValue(1);
             _swapchain->Release();
         }
 

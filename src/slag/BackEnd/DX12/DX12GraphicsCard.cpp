@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cassert>
 #include "DX12GraphicsCard.h"
 #include "DX12Lib.h"
 #include "directx/d3dx12.h"
@@ -15,10 +16,11 @@ namespace slag
         DX12GraphicsCard::DX12GraphicsCard(const Microsoft::WRL::ComPtr<IDXGIAdapter4>& adapter, Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory)
         {
             _dxgiFactory = dxgiFactory;
-            D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&_device));
+            D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&_device));
             D3D12_FEATURE_DATA_D3D12_OPTIONS12 features{};
             _device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS12,&features,sizeof(features));
             _supportsEnhancedBarriers = features.EnhancedBarriersSupported;
+            assert(_supportsEnhancedBarriers && "Graphics card DX12 API must support enhanced barriers");
 #ifndef NDEBUG
             Microsoft::WRL::ComPtr<ID3D12InfoQueue> pInfoQueue;
             if (SUCCEEDED(_device.As(&pInfoQueue)))
@@ -125,7 +127,7 @@ namespace slag
                 _samplerHeap->Release();
             }
             _dxgiFactory->Release();
-            _device->Release();
+            //_device->Release();
         }
 
         ID3D12Device2* DX12GraphicsCard::device()

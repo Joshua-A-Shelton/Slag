@@ -33,92 +33,68 @@ namespace slag
 
         void IDX12CommandBuffer::insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount)
         {
-            if(DX12Lib::card()->supportsEnhancedBarriers())
+            std::vector<D3D12_BARRIER_GROUP> barrierGroups;
+            std::vector<D3D12_TEXTURE_BARRIER> textureBarriers(imageBarrierCount);
+            if (imageBarrierCount)
             {
-                std::vector<D3D12_BARRIER_GROUP> barrierGroups;
-                std::vector<D3D12_TEXTURE_BARRIER> textureBarriers(imageBarrierCount);
-                if (imageBarrierCount)
+                D3D12_BARRIER_GROUP imageGroup{};
+                imageGroup.Type = D3D12_BARRIER_TYPE::D3D12_BARRIER_TYPE_TEXTURE;
+                imageGroup.NumBarriers = imageBarrierCount;
+                for (size_t i = 0; i < imageBarrierCount; i++)
                 {
-                    D3D12_BARRIER_GROUP imageGroup{};
-                    imageGroup.Type = D3D12_BARRIER_TYPE::D3D12_BARRIER_TYPE_TEXTURE;
-                    imageGroup.NumBarriers = imageBarrierCount;
-                    for (size_t i = 0; i < imageBarrierCount; i++)
+                    auto& barrier = imageBarriers[i];
+                    auto image = dynamic_cast<DX12Texture*>(barrier.texture);
+                    auto& dxBarrier = textureBarriers[i];
+                    dxBarrier.pResource = image->texture();
+                    dxBarrier.LayoutBefore = DX12Lib::barrierLayout(barrier.oldLayout);
+                    dxBarrier.LayoutAfter = DX12Lib::barrierLayout(barrier.newLayout);
+                    dxBarrier.AccessBefore = std::bit_cast<D3D12_BARRIER_ACCESS>(barrier.accessBefore);
+                    dxBarrier.AccessAfter = std::bit_cast<D3D12_BARRIER_ACCESS>(barrier.accessAfter);
+                    dxBarrier.SyncBefore = std::bit_cast<D3D12_BARRIER_SYNC>(barrier.syncBefore);
+                    dxBarrier.SyncAfter = std::bit_cast<D3D12_BARRIER_SYNC>(barrier.syncAfter);
+                    if (barrier.oldLayout == Texture::Layout::UNDEFINED)
                     {
-                        auto& barrier = imageBarriers[i];
-                        auto image = dynamic_cast<DX12Texture*>(barrier.texture);
-                        auto& dxBarrier = textureBarriers[i];
-                        dxBarrier.pResource = image->texture();
-                        dxBarrier.LayoutBefore = DX12Lib::barrierLayout(barrier.oldLayout);
-                        dxBarrier.LayoutAfter = DX12Lib::barrierLayout(barrier.newLayout);
-                        dxBarrier.AccessBefore = std::bit_cast<D3D12_BARRIER_ACCESS>(barrier.accessBefore);
-                        dxBarrier.AccessAfter = std::bit_cast<D3D12_BARRIER_ACCESS>(barrier.accessAfter);
-                        dxBarrier.SyncBefore = std::bit_cast<D3D12_BARRIER_SYNC>(barrier.syncBefore);
-                        dxBarrier.SyncAfter = std::bit_cast<D3D12_BARRIER_SYNC>(barrier.syncAfter);
-                        if (barrier.oldLayout == Texture::Layout::UNDEFINED)
-                        {
-                            dxBarrier.Flags = D3D12_TEXTURE_BARRIER_FLAG_DISCARD;
-                        }
+                        dxBarrier.Flags = D3D12_TEXTURE_BARRIER_FLAG_DISCARD;
                     }
-                    barrierGroups.push_back(D3D12_BARRIER_GROUP(D3D12_BARRIER_TYPE::D3D12_BARRIER_TYPE_TEXTURE, static_cast<UINT32>(imageBarrierCount), {.pTextureBarriers=textureBarriers.data()}));
                 }
-
-                if (bufferBarrierCount > 0)
-                {
-                    std::vector<D3D12_BUFFER_BARRIER> gpuBufferBarriers(bufferBarrierCount);
-                    for (size_t i = 0; i < bufferBarrierCount; i++)
-                    {
-                        auto& barrierDesc = bufferBarriers[i];
-                        auto buffer = dynamic_cast<DX12Buffer*>(barrierDesc.buffer);
-                        auto& barrier = gpuBufferBarriers[i];
-                        barrier.pResource = buffer->underlyingBuffer();
-                        barrier.AccessBefore = std::bit_cast<D3D12_BARRIER_ACCESS>(barrierDesc.accessBefore);
-                        barrier.AccessAfter = std::bit_cast<D3D12_BARRIER_ACCESS>(barrierDesc.accessAfter);
-                        barrier.SyncBefore = std::bit_cast<D3D12_BARRIER_SYNC>(barrierDesc.syncBefore);
-                        barrier.SyncAfter = std::bit_cast<D3D12_BARRIER_SYNC>(barrierDesc.syncAfter);
-                    }
-                    barrierGroups.push_back(D3D12_BARRIER_GROUP(D3D12_BARRIER_TYPE::D3D12_BARRIER_TYPE_BUFFER, static_cast<UINT32>(bufferBarrierCount), {.pBufferBarriers=gpuBufferBarriers.data()}));
-                }
-
-
-                if (memoryBarrierCount > 0)
-                {
-                    std::vector<D3D12_GLOBAL_BARRIER> globalBarriers(memoryBarrierCount);
-                    for (size_t i = 0; i < memoryBarrierCount; i++)
-                    {
-                        auto& barrierDesc = memoryBarriers[i];
-                        auto barrier = globalBarriers[i];
-                        barrier.AccessBefore = std::bit_cast<D3D12_BARRIER_ACCESS>(barrierDesc.accessBefore);
-                        barrier.AccessAfter = std::bit_cast<D3D12_BARRIER_ACCESS>(barrierDesc.accessAfter);
-                        barrier.SyncBefore = std::bit_cast<D3D12_BARRIER_SYNC>(barrierDesc.syncBefore);
-                        barrier.SyncAfter = std::bit_cast<D3D12_BARRIER_SYNC>(barrierDesc.syncAfter);
-                    }
-                    barrierGroups.push_back(D3D12_BARRIER_GROUP(D3D12_BARRIER_TYPE::D3D12_BARRIER_TYPE_GLOBAL, static_cast<UINT32>(memoryBarrierCount), {.pGlobalBarriers=globalBarriers.data()}));
-
-                }
-
-                _buffer->Barrier(barrierGroups.size(), barrierGroups.data());
+                barrierGroups.push_back(D3D12_BARRIER_GROUP(D3D12_BARRIER_TYPE::D3D12_BARRIER_TYPE_TEXTURE, static_cast<UINT32>(imageBarrierCount), {.pTextureBarriers=textureBarriers.data()}));
             }
-            else
+
+            if (bufferBarrierCount > 0)
             {
-                std::vector<D3D12_RESOURCE_BARRIER> barriers;
-                for(size_t i=0; i< imageBarrierCount; i++)
-                {
-                    auto& barrierDesc = imageBarriers[i];
-                    auto image = dynamic_cast<DX12Texture*>(barrierDesc.texture);
-                    barriers.push_back({.Type=D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,.Transition={.pResource=image->texture(),.Subresource=D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,.StateBefore=DX12Lib::stateLayout(barrierDesc.oldLayout),.StateAfter=DX12Lib::stateLayout(barrierDesc.newLayout)}});
-                }
-                for(size_t i=0; i< bufferBarrierCount; i++)
+                std::vector<D3D12_BUFFER_BARRIER> gpuBufferBarriers(bufferBarrierCount);
+                for (size_t i = 0; i < bufferBarrierCount; i++)
                 {
                     auto& barrierDesc = bufferBarriers[i];
                     auto buffer = dynamic_cast<DX12Buffer*>(barrierDesc.buffer);
-                    barriers.push_back({.Type=D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_UAV,.UAV={.pResource =buffer->underlyingBuffer()}});
+                    auto& barrier = gpuBufferBarriers[i];
+                    barrier.pResource = buffer->underlyingBuffer();
+                    barrier.AccessBefore = std::bit_cast<D3D12_BARRIER_ACCESS>(barrierDesc.accessBefore);
+                    barrier.AccessAfter = std::bit_cast<D3D12_BARRIER_ACCESS>(barrierDesc.accessAfter);
+                    barrier.SyncBefore = std::bit_cast<D3D12_BARRIER_SYNC>(barrierDesc.syncBefore);
+                    barrier.SyncAfter = std::bit_cast<D3D12_BARRIER_SYNC>(barrierDesc.syncAfter);
                 }
-                if(memoryBarrierCount)
-                {
-                    barriers.push_back({.Type=D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_UAV,.UAV={.pResource =nullptr}});
-                }
-                _buffer->ResourceBarrier(barriers.size(),barriers.data());
+                barrierGroups.push_back(D3D12_BARRIER_GROUP(D3D12_BARRIER_TYPE::D3D12_BARRIER_TYPE_BUFFER, static_cast<UINT32>(bufferBarrierCount), {.pBufferBarriers=gpuBufferBarriers.data()}));
             }
+
+
+            if (memoryBarrierCount > 0)
+            {
+                std::vector<D3D12_GLOBAL_BARRIER> globalBarriers(memoryBarrierCount);
+                for (size_t i = 0; i < memoryBarrierCount; i++)
+                {
+                    auto& barrierDesc = memoryBarriers[i];
+                    auto barrier = globalBarriers[i];
+                    barrier.AccessBefore = std::bit_cast<D3D12_BARRIER_ACCESS>(barrierDesc.accessBefore);
+                    barrier.AccessAfter = std::bit_cast<D3D12_BARRIER_ACCESS>(barrierDesc.accessAfter);
+                    barrier.SyncBefore = std::bit_cast<D3D12_BARRIER_SYNC>(barrierDesc.syncBefore);
+                    barrier.SyncAfter = std::bit_cast<D3D12_BARRIER_SYNC>(barrierDesc.syncAfter);
+                }
+                barrierGroups.push_back(D3D12_BARRIER_GROUP(D3D12_BARRIER_TYPE::D3D12_BARRIER_TYPE_GLOBAL, static_cast<UINT32>(memoryBarrierCount), {.pGlobalBarriers=globalBarriers.data()}));
+
+            }
+
+            _buffer->Barrier(barrierGroups.size(), barrierGroups.data());
         }
 
         void IDX12CommandBuffer::clearColorImage(Texture* texture, ClearColor color, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore, PipelineStages syncAfter)

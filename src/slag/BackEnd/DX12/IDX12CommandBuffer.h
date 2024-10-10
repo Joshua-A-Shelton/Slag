@@ -9,6 +9,7 @@ namespace slag
 {
     namespace dx
     {
+        class DX12Semaphore;
         class IDX12CommandBuffer: public CommandBuffer
         {
         public:
