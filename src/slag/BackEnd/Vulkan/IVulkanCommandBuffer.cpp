@@ -60,6 +60,34 @@ namespace slag
             insertBarriers(&barrier,1, nullptr,0, nullptr,0);
         }
 
+        /*void IVulkanCommandBuffer::blit(Texture* source, Texture::Layout sourceLayout, Rectangle sourceRect, Texture* destination, Texture::Layout destinationLayout, Rectangle destinationRect, Sampler::Filter blitFilter)
+        {
+            for(int32_t i=0; i< destination->mipLevels(); i++)
+            {
+                Rectangle dstRect{.offset={destinationRect.offset.x/(i+1),destinationRect.offset.y/(i+1)},.extent={destination->width()>>i,destination->height()>>i}};
+                blit(source,sourceLayout,sourceRect,0,0,destination,destinationLayout,dstRect,i,0,blitFilter);
+            }
+        }*/
+
+        /*void IVulkanCommandBuffer::blit(Texture* source, Texture::Layout sourceLayout, Rectangle sourceRect, size_t sourceMipLevel, size_t sourceLayer, Texture* destination,
+                                        Texture::Layout destinationLayout, Rectangle destinationRect, size_t destinationMipLevel, size_t destinationLayer, Sampler::Filter blitFilter)
+        {
+            auto src = dynamic_cast<VulkanTexture*>(source);
+            auto dst = dynamic_cast<VulkanTexture*>(destination);
+            VkImageBlit blit{};
+            blit.srcOffsets[0] = {sourceRect.offset.x,sourceRect.offset.y,0};
+            blit.srcOffsets[1] = {static_cast<int32_t>(sourceRect.extent.width),static_cast<int32_t>(sourceRect.extent.height),1};
+            blit.srcSubresource.aspectMask = src->aspectFlags();
+            blit.srcSubresource.mipLevel = sourceMipLevel;
+            blit.srcSubresource.baseArrayLayer = 0;
+            blit.srcSubresource.layerCount = 1;
+            blit.dstSubresource.aspectMask = dst->aspectFlags();
+            blit.dstSubresource.mipLevel = destinationMipLevel;
+            blit.dstSubresource.baseArrayLayer = 0;
+            blit.dstSubresource.layerCount = 1;
+            vkCmdBlitImage(_buffer,src->image(),VulkanLib::layout(sourceLayout),dst->image(),VulkanLib::layout(destinationLayout),1,&blit,VulkanLib::filter(blitFilter));
+        }*/
+
         void IVulkanCommandBuffer::insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount)
         {
             std::vector<VkImageMemoryBarrier2> imageMemoryBarriers(imageBarrierCount,VkImageMemoryBarrier2{});

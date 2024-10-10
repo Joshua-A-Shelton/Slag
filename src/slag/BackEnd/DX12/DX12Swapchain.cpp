@@ -19,6 +19,11 @@ namespace slag
 
         DX12Swapchain::~DX12Swapchain()
         {
+            for(int i=0; i< _frames.size(); i++)
+            {
+                _frames[i].commandBuffer()->waitUntilFinished();
+            }
+            _swapchain->Release();
         }
 
         void DX12Swapchain::rebuild()
@@ -81,9 +86,9 @@ namespace slag
             return nullptr;
         }
 
-        Microsoft::WRL::ComPtr<IDXGISwapChain4>& DX12Swapchain::underlyingSwapchain()
+        IDXGISwapChain4* DX12Swapchain::underlyingSwapchain()
         {
-            return _swapchain;
+            return _swapchain.Get();
         }
 
         Frame* DX12Swapchain::currentFrame()

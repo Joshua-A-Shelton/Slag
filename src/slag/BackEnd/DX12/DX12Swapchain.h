@@ -27,7 +27,7 @@ namespace slag
             void resize(uint32_t width, uint32_t height)override;
             PresentMode presentMode()override;
             void presentMode(PresentMode mode)override;
-            Microsoft::WRL::ComPtr<IDXGISwapChain4>& underlyingSwapchain();
+            IDXGISwapChain4* underlyingSwapchain();
 
         private:
             void rebuild();

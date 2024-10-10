@@ -9,6 +9,18 @@ namespace slag
 {
     namespace dx
     {
+        void IDX12CommandBuffer::move(IDX12CommandBuffer& from)
+        {
+            std::swap(_pool,from._pool);
+            std::swap(_buffer,from._buffer);
+            _commandType = from._commandType;
+        }
+
+        ID3D12GraphicsCommandList7* IDX12CommandBuffer::underlyingCommandBuffer()
+        {
+            return _buffer;
+        }
+
         void IDX12CommandBuffer::end()
         {
             _buffer->Close();
@@ -124,6 +136,7 @@ namespace slag
             insertBarriers(&barrier,1, nullptr,0, nullptr,0);
         }
 
+
         void IDX12CommandBuffer::copyBuffer(Buffer* source, size_t sourceOffset, size_t length, Buffer* destination, size_t destinationOffset)
         {
             DX12Buffer* src = dynamic_cast<DX12Buffer*>(source);
@@ -131,11 +144,6 @@ namespace slag
             _buffer->CopyBufferRegion(dst->underlyingBuffer(),destinationOffset,src->underlyingBuffer(),sourceOffset,length);
         }
 
-        void IDX12CommandBuffer::move(IDX12CommandBuffer& from)
-        {
-            std::swap(_pool,from._pool);
-            std::swap(_buffer,from._buffer);
-            _commandType = from._commandType;
-        }
+
     } // dx
 } // slag

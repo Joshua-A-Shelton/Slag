@@ -76,7 +76,10 @@ TEST(Swapchain, PresentModes)
 
 TEST(Swapchain, NextIfReady)
 {
-    SDL_WindowFlags flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+    SDL_WindowFlags flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE);
+#ifndef _WIN32
+    flags |= static_cast<SDL_WindowFlags>(SDL_VULKAN);
+#endif
     auto window = SDL_CreateWindow("Hello, Slag",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,500,500,flags);
 
 

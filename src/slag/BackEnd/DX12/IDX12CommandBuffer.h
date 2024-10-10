@@ -9,7 +9,6 @@ namespace slag
 {
     namespace dx
     {
-
         class IDX12CommandBuffer: public CommandBuffer
         {
         public:
@@ -22,6 +21,7 @@ namespace slag
             void copyBuffer(Buffer* source, size_t sourceOffset, size_t length, Buffer* destination, size_t destinationOffset)override;
 
             //DX12 Specific commands
+            ID3D12GraphicsCommandList7* underlyingCommandBuffer();
         protected:
             void move(IDX12CommandBuffer& from);
             GpuQueue::QueueType _commandType = GpuQueue::Graphics;

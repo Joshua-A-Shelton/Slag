@@ -255,13 +255,13 @@ namespace slag
         Texture* DX12Lib::newTexture(void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage texUsage, Texture::Layout initializedLayout, bool generateMips)
         {
             return new DX12Texture(texelData, dataSize, format(dataFormat), format(textureFormat), width, height, mipLevels, std::bit_cast<D3D12_RESOURCE_FLAGS>(texUsage),
-                                   barrierLayout(initializedLayout), generateMips, false);
+                                   initializedLayout, generateMips, false);
         }
 
         Texture* DX12Lib::newTexture(CommandBuffer* onBuffer, void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage texUsage, Texture::Layout initializedLayout, bool generateMips)
         {
             return new DX12Texture(dynamic_cast<DX12CommandBuffer*>(onBuffer), texelData, dataSize, format(dataFormat), format(textureFormat), width, height, mipLevels, std::bit_cast<D3D12_RESOURCE_FLAGS>(texUsage),
-                                   barrierLayout(initializedLayout), generateMips, false);
+                                   initializedLayout, generateMips, false);
         }
 
         CommandBuffer* DX12Lib::newCommandBuffer(GpuQueue::QueueType acceptsCommands)

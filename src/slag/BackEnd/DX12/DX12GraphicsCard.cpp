@@ -124,18 +124,18 @@ namespace slag
             {
                 _samplerHeap->Release();
             }
-            //_dxgiFactory->Release();
-            //_device->Release();
+            _dxgiFactory->Release();
+            _device->Release();
         }
 
-        Microsoft::WRL::ComPtr<ID3D12Device2>& DX12GraphicsCard::device()
+        ID3D12Device2* DX12GraphicsCard::device()
         {
-            return _device;
+            return _device.Get();
         }
 
-        Microsoft::WRL::ComPtr<IDXGIFactory4>& DX12GraphicsCard::dxgiFactory()
+        IDXGIFactory4* DX12GraphicsCard::dxgiFactory()
         {
-            return _dxgiFactory;
+            return _dxgiFactory.Get();
         }
 
 
