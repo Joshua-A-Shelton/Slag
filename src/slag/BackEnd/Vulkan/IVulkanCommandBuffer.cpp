@@ -51,6 +51,7 @@ namespace slag
             range.baseMipLevel = 0;
             range.layerCount = 1;
             range.levelCount = tex->mipLevels();
+            insertBarriers(&barrier,1, nullptr,0, nullptr,0);
             vkCmdClearColorImage(_buffer, tex->image(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL , reinterpret_cast<const VkClearColorValue*>(&color), 1, &range);
             barrier.oldLayout = Texture::TRANSFER_DESTINATION;
             barrier.newLayout = endingLayout;
