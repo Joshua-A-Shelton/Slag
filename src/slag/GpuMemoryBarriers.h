@@ -139,6 +139,12 @@ namespace slag
     struct ImageBarrier
     {
         Texture* texture = nullptr;
+        uint32_t baseLayer = 0;
+        /// layerCount = 0 means all remaining layers
+        uint32_t layerCount = 0;
+        uint32_t baseMipLevel = 0;
+        /// mipCount = 0 means all remaining mips
+        uint32_t mipCount = 0;
         Texture::Layout oldLayout = Texture::UNDEFINED;
         Texture::Layout newLayout = Texture::UNDEFINED;
         ///Synchronize (flush from cache [cache->Memory]) this kind of memory before barrier executes

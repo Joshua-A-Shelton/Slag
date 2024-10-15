@@ -14,9 +14,10 @@ TEST(Swapchain, PresentModes)
 {
 
     SDL_WindowFlags flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE);
-#ifndef _WIN32
-    flags |= static_cast<SDL_WindowFlags>(SDL_VULKAN);
-#endif
+    if(SlagLib::usingBackEnd() == BackEnd::Vulkan)
+    {
+        flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE | SDL_WINDOW_VULKAN);
+    }
     auto window = SDL_CreateWindow("Hello, Slag",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,500,500,flags);
 
 
@@ -38,11 +39,17 @@ TEST(Swapchain, PresentModes)
     Uint64 last = totalStart;
     for(int i=0; i< 300; i++)
     {
+        std::cout << "frame: "<<i<<std::endl;
         if(auto frame = swapchain->next())
         {
             auto cb = frame->commandBuffer();
             cb->begin();
-            cb->clearColorImage(frame->backBuffer(), {.floats={i/300.0f, 0, 0, 1}}, Texture::Layout::UNDEFINED, Texture::Layout::PRESENT,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
+            cb->clearColorImage(frame->backBuffer(), {.floats={i/300.0f, 0, 0, 1}}, Texture::Layout::UNDEFINED, Texture::Layout::GENERAL,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
+            /*ImageBarrier barrier{};
+            barrier.texture = frame->backBuffer();
+            barrier.oldLayout = Texture::UNDEFINED;
+            barrier.newLayout = Texture::RENDER_TARGET;
+            cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);*/
             cb->end();
             SlagLib::graphicsCard()->graphicsQueue()->submit(&cb,1, nullptr,0, nullptr,0,frame);
         }
@@ -77,9 +84,10 @@ TEST(Swapchain, PresentModes)
 TEST(Swapchain, NextIfReady)
 {
     SDL_WindowFlags flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE);
-#ifndef _WIN32
-    flags |= static_cast<SDL_WindowFlags>(SDL_VULKAN);
-#endif
+    if(SlagLib::usingBackEnd() == BackEnd::Vulkan)
+    {
+        flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE | SDL_WINDOW_VULKAN);
+    }
     auto window = SDL_CreateWindow("Hello, Slag",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,500,500,flags);
 
 
@@ -140,49 +148,4 @@ TEST(Swapchain, NextIfReady)
 
     GTEST_ASSERT_GE(i,frameCount);
     GTEST_ASSERT_EQ(j,frameCount2-1);
-}
-
-TEST(Swapchain, Teardown)
-{
-    SDL_WindowFlags flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE);
-#ifndef _WIN32
-    flags |= static_cast<SDL_WindowFlags>(SDL_VULKAN);
-#endif
-    auto window = SDL_CreateWindow("Hello, Slag",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,500,500,flags);
-
-
-    slag::PlatformData pd{};
-
-    SDL_SysWMinfo wmInfo;
-    SDL_VERSION(&wmInfo.version);
-    SDL_GetWindowWMInfo(window, &wmInfo);
-#ifdef _WIN32
-    pd.nativeWindowHandle = wmInfo.info.win.window;
-    pd.nativeDisplayType = wmInfo.info.win.hinstance;
-#elif __linux
-    pd.nativeWindowHandle = reinterpret_cast<void*>(wmInfo.info.x11.window);
-    pd.nativeDisplayType = wmInfo.info.x11.display;
-#endif
-
-    auto swapchain = Swapchain::newSwapchain(pd, 500, 500, 2, Swapchain::PresentMode::FIFO, Pixels::Format::B8G8R8A8_UNORM);
-
-    auto buffer1 = Buffer::newBuffer(10*sizeof(char),Buffer::Accessibility::CPU_AND_GPU,Buffer::Usage::DATA_BUFFER);
-    std::vector<char> data(10,'j');
-    auto buffer2 = Buffer::newBuffer(data.data(),10*sizeof(char),slag::Buffer::Accessibility::CPU_AND_GPU,Buffer::Usage::DATA_BUFFER);
-    for(int i=0; i< 16; i++)
-    {
-        if(auto frame = swapchain->next())
-        {
-            auto cb = frame->commandBuffer();
-            cb->begin();
-            //cb->copyBuffer(buffer2,0,buffer2->size(),buffer1,0);
-            cb->clearColorImage(frame->backBuffer(), {.floats={0, 0, 1, 1}}, Texture::Layout::UNDEFINED, Texture::Layout::PRESENT,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
-            cb->end();
-            SlagLib::graphicsCard()->graphicsQueue()->submit(&cb,1, nullptr,0, nullptr,0,frame);
-        }
-    }
-    delete swapchain;
-    delete buffer2;
-    delete buffer1;
-    SDL_DestroyWindow(window);
 }

@@ -19,18 +19,22 @@ namespace slag
             VulkanTexture(VkImage image, bool ownImage, VkImageView view, bool ownView, VulkanizedFormat format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageAspectFlags aspects, bool destroyImmediately);
             VulkanTexture(VkImage image, bool ownImage, VulkanizedFormat format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageAspectFlags aspects, bool destroyImmediately);
 
-            VulkanTexture(void* texelData, VkDeviceSize dataSize, VkFormat dataFormat, VulkanizedFormat textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageLayout initializedLayout, bool generateMips, bool destroyImmediately);
-            VulkanTexture(VulkanCommandBuffer* onBuffer, void* texelData, VkDeviceSize dataSize, VkFormat dataFormat, VulkanizedFormat textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageLayout initializedLayout, bool generateMips, bool destroyImmediately);
+            VulkanTexture(void* texelData, VkDeviceSize dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, uint8_t sampleCount, VkImageUsageFlags usage, Texture::Layout initializedLayout, bool destroyImmediately);
+            VulkanTexture(void** texelDataArray, size_t texelDataCount, VkDeviceSize dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, Texture::Layout initializedLayout, bool destroyImmediately);
+
 
             ~VulkanTexture()override;
             VulkanTexture(const VulkanTexture&)=delete;
             VulkanTexture& operator=(const VulkanTexture&)=delete;
             VulkanTexture(VulkanTexture&& from);
             VulkanTexture& operator=(VulkanTexture&& from);
-            void updateMipMaps(VulkanCommandBuffer* onBuffer,VkImageLayout startingLayout, VkImageLayout endingLayout);
+            Type type()override;
             uint32_t width()override;
             uint32_t height()override;
             uint32_t mipLevels()override;
+            uint32_t layers()override;
+            uint8_t sampleCount()override;
+
 
             VkImage image();
             VkImageView view();
@@ -38,11 +42,11 @@ namespace slag
             friend class VulkanGraphicsCard;
         private:
             void move(VulkanTexture&& from);
-            void build(VulkanCommandBuffer* onBuffer, void* texelData, VkDeviceSize dataSize, VkFormat dataFormat, VulkanizedFormat textureFormat, uint32_t  width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageLayout initializedLayout, bool generateMips);
-            void mipMapGenerateGraphicsQueue(VulkanCommandBuffer* onBuffer, VkImageLayout startingLayout, VkImageLayout endingLayout);
+            void construct(Pixels::Format dataFormat, Texture::Type textureType, uint32_t width, uint32_t height,uint32_t layers, uint32_t mipLevels, uint8_t samples, VkImageUsageFlags usage);
             VkImage copyVkImage();
             VulkanizedFormat _baseFormat{};
-            VkImageUsageFlags _usage;
+            Texture::Type _type=TEXTURE_2D;
+            VkImageUsageFlags _usage=0;
             VkImageAspectFlags _aspects=0;
             VkImage _image = nullptr;
             VmaAllocation _allocation = nullptr;
@@ -50,6 +54,8 @@ namespace slag
             uint32_t _width = 0;
             uint32_t _height = 0;
             uint32_t _mipLevels=1;
+            uint32_t _layers=1;
+            uint8_t _sampleCount=1;
             VulkanGPUMemoryReference _selfReference{.memoryType = VulkanGPUMemoryReference::Texture, .reference={this}};
         };
     }//vulkan

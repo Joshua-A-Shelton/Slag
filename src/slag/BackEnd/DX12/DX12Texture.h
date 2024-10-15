@@ -24,12 +24,16 @@ namespace slag
             DX12Texture& operator=(const DX12Texture&)=delete;
             DX12Texture(DX12Texture&& from);
             DX12Texture& operator=(DX12Texture&& from);
+            Type type()override;
             uint32_t width()override;
             uint32_t height()override;
+            uint32_t layers()override;
             uint32_t mipLevels()override;
+            uint8_t sampleCount()override;
             void updateMipMaps();
             void updateMipMaps(DX12CommandBuffer* onBuffer);
             ID3D12Resource* texture();
+            DXGI_FORMAT underlyingFormat();
             D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle();
 
         private:
@@ -40,10 +44,12 @@ namespace slag
             D3D12MA::Allocation* _allocation = nullptr;
             ID3D12DescriptorHeap* _heap = nullptr;
             D3D12_CPU_DESCRIPTOR_HANDLE _view{};
-
+            Texture::Type _type;
             uint32_t _width = 0;
             uint32_t _height = 0;
+            uint32_t _layers=1;
             uint32_t _mipLevels=1;
+            uint8_t _sampleCount=1;
             DXGI_FORMAT _format;
             D3D12_RESOURCE_FLAGS _usage;
 

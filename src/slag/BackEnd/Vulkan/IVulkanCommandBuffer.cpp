@@ -1,3 +1,4 @@
+#include <iostream>
 #include "IVulkanCommandBuffer.h"
 #include "VulkanLib.h"
 #include "VulkanTexture.h"
@@ -41,7 +42,7 @@ namespace slag
 
         void IVulkanCommandBuffer::clearColorImage(Texture* texture, ClearColor color, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore, PipelineStages syncAfter)
         {
-            ImageBarrier barrier{.texture=texture,.oldLayout=currentLayout,.newLayout=Texture::TRANSFER_DESTINATION,.accessBefore=BarrierAccessFlags::NONE,.accessAfter=BarrierAccessFlags::NONE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::TRANSFER};
+            ImageBarrier barrier{.texture=texture,.oldLayout=currentLayout,.newLayout=Texture::TRANSFER_DESTINATION,.accessBefore=BarrierAccessFlags::NONE,.accessAfter=BarrierAccessFlags::TRANSFER_WRITE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::TRANSFER};
             insertBarriers(&barrier,1, nullptr,0, nullptr,0);
             auto tex = dynamic_cast<VulkanTexture*>(texture);
             VkImageSubresourceRange range{};
@@ -53,8 +54,8 @@ namespace slag
             vkCmdClearColorImage(_buffer, tex->image(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL , reinterpret_cast<const VkClearColorValue*>(&color), 1, &range);
             barrier.oldLayout = Texture::TRANSFER_DESTINATION;
             barrier.newLayout = endingLayout;
-            barrier.accessBefore = BarrierAccessFlags::ALL_READ;
-            barrier.accessAfter = BarrierAccessFlags::NONE;
+            barrier.accessBefore = BarrierAccessFlags::TRANSFER_WRITE;
+            barrier.accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
             barrier.syncBefore = PipelineStageFlags::TRANSFER;
             barrier.syncAfter = syncAfter;
             insertBarriers(&barrier,1, nullptr,0, nullptr,0);
@@ -104,7 +105,7 @@ namespace slag
                 vkbarrier.newLayout = VulkanLib::layout(barrier.newLayout);
                 vkbarrier.srcStageMask = std::bit_cast<VkPipelineStageFlags>(barrier.syncBefore);
                 vkbarrier.dstStageMask = std::bit_cast<VkPipelineStageFlags>(barrier.syncAfter);
-                vkbarrier.subresourceRange = {.aspectMask = texture->aspectFlags(), .baseMipLevel = 0, .levelCount = texture->mipLevels(), .baseArrayLayer = 0, .layerCount = 1};
+                vkbarrier.subresourceRange = {.aspectMask = texture->aspectFlags(), .baseMipLevel =barrier.baseMipLevel, .levelCount = barrier.mipCount == 0 ? texture->mipLevels()-barrier.baseMipLevel : barrier.mipCount, .baseArrayLayer = barrier.baseLayer, .layerCount = barrier.layerCount == 0 ? texture->layers()-barrier.baseLayer : barrier.layerCount};
 
             }
             std::vector<VkBufferMemoryBarrier2> bufferMemoryBarriers(bufferBarrierCount,VkBufferMemoryBarrier2{});
@@ -159,53 +160,43 @@ namespace slag
             vkCmdCopyBuffer(_buffer, src->underlyingBuffer(), dst->underlyingBuffer(), 1, &copyRegion);
         }
 
-        void IVulkanCommandBuffer::transitionImageSubResource(VulkanTexture* texture, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t startingMipLevel, uint32_t levelCount, uint32_t startingLayer, uint32_t layerCount)
+
+        void IVulkanCommandBuffer::copyBufferToImage(Buffer* source, size_t sourceOffset, Texture* destination, Texture::Layout destinationLayout, size_t layer, size_t mipLevel)
         {
-            VkImageMemoryBarrier vkbarrier{};
-            vkbarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            vkbarrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-            vkbarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-            vkbarrier.image = texture->image();
-            vkbarrier.oldLayout = oldLayout;
-            vkbarrier.newLayout = newLayout;
-            vkbarrier.subresourceRange = {.aspectMask = texture->aspectFlags(), .baseMipLevel = startingMipLevel, .levelCount = levelCount, .baseArrayLayer = startingLayer, .layerCount = layerCount};
-            vkCmdPipelineBarrier(_buffer,srcStageMask,dstStageMask,0,0, nullptr,0, nullptr,1,&vkbarrier);
+            auto image = dynamic_cast<VulkanTexture*>(destination);
+            auto buffer = dynamic_cast<VulkanBuffer*>(source);
+            uint32_t w = std::max((uint32_t)1,image->width()>>mipLevel);
+            uint32_t h = std::max((uint32_t)1,image->height()>>mipLevel);
+
+            VkBufferImageCopy copy{};
+            copy.imageExtent = {.width=w,.height=h,.depth=1};
+            copy.bufferOffset = sourceOffset;
+            copy.imageSubresource =
+                    {
+                            .aspectMask = image->aspectFlags(),
+                            .mipLevel = static_cast<uint32_t>(mipLevel),
+                            .baseArrayLayer = static_cast<uint32_t>(layer),
+                            .layerCount = 1
+                    };
+
+            vkCmdCopyBufferToImage(_buffer,buffer->underlyingBuffer(),image->image(),VulkanLib::layout(destinationLayout),1,&copy);
         }
 
-        void IVulkanCommandBuffer::blitSubResource(VkImageAspectFlags aspects, VulkanTexture* source, VkImageLayout sourceLayout, Rectangle sourceArea, uint32_t sourceMipLevel, VulkanTexture* destination, VkImageLayout destImageLayout, Rectangle destArea, uint32_t  destMipLevel, VkFilter filter)
+        void IVulkanCommandBuffer::vulkanBlitImage(VkImageAspectFlags aspects, VulkanTexture* source, VkImageLayout sourceLayout, Rectangle sourceArea, uint32_t sourceLayer, uint32_t sourceMipLevel, VulkanTexture* destination, VkImageLayout destImageLayout, Rectangle destArea, uint32_t destLayer, uint32_t destMipLevel, VkFilter filter)
         {
             VkImageBlit blit{};
             blit.srcOffsets[0] = {sourceArea.offset.x,sourceArea.offset.y,0};
             blit.srcOffsets[1] = {static_cast<int32_t>(sourceArea.extent.width),static_cast<int32_t>(sourceArea.extent.height),1};
             blit.srcSubresource.aspectMask = aspects;
             blit.srcSubresource.mipLevel = sourceMipLevel;
-            blit.srcSubresource.baseArrayLayer = 0;
+            blit.srcSubresource.baseArrayLayer = sourceLayer;
             blit.srcSubresource.layerCount = 1;
             blit.dstSubresource.aspectMask = aspects;
             blit.dstSubresource.mipLevel = destMipLevel;
-            blit.dstSubresource.baseArrayLayer = 0;
+            blit.dstSubresource.baseArrayLayer = destLayer;
             blit.dstSubresource.layerCount = 1;
             vkCmdBlitImage(_buffer,source->image(),sourceLayout,destination->image(),destImageLayout,1,&blit,filter);
         }
 
-        void IVulkanCommandBuffer::copyBufferToImageMip(VulkanBuffer* buffer, VkDeviceSize bufferOffset, VulkanTexture* image, uint32_t mipLevel, VkImageLayout destinationImageLayout)
-        {
-
-            uint32_t w = std::max((uint32_t)1,image->width()>>mipLevel);
-            uint32_t h = std::max((uint32_t)1,image->height()>>mipLevel);
-
-            VkBufferImageCopy copy{};
-            copy.imageExtent = {.width=w,.height=h,.depth=1};
-            copy.bufferOffset = bufferOffset;
-            copy.imageSubresource =
-            {
-                .aspectMask = image->aspectFlags(),
-                .mipLevel = mipLevel,
-                .baseArrayLayer = 0,
-                .layerCount = 1
-            };
-
-            vkCmdCopyBufferToImage(_buffer,buffer->underlyingBuffer(),image->image(),destinationImageLayout,1,&copy);
-        }
     } // vulkan
 } // slag

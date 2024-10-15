@@ -52,6 +52,15 @@ namespace slag
                     dxBarrier.AccessAfter = std::bit_cast<D3D12_BARRIER_ACCESS>(barrier.accessAfter);
                     dxBarrier.SyncBefore = std::bit_cast<D3D12_BARRIER_SYNC>(barrier.syncBefore);
                     dxBarrier.SyncAfter = std::bit_cast<D3D12_BARRIER_SYNC>(barrier.syncAfter);
+                    dxBarrier.Subresources = D3D12_BARRIER_SUBRESOURCE_RANGE
+                    {
+                        .IndexOrFirstMipLevel = barrier.baseMipLevel,
+                        .NumMipLevels = barrier.mipCount == 0? image->mipLevels()-barrier.baseMipLevel : barrier.mipCount,
+                        .FirstArraySlice = barrier.baseLayer,
+                        .NumArraySlices = barrier.layerCount == 0? image->layers()-barrier.baseLayer : barrier.layerCount,
+                        .FirstPlane = 0,
+                        .NumPlanes = D3D12GetFormatPlaneCount(DX12Lib::card()->device(),image->underlyingFormat()) //there's room  for optimization here, I should probably make a lookup table when I first create the card
+                    };
                     if (barrier.oldLayout == Texture::Layout::UNDEFINED)
                     {
                         dxBarrier.Flags = D3D12_TEXTURE_BARRIER_FLAG_DISCARD;
@@ -119,7 +128,6 @@ namespace slag
             DX12Buffer* dst = dynamic_cast<DX12Buffer*>(destination);
             _buffer->CopyBufferRegion(dst->underlyingBuffer(),destinationOffset,src->underlyingBuffer(),sourceOffset,length);
         }
-
 
     } // dx
 } // slag

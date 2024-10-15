@@ -120,6 +120,8 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/DescriptorPool.h
         src/slag/Sampler.cpp
         src/slag/Sampler.h
+        src/slag/Shader.cpp
+        src/slag/Shader.h
 )
 target_link_libraries(Slag ${Boost_LIBRARIES})
 target_include_directories(Slag PRIVATE ${Boost_INCLUDE_DIRS} third-party/stb)
