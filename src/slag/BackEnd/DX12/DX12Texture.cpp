@@ -105,7 +105,7 @@ namespace slag
 
         void DX12Texture::build(DX12CommandBuffer* onBuffer, void* texelData, size_t dataSize, DXGI_FORMAT dataFormat, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, Texture::Layout initializedLayout, bool generateMips)
         {
-            assert(!(usage & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET && usage & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) && "Texture cannot be both render target and depth stencil");
+            /*assert(!(usage & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET && usage & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) && "Texture cannot be both render target and depth stencil");
             _width = width;
             _height = height;
             _mipLevels = mipLevels;
@@ -229,7 +229,12 @@ namespace slag
                 imBarrier.syncBefore = PipelineStageFlags::ALL_COMMANDS;
                 imBarrier.syncAfter = PipelineStageFlags::ALL_COMMANDS;
                 onBuffer->insertBarriers(&imBarrier,1, nullptr,0, nullptr,0);
-            }
+            }*/
+        }
+
+        Texture::Type DX12Texture::type()
+        {
+            return _type;
         }
 
         uint32_t DX12Texture::width()
@@ -242,9 +247,19 @@ namespace slag
             return _height;
         }
 
+        uint32_t DX12Texture::layers()
+        {
+            return _layers;
+        }
+
         uint32_t DX12Texture::mipLevels()
         {
             return _mipLevels;
+        }
+
+        uint8_t DX12Texture::sampleCount()
+        {
+            return _sampleCount;
         }
 
         ID3D12Resource* DX12Texture::texture()
@@ -283,6 +298,10 @@ namespace slag
             throw std::runtime_error("DX12Texture::updateMipMapsGraphics not implemented");
         }
 
+        DXGI_FORMAT DX12Texture::underlyingFormat()
+        {
+            return _format;
+        }
 
         D3D12_CPU_DESCRIPTOR_HANDLE DX12Texture::descriptorHandle()
         {

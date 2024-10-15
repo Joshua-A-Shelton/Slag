@@ -252,16 +252,17 @@ namespace slag
             return _graphicsCard;
         }
 
-        Texture* DX12Lib::newTexture(void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage texUsage, Texture::Layout initializedLayout, bool generateMips)
+        Texture*
+        DX12Lib::newTexture(void* data, size_t dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, uint32_t layers, uint8_t sampleCount,
+                            TextureUsage usage, Texture::Layout initializedLayout)
         {
-            return new DX12Texture(texelData, dataSize, format(dataFormat), format(textureFormat), width, height, mipLevels, std::bit_cast<D3D12_RESOURCE_FLAGS>(texUsage),
-                                   initializedLayout, generateMips, false);
+            throw std::runtime_error("DX12Lib::newTexture not implemented");
         }
 
-        Texture* DX12Lib::newTexture(CommandBuffer* onBuffer, void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage texUsage, Texture::Layout initializedLayout, bool generateMips)
+        Texture* DX12Lib::newTexture(void** texelDataArray, size_t texelDataCount, size_t dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels,
+                                      TextureUsage usage, Texture::Layout initializedLayout)
         {
-            return new DX12Texture(dynamic_cast<DX12CommandBuffer*>(onBuffer), texelData, dataSize, format(dataFormat), format(textureFormat), width, height, mipLevels, std::bit_cast<D3D12_RESOURCE_FLAGS>(texUsage),
-                                   initializedLayout, generateMips, false);
+            throw std::runtime_error("DX12Lib::newTexture not implemented");
         }
 
         CommandBuffer* DX12Lib::newCommandBuffer(GpuQueue::QueueType acceptsCommands)

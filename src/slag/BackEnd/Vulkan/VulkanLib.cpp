@@ -135,6 +135,58 @@ namespace slag
             return VK_IMAGE_LAYOUT_UNDEFINED;
         }
 
+        VkImageType VulkanLib::imageType(Texture::Type imageType)
+        {
+            switch (imageType)
+            {
+                case Texture::Type::TEXTURE_1D:
+                    return VK_IMAGE_TYPE_1D;
+                case Texture::Type::TEXTURE_2D:
+                case Texture::Type::CUBE_MAP:
+                    return VK_IMAGE_TYPE_2D;
+                case Texture::Type::TEXTURE_3D:
+                    return VK_IMAGE_TYPE_3D;
+            }
+            return VK_IMAGE_TYPE_2D;
+        }
+
+        VkImageViewType VulkanLib::viewType(Texture::Type textureType, size_t layerCount)
+        {
+            if(layerCount > 1)
+            {
+                switch (textureType)
+                {
+                    case Texture::TEXTURE_1D:
+                        return VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+                    case Texture::TEXTURE_2D:
+                        return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+                    case Texture::TEXTURE_3D:
+                        return VK_IMAGE_VIEW_TYPE_3D;
+                    case Texture::CUBE_MAP:
+                        if(layerCount != 6)
+                        {
+                            throw std::runtime_error("cannot have cubemap with non 6 sided layer count");
+                        }
+                        return VK_IMAGE_VIEW_TYPE_CUBE;
+                }
+            }
+            else
+            {
+                switch (textureType)
+                {
+                    case Texture::TEXTURE_1D:
+                        return VK_IMAGE_VIEW_TYPE_1D;
+                    case Texture::TEXTURE_2D:
+                        return VK_IMAGE_VIEW_TYPE_2D;
+                    case Texture::TEXTURE_3D:
+                        return VK_IMAGE_VIEW_TYPE_3D;
+                    case Texture::CUBE_MAP:
+                        throw std::runtime_error("cannot have cubemap with non 6 sided layer count");
+                }
+            }
+            return VK_IMAGE_VIEW_TYPE_2D;
+        }
+
         VkFilter VulkanLib::filter(Sampler::Filter filter)
         {
             switch (filter)
@@ -143,6 +195,7 @@ namespace slag
                 SAMPLER_FILTER_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
             }
+            return VK_FILTER_LINEAR;
         }
 
         VkSamplerMipmapMode VulkanLib::mipMapMode(Sampler::Filter filter)
@@ -154,6 +207,7 @@ namespace slag
                 case Sampler::Filter::LINEAR:
                     return VK_SAMPLER_MIPMAP_MODE_LINEAR;
             }
+            return VK_SAMPLER_MIPMAP_MODE_NEAREST;
         }
 
         VkSamplerAddressMode VulkanLib::addressMode(Sampler::AddressMode addressMode)
@@ -164,6 +218,7 @@ namespace slag
                 SAMPLER_ADDRESS_MODES_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
             }
+            return VK_SAMPLER_ADDRESS_MODE_REPEAT;
         }
 
         VkCompareOp VulkanLib::compareOp(Sampler::ComparisonFunction comparisonFunction)
@@ -229,14 +284,14 @@ namespace slag
             return new VulkanSwapchain(platformData,width,height,backBuffers,mode, format(imageFormat));
         }
 
-        Texture* VulkanLib::newTexture(void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage usage, Texture::Layout initializedLayout, bool generateMips)
+        Texture* VulkanLib::newTexture(void* data, size_t dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, uint32_t layers, uint8_t sampleCount, TextureUsage usage, Texture::Layout initializedLayout)
         {
-            return new VulkanTexture(texelData,dataSize, format(dataFormat).format, format(textureFormat),width,height,mipLevels,std::bit_cast<VkImageUsageFlags>(usage),layout(initializedLayout),generateMips,false);
+            return new VulkanTexture(data,dataSize,dataFormat,type,width,height,layers,mipLevels,sampleCount,std::bit_cast<VkImageUsageFlags>(usage),initializedLayout, false);
         }
 
-        Texture* VulkanLib::newTexture(CommandBuffer* onBuffer, void* texelData, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage usage, Texture::Layout initializedLayout, bool generateMips)
+        Texture* VulkanLib::newTexture(void** texelDataArray, size_t texelDataCount, size_t dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage usage, Texture::Layout initializedLayout)
         {
-            return new VulkanTexture(dynamic_cast<VulkanCommandBuffer*>(onBuffer),texelData,dataSize, format(dataFormat).format, format(textureFormat),width,height,mipLevels,std::bit_cast<VkImageUsageFlags>(usage),layout(initializedLayout),generateMips,false);
+            return new VulkanTexture(texelDataArray,texelDataCount,dataSize,dataFormat,type,width,height,mipLevels,std::bit_cast<VkImageUsageFlags>(usage),initializedLayout,false);
         }
 
         CommandBuffer* VulkanLib::newCommandBuffer(GpuQueue::QueueType acceptsCommands)

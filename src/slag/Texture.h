@@ -23,8 +23,12 @@ DEFINITION(STORAGE,VK_IMAGE_USAGE_STORAGE_BIT,D3D12_RESOURCE_FLAG_ALLOW_UNORDERE
 DEFINITION(RENDER_TARGET_ATTACHMENT,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) \
 DEFINITION(DEPTH_STENCIL_ATTACHMENT,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) \
 
+
+
+
 #include "Pixel.h"
 #include "Color.h"
+#include "Sampler.h"
 #include <filesystem>
 
 namespace slag
@@ -87,16 +91,65 @@ namespace slag
 #undef DEFINITION
         };
 
+        enum Type
+        {
+            TEXTURE_1D,
+            TEXTURE_2D,
+            TEXTURE_3D,
+            CUBE_MAP
+        };
+
         virtual ~Texture()=default;
 
+        /**
+         * What the texture type is
+         * @return
+         */
+        virtual Type type()=0;
+        /**
+         * The width of the texture
+         * @return
+         */
         virtual uint32_t width()=0;
+        /**
+         * the height of the texture, (always 1 for 1D textures)
+         * @return
+         */
         virtual uint32_t height()=0;
+        /**
+         * number of elements in the arrary (1D and 2D textures), or number of depth slices (3D texture), (always 6 for cubemap)
+         * @return
+         */
+        virtual uint32_t layers()=0;
+        /**
+         * the number of mip levels (lower res LOD images) per texture
+         * @return
+         */
         virtual uint32_t mipLevels()=0;
+        /**
+         * MSAA Sample Count
+         * @return
+         */
+        virtual uint8_t sampleCount()=0;
 
-        static Texture* newTexture(void* data, size_t dataSize, Pixels::Format dataFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage usage, Layout initializedLayout, bool generateMipMaps);
-        static Texture* newTexture(void* data, size_t dataSize, Pixels::Format dataFormat, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage usage, Layout initializedLayout, bool generateMipMaps);
-        static Texture* newTexture(const std::filesystem::path& imagePath, Pixels::Format textureFormat, uint32_t mipLevels, TextureUsage usage, Layout initializedLayout, bool generateMipMaps);
-        static Texture* newTexture(Color* colorArray, size_t colorCount, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage usage, Layout initializedLayout, bool generateMipMaps);
+
+        /**
+         * Raw dogging it texture. Give it the data it needs, and it assumes it's all correct. should be *fast*, but requires the user of the API to be doing the homework
+         * @param data
+         * @param dataSize
+         * @param dataFormat
+         * @param width
+         * @param height
+         * @param mipLevels
+         * @param layers
+         * @param sampleCount
+         * @param usage
+         * @param initializedLayout
+         * @return
+         */
+        static Texture* newTexture(void* data, size_t dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, uint32_t layers, uint8_t sampleCount, TextureUsage usage, Layout initializedLayout);
+        static Texture* newTexture(const std::filesystem::path& imagePath, uint32_t mipLevels, TextureUsage usage, bool sRGB, Layout initializedLayout);
+        static Texture* newTexture(Pixels::Format dataFormat,size_t width, size_t height, size_t sampleCount, TextureUsage usage, Layout initializedLayout);
     };
 
 } // slag

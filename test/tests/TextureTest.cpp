@@ -2,20 +2,27 @@
 #include "slag/SlagLib.h"
 using namespace slag;
 
-TEST(Texture, Creation)
+TEST(Texture, LoadFromFile)
 {
-    auto texture = Texture::newTexture("resources/Crucible.png",Pixels::R8G8B8A8_UINT,1,TextureUsageFlags::SAMPLED_IMAGE,Texture::Layout::SHADER_RESOURCE,false);
+    auto texture = Texture::newTexture("resources/Crucible.png",5,TextureUsageFlags::SAMPLED_IMAGE,false,Texture::Layout::SHADER_RESOURCE);
+    GTEST_ASSERT_GE(texture->sampleCount() ,1);
+    GTEST_ASSERT_GE(texture->mipLevels() ,5);
+    GTEST_ASSERT_GE(texture->type() ,Texture::Type::TEXTURE_2D);
+    GTEST_ASSERT_GE(texture->layers() ,1);
+    GTEST_ASSERT_GE(texture->width() ,1920);
+    GTEST_ASSERT_GE(texture->height() ,1080);
+
     delete texture;
-    int i=0;
 }
 
-TEST(Texture, Mipmaps)
+TEST(Texture, MultiSampled)
 {
-    auto texture = Texture::newTexture("resources/Crucible.png",Pixels::R8G8B8A8_UINT,4,TextureUsageFlags::SAMPLED_IMAGE,Texture::Layout::SHADER_RESOURCE,true);
+    auto texture = Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,500,700,16,TextureUsageFlags::RENDER_TARGET_ATTACHMENT,Texture::Layout::RENDER_TARGET);
+    GTEST_ASSERT_GE(texture->sampleCount() ,16);
+    GTEST_ASSERT_GE(texture->mipLevels() ,1);
+    GTEST_ASSERT_GE(texture->type() ,Texture::Type::TEXTURE_2D);
+    GTEST_ASSERT_GE(texture->layers() ,1);
+    GTEST_ASSERT_GE(texture->width() ,500);
+    GTEST_ASSERT_GE(texture->height() ,700);
     delete texture;
-
-    assert(false && "no generating texture on graphics buffer implemented");
-    assert(false && "no generating texture on compute buffer implemented");
-    //assert throw error
-    assert(false && "no generating texture on transfer buffer implemented");
 }
