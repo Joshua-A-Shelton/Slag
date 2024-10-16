@@ -178,39 +178,7 @@ namespace slag
             //generateMips
             if(mipLevels > 1)
             {
-                Rectangle srcRect{.offset={0,0},.extent={_width,_height}};
-                for(size_t layer = 0; layer < texelDataCount; layer++)
-                {
-                    imageBarrier.baseMipLevel = 0;
-                    imageBarrier.mipCount = 1;
-                    imageBarrier.baseLayer = layer;
-                    imageBarrier.layerCount = 1;
-                    imageBarrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
-                    imageBarrier.newLayout = Texture::Layout::TRANSFER_SOURCE;
-                    imageBarrier.accessBefore = BarrierAccessFlags::TRANSFER_WRITE;
-                    imageBarrier.accessAfter = BarrierAccessFlags::TRANSFER_READ;
-                    imageBarrier.syncBefore = PipelineStageFlags::TRANSFER;
-                    imageBarrier.syncAfter = PipelineStageFlags::TRANSFER;
-                    commandBuffer.insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-
-                    for(size_t mip=1; mip< mipLevels; mip++)
-                    {
-                        Rectangle dstRect{.offset={0,0},.extent={_width>>mip,_height>>mip}};
-                        commandBuffer.vulkanBlitImage(_aspects,this,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,srcRect,layer,0,this,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,dstRect,layer,mip,VK_FILTER_NEAREST);
-                    }
-
-                    imageBarrier.oldLayout = Texture::Layout::TRANSFER_SOURCE;
-                    imageBarrier.newLayout = initializedLayout;
-                    imageBarrier.accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
-                    imageBarrier.syncAfter = PipelineStageFlags::ALL_COMMANDS;
-
-                    auto barrier2 = imageBarrier;
-                    barrier2.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
-                    barrier2.baseMipLevel = 1;
-                    barrier2.mipCount = 0;
-                    ImageBarrier barriers[2] = {imageBarrier,barrier2};
-                    commandBuffer.insertBarriers(barriers,2, nullptr,0, nullptr,0);
-                }
+                throw std::runtime_error("VulkanTexture::VulkanTexture multiple mips not implemented yet");
             }
             else
             {
