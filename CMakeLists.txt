@@ -45,6 +45,12 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/BackEnd/Vulkan/IVulkanCommandBuffer.h
             src/slag/BackEnd/Vulkan/VulkanSampler.cpp
             src/slag/BackEnd/Vulkan/VulkanSampler.h
+            src/slag/BackEnd/Vulkan/VulkanShader.cpp
+            src/slag/BackEnd/Vulkan/VulkanShader.h
+            src/slag/BackEnd/Vulkan/VulkanDescriptorGroup.cpp
+            src/slag/BackEnd/Vulkan/VulkanDescriptorGroup.h
+            src/slag/BackEnd/Vulkan/VulkanDescriptorGroupCache.cpp
+            src/slag/BackEnd/Vulkan/VulkanDescriptorGroupCache.h
     )
 endif()
 
@@ -78,7 +84,11 @@ if(SLAG_DX12_BACKEND)
             src/slag/BackEnd/DX12/DX12DescriptorPool.cpp
             src/slag/BackEnd/DX12/DX12DescriptorPool.h
             src/slag/BackEnd/DX12/DX12Sampler.cpp
-            src/slag/BackEnd/DX12/DX12Sampler.h)
+            src/slag/BackEnd/DX12/DX12Sampler.h
+            src/slag/Descriptor.cpp
+            src/slag/Descriptor.h
+            src/slag/BackEnd/DX12/DX12Shader.cpp
+            src/slag/BackEnd/DX12/DX12Shader.h)
 endif()
 
 add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
@@ -122,6 +132,11 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/Sampler.h
         src/slag/Shader.cpp
         src/slag/Shader.h
+        src/slag/DescriptorGroup.cpp
+        src/slag/DescriptorGroup.h
+        src/slag/GraphicsTypes.h
+        src/slag/UniformBufferDescriptorLayout.cpp
+        src/slag/UniformBufferDescriptorLayout.h
 )
 target_link_libraries(Slag ${Boost_LIBRARIES})
 target_include_directories(Slag PRIVATE ${Boost_INCLUDE_DIRS} third-party/stb)
@@ -146,7 +161,6 @@ if(SLAG_VULKAN_BACKEND)
     target_link_libraries(Slag ${Vulkan_LIBRARIES} vk-bootstrap GPUOpen::VulkanMemoryAllocator spirv-reflect-static)
 endif()
 if(SLAG_DX12_BACKEND)
-
     add_subdirectory(third-party/dx12-headers)
     add_subdirectory(third-party/d3dma)
     target_include_directories(Slag SYSTEM BEFORE PUBLIC DirectX-Headers)
@@ -174,12 +188,14 @@ if(BUILD_SLAG_TESTS)
             test/SlagTestsMain.cpp
             test/DX12Environment.cpp
             test/DX12Environment.h
-            test/tests/CommandBufferTest.cc
+            test/tests/CommandBufferTest.cpp
             test/VulkanEnvironment.cpp
             test/VulkanEnvironment.h
             test/tests/TextureTest.cpp
             test/tests/SwapchainTest.cpp
             test/tests/BufferTest.cpp
+            test/tests/UniformDescriptorLayoutTest.cpp
+            test/tests/UniformGroupTest.cpp
     )
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 Slag)
     target_include_directories(SlagTests PRIVATE src ${SDL2_LIBRARIES})

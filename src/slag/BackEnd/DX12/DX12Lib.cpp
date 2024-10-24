@@ -6,10 +6,12 @@
 #include "DX12Swapchain.h"
 #include "DX12Buffer.h"
 #include "DX12Sampler.h"
+#include "DX12Shader.h"
 #include <wrl.h>
 #include <dxgi1_4.h>
 #include <dxgi1_6.h>
 #include <dxgidebug.h>
+
 
 namespace slag
 {
@@ -56,12 +58,16 @@ namespace slag
                     // creating it. The adapter with the largest dedicated video memory
                     // is favored.
                     if ((dxgiAdapterDesc1.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0 &&
-                        SUCCEEDED(D3D12CreateDevice(dxgiAdapter1.Get(),D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), nullptr)) &&dxgiAdapterDesc1.DedicatedVideoMemory > maxDedicatedVideoMemory )
+                        SUCCEEDED(D3D12CreateDevice(dxgiAdapter1.Get(),D3D_FEATURE_LEVEL_12_2, __uuidof(ID3D12Device), nullptr)) &&dxgiAdapterDesc1.DedicatedVideoMemory > maxDedicatedVideoMemory )
                     {
                         maxDedicatedVideoMemory = dxgiAdapterDesc1.DedicatedVideoMemory;
                         dxgiAdapter1.As(&dxgiAdapter4);
                     }
                 }
+            }
+            if(!dxgiAdapter4)
+            {
+                return nullptr;
             }
             mapFlags();
             auto card = new DX12GraphicsCard(dxgiAdapter4,dxgiFactory);
@@ -230,6 +236,10 @@ namespace slag
 #define DEFINITION(slagName, vulkanName, directXName) PipelineStageFlags::set##slagName##Value(static_cast<int>(directXName));
             MEMORY_PIPELINE_STAGE_DEFINITIONS(DEFINITION)
 #undef DEFINITION
+
+#define DEFINITION(slagName, vulkanName, directXName) ShaderStageFlags::set##slagName##Value(static_cast<int>(directXName));
+            SHADER_STAGE_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
         }
 
         BackEnd DX12Lib::identifier()
@@ -328,6 +338,11 @@ namespace slag
                                      float mipLODBias, bool enableAnisotrophy, uint8_t maxAnisotrophy, Sampler::ComparisonFunction comparisonFunction, Color borderColor, float minLOD, float maxLOD)
         {
             return new DX12Sampler(minFilter,magFilter,mipMapFilter,u,v,w,mipLODBias,enableAnisotrophy,maxAnisotrophy,comparisonFunction,borderColor,minLOD,maxLOD,false);
+        }
+
+        DescriptorGroup* DX12Lib::newDescriptorGroup(Descriptor* descriptors, size_t descriptorCount)
+        {
+            throw std::runtime_error("DX12Lib::newDescriptorGroup not implemented");
         }
 
     } // dx

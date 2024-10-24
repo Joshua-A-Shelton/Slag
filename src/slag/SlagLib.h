@@ -5,6 +5,8 @@
 #include "Clear.h"
 #include "Color.h"
 #include "CommandBuffer.h"
+#include "Descriptor.h"
+#include "DescriptorGroup.h"
 #include "DescriptorPool.h"
 #include "Frame.h"
 #include "GpuMemoryBarriers.h"
@@ -15,8 +17,10 @@
 #include "Rectangle.h"
 #include "Sampler.h"
 #include "Semaphore.h"
+#include "Shader.h"
 #include "Swapchain.h"
 #include "Texture.h"
+#include "UniformBufferDescriptorLayout.h"
 
 namespace slag
 {

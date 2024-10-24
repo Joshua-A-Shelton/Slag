@@ -4,6 +4,7 @@
 #include "DX12GraphicsCard.h"
 #include "../BackEndLib.h"
 
+
 namespace slag
 {
     namespace dx
@@ -40,6 +41,8 @@ namespace slag
             Semaphore* newSemaphore(uint64_t startingValue)override;
             //Samplers
             Sampler* newSampler(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, Sampler::AddressMode u, Sampler::AddressMode v, Sampler::AddressMode w, float mipLODBias, bool enableAnisotrophy, uint8_t maxAnisotrophy,Sampler::ComparisonFunction comparisonFunction, Color borderColor, float minLOD, float maxLOD)override;
+            //Shaders
+            DescriptorGroup* newDescriptorGroup(Descriptor* descriptors, size_t descriptorCount)override;
 
             void waitFor(SemaphoreValue* values, size_t count)override;
 

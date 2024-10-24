@@ -39,17 +39,11 @@ TEST(Swapchain, PresentModes)
     Uint64 last = totalStart;
     for(int i=0; i< 300; i++)
     {
-        std::cout << "frame: "<<i<<std::endl;
         if(auto frame = swapchain->next())
         {
             auto cb = frame->commandBuffer();
             cb->begin();
             cb->clearColorImage(frame->backBuffer(), {.floats={i/300.0f, 0, 0, 1}}, Texture::Layout::UNDEFINED, Texture::Layout::GENERAL,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
-            /*ImageBarrier barrier{};
-            barrier.texture = frame->backBuffer();
-            barrier.oldLayout = Texture::UNDEFINED;
-            barrier.newLayout = Texture::RENDER_TARGET;
-            cb->insertBarriers(&barrier,1, nullptr,0, nullptr,0);*/
             cb->end();
             SlagLib::graphicsCard()->graphicsQueue()->submit(&cb,1, nullptr,0, nullptr,0,frame);
         }

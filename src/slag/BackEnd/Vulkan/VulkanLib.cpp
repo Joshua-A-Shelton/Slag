@@ -8,6 +8,7 @@
 #include "VulkanTexture.h"
 #include "Extensions.h"
 #include "VulkanSampler.h"
+#include "VulkanDescriptorGroup.h"
 
 namespace slag
 {
@@ -93,6 +94,10 @@ namespace slag
 
 #define DEFINITION(slagName, vulkanName, directXName) PipelineStageFlags::set##slagName##Value(static_cast<int>(vulkanName));
             MEMORY_PIPELINE_STAGE_DEFINITIONS(DEFINITION)
+#undef DEFINITION
+
+#define DEFINITION(slagName, vulkanName, directXName) ShaderStageFlags::set##slagName##Value(static_cast<int>(vulkanName));
+            SHADER_STAGE_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
 
         }
@@ -232,6 +237,32 @@ namespace slag
             return VK_COMPARE_OP_NEVER;
         }
 
+        VkDescriptorType VulkanLib::descriptorType(slag::Descriptor::DescriptorType descriptorType)
+        {
+            switch (descriptorType)
+            {
+                case slag::Descriptor::DescriptorType::SAMPLER:
+                    return  VK_DESCRIPTOR_TYPE_SAMPLER;
+                case slag::Descriptor::DescriptorType::SAMPLED_TEXTURE:
+                    return  VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+                case slag::Descriptor::DescriptorType::SAMPLER_AND_TEXTURE:
+                    return  VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                case slag::Descriptor::DescriptorType::STORAGE_TEXTURE:
+                    return  VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+                case slag::Descriptor::DescriptorType::UNIFORM_TEXEL_BUFFER:
+                    return  VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+                case slag::Descriptor::DescriptorType::STORAGE_TEXEL_BUFFER:
+                    return  VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+                case slag::Descriptor::DescriptorType::UNIFORM_BUFFER:
+                    return  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+                case slag::Descriptor::DescriptorType::STORAGE_BUFFER:
+                    return  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+                case slag::Descriptor::DescriptorType::INPUT_ATTACHMENT:
+                    return  VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+            }
+            throw std::runtime_error("unable to convert descriptorType");
+        }
+
         VulkanLib::VulkanLib(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VulkanGraphicsCard* card)
         {
             _instance = instance;
@@ -364,6 +395,11 @@ namespace slag
         Sampler* VulkanLib::newSampler(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, Sampler::AddressMode u, Sampler::AddressMode v, Sampler::AddressMode w, float mipLODBias, bool enableAnisotrophy, uint8_t maxAnisotrophy,Sampler::ComparisonFunction comparisonFunction, Color borderColor, float minLOD, float maxLOD)
         {
             return new VulkanSampler(minFilter,magFilter,mipMapFilter,u,v,w,mipLODBias,enableAnisotrophy,maxAnisotrophy,comparisonFunction,minLOD,maxLOD,borderColor, false);
+        }
+
+        DescriptorGroup* VulkanLib::newDescriptorGroup(Descriptor* descriptors, size_t descriptorCount)
+        {
+            return new VulkanDescriptorGroup(descriptors,descriptorCount);
         }
 
     } // vulkan

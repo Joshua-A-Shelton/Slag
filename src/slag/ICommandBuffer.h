@@ -6,6 +6,7 @@
 #include "GpuMemoryBarriers.h"
 #include "Rectangle.h"
 #include "Sampler.h"
+#include "DescriptorGroup.h"
 
 namespace slag
 {
@@ -22,6 +23,7 @@ namespace slag
         //virtual void blit(Texture* source, Texture::Layout sourceLayout, Rectangle sourceRect, Texture* destination, Texture::Layout destinationLayout, Rectangle destinationRect,Sampler::Filter blitFilter)=0;
         //virtual void blit(Texture* source, Texture::Layout sourceLayout, Rectangle sourceRect,size_t sourceMipLevel, size_t sourceLayer, Texture* destination, Texture::Layout destinationLayout, Rectangle destinationRect, size_t destinationMipLevel, size_t destinationLayer, Sampler::Filter blitFilter)=0;
         virtual void copyBuffer(Buffer* source, size_t sourceOffset, size_t length, Buffer* destination, size_t destinationOffset)=0;
+        //virtual void bindUniformData(DescriptorGroup* group,)
     };
 }
 #endif //SLAG_ICOMMANDBUFFER_H

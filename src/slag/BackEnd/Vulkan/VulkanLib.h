@@ -30,6 +30,7 @@ namespace slag
             static VkSamplerMipmapMode mipMapMode(Sampler::Filter filter);
             static VkSamplerAddressMode addressMode(Sampler::AddressMode addressMode);
             static VkCompareOp compareOp(Sampler::ComparisonFunction comparisonFunction);
+            static VkDescriptorType descriptorType(slag::Descriptor::DescriptorType descriptorType);
 
 
             VulkanLib(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VulkanGraphicsCard* card);
@@ -58,6 +59,8 @@ namespace slag
             void waitFor(SemaphoreValue* values, size_t count)override;
             //Samplers
             Sampler* newSampler(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, Sampler::AddressMode u, Sampler::AddressMode v, Sampler::AddressMode w, float mipLODBias, bool enableAnisotrophy, uint8_t maxAnisotrophy,Sampler::ComparisonFunction comparisonFunction, Color borderColor, float minLOD, float maxLOD)override;
+            //Shaders
+            DescriptorGroup* newDescriptorGroup(Descriptor* descriptors, size_t descriptorCount)override;
 
         private:
             static void mapFlags();
