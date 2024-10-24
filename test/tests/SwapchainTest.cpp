@@ -43,7 +43,7 @@ TEST(Swapchain, PresentModes)
         {
             auto cb = frame->commandBuffer();
             cb->begin();
-            cb->clearColorImage(frame->backBuffer(), {.floats={i/300.0f, 0, 0, 1}}, Texture::Layout::UNDEFINED, Texture::Layout::GENERAL,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
+            cb->clearColorImage(frame->backBuffer(), {.floats={i/300.0f, 0, 0, 1}}, Texture::Layout::UNDEFINED, Texture::Layout::PRESENT,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
             cb->end();
             SlagLib::graphicsCard()->graphicsQueue()->submit(&cb,1, nullptr,0, nullptr,0,frame);
         }
