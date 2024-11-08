@@ -120,12 +120,12 @@ namespace slag
             return  D3D12_RESOURCE_STATE_COMMON;
         }
 
-        D3D12_COMPARISON_FUNC DX12Lib::comparisonFunction(Sampler::ComparisonFunction compFunction)
+        D3D12_COMPARISON_FUNC DX12Lib::comparisonFunction(Operations::ComparisonFunction compFunction)
         {
             switch (compFunction)
             {
-#define DEFINITION(slagName, vulkanName, dx12Name) case Sampler::slagName:return dx12Name;
-                SAMPLER_COMPARISON_FUNCTION(DEFINITION)
+#define DEFINITION(slagName, vulkanName, dx12Name) case Operations::slagName:return dx12Name;
+                COMPARISON_FUNCTION(DEFINITION)
 #undef DEFINITION
             }
             return D3D12_COMPARISON_FUNC_NONE;
@@ -335,7 +335,7 @@ namespace slag
         }
 
         Sampler* DX12Lib::newSampler(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, Sampler::AddressMode u, Sampler::AddressMode v, Sampler::AddressMode w,
-                                     float mipLODBias, bool enableAnisotrophy, uint8_t maxAnisotrophy, Sampler::ComparisonFunction comparisonFunction, Color borderColor, float minLOD, float maxLOD)
+                                     float mipLODBias, bool enableAnisotrophy, uint8_t maxAnisotrophy, Operations::ComparisonFunction comparisonFunction, Color borderColor, float minLOD, float maxLOD)
         {
             return new DX12Sampler(minFilter,magFilter,mipMapFilter,u,v,w,mipLODBias,enableAnisotrophy,maxAnisotrophy,comparisonFunction,borderColor,minLOD,maxLOD,false);
         }
@@ -343,6 +343,11 @@ namespace slag
         DescriptorGroup* DX12Lib::newDescriptorGroup(Descriptor* descriptors, size_t descriptorCount)
         {
             throw std::runtime_error("DX12Lib::newDescriptorGroup not implemented");
+        }
+
+        Shader* DX12Lib::newShader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)
+        {
+            throw std::runtime_error("DX12Lib::newShader not implemented");
         }
 
     } // dx

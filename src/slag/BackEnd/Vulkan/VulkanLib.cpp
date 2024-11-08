@@ -9,6 +9,7 @@
 #include "Extensions.h"
 #include "VulkanSampler.h"
 #include "VulkanDescriptorGroup.h"
+#include "VulkanShader.h"
 
 namespace slag
 {
@@ -129,6 +130,56 @@ namespace slag
             return VulkanizedFormat{};
         }
 
+        VkFormat VulkanLib::graphicsType(GraphicsTypes::GraphicsType type)
+        {
+            switch(type)
+            {
+                case GraphicsTypes::GraphicsType::UNKNOWN:
+                    return VK_FORMAT_UNDEFINED;
+                case GraphicsTypes::GraphicsType::BOOLEAN:
+                    return VK_FORMAT_R8_UINT;
+                case GraphicsTypes::GraphicsType::INTEGER:
+                    return VK_FORMAT_R32_SINT;
+                case GraphicsTypes::GraphicsType::UNSIGNED_INTEGER:
+                    return VK_FORMAT_R32_UINT;
+                case GraphicsTypes::GraphicsType::FLOAT:
+                    return VK_FORMAT_R32_SFLOAT;
+                case GraphicsTypes::GraphicsType::DOUBLE:
+                    return VK_FORMAT_R64_SFLOAT;
+                case GraphicsTypes::GraphicsType::VECTOR2:
+                    return VK_FORMAT_R32G32_SFLOAT;
+                case GraphicsTypes::GraphicsType::VECTOR3:
+                    return VK_FORMAT_R32G32B32_SFLOAT;
+                case GraphicsTypes::GraphicsType::VECTOR4:
+                    return VK_FORMAT_R32G32B32A32_SFLOAT;
+                case GraphicsTypes::GraphicsType::BOOLEAN_VECTOR2:
+                    return VK_FORMAT_R8G8_UINT;
+                case GraphicsTypes::GraphicsType::BOOLEAN_VECTOR3:
+                    return VK_FORMAT_R8G8B8_UINT;
+                case GraphicsTypes::GraphicsType::BOOLEAN_VECTOR4:
+                    return VK_FORMAT_R8G8B8A8_UINT;
+                case GraphicsTypes::GraphicsType::INTEGER_VECTOR2:
+                    return VK_FORMAT_R32G32_SINT;
+                case GraphicsTypes::GraphicsType::INTEGER_VECTOR3:
+                    return VK_FORMAT_R32G32B32_SINT;
+                case GraphicsTypes::GraphicsType::INTEGER_VECTOR4:
+                    return VK_FORMAT_R32G32B32A32_SINT;
+                case GraphicsTypes::GraphicsType::UNSIGNED_INTEGER_VECTOR2:
+                    return VK_FORMAT_R32G32_UINT;
+                case GraphicsTypes::GraphicsType::UNSIGNED_INTEGER_VECTOR3:
+                    return VK_FORMAT_R32G32B32_UINT;
+                case GraphicsTypes::GraphicsType::UNSIGNED_INTEGER_VECTOR4:
+                    return VK_FORMAT_R32G32B32A32_UINT;
+                case GraphicsTypes::GraphicsType::DOUBLE_VECTOR2:
+                    return VK_FORMAT_R64G64_SFLOAT;
+                case GraphicsTypes::GraphicsType::DOUBLE_VECTOR3:
+                    return VK_FORMAT_R64G64B64_SFLOAT;
+                case GraphicsTypes::GraphicsType::DOUBLE_VECTOR4:
+                    return VK_FORMAT_R64G64B64A64_SFLOAT;
+            }
+            return VK_FORMAT_UNDEFINED;
+        }
+
         VkImageLayout VulkanLib::layout(Texture::Layout layout)
         {
             switch(layout)
@@ -226,12 +277,12 @@ namespace slag
             return VK_SAMPLER_ADDRESS_MODE_REPEAT;
         }
 
-        VkCompareOp VulkanLib::compareOp(Sampler::ComparisonFunction comparisonFunction)
+        VkCompareOp VulkanLib::compareOp(Operations::ComparisonFunction comparisonFunction)
         {
             switch (comparisonFunction)
             {
-#define DEFINITION(slagName, vulkanName, dx12Name) case Sampler::slagName: return vulkanName;
-                SAMPLER_COMPARISON_FUNCTION(DEFINITION)
+#define DEFINITION(slagName, vulkanName, dx12Name) case Operations::slagName: return vulkanName;
+                COMPARISON_FUNCTION(DEFINITION)
 #undef DEFINITION
             }
             return VK_COMPARE_OP_NEVER;
@@ -259,8 +310,116 @@ namespace slag
                     return  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
                 case slag::Descriptor::DescriptorType::INPUT_ATTACHMENT:
                     return  VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+                case slag::Descriptor::DescriptorType::ACCELERATION_STRUCTURE:
+                    return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
             }
             throw std::runtime_error("unable to convert descriptorType");
+        }
+
+        VkPolygonMode VulkanLib::polygonMode(RasterizationState::DrawMode mode)
+        {
+            switch (mode)
+            {
+                case RasterizationState::DrawMode::FACE:
+                    return VK_POLYGON_MODE_FILL;
+                case RasterizationState::DrawMode::EDGE:
+                    return VK_POLYGON_MODE_LINE;
+                case RasterizationState::DrawMode::VERTEX:
+                    return VK_POLYGON_MODE_POINT;
+            }
+            return VK_POLYGON_MODE_FILL;
+        }
+
+        VkCullModeFlags VulkanLib::cullMode(RasterizationState::CullOptions mode)
+        {
+            switch (mode)
+            {
+                case RasterizationState::CullOptions::NONE:
+                   return VK_CULL_MODE_NONE;
+                case RasterizationState::CullOptions::FRONT_FACING:
+                    return VK_CULL_MODE_FRONT_BIT;
+                case RasterizationState::CullOptions::BACK_FACING:
+                    return VK_CULL_MODE_BACK_BIT;
+            }
+            return VK_CULL_MODE_NONE;
+        }
+
+        VkFrontFace VulkanLib::frontFace(RasterizationState::FrontFacing facing)
+        {
+            switch(facing)
+            {
+                case RasterizationState::FrontFacing::CLOCKWISE:
+                    return VK_FRONT_FACE_CLOCKWISE;
+                case RasterizationState::FrontFacing::COUNTER_CLOCKWISE:
+                    return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+            }
+            return VK_FRONT_FACE_CLOCKWISE;
+        }
+
+        VkBlendFactor VulkanLib::blendFactor(Operations::BlendFactor factor)
+        {
+            switch (factor)
+            {
+#define DEFINITION(SlagName, VulkanName, DXName) case Operations::BlendFactor::SlagName: return VulkanName;
+                BLEND_FACTOR_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            return VK_BLEND_FACTOR_ZERO;
+        }
+
+        VkBlendOp VulkanLib::blendOp(Operations::BlendOperation op)
+        {
+            switch(op)
+            {
+#define DEFINITION(SlagName, VulkanName, DXName) case Operations::BlendOperation::SlagName: return VulkanName;
+                BLEND_OP_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            return VK_BLEND_OP_ADD;
+        }
+
+        VkColorComponentFlags VulkanLib::colorComponents(Color::ComponentFlags componentFlags)
+        {
+            VkColorComponentFlags colorFlags = 0;
+            if(componentFlags & Color::RED_COMPONENT)
+            {
+                colorFlags|= VK_COLOR_COMPONENT_R_BIT;
+            }
+            if(componentFlags & Color::GREEN_COMPONENT)
+            {
+                colorFlags|= VK_COLOR_COMPONENT_G_BIT;
+            }
+            if(componentFlags & Color::BLUE_COMPONENT)
+            {
+                colorFlags|= VK_COLOR_COMPONENT_B_BIT;
+            }
+            if(componentFlags & Color::ALPHA_COMPONENT)
+            {
+                colorFlags|= VK_COLOR_COMPONENT_A_BIT;
+            }
+            return colorFlags;
+        }
+
+        VkLogicOp VulkanLib::logicOp(Operations::LogicalOperation op)
+        {
+            switch (op)
+            {
+#define DEFINITION(SlagName,VulkanName,DX12Name) case Operations::LogicalOperation::SlagName: return VulkanName;
+                FRAMEBUFFER_LOGICAL_OP_DEFINITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            return VK_LOGIC_OP_NO_OP;
+        }
+
+        VkStencilOp VulkanLib::stencilOp(Operations::StencilOperation op)
+        {
+            switch(op)
+            {
+#define DEFINITION(SlagName,VulkanName,DX12Name) case Operations::StencilOperation::SlagName: return VulkanName;
+                STENCIL_OP_DEFINITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            return VK_STENCIL_OP_KEEP;
         }
 
         VulkanLib::VulkanLib(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VulkanGraphicsCard* card)
@@ -392,7 +551,7 @@ namespace slag
             return new VulkanBuffer(bufferSize,accessibility,usageFlags, false);
         }
 
-        Sampler* VulkanLib::newSampler(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, Sampler::AddressMode u, Sampler::AddressMode v, Sampler::AddressMode w, float mipLODBias, bool enableAnisotrophy, uint8_t maxAnisotrophy,Sampler::ComparisonFunction comparisonFunction, Color borderColor, float minLOD, float maxLOD)
+        Sampler* VulkanLib::newSampler(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, Sampler::AddressMode u, Sampler::AddressMode v, Sampler::AddressMode w, float mipLODBias, bool enableAnisotrophy, uint8_t maxAnisotrophy,Operations::ComparisonFunction comparisonFunction, Color borderColor, float minLOD, float maxLOD)
         {
             return new VulkanSampler(minFilter,magFilter,mipMapFilter,u,v,w,mipLODBias,enableAnisotrophy,maxAnisotrophy,comparisonFunction,minLOD,maxLOD,borderColor, false);
         }
@@ -400,6 +559,11 @@ namespace slag
         DescriptorGroup* VulkanLib::newDescriptorGroup(Descriptor* descriptors, size_t descriptorCount)
         {
             return new VulkanDescriptorGroup(descriptors,descriptorCount);
+        }
+
+        Shader* VulkanLib::newShader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)
+        {
+            return new VulkanShader(modules,moduleCount,descriptorGroups,descriptorGroupCount,properties,vertexDescription,frameBufferDescription,false);
         }
 
     } // vulkan

@@ -28,6 +28,7 @@ namespace slag
         virtual ~DescriptorGroup()=default;
         virtual uint32_t descriptorCount()=0;
         virtual Descriptor& operator[](size_t index)=0;
+        virtual Descriptor& descriptor(size_t index)=0;
 
         Shape shape();
         /**
@@ -37,6 +38,7 @@ namespace slag
          * @return
          */
         static DescriptorGroup* newDescriptorGroup(Descriptor* descriptors, size_t descriptorCount);
+        static std::vector<Descriptor> combine(DescriptorGroup** combineGroups, size_t descriptorGroupCount);
     };
 
 } // slag

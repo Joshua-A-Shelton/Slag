@@ -9,18 +9,22 @@
 #include "DescriptorGroup.h"
 #include "DescriptorPool.h"
 #include "Frame.h"
+#include "FrameBufferDescription.h"
 #include "GpuMemoryBarriers.h"
 #include "GpuQueue.h"
 #include "GraphicsCard.h"
+#include "Operations.h"
 #include "Pixel.h"
 #include "PlatformData.h"
 #include "Rectangle.h"
 #include "Sampler.h"
 #include "Semaphore.h"
 #include "Shader.h"
+#include "ShaderProperties.h"
 #include "Swapchain.h"
 #include "Texture.h"
 #include "UniformBufferDescriptorLayout.h"
+#include "VertexDescription.h"
 
 namespace slag
 {

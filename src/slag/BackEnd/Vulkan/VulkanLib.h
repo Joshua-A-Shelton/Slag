@@ -23,15 +23,23 @@ namespace slag
             static VulkanGraphicsCard* card();
 
             static VulkanizedFormat format(Pixels::Format format);
+            static VkFormat graphicsType(GraphicsTypes::GraphicsType type);
             static VkImageLayout layout(Texture::Layout layout);
             static VkImageType imageType(Texture::Type imageType);
             static VkImageViewType viewType(Texture::Type textureType, size_t layerCount);
             static VkFilter filter(Sampler::Filter filter);
             static VkSamplerMipmapMode mipMapMode(Sampler::Filter filter);
             static VkSamplerAddressMode addressMode(Sampler::AddressMode addressMode);
-            static VkCompareOp compareOp(Sampler::ComparisonFunction comparisonFunction);
-            static VkDescriptorType descriptorType(slag::Descriptor::DescriptorType descriptorType);
-
+            static VkCompareOp compareOp(Operations::ComparisonFunction comparisonFunction);
+            static VkDescriptorType descriptorType(Descriptor::DescriptorType descriptorType);
+            static VkPolygonMode polygonMode(RasterizationState::DrawMode mode);
+            static VkCullModeFlags cullMode(RasterizationState::CullOptions mode);
+            static VkFrontFace frontFace(RasterizationState::FrontFacing facing);
+            static VkBlendFactor blendFactor(Operations::BlendFactor factor);
+            static VkBlendOp blendOp(Operations::BlendOperation op);
+            static VkColorComponentFlags colorComponents(Color::ComponentFlags componentFlags);
+            static VkLogicOp logicOp(Operations::LogicalOperation op);
+            static VkStencilOp stencilOp(Operations::StencilOperation op);
 
             VulkanLib(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VulkanGraphicsCard* card);
             ~VulkanLib();
@@ -58,9 +66,10 @@ namespace slag
             Semaphore* newSemaphore(uint64_t startingValue)override;
             void waitFor(SemaphoreValue* values, size_t count)override;
             //Samplers
-            Sampler* newSampler(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, Sampler::AddressMode u, Sampler::AddressMode v, Sampler::AddressMode w, float mipLODBias, bool enableAnisotrophy, uint8_t maxAnisotrophy,Sampler::ComparisonFunction comparisonFunction, Color borderColor, float minLOD, float maxLOD)override;
+            Sampler* newSampler(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, Sampler::AddressMode u, Sampler::AddressMode v, Sampler::AddressMode w, float mipLODBias, bool enableAnisotrophy, uint8_t maxAnisotrophy,Operations::ComparisonFunction comparisonFunction, Color borderColor, float minLOD, float maxLOD)override;
             //Shaders
             DescriptorGroup* newDescriptorGroup(Descriptor* descriptors, size_t descriptorCount)override;
+            Shader* newShader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)override;
 
         private:
             static void mapFlags();

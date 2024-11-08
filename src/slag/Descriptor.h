@@ -21,7 +21,8 @@ namespace slag
             STORAGE_TEXEL_BUFFER,
             UNIFORM_BUFFER,
             STORAGE_BUFFER,
-            INPUT_ATTACHMENT
+            INPUT_ATTACHMENT,
+            ACCELERATION_STRUCTURE
         };
         struct Shape
         {
@@ -42,6 +43,7 @@ namespace slag
         Descriptor& operator=(Descriptor&& from);
         const std::string& name()const;
         const Shape& shape()const;
+        friend class DescriptorGroup;
     protected:
         void copy(Descriptor& from);
         void move(Descriptor& uniform);

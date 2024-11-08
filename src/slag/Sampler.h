@@ -12,18 +12,8 @@ DEFINITION(CLAMP_TO_BORDER,VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,D3D12_TEXTURE
 DEFINITION(NEAREST,VK_FILTER_NEAREST) \
 DEFINITION(LINEAR,VK_FILTER_LINEAR) \
 
-#define SAMPLER_COMPARISON_FUNCTION(DEFINITION) \
-DEFINITION(COMPARISION_NONE,VK_COMPARE_OP_NEVER,D3D12_COMPARISON_FUNC_NONE)\
-DEFINITION(COMPARISION_NEVER,VK_COMPARE_OP_NEVER,D3D12_COMPARISON_FUNC_NEVER)\
-DEFINITION(COMPARISION_LESS,VK_COMPARE_OP_LESS,D3D12_COMPARISON_FUNC_LESS)\
-DEFINITION(COMPARISION_LESS_OR_EQUAL,VK_COMPARE_OP_LESS_OR_EQUAL,D3D12_COMPARISON_FUNC_LESS_EQUAL)\
-DEFINITION(COMPARISION_GREATER,VK_COMPARE_OP_GREATER,D3D12_COMPARISON_FUNC_GREATER)\
-DEFINITION(COMPARISION_GREATER_OR_EQUAL,VK_COMPARE_OP_GREATER_OR_EQUAL,D3D12_COMPARISON_FUNC_GREATER_EQUAL) \
-DEFINITION(COMPARISION_EQUAL,VK_COMPARE_OP_EQUAL,D3D12_COMPARISON_FUNC_EQUAL)\
-DEFINITION(COMPARISION_NOT_EQUAL,VK_COMPARE_OP_NOT_EQUAL,D3D12_COMPARISON_FUNC_NOT_EQUAL)\
-DEFINITION(COMPARISION_ALWAYS,VK_COMPARE_OP_ALWAYS,D3D12_COMPARISON_FUNC_ALWAYS)\
-
 #include "Color.h"
+#include "Operations.h"
 namespace slag
 {
 
@@ -42,12 +32,6 @@ namespace slag
             SAMPLER_FILTER_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
         };
-        enum ComparisonFunction
-        {
-#define DEFINITION(slagName, vulkanName, dx12Name) slagName,
-            SAMPLER_COMPARISON_FUNCTION(DEFINITION)
-#undef DEFINITION
-        };
 
         virtual ~Sampler()=default;
         virtual Filter minFilter()=0;
@@ -59,7 +43,7 @@ namespace slag
         virtual float mipLODBias()=0;
         virtual bool anisotrophyEnabled()=0;
         virtual uint8_t maxAnisotrophy()=0;
-        virtual ComparisonFunction comparisonFunction()=0;
+        virtual Operations::ComparisonFunction comparisonFunction()=0;
         virtual Color borderColor()=0;
         virtual float minLOD()=0;
         virtual float maxLOD()=0;
@@ -78,7 +62,7 @@ namespace slag
         SamplerBuilder& setMipLODBias(float bias);
         SamplerBuilder& setAnisotrophyEnabled(bool enabled);
         SamplerBuilder& setMaxAnisotrophy(uint8_t max);
-        SamplerBuilder& setComparisonFunction(Sampler::ComparisonFunction comparisonFunction);
+        SamplerBuilder& setComparisonFunction(Operations::ComparisonFunction comparisonFunction);
         SamplerBuilder& setBorderColor(Color color);
         SamplerBuilder& setMinLOD(float lod);
         SamplerBuilder& setMaxLOD(float lod);
@@ -94,7 +78,7 @@ namespace slag
         float _mipLODBias=0;
         bool _anisotrophyEnabled=false;
         uint8_t _maxAnisotrophy=0;
-        Sampler::ComparisonFunction _comparisonFunction;
+        Operations::ComparisonFunction _comparisonFunction = Operations::COMPARISION_NEVER;
         Color _borderColor=Color(0.0f,0.0f,0.0f,0.0f);
         float _minLOD = 0;
         float _maxLOD = 1000.0f;

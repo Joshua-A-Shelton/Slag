@@ -22,7 +22,7 @@ namespace slag
             static D3D12_RESOURCE_STATES stateLayout(Texture::Layout texLayout);
             static D3D12_TEXTURE_ADDRESS_MODE addressMode(Sampler::AddressMode mode);
             static D3D12_FILTER filter(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, bool ansitrophyEnabled);
-            static D3D12_COMPARISON_FUNC comparisonFunction(Sampler::ComparisonFunction compFunction);
+            static D3D12_COMPARISON_FUNC comparisonFunction(Operations::ComparisonFunction compFunction);
             explicit DX12Lib(DX12GraphicsCard* card);
             ~DX12Lib() override;
             BackEnd identifier()override;
@@ -40,9 +40,10 @@ namespace slag
             //Semaphores
             Semaphore* newSemaphore(uint64_t startingValue)override;
             //Samplers
-            Sampler* newSampler(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, Sampler::AddressMode u, Sampler::AddressMode v, Sampler::AddressMode w, float mipLODBias, bool enableAnisotrophy, uint8_t maxAnisotrophy,Sampler::ComparisonFunction comparisonFunction, Color borderColor, float minLOD, float maxLOD)override;
+            Sampler* newSampler(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, Sampler::AddressMode u, Sampler::AddressMode v, Sampler::AddressMode w, float mipLODBias, bool enableAnisotrophy, uint8_t maxAnisotrophy,Operations::ComparisonFunction comparisonFunction, Color borderColor, float minLOD, float maxLOD)override;
             //Shaders
             DescriptorGroup* newDescriptorGroup(Descriptor* descriptors, size_t descriptorCount)override;
+            Shader* newShader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)override;
 
             void waitFor(SemaphoreValue* values, size_t count)override;
 

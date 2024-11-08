@@ -15,7 +15,7 @@ namespace slag
                                      float mipLODBias,
                                      bool anisotrphyEnable,
                                      uint8_t maxAnisotrophy,
-                                     Sampler::ComparisonFunction comparisonFunction,
+                                     Operations::ComparisonFunction comparisonFunction,
                                      float minLOD,
                                      float maxLOD,
                                      Color borderColor,
@@ -167,7 +167,7 @@ namespace slag
             return _maxAniotrophy;
         }
 
-        Sampler::ComparisonFunction VulkanSampler::comparisonFunction()
+        Operations::ComparisonFunction VulkanSampler::comparisonFunction()
         {
             return _comparisionFunction;
         }

@@ -20,6 +20,8 @@ namespace slag
 
             uint32_t descriptorCount()override;
             Descriptor& operator[](size_t index)override;
+            Descriptor& descriptor(size_t index)override;
+            VkDescriptorSetLayout layout()const;
 
         private:
             void copy(const VulkanDescriptorGroup& from);

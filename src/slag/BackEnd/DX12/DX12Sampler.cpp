@@ -13,7 +13,7 @@ namespace slag
                                  float mipLODBias,
                                  bool anisotrophyEnabled,
                                  uint8_t maxAnisotrophy,
-                                 Sampler::ComparisonFunction comparisonFunc,
+                                 Operations::ComparisonFunction comparisonFunc,
                                  Color borderColor,
                                  float minLOD,
                                  float maxLOD,
@@ -143,7 +143,7 @@ namespace slag
             return _maxAnisotrophy;
         }
 
-        Sampler::ComparisonFunction DX12Sampler::comparisonFunction()
+        Operations::ComparisonFunction DX12Sampler::comparisonFunction()
         {
             return _comparisonFunction;
         }

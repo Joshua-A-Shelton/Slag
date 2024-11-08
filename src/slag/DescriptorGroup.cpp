@@ -1,3 +1,4 @@
+#include <unordered_map>
 #include "DescriptorGroup.h"
 #include "BackEnd/BackEndLib.h"
 namespace slag
@@ -59,5 +60,40 @@ namespace slag
     DescriptorGroup* DescriptorGroup::newDescriptorGroup(Descriptor* descriptors, size_t descriptorCount)
     {
         return lib::BackEndLib::get()->newDescriptorGroup(descriptors,descriptorCount);
+    }
+
+    std::vector<Descriptor> DescriptorGroup::combine(DescriptorGroup** combineGroups, size_t descriptorGroupCount)
+    {
+        std::unordered_map<uint32_t,Descriptor> descriptors;
+        for(size_t i=0; i<descriptorGroupCount; i++)
+        {
+            auto descriptorGroup = combineGroups[i];
+            for(size_t j=0; j<descriptorGroup->descriptorCount(); j++)
+            {
+                auto& descriptor = descriptorGroup->descriptor(j);
+                if(descriptors.contains(descriptor.shape().binding))
+                {
+                    auto& combined = descriptors.at(descriptor.shape().binding);
+                    if(combined.shape().type == descriptor.shape().type && combined.shape().arrayDepth == descriptor.shape().arrayDepth)
+                    {
+                        combined._shape.visibleStages = combined.shape().visibleStages | descriptor.shape().visibleStages;
+                    }
+                    else
+                    {
+                        throw std::runtime_error("Unable to combine Descriptor Groups, incompatible descriptors");
+                    }
+                }
+                else
+                {
+                    descriptors[descriptor.shape().binding] = descriptor;
+                }
+            }
+        }
+        std::vector<Descriptor> linearDescriptors;
+        for(auto& pair: descriptors)
+        {
+            linearDescriptors.push_back(std::move(pair.second));
+        }
+        return linearDescriptors;
     }
 } // slag

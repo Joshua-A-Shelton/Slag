@@ -15,6 +15,11 @@ DEFINITION(CALLABLE,VK_SHADER_STAGE_CALLABLE_BIT_KHR,D3D12_SHVER_CALLABLE_SHADER
 DEFINITION(MESH,VK_SHADER_STAGE_MESH_BIT_EXT,D3D12_SHVER_MESH_SHADER)   \
 DEFINITION(TASK,VK_SHADER_STAGE_TASK_BIT_EXT,D3D12_SHVER_AMPLIFICATION_SHADER) \
 
+#include <filesystem>
+#include "VertexDescription.h"
+#include "FrameBufferDescription.h"
+#include "ShaderProperties.h"
+
 namespace slag
 {
     class ShaderStages
@@ -73,7 +78,32 @@ namespace slag
 #undef DEFINITION
     };
 
+    struct PushConstantRange
+    {
+        ShaderStages stageFlags;
+        uint32_t offset;
+        uint32_t size;
+    };
+
     class DescriptorGroup;
+    class ShaderModule
+    {
+    public:
+        ShaderModule(ShaderStages stage, void* data, size_t size);
+        ShaderModule(ShaderStages stage, std::filesystem::path path);
+        ShaderModule(const ShaderModule&)=delete;
+        ShaderModule& operator=(const ShaderModule&)=delete;
+        ShaderModule(ShaderModule&& from);
+        ShaderModule& operator=(ShaderModule&& from);
+        void* data();
+        size_t dataSize();
+        ShaderStages stage();
+    private:
+        void move(ShaderModule&& from);
+        ShaderStages _stage;
+        std::vector<char> _shaderData;
+    };
+
     class Shader
     {
     public:
@@ -81,6 +111,10 @@ namespace slag
         virtual size_t descriptorGroupCount()=0;
         virtual DescriptorGroup* descriptorGroup(size_t index)=0;
         virtual DescriptorGroup* operator[](size_t index)=0;
+        virtual size_t pushConstantRangeCount()=0;
+        virtual PushConstantRange pushConstantRange(size_t index)=0;
+
+        static Shader* newShader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription);
     };
 
 } // slag

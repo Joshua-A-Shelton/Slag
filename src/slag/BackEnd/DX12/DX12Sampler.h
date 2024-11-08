@@ -23,7 +23,7 @@ namespace slag
                     float mipLODBias,
                     bool anisotrophyEnabled,
                     uint8_t maxAnisotrophy,
-                    Sampler::ComparisonFunction comparisonFunc,
+                    Operations::ComparisonFunction comparisonFunc,
                     Color borderColor,
                     float minLOD,
                     float maxLOD,
@@ -42,7 +42,7 @@ namespace slag
             float mipLODBias()override;
             bool anisotrophyEnabled()override;
             uint8_t maxAnisotrophy()override;
-            ComparisonFunction comparisonFunction()override;
+            Operations::ComparisonFunction comparisonFunction()override;
             Color borderColor()override;
             float minLOD()override;
             float maxLOD()override;
@@ -57,7 +57,7 @@ namespace slag
             float _mipLODBias=0;
             bool _anisotrophyEnabled=false;
             uint8_t _maxAnisotrophy=1;
-            ComparisonFunction _comparisonFunction;
+            Operations::ComparisonFunction _comparisonFunction;
             Color _borderColor;
             float _minLOD=0;
             float _maxLOD = 1000;

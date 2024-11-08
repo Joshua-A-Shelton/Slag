@@ -1,6 +1,7 @@
 #ifndef SLAG_GRAPHICSTYPES_H
 #define SLAG_GRAPHICSTYPES_H
 #include <cstdint>
+#include <stdexcept>
 namespace slag
 {
     struct GraphicsTypes

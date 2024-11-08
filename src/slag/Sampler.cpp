@@ -56,7 +56,7 @@ namespace slag
         return *this;
     }
 
-    SamplerBuilder& SamplerBuilder::setComparisonFunction(Sampler::ComparisonFunction comparisonFunction)
+    SamplerBuilder& SamplerBuilder::setComparisonFunction(Operations::ComparisonFunction comparisonFunction)
     {
         _comparisonFunction = comparisonFunction;
         return *this;

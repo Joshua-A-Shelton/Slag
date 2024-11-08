@@ -137,6 +137,13 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/GraphicsTypes.h
         src/slag/UniformBufferDescriptorLayout.cpp
         src/slag/UniformBufferDescriptorLayout.h
+        src/slag/ShaderProperties.cpp
+        src/slag/ShaderProperties.h
+        src/slag/VertexDescription.cpp
+        src/slag/VertexDescription.h
+        src/slag/Operations.h
+        src/slag/FrameBufferDescription.cpp
+        src/slag/FrameBufferDescription.h
 )
 target_link_libraries(Slag ${Boost_LIBRARIES})
 target_include_directories(Slag PRIVATE ${Boost_INCLUDE_DIRS} third-party/stb)
@@ -196,6 +203,7 @@ if(BUILD_SLAG_TESTS)
             test/tests/BufferTest.cpp
             test/tests/UniformDescriptorLayoutTest.cpp
             test/tests/UniformGroupTest.cpp
+            test/tests/ShaderTest.cpp
     )
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 Slag)
     target_include_directories(SlagTests PRIVATE src ${SDL2_LIBRARIES})

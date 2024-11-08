@@ -88,5 +88,15 @@ namespace slag
             return _bindings[index];
         }
 
+        Descriptor& VulkanDescriptorGroup::descriptor(size_t index)
+        {
+            return _bindings.at(index);
+        }
+
+        VkDescriptorSetLayout VulkanDescriptorGroup::layout() const
+        {
+            return _layout;
+        }
+
     } // vulkan
 } // slag
