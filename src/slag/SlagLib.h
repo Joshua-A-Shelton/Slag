@@ -34,9 +34,18 @@ namespace slag
         Vulkan,
         DirectX12
     };
+
     struct SlagInitDetails
     {
+        enum DebugLevel
+        {
+            SLAG_ERROR,
+            SLAG_WARNING,
+            SLAG_MESSAGE
+        };
         BackEnd backend = Vulkan;
+        bool debug = false;
+        void(* slagDebugHandler)(std::string& message, DebugLevel level, int32_t messageID) = nullptr;
     };
     class SlagLib
     {

@@ -18,7 +18,7 @@ namespace slag
     namespace dx
     {
 
-        DX12Lib* DX12Lib::initialize()
+        DX12Lib* DX12Lib::initialize(const SlagInitDetails& details)
         {
 
 
@@ -70,7 +70,7 @@ namespace slag
                 return nullptr;
             }
             mapFlags();
-            auto card = new DX12GraphicsCard(dxgiAdapter4,dxgiFactory);
+            auto card = new DX12GraphicsCard(dxgiAdapter4,dxgiFactory,details);
             return new DX12Lib(card);
         }
 

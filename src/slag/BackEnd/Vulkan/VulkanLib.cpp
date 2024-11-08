@@ -16,17 +16,41 @@ namespace slag
     namespace vulkan
     {
 
-        bool _includeVulkanLayers = true;
-
-        VulkanLib* VulkanLib::initialize()
+        void(* SLAG_VULKAN_DEBUG_HANDLER)(std::string& message, SlagInitDetails::DebugLevel level, int32_t messageID) = nullptr;
+        VkBool32 VULKAN_DEBUG_MESSENGER_CALLBACK(VkDebugUtilsMessageSeverityFlagBitsEXT           messageSeverity,
+                                                 VkDebugUtilsMessageTypeFlagsEXT                  messageTypes,
+                                                 const VkDebugUtilsMessengerCallbackDataEXT*      pCallbackData,
+                                                 void*                                            pUserData)
         {
-#if NDEBUG
-            _includeVulkanLayers = false;
-#endif
+            if(SLAG_VULKAN_DEBUG_HANDLER!= nullptr)
+            {
+                SlagInitDetails::DebugLevel level = SlagInitDetails::DebugLevel::SLAG_MESSAGE;
+                if(messageSeverity & VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+                {
+                    level = SlagInitDetails::DebugLevel::SLAG_ERROR;
+                }
+                else if(messageSeverity & VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+                {
+                    level = SlagInitDetails::DebugLevel::SLAG_WARNING;
+                }
+                std::string message = pCallbackData->pMessage;
+                SLAG_VULKAN_DEBUG_HANDLER(message,level,pCallbackData->messageIdNumber);
+            }
+            return VK_FALSE;
+        }
+
+        VulkanLib* VulkanLib::initialize(const SlagInitDetails& details)
+        {
+            if(details.debug)
+            {
+                SLAG_VULKAN_DEBUG_HANDLER = details.slagDebugHandler;
+            }
+
             vkb::InstanceBuilder builder;
             auto inst = builder.set_app_name("Slag Application")
-                               .request_validation_layers(_includeVulkanLayers)
-                               .use_default_debug_messenger()
+                               .request_validation_layers(details.debug)
+                               //.use_default_debug_messenger()
+                               .set_debug_callback(VULKAN_DEBUG_MESSENGER_CALLBACK)
                                .require_api_version(1,3,0)
                                .build();
 
@@ -81,6 +105,7 @@ namespace slag
             {
                 delete library;
             }
+            SLAG_VULKAN_DEBUG_HANDLER = nullptr;
         }
 
         void VulkanLib::mapFlags()

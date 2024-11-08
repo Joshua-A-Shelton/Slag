@@ -8,12 +8,27 @@ namespace slag
 {
     namespace dx
     {
+        void (*SLAG_DX12_DEBUG_CALLBACK)(std::string& message, SlagInitDetails::DebugLevel level, int32_t messageID);
+
         void DX12ErrorCallback(D3D12_MESSAGE_CATEGORY category,D3D12_MESSAGE_SEVERITY severity,D3D12_MESSAGE_ID id, LPCSTR pdescription, void* pcontext)
         {
-            std::cout << pdescription << std::endl;
+            if(SLAG_DX12_DEBUG_CALLBACK!=nullptr)
+            {
+                SlagInitDetails::DebugLevel level = SlagInitDetails::SLAG_MESSAGE;
+                if(severity == D3D12_MESSAGE_SEVERITY_ERROR || severity == D3D12_MESSAGE_SEVERITY_CORRUPTION)
+                {
+                    level = SlagInitDetails::SLAG_ERROR;
+                }
+                else if(severity == D3D12_MESSAGE_SEVERITY_WARNING)
+                {
+                    level = SlagInitDetails::SLAG_WARNING;
+                }
+                std::string message = pdescription;
+                SLAG_DX12_DEBUG_CALLBACK(message,level,id);
+            }
         }
 
-        DX12GraphicsCard::DX12GraphicsCard(const Microsoft::WRL::ComPtr<IDXGIAdapter4>& adapter, Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory)
+        DX12GraphicsCard::DX12GraphicsCard(const Microsoft::WRL::ComPtr<IDXGIAdapter4>& adapter, Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory, const SlagInitDetails& details)
         {
             _dxgiFactory = dxgiFactory;
             D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&_device));
@@ -21,51 +36,54 @@ namespace slag
             _device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS12,&features,sizeof(features));
             _supportsEnhancedBarriers = features.EnhancedBarriersSupported;
             assert(_supportsEnhancedBarriers && "Graphics card DX12 API must support enhanced barriers");
-#ifndef NDEBUG
-            Microsoft::WRL::ComPtr<ID3D12InfoQueue> pInfoQueue;
-            if (SUCCEEDED(_device.As(&pInfoQueue)))
+
+            if(details.debug)
             {
-                pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
-                pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
-                pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
-                pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_INFO,TRUE);
-                pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_MESSAGE,TRUE);
+                Microsoft::WRL::ComPtr<ID3D12InfoQueue> pInfoQueue;
+                if (SUCCEEDED(_device.As(&pInfoQueue)))
+                {
+                    pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+                    pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
+                    pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
+                    pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_INFO,TRUE);
+                    pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_MESSAGE,TRUE);
 
-                // Suppress whole categories of messages
-                //D3D12_MESSAGE_CATEGORY Categories[] = {};
+                    // Suppress whole categories of messages
+                    //D3D12_MESSAGE_CATEGORY Categories[] = {};
 
-                // Suppress messages based on their severity level
-                D3D12_MESSAGE_SEVERITY Severities[] =
-                        {
-                                D3D12_MESSAGE_SEVERITY_INFO
-                        };
+                    // Suppress messages based on their severity level
+                    D3D12_MESSAGE_SEVERITY Severities[] =
+                            {
+                                    D3D12_MESSAGE_SEVERITY_INFO
+                            };
 
-                // Suppress individual messages by their ID
-                /*D3D12_MESSAGE_ID DenyIds[] = {
-                        D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,   // I'm really not sure how to avoid this message.
-                        //D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,                         // This warning occurs when using capture frame while graphics debugging.
-                        //D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,                       // This warning occurs when using capture frame while graphics debugging.
-                };*/
+                    // Suppress individual messages by their ID
+                    /*D3D12_MESSAGE_ID DenyIds[] = {
+                            D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,   // I'm really not sure how to avoid this message.
+                            //D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,                         // This warning occurs when using capture frame while graphics debugging.
+                            //D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,                       // This warning occurs when using capture frame while graphics debugging.
+                    };*/
 
-                D3D12_INFO_QUEUE_FILTER NewFilter = {};
-                //NewFilter.DenyList.NumCategories = _countof(Categories);
-                //NewFilter.DenyList.pCategoryList = Categories;
-                NewFilter.DenyList.NumSeverities = 0;
-                NewFilter.DenyList.pSeverityList = nullptr;
-                NewFilter.DenyList.NumIDs = 0;
-                NewFilter.DenyList.pIDList = nullptr;
+                    D3D12_INFO_QUEUE_FILTER NewFilter = {};
+                    //NewFilter.DenyList.NumCategories = _countof(Categories);
+                    //NewFilter.DenyList.pCategoryList = Categories;
+                    NewFilter.DenyList.NumSeverities = 0;
+                    NewFilter.DenyList.pSeverityList = nullptr;
+                    NewFilter.DenyList.NumIDs = 0;
+                    NewFilter.DenyList.pIDList = nullptr;
 
-                pInfoQueue->PushStorageFilter(&NewFilter);
+                    pInfoQueue->PushStorageFilter(&NewFilter);
+                    SLAG_DX12_DEBUG_CALLBACK = details.slagDebugHandler;
+                }
+
+                Microsoft::WRL::ComPtr<ID3D12InfoQueue> infoQueue = nullptr;
+                auto res = _device->QueryInterface(IID_PPV_ARGS(&infoQueue));
+                Microsoft::WRL::ComPtr<ID3D12InfoQueue1> infoQueue1 = nullptr;
+                infoQueue.As(&infoQueue1);
+                DWORD callBackCookie = 0;
+                infoQueue1->RegisterMessageCallback(DX12ErrorCallback,D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &callBackCookie);
+
             }
-
-            Microsoft::WRL::ComPtr<ID3D12InfoQueue> infoQueue = nullptr;
-            auto res = _device->QueryInterface(IID_PPV_ARGS(&infoQueue));
-            Microsoft::WRL::ComPtr<ID3D12InfoQueue1> infoQueue1 = nullptr;
-            infoQueue.As(&infoQueue1);
-            DWORD callBackCookie = 0;
-            infoQueue1->RegisterMessageCallback(DX12ErrorCallback,D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &callBackCookie);
-
-#endif
 
             D3D12_COMMAND_QUEUE_DESC desc = {};
             desc.Type =     D3D12_COMMAND_LIST_TYPE_DIRECT;

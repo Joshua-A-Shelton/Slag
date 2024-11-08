@@ -17,7 +17,7 @@ namespace slag
         class VulkanLib: public lib::BackEndLib
         {
         public:
-            static VulkanLib* initialize();
+            static VulkanLib* initialize(const SlagInitDetails& details);
             static VulkanLib* get();
             static void cleanup(lib::BackEndLib* library);
             static VulkanGraphicsCard* card();

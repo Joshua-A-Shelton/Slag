@@ -13,7 +13,7 @@ namespace slag
         class DX12Lib:public lib::BackEndLib
         {
         public:
-            static DX12Lib* initialize();
+            static DX12Lib* initialize(const SlagInitDetails& details);
             static void cleanup(lib::BackEndLib* library);
             static DX12Lib* get();
             static DX12GraphicsCard* card();

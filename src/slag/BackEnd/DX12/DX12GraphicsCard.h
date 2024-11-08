@@ -6,6 +6,7 @@
 #include "../../GraphicsCard.h"
 #include "DX12Queue.h"
 #include "D3D12MemAlloc.h"
+#include "slag/SlagLib.h"
 #include <queue>
 
 namespace slag
@@ -16,7 +17,7 @@ namespace slag
         class DX12GraphicsCard: public GraphicsCard
         {
         public:
-            DX12GraphicsCard(const Microsoft::WRL::ComPtr<IDXGIAdapter4>& adapter, Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory);
+            DX12GraphicsCard(const Microsoft::WRL::ComPtr<IDXGIAdapter4>& adapter, Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory, const SlagInitDetails& details);
             ~DX12GraphicsCard()override;
             ID3D12Device2* device();
             IDXGIFactory4* dxgiFactory();

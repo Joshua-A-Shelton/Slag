@@ -19,12 +19,12 @@ namespace slag
         {
             case BackEnd::Vulkan:
 #if SLAG_VULKAN_BACKEND
-                lib::BackEndLib::set(vulkan::VulkanLib::initialize());
+                lib::BackEndLib::set(vulkan::VulkanLib::initialize(details));
 #endif
                 break;
             case BackEnd::DirectX12:
 #if SLAG_DX12_BACKEND
-                lib::BackEndLib::set(dx::DX12Lib::initialize());
+                lib::BackEndLib::set(dx::DX12Lib::initialize(details));
 #endif
                 break;
         }
