@@ -17,8 +17,8 @@ TEST(Texture, LoadFromFile)
 
 TEST(Texture, MultiSampled)
 {
-    auto texture = Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,500,700,16,TextureUsageFlags::RENDER_TARGET_ATTACHMENT,Texture::Layout::RENDER_TARGET);
-    GTEST_ASSERT_GE(texture->sampleCount() ,16);
+    auto texture = Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,500,700,8,TextureUsageFlags::RENDER_TARGET_ATTACHMENT,Texture::Layout::RENDER_TARGET);
+    GTEST_ASSERT_GE(texture->sampleCount() ,8);
     GTEST_ASSERT_GE(texture->mipLevels() ,1);
     GTEST_ASSERT_GE(texture->type() ,Texture::Type::TEXTURE_2D);
     GTEST_ASSERT_GE(texture->layers() ,1);

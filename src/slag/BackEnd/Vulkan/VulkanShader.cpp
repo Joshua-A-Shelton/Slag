@@ -377,7 +377,7 @@ namespace slag
                     .colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size()),
                     .pColorAttachmentFormats = colorAttachments.data(),
                     .depthAttachmentFormat = VulkanLib::format(frameBufferDescription.depthFormat()).format,
-                    .stencilAttachmentFormat = VulkanLib::format(frameBufferDescription.depthFormat()).format //TODO: not sure how this works.....
+                    .stencilAttachmentFormat = Pixels::hasStencilComponent(frameBufferDescription.depthFormat()) ?  VulkanLib::format(frameBufferDescription.depthFormat()).format : VK_FORMAT_UNDEFINED
             };
 
             pipelineInfo.pNext = &pipelineRenderingCreateInfo;

@@ -16,9 +16,9 @@ TEST(UniformGroup, Shape)
     descriptors2.push_back(Descriptor("Albedo",Descriptor::SAMPLER_AND_TEXTURE,1,0,ShaderStageFlags::FRAGMENT));
     auto group2 = DescriptorGroup::newDescriptorGroup(descriptors2.data(),descriptors2.size());
 
-    descriptors.push_back(Descriptor("DifferentThing",Descriptor::INPUT_ATTACHMENT,1,4,slag::ShaderStageFlags::FRAGMENT));
+    descriptors.push_back(Descriptor("DifferentThing",Descriptor::SAMPLER_AND_TEXTURE,1,4,slag::ShaderStageFlags::FRAGMENT));
     auto group3 = DescriptorGroup::newDescriptorGroup(descriptors.data(),descriptors.size());
-    descriptors2.push_back(Descriptor("DifferentThing",Descriptor::INPUT_ATTACHMENT,1,4,slag::ShaderStageFlags::FRAGMENT | ShaderStageFlags::VERTEX));
+    descriptors2.push_back(Descriptor("DifferentThing",Descriptor::SAMPLER_AND_TEXTURE,1,4,slag::ShaderStageFlags::FRAGMENT | ShaderStageFlags::VERTEX));
     auto group4 = DescriptorGroup::newDescriptorGroup(descriptors2.data(),descriptors2.size());
     GTEST_ASSERT_TRUE(group->shape() == group2->shape());
     GTEST_ASSERT_TRUE(group->shape() != group3->shape());
@@ -26,4 +26,6 @@ TEST(UniformGroup, Shape)
     GTEST_ASSERT_TRUE(group3->shape() != group4->shape());
     delete group;
     delete group2;
+    delete group3;
+    delete group4;
 }

@@ -114,6 +114,17 @@ namespace slag
             }
             return 0;
         }
+
+        static bool hasStencilComponent(Format format)
+        {
+            switch (format)
+            {
+                case Format::D24_UNORM_S8_UINT:
+                case Format::D32_FLOAT_S8X24_UINT:
+                    return true;
+            }
+            return false;
+        }
     };
 
 } // slag
