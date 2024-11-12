@@ -178,6 +178,7 @@ namespace slag
             //generateMips
             if(mipLevels > 1)
             {
+                smartDestroy();
                 throw std::runtime_error("VulkanTexture::VulkanTexture multiple mips not implemented yet");
             }
             else
@@ -361,6 +362,7 @@ namespace slag
             auto result = vmaCreateImage(VulkanLib::card()->memoryAllocator(), &dimg_info, &dimg_allocinfo, &_image, &_allocation, nullptr);
             if(result!= VK_SUCCESS)
             {
+                smartDestroy();
                 throw std::runtime_error("unable to create image");
             }
 
