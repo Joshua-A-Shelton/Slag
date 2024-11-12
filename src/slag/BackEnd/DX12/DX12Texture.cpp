@@ -105,7 +105,7 @@ namespace slag
 
         void DX12Texture::build(DX12CommandBuffer* onBuffer, void* texelData, size_t dataSize, DXGI_FORMAT dataFormat, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, Texture::Layout initializedLayout, bool generateMips)
         {
-            /*assert(!(usage & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET && usage & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) && "Texture cannot be both render target and depth stencil");
+            assert(!(usage & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET && usage & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) && "Texture cannot be both render target and depth stencil");
             _width = width;
             _height = height;
             _mipLevels = mipLevels;
@@ -229,7 +229,7 @@ namespace slag
                 imBarrier.syncBefore = PipelineStageFlags::ALL_COMMANDS;
                 imBarrier.syncAfter = PipelineStageFlags::ALL_COMMANDS;
                 onBuffer->insertBarriers(&imBarrier,1, nullptr,0, nullptr,0);
-            }*/
+            }
         }
 
         Texture::Type DX12Texture::type()

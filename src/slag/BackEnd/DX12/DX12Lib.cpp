@@ -20,8 +20,6 @@ namespace slag
 
         DX12Lib* DX12Lib::initialize(const SlagInitDetails& details)
         {
-
-
             Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory;
             UINT createFactoryFlags = 0;
 #ifndef NDEBUG

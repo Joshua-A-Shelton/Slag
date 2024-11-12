@@ -8,11 +8,11 @@ namespace slag
     namespace tests
     {
 
-        bool POST_SET_UP = false;
+        bool VULKAN_TESTS_POST_SET_UP = false;
         void VulkanDebugTest(std::string& message, SlagInitDetails::DebugLevel level, int32_t messageID)
         {
             std::cout << message <<std::endl;
-            if(level != SlagInitDetails::SLAG_MESSAGE && POST_SET_UP)
+            if(level != SlagInitDetails::SLAG_MESSAGE && VULKAN_TESTS_POST_SET_UP)
             {
                 GTEST_FAIL();
             }
@@ -21,7 +21,7 @@ namespace slag
         {
             SlagInitDetails details{.backend = Vulkan,.debug=true,.slagDebugHandler=VulkanDebugTest};
             slag::SlagLib::initialize(details);
-            POST_SET_UP = true;
+            VULKAN_TESTS_POST_SET_UP = true;
         }
 
         void VulkanEnvironment::TearDown()

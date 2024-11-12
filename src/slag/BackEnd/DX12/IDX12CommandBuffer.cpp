@@ -9,11 +9,24 @@ namespace slag
 {
     namespace dx
     {
+        IDX12CommandBuffer::IDX12CommandBuffer()
+        {
+            if(DX12Lib::card()->supportsEnhancedBarriers())
+            {
+                _insertBarriers_ptr = &IDX12CommandBuffer::insertBarriersEnhanced;
+            }
+            else
+            {
+                _insertBarriers_ptr = &IDX12CommandBuffer::insertBarriersLegacy;
+            }
+        }
+
         void IDX12CommandBuffer::move(IDX12CommandBuffer& from)
         {
             std::swap(_pool,from._pool);
             std::swap(_buffer,from._buffer);
             _commandType = from._commandType;
+            _insertBarriers_ptr = from._insertBarriers_ptr;
         }
 
         ID3D12GraphicsCommandList7* IDX12CommandBuffer::underlyingCommandBuffer()
@@ -31,7 +44,12 @@ namespace slag
             return _commandType;
         }
 
-        void IDX12CommandBuffer::insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount)
+        void IDX12CommandBuffer::insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers,size_t memoryBarrierCount)
+        {
+            (this->*(this->_insertBarriers_ptr))(imageBarriers, imageBarrierCount, bufferBarriers, bufferBarrierCount, memoryBarriers,memoryBarrierCount);
+        }
+
+        void IDX12CommandBuffer::insertBarriersEnhanced(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount)
         {
             std::vector<D3D12_BARRIER_GROUP> barrierGroups;
             std::vector<D3D12_TEXTURE_BARRIER> textureBarriers(imageBarrierCount);
@@ -104,6 +122,32 @@ namespace slag
             }
 
             _buffer->Barrier(barrierGroups.size(), barrierGroups.data());
+        }
+
+        void IDX12CommandBuffer::insertBarriersLegacy(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount)
+        {
+            std::vector<D3D12_RESOURCE_BARRIER> barriers;
+            for(size_t i=0; i< imageBarrierCount; i++)
+            {
+                auto& barrierDesc = imageBarriers[i];
+                auto image = dynamic_cast<DX12Texture*>(barrierDesc.texture);
+                //TODO, not sure about plane slice being 0, especially for depth/stencil
+                auto mipCount = barrierDesc.mipCount != 0 ? barrierDesc.mipCount : image->mipLevels() - barrierDesc.baseMipLevel;
+                auto layerCount = barrierDesc.layerCount != 0 ? barrierDesc.layerCount : image->layers() - barrierDesc.baseLayer;
+                UINT subresource = D3D12CalcSubresource(barrierDesc.baseMipLevel,barrierDesc.baseLayer,0,mipCount,layerCount);
+                barriers.push_back({.Type=D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,.Transition={.pResource=image->texture(),.Subresource=subresource,.StateBefore=DX12Lib::stateLayout(barrierDesc.oldLayout),.StateAfter=DX12Lib::stateLayout(barrierDesc.newLayout)}});
+            }
+            for(size_t i=0; i< bufferBarrierCount; i++)
+            {
+                auto& barrierDesc = bufferBarriers[i];
+                auto buffer = dynamic_cast<DX12Buffer*>(barrierDesc.buffer);
+                barriers.push_back({.Type=D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_UAV,.UAV={.pResource =buffer->underlyingBuffer()}});
+            }
+            if(memoryBarrierCount)
+            {
+                barriers.push_back({.Type=D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_UAV,.UAV={.pResource =nullptr}});
+            }
+            _buffer->ResourceBarrier(barriers.size(),barriers.data());
         }
 
         void IDX12CommandBuffer::clearColorImage(Texture* texture, ClearColor color, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore, PipelineStages syncAfter)

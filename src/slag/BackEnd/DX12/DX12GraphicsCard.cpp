@@ -35,7 +35,6 @@ namespace slag
             D3D12_FEATURE_DATA_D3D12_OPTIONS12 features{};
             _device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS12,&features,sizeof(features));
             _supportsEnhancedBarriers = features.EnhancedBarriersSupported;
-            assert(_supportsEnhancedBarriers && "Graphics card DX12 API must support enhanced barriers");
 
             if(details.debug)
             {
