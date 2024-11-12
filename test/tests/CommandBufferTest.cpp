@@ -2,16 +2,8 @@
 #include "slag/SlagLib.h"
 using namespace slag;
 
-TEST(CommandBuffer, Creation)
-{
-    auto buffer = CommandBuffer::newCommandBuffer(GpuQueue::Graphics);
-    delete buffer;
-    int i=0;
-}
-
 TEST(CommandBuffer, StartFinished)
 {
-    auto buffer = CommandBuffer::newCommandBuffer(GpuQueue::Graphics);
+    std::unique_ptr<CommandBuffer> buffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Graphics));
     ASSERT_TRUE(buffer->isFinished());
-    delete buffer;
 }

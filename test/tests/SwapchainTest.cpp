@@ -10,6 +10,14 @@
 
 using namespace slag;
 
+struct SDL_WindowCustomDeleter
+{
+    void operator()(SDL_Window* window)
+    {
+        SDL_DestroyWindow(window);
+    }
+};
+
 TEST(Swapchain, PresentModes)
 {
 
@@ -18,14 +26,14 @@ TEST(Swapchain, PresentModes)
     {
         flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE | SDL_WINDOW_VULKAN);
     }
-    auto window = SDL_CreateWindow("Hello, Slag",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,500,500,flags);
+    auto window = std::unique_ptr<SDL_Window,SDL_WindowCustomDeleter>(SDL_CreateWindow("Hello, Slag",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,500,500,flags));
 
 
     slag::PlatformData pd{};
 
     SDL_SysWMinfo wmInfo;
     SDL_VERSION(&wmInfo.version);
-    SDL_GetWindowWMInfo(window, &wmInfo);
+    SDL_GetWindowWMInfo(window.get(), &wmInfo);
 #ifdef _WIN32
     pd.nativeWindowHandle = wmInfo.info.win.window;
     pd.nativeDisplayType = wmInfo.info.win.hinstance;
@@ -34,7 +42,7 @@ TEST(Swapchain, PresentModes)
     pd.nativeDisplayType = wmInfo.info.x11.display;
 #endif
 
-    auto swapchain = Swapchain::newSwapchain(pd, 500, 500, 3, Swapchain::PresentMode::MAILBOX, Pixels::Format::B8G8R8A8_UNORM);
+    auto swapchain = std::unique_ptr<Swapchain>(Swapchain::newSwapchain(pd, 500, 500, 3, Swapchain::PresentMode::MAILBOX, Pixels::Format::B8G8R8A8_UNORM));
     Uint64 totalStart = SDL_GetPerformanceCounter();
     Uint64 last = totalStart;
     for(int i=0; i< 300; i++)
@@ -69,10 +77,6 @@ TEST(Swapchain, PresentModes)
     totalEnd = SDL_GetPerformanceCounter();
     auto sequentialTime = ((totalEnd-totalStart)/1000)/300;
     GTEST_ASSERT_GE(sequentialTime,(discardTime*1.05));
-
-    delete swapchain;
-
-    SDL_DestroyWindow(window);
 }
 
 TEST(Swapchain, NextIfReady)
@@ -82,14 +86,14 @@ TEST(Swapchain, NextIfReady)
     {
         flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE | SDL_WINDOW_VULKAN);
     }
-    auto window = SDL_CreateWindow("Hello, Slag",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,500,500,flags);
+    auto window = std::unique_ptr<SDL_Window,SDL_WindowCustomDeleter>(SDL_CreateWindow("Hello, Slag",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,500,500,flags));
 
 
     slag::PlatformData pd{};
 
     SDL_SysWMinfo wmInfo;
     SDL_VERSION(&wmInfo.version);
-    SDL_GetWindowWMInfo(window, &wmInfo);
+    SDL_GetWindowWMInfo(window.get(), &wmInfo);
 #ifdef _WIN32
     pd.nativeWindowHandle = wmInfo.info.win.window;
     pd.nativeDisplayType = wmInfo.info.win.hinstance;
@@ -98,7 +102,7 @@ TEST(Swapchain, NextIfReady)
     pd.nativeDisplayType = wmInfo.info.x11.display;
 #endif
 
-    auto swapchain = Swapchain::newSwapchain(pd, 500, 500, 2, Swapchain::PresentMode::FIFO, Pixels::Format::B8G8R8A8_UNORM);
+    auto swapchain = std::unique_ptr<Swapchain>(Swapchain::newSwapchain(pd, 500, 500, 2, Swapchain::PresentMode::FIFO, Pixels::Format::B8G8R8A8_UNORM));
     int frameCount = 0;
     int i=0;
     for(;; i++)
@@ -136,9 +140,6 @@ TEST(Swapchain, NextIfReady)
             break;
         }
     }
-    delete swapchain;
-
-    SDL_DestroyWindow(window);
 
     GTEST_ASSERT_GE(i,frameCount);
     GTEST_ASSERT_EQ(j,frameCount2-1);

@@ -5,14 +5,14 @@ using namespace slag;
 
 TEST(BufferTest, Copy)
 {
-    CommandBuffer* commandBuffer = CommandBuffer::newCommandBuffer(GpuQueue::Transfer);
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Transfer));
     commandBuffer->begin();
     std::vector<Color> rawData{Color(1.0f,0.0f,0.0f,1.0f),Color(.7f,.6f,.2f,1.0f),Color(0.0f,.9f,.25f,.33f)};
-    auto cpuBuffer = Buffer::newBuffer(rawData.data(), sizeof(Color) * rawData.size(), Buffer::Accessibility::CPU, Buffer::Usage::DATA_BUFFER);
-    auto gpuBuffer = Buffer::newBuffer(sizeof(Color) * rawData.size(), Buffer::Accessibility::GPU, Buffer::Usage::DATA_BUFFER);
-    commandBuffer->copyBuffer(cpuBuffer,0,cpuBuffer->size(),gpuBuffer,0);
+    std::unique_ptr<Buffer> cpuBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(rawData.data(), sizeof(Color) * rawData.size(), Buffer::Accessibility::CPU, Buffer::Usage::DATA_BUFFER));
+    std::unique_ptr<Buffer> gpuBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(Color) * rawData.size(), Buffer::Accessibility::GPU, Buffer::Usage::DATA_BUFFER));
+    commandBuffer->copyBuffer(cpuBuffer.get(),0,cpuBuffer->size(),gpuBuffer.get(),0);
     commandBuffer->end();
-    SlagLib::graphicsCard()->transferQueue()->submit(commandBuffer);
+    SlagLib::graphicsCard()->transferQueue()->submit(commandBuffer.get());
     commandBuffer->waitUntilFinished();
     auto data = gpuBuffer->downloadData();
 
@@ -24,9 +24,4 @@ TEST(BufferTest, Copy)
         auto proccessed = processedData[i];
         GTEST_ASSERT_TRUE(original == proccessed);
     }
-
-
-    delete commandBuffer;
-    delete cpuBuffer;
-    delete gpuBuffer;
 }
