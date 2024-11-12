@@ -80,12 +80,17 @@ namespace slag
             //get descriptor groups via reflection
             std::unordered_map<size_t,std::vector<VulkanDescriptorGroup>> reflectedDescriptorGroups;
             size_t maxDescriptorGroup = descriptorGroupCount;
+            bool hasDescriptorGroups = false;
             for(size_t i=0; i< shaderStageData.size(); i++)
             {
                 auto& module = modules[i];
                 auto& reflectModule = shaderStageData[i].reflectModule;
                 uint32_t setCount = 0;
                 auto result = spvReflectEnumerateDescriptorSets(&reflectModule,&setCount, nullptr);
+                if(setCount > 0)
+                {
+                    hasDescriptorGroups = true;
+                }
                 for(size_t set = 0; set< setCount; set++)
                 {
                     auto binding = reflectModule.descriptor_bindings[set];
@@ -126,7 +131,7 @@ namespace slag
             }
 
             //add descriptor groups to shader
-            for(size_t i=0; i<maxDescriptorGroup; i++)
+            for(size_t i=0; i<=maxDescriptorGroup && hasDescriptorGroups; i++)
             {
                 //if we provided an override for a group, use that
                 if(i < descriptorGroupCount)
