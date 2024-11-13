@@ -105,8 +105,9 @@ TEST(Swapchain, NextIfReady)
     auto swapchain = std::unique_ptr<Swapchain>(Swapchain::newSwapchain(pd, 500, 500, 2, Swapchain::PresentMode::FIFO, Pixels::Format::B8G8R8A8_UNORM));
     int frameCount = 0;
     int i=0;
-    for(;; i++)
+    for(;;)
     {
+        i++;
         if(auto frame = swapchain->nextIfReady())
         {
             auto cb = frame->commandBuffer();
