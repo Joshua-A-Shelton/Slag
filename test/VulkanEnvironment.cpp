@@ -19,7 +19,7 @@ namespace slag
         }
         void VulkanEnvironment::SetUp()
         {
-            SlagInitDetails details{.backend = Vulkan,.debug=false,.slagDebugHandler=VulkanDebugTest};
+            SlagInitDetails details{.backend = Vulkan,.debug=true,.slagDebugHandler=VulkanDebugTest};
             slag::SlagLib::initialize(details);
             VULKAN_TESTS_POST_SET_UP = true;
         }
