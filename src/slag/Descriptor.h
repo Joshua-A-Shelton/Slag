@@ -37,15 +37,15 @@ namespace slag
         Descriptor()=default;
         Descriptor(const std::string& name, DescriptorType type, uint32_t arrayDepth, uint32_t binding, ShaderStages visibleStages);
         ~Descriptor()=default;
-        Descriptor(Descriptor& from);
-        Descriptor& operator=(Descriptor& from);
+        Descriptor(const Descriptor& from);
+        Descriptor& operator=(const Descriptor& from);
         Descriptor(Descriptor&& from);
         Descriptor& operator=(Descriptor&& from);
         const std::string& name()const;
         const Shape& shape()const;
         friend class DescriptorGroup;
     protected:
-        void copy(Descriptor& from);
+        void copy(const Descriptor& from);
         void move(Descriptor& uniform);
         std::string _name;
         Shape _shape;

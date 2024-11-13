@@ -76,7 +76,6 @@ namespace slag
                                           .set_required_features_13(features1_3)
                                           .set_required_features_12(features1_2)
                                           .add_required_extension("VK_EXT_swapchain_maintenance1")
-                                          .add_required_extension("VK_EXT_host_image_copy")
                                           .add_required_extension("VK_EXT_custom_border_color")
                                           .defer_surface_initialization()
                                           .select();

@@ -9,7 +9,7 @@ if(NOT WIN32)
     set(SLAG_DX12_BACKEND OFF)
 endif()
 
-find_package(Boost REQUIRED COMPONENTS uuid)
+find_package(Boost REQUIRED)
 
 if(SLAG_VULKAN_BACKEND)
     find_package(Vulkan REQUIRED)
@@ -85,8 +85,6 @@ if(SLAG_DX12_BACKEND)
             src/slag/BackEnd/DX12/DX12DescriptorPool.h
             src/slag/BackEnd/DX12/DX12Sampler.cpp
             src/slag/BackEnd/DX12/DX12Sampler.h
-            src/slag/Descriptor.cpp
-            src/slag/Descriptor.h
             src/slag/BackEnd/DX12/DX12Shader.cpp
             src/slag/BackEnd/DX12/DX12Shader.h)
 endif()
@@ -132,6 +130,8 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/Sampler.h
         src/slag/Shader.cpp
         src/slag/Shader.h
+        src/slag/Descriptor.cpp
+        src/slag/Descriptor.h
         src/slag/DescriptorGroup.cpp
         src/slag/DescriptorGroup.h
         src/slag/GraphicsTypes.h
@@ -178,6 +178,7 @@ endif()
 OPTION(BUILD_SLAG_TESTS "Build tests" ON)
 if(BUILD_SLAG_TESTS)
     find_package(SDL2 REQUIRED)
+    find_package(glm CONFIG REQUIRED)
     message("building tests")
     include(FetchContent)
     FetchContent_Declare(
@@ -205,7 +206,7 @@ if(BUILD_SLAG_TESTS)
             test/tests/UniformGroupTest.cpp
             test/tests/ShaderTest.cpp
     )
-    target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 Slag)
+    target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)
     target_include_directories(SlagTests PRIVATE src ${SDL2_LIBRARIES})
     include(GoogleTest)
     gtest_discover_tests(SlagTests)

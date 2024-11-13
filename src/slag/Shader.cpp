@@ -7,7 +7,7 @@ namespace slag
     ShaderModule::ShaderModule(ShaderStages stage, void* data, size_t size): _stage(stage)
     {
         _shaderData.resize(size);
-        memcpy_s(_shaderData.data(),size,data,size);
+        memcpy(_shaderData.data(),data,size);
     }
 
     ShaderModule::ShaderModule(ShaderStages stage, std::filesystem::path path): _stage(stage)

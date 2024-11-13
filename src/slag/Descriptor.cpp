@@ -25,19 +25,19 @@ namespace slag
         _shape = uniform._shape;
     }
 
-    Descriptor::Descriptor(Descriptor& from): _shape(from._shape)
+    Descriptor::Descriptor(const Descriptor& from): _shape(from._shape)
     {
         copy(from);
     }
 
-    Descriptor& Descriptor::operator=(Descriptor& from)
+    Descriptor& Descriptor::operator=(const Descriptor& from)
     {
         copy(from);
         return *this;
     }
 
 
-    void Descriptor::copy(Descriptor& from)
+    void Descriptor::copy(const Descriptor& from)
     {
         _name = from._name;
         _shape = from._shape;
