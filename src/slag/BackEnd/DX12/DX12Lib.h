@@ -18,11 +18,13 @@ namespace slag
             static DX12Lib* get();
             static DX12GraphicsCard* card();
             static DXGI_FORMAT format(Pixels::Format pixelFormat);
+            static D3D12_RESOURCE_DIMENSION dimension(Texture::Type type);
             static D3D12_BARRIER_LAYOUT barrierLayout(Texture::Layout texLayout);
             static D3D12_RESOURCE_STATES stateLayout(Texture::Layout texLayout);
             static D3D12_TEXTURE_ADDRESS_MODE addressMode(Sampler::AddressMode mode);
             static D3D12_FILTER filter(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, bool ansitrophyEnabled);
             static D3D12_COMPARISON_FUNC comparisonFunction(Operations::ComparisonFunction compFunction);
+            static uint32_t formatSize(DXGI_FORMAT format);
             explicit DX12Lib(DX12GraphicsCard* card);
             ~DX12Lib() override;
             BackEnd identifier()override;
@@ -30,8 +32,9 @@ namespace slag
             //Swapchain
             Swapchain* newSwapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode, Pixels::Format imageFormat)override;
             //Textures
-            Texture* newTexture(void* data, size_t dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, uint32_t layers, uint8_t sampleCount, TextureUsage usage, Texture::Layout initializedLayout)override;
             Texture* newTexture(void** texelDataArray, size_t texelDataCount, size_t dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage usage, Texture::Layout initializedLayout)override;
+            Texture* newTexture(Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, uint32_t layers, uint8_t sampleCount, TextureUsage usage)override;
+
             //CommandBuffers
             CommandBuffer* newCommandBuffer(GpuQueue::QueueType acceptsCommands)override;
             //Buffers

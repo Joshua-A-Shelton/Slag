@@ -31,6 +31,7 @@ namespace slag
             void freeSamplerHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle);
             ID3D12DescriptorHeap* samplerHeap();
             bool supportsEnhancedBarriers();
+            D3D12MA::Pool* sharedMemoryPool();
 
             void defragmentMemory()override;
         private:
@@ -40,6 +41,7 @@ namespace slag
             DX12Queue* _transfer = nullptr;
             DX12Queue* _compute = nullptr;
             D3D12MA::Allocator* _allocator = nullptr;
+            D3D12MA::Pool* _sharedMemoryPool = nullptr;
             ID3D12DescriptorHeap* _samplerHeap = nullptr;
             size_t _samplerIndex = 0;
             std::queue<D3D12_CPU_DESCRIPTOR_HANDLE> _freedSamplerHandles;

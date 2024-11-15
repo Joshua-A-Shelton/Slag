@@ -28,8 +28,6 @@ namespace slag
 
         void DX12Environment::TearDown()
         {
-            //this is a hack, but wait for 2 seconds to allow GPU to finish destroying objects before destroying so we don't get false positives on undestroyed objects
-            std::this_thread::sleep_for(std::chrono::seconds(2));
             slag::SlagLib::cleanup();
             DX12_TESTS_POST_SET_UP = false;
         }

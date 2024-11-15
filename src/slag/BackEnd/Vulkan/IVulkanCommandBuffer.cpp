@@ -61,6 +61,50 @@ namespace slag
             insertBarriers(&barrier,1, nullptr,0, nullptr,0);
         }
 
+        void IVulkanCommandBuffer::updateMipChain(Texture* texture, uint32_t sourceMipLevel, Texture::Layout sourceLayout, Texture::Layout endingSourceLayout, Texture::Layout destinationLayout, Texture::Layout endingDestinationLayout, PipelineStages syncBefore, PipelineStages syncAfter)
+        {
+            auto tex = dynamic_cast<VulkanTexture*>(texture);
+            ImageBarrier barriers[2];
+            barriers[0]={.texture=texture,.baseLayer=0,.layerCount=0,.baseMipLevel=sourceMipLevel,.mipCount=1,.oldLayout=sourceLayout,.newLayout=Texture::TRANSFER_SOURCE,.accessBefore=BarrierAccessFlags::ALL_WRITE | BarrierAccessFlags::TRANSFER_READ,.accessAfter=BarrierAccessFlags::NONE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::TRANSFER};
+            barriers[1]={.texture=texture,.baseLayer=0,.layerCount=0,.baseMipLevel=sourceMipLevel+1,.mipCount=0,.oldLayout=destinationLayout,.newLayout=Texture::TRANSFER_DESTINATION,.accessBefore=BarrierAccessFlags::NONE,.accessAfter=BarrierAccessFlags::NONE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::TRANSFER};
+            insertBarriers(barriers,2, nullptr,0, nullptr,0);
+            int32_t width = tex->width() >> sourceMipLevel;
+            int32_t height = tex->height() >> sourceMipLevel;
+            int32_t destWidth = width;
+            int32_t destHeight = height;
+            for(uint32_t i=sourceMipLevel+1; i< tex->mipLevels(); i++)
+            {
+                destWidth = destWidth >> 1;
+                destHeight = destHeight >> 1;
+                VkImageBlit blitRegion
+                {
+                    .srcSubresource = {.aspectMask = tex->aspectFlags(),.mipLevel=sourceMipLevel,.baseArrayLayer = 0,.layerCount=tex->layers()},
+                    .srcOffsets = {{0,0,0},{width,height,1}},
+                    .dstSubresource = {.aspectMask = tex->aspectFlags(),.mipLevel=i,.baseArrayLayer = 0,.layerCount=tex->layers()},
+                    .dstOffsets = {{0,0,0},{destWidth,destHeight,1}}
+
+                };
+                vkCmdBlitImage(_buffer,tex->image(),VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,tex->image(),VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,1,&blitRegion,VK_FILTER_NEAREST);
+            }
+            auto& sourceBarrier = barriers[0];
+            auto& destBarrier = barriers[1];
+
+            sourceBarrier.oldLayout = Texture::TRANSFER_SOURCE;
+            sourceBarrier.newLayout = endingSourceLayout;
+            sourceBarrier.accessBefore = BarrierAccessFlags::TRANSFER_READ;
+            sourceBarrier.accessAfter = BarrierAccessFlags::NONE;
+            sourceBarrier.syncBefore = PipelineStageFlags::TRANSFER;
+            sourceBarrier.syncAfter = syncAfter;
+
+            destBarrier.oldLayout = Texture::TRANSFER_DESTINATION;
+            destBarrier.newLayout = endingDestinationLayout;
+            destBarrier.accessBefore = BarrierAccessFlags::TRANSFER_WRITE;
+            destBarrier.accessAfter = BarrierAccessFlags::ALL_READ;
+            destBarrier.syncBefore = PipelineStageFlags::TRANSFER;
+            destBarrier.syncAfter = syncAfter;
+            insertBarriers(barriers,2, nullptr,0, nullptr,0);
+        }
+
         /*void IVulkanCommandBuffer::blit(Texture* source, Texture::Layout sourceLayout, Rectangle sourceRect, Texture* destination, Texture::Layout destinationLayout, Rectangle destinationRect, Sampler::Filter blitFilter)
         {
             for(int32_t i=0; i< destination->mipLevels(); i++)
@@ -158,6 +202,22 @@ namespace slag
 
             //copy the buffer into the image
             vkCmdCopyBuffer(_buffer, src->underlyingBuffer(), dst->underlyingBuffer(), 1, &copyRegion);
+        }
+
+        void IVulkanCommandBuffer::copyImageToBuffer(Texture* texture, Texture::Layout layout, uint32_t baseLayer, uint32_t layerCount, uint32_t mip, Buffer* buffer,size_t bufferOffset)
+        {
+            auto tex = dynamic_cast<VulkanTexture*>(texture);
+            auto buf = dynamic_cast<VulkanBuffer*>(buffer);
+            VkBufferImageCopy copyRegion
+            {
+                .bufferOffset = bufferOffset,
+                .bufferRowLength = 0,
+                .bufferImageHeight = 0,
+                .imageSubresource = {.aspectMask=tex->aspectFlags(),.mipLevel=mip,.baseArrayLayer=baseLayer,.layerCount=layerCount},
+                .imageOffset = {0,0,0},
+                .imageExtent = {tex->width()>>mip,tex->height()>>mip,1}
+            };
+            vkCmdCopyImageToBuffer(_buffer,tex->image(),VulkanLib::layout(layout),buf->underlyingBuffer(),1,&copyRegion);
         }
 
 

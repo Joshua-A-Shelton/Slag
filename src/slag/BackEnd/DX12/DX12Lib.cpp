@@ -96,6 +96,22 @@ namespace slag
             return DXGI_FORMAT_UNKNOWN;
         }
 
+        D3D12_RESOURCE_DIMENSION DX12Lib::dimension(Texture::Type type)
+        {
+            switch (type)
+            {
+                case Texture::Type::TEXTURE_1D:
+                    return D3D12_RESOURCE_DIMENSION_TEXTURE1D;
+                case Texture::Type::TEXTURE_2D:
+                    return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+                case Texture::Type::TEXTURE_3D:
+                    return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
+                case Texture::Type::CUBE_MAP:
+                    return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+            }
+            return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+        }
+
         D3D12_BARRIER_LAYOUT DX12Lib::barrierLayout(Texture::Layout texLayout)
         {
             switch(texLayout)
@@ -127,6 +143,17 @@ namespace slag
 #undef DEFINITION
             }
             return D3D12_COMPARISON_FUNC_NONE;
+        }
+
+        uint32_t DX12Lib::formatSize(DXGI_FORMAT format)
+        {
+            switch (format)
+            {
+#define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits) case DxName: return totalBits/8;
+                TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            return 0;
         }
 
         D3D12_TEXTURE_ADDRESS_MODE DX12Lib::addressMode(Sampler::AddressMode mode)
@@ -260,17 +287,15 @@ namespace slag
             return _graphicsCard;
         }
 
-        Texture*
-        DX12Lib::newTexture(void* data, size_t dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, uint32_t layers, uint8_t sampleCount,
-                            TextureUsage usage, Texture::Layout initializedLayout)
-        {
-            throw std::runtime_error("DX12Lib::newTexture not implemented");
-        }
-
         Texture* DX12Lib::newTexture(void** texelDataArray, size_t texelDataCount, size_t dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels,
                                       TextureUsage usage, Texture::Layout initializedLayout)
         {
-            throw std::runtime_error("DX12Lib::newTexture not implemented");
+            return new DX12Texture(texelDataArray,texelDataCount,dataSize,dataFormat,type,width,height,mipLevels,std::bit_cast<D3D12_RESOURCE_FLAGS>(usage),initializedLayout,false);
+        }
+
+        Texture* DX12Lib::newTexture(Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, uint32_t layers, uint8_t sampleCount, TextureUsage usage)
+        {
+            return new DX12Texture(dataFormat,type,width,height,mipLevels,layers,sampleCount,std::bit_cast<D3D12_RESOURCE_FLAGS>(usage),false);
         }
 
         CommandBuffer* DX12Lib::newCommandBuffer(GpuQueue::QueueType acceptsCommands)

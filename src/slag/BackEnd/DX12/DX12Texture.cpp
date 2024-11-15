@@ -54,19 +54,45 @@ namespace slag
             }
         }
 
-        DX12Texture::DX12Texture(void* texelData, size_t dataSize, DXGI_FORMAT dataFormat, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, Texture::Layout initializedLayout, bool generateMips, bool destroyImmediately): resources::Resource(destroyImmediately)
+        DX12Texture::DX12Texture(void** texelDataArray, size_t texelDataCount, uint64_t dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, Texture::Layout initializedLayout, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
-            DX12CommandBuffer commandBuffer(GpuQueue::QueueType::Compute);
+            construct(dataFormat,type,width,height,texelDataCount,mipLevels,1,usage);
+            DX12CommandBuffer commandBuffer(GpuQueue::Transfer);
             commandBuffer.begin();
-            build(&commandBuffer,texelData,dataSize,dataFormat,textureFormat,width,height,mipLevels,usage,initializedLayout,generateMips);
+
+            ImageBarrier imageBarrier
+                    {
+                            .texture=this,
+                            .oldLayout=Texture::Layout::UNDEFINED,
+                            .newLayout=Texture::Layout::TRANSFER_DESTINATION,
+                            .accessBefore = BarrierAccessFlags::NONE,
+                            .accessAfter=BarrierAccessFlags::TRANSFER_WRITE,
+                            .syncBefore=PipelineStageFlags::NONE,
+                            .syncAfter =PipelineStageFlags::TRANSFER
+                    };
+            //commandBuffer.insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
+            std::vector<DX12Buffer> dataBuffers;
+            for(int i=0; i<texelDataCount; i++)
+            {
+                dataBuffers.emplace_back(texelDataArray[i],dataSize,Buffer::Accessibility::CPU_AND_GPU,D3D12_RESOURCE_STATE_COPY_SOURCE,true);
+                commandBuffer.copyBufferToImage(&dataBuffers[i],0,this,Texture::Layout::TRANSFER_DESTINATION,0,0);
+            }
+            imageBarrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
+            imageBarrier.newLayout = initializedLayout;
+            imageBarrier.syncBefore = PipelineStageFlags::TRANSFER;
+            imageBarrier.syncAfter = PipelineStageFlags::ALL_COMMANDS;
+            imageBarrier.accessBefore = BarrierAccessFlags::TRANSFER_WRITE;
+            imageBarrier.accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+            commandBuffer.insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
+
             commandBuffer.end();
-            DX12Lib::card()->computeQueue()->submit(&commandBuffer);
+            DX12Lib::card()->transferQueue()->submit(&commandBuffer);
             commandBuffer.waitUntilFinished();
         }
 
-        DX12Texture::DX12Texture(DX12CommandBuffer* onBuffer, void* texelData, size_t dataSize, DXGI_FORMAT dataFormat, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, Texture::Layout initializedLayout, bool generateMips, bool destroyImmediately): resources::Resource(destroyImmediately)
+        DX12Texture::DX12Texture(Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, uint32_t layers, uint8_t sampleCount, D3D12_RESOURCE_FLAGS usage, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
-            build(onBuffer,texelData,dataSize,dataFormat,textureFormat,width,height,mipLevels,usage,initializedLayout,generateMips);
+            construct(dataFormat,type,width,height,layers,mipLevels,sampleCount,usage);
         }
 
         DX12Texture::~DX12Texture()
@@ -96,140 +122,14 @@ namespace slag
             std::swap(_heap,from._heap);
 
             _view = from._view;
+            _type = from._type;
             _width = from._width;
             _height = from._height;
             _mipLevels = from._mipLevels;
+            _layers = from._layers;
+            _sampleCount = from._sampleCount;
             _format = from._format;
             _usage = from._usage;
-        }
-
-        void DX12Texture::build(DX12CommandBuffer* onBuffer, void* texelData, size_t dataSize, DXGI_FORMAT dataFormat, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, Texture::Layout initializedLayout, bool generateMips)
-        {
-            assert(!(usage & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET && usage & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) && "Texture cannot be both render target and depth stencil");
-            _width = width;
-            _height = height;
-            _mipLevels = mipLevels;
-            _format = textureFormat;
-            _usage = usage;
-
-            D3D12_RESOURCE_DESC resourceDesc = {};
-            resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-            resourceDesc.Alignment = 0;
-            resourceDesc.Width = width;
-            resourceDesc.Height = height;
-            resourceDesc.DepthOrArraySize = 1;
-            resourceDesc.MipLevels = mipLevels;
-            resourceDesc.Format = textureFormat;
-            resourceDesc.SampleDesc.Count = 1;
-            resourceDesc.SampleDesc.Quality = 0;
-            resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-            resourceDesc.Flags = usage;
-
-            D3D12MA::ALLOCATION_DESC allocationDesc = {};
-            allocationDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
-
-            DX12Lib::card()->allocator()->CreateResource(&allocationDesc,&resourceDesc,D3D12_RESOURCE_STATE_COPY_DEST,nullptr,&_allocation, IID_PPV_ARGS(&_texture));
-
-            D3D12_DESCRIPTOR_HEAP_DESC desc = {};
-            desc.NumDescriptors = 1;
-            if(usage & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
-            {
-                desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-                DX12Lib::card()->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_heap));
-                _view = _heap->GetCPUDescriptorHandleForHeapStart();
-                DX12Lib::card()->device()->CreateRenderTargetView(_texture, nullptr,_view);
-            }
-            else if(usage & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)
-            {
-                desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-                DX12Lib::card()->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_heap));
-                _view = _heap->GetCPUDescriptorHandleForHeapStart();
-                DX12Lib::card()->device()->CreateDepthStencilView(_texture, nullptr,_view);
-            }
-
-            auto tex = _texture;
-            auto alloc = _allocation;
-            auto heap = _heap;
-            _disposeFunction = [=]()
-            {
-                tex->Release();
-                alloc->Release();
-                if(heap)(heap->Release());
-            };
-
-            Texture::Layout currentLayout = Texture::Layout::UNDEFINED;
-            if(texelData && dataSize)
-            {
-                DX12CommandBuffer commands(GpuQueue::QueueType::Transfer);
-                commands.begin();
-                if(dataFormat != textureFormat)
-                {
-                    DX12Texture tempTexture(texelData,dataSize,dataFormat,dataFormat,width,height,1,usage,Texture::Layout::SHADER_RESOURCE,false,true);
-
-                    throw std::runtime_error("DX12Texture::build isn't finished implementing, unable to use different data format and texture format");
-
-                    commands.end();
-                    DX12Lib::card()->transferQueue()->submit(&commands);
-                    commands.waitUntilFinished();
-
-                    currentLayout = Texture::Layout::RENDER_TARGET;
-                }
-                else
-                {
-                    DX12Buffer tempBuffer(dataSize,slag::Buffer::Accessibility::CPU_AND_GPU,D3D12_RESOURCE_STATE_COMMON, true);
-                    D3D12_PLACED_SUBRESOURCE_FOOTPRINT footPrint;
-                    UINT numRows=0;
-                    UINT64 rowSizeInBytes=0;
-                    UINT64 totalBytes=0;
-                    DX12Lib::card()->device()->GetCopyableFootprints(&resourceDesc,0,1,0,&footPrint,&numRows,&rowSizeInBytes,&totalBytes);
-
-                    D3D12_SUBRESOURCE_DATA resourceData;
-                    resourceData.pData=texelData;
-                    resourceData.RowPitch = footPrint.Footprint.RowPitch;
-                    resourceData.SlicePitch = resourceData.RowPitch* _height;
-
-                    ImageBarrier imBarrier{};
-                    imBarrier.texture = this;
-                    imBarrier.oldLayout = Texture::Layout::UNDEFINED;
-                    imBarrier.newLayout = Texture::Layout::TRANSFER_DESTINATION;
-                    imBarrier.accessBefore = BarrierAccessFlags::NONE;
-                    imBarrier.accessAfter = BarrierAccessFlags::TRANSFER_WRITE;
-                    imBarrier.syncBefore = PipelineStageFlags::NONE;
-                    imBarrier.syncAfter = PipelineStageFlags::ALL_COMMANDS;
-                    commands.insertBarriers(&imBarrier,1, nullptr,0, nullptr,0);
-                    UpdateSubresources(commands.underlyingCommandBuffer(),_texture,tempBuffer.underlyingBuffer(),0,0,1,&resourceData);
-
-                    imBarrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
-                    //if we're not generating mip maps, put it in the final layout, otherwise, make it layout general
-                    imBarrier.newLayout = generateMips? Texture::Layout::GENERAL : initializedLayout;
-                    imBarrier.accessBefore = BarrierAccessFlags::TRANSFER_WRITE;
-                    imBarrier.accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
-                    imBarrier.syncBefore = PipelineStageFlags::TRANSFER;
-                    imBarrier.syncAfter = PipelineStageFlags::ALL_COMMANDS;
-                    commands.insertBarriers(&imBarrier,1, nullptr,0, nullptr,0);
-
-                    commands.end();
-                    DX12Lib::card()->transferQueue()->submit(&commands);
-                    commands.waitUntilFinished();
-
-                    currentLayout = imBarrier.newLayout;
-                }
-
-            }
-
-            if(generateMips)
-            {
-                updateMipMaps(onBuffer);
-                ImageBarrier imBarrier{};
-                imBarrier.texture = this;
-                imBarrier.oldLayout = currentLayout;
-                imBarrier.newLayout = initializedLayout;
-                imBarrier.accessBefore = BarrierAccessFlags::NONE;
-                imBarrier.accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
-                imBarrier.syncBefore = PipelineStageFlags::ALL_COMMANDS;
-                imBarrier.syncAfter = PipelineStageFlags::ALL_COMMANDS;
-                onBuffer->insertBarriers(&imBarrier,1, nullptr,0, nullptr,0);
-            }
         }
 
         Texture::Type DX12Texture::type()
@@ -267,37 +167,6 @@ namespace slag
             return _texture;
         }
 
-        void DX12Texture::updateMipMaps()
-        {
-            DX12CommandBuffer commandBuffer(GpuQueue::Compute);
-            commandBuffer.begin();
-            updateMipMaps(&commandBuffer);
-            commandBuffer.end();
-            DX12Lib::card()->computeQueue()->submit(&commandBuffer);
-            commandBuffer.waitUntilFinished();
-        }
-
-        void DX12Texture::updateMipMaps(DX12CommandBuffer* onBuffer)
-        {
-            switch (onBuffer->commandType())
-            {
-                case GpuQueue::Graphics:
-                    updateMipMapsGraphics(onBuffer);
-                    break;
-                case GpuQueue::Compute:
-                    throw std::runtime_error("Generating mip maps on Compute Queue not implemented yet");
-                    break;
-                case GpuQueue::Transfer:
-                    throw std::runtime_error("Cannot generate mip maps on Transfer Queue");
-                    break;
-            }
-        }
-
-        void DX12Texture::updateMipMapsGraphics(DX12CommandBuffer* onBuffer)
-        {
-            throw std::runtime_error("DX12Texture::updateMipMapsGraphics not implemented");
-        }
-
         DXGI_FORMAT DX12Texture::underlyingFormat()
         {
             return _format;
@@ -306,6 +175,64 @@ namespace slag
         D3D12_CPU_DESCRIPTOR_HANDLE DX12Texture::descriptorHandle()
         {
             return _view;
+        }
+
+        void DX12Texture::construct(Pixels::Format dataFormat, Texture::Type textureType, uint32_t width, uint32_t height,uint32_t layers, uint32_t mipLevels, uint8_t samples, D3D12_RESOURCE_FLAGS usage)
+        {
+            assert(!(usage & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET && usage & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) && "Texture cannot be both render target and depth stencil");
+            _width = width;
+            _height = height;
+            _mipLevels = mipLevels;
+            _layers = layers;
+            _format = DX12Lib::format(dataFormat);
+            _usage = usage;
+            _sampleCount = samples;
+            _type = textureType;
+
+            D3D12_RESOURCE_DESC resourceDesc = {};
+            resourceDesc.Dimension = DX12Lib::dimension(textureType);
+            resourceDesc.Alignment = 0;
+            resourceDesc.Width = width;
+            resourceDesc.Height = height;
+            resourceDesc.DepthOrArraySize = layers;
+            resourceDesc.MipLevels = mipLevels;
+            resourceDesc.Format = _format;
+            resourceDesc.SampleDesc.Count = samples;
+            resourceDesc.SampleDesc.Quality = 0;
+            resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+            resourceDesc.Flags = usage;
+
+            D3D12MA::ALLOCATION_DESC allocationDesc = {};
+            allocationDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
+
+            DX12Lib::card()->allocator()->CreateResource(&allocationDesc,&resourceDesc,D3D12_RESOURCE_STATE_COPY_DEST,nullptr,&_allocation, IID_PPV_ARGS(&_texture));
+
+            D3D12_DESCRIPTOR_HEAP_DESC desc = {};
+            desc.NumDescriptors = 1;
+            if(usage & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
+            {
+                desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+                DX12Lib::card()->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_heap));
+                _view = _heap->GetCPUDescriptorHandleForHeapStart();
+                DX12Lib::card()->device()->CreateRenderTargetView(_texture, nullptr,_view);
+            }
+            else if(usage & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)
+            {
+                desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+                DX12Lib::card()->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_heap));
+                _view = _heap->GetCPUDescriptorHandleForHeapStart();
+                DX12Lib::card()->device()->CreateDepthStencilView(_texture, nullptr,_view);
+            }
+
+            auto tex = _texture;
+            auto alloc = _allocation;
+            auto heap = _heap;
+            _disposeFunction = [=]()
+            {
+                tex->Release();
+                alloc->Release();
+                if(heap)(heap->Release());
+            };
         }
 
     } // dx

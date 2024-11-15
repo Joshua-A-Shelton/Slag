@@ -207,7 +207,7 @@ if(BUILD_SLAG_TESTS)
             test/tests/ShaderTest.cpp
     )
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)
-    target_include_directories(SlagTests PRIVATE src ${SDL2_LIBRARIES})
+    target_include_directories(SlagTests PRIVATE src ${SDL2_LIBRARIES} third-party/stb)
     include(GoogleTest)
     gtest_discover_tests(SlagTests)
 

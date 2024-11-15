@@ -15,14 +15,19 @@ namespace slag
         DX12Buffer::DX12Buffer(size_t bufferSize, Accessibility accessibility, D3D12_RESOURCE_STATES usageStateFlags, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
             _size = bufferSize;
-            //DX12 buffers are always gpu visible
-            _accessibility = accessibility | Accessibility::GPU;
+
+            _accessibility = accessibility;
+            D3D12MA::Pool* manualPool = nullptr;
             //TODO: I may want to specify D3D12_HEAP_TYPE_CUSTOM, and assign the properties manually. see https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_heap_type
             D3D12_HEAP_TYPE heapType=D3D12_HEAP_TYPE_DEFAULT;
-            if(_accessibility & Buffer::Accessibility::CPU)
+            if(_accessibility == Buffer::Accessibility::CPU)
             {
                 heapType = D3D12_HEAP_TYPE_UPLOAD;
-                //usageStateFlags|= D3D12_RESOURCE_STATE_GENERIC_READ;
+            }
+            else if(_accessibility & Buffer::Accessibility::CPU)
+            {
+                heapType = D3D12_HEAP_TYPE_CUSTOM;
+                manualPool = DX12Lib::card()->sharedMemoryPool();
             }
 
             D3D12_RESOURCE_DESC resourceDesc = {};
@@ -39,7 +44,9 @@ namespace slag
             resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
             D3D12MA::ALLOCATION_DESC allocationDesc = {};
+
             allocationDesc.HeapType = heapType;
+            allocationDesc.CustomPool = manualPool;
 
             DX12Lib::card()->allocator()->CreateResource(&allocationDesc,&resourceDesc,usageStateFlags, nullptr,&_allocation, IID_PPV_ARGS(&_buffer));
 

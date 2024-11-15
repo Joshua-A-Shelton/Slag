@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cassert>
+#include <comdef.h>
 #include "DX12GraphicsCard.h"
 #include "DX12Lib.h"
 #include "directx/d3dx12.h"
@@ -33,8 +34,16 @@ namespace slag
             _dxgiFactory = dxgiFactory;
             D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&_device));
             D3D12_FEATURE_DATA_D3D12_OPTIONS12 features{};
-            _device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS12,&features,sizeof(features));
+            auto res = _device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS12,&features,sizeof(features));
             _supportsEnhancedBarriers = features.EnhancedBarriersSupported;
+            D3D12_FEATURE_DATA_D3D12_OPTIONS13 features13{};
+            res = _device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS13,&features13,sizeof(features13));
+            assert(features13.UnrestrictedBufferTextureCopyPitchSupported && "DX12 renderer must support arbitrary texture copy pitch");
+            /*D3D12_FEATURE_DATA_D3D12_OPTIONS16 features16{};
+            res = _device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS16,&features16,sizeof(features16));
+            _com_error err(res);
+            LPCTSTR errMsg = err.ErrorMessage();
+            //assert(features16.GPUUploadHeapSupported && "DX12 doesn't support gpu upload heaps");*/
 
             if(details.debug)
             {
@@ -114,6 +123,14 @@ namespace slag
             allocatorDesc.Flags = static_cast<D3D12MA::ALLOCATOR_FLAGS>(D3D12MA::ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED | D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED);
             D3D12MA::CreateAllocator(&allocatorDesc,&_allocator);
 
+            D3D12MA::POOL_DESC poolDesc{};
+            poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_CUSTOM;
+            poolDesc.HeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE;
+            poolDesc.HeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_L0;
+            poolDesc.Flags = D3D12MA::POOL_FLAG_NONE;
+            poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+            _allocator->CreatePool(&poolDesc,&_sharedMemoryPool);
+
             D3D12_DESCRIPTOR_HEAP_DESC samplerHeapDesc = {};
             samplerHeapDesc.NumDescriptors = 2048;
             samplerHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
@@ -134,6 +151,10 @@ namespace slag
             if(_compute)
             {
                 delete _compute;
+            }
+            if(_sharedMemoryPool)
+            {
+                _sharedMemoryPool->Release();
             }
             if(_allocator)
             {
@@ -212,6 +233,11 @@ namespace slag
         void DX12GraphicsCard::freeSamplerHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle)
         {
             _freedSamplerHandles.push(handle);
+        }
+
+        D3D12MA::Pool* DX12GraphicsCard::sharedMemoryPool()
+        {
+            return _sharedMemoryPool;
         }
     } // dx
 } // slag

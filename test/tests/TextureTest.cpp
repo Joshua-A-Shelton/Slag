@@ -1,26 +1,62 @@
 #include "gtest/gtest.h"
 #include "slag/SlagLib.h"
+#include "stb_image.h"
+#include "filesystem"
+
 using namespace slag;
+
+struct RawImageDeleter
+{
+    void operator()(unsigned char* data)
+    {
+
+    }
+};
 
 TEST(Texture, LoadFromFile)
 {
-    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture("resources/Crucible.png",5,TextureUsageFlags::SAMPLED_IMAGE,false,Texture::Layout::SHADER_RESOURCE));
+    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture("resources/Crucible.png",1,TextureUsageFlags::SAMPLED_IMAGE,false,Texture::Layout::TRANSFER_SOURCE));
     GTEST_ASSERT_GE(texture->sampleCount() ,1);
-    GTEST_ASSERT_GE(texture->mipLevels() ,5);
+    GTEST_ASSERT_GE(texture->mipLevels() ,1);
     GTEST_ASSERT_GE(texture->type() ,Texture::Type::TEXTURE_2D);
     GTEST_ASSERT_GE(texture->layers() ,1);
     GTEST_ASSERT_GE(texture->width() ,1920);
     GTEST_ASSERT_GE(texture->height() ,1080);
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Transfer));
+    std::unique_ptr<Buffer> dataBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(1920*1080*sizeof(unsigned char)*4,Buffer::CPU_AND_GPU,Buffer::DATA_BUFFER));
+    commandBuffer->begin();
+    commandBuffer->copyImageToBuffer(texture.get(),Texture::Layout::TRANSFER_SOURCE,0,1,0,dataBuffer.get(),0);
+    commandBuffer->end();
+    SlagLib::graphicsCard()->transferQueue()->submit(commandBuffer.get());
+    commandBuffer->waitUntilFinished();
+    auto data = dataBuffer->downloadData();
+
+    int w, h, channels;
+
+    auto rawBytes = stbi_load(std::filesystem::absolute("resources/Crucible.png").string().c_str(),&w,&h,&channels,4);
+    std::vector<std::byte> groundTruth(w*h*channels);
+    memcpy(groundTruth.data(),rawBytes,w*h*channels);
+    stbi_image_free(rawBytes);
+    for(size_t i=0; i< w*h*channels; i++)
+    {
+        GTEST_ASSERT_TRUE(data[i] == groundTruth[i]);
+    }
 
 }
 
 TEST(Texture, MultiSampled)
 {
-    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,500,700,8,TextureUsageFlags::RENDER_TARGET_ATTACHMENT,Texture::Layout::RENDER_TARGET));
+
+    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,slag::Texture::TEXTURE_2D,500,700,1,1,8,TextureUsageFlags::RENDER_TARGET_ATTACHMENT));
     GTEST_ASSERT_GE(texture->sampleCount() ,8);
     GTEST_ASSERT_GE(texture->mipLevels() ,1);
     GTEST_ASSERT_GE(texture->type() ,Texture::Type::TEXTURE_2D);
     GTEST_ASSERT_GE(texture->layers() ,1);
     GTEST_ASSERT_GE(texture->width() ,500);
     GTEST_ASSERT_GE(texture->height() ,700);
+}
+
+TEST(Texture, MipMapped)
+{
+    GTEST_FAIL();
 }

@@ -93,71 +93,18 @@ namespace slag
             }
         }
 
-        VulkanTexture::VulkanTexture(void* texelData, VkDeviceSize dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, uint8_t sampleCount, VkImageUsageFlags usage, Texture::Layout initializedLayout, bool destroyImmediately): resources::Resource(destroyImmediately)
+        VulkanTexture::VulkanTexture(Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, uint32_t layers, uint8_t sampleCount, VkImageUsageFlags usage, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
             construct(dataFormat,type,width,height,layers,mipLevels,sampleCount,usage);
-
-            VulkanCommandBuffer transferCommands(VulkanLib::card()->graphicsQueueFamily());
-            transferCommands.begin();
-            //copy texel data into buffer
-            if(texelData && dataSize)
-            {
-                VulkanBuffer dataBuffer(texelData, dataSize, slag::Buffer::CPU_AND_GPU, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, true);
-                ImageBarrier imageBarrier
-                {
-                    .texture=this,
-                    .oldLayout=Texture::Layout::UNDEFINED,
-                    .newLayout=Texture::Layout::TRANSFER_DESTINATION,
-                    .accessBefore = BarrierAccessFlags::NONE,
-                    .accessAfter=BarrierAccessFlags::TRANSFER_WRITE,
-                    .syncBefore=PipelineStageFlags::NONE,
-                    .syncAfter =PipelineStageFlags::TRANSFER
-                };
-                transferCommands.insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-
-                VkDeviceSize bufferOffset = 0;
-                for(size_t layer=0; layer < _layers; layer++)
-                {
-                    for(size_t mip=0; mip < _mipLevels; mip++)
-                    {
-                        transferCommands.copyBufferToImage(&dataBuffer,bufferOffset,this,Texture::Layout::TRANSFER_DESTINATION,layer,mip);
-                        auto w = _width>>mip;
-                        auto h = _height>>mip;
-                        bufferOffset+= Pixels::pixelBytes(dataFormat)*w*h;
-                    }
-                }
-                imageBarrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
-                imageBarrier.newLayout = initializedLayout;
-                imageBarrier.syncBefore = PipelineStageFlags::TRANSFER;
-                imageBarrier.syncAfter = PipelineStageFlags::ALL_COMMANDS;
-                imageBarrier.accessBefore = BarrierAccessFlags::TRANSFER_WRITE;
-                imageBarrier.accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
-                transferCommands.insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-            }
-            else
-            {
-                ImageBarrier imageBarrier
-                {
-                    .texture=this,
-                    .oldLayout=Texture::Layout::UNDEFINED,
-                    .newLayout=initializedLayout,
-                    .accessBefore = BarrierAccessFlags::NONE,
-                    .accessAfter=BarrierAccessFlags::TRANSFER_WRITE,
-                    .syncBefore=PipelineStageFlags::NONE,
-                    .syncAfter =PipelineStageFlags::TRANSFER
-                };
-                transferCommands.insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-            }
-            transferCommands.end();
-            VulkanLib::card()->graphicsQueue()->submit(&transferCommands);
         }
 
         VulkanTexture::VulkanTexture(void** texelDataArray, size_t texelDataCount, VkDeviceSize dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height,
                                      uint32_t mipLevels, VkImageUsageFlags usage, Texture::Layout initializedLayout, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
             construct(dataFormat,type,width,height,texelDataCount,mipLevels,1,usage);
-            VulkanCommandBuffer commandBuffer(VulkanLib::card()->graphicsQueueFamily());
+            VulkanCommandBuffer commandBuffer(VulkanLib::card()->transferQueueFamily());
             commandBuffer.begin();
+
             ImageBarrier imageBarrier
             {
                 .texture=this,
@@ -175,22 +122,13 @@ namespace slag
                 dataBuffers.emplace_back(texelDataArray[i],dataSize,Buffer::Accessibility::CPU_AND_GPU,VK_BUFFER_USAGE_TRANSFER_SRC_BIT, true);
                 commandBuffer.copyBufferToImage(&dataBuffers[i],0,this,Texture::Layout::TRANSFER_DESTINATION,0,0);
             }
-            //generateMips
-            if(mipLevels > 1)
-            {
-                smartDestroy();
-                throw std::runtime_error("VulkanTexture::VulkanTexture multiple mips not implemented yet");
-            }
-            else
-            {
-                imageBarrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
-                imageBarrier.newLayout = initializedLayout;
-                imageBarrier.syncBefore = PipelineStageFlags::TRANSFER;
-                imageBarrier.syncAfter = PipelineStageFlags::ALL_COMMANDS;
-                imageBarrier.accessBefore = BarrierAccessFlags::TRANSFER_WRITE;
-                imageBarrier.accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
-                commandBuffer.insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-            }
+            imageBarrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
+            imageBarrier.newLayout = initializedLayout;
+            imageBarrier.syncBefore = PipelineStageFlags::TRANSFER;
+            imageBarrier.syncAfter = PipelineStageFlags::ALL_COMMANDS;
+            imageBarrier.accessBefore = BarrierAccessFlags::TRANSFER_WRITE;
+            imageBarrier.accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+            commandBuffer.insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
 
             commandBuffer.end();
             VulkanLib::card()->transferQueue()->submit(&commandBuffer);
@@ -308,7 +246,7 @@ namespace slag
 
         void VulkanTexture::construct(Pixels::Format dataFormat, Texture::Type textureType, uint32_t width, uint32_t height,uint32_t layers, uint32_t mipLevels, uint8_t samples, VkImageUsageFlags usage)
         {
-//every texture should support copy and compute operations
+            //every texture should support copy and compute operations
             _usage = usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
             _baseFormat = VulkanLib::format(dataFormat);
             _type = textureType;

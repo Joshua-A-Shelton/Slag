@@ -165,12 +165,54 @@ namespace slag
             insertBarriers(&barrier,1, nullptr,0, nullptr,0);
         }
 
+        void IDX12CommandBuffer::updateMipChain(Texture* texture, uint32_t sourceMipLevel, Texture::Layout sourceLayout, Texture::Layout endingSourceLayout, Texture::Layout destinationLayout,Texture::Layout endingDestinationLayout, PipelineStages syncBefore, PipelineStages syncAfter)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::updateMipChain is not implemented");
+        }
+
 
         void IDX12CommandBuffer::copyBuffer(Buffer* source, size_t sourceOffset, size_t length, Buffer* destination, size_t destinationOffset)
         {
             DX12Buffer* src = dynamic_cast<DX12Buffer*>(source);
             DX12Buffer* dst = dynamic_cast<DX12Buffer*>(destination);
             _buffer->CopyBufferRegion(dst->underlyingBuffer(),destinationOffset,src->underlyingBuffer(),sourceOffset,length);
+        }
+
+        void IDX12CommandBuffer::copyImageToBuffer(Texture* texture, Texture::Layout layout, uint32_t baseLayer, uint32_t layerCount, uint32_t mip, Buffer* buffer, size_t bufferOffset)
+        {
+            auto tex = dynamic_cast<DX12Texture*>(texture);
+            auto buf = dynamic_cast<DX12Buffer*>(buffer);
+
+            D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
+            footprint.Offset = bufferOffset;
+            footprint.Footprint.Format = tex->underlyingFormat();
+            footprint.Footprint.Width = tex->width() >> mip;
+            footprint.Footprint.Height = tex->height() >> mip;
+            footprint.Footprint.Depth = 1;
+            footprint.Footprint.RowPitch = footprint.Footprint.Width * (DX12Lib::formatSize(tex->underlyingFormat())); //there may be an alignment issue I need to deal with here
+
+            auto src = CD3DX12_TEXTURE_COPY_LOCATION(tex->texture(),D3D12CalcSubresource(mip,baseLayer,0,1,layerCount));
+            auto dst = CD3DX12_TEXTURE_COPY_LOCATION(buf->underlyingBuffer(),footprint);
+            _buffer->CopyTextureRegion(&dst,0,0,0,&src, nullptr);
+        }
+
+        void IDX12CommandBuffer::copyBufferToImage(Buffer* source, size_t sourceOffset, Texture* destination, Texture::Layout destinationLayout, size_t layer, size_t mipLevel)
+        {
+            auto tex = dynamic_cast<DX12Texture*>(destination);
+            auto buf = dynamic_cast<DX12Buffer*>(source);
+
+            D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
+            footprint.Offset = sourceOffset;
+            footprint.Footprint.Format = tex->underlyingFormat();
+            footprint.Footprint.Width = tex->width() >> mipLevel;
+            footprint.Footprint.Height = tex->height() >> mipLevel;
+            footprint.Footprint.Depth = 1;
+            footprint.Footprint.RowPitch = footprint.Footprint.Width * (DX12Lib::formatSize(tex->underlyingFormat())); //there may be an alignment issue I need to deal with here
+
+            auto dst = CD3DX12_TEXTURE_COPY_LOCATION(tex->texture(),D3D12CalcSubresource(mipLevel,layer,0,1,1));
+            auto src = CD3DX12_TEXTURE_COPY_LOCATION(buf->underlyingBuffer(),footprint);
+            _buffer->CopyTextureRegion(&dst,0,0,0,&src, nullptr);
+
         }
 
     } // dx

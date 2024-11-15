@@ -498,14 +498,14 @@ namespace slag
             return new VulkanSwapchain(platformData,width,height,backBuffers,mode, format(imageFormat));
         }
 
-        Texture* VulkanLib::newTexture(void* data, size_t dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, uint32_t layers, uint8_t sampleCount, TextureUsage usage, Texture::Layout initializedLayout)
-        {
-            return new VulkanTexture(data,dataSize,dataFormat,type,width,height,layers,mipLevels,sampleCount,std::bit_cast<VkImageUsageFlags>(usage),initializedLayout, false);
-        }
-
         Texture* VulkanLib::newTexture(void** texelDataArray, size_t texelDataCount, size_t dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage usage, Texture::Layout initializedLayout)
         {
             return new VulkanTexture(texelDataArray,texelDataCount,dataSize,dataFormat,type,width,height,mipLevels,std::bit_cast<VkImageUsageFlags>(usage),initializedLayout,false);
+        }
+
+        Texture* VulkanLib::newTexture(Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, uint32_t layers, uint8_t sampleCount, TextureUsage usage)
+        {
+            return new VulkanTexture(dataFormat,type,width,height,mipLevels,layers,sampleCount,std::bit_cast<VkImageUsageFlags>(usage),false);
         }
 
         CommandBuffer* VulkanLib::newCommandBuffer(GpuQueue::QueueType acceptsCommands)
