@@ -129,13 +129,20 @@ namespace slag
             std::vector<D3D12_RESOURCE_BARRIER> barriers;
             for(size_t i=0; i< imageBarrierCount; i++)
             {
+
                 auto& barrierDesc = imageBarriers[i];
                 auto image = dynamic_cast<DX12Texture*>(barrierDesc.texture);
                 //TODO, not sure about plane slice being 0, especially for depth/stencil
                 auto mipCount = barrierDesc.mipCount != 0 ? barrierDesc.mipCount : image->mipLevels() - barrierDesc.baseMipLevel;
                 auto layerCount = barrierDesc.layerCount != 0 ? barrierDesc.layerCount : image->layers() - barrierDesc.baseLayer;
                 UINT subresource = D3D12CalcSubresource(barrierDesc.baseMipLevel,barrierDesc.baseLayer,0,mipCount,layerCount);
-                barriers.push_back({.Type=D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,.Transition={.pResource=image->texture(),.Subresource=subresource,.StateBefore=DX12Lib::stateLayout(barrierDesc.oldLayout),.StateAfter=DX12Lib::stateLayout(barrierDesc.newLayout)}});
+
+
+                barriers.push_back(
+                {
+                    .Type=D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+                    .Transition={.pResource=image->texture(),.Subresource=subresource,.StateBefore=DX12Lib::stateLayout(barrierDesc.oldLayout),.StateAfter=DX12Lib::stateLayout(barrierDesc.newLayout)}
+                });
             }
             for(size_t i=0; i< bufferBarrierCount; i++)
             {

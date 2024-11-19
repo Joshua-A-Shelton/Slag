@@ -86,7 +86,9 @@ if(SLAG_DX12_BACKEND)
             src/slag/BackEnd/DX12/DX12Sampler.cpp
             src/slag/BackEnd/DX12/DX12Sampler.h
             src/slag/BackEnd/DX12/DX12Shader.cpp
-            src/slag/BackEnd/DX12/DX12Shader.h)
+            src/slag/BackEnd/DX12/DX12Shader.h
+            src/slag/BackEnd/DX12/DX12DescriptorGroup.cpp
+            src/slag/BackEnd/DX12/DX12DescriptorGroup.h)
 endif()
 
 add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}

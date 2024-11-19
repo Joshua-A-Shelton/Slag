@@ -108,12 +108,12 @@ namespace slag
             desc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
             ID3D12CommandQueue* transfer = nullptr;
             _device->CreateCommandQueue(&desc, IID_PPV_ARGS(&transfer));
-            _transfer = new DX12Queue(transfer,slag::GpuQueue::QueueType::Transfer);
+            _transfer = new DX12Queue(transfer, slag::GpuQueue::QueueType::Transfer);
 
             desc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
             ID3D12CommandQueue* compute = nullptr;
             _device->CreateCommandQueue(&desc, IID_PPV_ARGS(&compute));
-            _compute = new DX12Queue(compute,slag::GpuQueue::QueueType::Compute);
+            _compute = new DX12Queue(compute, slag::GpuQueue::QueueType::Compute);
 
 
             D3D12MA::ALLOCATOR_DESC allocatorDesc = {};

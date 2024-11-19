@@ -56,33 +56,27 @@ namespace slag
 
         DX12Texture::DX12Texture(void** texelDataArray, size_t texelDataCount, uint64_t dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, Texture::Layout initializedLayout, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
-            construct(dataFormat,type,width,height,texelDataCount,mipLevels,1,usage);
+            construct(dataFormat,type,width,height,texelDataCount,mipLevels,1,usage,Texture::Layout::TRANSFER_DESTINATION);
             DX12CommandBuffer commandBuffer(GpuQueue::Transfer);
             commandBuffer.begin();
 
-            ImageBarrier imageBarrier
-                    {
-                            .texture=this,
-                            .oldLayout=Texture::Layout::UNDEFINED,
-                            .newLayout=Texture::Layout::TRANSFER_DESTINATION,
-                            .accessBefore = BarrierAccessFlags::NONE,
-                            .accessAfter=BarrierAccessFlags::TRANSFER_WRITE,
-                            .syncBefore=PipelineStageFlags::NONE,
-                            .syncAfter =PipelineStageFlags::TRANSFER
-                    };
-            //commandBuffer.insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
             std::vector<DX12Buffer> dataBuffers;
             for(int i=0; i<texelDataCount; i++)
             {
                 dataBuffers.emplace_back(texelDataArray[i],dataSize,Buffer::Accessibility::CPU_AND_GPU,D3D12_RESOURCE_STATE_COPY_SOURCE,true);
                 commandBuffer.copyBufferToImage(&dataBuffers[i],0,this,Texture::Layout::TRANSFER_DESTINATION,0,0);
             }
-            imageBarrier.oldLayout = Texture::Layout::TRANSFER_DESTINATION;
-            imageBarrier.newLayout = initializedLayout;
-            imageBarrier.syncBefore = PipelineStageFlags::TRANSFER;
-            imageBarrier.syncAfter = PipelineStageFlags::ALL_COMMANDS;
-            imageBarrier.accessBefore = BarrierAccessFlags::TRANSFER_WRITE;
-            imageBarrier.accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+            ImageBarrier imageBarrier
+            {
+                    .texture=this,
+                    .oldLayout=Texture::Layout::TRANSFER_DESTINATION,
+                    .newLayout=initializedLayout,
+                    .accessBefore = BarrierAccessFlags::TRANSFER_WRITE,
+                    .accessAfter=BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE,
+                    .syncBefore=PipelineStageFlags::TRANSFER,
+                    .syncAfter =PipelineStageFlags::ALL_COMMANDS
+            };
+
             commandBuffer.insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
 
             commandBuffer.end();
@@ -92,7 +86,7 @@ namespace slag
 
         DX12Texture::DX12Texture(Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, uint32_t layers, uint8_t sampleCount, D3D12_RESOURCE_FLAGS usage, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
-            construct(dataFormat,type,width,height,layers,mipLevels,sampleCount,usage);
+            construct(dataFormat,type,width,height,layers,mipLevels,sampleCount,usage,Texture::Layout::UNDEFINED);
         }
 
         DX12Texture::~DX12Texture()
@@ -177,7 +171,7 @@ namespace slag
             return _view;
         }
 
-        void DX12Texture::construct(Pixels::Format dataFormat, Texture::Type textureType, uint32_t width, uint32_t height,uint32_t layers, uint32_t mipLevels, uint8_t samples, D3D12_RESOURCE_FLAGS usage)
+        void DX12Texture::construct(Pixels::Format dataFormat, Texture::Type textureType, uint32_t width, uint32_t height,uint32_t layers, uint32_t mipLevels, uint8_t samples, D3D12_RESOURCE_FLAGS usage, Texture::Layout initialLayout)
         {
             assert(!(usage & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET && usage & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) && "Texture cannot be both render target and depth stencil");
             _width = width;
@@ -205,7 +199,7 @@ namespace slag
             D3D12MA::ALLOCATION_DESC allocationDesc = {};
             allocationDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
 
-            DX12Lib::card()->allocator()->CreateResource(&allocationDesc,&resourceDesc,D3D12_RESOURCE_STATE_COPY_DEST,nullptr,&_allocation, IID_PPV_ARGS(&_texture));
+            DX12Lib::card()->allocator()->CreateResource(&allocationDesc,&resourceDesc,DX12Lib::stateLayout(initialLayout),nullptr,&_allocation, IID_PPV_ARGS(&_texture));
 
             D3D12_DESCRIPTOR_HEAP_DESC desc = {};
             desc.NumDescriptors = 1;
