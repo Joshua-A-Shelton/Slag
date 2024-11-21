@@ -264,8 +264,12 @@ namespace slag
             }
             if(_usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
             {
-                //TODO: I think i may need to separate the depth and stencil based on the texture format
-                aspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+                assert(dataFormat == Pixels::D32_FLOAT_S8X24_UINT || dataFormat == Pixels::D32_FLOAT || dataFormat == Pixels::D24_UNORM_S8_UINT || dataFormat == Pixels::D16_UNORM);
+                if(dataFormat == Pixels::D32_FLOAT_S8X24_UINT || dataFormat == Pixels::D24_UNORM_S8_UINT)
+                {
+                    aspectFlags |=  VK_IMAGE_ASPECT_STENCIL_BIT;
+                }
+                aspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT;
             }
             _aspects = aspectFlags;
 
