@@ -222,5 +222,10 @@ namespace slag
 
         }
 
+        void IDX12CommandBuffer::blit(Texture* source, Texture::Layout sourceLayout, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceArea, Texture* destination, Texture::Layout destinationLayout, uint32_t destinationLayer, uint32_t destinationMip, Rectangle destinationArea, Sampler::Filter filter)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::blit is not implemented");
+        }
+
     } // dx
 } // slag

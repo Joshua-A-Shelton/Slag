@@ -25,6 +25,8 @@ namespace slag
             static D3D12_FILTER filter(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, bool ansitrophyEnabled);
             static D3D12_COMPARISON_FUNC comparisonFunction(Operations::ComparisonFunction compFunction);
             static uint32_t formatSize(DXGI_FORMAT format);
+            static D3D12_DESCRIPTOR_RANGE_TYPE rangeType(Descriptor::DescriptorType type);
+
             explicit DX12Lib(DX12GraphicsCard* card);
             ~DX12Lib() override;
             BackEnd identifier()override;

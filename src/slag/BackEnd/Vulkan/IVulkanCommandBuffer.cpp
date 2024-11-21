@@ -242,20 +242,25 @@ namespace slag
             vkCmdCopyBufferToImage(_buffer,buffer->underlyingBuffer(),image->image(),VulkanLib::layout(destinationLayout),1,&copy);
         }
 
-        void IVulkanCommandBuffer::vulkanBlitImage(VkImageAspectFlags aspects, VulkanTexture* source, VkImageLayout sourceLayout, Rectangle sourceArea, uint32_t sourceLayer, uint32_t sourceMipLevel, VulkanTexture* destination, VkImageLayout destImageLayout, Rectangle destArea, uint32_t destLayer, uint32_t destMipLevel, VkFilter filter)
+
+        void IVulkanCommandBuffer::blit(Texture* source, Texture::Layout sourceLayout, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceArea, Texture* destination,Texture::Layout destinationLayout, uint32_t destinationLayer, uint32_t destinationMip, Rectangle destinationArea, Sampler::Filter filter)
         {
+            auto src = dynamic_cast<VulkanTexture*>(source);
+            auto dst = dynamic_cast<VulkanTexture*>(destination);
             VkImageBlit blit{};
             blit.srcOffsets[0] = {sourceArea.offset.x,sourceArea.offset.y,0};
             blit.srcOffsets[1] = {static_cast<int32_t>(sourceArea.extent.width),static_cast<int32_t>(sourceArea.extent.height),1};
-            blit.srcSubresource.aspectMask = aspects;
-            blit.srcSubresource.mipLevel = sourceMipLevel;
+            blit.srcSubresource.aspectMask = src->aspectFlags();
+            blit.srcSubresource.mipLevel = sourceMip;
             blit.srcSubresource.baseArrayLayer = sourceLayer;
             blit.srcSubresource.layerCount = 1;
-            blit.dstSubresource.aspectMask = aspects;
-            blit.dstSubresource.mipLevel = destMipLevel;
-            blit.dstSubresource.baseArrayLayer = destLayer;
+            blit.dstOffsets[0] = {destinationArea.offset.x,destinationArea.offset.y,0};
+            blit.dstOffsets[1] = {static_cast<int32_t>(destinationArea.extent.width),static_cast<int32_t>(destinationArea.extent.height),1};
+            blit.dstSubresource.aspectMask = dst->aspectFlags();
+            blit.dstSubresource.mipLevel = destinationMip;
+            blit.dstSubresource.baseArrayLayer = destinationLayer;
             blit.dstSubresource.layerCount = 1;
-            vkCmdBlitImage(_buffer,source->image(),sourceLayout,destination->image(),destImageLayout,1,&blit,filter);
+            vkCmdBlitImage(_buffer,src->image(),VulkanLib::layout(sourceLayout),dst->image(),VulkanLib::layout(destinationLayout),1,&blit,VulkanLib::filter(filter));
         }
 
     } // vulkan

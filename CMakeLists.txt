@@ -88,7 +88,8 @@ if(SLAG_DX12_BACKEND)
             src/slag/BackEnd/DX12/DX12Shader.cpp
             src/slag/BackEnd/DX12/DX12Shader.h
             src/slag/BackEnd/DX12/DX12DescriptorGroup.cpp
-            src/slag/BackEnd/DX12/DX12DescriptorGroup.h)
+            src/slag/BackEnd/DX12/DX12DescriptorGroup.h
+    )
 endif()
 
 add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
@@ -205,11 +206,13 @@ if(BUILD_SLAG_TESTS)
             test/tests/SwapchainTest.cpp
             test/tests/BufferTest.cpp
             test/tests/UniformDescriptorLayoutTest.cpp
-            test/tests/UniformGroupTest.cpp
+            test/tests/DescriptorGroupTest.cpp
             test/tests/ShaderTest.cpp
+            test/third-party/LodePNG/lodepng.cpp
+            test/third-party/LodePNG/lodepng.h
     )
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)
-    target_include_directories(SlagTests PRIVATE src ${SDL2_LIBRARIES} third-party/stb)
+    target_include_directories(SlagTests PRIVATE src ${SDL2_LIBRARIES} third-party/stb test/third-party/LodePNG)
     include(GoogleTest)
     gtest_discover_tests(SlagTests)
 

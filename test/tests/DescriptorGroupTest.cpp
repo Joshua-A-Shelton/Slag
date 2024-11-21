@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 #include "slag/SlagLib.h"
 using namespace slag;
-TEST(UniformGroup, Shape)
+TEST(DescriptorGroup, Shape)
 {
     std::vector<Descriptor> descriptors;
     descriptors.push_back(Descriptor("Albedo",Descriptor::SAMPLER_AND_TEXTURE,1,0,ShaderStageFlags::FRAGMENT));

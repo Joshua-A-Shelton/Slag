@@ -7,6 +7,7 @@
 #include "DX12Buffer.h"
 #include "DX12Sampler.h"
 #include "DX12Shader.h"
+#include "DX12DescriptorGroup.h"
 #include <wrl.h>
 #include <dxgi1_4.h>
 #include <dxgi1_6.h>
@@ -154,6 +155,25 @@ namespace slag
 #undef DEFINITION
             }
             return 0;
+        }
+
+        D3D12_DESCRIPTOR_RANGE_TYPE DX12Lib::rangeType(Descriptor::DescriptorType type)
+        {
+            switch (type)
+            {
+                case Descriptor::SAMPLER:
+                case Descriptor::SAMPLER_AND_TEXTURE:
+                    return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+                case Descriptor::STORAGE_TEXTURE:
+                case Descriptor::STORAGE_TEXEL_BUFFER:
+                case Descriptor::STORAGE_BUFFER:
+                    return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+                case Descriptor::INPUT_ATTACHMENT:
+                    return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+                default:
+                    return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+
+            }
         }
 
         D3D12_TEXTURE_ADDRESS_MODE DX12Lib::addressMode(Sampler::AddressMode mode)
@@ -365,7 +385,7 @@ namespace slag
 
         DescriptorGroup* DX12Lib::newDescriptorGroup(Descriptor* descriptors, size_t descriptorCount)
         {
-            throw std::runtime_error("DX12Lib::newDescriptorGroup not implemented");
+            return new DX12DescriptorGroup(descriptors, descriptorCount);
         }
 
         Shader* DX12Lib::newShader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)

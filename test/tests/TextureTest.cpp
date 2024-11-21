@@ -2,6 +2,7 @@
 #include "slag/SlagLib.h"
 #include "stb_image.h"
 #include "filesystem"
+#include <lodepng.h>
 
 using namespace slag;
 
@@ -58,5 +59,58 @@ TEST(Texture, MultiSampled)
 
 TEST(Texture, MipMapped)
 {
-    GTEST_FAIL();
+    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture("resources/test-img.png",5,TextureUsageFlags::SAMPLED_IMAGE,false,Texture::Layout::TRANSFER_SOURCE));
+
+    GTEST_ASSERT_GE(texture->sampleCount() ,1);
+    GTEST_ASSERT_GE(texture->mipLevels() ,5);
+    GTEST_ASSERT_GE(texture->type() ,Texture::Type::TEXTURE_2D);
+    GTEST_ASSERT_GE(texture->layers() ,1);
+    GTEST_ASSERT_GE(texture->width() ,100);
+    GTEST_ASSERT_GE(texture->height() ,100);
+
+    std::unique_ptr<Texture> flatMipped = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,150,100,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+    std::unique_ptr<Buffer> dataBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(flatMipped->width()*flatMipped->height()*sizeof(unsigned char)*4,Buffer::CPU_AND_GPU,Buffer::DATA_BUFFER));
+
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Graphics));
+    commandBuffer->begin();
+    commandBuffer->updateMipChain(texture.get(),0,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,PipelineStageFlags::TRANSFER,PipelineStageFlags::ALL_GRAPHICS);
+    ImageBarrier flatMippedBarrier
+    {
+        .texture = flatMipped.get(),
+        .oldLayout = Texture::UNDEFINED,
+        .newLayout = Texture::TRANSFER_DESTINATION,
+        .accessBefore = BarrierAccessFlags::NONE,
+        .accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE,
+        .syncBefore = PipelineStageFlags::NONE,
+        .syncAfter = PipelineStageFlags::ALL_COMMANDS
+    };
+    commandBuffer->insertBarriers(&flatMippedBarrier,1, nullptr,0, nullptr,0);
+    Rectangle srcArea{.offset{},.extent{100,100}};
+    Rectangle dstArea{.offset{},.extent{100,100}};
+    commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,0,srcArea,flatMipped.get(),Texture::TRANSFER_DESTINATION,0,0,dstArea,Sampler::Filter::NEAREST);
+    //dstArea.offset.x = 100;
+    for(uint32_t i=1; i< texture->mipLevels(); i++)
+    {
+        srcArea.extent.width = srcArea.extent.width>>1;
+        srcArea.extent.height = srcArea.extent.height>>1;
+        //dstArea.extent.width = dstArea.extent.width>>1;
+        //dstArea.extent.height = dstArea.extent.height>>1;
+
+        commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,i,srcArea,flatMipped.get(),Texture::TRANSFER_DESTINATION,0,0,dstArea,Sampler::Filter::NEAREST);
+
+        //dstArea.offset.y += dstArea.extent.height;
+    }
+    flatMippedBarrier.oldLayout = Texture::TRANSFER_DESTINATION;
+    flatMippedBarrier.newLayout = Texture::TRANSFER_SOURCE;
+    flatMippedBarrier.accessBefore = BarrierAccessFlags::ALL_WRITE;
+    flatMippedBarrier.syncBefore = PipelineStageFlags::TRANSFER;
+    commandBuffer->insertBarriers(&flatMippedBarrier,1, nullptr,0, nullptr,0);
+
+    commandBuffer->copyImageToBuffer(flatMipped.get(),Texture::Layout::TRANSFER_SOURCE,0,1,0,dataBuffer.get(),0);
+    commandBuffer->end();
+    SlagLib::graphicsCard()->graphicsQueue()->submit(commandBuffer.get());
+    commandBuffer->waitUntilFinished();
+
+    lodepng::encode("C:\\Users\\jshelton.CHEMTECH2008\\Desktop\\mipped.png", (unsigned char*)(dataBuffer->downloadData().data()),flatMipped->width(),flatMipped->height());
+
 }
