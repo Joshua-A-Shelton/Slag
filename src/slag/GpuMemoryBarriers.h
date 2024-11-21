@@ -78,6 +78,16 @@ namespace slag
         {
             return BarrierAccess(~_value);
         }
+
+        bool operator==(BarrierAccess b)const
+        {
+            return _value==b._value;
+        }
+
+        bool operator!=(BarrierAccess b)const
+        {
+            return _value!=b._value;
+        }
     };
     class BarrierAccessFlags
     {
@@ -122,6 +132,16 @@ namespace slag
         PipelineStages operator~() const
         {
             return PipelineStages(~_value);
+        }
+
+        bool operator==(PipelineStages b)const
+        {
+            return _value==b._value;
+        }
+
+        bool operator!=(PipelineStages b)const
+        {
+            return _value!=b._value;
         }
     };
 

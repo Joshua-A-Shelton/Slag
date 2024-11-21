@@ -143,6 +143,14 @@ namespace slag
                     .Type=D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
                     .Transition={.pResource=image->texture(),.Subresource=subresource,.StateBefore=DX12Lib::stateLayout(barrierDesc.oldLayout),.StateAfter=DX12Lib::stateLayout(barrierDesc.newLayout)}
                 });
+                if((barrierDesc.accessBefore | barrierDesc.accessAfter) != BarrierAccessFlags::NONE)
+                {
+                    barriers.push_back(
+                    {
+                        .Type=D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_UAV,
+                        .UAV={.pResource=image->texture()}
+                    });
+                }
             }
             for(size_t i=0; i< bufferBarrierCount; i++)
             {
