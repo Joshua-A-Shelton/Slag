@@ -249,13 +249,13 @@ namespace slag
             auto dst = dynamic_cast<VulkanTexture*>(destination);
             VkImageBlit blit{};
             blit.srcOffsets[0] = {sourceArea.offset.x,sourceArea.offset.y,0};
-            blit.srcOffsets[1] = {static_cast<int32_t>(sourceArea.extent.width),static_cast<int32_t>(sourceArea.extent.height),1};
+            blit.srcOffsets[1] = {static_cast<int32_t>(sourceArea.extent.width + sourceArea.offset.x),static_cast<int32_t>(sourceArea.extent.height + sourceArea.offset.y),1};
             blit.srcSubresource.aspectMask = src->aspectFlags();
             blit.srcSubresource.mipLevel = sourceMip;
             blit.srcSubresource.baseArrayLayer = sourceLayer;
             blit.srcSubresource.layerCount = 1;
             blit.dstOffsets[0] = {destinationArea.offset.x,destinationArea.offset.y,0};
-            blit.dstOffsets[1] = {static_cast<int32_t>(destinationArea.extent.width),static_cast<int32_t>(destinationArea.extent.height),1};
+            blit.dstOffsets[1] = {static_cast<int32_t>(destinationArea.extent.width + destinationArea.offset.x),static_cast<int32_t>(destinationArea.extent.height + destinationArea.offset.y),1};
             blit.dstSubresource.aspectMask = dst->aspectFlags();
             blit.dstSubresource.mipLevel = destinationMip;
             blit.dstSubresource.baseArrayLayer = destinationLayer;

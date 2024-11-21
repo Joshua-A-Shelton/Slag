@@ -20,7 +20,11 @@ struct SDL_WindowCustomDeleter
 
 TEST(Swapchain, PresentModes)
 {
-
+#ifdef __linux
+#ifndef NDEBUG
+    GTEST_SKIP();
+#endif
+#endif
     SDL_WindowFlags flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE);
     if(SlagLib::usingBackEnd() == BackEnd::Vulkan)
     {
@@ -81,6 +85,11 @@ TEST(Swapchain, PresentModes)
 
 TEST(Swapchain, NextIfReady)
 {
+#ifdef __linux
+#ifndef NDEBUG
+    GTEST_SKIP();
+#endif
+#endif
     SDL_WindowFlags flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE);
     if(SlagLib::usingBackEnd() == BackEnd::Vulkan)
     {

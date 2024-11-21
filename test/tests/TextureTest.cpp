@@ -88,17 +88,17 @@ TEST(Texture, MipMapped)
     Rectangle srcArea{.offset{},.extent{100,100}};
     Rectangle dstArea{.offset{},.extent{100,100}};
     commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,0,srcArea,flatMipped.get(),Texture::TRANSFER_DESTINATION,0,0,dstArea,Sampler::Filter::NEAREST);
-    //dstArea.offset.x = 100;
+    dstArea.offset.x = 100;
     for(uint32_t i=1; i< texture->mipLevels(); i++)
     {
         srcArea.extent.width = srcArea.extent.width>>1;
         srcArea.extent.height = srcArea.extent.height>>1;
-        //dstArea.extent.width = dstArea.extent.width>>1;
-        //dstArea.extent.height = dstArea.extent.height>>1;
+        dstArea.extent.width = dstArea.extent.width>>1;
+        dstArea.extent.height = dstArea.extent.height>>1;
 
         commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,i,srcArea,flatMipped.get(),Texture::TRANSFER_DESTINATION,0,0,dstArea,Sampler::Filter::NEAREST);
 
-        //dstArea.offset.y += dstArea.extent.height;
+        dstArea.offset.y += dstArea.extent.height;
     }
     flatMippedBarrier.oldLayout = Texture::TRANSFER_DESTINATION;
     flatMippedBarrier.newLayout = Texture::TRANSFER_SOURCE;
@@ -111,6 +111,17 @@ TEST(Texture, MipMapped)
     SlagLib::graphicsCard()->graphicsQueue()->submit(commandBuffer.get());
     commandBuffer->waitUntilFinished();
 
-    lodepng::encode("C:\\Users\\jshelton.CHEMTECH2008\\Desktop\\mipped.png", (unsigned char*)(dataBuffer->downloadData().data()),flatMipped->width(),flatMipped->height());
+    int w, h, channels;
+    auto rawBytes = stbi_load(std::filesystem::absolute("resources/test-img-mipped.png").string().c_str(),&w,&h,&channels,4);
+    std::vector<std::byte> groundTruth(w*h*channels);
+    memcpy(groundTruth.data(),rawBytes,w*h*channels);
+    stbi_image_free(rawBytes);
+
+    auto data = dataBuffer->downloadData();
+
+    for(size_t i=0; i< w*h*channels; i++)
+    {
+        GTEST_ASSERT_TRUE(data[i] == groundTruth[i]);
+    }
 
 }
