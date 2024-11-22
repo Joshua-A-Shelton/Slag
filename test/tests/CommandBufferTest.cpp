@@ -1,153 +1,402 @@
 #include "gtest/gtest.h"
 #include "slag/SlagLib.h"
+#include <stb_image.h>
+
 using namespace slag;
 
-TEST(CommandBuffer, StartFinished)
+class CommandBufferTests: public ::testing::Test
 {
-    std::unique_ptr<CommandBuffer> buffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Graphics));
-    ASSERT_TRUE(buffer->isFinished());
-}
+protected:
+    std::vector<GpuQueue::QueueType> commandBufferQueueTypes{GpuQueue::Graphics,GpuQueue::Compute,GpuQueue::Transfer};
+    std::vector<GpuQueue*> submissionQueues;
 
-TEST(CommandBuffer, InsertBarriersMultiUseTexture)
-{
-    std::unique_ptr<CommandBuffer> buffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Graphics));
-    std::unique_ptr<Texture> img = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::SAMPLED_IMAGE | TextureUsageFlags::RENDER_TARGET_ATTACHMENT | TextureUsageFlags::STORAGE));
-    ImageBarrier imageBarrier
+public:
+    CommandBufferTests()
     {
-        .texture = img.get(),
-    };
-    buffer->begin();
-    std::vector<Texture::Layout> layouts =
-    {
-#define DEFINITION(slagName, vulkanName, directXName,directXResourceName) Texture::slagName,
-                    TEXTURE_LAYOUT_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-    };
-    imageBarrier.oldLayout = Texture::UNDEFINED;
-    for(size_t i=0; i< layouts.size(); i++)
-    {
-        auto newLayout = layouts[i];
-        if(newLayout != Texture::UNDEFINED && newLayout != Texture::DEPTH_READ && newLayout != Texture::DEPTH_WRITE)
-        {
-            imageBarrier.newLayout = newLayout;
-        }
-        else
-        {
-            break;
-        }
-        buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-        imageBarrier.oldLayout = newLayout;
+        auto card = SlagLib::graphicsCard();
+        submissionQueues = {card->graphicsQueue(),card->computeQueue(),card->transferQueue()};
 
     }
 
-    buffer->end();
-    SlagLib::graphicsCard()->graphicsQueue()->submit(buffer.get());
-    buffer->waitUntilFinished();
+    virtual ~CommandBufferTests() {}
 
+    virtual void SetUp() {}
+
+    virtual void TearDown() {}
+
+};
+
+TEST_F(CommandBufferTests, StartFinished)
+{
+    for(auto i=0; i< commandBufferQueueTypes.size(); i++)
+    {
+        std::unique_ptr<CommandBuffer> buffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(commandBufferQueueTypes[i]));
+        ASSERT_TRUE(buffer->isFinished());
+    }
 }
 
-TEST(CommandBuffer, InsertBarriersSampledTexture)
+TEST_F(CommandBufferTests, InsertBarriersMultiUseTexture)
 {
-    std::unique_ptr<CommandBuffer> buffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Graphics));
-    std::unique_ptr<Texture> img = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
-    ImageBarrier imageBarrier
-            {
-                    .texture = img.get(),
-            };
-    buffer->begin();
-    std::vector<Texture::Layout> layouts =
-            {
-#define DEFINITION(slagName, vulkanName, directXName,directXResourceName) Texture::slagName,
-                    TEXTURE_LAYOUT_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-            };
-    imageBarrier.oldLayout = Texture::UNDEFINED;
-    for(size_t i=0; i< layouts.size(); i++)
+    for(auto qt=0; qt< commandBufferQueueTypes.size(); qt++)
     {
-        auto newLayout = layouts[i];
-        if(newLayout != Texture::UNDEFINED && newLayout != Texture::DEPTH_READ && newLayout != Texture::DEPTH_WRITE && newLayout != Texture::RENDER_TARGET && newLayout != Texture::UNORDERED)
+        std::unique_ptr<CommandBuffer> buffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(commandBufferQueueTypes[qt]));
+        std::unique_ptr<Texture> img = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::SAMPLED_IMAGE | TextureUsageFlags::RENDER_TARGET_ATTACHMENT | TextureUsageFlags::STORAGE));
+        ImageBarrier imageBarrier
+                {
+                        .texture = img.get(),
+                };
+        buffer->begin();
+        std::vector<Texture::Layout> layouts =
+                {
+#define DEFINITION(slagName, vulkanName, directXName,directXResourceName) Texture::slagName,
+                        TEXTURE_LAYOUT_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+                };
+        imageBarrier.oldLayout = Texture::UNDEFINED;
+        for(size_t i=0; i< layouts.size(); i++)
         {
-            imageBarrier.newLayout = newLayout;
-        }
-        else
-        {
-            continue;
-        }
-        buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-        imageBarrier.oldLayout = newLayout;
+            auto newLayout = layouts[i];
+            if(newLayout != Texture::UNDEFINED && newLayout != Texture::DEPTH_READ && newLayout != Texture::DEPTH_WRITE)
+            {
+                imageBarrier.newLayout = newLayout;
+            }
+            else
+            {
+                break;
+            }
+            buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
+            imageBarrier.oldLayout = newLayout;
 
+        }
+
+        buffer->end();
+        submissionQueues[qt]->submit(buffer.get());
+        buffer->waitUntilFinished();
     }
 
-    buffer->end();
-    SlagLib::graphicsCard()->graphicsQueue()->submit(buffer.get());
-    buffer->waitUntilFinished();
 }
 
-TEST(CommandBuffer, InsertBarriersDepthTexture)
+TEST_F(CommandBufferTests, InsertBarriersSampledTexture)
 {
-    std::unique_ptr<CommandBuffer> buffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Graphics));
-    std::unique_ptr<Texture> img = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,slag::Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::DEPTH_STENCIL_ATTACHMENT));
-    ImageBarrier imageBarrier
+    for(auto qt=0; qt< commandBufferQueueTypes.size(); qt++)
+    {
+        std::unique_ptr<CommandBuffer> buffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(commandBufferQueueTypes[qt]));
+        std::unique_ptr<Texture> img = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+        ImageBarrier imageBarrier
+                {
+                        .texture = img.get(),
+                };
+        buffer->begin();
+        std::vector<Texture::Layout> layouts =
+                {
+#define DEFINITION(slagName, vulkanName, directXName,directXResourceName) Texture::slagName,
+                        TEXTURE_LAYOUT_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+                };
+        imageBarrier.oldLayout = Texture::UNDEFINED;
+        for(size_t i=0; i< layouts.size(); i++)
+        {
+            auto newLayout = layouts[i];
+            if(newLayout != Texture::UNDEFINED && newLayout != Texture::DEPTH_READ && newLayout != Texture::DEPTH_WRITE && newLayout != Texture::RENDER_TARGET && newLayout != Texture::UNORDERED)
             {
-                    .texture = img.get(),
+                imageBarrier.newLayout = newLayout;
+            }
+            else
+            {
+                continue;
+            }
+            buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
+            imageBarrier.oldLayout = newLayout;
+
+        }
+
+        buffer->end();
+        submissionQueues[qt]->submit(buffer.get());
+        buffer->waitUntilFinished();
+    }
+}
+
+TEST_F(CommandBufferTests, InsertBarriersDepthTexture)
+{
+    for(auto qt=0; qt< commandBufferQueueTypes.size(); qt++)
+    {
+        std::unique_ptr<CommandBuffer> buffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(commandBufferQueueTypes[qt]));
+        std::unique_ptr<Texture> img = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,slag::Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::DEPTH_STENCIL_ATTACHMENT));
+        ImageBarrier imageBarrier
+                {
+                        .texture = img.get(),
+                };
+        buffer->begin();
+        imageBarrier.oldLayout = Texture::UNDEFINED;
+        imageBarrier.newLayout = Texture::GENERAL;
+        buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
+        imageBarrier.oldLayout = Texture::GENERAL;
+        imageBarrier.newLayout = Texture::TRANSFER_SOURCE;
+        buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
+        imageBarrier.oldLayout = Texture::TRANSFER_SOURCE;
+        imageBarrier.newLayout = Texture::TRANSFER_DESTINATION;
+        buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
+        imageBarrier.oldLayout = Texture::TRANSFER_DESTINATION;
+        imageBarrier.newLayout = Texture::DEPTH_READ;
+        buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
+        imageBarrier.oldLayout = Texture::DEPTH_READ;
+        imageBarrier.newLayout = Texture::DEPTH_WRITE;
+        buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
+        buffer->end();
+        submissionQueues[qt]->submit(buffer.get());
+        buffer->waitUntilFinished();
+    }
+}
+
+TEST_F(CommandBufferTests, InsertBarriersBuffers)
+{
+    for(auto qt=0; qt< commandBufferQueueTypes.size(); qt++)
+    {
+        auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(commandBufferQueueTypes[qt]));
+        std::vector<Color> colors(100, {1.0f, 0.0f, 0.2f, 1.0f});
+        std::vector<Color> colors2(100, {0.0f, 0.5f, 0.5f, 1.0f});
+        auto data = std::unique_ptr<Buffer>(
+                Buffer::newBuffer(colors.data(), colors.size() * sizeof(float) * 4, Buffer::GPU, Buffer::DATA_BUFFER));
+        auto intermediate = std::unique_ptr<Buffer>(
+                Buffer::newBuffer(colors.data(), colors.size() * sizeof(float) * 4, Buffer::CPU, Buffer::DATA_BUFFER));
+        auto final = std::unique_ptr<Buffer>(Buffer::newBuffer(data->size(), Buffer::CPU_AND_GPU, Buffer::DATA_BUFFER));
+        BufferBarrier barrier{.buffer=data.get(), .offset=0, .size=data->size(), .syncBefore=PipelineStageFlags::NONE, .syncAfter=PipelineStageFlags::TRANSFER};
+        commandBuffer->begin();
+        commandBuffer->copyBuffer(data.get(), 0, data->size(), intermediate.get(), 0);
+        commandBuffer->insertBarriers(nullptr, 0, &barrier, 1, nullptr, 0);
+        commandBuffer->copyBuffer(intermediate.get(), data->size() / 2, data->size() / 2, final.get(),
+                                  data->size() / 2);
+        barrier.buffer = intermediate.get();
+        commandBuffer->insertBarriers(nullptr, 0, &barrier, 1, nullptr, 0);
+        commandBuffer->copyBuffer(intermediate.get(), 0, data->size() / 2, final.get(), 0);
+
+        commandBuffer->end();
+        submissionQueues[qt]->submit(commandBuffer.get());
+        auto dataRaw = data->downloadData();
+        auto intermediateRaw = data->downloadData();
+        auto finalRaw = data->downloadData();
+        for (size_t i = 0; i < data->size(); i++)
+        {
+            GTEST_ASSERT_TRUE(dataRaw[i] == intermediateRaw[i] && intermediateRaw[i] == finalRaw[i]);
+        }
+    }
+}
+
+TEST_F(CommandBufferTests, InsertBarriersGlobal)
+{
+    for(auto qt=0; qt< commandBufferQueueTypes.size(); qt++)
+    {
+        auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(commandBufferQueueTypes[qt]));
+        commandBuffer->begin();
+
+        GPUMemoryBarrier barrier{.accessBefore = BarrierAccessFlags::NONE,.accessAfter=BarrierAccessFlags::ALL_WRITE,.syncBefore=PipelineStageFlags::NONE,.syncAfter=PipelineStageFlags::ALL_COMMANDS};
+        commandBuffer->insertBarriers(nullptr,0, nullptr,0,&barrier,1);
+
+        commandBuffer->end();
+        submissionQueues[qt]->submit(commandBuffer.get());
+
+    }
+}
+
+TEST_F(CommandBufferTests, ClearColorImage)
+{
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(slag::GpuQueue::Graphics));
+    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R32G32B32A32_FLOAT,slag::Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+    auto texture2 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R32G32B32A32_FLOAT,slag::Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::RENDER_TARGET_ATTACHMENT));
+    auto texture3 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R32G32B32A32_FLOAT,slag::Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::RENDER_TARGET_ATTACHMENT | TextureUsageFlags::SAMPLED_IMAGE));
+    auto buffer = std::unique_ptr<Buffer>(Buffer::newBuffer(texture->width()*texture->height()*sizeof(float)*4,Buffer::CPU,Buffer::DATA_BUFFER));
+    auto buffer2 = std::unique_ptr<Buffer>(Buffer::newBuffer(texture2->width()*texture2->height()*sizeof(float)*4,Buffer::CPU,Buffer::DATA_BUFFER));
+    auto buffer3 = std::unique_ptr<Buffer>(Buffer::newBuffer(texture3->width()*texture3->height()*sizeof(float)*4,Buffer::CPU,Buffer::DATA_BUFFER));
+
+
+    commandBuffer->begin();
+    commandBuffer->clearColorImage(texture.get(), {.floats={1,0,0,1}}, Texture::Layout::UNDEFINED, Texture::Layout::TRANSFER_SOURCE,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
+    commandBuffer->clearColorImage(texture2.get(), {.floats={0,1,0,1}}, Texture::Layout::UNDEFINED, Texture::Layout::TRANSFER_SOURCE,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
+    commandBuffer->clearColorImage(texture3.get(), {.floats={0,0,1,1}}, Texture::Layout::UNDEFINED, Texture::Layout::TRANSFER_SOURCE,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
+    commandBuffer->copyImageToBuffer(texture.get(),Texture::Layout::TRANSFER_SOURCE,0,1,0,buffer.get(),0);
+    commandBuffer->copyImageToBuffer(texture2.get(),Texture::Layout::TRANSFER_SOURCE,0,1,0,buffer2.get(),0);
+    commandBuffer->copyImageToBuffer(texture3.get(),Texture::Layout::TRANSFER_SOURCE,0,1,0,buffer3.get(),0);
+
+
+    commandBuffer->end();
+    SlagLib::graphicsCard()->graphicsQueue()->submit(commandBuffer.get());
+    commandBuffer->waitUntilFinished();
+    auto data1 = buffer->downloadData();
+    auto data2 = buffer2->downloadData();
+    auto data3 = buffer3->downloadData();
+    auto red = Color(1.0f,0,0,1);
+    auto green = Color(0.0f,1,0,1);
+    auto blue = Color(0.0f,0,1,1);
+    for(size_t i=0; i< data1.size(); i+=4*sizeof(float))
+    {
+        Color color1 = *std::bit_cast<Color*>(&data1[i]);
+        Color color2 = *std::bit_cast<Color*>(&data2[i]);
+        Color color3 = *std::bit_cast<Color*>(&data3[i]);
+        GTEST_ASSERT_TRUE(color1 == red);
+        GTEST_ASSERT_TRUE(color2 == green);
+        GTEST_ASSERT_TRUE(color3 == blue);
+    }
+}
+
+TEST_F(CommandBufferTests, UpdateMipChain)
+{
+    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture("resources/test-img.png",5,TextureUsageFlags::SAMPLED_IMAGE,false,Texture::Layout::TRANSFER_SOURCE));
+
+    std::unique_ptr<Texture> flatMipped = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,150,100,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+    std::unique_ptr<Buffer> dataBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(flatMipped->width()*flatMipped->height()*sizeof(unsigned char)*4,Buffer::CPU_AND_GPU,Buffer::DATA_BUFFER));
+
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Graphics));
+    commandBuffer->begin();
+    commandBuffer->updateMipChain(texture.get(),0,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,PipelineStageFlags::TRANSFER,PipelineStageFlags::ALL_GRAPHICS);
+    ImageBarrier flatMippedBarrier
+            {
+                    .texture = flatMipped.get(),
+                    .oldLayout = Texture::UNDEFINED,
+                    .newLayout = Texture::TRANSFER_DESTINATION,
+                    .accessBefore = BarrierAccessFlags::NONE,
+                    .accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE,
+                    .syncBefore = PipelineStageFlags::NONE,
+                    .syncAfter = PipelineStageFlags::ALL_COMMANDS
             };
-    buffer->begin();
-    imageBarrier.oldLayout = Texture::UNDEFINED;
-    imageBarrier.newLayout = Texture::GENERAL;
-    buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-    imageBarrier.oldLayout = Texture::GENERAL;
-    imageBarrier.newLayout = Texture::TRANSFER_SOURCE;
-    buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-    imageBarrier.oldLayout = Texture::TRANSFER_SOURCE;
-    imageBarrier.newLayout = Texture::TRANSFER_DESTINATION;
-    buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-    imageBarrier.oldLayout = Texture::TRANSFER_DESTINATION;
-    imageBarrier.newLayout = Texture::DEPTH_READ;
-    buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-    imageBarrier.oldLayout = Texture::DEPTH_READ;
-    imageBarrier.newLayout = Texture::DEPTH_WRITE;
-    buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-    buffer->end();
-    SlagLib::graphicsCard()->graphicsQueue()->submit(buffer.get());
-    buffer->waitUntilFinished();
+    commandBuffer->insertBarriers(&flatMippedBarrier,1, nullptr,0, nullptr,0);
+    Rectangle srcArea{.offset{},.extent{100,100}};
+    Rectangle dstArea{.offset{},.extent{100,100}};
+    commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,0,srcArea,flatMipped.get(),Texture::TRANSFER_DESTINATION,0,0,dstArea,Sampler::Filter::NEAREST);
+    dstArea.offset.x = 100;
+    for(uint32_t i=1; i< texture->mipLevels(); i++)
+    {
+        srcArea.extent.width = srcArea.extent.width>>1;
+        srcArea.extent.height = srcArea.extent.height>>1;
+        dstArea.extent.width = dstArea.extent.width>>1;
+        dstArea.extent.height = dstArea.extent.height>>1;
+
+        commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,i,srcArea,flatMipped.get(),Texture::TRANSFER_DESTINATION,0,0,dstArea,Sampler::Filter::NEAREST);
+
+        dstArea.offset.y += dstArea.extent.height;
+    }
+    flatMippedBarrier.oldLayout = Texture::TRANSFER_DESTINATION;
+    flatMippedBarrier.newLayout = Texture::TRANSFER_SOURCE;
+    flatMippedBarrier.accessBefore = BarrierAccessFlags::ALL_WRITE;
+    flatMippedBarrier.syncBefore = PipelineStageFlags::TRANSFER;
+    commandBuffer->insertBarriers(&flatMippedBarrier,1, nullptr,0, nullptr,0);
+
+    commandBuffer->copyImageToBuffer(flatMipped.get(),Texture::Layout::TRANSFER_SOURCE,0,1,0,dataBuffer.get(),0);
+    commandBuffer->end();
+    SlagLib::graphicsCard()->graphicsQueue()->submit(commandBuffer.get());
+    commandBuffer->waitUntilFinished();
+
+    int w, h, channels;
+    auto rawBytes = stbi_load(std::filesystem::absolute("resources/test-img-mipped.png").string().c_str(),&w,&h,&channels,4);
+    std::vector<std::byte> groundTruth(w*h*channels);
+    memcpy(groundTruth.data(),rawBytes,w*h*channels);
+    stbi_image_free(rawBytes);
+
+    auto data = dataBuffer->downloadData();
+    for(size_t i=0; i< w*h*channels; i++)
+    {
+        GTEST_ASSERT_TRUE(data[i] == groundTruth[i]);
+    }
 }
 
-TEST(CommandBuffer, InsertBarriersBuffers)
+TEST_F(CommandBufferTests, CopyBuffer)
 {
-    GTEST_FAIL();
+    for(auto qt=0; qt< commandBufferQueueTypes.size(); qt++)
+    {
+        std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(commandBufferQueueTypes[qt]));
+        commandBuffer->begin();
+        std::vector<Color> rawData{Color(1.0f,0.0f,0.0f,1.0f),Color(.7f,.6f,.2f,1.0f),Color(0.0f,.9f,.25f,.33f)};
+        std::unique_ptr<Buffer> cpuBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(rawData.data(), sizeof(Color) * rawData.size(), Buffer::Accessibility::CPU, Buffer::Usage::DATA_BUFFER));
+        std::unique_ptr<Buffer> gpuBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(Color) * rawData.size(), Buffer::Accessibility::GPU, Buffer::Usage::DATA_BUFFER));
+        commandBuffer->copyBuffer(cpuBuffer.get(),0,cpuBuffer->size(),gpuBuffer.get(),0);
+        commandBuffer->end();
+        submissionQueues[qt]->submit(commandBuffer.get());
+        commandBuffer->waitUntilFinished();
+        auto data = gpuBuffer->downloadData();
+
+        std::vector<Color> processedData(rawData.size());
+        memcpy(processedData.data(),data.data(),data.size());
+        for(int i=0; i<rawData.size(); i++)
+        {
+            auto original = rawData[i];
+            auto proccessed = processedData[i];
+            GTEST_ASSERT_TRUE(original == proccessed);
+        }
+    }
 }
 
-TEST(CommandBuffer, InsertBarriersGlobal)
+TEST_F(CommandBufferTests, CopyImageToBuffer)
 {
-    GTEST_FAIL();
+    Color color(.5f,.3f,.1f,.8f);
+    std::vector<Color> data(100,color);
+
+    for(auto qt=0; qt< commandBufferQueueTypes.size(); qt++)
+    {
+        auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,slag::Texture::TEXTURE_2D,10,10,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+        auto uploadBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(data.data(),data.size()*sizeof(color),Buffer::CPU_AND_GPU,Buffer::DATA_BUFFER));
+        auto downloadBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(uploadBuffer->size(),Buffer::CPU,Buffer::DATA_BUFFER));
+        auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(commandBufferQueueTypes[qt]));
+        commandBuffer->begin();
+        ImageBarrier barrier{.texture=texture.get(),.oldLayout = Texture::UNDEFINED, .newLayout = slag::Texture::TRANSFER_DESTINATION};
+        commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+        commandBuffer->copyBufferToImage(uploadBuffer.get(),0,texture.get(),slag::Texture::TRANSFER_DESTINATION,0,0);
+        barrier.oldLayout = slag::Texture::TRANSFER_DESTINATION;
+        barrier.newLayout = slag::Texture::TRANSFER_SOURCE;
+        barrier.syncBefore = PipelineStageFlags::TRANSFER;
+        barrier.syncAfter = PipelineStageFlags::TRANSFER;
+        barrier.accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+        commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+        commandBuffer->copyImageToBuffer(texture.get(),slag::Texture::TRANSFER_SOURCE,0,1,0,downloadBuffer.get(),0);
+        commandBuffer->end();
+        submissionQueues[qt]->submit(commandBuffer.get());
+        commandBuffer->waitUntilFinished();
+
+        auto download = downloadBuffer->downloadData();
+
+        for(size_t i=0; i< download.size(); i+=4*sizeof(float))
+        {
+            Color comp = *std::bit_cast<Color*>(&download[i]);
+            GTEST_ASSERT_TRUE(color == comp);
+        }
+    }
 }
 
-TEST(CommandBuffer, ClearColorImage)
+TEST_F(CommandBufferTests, CopyBufferToImage)
 {
-    GTEST_FAIL();
+    Color color(.06f,.9f,.436f,.3f);
+    std::vector<Color> data(100,color);
+
+    for(auto qt=0; qt< commandBufferQueueTypes.size(); qt++)
+    {
+        auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,slag::Texture::TEXTURE_2D,10,10,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+        auto uploadBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(data.data(),data.size()*sizeof(color),Buffer::CPU_AND_GPU,Buffer::DATA_BUFFER));
+        auto downloadBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(uploadBuffer->size(),Buffer::CPU,Buffer::DATA_BUFFER));
+        auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(commandBufferQueueTypes[qt]));
+        commandBuffer->begin();
+        ImageBarrier barrier{.texture=texture.get(),.oldLayout = Texture::UNDEFINED, .newLayout = slag::Texture::TRANSFER_DESTINATION};
+        commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+        commandBuffer->copyBufferToImage(uploadBuffer.get(),0,texture.get(),slag::Texture::TRANSFER_DESTINATION,0,0);
+        barrier.oldLayout = slag::Texture::TRANSFER_DESTINATION;
+        barrier.newLayout = slag::Texture::TRANSFER_SOURCE;
+        barrier.syncBefore = PipelineStageFlags::TRANSFER;
+        barrier.syncAfter = PipelineStageFlags::TRANSFER;
+        barrier.accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+        commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+        commandBuffer->copyImageToBuffer(texture.get(),slag::Texture::TRANSFER_SOURCE,0,1,0,downloadBuffer.get(),0);
+        commandBuffer->end();
+        submissionQueues[qt]->submit(commandBuffer.get());
+        commandBuffer->waitUntilFinished();
+
+        auto download = downloadBuffer->downloadData();
+
+        for(size_t i=0; i< download.size(); i+=4*sizeof(float))
+        {
+            Color comp = *std::bit_cast<Color*>(&download[i]);
+            GTEST_ASSERT_TRUE(color == comp);
+        }
+    }
 }
 
-TEST(CommandBuffer, UpdateMipChain)
-{
-    GTEST_FAIL();
-}
-
-TEST(CommandBuffer, CopyBuffer)
-{
-    GTEST_FAIL();
-}
-
-TEST(CommandBuffer, CopyImageToBuffer)
-{
-    GTEST_FAIL();
-}
-
-TEST(CommandBuffer, CopyBufferToImage)
-{
-    GTEST_FAIL();
-}
-
-TEST(CommandBuffer, Blit)
+TEST_F(CommandBufferTests, Blit)
 {
     GTEST_FAIL();
 }
