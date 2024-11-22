@@ -34,6 +34,7 @@ namespace slag
 
             if(_buffer)
             {
+
                 //there's the possibility we started recording commands, but never submitted. Force clear resources just in case
                 if(_finished == nullptr)
                 {

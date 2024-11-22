@@ -36,6 +36,7 @@ namespace slag
             GpuQueue::QueueType _commandType = GpuQueue::Graphics;
             ID3D12GraphicsCommandList7* _buffer = nullptr;
             ID3D12CommandAllocator* _pool = nullptr;
+
             void (IDX12CommandBuffer::*_insertBarriers_ptr)(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount)= nullptr;
         };
 

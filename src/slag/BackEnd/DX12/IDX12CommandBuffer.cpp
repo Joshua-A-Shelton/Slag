@@ -127,6 +127,7 @@ namespace slag
         void IDX12CommandBuffer::insertBarriersLegacy(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount)
         {
             std::vector<D3D12_RESOURCE_BARRIER> barriers;
+
             for(size_t i=0; i< imageBarrierCount; i++)
             {
 
@@ -137,13 +138,17 @@ namespace slag
                 auto layerCount = barrierDesc.layerCount != 0 ? barrierDesc.layerCount : image->layers() - barrierDesc.baseLayer;
                 UINT subresource = D3D12CalcSubresource(barrierDesc.baseMipLevel,barrierDesc.baseLayer,0,mipCount,layerCount);
 
-
-                barriers.push_back(
+                auto before = DX12Lib::stateLayout(barrierDesc.oldLayout);
+                auto after = DX12Lib::stateLayout(barrierDesc.newLayout);
+                if(before != after)
                 {
-                    .Type=D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-                    .Transition={.pResource=image->texture(),.Subresource=subresource,.StateBefore=DX12Lib::stateLayout(barrierDesc.oldLayout),.StateAfter=DX12Lib::stateLayout(barrierDesc.newLayout)}
-                });
-                if((barrierDesc.accessBefore | barrierDesc.accessAfter) != BarrierAccessFlags::NONE)
+                    barriers.push_back(
+                    {
+                        .Type=D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+                        .Transition={.pResource=image->texture(),.Subresource=subresource,.StateBefore=before,.StateAfter=after}
+                    });
+                }
+                if(before == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
                 {
                     barriers.push_back(
                     {
@@ -162,7 +167,11 @@ namespace slag
             {
                 barriers.push_back({.Type=D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_UAV,.UAV={.pResource =nullptr}});
             }
-            _buffer->ResourceBarrier(barriers.size(),barriers.data());
+            if(!barriers.empty())
+            {
+                _buffer->ResourceBarrier(barriers.size(),barriers.data());
+            }
+
         }
 
         void IDX12CommandBuffer::clearColorImage(Texture* texture, ClearColor color, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore, PipelineStages syncAfter)

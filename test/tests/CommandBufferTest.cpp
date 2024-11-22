@@ -8,7 +8,7 @@ TEST(CommandBuffer, StartFinished)
     ASSERT_TRUE(buffer->isFinished());
 }
 
-TEST(CommandBuffer, InsertBarriers)
+TEST(CommandBuffer, InsertBarriersMultiUseTexture)
 {
     std::unique_ptr<CommandBuffer> buffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Graphics));
     std::unique_ptr<Texture> img = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::SAMPLED_IMAGE | TextureUsageFlags::RENDER_TARGET_ATTACHMENT | TextureUsageFlags::STORAGE));
@@ -30,16 +30,68 @@ TEST(CommandBuffer, InsertBarriers)
         if(newLayout != Texture::UNDEFINED && newLayout != Texture::DEPTH_READ && newLayout != Texture::DEPTH_WRITE)
         {
             imageBarrier.newLayout = newLayout;
+        }
+        else
+        {
             break;
         }
-        imageBarrier.newLayout = newLayout;
         buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
         imageBarrier.oldLayout = newLayout;
 
     }
 
-    std::unique_ptr<Texture> depthImg = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,slag::Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::DEPTH_STENCIL_ATTACHMENT));
-    imageBarrier.texture = depthImg.get();
+    buffer->end();
+    SlagLib::graphicsCard()->graphicsQueue()->submit(buffer.get());
+    buffer->waitUntilFinished();
+
+}
+
+TEST(CommandBuffer, InsertBarriersSampledTexture)
+{
+    std::unique_ptr<CommandBuffer> buffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Graphics));
+    std::unique_ptr<Texture> img = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+    ImageBarrier imageBarrier
+            {
+                    .texture = img.get(),
+            };
+    buffer->begin();
+    std::vector<Texture::Layout> layouts =
+            {
+#define DEFINITION(slagName, vulkanName, directXName,directXResourceName) Texture::slagName,
+                    TEXTURE_LAYOUT_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            };
+    imageBarrier.oldLayout = Texture::UNDEFINED;
+    for(size_t i=0; i< layouts.size(); i++)
+    {
+        auto newLayout = layouts[i];
+        if(newLayout != Texture::UNDEFINED && newLayout != Texture::DEPTH_READ && newLayout != Texture::DEPTH_WRITE && newLayout != Texture::RENDER_TARGET && newLayout != Texture::UNORDERED)
+        {
+            imageBarrier.newLayout = newLayout;
+        }
+        else
+        {
+            continue;
+        }
+        buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
+        imageBarrier.oldLayout = newLayout;
+
+    }
+
+    buffer->end();
+    SlagLib::graphicsCard()->graphicsQueue()->submit(buffer.get());
+    buffer->waitUntilFinished();
+}
+
+TEST(CommandBuffer, InsertBarriersDepthTexture)
+{
+    std::unique_ptr<CommandBuffer> buffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Graphics));
+    std::unique_ptr<Texture> img = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,slag::Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::DEPTH_STENCIL_ATTACHMENT));
+    ImageBarrier imageBarrier
+            {
+                    .texture = img.get(),
+            };
+    buffer->begin();
     imageBarrier.oldLayout = Texture::UNDEFINED;
     imageBarrier.newLayout = Texture::GENERAL;
     buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
@@ -55,41 +107,47 @@ TEST(CommandBuffer, InsertBarriers)
     imageBarrier.oldLayout = Texture::DEPTH_READ;
     imageBarrier.newLayout = Texture::DEPTH_WRITE;
     buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-
-
     buffer->end();
     SlagLib::graphicsCard()->graphicsQueue()->submit(buffer.get());
     buffer->waitUntilFinished();
-    GTEST_FAIL();
+}
 
+TEST(CommandBuffer, InsertBarriersBuffers)
+{
+    GTEST_FAIL();
+}
+
+TEST(CommandBuffer, InsertBarriersGlobal)
+{
+    GTEST_FAIL();
 }
 
 TEST(CommandBuffer, ClearColorImage)
 {
-    GTEST_SKIP();
+    GTEST_FAIL();
 }
 
 TEST(CommandBuffer, UpdateMipChain)
 {
-    GTEST_SKIP();
+    GTEST_FAIL();
 }
 
 TEST(CommandBuffer, CopyBuffer)
 {
-    GTEST_SKIP();
+    GTEST_FAIL();
 }
 
 TEST(CommandBuffer, CopyImageToBuffer)
 {
-    GTEST_SKIP();
+    GTEST_FAIL();
 }
 
 TEST(CommandBuffer, CopyBufferToImage)
 {
-    GTEST_SKIP();
+    GTEST_FAIL();
 }
 
 TEST(CommandBuffer, Blit)
 {
-    GTEST_SKIP();
+    GTEST_FAIL();
 }

@@ -229,5 +229,10 @@ namespace slag
             };
         }
 
+        D3D12_RESOURCE_FLAGS DX12Texture::usage()const
+        {
+            return _usage;
+        }
+
     } // dx
 } // slag

@@ -33,6 +33,7 @@ namespace slag
             uint8_t sampleCount()override;
             ID3D12Resource* texture();
             DXGI_FORMAT underlyingFormat();
+            D3D12_RESOURCE_FLAGS usage()const;
             D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle();
 
         private:
