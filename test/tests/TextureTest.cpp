@@ -74,17 +74,7 @@ TEST(Texture, MipMapped)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Graphics));
     commandBuffer->begin();
     commandBuffer->updateMipChain(texture.get(),0,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,PipelineStageFlags::TRANSFER,PipelineStageFlags::ALL_GRAPHICS);
-    ImageBarrier flatMippedBarrier
-    {
-        .texture = flatMipped.get(),
-        .oldLayout = Texture::UNDEFINED,
-        .newLayout = Texture::TRANSFER_DESTINATION,
-        .accessBefore = BarrierAccessFlags::NONE,
-        .accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE,
-        .syncBefore = PipelineStageFlags::NONE,
-        .syncAfter = PipelineStageFlags::ALL_COMMANDS
-    };
-    commandBuffer->insertBarriers(&flatMippedBarrier,1, nullptr,0, nullptr,0);
+    commandBuffer->clearColorImage(flatMipped.get(),ClearColor{0,0,0,0},slag::Texture::UNDEFINED,slag::Texture::TRANSFER_DESTINATION,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
     Rectangle srcArea{.offset{},.extent{100,100}};
     Rectangle dstArea{.offset{},.extent{100,100}};
     commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,0,srcArea,flatMipped.get(),Texture::TRANSFER_DESTINATION,0,0,dstArea,Sampler::Filter::NEAREST);
@@ -100,10 +90,16 @@ TEST(Texture, MipMapped)
 
         dstArea.offset.y += dstArea.extent.height;
     }
-    flatMippedBarrier.oldLayout = Texture::TRANSFER_DESTINATION;
-    flatMippedBarrier.newLayout = Texture::TRANSFER_SOURCE;
-    flatMippedBarrier.accessBefore = BarrierAccessFlags::ALL_WRITE;
-    flatMippedBarrier.syncBefore = PipelineStageFlags::TRANSFER;
+    ImageBarrier flatMippedBarrier
+            {
+                    .texture = flatMipped.get(),
+                    .oldLayout = Texture::TRANSFER_DESTINATION,
+                    .newLayout = Texture::TRANSFER_SOURCE,
+                    .accessBefore = BarrierAccessFlags::ALL_WRITE,
+                    .accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE,
+                    .syncBefore = PipelineStageFlags::TRANSFER,
+                    .syncAfter = PipelineStageFlags::ALL_COMMANDS
+            };
     commandBuffer->insertBarriers(&flatMippedBarrier,1, nullptr,0, nullptr,0);
 
     commandBuffer->copyImageToBuffer(flatMipped.get(),Texture::Layout::TRANSFER_SOURCE,0,1,0,dataBuffer.get(),0);
@@ -112,7 +108,8 @@ TEST(Texture, MipMapped)
     commandBuffer->waitUntilFinished();
 
     int w, h, channels;
-    auto rawBytes = stbi_load(std::filesystem::absolute("resources/test-img-mipped.png").string().c_str(),&w,&h,&channels,4);
+    auto file = std::filesystem::absolute("resources/test-img-mipped.png");
+    auto rawBytes = stbi_load(file.string().c_str(),&w,&h,&channels,4);
     std::vector<std::byte> groundTruth(w*h*channels);
     memcpy(groundTruth.data(),rawBytes,w*h*channels);
     stbi_image_free(rawBytes);
@@ -121,7 +118,7 @@ TEST(Texture, MipMapped)
 
     for(size_t i=0; i< w*h*channels; i++)
     {
-        GTEST_ASSERT_TRUE(data[i] == groundTruth[i]);
+        GTEST_ASSERT_EQ(data[i],groundTruth[i]);
     }
 
 }

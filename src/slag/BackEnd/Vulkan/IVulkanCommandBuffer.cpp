@@ -42,6 +42,7 @@ namespace slag
 
         void IVulkanCommandBuffer::clearColorImage(Texture* texture, ClearColor color, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore, PipelineStages syncAfter)
         {
+            assert(commandType() == GpuQueue::Graphics && "clearColorImage is a graphics queue only operation");
             ImageBarrier barrier{.texture=texture,.oldLayout=currentLayout,.newLayout=Texture::TRANSFER_DESTINATION,.accessBefore=BarrierAccessFlags::NONE,.accessAfter=BarrierAccessFlags::TRANSFER_WRITE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::TRANSFER};
             insertBarriers(&barrier,1, nullptr,0, nullptr,0);
             auto tex = dynamic_cast<VulkanTexture*>(texture);
@@ -63,6 +64,7 @@ namespace slag
 
         void IVulkanCommandBuffer::updateMipChain(Texture* texture, uint32_t sourceMipLevel, Texture::Layout sourceLayout, Texture::Layout endingSourceLayout, Texture::Layout destinationLayout, Texture::Layout endingDestinationLayout, PipelineStages syncBefore, PipelineStages syncAfter)
         {
+            assert(commandType() == GpuQueue::Graphics && "clearColorImage is a graphics queue only operation");
             auto tex = dynamic_cast<VulkanTexture*>(texture);
             ImageBarrier barriers[2];
             barriers[0]={.texture=texture,.baseLayer=0,.layerCount=0,.baseMipLevel=sourceMipLevel,.mipCount=1,.oldLayout=sourceLayout,.newLayout=Texture::TRANSFER_SOURCE,.accessBefore=BarrierAccessFlags::ALL_WRITE | BarrierAccessFlags::TRANSFER_READ,.accessAfter=BarrierAccessFlags::NONE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::TRANSFER};
@@ -104,34 +106,6 @@ namespace slag
             destBarrier.syncAfter = syncAfter;
             insertBarriers(barriers,2, nullptr,0, nullptr,0);
         }
-
-        /*void IVulkanCommandBuffer::blit(Texture* source, Texture::Layout sourceLayout, Rectangle sourceRect, Texture* destination, Texture::Layout destinationLayout, Rectangle destinationRect, Sampler::Filter blitFilter)
-        {
-            for(int32_t i=0; i< destination->mipLevels(); i++)
-            {
-                Rectangle dstRect{.offset={destinationRect.offset.x/(i+1),destinationRect.offset.y/(i+1)},.extent={destination->width()>>i,destination->height()>>i}};
-                blit(source,sourceLayout,sourceRect,0,0,destination,destinationLayout,dstRect,i,0,blitFilter);
-            }
-        }*/
-
-        /*void IVulkanCommandBuffer::blit(Texture* source, Texture::Layout sourceLayout, Rectangle sourceRect, size_t sourceMipLevel, size_t sourceLayer, Texture* destination,
-                                        Texture::Layout destinationLayout, Rectangle destinationRect, size_t destinationMipLevel, size_t destinationLayer, Sampler::Filter blitFilter)
-        {
-            auto src = dynamic_cast<VulkanTexture*>(source);
-            auto dst = dynamic_cast<VulkanTexture*>(destination);
-            VkImageBlit blit{};
-            blit.srcOffsets[0] = {sourceRect.offset.x,sourceRect.offset.y,0};
-            blit.srcOffsets[1] = {static_cast<int32_t>(sourceRect.extent.width),static_cast<int32_t>(sourceRect.extent.height),1};
-            blit.srcSubresource.aspectMask = src->aspectFlags();
-            blit.srcSubresource.mipLevel = sourceMipLevel;
-            blit.srcSubresource.baseArrayLayer = 0;
-            blit.srcSubresource.layerCount = 1;
-            blit.dstSubresource.aspectMask = dst->aspectFlags();
-            blit.dstSubresource.mipLevel = destinationMipLevel;
-            blit.dstSubresource.baseArrayLayer = 0;
-            blit.dstSubresource.layerCount = 1;
-            vkCmdBlitImage(_buffer,src->image(),VulkanLib::layout(sourceLayout),dst->image(),VulkanLib::layout(destinationLayout),1,&blit,VulkanLib::filter(blitFilter));
-        }*/
 
         void IVulkanCommandBuffer::insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount)
         {
@@ -245,6 +219,7 @@ namespace slag
 
         void IVulkanCommandBuffer::blit(Texture* source, Texture::Layout sourceLayout, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceArea, Texture* destination,Texture::Layout destinationLayout, uint32_t destinationLayer, uint32_t destinationMip, Rectangle destinationArea, Sampler::Filter filter)
         {
+            assert(commandType() == GpuQueue::Graphics && "clearColorImage is a graphics queue only operation");
             auto src = dynamic_cast<VulkanTexture*>(source);
             auto dst = dynamic_cast<VulkanTexture*>(destination);
             VkImageBlit blit{};

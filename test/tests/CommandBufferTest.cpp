@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "slag/SlagLib.h"
 #include <stb_image.h>
+#include <lodepng.h>
 
 using namespace slag;
 
@@ -23,6 +24,19 @@ public:
     virtual void SetUp() {}
 
     virtual void TearDown() {}
+
+    bool IsQueueGraphics(GpuQueue::QueueType type)
+    {
+        switch (type)
+        {
+            case GpuQueue::Graphics:
+                return true;
+            case GpuQueue::Compute:
+                return SlagLib::graphicsCard()->computeQueue()->type() == slag::GpuQueue::Graphics;
+            case GpuQueue::Transfer:
+                return SlagLib::graphicsCard()->transferQueue()->type() == slag::GpuQueue::Graphics;
+        }
+    }
 
 };
 
@@ -240,6 +254,7 @@ TEST_F(CommandBufferTests, ClearColorImage)
 
 TEST_F(CommandBufferTests, UpdateMipChain)
 {
+
     std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture("resources/test-img.png",5,TextureUsageFlags::SAMPLED_IMAGE,false,Texture::Layout::TRANSFER_SOURCE));
 
     std::unique_ptr<Texture> flatMipped = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,150,100,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
@@ -248,17 +263,7 @@ TEST_F(CommandBufferTests, UpdateMipChain)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Graphics));
     commandBuffer->begin();
     commandBuffer->updateMipChain(texture.get(),0,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,PipelineStageFlags::TRANSFER,PipelineStageFlags::ALL_GRAPHICS);
-    ImageBarrier flatMippedBarrier
-            {
-                    .texture = flatMipped.get(),
-                    .oldLayout = Texture::UNDEFINED,
-                    .newLayout = Texture::TRANSFER_DESTINATION,
-                    .accessBefore = BarrierAccessFlags::NONE,
-                    .accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE,
-                    .syncBefore = PipelineStageFlags::NONE,
-                    .syncAfter = PipelineStageFlags::ALL_COMMANDS
-            };
-    commandBuffer->insertBarriers(&flatMippedBarrier,1, nullptr,0, nullptr,0);
+    commandBuffer->clearColorImage(flatMipped.get(),ClearColor{0,0,0,0},slag::Texture::UNDEFINED,slag::Texture::TRANSFER_DESTINATION,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
     Rectangle srcArea{.offset{},.extent{100,100}};
     Rectangle dstArea{.offset{},.extent{100,100}};
     commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,0,srcArea,flatMipped.get(),Texture::TRANSFER_DESTINATION,0,0,dstArea,Sampler::Filter::NEAREST);
@@ -274,10 +279,16 @@ TEST_F(CommandBufferTests, UpdateMipChain)
 
         dstArea.offset.y += dstArea.extent.height;
     }
-    flatMippedBarrier.oldLayout = Texture::TRANSFER_DESTINATION;
-    flatMippedBarrier.newLayout = Texture::TRANSFER_SOURCE;
-    flatMippedBarrier.accessBefore = BarrierAccessFlags::ALL_WRITE;
-    flatMippedBarrier.syncBefore = PipelineStageFlags::TRANSFER;
+    ImageBarrier flatMippedBarrier
+    {
+        .texture = flatMipped.get(),
+        .oldLayout = Texture::TRANSFER_DESTINATION,
+        .newLayout = Texture::TRANSFER_SOURCE,
+        .accessBefore = BarrierAccessFlags::ALL_WRITE,
+        .accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE,
+        .syncBefore = PipelineStageFlags::TRANSFER,
+        .syncAfter = PipelineStageFlags::ALL_COMMANDS
+    };
     commandBuffer->insertBarriers(&flatMippedBarrier,1, nullptr,0, nullptr,0);
 
     commandBuffer->copyImageToBuffer(flatMipped.get(),Texture::Layout::TRANSFER_SOURCE,0,1,0,dataBuffer.get(),0);
@@ -286,15 +297,17 @@ TEST_F(CommandBufferTests, UpdateMipChain)
     commandBuffer->waitUntilFinished();
 
     int w, h, channels;
-    auto rawBytes = stbi_load(std::filesystem::absolute("resources/test-img-mipped.png").string().c_str(),&w,&h,&channels,4);
+    auto file = std::filesystem::absolute("resources/test-img-mipped.png");
+    auto rawBytes = stbi_load(file.string().c_str(),&w,&h,&channels,4);
     std::vector<std::byte> groundTruth(w*h*channels);
     memcpy(groundTruth.data(),rawBytes,w*h*channels);
     stbi_image_free(rawBytes);
 
     auto data = dataBuffer->downloadData();
+
     for(size_t i=0; i< w*h*channels; i++)
     {
-        GTEST_ASSERT_TRUE(data[i] == groundTruth[i]);
+        GTEST_ASSERT_EQ(data[i],groundTruth[i]);
     }
 }
 
@@ -399,4 +412,113 @@ TEST_F(CommandBufferTests, CopyBufferToImage)
 TEST_F(CommandBufferTests, Blit)
 {
     GTEST_FAIL();
+}
+//--------------------------------------------------------------------------------DEATH TESTS-----------------------------------------------------------------------------------------------------------
+TEST_F(CommandBufferTests, DisallowCompute_clearColorImage)
+{
+#ifdef NDEBUG
+    GTEST_SKIP();
+#endif
+    if(IsQueueGraphics(GpuQueue::Compute))
+    {
+        GTEST_SKIP();
+    }
+
+
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Compute));
+    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,10,10,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+    commandBuffer->begin();
+    ASSERT_DEATH(commandBuffer->clearColorImage(texture.get(),ClearColor{0,0,0,0},Texture::UNDEFINED,Texture::GENERAL,PipelineStageFlags::NONE,PipelineStageFlags::ALL_COMMANDS),"");
+}
+
+TEST_F(CommandBufferTests, DisallowTransfer_clearColorImage)
+{
+#ifdef NDEBUG
+    GTEST_SKIP();
+#endif
+    if(IsQueueGraphics(GpuQueue::Transfer))
+    {
+        GTEST_SKIP();
+    }
+
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Transfer));
+    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,10,10,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+    commandBuffer->begin();
+    ASSERT_DEATH(commandBuffer->clearColorImage(texture.get(),ClearColor{0,0,0,0},Texture::UNDEFINED,Texture::GENERAL,PipelineStageFlags::NONE,PipelineStageFlags::ALL_COMMANDS),"");
+}
+
+TEST_F(CommandBufferTests, DisallowCompute_updateMipChain)
+{
+#ifdef NDEBUG
+    GTEST_SKIP();
+#endif
+    if(IsQueueGraphics(GpuQueue::Compute))
+    {
+        GTEST_SKIP();
+    }
+
+
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Compute));
+    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,10,10,2,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+    commandBuffer->begin();
+    ASSERT_DEATH(commandBuffer->updateMipChain(texture.get(),0,slag::Texture::UNDEFINED,slag::Texture::GENERAL,Texture::UNDEFINED,Texture::GENERAL,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS),"");
+}
+
+TEST_F(CommandBufferTests, DisallowTransfer_updateMipChain)
+{
+#ifdef NDEBUG
+    GTEST_SKIP();
+#endif
+    if(IsQueueGraphics(GpuQueue::Transfer))
+    {
+        GTEST_SKIP();
+    }
+
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Transfer));
+    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,10,10,2,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+    commandBuffer->begin();
+    ASSERT_DEATH(commandBuffer->updateMipChain(texture.get(),0,slag::Texture::UNDEFINED,slag::Texture::GENERAL,Texture::UNDEFINED,Texture::GENERAL,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS),"");
+}
+
+TEST_F(CommandBufferTests, DisallowCompute_blit)
+{
+#ifdef NDEBUG
+    GTEST_SKIP();
+#endif
+    if(IsQueueGraphics(GpuQueue::Compute))
+    {
+        GTEST_SKIP();
+    }
+
+
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Compute));
+    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,10,10,2,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+    commandBuffer->begin();
+    ImageBarrier barrier{.texture=texture.get(),.baseLayer=0,.layerCount=1,.baseMipLevel=0,.mipCount=1,.oldLayout=Texture::UNDEFINED,.newLayout=Texture::TRANSFER_SOURCE};
+    commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+    barrier.baseMipLevel = 1;
+    barrier.newLayout = slag::Texture::TRANSFER_DESTINATION;
+    commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+    ASSERT_DEATH(commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,0,Rectangle{{0,0,},{10,10}},texture.get(),Texture::TRANSFER_DESTINATION,0,1,Rectangle{{0,0},{5,5}},Sampler::NEAREST),"");
+}
+
+TEST_F(CommandBufferTests, DisallowTransfer_blit)
+{
+#ifdef NDEBUG
+    GTEST_SKIP();
+#endif
+    if(IsQueueGraphics(GpuQueue::Transfer))
+    {
+        GTEST_SKIP();
+    }
+
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Transfer));
+    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,10,10,2,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+    commandBuffer->begin();
+    ImageBarrier barrier{.texture=texture.get(),.baseLayer=0,.layerCount=1,.baseMipLevel=0,.mipCount=1,.oldLayout=Texture::UNDEFINED,.newLayout=Texture::TRANSFER_SOURCE};
+    commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+    barrier.baseMipLevel = 1;
+    barrier.newLayout = slag::Texture::TRANSFER_DESTINATION;
+    commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+    ASSERT_DEATH(commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,0,Rectangle{{0,0,},{10,10}},texture.get(),Texture::TRANSFER_DESTINATION,0,1,Rectangle{{0,0},{5,5}},Sampler::NEAREST),"");
 }

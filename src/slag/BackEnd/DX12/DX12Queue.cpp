@@ -14,6 +14,7 @@ namespace slag
         DX12Queue::DX12Queue(ID3D12CommandQueue* queue, GpuQueue::QueueType type)
         {
             _queue = queue;
+            _type = type;
         }
 
         DX12Queue::~DX12Queue()
