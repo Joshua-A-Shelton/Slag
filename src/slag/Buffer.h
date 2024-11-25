@@ -29,6 +29,11 @@ namespace slag
             //Indicates the buffer is suitable as a parameter to indirect calls
             INDIRECT_BUFFER = 0b00001000
         };
+        enum IndexSize
+        {
+            UINT16,
+            UINT32
+        };
         virtual ~Buffer()=default;
         virtual void update(size_t offset, void* data, size_t dataLength)=0;
         virtual std::vector<std::byte> downloadData()=0;

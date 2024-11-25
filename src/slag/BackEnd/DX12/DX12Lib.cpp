@@ -249,7 +249,7 @@ namespace slag
 
         DX12Lib* DX12Lib::get()
         {
-            return dynamic_cast<DX12Lib*>(lib::BackEndLib::get());
+            return static_cast<DX12Lib*>(lib::BackEndLib::get());
         }
 
         DX12GraphicsCard* DX12Lib::card()

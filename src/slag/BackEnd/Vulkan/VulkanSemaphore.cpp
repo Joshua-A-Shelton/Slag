@@ -86,7 +86,7 @@ namespace slag
             std::vector<uint64_t> waitValues(count);
             for(auto i=0; i< count; i++)
             {
-                semaphores[i] = dynamic_cast<VulkanSemaphore*>(values[i].semaphore)->_semaphore;
+                semaphores[i] = static_cast<VulkanSemaphore*>(values[i].semaphore)->_semaphore;
                 waitValues[i] = values[i].value;
             }
 

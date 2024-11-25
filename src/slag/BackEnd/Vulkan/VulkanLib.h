@@ -40,6 +40,7 @@ namespace slag
             static VkColorComponentFlags colorComponents(Color::ComponentFlags componentFlags);
             static VkLogicOp logicOp(Operations::LogicalOperation op);
             static VkStencilOp stencilOp(Operations::StencilOperation op);
+            static VkIndexType indexType(Buffer::IndexSize iSize);
 
             VulkanLib(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VulkanGraphicsCard* card);
             ~VulkanLib();

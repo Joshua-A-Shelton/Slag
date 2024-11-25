@@ -134,7 +134,7 @@ namespace slag
 
         VulkanLib* VulkanLib::get()
         {
-            return dynamic_cast<VulkanLib*>(lib::BackEndLib::get());
+            return static_cast<VulkanLib*>(lib::BackEndLib::get());
         }
 
         VulkanGraphicsCard* VulkanLib::card()
@@ -444,6 +444,15 @@ namespace slag
 #undef DEFINITION
             }
             return VK_STENCIL_OP_KEEP;
+        }
+
+        VkIndexType VulkanLib::indexType(Buffer::IndexSize iSize)
+        {
+            if(iSize == Buffer::UINT16)
+            {
+                return VK_INDEX_TYPE_UINT16;
+            }
+            return VK_INDEX_TYPE_UINT32;
         }
 
         VulkanLib::VulkanLib(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VulkanGraphicsCard* card)

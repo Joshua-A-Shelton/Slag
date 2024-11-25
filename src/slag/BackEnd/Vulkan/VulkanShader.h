@@ -22,6 +22,7 @@ namespace slag
             DescriptorGroup* operator[](size_t index)override;
             size_t pushConstantRangeCount()override;
             PushConstantRange pushConstantRange(size_t index)override;
+            VkPipeline pipeline()const;
         private:
             void move(VulkanShader&& from);
             std::vector<VulkanDescriptorGroup> _descriptorGroups;

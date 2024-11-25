@@ -24,7 +24,7 @@ namespace slag
                 _frames[i].commandBuffer()->waitUntilFinished();
             }
             DX12Semaphore semaphore(0,true);
-            dynamic_cast<DX12Queue*>(DX12Lib::card()->graphicsQueue())->signal(&semaphore,1);
+            static_cast<DX12Queue*>(DX12Lib::card()->graphicsQueue())->signal(&semaphore,1);
             semaphore.waitForValue(1);
             _swapchain->Release();
         }
@@ -55,7 +55,7 @@ namespace slag
 
             Microsoft::WRL::ComPtr<IDXGISwapChain1> swapChain1;
             //TODO: I apparently cant use sRGB formats for swapchain images, I think I need to force non sRGB as the image type, and use sRGB format as render target? see bottom of accepted answer on https://gamedev.stackexchange.com/questions/149822/direct3d-12-cant-create-a-swap-chain
-            DX12Lib::card()->dxgiFactory()->CreateSwapChainForHwnd(dynamic_cast<DX12Queue*>(DX12Lib::card()->graphicsQueue())->underlyingQueue(),_surface,&swapChainDesc, nullptr, nullptr,&swapChain1);
+            DX12Lib::card()->dxgiFactory()->CreateSwapChainForHwnd(static_cast<DX12Queue*>(DX12Lib::card()->graphicsQueue())->underlyingQueue(),_surface,&swapChainDesc, nullptr, nullptr,&swapChain1);
             //this is the reason we have to wrap the swapchain in the ComPtr, I don't know how to do this without it
             swapChain1.As(&_swapchain);
 

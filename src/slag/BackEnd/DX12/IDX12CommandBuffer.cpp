@@ -61,7 +61,7 @@ namespace slag
                 for (size_t i = 0; i < imageBarrierCount; i++)
                 {
                     auto& barrier = imageBarriers[i];
-                    auto image = dynamic_cast<DX12Texture*>(barrier.texture);
+                    auto image = static_cast<DX12Texture*>(barrier.texture);
                     auto& dxBarrier = textureBarriers[i];
                     dxBarrier.pResource = image->texture();
                     dxBarrier.LayoutBefore = DX12Lib::barrierLayout(barrier.oldLayout);
@@ -93,7 +93,7 @@ namespace slag
                 for (size_t i = 0; i < bufferBarrierCount; i++)
                 {
                     auto& barrierDesc = bufferBarriers[i];
-                    auto buffer = dynamic_cast<DX12Buffer*>(barrierDesc.buffer);
+                    auto buffer = static_cast<DX12Buffer*>(barrierDesc.buffer);
                     auto& barrier = gpuBufferBarriers[i];
                     barrier.pResource = buffer->underlyingBuffer();
                     barrier.AccessBefore = std::bit_cast<D3D12_BARRIER_ACCESS>(barrierDesc.accessBefore);
@@ -132,7 +132,7 @@ namespace slag
             {
 
                 auto& barrierDesc = imageBarriers[i];
-                auto image = dynamic_cast<DX12Texture*>(barrierDesc.texture);
+                auto image = static_cast<DX12Texture*>(barrierDesc.texture);
                 //TODO, not sure about plane slice being 0, especially for depth/stencil
                 auto mipCount = barrierDesc.mipCount != 0 ? barrierDesc.mipCount : image->mipLevels() - barrierDesc.baseMipLevel;
                 auto layerCount = barrierDesc.layerCount != 0 ? barrierDesc.layerCount : image->layers() - barrierDesc.baseLayer;
@@ -160,7 +160,7 @@ namespace slag
             for(size_t i=0; i< bufferBarrierCount; i++)
             {
                 auto& barrierDesc = bufferBarriers[i];
-                auto buffer = dynamic_cast<DX12Buffer*>(barrierDesc.buffer);
+                auto buffer = static_cast<DX12Buffer*>(barrierDesc.buffer);
                 barriers.push_back({.Type=D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_UAV,.UAV={.pResource =buffer->underlyingBuffer()}});
             }
             if(memoryBarrierCount)
@@ -177,7 +177,7 @@ namespace slag
         void IDX12CommandBuffer::clearColorImage(Texture* texture, ClearColor color, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore, PipelineStages syncAfter)
         {
             assert(commandType() == GpuQueue::Graphics && "clearColorImage is a graphics queue only operation");
-            auto image = dynamic_cast<DX12Texture*>(texture);
+            auto image = static_cast<DX12Texture*>(texture);
             ImageBarrier barrier{.texture=texture,.oldLayout=currentLayout,.newLayout=Texture::RENDER_TARGET,.accessBefore=BarrierAccessFlags::NONE,.accessAfter=BarrierAccessFlags::NONE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::NONE};
             insertBarriers(&barrier,1, nullptr,0, nullptr,0);
             _buffer->ClearRenderTargetView(image->descriptorHandle(),color.floats,0, nullptr);
@@ -199,15 +199,15 @@ namespace slag
 
         void IDX12CommandBuffer::copyBuffer(Buffer* source, size_t sourceOffset, size_t length, Buffer* destination, size_t destinationOffset)
         {
-            DX12Buffer* src = dynamic_cast<DX12Buffer*>(source);
-            DX12Buffer* dst = dynamic_cast<DX12Buffer*>(destination);
+            DX12Buffer* src = static_cast<DX12Buffer*>(source);
+            DX12Buffer* dst = static_cast<DX12Buffer*>(destination);
             _buffer->CopyBufferRegion(dst->underlyingBuffer(),destinationOffset,src->underlyingBuffer(),sourceOffset,length);
         }
 
         void IDX12CommandBuffer::copyImageToBuffer(Texture* texture, Texture::Layout layout, uint32_t baseLayer, uint32_t layerCount, uint32_t mip, Buffer* buffer, size_t bufferOffset)
         {
-            auto tex = dynamic_cast<DX12Texture*>(texture);
-            auto buf = dynamic_cast<DX12Buffer*>(buffer);
+            auto tex = static_cast<DX12Texture*>(texture);
+            auto buf = static_cast<DX12Buffer*>(buffer);
 
             D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
             footprint.Offset = bufferOffset;
@@ -224,8 +224,8 @@ namespace slag
 
         void IDX12CommandBuffer::copyBufferToImage(Buffer* source, size_t sourceOffset, Texture* destination, Texture::Layout destinationLayout, size_t layer, size_t mipLevel)
         {
-            auto tex = dynamic_cast<DX12Texture*>(destination);
-            auto buf = dynamic_cast<DX12Buffer*>(source);
+            auto tex = static_cast<DX12Texture*>(destination);
+            auto buf = static_cast<DX12Buffer*>(source);
 
             D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
             footprint.Offset = sourceOffset;
@@ -245,6 +245,112 @@ namespace slag
         {
             assert(commandType() == GpuQueue::Graphics && "clearColorImage is a graphics queue only operation");
             throw std::runtime_error("IDX12CommandBuffer::blit is not implemented");
+        }
+
+        void IDX12CommandBuffer::beginQuery(QueryPool* queryPool, uint32_t query, bool precise)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::beginQuery is not implemented");
+        }
+
+        void IDX12CommandBuffer::beginRendering(Attachment* colorAttachments, size_t colorAttachmentCount, Attachment* depthAttachment)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::beginRendering is not implemented");
+        }
+
+        void IDX12CommandBuffer::bindIndexBuffer(Buffer* buffer, Buffer::IndexSize indexSize, size_t offset)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::bindIndexBuffer is not implemented");
+        }
+
+        void IDX12CommandBuffer::bindGraphicsShader(Shader* shader)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::bindGraphicsShader is not implemented");
+        }
+
+        void IDX12CommandBuffer::bindComputeShader(Shader* shader)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::bindComputeShader is not implemented");
+        }
+
+        void IDX12CommandBuffer::bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, size_t* offsets, size_t bindingCount)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::bindVertexBuffers is not implemented");
+        }
+
+        void IDX12CommandBuffer::clearDepthStencilImage(Texture* texture, ClearDepthStencil clear, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore,
+                                                        PipelineStages syncAfter)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::clearDepthStencilImage is not implemented");
+        }
+
+        void IDX12CommandBuffer::copyQueryPoolResults(QueryPool* queryPool, uint32_t firstQuery, uint32_t queryCount, Buffer* destination, size_t offset, size_t stride, QueryPoolResultFlag flags)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::copyQueryPoolResults is not implemented");
+        }
+
+        void IDX12CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::dispatch is not implemented");
+        }
+
+        void IDX12CommandBuffer::dispatchBase(uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::dispatchBase is not implemented");
+        }
+
+        void IDX12CommandBuffer::dispatchIndirect(Buffer* buffer, size_t offset)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::dispatchIndirect is not implemented");
+        }
+
+        void IDX12CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::draw is not implemented");
+        }
+
+        void IDX12CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::drawIndexed is not implemented");
+        }
+
+        void IDX12CommandBuffer::drawIndexedIndirect(Buffer* buffer, size_t offset, uint32_t drawCount, uint32_t stride)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::drawIndexedIndirect is not implemented");
+        }
+
+        void IDX12CommandBuffer::drawIndexedIndirectCount(Buffer* buffer, size_t offset, Buffer* countBuffer, size_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::drawIndexedIndirectCount is not implemented");
+        }
+
+        void IDX12CommandBuffer::drawIndirect(Buffer* buffer, size_t offset, uint32_t drawCount, uint32_t stride)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::drawIndirect is not implemented");
+        }
+
+        void IDX12CommandBuffer::drawIndirectCount(Buffer* buffer, size_t offset, Buffer* countBuffer, size_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::drawIndirectCount is not implemented");
+        }
+
+        void IDX12CommandBuffer::endQuery(QueryPool* pool, uint32_t query)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::endQuery is not implemented");
+        }
+
+        void IDX12CommandBuffer::endRendering()
+        {
+            throw std::runtime_error("IDX12CommandBuffer::endRendering is not implemented");
+        }
+
+        void IDX12CommandBuffer::fillBuffer(Buffer* buffer, size_t offset, size_t length, uint32_t data)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::fillBuffer is not implemented");
+        }
+
+        void IDX12CommandBuffer::resetQueryPool(QueryPool* pool, uint32_t firstQuery, uint32_t queryCount)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::resetQueryPool is not implemented");
         }
 
     } // dx

@@ -69,7 +69,7 @@ namespace slag
             {
                 events[i] = CreateEvent(nullptr,FALSE,FALSE,nullptr);
                 auto& v = values[i];
-                auto semaphore = dynamic_cast<DX12Semaphore*>(v.semaphore);
+                auto semaphore = static_cast<DX12Semaphore*>(v.semaphore);
                 semaphore->fence()->SetEventOnCompletion(v.value, events[i]);
             }
 

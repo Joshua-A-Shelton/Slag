@@ -49,7 +49,7 @@ namespace slag
 
         void DX12Queue::submit(CommandBuffer* commands)
         {
-            auto buffer = dynamic_cast<DX12CommandBuffer*>(commands);
+            auto buffer = static_cast<DX12CommandBuffer*>(commands);
             buffer->_finished = new DX12Semaphore(0,true);
             ID3D12CommandList* lists[1]{buffer->_buffer};
             _queue->ExecuteCommandLists(1,lists);
@@ -71,7 +71,7 @@ namespace slag
                 std::vector<ID3D12Fence*> signals(bufferCount, nullptr);
                 for(size_t  i =0; i< bufferCount; i++)
                 {
-                    auto buffer = dynamic_cast<DX12CommandBuffer*>(commandBuffers[i]);
+                    auto buffer = static_cast<DX12CommandBuffer*>(commandBuffers[i]);
                     buffer->_finished = new DX12Semaphore(0,true);
                     commands[i] = buffer->_buffer;
                     signals[i] = buffer->_finished->fence();
@@ -88,14 +88,14 @@ namespace slag
         void DX12Queue::submit(CommandBuffer* commands, SemaphoreValue& signalFinished)
         {
             submit(commands);
-            auto semaphore = dynamic_cast<DX12Semaphore*>(signalFinished.semaphore);
+            auto semaphore = static_cast<DX12Semaphore*>(signalFinished.semaphore);
             _queue->Signal(semaphore->fence(),signalFinished.value);
         }
 
         void DX12Queue::submit(CommandBuffer** commandBuffers, size_t bufferCount, SemaphoreValue& signalFinished, bool forceDependency)
         {
             submit(commandBuffers,bufferCount,forceDependency);
-            auto semaphore = dynamic_cast<DX12Semaphore*>(signalFinished.semaphore);
+            auto semaphore = static_cast<DX12Semaphore*>(signalFinished.semaphore);
             _queue->Signal(semaphore->fence(),signalFinished.value);
         }
 
@@ -103,25 +103,25 @@ namespace slag
         {
             for(size_t i=0; i < waitCount; i++)
             {
-                auto semaphore = dynamic_cast<DX12Semaphore*>(waitOnSemaphores[i].semaphore);
+                auto semaphore = static_cast<DX12Semaphore*>(waitOnSemaphores[i].semaphore);
                 _queue->Wait(semaphore->fence(),waitOnSemaphores[i].value);
             }
             std::vector<ID3D12CommandList*> buffers(bufferCount, nullptr);
             for(size_t i=0; i< bufferCount; i++)
             {
-                auto cb = dynamic_cast<DX12CommandBuffer*>(commandBuffers[i]);
+                auto cb = static_cast<DX12CommandBuffer*>(commandBuffers[i]);
                 buffers[i] = cb->_buffer;
                 cb->_finished = new DX12Semaphore(0,true);
             }
             _queue->ExecuteCommandLists(bufferCount,buffers.data());
             for(size_t i=0; i< signalCount; i++)
             {
-                auto semaphore = dynamic_cast<DX12Semaphore*>(signalSemaphores[i].semaphore);
+                auto semaphore = static_cast<DX12Semaphore*>(signalSemaphores[i].semaphore);
                 _queue->Signal(semaphore->fence(),signalSemaphores[i].value);
             }
             for(size_t i=0; i<bufferCount; i++)
             {
-                auto cb = dynamic_cast<DX12CommandBuffer*>(commandBuffers[i]);
+                auto cb = static_cast<DX12CommandBuffer*>(commandBuffers[i]);
                 _queue->Signal(cb->_finished->fence(),1);
             }
 
@@ -129,7 +129,7 @@ namespace slag
 
         void DX12Queue::submit(CommandBuffer** commandBuffers, size_t bufferCount, SemaphoreValue* waitOnSemaphores, size_t waitCount, SemaphoreValue* signalSemaphores, size_t signalCount, Frame* presentFrame)
         {
-            auto frame = dynamic_cast<DX12Frame*>(presentFrame);
+            auto frame = static_cast<DX12Frame*>(presentFrame);
             submit(commandBuffers,bufferCount,waitOnSemaphores,waitCount,signalSemaphores,signalCount);
             UINT flags = frame->from()->presentMode() == Swapchain::MAILBOX ? DXGI_PRESENT_DO_NOT_SEQUENCE : 0;
             frame->from()->underlyingSwapchain()->Present(0,flags);

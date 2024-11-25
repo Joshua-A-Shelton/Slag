@@ -3,6 +3,7 @@
 #include "VulkanLib.h"
 #include "VulkanTexture.h"
 #include "VulkanBuffer.h"
+#include "VulkanShader.h"
 
 namespace slag
 {
@@ -45,7 +46,7 @@ namespace slag
             assert(commandType() == GpuQueue::Graphics && "clearColorImage is a graphics queue only operation");
             ImageBarrier barrier{.texture=texture,.oldLayout=currentLayout,.newLayout=Texture::TRANSFER_DESTINATION,.accessBefore=BarrierAccessFlags::NONE,.accessAfter=BarrierAccessFlags::TRANSFER_WRITE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::TRANSFER};
             insertBarriers(&barrier,1, nullptr,0, nullptr,0);
-            auto tex = dynamic_cast<VulkanTexture*>(texture);
+            auto tex = static_cast<VulkanTexture*>(texture);
             VkImageSubresourceRange range{};
             range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             range.baseArrayLayer = 0;
@@ -65,7 +66,7 @@ namespace slag
         void IVulkanCommandBuffer::updateMipChain(Texture* texture, uint32_t sourceMipLevel, Texture::Layout sourceLayout, Texture::Layout endingSourceLayout, Texture::Layout destinationLayout, Texture::Layout endingDestinationLayout, PipelineStages syncBefore, PipelineStages syncAfter)
         {
             assert(commandType() == GpuQueue::Graphics && "clearColorImage is a graphics queue only operation");
-            auto tex = dynamic_cast<VulkanTexture*>(texture);
+            auto tex = static_cast<VulkanTexture*>(texture);
             ImageBarrier barriers[2];
             barriers[0]={.texture=texture,.baseLayer=0,.layerCount=0,.baseMipLevel=sourceMipLevel,.mipCount=1,.oldLayout=sourceLayout,.newLayout=Texture::TRANSFER_SOURCE,.accessBefore=BarrierAccessFlags::ALL_WRITE | BarrierAccessFlags::TRANSFER_READ,.accessAfter=BarrierAccessFlags::NONE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::TRANSFER};
             barriers[1]={.texture=texture,.baseLayer=0,.layerCount=0,.baseMipLevel=sourceMipLevel+1,.mipCount=0,.oldLayout=destinationLayout,.newLayout=Texture::TRANSFER_DESTINATION,.accessBefore=BarrierAccessFlags::NONE,.accessAfter=BarrierAccessFlags::NONE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::TRANSFER};
@@ -114,7 +115,7 @@ namespace slag
             {
                 auto& vkbarrier = imageMemoryBarriers[i];
                 auto barrier = imageBarriers[i];
-                auto texture = dynamic_cast<VulkanTexture*>(barrier.texture);
+                auto texture = static_cast<VulkanTexture*>(barrier.texture);
                 vkbarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
                 vkbarrier.srcAccessMask = std::bit_cast<VkAccessFlags>(barrier.accessBefore);
                 vkbarrier.dstAccessMask = std::bit_cast<VkAccessFlags>(barrier.accessAfter);
@@ -131,7 +132,7 @@ namespace slag
             {
                 auto& bufferBarrier = bufferMemoryBarriers[i];
                 auto bufferBarrierDesc = bufferBarriers[i];
-                auto buffer = dynamic_cast<VulkanBuffer*>(bufferBarrierDesc.buffer);
+                auto buffer = static_cast<VulkanBuffer*>(bufferBarrierDesc.buffer);
                 bufferBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
                 bufferBarrier.buffer = buffer->underlyingBuffer();
                 bufferBarrier.srcAccessMask = std::bit_cast<VkAccessFlags>(bufferBarrierDesc.accessBefore);
@@ -166,8 +167,8 @@ namespace slag
 
         void IVulkanCommandBuffer::copyBuffer(Buffer* source, size_t sourceOffset, size_t length, Buffer* destination, size_t destinationOffset)
         {
-            VulkanBuffer* src = dynamic_cast<VulkanBuffer*>(source);
-            VulkanBuffer* dst = dynamic_cast<VulkanBuffer*>(destination);
+            VulkanBuffer* src = static_cast<VulkanBuffer*>(source);
+            VulkanBuffer* dst = static_cast<VulkanBuffer*>(destination);
 
             VkBufferCopy copyRegion = {};
             copyRegion.size = length;
@@ -180,8 +181,8 @@ namespace slag
 
         void IVulkanCommandBuffer::copyImageToBuffer(Texture* texture, Texture::Layout layout, uint32_t baseLayer, uint32_t layerCount, uint32_t mip, Buffer* buffer,size_t bufferOffset)
         {
-            auto tex = dynamic_cast<VulkanTexture*>(texture);
-            auto buf = dynamic_cast<VulkanBuffer*>(buffer);
+            auto tex = static_cast<VulkanTexture*>(texture);
+            auto buf = static_cast<VulkanBuffer*>(buffer);
             VkBufferImageCopy copyRegion
             {
                 .bufferOffset = bufferOffset,
@@ -197,8 +198,8 @@ namespace slag
 
         void IVulkanCommandBuffer::copyBufferToImage(Buffer* source, size_t sourceOffset, Texture* destination, Texture::Layout destinationLayout, size_t layer, size_t mipLevel)
         {
-            auto image = dynamic_cast<VulkanTexture*>(destination);
-            auto buffer = dynamic_cast<VulkanBuffer*>(source);
+            auto image = static_cast<VulkanTexture*>(destination);
+            auto buffer = static_cast<VulkanBuffer*>(source);
             uint32_t w = std::max((uint32_t)1,image->width()>>mipLevel);
             uint32_t h = std::max((uint32_t)1,image->height()>>mipLevel);
 
@@ -220,8 +221,8 @@ namespace slag
         void IVulkanCommandBuffer::blit(Texture* source, Texture::Layout sourceLayout, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceArea, Texture* destination,Texture::Layout destinationLayout, uint32_t destinationLayer, uint32_t destinationMip, Rectangle destinationArea, Sampler::Filter filter)
         {
             assert(commandType() == GpuQueue::Graphics && "clearColorImage is a graphics queue only operation");
-            auto src = dynamic_cast<VulkanTexture*>(source);
-            auto dst = dynamic_cast<VulkanTexture*>(destination);
+            auto src = static_cast<VulkanTexture*>(source);
+            auto dst = static_cast<VulkanTexture*>(destination);
             VkImageBlit blit{};
             blit.srcOffsets[0] = {sourceArea.offset.x,sourceArea.offset.y,0};
             blit.srcOffsets[1] = {static_cast<int32_t>(sourceArea.extent.width + sourceArea.offset.x),static_cast<int32_t>(sourceArea.extent.height + sourceArea.offset.y),1};
@@ -237,6 +238,170 @@ namespace slag
             blit.dstSubresource.layerCount = 1;
             vkCmdBlitImage(_buffer,src->image(),VulkanLib::layout(sourceLayout),dst->image(),VulkanLib::layout(destinationLayout),1,&blit,VulkanLib::filter(filter));
         }
+
+        void IVulkanCommandBuffer::beginQuery(QueryPool* queryPool, uint32_t query, bool precise)
+        {
+            throw std::runtime_error("IVulkanCommandBuffer::beginQuery is not implemented");
+        }
+
+        void IVulkanCommandBuffer::beginRendering(Attachment* colorAttachments, size_t colorAttachmentCount, Attachment* depthAttachment)
+        {
+            throw std::runtime_error("IVulkanCommandBuffer::beginRendering is not implemented");
+        }
+
+        void IVulkanCommandBuffer::bindIndexBuffer(Buffer* buffer, Buffer::IndexSize indexSize, size_t offset)
+        {
+            auto buf = static_cast<VulkanBuffer*>(buffer);
+
+            vkCmdBindIndexBuffer(_buffer,buf->underlyingBuffer(),offset,VulkanLib::indexType(indexSize));
+        }
+
+        void IVulkanCommandBuffer::bindGraphicsShader(Shader* shader)
+        {
+            auto pipeLine = static_cast<VulkanShader*>(shader);
+            vkCmdBindPipeline(_buffer,VK_PIPELINE_BIND_POINT_GRAPHICS,pipeLine->pipeline());
+        }
+
+        void IVulkanCommandBuffer::bindComputeShader(Shader* shader)
+        {
+            auto pipeLine = static_cast<VulkanShader*>(shader);
+            vkCmdBindPipeline(_buffer,VK_PIPELINE_BIND_POINT_COMPUTE,pipeLine->pipeline());
+        }
+
+        void IVulkanCommandBuffer::bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, size_t* offsets, size_t bindingCount)
+        {
+            std::vector<VkBuffer> nativeBuffers(bindingCount);
+            //TODO: I don't like allocating this, possibly change offsets to be uint64_t
+            std::vector<VkDeviceSize> nativeOffsets(bindingCount);
+            for(size_t i=0; i< nativeBuffers.size(); i++)
+            {
+                nativeBuffers[i] = static_cast<VulkanBuffer*>(buffers[i])->underlyingBuffer();
+                nativeOffsets[i] = offsets[i];
+            }
+            vkCmdBindVertexBuffers(_buffer,firstBinding,bindingCount,nativeBuffers.data(),nativeOffsets.data());
+        }
+
+        void IVulkanCommandBuffer::clearDepthStencilImage(Texture* texture, ClearDepthStencil clear, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore,PipelineStages syncAfter)
+        {
+            assert(commandType() == GpuQueue::Graphics && "clearDepthStencilImage is a graphics queue only operation");
+            ImageBarrier barrier{.texture=texture,.oldLayout=currentLayout,.newLayout=Texture::TRANSFER_DESTINATION,.accessBefore=BarrierAccessFlags::NONE,.accessAfter=BarrierAccessFlags::TRANSFER_WRITE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::TRANSFER};
+            insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+            auto tex = static_cast<VulkanTexture*>(texture);
+            VkImageSubresourceRange range{};
+            range.aspectMask = tex->aspectFlags();
+            range.baseArrayLayer = 0;
+            range.baseMipLevel = 0;
+            range.layerCount = 1;
+            range.levelCount = tex->mipLevels();
+            vkCmdClearDepthStencilImage(_buffer, tex->image(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL , reinterpret_cast<const VkClearDepthStencilValue*>(&clear), 1, &range);
+            barrier.oldLayout = Texture::TRANSFER_DESTINATION;
+            barrier.newLayout = endingLayout;
+            barrier.accessBefore = BarrierAccessFlags::TRANSFER_WRITE;
+            barrier.accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+            barrier.syncBefore = PipelineStageFlags::TRANSFER;
+            barrier.syncAfter = syncAfter;
+            insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+        }
+
+        void IVulkanCommandBuffer::copyQueryPoolResults(QueryPool* queryPool, uint32_t firstQuery, uint32_t queryCount, Buffer* destination, size_t offset, size_t stride, QueryPoolResultFlag flags)
+        {
+            throw std::runtime_error("IVulkanCommandBuffer::copyQueryPoolResults is not implemented");
+        }
+
+        void IVulkanCommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+        {
+            vkCmdDispatch(_buffer,groupCountX,groupCountY,groupCountZ);
+        }
+
+        void IVulkanCommandBuffer::dispatchBase(uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+        {
+            vkCmdDispatchBase(_buffer,baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY, groupCountZ);
+        }
+
+        void IVulkanCommandBuffer::dispatchIndirect(Buffer* buffer, size_t offset)
+        {
+            auto buf = static_cast<VulkanBuffer*>(buffer);
+            vkCmdDispatchIndirect(_buffer,buf->underlyingBuffer(),offset);
+        }
+
+        void IVulkanCommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
+        {
+            vkCmdDraw(_buffer,vertexCount,instanceCount,firstVertex,firstInstance);
+        }
+
+        void IVulkanCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance)
+        {
+            vkCmdDrawIndexed(_buffer,indexCount,instanceCount,firstIndex,vertexOffset,firstInstance);
+        }
+
+        void IVulkanCommandBuffer::drawIndexedIndirect(Buffer* buffer, size_t offset, uint32_t drawCount, uint32_t stride)
+        {
+            auto buf = static_cast<VulkanBuffer*>(buffer);
+            vkCmdDrawIndexedIndirect(_buffer,buf->underlyingBuffer(),offset,drawCount,stride);
+        }
+
+        void IVulkanCommandBuffer::drawIndexedIndirectCount(Buffer* buffer, size_t offset, Buffer* countBuffer, size_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
+        {
+            auto buf = static_cast<VulkanBuffer*>(buffer);
+            auto countBuf = static_cast<VulkanBuffer*>(countBuffer);
+            vkCmdDrawIndexedIndirectCount(_buffer,buf->underlyingBuffer(),offset,countBuf->underlyingBuffer(),countBufferOffset,maxDrawCount,stride);
+        }
+
+        void IVulkanCommandBuffer::drawIndirect(Buffer* buffer, size_t offset, uint32_t drawCount, uint32_t stride)
+        {
+            auto buf = static_cast<VulkanBuffer*>(buffer);
+            vkCmdDrawIndirect(_buffer,buf->underlyingBuffer(),offset,drawCount,stride);
+        }
+
+        void IVulkanCommandBuffer::drawIndirectCount(Buffer* buffer, size_t offset, Buffer* countBuffer, size_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
+        {
+            auto buf = static_cast<VulkanBuffer*>(buffer);
+            auto countBuf = static_cast<VulkanBuffer*>(countBuffer);
+            vkCmdDrawIndirectCount(_buffer,buf->underlyingBuffer(),offset,countBuf->underlyingBuffer(),countBufferOffset,maxDrawCount,stride);
+        }
+
+        void IVulkanCommandBuffer::endQuery(QueryPool* pool, uint32_t query)
+        {
+            throw std::runtime_error("IVulkanCommandBuffer::endQuery is not implemented");
+        }
+
+        void IVulkanCommandBuffer::endRendering()
+        {
+            throw std::runtime_error("IVulkanCommandBuffer::endRendering is not implemented");
+        }
+
+        void IVulkanCommandBuffer::fillBuffer(Buffer* buffer, size_t offset, size_t length, uint32_t data)
+        {
+            auto buf = static_cast<VulkanBuffer*>(buffer);
+            vkCmdFillBuffer(_buffer,buf->underlyingBuffer(),offset,length,data);
+        }
+
+        void IVulkanCommandBuffer::resetQueryPool(QueryPool* pool, uint32_t firstQuery, uint32_t queryCount)
+        {
+            throw std::runtime_error("IVulkanCommandBuffer::resetQueryPool is not implemented");
+        }
+
+        /*void IVulkanCommandBuffer::resolve(Texture* source,Texture::Layout sourceLayout,uint32_t sourceLayer, uint32_t sourceMip,Rectangle sourceArea, Texture* destination, Texture::Layout destinationLayout,uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea)
+        {
+            assert(commandType() == GpuQueue::Graphics && "clearColorImage is a graphics queue only operation");
+            auto src = static_cast<VulkanTexture*>(source);
+            auto dst = static_cast<VulkanTexture*>(destination);
+            VkImageResolve blit{};
+            blit.extent
+            blit.srcOffsets[0] = {sourceArea.offset.x,sourceArea.offset.y,0};
+            blit.srcOffsets[1] = {static_cast<int32_t>(sourceArea.extent.width + sourceArea.offset.x),static_cast<int32_t>(sourceArea.extent.height + sourceArea.offset.y),1};
+            blit.srcSubresource.aspectMask = src->aspectFlags();
+            blit.srcSubresource.mipLevel = sourceMip;
+            blit.srcSubresource.baseArrayLayer = sourceLayer;
+            blit.srcSubresource.layerCount = 1;
+            blit.dstOffsets[0] = {destinationArea.offset.x,destinationArea.offset.y,0};
+            blit.dstOffsets[1] = {static_cast<int32_t>(destinationArea.extent.width + destinationArea.offset.x),static_cast<int32_t>(destinationArea.extent.height + destinationArea.offset.y),1};
+            blit.dstSubresource.aspectMask = dst->aspectFlags();
+            blit.dstSubresource.mipLevel = destinationMip;
+            blit.dstSubresource.baseArrayLayer = destinationLayer;
+            blit.dstSubresource.layerCount = 1;
+            vkCmdResolveImage(_buffer,src->image(),VulkanLib::layout(sourceLayout),dst->image(),VulkanLib::layout(destinationLayout),1,&blit);
+        }*/
 
     } // vulkan
 } // slag

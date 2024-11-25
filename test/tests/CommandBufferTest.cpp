@@ -424,6 +424,8 @@ TEST_F(CommandBufferTests, DisallowCompute_clearColorImage)
         GTEST_SKIP();
     }
 
+    //Compute should possibly allow clearing, look into this
+    GTEST_ASSERT_TRUE(false);
 
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Compute));
     auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,10,10,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));

@@ -104,7 +104,7 @@ namespace slag
 
         void DX12CommandBuffer::bindDescriptorPool(DescriptorPool* pool)
         {
-            auto descriptorPool = dynamic_cast<DX12DescriptorPool*>(pool);
+            auto descriptorPool = static_cast<DX12DescriptorPool*>(pool);
             //_buffer->SetDescriptorHeaps(2,)
             throw std::runtime_error("DX12CommandBuffer::bindDescriptorPool not implemented");
         }

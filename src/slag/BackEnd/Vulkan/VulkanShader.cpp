@@ -136,7 +136,7 @@ namespace slag
                 //if we provided an override for a group, use that
                 if(i < descriptorGroupCount)
                 {
-                    _descriptorGroups.push_back(*dynamic_cast<VulkanDescriptorGroup*>(descriptorGroups[i]));
+                    _descriptorGroups.push_back(*static_cast<VulkanDescriptorGroup*>(descriptorGroups[i]));
                 }
                 //otherwise, merge the groups we found from reflection and use that
                 else
@@ -453,6 +453,11 @@ namespace slag
         PushConstantRange VulkanShader::pushConstantRange(size_t index)
         {
             return _pushConstantRanges[index];
+        }
+
+        VkPipeline VulkanShader::pipeline() const
+        {
+            return _pipeline;
         }
 
     } // vulkan

@@ -37,7 +37,7 @@ namespace slag
 
         void VulkanQueue::submit(CommandBuffer* commands)
         {
-            VulkanCommandBuffer* buffer = dynamic_cast<VulkanCommandBuffer*>(commands);
+            VulkanCommandBuffer* buffer = static_cast<VulkanCommandBuffer*>(commands);
             //started
             buffer->_finished = new VulkanSemaphore(0, true);
 
@@ -68,7 +68,7 @@ namespace slag
                 uint32_t waitSemaphoreCount = 0;
                 for(size_t i=0; i< bufferCount; i++)
                 {
-                    VulkanCommandBuffer* buffer = dynamic_cast<VulkanCommandBuffer*>(commandBuffers[i]);
+                    VulkanCommandBuffer* buffer = static_cast<VulkanCommandBuffer*>(commandBuffers[i]);
                     //started
                     buffer->_finished = new VulkanSemaphore(0, true);
 
@@ -110,7 +110,7 @@ namespace slag
                 for(size_t i=0; i< bufferCount; i++)
                 {
 
-                    VulkanCommandBuffer* buffer = dynamic_cast<VulkanCommandBuffer*>(commandBuffers[i]);
+                    VulkanCommandBuffer* buffer = static_cast<VulkanCommandBuffer*>(commandBuffers[i]);
                     //started
                     buffer->_finished = new VulkanSemaphore(0, true);
                     signals[i].semaphore = buffer->_finished->semaphore();
@@ -129,7 +129,7 @@ namespace slag
 
         void VulkanQueue::submit(CommandBuffer* commands, SemaphoreValue& signalFinished)
         {
-            VulkanCommandBuffer* buffer = dynamic_cast<VulkanCommandBuffer*>(commands);
+            VulkanCommandBuffer* buffer = static_cast<VulkanCommandBuffer*>(commands);
             //started
             buffer->_finished = new VulkanSemaphore(0, true);
 
@@ -140,7 +140,7 @@ namespace slag
             signalInfo[0].stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 
             signalInfo[1].sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-            signalInfo[1].semaphore = dynamic_cast<VulkanSemaphore*>(signalFinished.semaphore)->semaphore();
+            signalInfo[1].semaphore = static_cast<VulkanSemaphore*>(signalFinished.semaphore)->semaphore();
             signalInfo[0].value = signalFinished.value;
             signalInfo[0].stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 
@@ -171,13 +171,13 @@ namespace slag
                 signalInfo[0].stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 
                 signalInfo[1].sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-                signalInfo[1].semaphore = dynamic_cast<VulkanSemaphore*>(signalFinished.semaphore)->semaphore();
+                signalInfo[1].semaphore = static_cast<VulkanSemaphore*>(signalFinished.semaphore)->semaphore();
                 signalInfo[1].value = signalFinished.value;
                 signalInfo[1].stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 
                 for(size_t i=0; i< bufferCount; i++)
                 {
-                    VulkanCommandBuffer* buffer = dynamic_cast<VulkanCommandBuffer*>(commandBuffers[i]);
+                    VulkanCommandBuffer* buffer = static_cast<VulkanCommandBuffer*>(commandBuffers[i]);
                     //started
                     buffer->_finished = new VulkanSemaphore(0, true);
 
@@ -222,7 +222,7 @@ namespace slag
                 for(size_t i=0; i< bufferCount; i++)
                 {
 
-                    VulkanCommandBuffer* buffer = dynamic_cast<VulkanCommandBuffer*>(commandBuffers[i]);
+                    VulkanCommandBuffer* buffer = static_cast<VulkanCommandBuffer*>(commandBuffers[i]);
                     //started
                     buffer->_finished = new VulkanSemaphore(0, true);
                     signals[i].semaphore = buffer->_finished->semaphore();
@@ -247,7 +247,7 @@ namespace slag
             for(size_t i=0; i< bufferCount; i++)
             {
 
-                VulkanCommandBuffer* buffer = dynamic_cast<VulkanCommandBuffer*>(commandBuffers[i]);
+                VulkanCommandBuffer* buffer = static_cast<VulkanCommandBuffer*>(commandBuffers[i]);
                 //started
                 buffer->_finished = new VulkanSemaphore(0, true);
                 signals[i].semaphore = buffer->_finished->semaphore();
@@ -257,7 +257,7 @@ namespace slag
             }
             for(size_t i= 0; i< signalCount; i++)
             {
-                VulkanSemaphore* semaphore = dynamic_cast<VulkanSemaphore*>(signalSemaphores[i].semaphore);
+                VulkanSemaphore* semaphore = static_cast<VulkanSemaphore*>(signalSemaphores[i].semaphore);
                 signals[bufferCount+i].semaphore = semaphore->semaphore();
                 signals[bufferCount+i].value = signalSemaphores[i].value;
             }
@@ -265,7 +265,7 @@ namespace slag
 
             for(size_t i =0; i< waitCount; i++)
             {
-                wait[i].semaphore = dynamic_cast<VulkanSemaphore*>(signalSemaphores[i].semaphore)->semaphore();
+                wait[i].semaphore = static_cast<VulkanSemaphore*>(signalSemaphores[i].semaphore)->semaphore();
                 wait[i].value = signalSemaphores[i].value;
             }
             VkSubmitInfo2 submitInfo{};
@@ -281,13 +281,13 @@ namespace slag
 
         void VulkanQueue::submit(CommandBuffer** commandBuffers, size_t bufferCount, SemaphoreValue* waitOnSemaphores, size_t waitCount, SemaphoreValue* signalSemaphores, size_t signalCount,Frame* presentFrame)
         {
-            auto frame = dynamic_cast<VulkanFrame*>(presentFrame);
+            auto frame = static_cast<VulkanFrame*>(presentFrame);
             std::vector<VkSemaphoreSubmitInfo> signals(bufferCount + signalCount+1,{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,.semaphore = nullptr,.value =1, .stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT});
             std::vector<VkCommandBufferSubmitInfo> commands(bufferCount, {.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO, .commandBuffer = nullptr});
             for(size_t i=0; i< bufferCount; i++)
             {
 
-                VulkanCommandBuffer* buffer = dynamic_cast<VulkanCommandBuffer*>(commandBuffers[i]);
+                VulkanCommandBuffer* buffer = static_cast<VulkanCommandBuffer*>(commandBuffers[i]);
                 //started
                 buffer->_finished = new VulkanSemaphore(0, true);
                 signals[i].semaphore = buffer->_finished->semaphore();
@@ -297,7 +297,7 @@ namespace slag
             }
             for(size_t i= 0; i< signalCount; i++)
             {
-                VulkanSemaphore* semaphore = dynamic_cast<VulkanSemaphore*>(signalSemaphores[i].semaphore);
+                VulkanSemaphore* semaphore = static_cast<VulkanSemaphore*>(signalSemaphores[i].semaphore);
                 signals[bufferCount+i].semaphore = semaphore->semaphore();
                 signals[bufferCount+i].value = signalSemaphores[i].value;
             }
@@ -307,7 +307,7 @@ namespace slag
 
             for(size_t i =0; i< waitCount; i++)
             {
-                wait[i].semaphore = dynamic_cast<VulkanSemaphore*>(signalSemaphores[i].semaphore)->semaphore();
+                wait[i].semaphore = static_cast<VulkanSemaphore*>(signalSemaphores[i].semaphore)->semaphore();
                 wait[i].value = signalSemaphores[i].value;
             }
             wait[wait.size()-1].semaphore = frame->from()->currentImageAcquiredSemaphore();
