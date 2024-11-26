@@ -146,7 +146,7 @@ namespace slag
          * @param initializedLayout
          * @return
          */
-        static Texture* newTexture(const std::filesystem::path& imagePath, uint32_t mipLevels, TextureUsage usage, bool sRGB, Layout initializedLayout);
+        static Texture* newTexture(const std::filesystem::path& imagePath, Pixels::Format dataFormat, uint32_t mipLevels, TextureUsage usage, Layout initializedLayout);
         static Texture* newTexture(Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, uint32_t layers, uint8_t sampleCount, TextureUsage usage);
     };
 

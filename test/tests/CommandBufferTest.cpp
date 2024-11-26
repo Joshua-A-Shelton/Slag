@@ -255,7 +255,7 @@ TEST_F(CommandBufferTests, ClearColorImage)
 TEST_F(CommandBufferTests, UpdateMipChain)
 {
 
-    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture("resources/test-img.png",5,TextureUsageFlags::SAMPLED_IMAGE,false,Texture::Layout::TRANSFER_SOURCE));
+    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture("resources/test-img.png",Pixels::R8G8B8A8_UINT,5,TextureUsageFlags::SAMPLED_IMAGE,Texture::Layout::TRANSFER_SOURCE));
 
     std::unique_ptr<Texture> flatMipped = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,150,100,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
     std::unique_ptr<Buffer> dataBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(flatMipped->width()*flatMipped->height()*sizeof(unsigned char)*4,Buffer::CPU_AND_GPU,Buffer::DATA_BUFFER));
@@ -410,6 +410,136 @@ TEST_F(CommandBufferTests, CopyBufferToImage)
 }
 
 TEST_F(CommandBufferTests, Blit)
+{
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Graphics));
+    auto sourceTexture = std::unique_ptr<Texture>(Texture::newTexture("resources\\solid-color.png",Pixels::R8G8B8A8_UNORM,1,TextureUsageFlags::SAMPLED_IMAGE,slag::Texture::TRANSFER_SOURCE));
+    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R32G32B32A32_FLOAT,slag::Texture::TEXTURE_2D,10,10,2,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+    auto memory = std::unique_ptr<Buffer>(Buffer::newBuffer(5*5*4*sizeof(float),Buffer::CPU,Buffer::DATA_BUFFER));
+    commandBuffer->begin();
+    ImageBarrier barrier{.texture=texture.get(),.baseLayer=0,.layerCount=1,.baseMipLevel=0,.mipCount=0,.oldLayout=Texture::UNDEFINED,.newLayout=Texture::TRANSFER_DESTINATION};
+    commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+    commandBuffer->blit(sourceTexture.get(),Texture::TRANSFER_SOURCE,0,0,Rectangle{{0,0},{sourceTexture->width(),sourceTexture->height()}},texture.get(),Texture::TRANSFER_DESTINATION,0,0,Rectangle{{0,0},{10,10}},Sampler::NEAREST);
+    barrier.mipCount=1;
+    barrier.baseMipLevel = 0;
+    barrier.newLayout = slag::Texture::TRANSFER_SOURCE;
+    commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+    commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,0,Rectangle{{0,0},{10,10}},texture.get(),Texture::TRANSFER_DESTINATION,0,1,Rectangle{{0,0},{5,5}},Sampler::NEAREST);
+    barrier.oldLayout = Texture::TRANSFER_DESTINATION;
+    barrier.newLayout = Texture::TRANSFER_SOURCE;
+    barrier.baseMipLevel = 1;
+    commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+    commandBuffer->copyImageToBuffer(texture.get(),Texture::TRANSFER_SOURCE,0,1,1,memory.get(),0);
+    commandBuffer->end();
+    SlagLib::graphicsCard()->graphicsQueue()->submit(commandBuffer.get());
+    commandBuffer->waitUntilFinished();
+    auto data = memory->downloadData();
+    Color orange(1.0f,0.607843161f,0,1);
+    for(size_t i=0; i<data.size(); i+=sizeof(float)*4)
+    {
+        Color comp = *std::bit_cast<Color*>(&data[i]);
+        auto hex = comp.hexCode();
+        GTEST_ASSERT_EQ(comp,orange);
+    }
+}
+
+TEST_F(CommandBufferTests, BeginQuery)
+{
+    GTEST_FAIL();
+}
+TEST_F(CommandBufferTests, BeginRendering)
+{
+    GTEST_FAIL();
+}
+TEST_F(CommandBufferTests, BindIndexBuffer)
+{
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, BindGraphicsShader)
+{
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, BindComputeShader)
+{
+    GTEST_FAIL();
+}
+TEST_F(CommandBufferTests, BindVertexBuffers)
+{
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, ClearDepthStencilImage)
+{
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, CopyQueryPoolResults)
+{
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, Dispatch)
+{
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, DispatchBase)
+{
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, DispatchIndirect)
+{
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, Draw)
+{
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, DrawIndexed)
+{
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, DrawIndexedIndirect)
+{
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, DrawIndexedIndirectCount)
+{
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, DrawIndirect)
+{
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, DrawIndirectCount)
+{
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, EndQuery)
+{
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, EndRendering)
+{
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, FillBuffer)
+{
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, ResetQueryPool)
 {
     GTEST_FAIL();
 }

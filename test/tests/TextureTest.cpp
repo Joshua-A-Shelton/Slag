@@ -16,7 +16,7 @@ struct RawImageDeleter
 
 TEST(Texture, LoadFromFile)
 {
-    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture("resources/Crucible.png",1,TextureUsageFlags::SAMPLED_IMAGE,false,Texture::Layout::TRANSFER_SOURCE));
+    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture("resources/Crucible.png",Pixels::R8G8B8A8_UINT,1,TextureUsageFlags::SAMPLED_IMAGE,Texture::Layout::TRANSFER_SOURCE));
     GTEST_ASSERT_GE(texture->sampleCount() ,1);
     GTEST_ASSERT_GE(texture->mipLevels() ,1);
     GTEST_ASSERT_GE(texture->type() ,Texture::Type::TEXTURE_2D);
@@ -59,7 +59,7 @@ TEST(Texture, MultiSampled)
 
 TEST(Texture, MipMapped)
 {
-    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture("resources/test-img.png",5,TextureUsageFlags::SAMPLED_IMAGE,false,Texture::Layout::TRANSFER_SOURCE));
+    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture("resources/test-img.png",Pixels::R8G8B8A8_UINT,5,TextureUsageFlags::SAMPLED_IMAGE,Texture::Layout::TRANSFER_SOURCE));
 
     GTEST_ASSERT_GE(texture->sampleCount() ,1);
     GTEST_ASSERT_GE(texture->mipLevels() ,5);
