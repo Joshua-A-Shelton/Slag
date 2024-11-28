@@ -345,7 +345,7 @@ namespace slag
             insertBarriers(&barrier,1, nullptr,0, nullptr,0);
         }
 
-        void IVulkanCommandBuffer::copyQueryPoolResults(QueryPool* queryPool, uint32_t firstQuery, uint32_t queryCount, Buffer* destination, size_t offset, size_t stride, QueryPoolResultFlag flags)
+        void IVulkanCommandBuffer::copyQueryPoolResults(QueryPool* queryPool, uint32_t firstQuery, uint32_t queryCount, Buffer* destination, size_t offset, size_t stride, QueryPool::ResultFlag flags)
         {
             throw std::runtime_error("IVulkanCommandBuffer::copyQueryPoolResults is not implemented");
         }

@@ -38,7 +38,7 @@ namespace slag
             //void clearAttachments(Attachment* attachments, size_t attachmentCount)override;
             void clearDepthStencilImage(Texture* texture, ClearDepthStencil clear, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore, PipelineStages syncAfter)override;
             //void copyImageToImage()override;
-            void copyQueryPoolResults(QueryPool* queryPool, uint32_t firstQuery, uint32_t queryCount, Buffer* destination, size_t offset, size_t stride,QueryPoolResultFlag flags)override;
+            void copyQueryPoolResults(QueryPool* queryPool, uint32_t firstQuery, uint32_t queryCount, Buffer* destination, size_t offset, size_t stride,QueryPool::ResultFlag flags)override;
             void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)override;
             void dispatchBase(uint32_t baseGroupX,uint32_t baseGroupY, uint32_t baseGroupZ,uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)override;
             void dispatchIndirect(Buffer* buffer, size_t offset)override;

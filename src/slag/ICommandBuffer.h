@@ -8,13 +8,12 @@
 #include "Sampler.h"
 #include "DescriptorGroup.h"
 #include "Attachment.h"
+#include "QueryPool.h"
 
 namespace slag
 {
     class Texture;
     class Buffer;
-    class QueryPool;
-    enum QueryPoolResultFlag;
 
     class ICommandBuffer
     {
@@ -41,7 +40,7 @@ namespace slag
         //virtual void clearAttachments(Attachment* attachments, size_t attachmentCount)
         virtual void clearDepthStencilImage(Texture* texture, ClearDepthStencil color, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore, PipelineStages syncAfter)=0;
         //virtual void copyImageToImage();
-        virtual void copyQueryPoolResults(QueryPool* queryPool, uint32_t firstQuery, uint32_t queryCount, Buffer* destination, size_t offset, size_t stride,QueryPoolResultFlag flags)=0;
+        virtual void copyQueryPoolResults(QueryPool* queryPool, uint32_t firstQuery, uint32_t queryCount, Buffer* destination, size_t offset, size_t stride,QueryPool::ResultFlag flags)=0;
         virtual void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)=0;
         virtual void dispatchBase(uint32_t baseGroupX,uint32_t baseGroupY, uint32_t baseGroupZ,uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)=0;
         virtual void dispatchIndirect(Buffer* buffer, size_t offset)=0;

@@ -283,7 +283,7 @@ namespace slag
             throw std::runtime_error("IDX12CommandBuffer::clearDepthStencilImage is not implemented");
         }
 
-        void IDX12CommandBuffer::copyQueryPoolResults(QueryPool* queryPool, uint32_t firstQuery, uint32_t queryCount, Buffer* destination, size_t offset, size_t stride, QueryPoolResultFlag flags)
+        void IDX12CommandBuffer::copyQueryPoolResults(QueryPool* queryPool, uint32_t firstQuery, uint32_t queryCount, Buffer* destination, size_t offset, size_t stride, QueryPool::ResultFlag flags)
         {
             throw std::runtime_error("IDX12CommandBuffer::copyQueryPoolResults is not implemented");
         }

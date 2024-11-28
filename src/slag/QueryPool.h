@@ -6,7 +6,11 @@ namespace slag
 
     class QueryPool
     {
+    public:
+        enum ResultFlag
+        {
 
+        };
     };
 
 } // slag
