@@ -23,7 +23,7 @@ TEST(Texture, LoadFromFile)
     GTEST_ASSERT_GE(texture->layers() ,1);
     GTEST_ASSERT_GE(texture->width() ,1920);
     GTEST_ASSERT_GE(texture->height() ,1080);
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Transfer));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::TRANSFER));
     std::unique_ptr<Buffer> dataBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(1920*1080*sizeof(unsigned char)*4,Buffer::CPU_AND_GPU,Buffer::DATA_BUFFER));
     commandBuffer->begin();
     commandBuffer->copyImageToBuffer(texture.get(),Texture::Layout::TRANSFER_SOURCE,0,1,0,dataBuffer.get(),0);
@@ -71,7 +71,7 @@ TEST(Texture, MipMapped)
     std::unique_ptr<Texture> flatMipped = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,150,100,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
     std::unique_ptr<Buffer> dataBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(flatMipped->width()*flatMipped->height()*sizeof(unsigned char)*4,Buffer::CPU_AND_GPU,Buffer::DATA_BUFFER));
 
-    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Graphics));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::GRAPHICS));
     commandBuffer->begin();
     commandBuffer->updateMipChain(texture.get(),0,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,PipelineStageFlags::TRANSFER,PipelineStageFlags::ALL_GRAPHICS);
     commandBuffer->clearColorImage(flatMipped.get(),ClearColor{0,0,0,0},slag::Texture::UNDEFINED,slag::Texture::TRANSFER_DESTINATION,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);

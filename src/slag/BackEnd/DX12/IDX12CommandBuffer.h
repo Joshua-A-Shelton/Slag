@@ -28,7 +28,7 @@ namespace slag
             void blit(Texture* source,Texture::Layout sourceLayout,uint32_t sourceLayer, uint32_t sourceMip,Rectangle sourceArea, Texture* destination, Texture::Layout destinationLayout,uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea, Sampler::Filter filter)override;
 
             void beginQuery(QueryPool* queryPool, uint32_t query, bool precise)override;
-            void beginRendering(Attachment* colorAttachments, size_t colorAttachmentCount,Attachment* depthAttachment)override;
+            void beginRendering(Attachment* colorAttachments, size_t colorAttachmentCount,Attachment* depthAttachment,Rectangle bounds)override;
             //void bindGraphicsDescriptorGroup()override;
             //void bindComputeDescriptorGroup()override;
             void bindIndexBuffer(Buffer* buffer,Buffer::IndexSize indexSize, size_t offset)override;
@@ -62,7 +62,7 @@ namespace slag
             void move(IDX12CommandBuffer& from);
             void insertBarriersEnhanced(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount);
             void insertBarriersLegacy(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount);
-            GpuQueue::QueueType _commandType = GpuQueue::Graphics;
+            GpuQueue::QueueType _commandType = GpuQueue::GRAPHICS;
             ID3D12GraphicsCommandList7* _buffer = nullptr;
             ID3D12CommandAllocator* _pool = nullptr;
 

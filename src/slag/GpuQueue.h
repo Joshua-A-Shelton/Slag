@@ -13,9 +13,9 @@ namespace slag
     public:
         enum QueueType
         {
-            Graphics,
-            Transfer,
-            Compute,
+            GRAPHICS,
+            TRANSFER,
+            COMPUTE,
         };
         virtual ~GpuQueue()=default;
         virtual void submit(CommandBuffer* commands)=0;

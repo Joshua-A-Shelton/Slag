@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 using namespace slag;
 
-TEST(Shader, Creation)
+TEST(Shader, VertexDescription)
 {
     struct SimpleVertex
     {
@@ -23,5 +23,7 @@ TEST(Shader, Creation)
     frameBufferDescription.setDepthTarget(Pixels::D32_FLOAT);
     std::unique_ptr<Shader> basicShader = std::unique_ptr<Shader>(Shader::newShader(modules.data(),modules.size(), nullptr,0,properties,&vertexDescription,frameBufferDescription));
     std::unique_ptr<Shader> reflectedShader = std::unique_ptr<Shader>(Shader::newShader(modules.data(),modules.size(), nullptr,0,properties, nullptr,frameBufferDescription));
-    int i=0;
+
+    //actually test something
+    GTEST_FAIL();
 }

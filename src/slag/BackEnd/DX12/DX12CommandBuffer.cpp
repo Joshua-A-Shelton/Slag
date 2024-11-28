@@ -13,13 +13,13 @@ namespace slag
             D3D12_COMMAND_LIST_TYPE comType = D3D12_COMMAND_LIST_TYPE_DIRECT;
             switch (_commandType)
             {
-                case GpuQueue::Graphics:
+                case GpuQueue::GRAPHICS:
                     comType = D3D12_COMMAND_LIST_TYPE_DIRECT;
                     break;
-                case GpuQueue::Transfer:
+                case GpuQueue::TRANSFER:
                     comType = D3D12_COMMAND_LIST_TYPE_COPY;
                     break;
-                case GpuQueue::Compute:
+                case GpuQueue::COMPUTE:
                     comType = D3D12_COMMAND_LIST_TYPE_COMPUTE;
                     break;
 

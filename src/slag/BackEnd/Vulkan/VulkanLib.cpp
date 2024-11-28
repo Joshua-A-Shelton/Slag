@@ -455,6 +455,11 @@ namespace slag
             return VK_INDEX_TYPE_UINT32;
         }
 
+        VkClearValue VulkanLib::clearValue(slag::ClearValue clearValue)
+        {
+            return std::bit_cast<VkClearValue>(clearValue);
+        }
+
         VulkanLib::VulkanLib(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VulkanGraphicsCard* card)
         {
             _instance = instance;
@@ -522,13 +527,13 @@ namespace slag
             uint32_t family = VulkanLib::_graphicsCard->graphicsQueueFamily();
             switch (acceptsCommands)
             {
-                case GpuQueue::Graphics:
+                case GpuQueue::GRAPHICS:
                     family = VulkanLib::_graphicsCard->graphicsQueueFamily();
                     break;
-                case GpuQueue::Transfer:
+                case GpuQueue::TRANSFER:
                     family = VulkanLib::_graphicsCard->transferQueueFamily();
                     break;
-                case GpuQueue::Compute:
+                case GpuQueue::COMPUTE:
                     family = VulkanLib::_graphicsCard->computeQueueFamily();
                     break;
 

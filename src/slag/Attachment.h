@@ -8,6 +8,7 @@ namespace slag
     struct Attachment
     {
         Texture* texture = nullptr;
+        Texture::Layout layout = Texture::UNDEFINED;
         bool clearOnLoad = false;
         ClearValue clear={0.0f,0.0f,0.0f,0.0f};
     };

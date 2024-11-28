@@ -8,7 +8,7 @@ using namespace slag;
 class CommandBufferTests: public ::testing::Test
 {
 protected:
-    std::vector<GpuQueue::QueueType> commandBufferQueueTypes{GpuQueue::Graphics,GpuQueue::Compute,GpuQueue::Transfer};
+    std::vector<GpuQueue::QueueType> commandBufferQueueTypes{GpuQueue::GRAPHICS, GpuQueue::COMPUTE, GpuQueue::TRANSFER};
     std::vector<GpuQueue*> submissionQueues;
 
 public:
@@ -29,13 +29,14 @@ public:
     {
         switch (type)
         {
-            case GpuQueue::Graphics:
+            case GpuQueue::GRAPHICS:
                 return true;
-            case GpuQueue::Compute:
-                return SlagLib::graphicsCard()->computeQueue()->type() == slag::GpuQueue::Graphics;
-            case GpuQueue::Transfer:
-                return SlagLib::graphicsCard()->transferQueue()->type() == slag::GpuQueue::Graphics;
+            case GpuQueue::COMPUTE:
+                return SlagLib::graphicsCard()->computeQueue()->type() == slag::GpuQueue::GRAPHICS;
+            case GpuQueue::TRANSFER:
+                return SlagLib::graphicsCard()->transferQueue()->type() == slag::GpuQueue::GRAPHICS;
         }
+        return false;
     }
 
 };
@@ -214,7 +215,7 @@ TEST_F(CommandBufferTests, InsertBarriersGlobal)
 
 TEST_F(CommandBufferTests, ClearColorImage)
 {
-    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(slag::GpuQueue::Graphics));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(slag::GpuQueue::GRAPHICS));
     auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R32G32B32A32_FLOAT,slag::Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
     auto texture2 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R32G32B32A32_FLOAT,slag::Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::RENDER_TARGET_ATTACHMENT));
     auto texture3 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R32G32B32A32_FLOAT,slag::Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::RENDER_TARGET_ATTACHMENT | TextureUsageFlags::SAMPLED_IMAGE));
@@ -260,7 +261,7 @@ TEST_F(CommandBufferTests, UpdateMipChain)
     std::unique_ptr<Texture> flatMipped = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,150,100,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
     std::unique_ptr<Buffer> dataBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(flatMipped->width()*flatMipped->height()*sizeof(unsigned char)*4,Buffer::CPU_AND_GPU,Buffer::DATA_BUFFER));
 
-    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Graphics));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::GRAPHICS));
     commandBuffer->begin();
     commandBuffer->updateMipChain(texture.get(),0,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,PipelineStageFlags::TRANSFER,PipelineStageFlags::ALL_GRAPHICS);
     commandBuffer->clearColorImage(flatMipped.get(),ClearColor{0,0,0,0},slag::Texture::UNDEFINED,slag::Texture::TRANSFER_DESTINATION,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
@@ -411,7 +412,7 @@ TEST_F(CommandBufferTests, CopyBufferToImage)
 
 TEST_F(CommandBufferTests, Blit)
 {
-    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Graphics));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::GRAPHICS));
     auto sourceTexture = std::unique_ptr<Texture>(Texture::newTexture("resources\\solid-color.png",Pixels::R8G8B8A8_UNORM,1,TextureUsageFlags::SAMPLED_IMAGE,slag::Texture::TRANSFER_SOURCE));
     auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R32G32B32A32_FLOAT,slag::Texture::TEXTURE_2D,10,10,2,1,1,TextureUsageFlags::SAMPLED_IMAGE));
     auto memory = std::unique_ptr<Buffer>(Buffer::newBuffer(5*5*4*sizeof(float),Buffer::CPU,Buffer::DATA_BUFFER));
@@ -448,16 +449,50 @@ TEST_F(CommandBufferTests, BeginQuery)
 }
 TEST_F(CommandBufferTests, BeginRendering)
 {
-    GTEST_FAIL();
+    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UNORM,Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::RENDER_TARGET_ATTACHMENT));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::GRAPHICS));
+    commandBuffer->begin();
+    ImageBarrier barrier{.texture = texture.get(),.oldLayout=Texture::UNDEFINED,.newLayout=Texture::RENDER_TARGET};
+    commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+    Attachment colorAttachment{.texture=texture.get(),.layout=Texture::RENDER_TARGET,.clearOnLoad=false};
+    commandBuffer->beginRendering(&colorAttachment,1, nullptr,Rectangle{{0,0},{texture->width(),texture->height()}});
+    commandBuffer->endRendering();
+    commandBuffer->end();
+    SlagLib::graphicsCard()->graphicsQueue()->submit(commandBuffer.get());
+    commandBuffer->waitUntilFinished();
 }
 TEST_F(CommandBufferTests, BindIndexBuffer)
 {
-    GTEST_FAIL();
+    std::vector<uint16_t> indicies = {0,1,2};
+    std::vector<Buffer::Accessibility> accessTypes = {Buffer::CPU,Buffer::CPU_AND_GPU,Buffer::GPU};
+    for(auto access: accessTypes)
+    {
+        auto indexBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(indicies.data(),sizeof(uint16_t)*3,access,Buffer::INDEX_BUFFER));
+        auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::GRAPHICS));
+        commandBuffer->begin();
+        commandBuffer->bindIndexBuffer(indexBuffer.get(),Buffer::UINT16,0);
+        commandBuffer->end();
+        SlagLib::graphicsCard()->graphicsQueue()->submit(commandBuffer.get());
+        commandBuffer->waitUntilFinished();
+    }
+
+
 }
 
 TEST_F(CommandBufferTests, BindGraphicsShader)
 {
-    GTEST_FAIL();
+    FrameBufferDescription description;
+    description.addColorTarget(Pixels::R8G8B8A8_UNORM);
+
+    ShaderModule modules[2]={ShaderModule(ShaderStageFlags::VERTEX,"resources\\basic.vert.spv"),ShaderModule(ShaderStageFlags::FRAGMENT,"resources\\basic.frag.spv")};
+    ShaderProperties shaderProps;
+    auto shader = std::unique_ptr<Shader>(Shader::newShader(modules,2, nullptr,0,shaderProps, nullptr,description));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::GRAPHICS));
+    commandBuffer->begin();
+    commandBuffer->bindGraphicsShader(shader.get());
+    commandBuffer->end();
+    SlagLib::graphicsCard()->graphicsQueue()->submit(commandBuffer.get());
+    commandBuffer->waitUntilFinished();
 }
 
 TEST_F(CommandBufferTests, BindComputeShader)
@@ -531,12 +566,48 @@ TEST_F(CommandBufferTests, EndQuery)
 
 TEST_F(CommandBufferTests, EndRendering)
 {
-    GTEST_FAIL();
+    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UNORM,Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::RENDER_TARGET_ATTACHMENT));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::GRAPHICS));
+    commandBuffer->begin();
+    ImageBarrier barrier{.texture = texture.get(),.oldLayout=Texture::UNDEFINED,.newLayout=Texture::RENDER_TARGET};
+    commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+    Attachment colorAttachment{.texture=texture.get(),.layout=Texture::RENDER_TARGET,.clearOnLoad=false};
+    commandBuffer->beginRendering(&colorAttachment,1, nullptr,Rectangle{{0,0},{texture->width(),texture->height()}});
+    commandBuffer->endRendering();
+    commandBuffer->end();
+    SlagLib::graphicsCard()->graphicsQueue()->submit(commandBuffer.get());
+    commandBuffer->waitUntilFinished();
 }
 
 TEST_F(CommandBufferTests, FillBuffer)
 {
-    GTEST_FAIL();
+    std::vector<uint32_t> initData(64,0);
+    for(auto i=0; i<this->commandBufferQueueTypes.size(); i++)
+    {
+        auto buffer = std::unique_ptr<Buffer>(Buffer::newBuffer(initData.data(),initData.size(),Buffer::CPU_AND_GPU,Buffer::DATA_BUFFER));
+        auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(commandBufferQueueTypes[i]));
+
+        commandBuffer->begin();
+        commandBuffer->fillBuffer(buffer.get(),4,buffer->size()-8,UINT32_MAX);
+        commandBuffer->end();
+        this->submissionQueues[i]->submit(commandBuffer.get());
+        commandBuffer->waitUntilFinished();
+        auto data = buffer->downloadData();
+        for(size_t j=0; j< data.size(); j+=sizeof(uint32_t))
+        {
+            uint32_t number = *std::bit_cast<uint32_t*>(&data[j]);
+            if(j==0 || j==data.size()-sizeof(uint32_t))
+            {
+                GTEST_ASSERT_EQ(number,0);
+            }
+            else
+            {
+                GTEST_ASSERT_EQ(number,UINT32_MAX);
+
+            }
+        }
+    }
+
 }
 
 TEST_F(CommandBufferTests, ResetQueryPool)
@@ -549,7 +620,7 @@ TEST_F(CommandBufferTests, DisallowCompute_clearColorImage)
 #ifdef NDEBUG
     GTEST_SKIP();
 #endif
-    if(IsQueueGraphics(GpuQueue::Compute))
+    if(IsQueueGraphics(GpuQueue::COMPUTE))
     {
         GTEST_SKIP();
     }
@@ -557,7 +628,7 @@ TEST_F(CommandBufferTests, DisallowCompute_clearColorImage)
     //Compute should possibly allow clearing, look into this
     GTEST_ASSERT_TRUE(false);
 
-    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Compute));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::COMPUTE));
     auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,10,10,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
     commandBuffer->begin();
     ASSERT_DEATH(commandBuffer->clearColorImage(texture.get(),ClearColor{0,0,0,0},Texture::UNDEFINED,Texture::GENERAL,PipelineStageFlags::NONE,PipelineStageFlags::ALL_COMMANDS),"");
@@ -568,12 +639,12 @@ TEST_F(CommandBufferTests, DisallowTransfer_clearColorImage)
 #ifdef NDEBUG
     GTEST_SKIP();
 #endif
-    if(IsQueueGraphics(GpuQueue::Transfer))
+    if(IsQueueGraphics(GpuQueue::TRANSFER))
     {
         GTEST_SKIP();
     }
 
-    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Transfer));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::TRANSFER));
     auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,10,10,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
     commandBuffer->begin();
     ASSERT_DEATH(commandBuffer->clearColorImage(texture.get(),ClearColor{0,0,0,0},Texture::UNDEFINED,Texture::GENERAL,PipelineStageFlags::NONE,PipelineStageFlags::ALL_COMMANDS),"");
@@ -584,13 +655,13 @@ TEST_F(CommandBufferTests, DisallowCompute_updateMipChain)
 #ifdef NDEBUG
     GTEST_SKIP();
 #endif
-    if(IsQueueGraphics(GpuQueue::Compute))
+    if(IsQueueGraphics(GpuQueue::COMPUTE))
     {
         GTEST_SKIP();
     }
 
 
-    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Compute));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::COMPUTE));
     auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,10,10,2,1,1,TextureUsageFlags::SAMPLED_IMAGE));
     commandBuffer->begin();
     ASSERT_DEATH(commandBuffer->updateMipChain(texture.get(),0,slag::Texture::UNDEFINED,slag::Texture::GENERAL,Texture::UNDEFINED,Texture::GENERAL,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS),"");
@@ -601,12 +672,12 @@ TEST_F(CommandBufferTests, DisallowTransfer_updateMipChain)
 #ifdef NDEBUG
     GTEST_SKIP();
 #endif
-    if(IsQueueGraphics(GpuQueue::Transfer))
+    if(IsQueueGraphics(GpuQueue::TRANSFER))
     {
         GTEST_SKIP();
     }
 
-    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Transfer));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::TRANSFER));
     auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,10,10,2,1,1,TextureUsageFlags::SAMPLED_IMAGE));
     commandBuffer->begin();
     ASSERT_DEATH(commandBuffer->updateMipChain(texture.get(),0,slag::Texture::UNDEFINED,slag::Texture::GENERAL,Texture::UNDEFINED,Texture::GENERAL,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS),"");
@@ -617,13 +688,13 @@ TEST_F(CommandBufferTests, DisallowCompute_blit)
 #ifdef NDEBUG
     GTEST_SKIP();
 #endif
-    if(IsQueueGraphics(GpuQueue::Compute))
+    if(IsQueueGraphics(GpuQueue::COMPUTE))
     {
         GTEST_SKIP();
     }
 
 
-    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Compute));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::COMPUTE));
     auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,10,10,2,1,1,TextureUsageFlags::SAMPLED_IMAGE));
     commandBuffer->begin();
     ImageBarrier barrier{.texture=texture.get(),.baseLayer=0,.layerCount=1,.baseMipLevel=0,.mipCount=1,.oldLayout=Texture::UNDEFINED,.newLayout=Texture::TRANSFER_SOURCE};
@@ -639,12 +710,12 @@ TEST_F(CommandBufferTests, DisallowTransfer_blit)
 #ifdef NDEBUG
     GTEST_SKIP();
 #endif
-    if(IsQueueGraphics(GpuQueue::Transfer))
+    if(IsQueueGraphics(GpuQueue::TRANSFER))
     {
         GTEST_SKIP();
     }
 
-    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Transfer));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::TRANSFER));
     auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,10,10,2,1,1,TextureUsageFlags::SAMPLED_IMAGE));
     commandBuffer->begin();
     ImageBarrier barrier{.texture=texture.get(),.baseLayer=0,.layerCount=1,.baseMipLevel=0,.mipCount=1,.oldLayout=Texture::UNDEFINED,.newLayout=Texture::TRANSFER_SOURCE};
@@ -653,4 +724,119 @@ TEST_F(CommandBufferTests, DisallowTransfer_blit)
     barrier.newLayout = slag::Texture::TRANSFER_DESTINATION;
     commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
     ASSERT_DEATH(commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,0,Rectangle{{0,0,},{10,10}},texture.get(),Texture::TRANSFER_DESTINATION,0,1,Rectangle{{0,0},{5,5}},Sampler::NEAREST),"");
+}
+
+TEST_F(CommandBufferTests, DisallowCompute_beginRendering)
+{
+#ifdef NDEBUG
+    GTEST_SKIP();
+#endif
+    if(IsQueueGraphics(GpuQueue::COMPUTE))
+    {
+        GTEST_SKIP();
+    }
+    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UNORM,Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::RENDER_TARGET_ATTACHMENT));
+
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::COMPUTE));
+    commandBuffer->begin();
+    ImageBarrier barrier{.texture = texture.get(),.oldLayout=Texture::UNDEFINED,.newLayout=Texture::RENDER_TARGET};
+    commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+    Attachment colorAttachment{.texture=texture.get(),.layout=Texture::RENDER_TARGET,.clearOnLoad=false};
+    ASSERT_DEATH(commandBuffer->beginRendering(&colorAttachment,1, nullptr,Rectangle{{0,0},{texture->width(),texture->height()}}),"");
+}
+
+TEST_F(CommandBufferTests, DisallowTransfer_beginRendering)
+{
+#ifdef NDEBUG
+    GTEST_SKIP();
+#endif
+    if(IsQueueGraphics(GpuQueue::TRANSFER))
+    {
+        GTEST_SKIP();
+    }
+
+    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UNORM,Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::RENDER_TARGET_ATTACHMENT));
+
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::COMPUTE));
+    commandBuffer->begin();
+    ImageBarrier barrier{.texture = texture.get(),.oldLayout=Texture::UNDEFINED,.newLayout=Texture::RENDER_TARGET};
+    commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
+    Attachment colorAttachment{.texture=texture.get(),.layout=Texture::RENDER_TARGET,.clearOnLoad=false};
+    ASSERT_DEATH(commandBuffer->beginRendering(&colorAttachment,1, nullptr,Rectangle{{0,0},{texture->width(),texture->height()}}),"");
+}
+
+TEST_F(CommandBufferTests, DisallowCompute_bindIndexBuffer)
+{
+#ifdef NDEBUG
+    GTEST_SKIP();
+#endif
+    if(IsQueueGraphics(GpuQueue::COMPUTE))
+    {
+        GTEST_SKIP();
+    }
+    std::vector<uint16_t> indicies = {0,1,2};
+    auto indexBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(indicies.data(),sizeof(uint16_t)*3,Buffer::CPU_AND_GPU,Buffer::INDEX_BUFFER));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::COMPUTE));
+    commandBuffer->begin();
+    ASSERT_DEATH(commandBuffer->bindIndexBuffer(indexBuffer.get(),Buffer::UINT16,0),"");
+}
+
+TEST_F(CommandBufferTests, DisallowTransfer_bindIndexBuffer)
+{
+#ifdef NDEBUG
+    GTEST_SKIP();
+#endif
+    if(IsQueueGraphics(GpuQueue::TRANSFER))
+    {
+        GTEST_SKIP();
+    }
+    std::vector<uint16_t> indicies = {0,1,2};
+    auto indexBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(indicies.data(),sizeof(uint16_t)*3,Buffer::CPU_AND_GPU,Buffer::INDEX_BUFFER));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::TRANSFER));
+    commandBuffer->begin();
+    ASSERT_DEATH(commandBuffer->bindIndexBuffer(indexBuffer.get(),Buffer::UINT16,0),"");
+}
+
+TEST_F(CommandBufferTests, DisallowGraphics_bindGraphicsShader)
+{
+#ifdef NDEBUG
+    GTEST_SKIP();
+#endif
+    if(IsQueueGraphics(GpuQueue::COMPUTE))
+    {
+        GTEST_SKIP();
+    }
+
+    FrameBufferDescription description;
+    description.addColorTarget(Pixels::R8G8B8A8_UNORM);
+
+    ShaderModule modules[2]={ShaderModule(ShaderStageFlags::VERTEX,"resources\\basic.vert.spv"),ShaderModule(ShaderStageFlags::FRAGMENT,"resources\\basic.frag.spv")};
+    ShaderProperties shaderProps;
+    auto shader = std::unique_ptr<Shader>(Shader::newShader(modules,2, nullptr,0,shaderProps, nullptr,description));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::COMPUTE));
+    commandBuffer->begin();
+    ASSERT_DEATH(commandBuffer->bindGraphicsShader(shader.get()),"");
+
+}
+
+TEST_F(CommandBufferTests, DisallowTransfer_bindGraphicsShader)
+{
+#ifdef NDEBUG
+    GTEST_SKIP();
+#endif
+    if(IsQueueGraphics(GpuQueue::TRANSFER))
+    {
+        GTEST_SKIP();
+    }
+
+    FrameBufferDescription description;
+    description.addColorTarget(Pixels::R8G8B8A8_UNORM);
+
+    ShaderModule modules[2]={ShaderModule(ShaderStageFlags::VERTEX,"resources\\basic.vert.spv"),ShaderModule(ShaderStageFlags::FRAGMENT,"resources\\basic.frag.spv")};
+    ShaderProperties shaderProps;
+    auto shader = std::unique_ptr<Shader>(Shader::newShader(modules,2, nullptr,0,shaderProps, nullptr,description));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::TRANSFER));
+    commandBuffer->begin();
+    ASSERT_DEATH(commandBuffer->bindGraphicsShader(shader.get()),"");
+
 }

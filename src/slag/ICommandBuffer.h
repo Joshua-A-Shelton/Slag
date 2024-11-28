@@ -31,7 +31,7 @@ namespace slag
         virtual void blit(Texture* source,Texture::Layout sourceLayout,uint32_t sourceLayer, uint32_t sourceMip,Rectangle sourceArea, Texture* destination, Texture::Layout destinationLayout,uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea,Sampler::Filter filter)=0;
 
         virtual void beginQuery(QueryPool* queryPool, uint32_t query, bool precise)=0;
-        virtual void beginRendering(Attachment* colorAttachments, size_t colorAttachmentCount,Attachment* depthAttachment)=0;
+        virtual void beginRendering(Attachment* colorAttachments, size_t colorAttachmentCount,Attachment* depthAttachment,Rectangle bounds)=0;
         //virtual void bindGraphicsDescriptorGroup();
         //virtual void bindComputeDescriptorGroup();
         virtual void bindIndexBuffer(Buffer* buffer,Buffer::IndexSize indexSize, size_t offset)=0;
@@ -54,6 +54,13 @@ namespace slag
         virtual void endQuery(QueryPool* pool, uint32_t query)=0;
         virtual void endRendering()=0;
         //virtual void executeCommands(ICommandBuffer** commands, size_t commandsCount)=0;
+        /**
+         *
+         * @param buffer
+         * @param offset
+         * @param length the length to fill (must be multiple of 4)
+         * @param data
+         */
         virtual void fillBuffer(Buffer* buffer, size_t offset, size_t length, uint32_t data)=0;
         //virtual void pushConstants();
         virtual void resetQueryPool(QueryPool* pool, uint32_t firstQuery, uint32_t queryCount)=0;

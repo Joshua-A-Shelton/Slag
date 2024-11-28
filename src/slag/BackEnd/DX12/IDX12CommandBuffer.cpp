@@ -176,7 +176,7 @@ namespace slag
 
         void IDX12CommandBuffer::clearColorImage(Texture* texture, ClearColor color, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore, PipelineStages syncAfter)
         {
-            assert(commandType() == GpuQueue::Graphics && "clearColorImage is a graphics queue only operation");
+            assert(commandType() == GpuQueue::GRAPHICS && "clearColorImage is a graphics queue only operation");
             auto image = static_cast<DX12Texture*>(texture);
             ImageBarrier barrier{.texture=texture,.oldLayout=currentLayout,.newLayout=Texture::RENDER_TARGET,.accessBefore=BarrierAccessFlags::NONE,.accessAfter=BarrierAccessFlags::NONE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::NONE};
             insertBarriers(&barrier,1, nullptr,0, nullptr,0);
@@ -192,7 +192,7 @@ namespace slag
 
         void IDX12CommandBuffer::updateMipChain(Texture* texture, uint32_t sourceMipLevel, Texture::Layout sourceLayout, Texture::Layout endingSourceLayout, Texture::Layout destinationLayout,Texture::Layout endingDestinationLayout, PipelineStages syncBefore, PipelineStages syncAfter)
         {
-            assert(commandType() == GpuQueue::Graphics && "clearColorImage is a graphics queue only operation");
+            assert(commandType() == GpuQueue::GRAPHICS && "clearColorImage is a graphics queue only operation");
             throw std::runtime_error("IDX12CommandBuffer::updateMipChain is not implemented");
         }
 
@@ -243,7 +243,7 @@ namespace slag
 
         void IDX12CommandBuffer::blit(Texture* source, Texture::Layout sourceLayout, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceArea, Texture* destination, Texture::Layout destinationLayout, uint32_t destinationLayer, uint32_t destinationMip, Rectangle destinationArea, Sampler::Filter filter)
         {
-            assert(commandType() == GpuQueue::Graphics && "clearColorImage is a graphics queue only operation");
+            assert(commandType() == GpuQueue::GRAPHICS && "clearColorImage is a graphics queue only operation");
             throw std::runtime_error("IDX12CommandBuffer::blit is not implemented");
         }
 
@@ -252,7 +252,7 @@ namespace slag
             throw std::runtime_error("IDX12CommandBuffer::beginQuery is not implemented");
         }
 
-        void IDX12CommandBuffer::beginRendering(Attachment* colorAttachments, size_t colorAttachmentCount, Attachment* depthAttachment)
+        void IDX12CommandBuffer::beginRendering(Attachment* colorAttachments, size_t colorAttachmentCount, Attachment* depthAttachment,Rectangle bounds)
         {
             throw std::runtime_error("IDX12CommandBuffer::beginRendering is not implemented");
         }

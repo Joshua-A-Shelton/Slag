@@ -33,7 +33,7 @@ namespace slag
         private:
             void move(DX12Queue&& from);
             ID3D12CommandQueue* _queue = nullptr;
-            GpuQueue::QueueType _type = GpuQueue::QueueType::Graphics;
+            GpuQueue::QueueType _type = GpuQueue::QueueType::GRAPHICS;
         };
 
     } // dx

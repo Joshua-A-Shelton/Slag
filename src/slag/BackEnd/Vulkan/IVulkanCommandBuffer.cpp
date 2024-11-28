@@ -24,15 +24,15 @@ namespace slag
         {
             if(_family == VulkanLib::card()->graphicsQueueFamily())
             {
-                return GpuQueue::Graphics;
+                return GpuQueue::GRAPHICS;
             }
             else if(_family == VulkanLib::card()->computeQueueFamily())
             {
-                return GpuQueue::Compute;
+                return GpuQueue::COMPUTE;
             }
             else
             {
-                return GpuQueue::Transfer;
+                return GpuQueue::TRANSFER;
             }
         }
 
@@ -43,7 +43,7 @@ namespace slag
 
         void IVulkanCommandBuffer::clearColorImage(Texture* texture, ClearColor color, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore, PipelineStages syncAfter)
         {
-            assert(commandType() == GpuQueue::Graphics && "clearColorImage is a graphics queue only operation");
+            assert(commandType() == GpuQueue::GRAPHICS && "clearColorImage is a graphics queue only operation");
             ImageBarrier barrier{.texture=texture,.oldLayout=currentLayout,.newLayout=Texture::TRANSFER_DESTINATION,.accessBefore=BarrierAccessFlags::NONE,.accessAfter=BarrierAccessFlags::TRANSFER_WRITE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::TRANSFER};
             insertBarriers(&barrier,1, nullptr,0, nullptr,0);
             auto tex = static_cast<VulkanTexture*>(texture);
@@ -65,7 +65,7 @@ namespace slag
 
         void IVulkanCommandBuffer::updateMipChain(Texture* texture, uint32_t sourceMipLevel, Texture::Layout sourceLayout, Texture::Layout endingSourceLayout, Texture::Layout destinationLayout, Texture::Layout endingDestinationLayout, PipelineStages syncBefore, PipelineStages syncAfter)
         {
-            assert(commandType() == GpuQueue::Graphics && "clearColorImage is a graphics queue only operation");
+            assert(commandType() == GpuQueue::GRAPHICS && "updateMipChain is a graphics queue only operation");
             auto tex = static_cast<VulkanTexture*>(texture);
             ImageBarrier barriers[2];
             barriers[0]={.texture=texture,.baseLayer=0,.layerCount=0,.baseMipLevel=sourceMipLevel,.mipCount=1,.oldLayout=sourceLayout,.newLayout=Texture::TRANSFER_SOURCE,.accessBefore=BarrierAccessFlags::ALL_WRITE | BarrierAccessFlags::TRANSFER_READ,.accessAfter=BarrierAccessFlags::NONE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::TRANSFER};
@@ -220,7 +220,7 @@ namespace slag
 
         void IVulkanCommandBuffer::blit(Texture* source, Texture::Layout sourceLayout, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceArea, Texture* destination,Texture::Layout destinationLayout, uint32_t destinationLayer, uint32_t destinationMip, Rectangle destinationArea, Sampler::Filter filter)
         {
-            assert(commandType() == GpuQueue::Graphics && "clearColorImage is a graphics queue only operation");
+            assert(commandType() == GpuQueue::GRAPHICS && "clearColorImage is a graphics queue only operation");
             auto src = static_cast<VulkanTexture*>(source);
             auto dst = static_cast<VulkanTexture*>(destination);
             VkImageBlit blit{};
@@ -244,13 +244,49 @@ namespace slag
             throw std::runtime_error("IVulkanCommandBuffer::beginQuery is not implemented");
         }
 
-        void IVulkanCommandBuffer::beginRendering(Attachment* colorAttachments, size_t colorAttachmentCount, Attachment* depthAttachment)
+        void IVulkanCommandBuffer::beginRendering(Attachment* colorAttachments, size_t colorAttachmentCount, Attachment* depthAttachment,Rectangle bounds)
         {
-            throw std::runtime_error("IVulkanCommandBuffer::beginRendering is not implemented");
+            assert(commandType() == GpuQueue::GRAPHICS && "beginRendering is a graphics queue only operation");
+
+            std::vector<VkRenderingAttachmentInfo> descriptions(colorAttachmentCount);
+            for(auto i=0; i< colorAttachmentCount; i++)
+            {
+                auto attachment = colorAttachments[i];
+                auto colorTexture = static_cast<VulkanTexture*>(colorAttachments->texture);
+                descriptions[i]=VkRenderingAttachmentInfo
+                {
+                    .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
+                    .imageView = colorTexture->view(),
+                    .imageLayout = VulkanLib::layout(attachment.layout),
+                    .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+                    .clearValue = VulkanLib::clearValue(attachment.clear)
+                };
+                if(attachment.clearOnLoad)
+                {
+                    descriptions[i].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+                }
+                else
+                {
+                    descriptions[i].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+                }
+            }
+            VkRenderingInfoKHR render_info
+            {
+                .sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+                .renderArea = {{bounds.offset.x,bounds.offset.y},{bounds.extent.width,bounds.extent.height}},
+                .layerCount = 1,
+                .colorAttachmentCount = static_cast<uint32_t>(colorAttachmentCount),
+                .pColorAttachments = descriptions.data(),
+                .pDepthAttachment = nullptr,
+                .pStencilAttachment = nullptr
+            };
+            vkCmdBeginRendering(_buffer,&render_info);
         }
 
         void IVulkanCommandBuffer::bindIndexBuffer(Buffer* buffer, Buffer::IndexSize indexSize, size_t offset)
         {
+            assert(commandType() == GpuQueue::GRAPHICS && "bindIndexBuffer is a graphics queue only operation");
+
             auto buf = static_cast<VulkanBuffer*>(buffer);
 
             vkCmdBindIndexBuffer(_buffer,buf->underlyingBuffer(),offset,VulkanLib::indexType(indexSize));
@@ -258,18 +294,24 @@ namespace slag
 
         void IVulkanCommandBuffer::bindGraphicsShader(Shader* shader)
         {
+            assert(commandType() == GpuQueue::GRAPHICS && "bindGraphicsShader is a graphics queue only operation");
+
             auto pipeLine = static_cast<VulkanShader*>(shader);
             vkCmdBindPipeline(_buffer,VK_PIPELINE_BIND_POINT_GRAPHICS,pipeLine->pipeline());
         }
 
         void IVulkanCommandBuffer::bindComputeShader(Shader* shader)
         {
+            assert(commandType() != GpuQueue::TRANSFER && "bindComputeShader is a graphics/compute queue only operation");
+
             auto pipeLine = static_cast<VulkanShader*>(shader);
             vkCmdBindPipeline(_buffer,VK_PIPELINE_BIND_POINT_COMPUTE,pipeLine->pipeline());
         }
 
         void IVulkanCommandBuffer::bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, size_t* offsets, size_t bindingCount)
         {
+            assert(commandType() == GpuQueue::GRAPHICS && "bindVertexBuffers is a graphics queue only operation");
+
             std::vector<VkBuffer> nativeBuffers(bindingCount);
             //TODO: I don't like allocating this, possibly change offsets to be uint64_t
             std::vector<VkDeviceSize> nativeOffsets(bindingCount);
@@ -283,7 +325,7 @@ namespace slag
 
         void IVulkanCommandBuffer::clearDepthStencilImage(Texture* texture, ClearDepthStencil clear, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore,PipelineStages syncAfter)
         {
-            assert(commandType() == GpuQueue::Graphics && "clearDepthStencilImage is a graphics queue only operation");
+            assert(commandType() == GpuQueue::GRAPHICS && "clearDepthStencilImage is a graphics queue only operation");
             ImageBarrier barrier{.texture=texture,.oldLayout=currentLayout,.newLayout=Texture::TRANSFER_DESTINATION,.accessBefore=BarrierAccessFlags::NONE,.accessAfter=BarrierAccessFlags::TRANSFER_WRITE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::TRANSFER};
             insertBarriers(&barrier,1, nullptr,0, nullptr,0);
             auto tex = static_cast<VulkanTexture*>(texture);
@@ -310,38 +352,52 @@ namespace slag
 
         void IVulkanCommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
         {
+            assert(commandType() != GpuQueue::TRANSFER && "dispatch is a graphics/compute queue only operation");
+
             vkCmdDispatch(_buffer,groupCountX,groupCountY,groupCountZ);
         }
 
         void IVulkanCommandBuffer::dispatchBase(uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
         {
+            assert(commandType() != GpuQueue::TRANSFER && "dispatchBase is a graphics/compute queue only operation");
+
             vkCmdDispatchBase(_buffer,baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY, groupCountZ);
         }
 
         void IVulkanCommandBuffer::dispatchIndirect(Buffer* buffer, size_t offset)
         {
+            assert(commandType() != GpuQueue::TRANSFER && "dispatchIndirect is a graphics/compute queue only operation");
+
             auto buf = static_cast<VulkanBuffer*>(buffer);
             vkCmdDispatchIndirect(_buffer,buf->underlyingBuffer(),offset);
         }
 
         void IVulkanCommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
         {
+            assert(commandType() == GpuQueue::GRAPHICS && "draw is a graphics queue only operation");
+
             vkCmdDraw(_buffer,vertexCount,instanceCount,firstVertex,firstInstance);
         }
 
         void IVulkanCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance)
         {
+            assert(commandType() == GpuQueue::GRAPHICS && "drawIndexed is a graphics queue only operation");
+
             vkCmdDrawIndexed(_buffer,indexCount,instanceCount,firstIndex,vertexOffset,firstInstance);
         }
 
         void IVulkanCommandBuffer::drawIndexedIndirect(Buffer* buffer, size_t offset, uint32_t drawCount, uint32_t stride)
         {
+            assert(commandType() == GpuQueue::GRAPHICS && "drawIndexedIndirect is a graphics queue only operation");
+
             auto buf = static_cast<VulkanBuffer*>(buffer);
             vkCmdDrawIndexedIndirect(_buffer,buf->underlyingBuffer(),offset,drawCount,stride);
         }
 
         void IVulkanCommandBuffer::drawIndexedIndirectCount(Buffer* buffer, size_t offset, Buffer* countBuffer, size_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
         {
+            assert(commandType() == GpuQueue::GRAPHICS && "drawIndexedIndirectCount is a graphics queue only operation");
+
             auto buf = static_cast<VulkanBuffer*>(buffer);
             auto countBuf = static_cast<VulkanBuffer*>(countBuffer);
             vkCmdDrawIndexedIndirectCount(_buffer,buf->underlyingBuffer(),offset,countBuf->underlyingBuffer(),countBufferOffset,maxDrawCount,stride);
@@ -349,12 +405,16 @@ namespace slag
 
         void IVulkanCommandBuffer::drawIndirect(Buffer* buffer, size_t offset, uint32_t drawCount, uint32_t stride)
         {
+            assert(commandType() == GpuQueue::GRAPHICS && "drawIndirect is a graphics queue only operation");
+
             auto buf = static_cast<VulkanBuffer*>(buffer);
             vkCmdDrawIndirect(_buffer,buf->underlyingBuffer(),offset,drawCount,stride);
         }
 
         void IVulkanCommandBuffer::drawIndirectCount(Buffer* buffer, size_t offset, Buffer* countBuffer, size_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
         {
+            assert(commandType() == GpuQueue::GRAPHICS && "drawIndirectCount is a graphics queue only operation");
+
             auto buf = static_cast<VulkanBuffer*>(buffer);
             auto countBuf = static_cast<VulkanBuffer*>(countBuffer);
             vkCmdDrawIndirectCount(_buffer,buf->underlyingBuffer(),offset,countBuf->underlyingBuffer(),countBufferOffset,maxDrawCount,stride);
@@ -367,7 +427,8 @@ namespace slag
 
         void IVulkanCommandBuffer::endRendering()
         {
-            throw std::runtime_error("IVulkanCommandBuffer::endRendering is not implemented");
+            assert(commandType() == GpuQueue::GRAPHICS && "endRendering is a graphics queue only operation");
+            vkCmdEndRendering(_buffer);
         }
 
         void IVulkanCommandBuffer::fillBuffer(Buffer* buffer, size_t offset, size_t length, uint32_t data)

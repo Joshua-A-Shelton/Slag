@@ -17,7 +17,7 @@ TEST(BufferTest, Copy)
             {
                 auto use = usages[usage];
 
-                std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::Transfer));
+                std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::TRANSFER));
                 commandBuffer->begin();
                 std::vector<Color> rawData{Color(1.0f,0.0f,0.0f,1.0f),Color(.7f,.6f,.2f,1.0f),Color(0.0f,.9f,.25f,.33f)};
                 std::unique_ptr<Buffer> buffer1 = std::unique_ptr<Buffer>(Buffer::newBuffer(rawData.data(), sizeof(Color) * rawData.size(), fromAccess, use));

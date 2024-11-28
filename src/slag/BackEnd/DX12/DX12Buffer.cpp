@@ -149,7 +149,7 @@ namespace slag
         void DX12Buffer::updateGPU(size_t offset, void* data, size_t dataLength)
         {
             DX12Buffer tempBuffer(data,dataLength,Accessibility::CPU,D3D12_RESOURCE_STATE_GENERIC_READ, true);
-            DX12CommandBuffer commands(GpuQueue::QueueType::Transfer);
+            DX12CommandBuffer commands(GpuQueue::QueueType::TRANSFER);
             commands.begin();
             commands.copyBuffer(&tempBuffer,0,dataLength,this,offset);
             commands.end();
@@ -168,7 +168,7 @@ namespace slag
         std::vector<std::byte> DX12Buffer::downloadDataGPU()
         {
             DX12Buffer temp(_size,Accessibility::CPU_AND_GPU,D3D12_RESOURCE_STATE_COMMON, true);
-            DX12CommandBuffer commandBuffer(GpuQueue::QueueType::Transfer);
+            DX12CommandBuffer commandBuffer(GpuQueue::QueueType::TRANSFER);
             commandBuffer.begin();
             commandBuffer.copyBuffer(this,0,_size,&temp,0);
             commandBuffer.end();

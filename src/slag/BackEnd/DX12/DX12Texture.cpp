@@ -57,7 +57,7 @@ namespace slag
         DX12Texture::DX12Texture(void** texelDataArray, size_t texelDataCount, uint64_t dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, Texture::Layout initializedLayout, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
             construct(dataFormat,type,width,height,texelDataCount,mipLevels,1,usage,Texture::Layout::TRANSFER_DESTINATION);
-            DX12CommandBuffer commandBuffer(GpuQueue::Transfer);
+            DX12CommandBuffer commandBuffer(GpuQueue::TRANSFER);
             commandBuffer.begin();
 
             std::vector<DX12Buffer> dataBuffers;

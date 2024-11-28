@@ -10,7 +10,7 @@ namespace slag
         DX12Frame::DX12Frame(ID3D12Resource* texture, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, D3D12_RESOURCE_FLAGS textureUsage, DX12Swapchain* from)
         {
             _backBuffer = new DX12Texture(texture,false,textureFormat,width,height,1,textureUsage, true);
-            _commandBuffer = new DX12CommandBuffer(GpuQueue::Graphics);
+            _commandBuffer = new DX12CommandBuffer(GpuQueue::GRAPHICS);
             _from = from;
         }
 

@@ -51,6 +51,8 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/BackEnd/Vulkan/VulkanDescriptorGroup.h
             src/slag/BackEnd/Vulkan/VulkanDescriptorGroupCache.cpp
             src/slag/BackEnd/Vulkan/VulkanDescriptorGroupCache.h
+            src/slag/BackEnd/Vulkan/VulkanDescriptorPool.cpp
+            src/slag/BackEnd/Vulkan/VulkanDescriptorPool.h
     )
 endif()
 
@@ -213,6 +215,7 @@ if(BUILD_SLAG_TESTS)
             test/tests/ShaderTest.cpp
             test/third-party/LodePNG/lodepng.cpp
             test/third-party/LodePNG/lodepng.h
+            test/tests/IntegrationTests.cpp
     )
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)
     target_include_directories(SlagTests PRIVATE src ${SDL2_LIBRARIES} third-party/stb test/third-party/LodePNG)

@@ -36,25 +36,25 @@ namespace slag
             auto gqueue = device.get_dedicated_queue(vkb::QueueType::graphics);
             if(gqueue.has_value())
             {
-                _graphicsQueue = new VulkanQueue(gqueue.value(), slag::GpuQueue::QueueType::Graphics);
+                _graphicsQueue = new VulkanQueue(gqueue.value(), slag::GpuQueue::QueueType::GRAPHICS);
             }
             else
             {
                 gqueue = device.get_queue(vkb::QueueType::graphics);
-                _graphicsQueue = new VulkanQueue(gqueue.value(),slag::GpuQueue::QueueType::Graphics);
+                _graphicsQueue = new VulkanQueue(gqueue.value(),slag::GpuQueue::QueueType::GRAPHICS);
             }
 
             auto cqueue = device.get_dedicated_queue(vkb::QueueType::compute);
             if(cqueue.has_value())
             {
-                _computeQueue = new VulkanQueue(cqueue.value(), slag::GpuQueue::QueueType::Compute);
+                _computeQueue = new VulkanQueue(cqueue.value(), slag::GpuQueue::QueueType::COMPUTE);
             }
             else
             {
                 cqueue = device.get_queue(vkb::QueueType::compute);
                 if(cqueue.has_value())
                 {
-                    _computeQueue = new VulkanQueue(cqueue.value(), slag::GpuQueue::QueueType::Compute);
+                    _computeQueue = new VulkanQueue(cqueue.value(), slag::GpuQueue::QueueType::COMPUTE);
                 }
                 else
                 {
@@ -66,14 +66,14 @@ namespace slag
             auto tqueue = device.get_dedicated_queue(vkb::QueueType::transfer);
             if(tqueue.has_value())
             {
-                _transferQueue = new VulkanQueue(tqueue.value(), slag::GpuQueue::QueueType::Transfer);
+                _transferQueue = new VulkanQueue(tqueue.value(), slag::GpuQueue::QueueType::TRANSFER);
             }
             else
             {
                 tqueue = device.get_queue(vkb::QueueType::transfer);
                 if(tqueue.has_value())
                 {
-                    _transferQueue = new VulkanQueue(tqueue.value(), slag::GpuQueue::QueueType::Transfer);
+                    _transferQueue = new VulkanQueue(tqueue.value(), slag::GpuQueue::QueueType::TRANSFER);
                 }
                 else
                 {
