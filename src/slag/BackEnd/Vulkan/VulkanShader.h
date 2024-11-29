@@ -23,6 +23,7 @@ namespace slag
             size_t pushConstantRangeCount()override;
             PushConstantRange pushConstantRange(size_t index)override;
             VkPipeline pipeline()const;
+            VkPipelineLayout layout()const;
         private:
             void move(VulkanShader&& from);
             std::vector<VulkanDescriptorGroup> _descriptorGroups;

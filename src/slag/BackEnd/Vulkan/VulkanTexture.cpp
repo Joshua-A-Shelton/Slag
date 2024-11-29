@@ -6,11 +6,11 @@ namespace slag
 {
     namespace vulkan
     {
-        VulkanTexture::VulkanTexture(VkImage image, bool ownImage, VkImageView view, bool ownView, VulkanizedFormat format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageAspectFlags aspects, bool destroyImmediately): resources::Resource(destroyImmediately)
+        VulkanTexture::VulkanTexture(VkImage image, bool ownImage, VkImageView view, bool ownView, Pixels::Format format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageAspectFlags aspects, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
             _image = image;
             _view = view;
-            _baseFormat = format;
+            _format = format;
             _usage = usage;
             _width = width;
             _height = height;
@@ -42,10 +42,10 @@ namespace slag
             }
         }
 
-        VulkanTexture::VulkanTexture(VkImage image, bool ownImage, VulkanizedFormat format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageAspectFlags aspects, bool destroyImmediately): resources::Resource(destroyImmediately)
+        VulkanTexture::VulkanTexture(VkImage image, bool ownImage, Pixels::Format format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageAspectFlags aspects, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
             _image = image;
-            _baseFormat = format;
+            _format = format;
             _usage = usage;
             _width = width;
             _height = height;
@@ -58,15 +58,17 @@ namespace slag
             info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             info.pNext = nullptr;
 
+            auto localFormat = VulkanLib::format(format);
+
             info.viewType = VK_IMAGE_VIEW_TYPE_2D;
             info.image = _image;
-            info.format = _baseFormat.format;
+            info.format = localFormat.format;
             info.subresourceRange.layerCount = _layers;
             info.subresourceRange.baseMipLevel = 0;
             info.subresourceRange.levelCount = _mipLevels;
             info.subresourceRange.baseArrayLayer = 0;
             info.subresourceRange.aspectMask = _aspects;
-            info.components = _baseFormat.mapping;
+            info.components = localFormat.mapping;
 
             auto success = vkCreateImageView(VulkanLib::card()->device(),&info, nullptr,&_view);
 
@@ -157,7 +159,7 @@ namespace slag
         void VulkanTexture::move(VulkanTexture&& from)
         {
             resources::Resource::move(from);
-            _baseFormat = from._baseFormat;
+            _format = from._format;
             _type = from._type;
             _aspects = from._aspects;
             _usage = from._usage;
@@ -173,30 +175,6 @@ namespace slag
             {
                 vmaSetAllocationUserData(VulkanLib::card()->memoryAllocator(),_allocation,&_selfReference);
             }
-        }
-
-        VkImage VulkanTexture::copyVkImage()
-        {
-            VkImageCreateInfo dimg_info{};
-            dimg_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-            dimg_info.format = _baseFormat.format;
-            dimg_info.usage = _aspects;
-
-            VkExtent3D imageExtent;
-            imageExtent.width = static_cast<uint32_t>(_width);
-            imageExtent.height = static_cast<uint32_t>(_height);
-            imageExtent.depth = 1;
-
-            dimg_info.extent = imageExtent;
-            dimg_info.imageType = VK_IMAGE_TYPE_2D;
-            dimg_info.mipLevels = _mipLevels;
-            dimg_info.arrayLayers = 1;
-            dimg_info.samples = VK_SAMPLE_COUNT_1_BIT;
-            dimg_info.tiling = VK_IMAGE_TILING_OPTIMAL;
-
-            VkImage copy;
-            vkCreateImage(VulkanLib::card()->device(),&dimg_info, nullptr,&copy);
-            return copy;
         }
 
         Texture::Type VulkanTexture::type()
@@ -224,6 +202,11 @@ namespace slag
             return _sampleCount;
         }
 
+        Pixels::Format VulkanTexture::format()
+        {
+            return _format;
+        }
+
         uint32_t VulkanTexture::layers()
         {
             return _layers;
@@ -248,7 +231,7 @@ namespace slag
         {
             //every texture should support copy and compute operations
             _usage = usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-            _baseFormat = VulkanLib::format(dataFormat);
+            _format = dataFormat;
             _type = textureType;
             _width = width;
             _height = height;
@@ -273,9 +256,11 @@ namespace slag
             }
             _aspects = aspectFlags;
 
+            auto localFormat = VulkanLib::format(dataFormat);
+
             VkImageCreateInfo dimg_info{};
             dimg_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-            dimg_info.format = _baseFormat.format;
+            dimg_info.format = localFormat.format;
             dimg_info.usage = _usage;
 
             VkExtent3D imageExtent;
@@ -315,13 +300,13 @@ namespace slag
 
             info.viewType = VulkanLib::viewType(textureType,layers);
             info.image = _image;
-            info.format = _baseFormat.format;
+            info.format = localFormat.format;
             info.subresourceRange.layerCount = 1;
             info.subresourceRange.baseMipLevel = 0;
             info.subresourceRange.levelCount = _mipLevels;
             info.subresourceRange.baseArrayLayer = 0;
             info.subresourceRange.aspectMask = _aspects;
-            info.components = _baseFormat.mapping;
+            info.components = localFormat.mapping;
 
             result = vkCreateImageView(VulkanLib::card()->device(),&info, nullptr,&_view);
 

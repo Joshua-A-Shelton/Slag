@@ -8,7 +8,7 @@ namespace slag
 {
     namespace dx
     {
-        DX12Texture::DX12Texture(ID3D12Resource* dx12Texture, bool ownTexture, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, bool destroyImmediately): resources::Resource(destroyImmediately)
+        DX12Texture::DX12Texture(ID3D12Resource* dx12Texture, bool ownTexture, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
             assert(!(usage & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET && usage & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) && "Texture cannot be both render target and depth stencil");
             _texture = dx12Texture;
@@ -156,15 +156,16 @@ namespace slag
             return _sampleCount;
         }
 
+        Pixels::Format DX12Texture::format()
+        {
+            return _format;
+        }
+
         ID3D12Resource* DX12Texture::texture()
         {
             return _texture;
         }
 
-        DXGI_FORMAT DX12Texture::underlyingFormat()
-        {
-            return _format;
-        }
 
         D3D12_CPU_DESCRIPTOR_HANDLE DX12Texture::descriptorHandle()
         {
@@ -178,10 +179,12 @@ namespace slag
             _height = height;
             _mipLevels = mipLevels;
             _layers = layers;
-            _format = DX12Lib::format(dataFormat);
+            _format = dataFormat;
             _usage = usage;
             _sampleCount = samples;
             _type = textureType;
+
+            auto localFormat = DX12Lib::format(dataFormat);
 
             D3D12_RESOURCE_DESC resourceDesc = {};
             resourceDesc.Dimension = DX12Lib::dimension(textureType);
@@ -190,7 +193,7 @@ namespace slag
             resourceDesc.Height = height;
             resourceDesc.DepthOrArraySize = layers;
             resourceDesc.MipLevels = mipLevels;
-            resourceDesc.Format = _format;
+            resourceDesc.Format = localFormat;
             resourceDesc.SampleDesc.Count = samples;
             resourceDesc.SampleDesc.Quality = 0;
             resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;

@@ -131,6 +131,12 @@ namespace slag
          */
         virtual uint8_t sampleCount()=0;
 
+        /**
+         * Pixel format
+         * @return
+         */
+        virtual Pixels::Format format()=0;
+
 
         /**
          * Raw dogging it texture. Give it the data it needs, and it assumes it's all correct. should be *fast*, but requires the user of the API to be doing the homework

@@ -14,7 +14,7 @@ namespace slag
         class DX12Swapchain: public Swapchain
         {
         public:
-            DX12Swapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, PresentMode mode, DXGI_FORMAT format);
+            DX12Swapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, PresentMode mode, Pixels::Format format);
             ~DX12Swapchain()override;
             Frame* next()override;
             Frame* nextIfReady()override;
@@ -37,7 +37,7 @@ namespace slag
             uint32_t _height=0;
             uint8_t _backBuffers=0;
             PresentMode _presentMode = PresentMode::MAILBOX;
-            DXGI_FORMAT _format;
+            Pixels::Format _format;
 
             std::vector<DX12Frame> _frames;
         };

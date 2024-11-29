@@ -152,6 +152,8 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/Attachment.h
         src/slag/QueryPool.cpp
         src/slag/QueryPool.h
+        src/slag/DescriptorBundle.cpp
+        src/slag/DescriptorBundle.h
 )
 target_link_libraries(Slag ${Boost_LIBRARIES})
 target_include_directories(Slag PRIVATE ${Boost_INCLUDE_DIRS} third-party/stb)

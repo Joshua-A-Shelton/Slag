@@ -20,5 +20,10 @@ namespace slag
             throw std::runtime_error("DX12DescriptorPool::reset not implemented");
         }
 
+        void* makeBundleLowLevelHandle(DescriptorGroup* forGroup)
+        {
+            throw std::runtime_error("DX12DescriptorPool::makeBudleLowLevelHandle not implemented");
+        }
+
     } // dx
 } // slag

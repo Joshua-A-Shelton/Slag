@@ -27,10 +27,13 @@ namespace slag
             void copyBufferToImage(Buffer* source, size_t sourceOffset, Texture* destination, Texture::Layout destinationLayout, size_t layer, size_t mipLevel)override;
             void blit(Texture* source,Texture::Layout sourceLayout,uint32_t sourceLayer, uint32_t sourceMip,Rectangle sourceArea, Texture* destination, Texture::Layout destinationLayout,uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea, Sampler::Filter filter)override;
 
+            void setViewPort(float x, float y, float width, float height, float minDepth,float maxDepth)override;
+            void setScissors(Rectangle rectangle)override;
+
             void beginQuery(QueryPool* queryPool, uint32_t query, bool precise)override;
             void beginRendering(Attachment* colorAttachments, size_t colorAttachmentCount,Attachment* depthAttachment,Rectangle bounds)override;
-            //void bindGraphicsDescriptorGroup()override;
-            //void bindComputeDescriptorGroup()override;
+            void bindGraphicsDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)override;
+            void bindComputeDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)override;
             void bindIndexBuffer(Buffer* buffer,Buffer::IndexSize indexSize, size_t offset)override;
             void bindGraphicsShader(Shader* shader)override;
             void bindComputeShader(Shader* shader)override;

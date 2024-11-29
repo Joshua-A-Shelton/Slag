@@ -10,6 +10,7 @@
 #include "VulkanSampler.h"
 #include "VulkanDescriptorGroup.h"
 #include "VulkanShader.h"
+#include "VulkanDescriptorPool.h"
 
 namespace slag
 {
@@ -329,9 +330,9 @@ namespace slag
                 case slag::Descriptor::DescriptorType::STORAGE_TEXEL_BUFFER:
                     return  VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
                 case slag::Descriptor::DescriptorType::UNIFORM_BUFFER:
-                    return  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+                    return  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
                 case slag::Descriptor::DescriptorType::STORAGE_BUFFER:
-                    return  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+                    return  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
                 case slag::Descriptor::DescriptorType::INPUT_ATTACHMENT:
                     return  VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
                 case slag::Descriptor::DescriptorType::ACCELERATION_STRUCTURE:
@@ -509,7 +510,7 @@ namespace slag
 
         Swapchain* VulkanLib::newSwapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode, Pixels::Format imageFormat)
         {
-            return new VulkanSwapchain(platformData,width,height,backBuffers,mode, format(imageFormat));
+            return new VulkanSwapchain(platformData,width,height,backBuffers,mode, imageFormat);
         }
 
         Texture* VulkanLib::newTexture(void** texelDataArray, size_t texelDataCount, size_t dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage usage, Texture::Layout initializedLayout)
@@ -602,6 +603,177 @@ namespace slag
         Shader* VulkanLib::newShader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)
         {
             return new VulkanShader(modules,moduleCount,descriptorGroups,descriptorGroupCount,properties,vertexDescription,frameBufferDescription,false);
+        }
+
+        DescriptorPool*
+        VulkanLib::newDescriptorPool(uint32_t samplers, uint32_t sampledTextures, uint32_t samplerAndTextureCombined,
+                                     uint32_t storageTextures, uint32_t uniformTexelBuffers,
+                                     uint32_t storageTexelBuffers, uint32_t uniformBuffers, uint32_t storageBuffers,
+                                     uint32_t inputAttachments, uint32_t accelerationStructures)
+        {
+            return new VulkanDescriptorPool(samplers,sampledTextures,samplerAndTextureCombined,storageTextures,uniformTexelBuffers,storageTexelBuffers,uniformBuffers,storageBuffers,inputAttachments,accelerationStructures);
+        }
+
+        void VulkanLib::setSampler(void* handle, uint32_t binding, uint32_t arrayElement, Sampler* sampler, Texture::Layout layout)
+        {
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(handle);
+            auto s = static_cast<VulkanSampler*>(sampler);
+
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.sampler = s->vulkanSampler();
+            imageInfo.imageLayout = VulkanLib::layout(layout);
+
+            VkWriteDescriptorSet write{};
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = descriptorSet;
+            write.dstBinding = binding;
+            write.dstArrayElement = arrayElement;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+            write.pImageInfo = &imageInfo;
+
+            vkUpdateDescriptorSets(card()->device(),1,&write,0, nullptr);
+
+        }
+
+        void VulkanLib::setSampledTexture(void* handle, uint32_t binding, uint32_t arrayElement, Texture* texture, Texture::Layout layout)
+        {
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(handle);
+            auto tex = static_cast<VulkanTexture*>(texture);
+
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.imageLayout = VulkanLib::layout(layout);
+            imageInfo.imageView = tex->view();
+
+            VkWriteDescriptorSet write{};
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = descriptorSet;
+            write.dstBinding = binding;
+            write.dstArrayElement = arrayElement;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            write.pImageInfo = &imageInfo;
+
+            vkUpdateDescriptorSets(card()->device(),1,&write,0, nullptr);
+        }
+
+        void VulkanLib::setSamplerAndTexture(void* handle, uint32_t binding, uint32_t arrayElement, Texture* texture, Texture::Layout layout, Sampler* sampler)
+        {
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(handle);
+            auto tex = static_cast<VulkanTexture*>(texture);
+            auto s = static_cast<VulkanSampler*>(sampler);
+
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.sampler = s->vulkanSampler();
+            imageInfo.imageLayout = VulkanLib::layout(layout);
+            imageInfo.imageView = tex->view();
+
+            VkWriteDescriptorSet write{};
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = descriptorSet;
+            write.dstBinding = binding;
+            write.dstArrayElement = arrayElement;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            write.pImageInfo = &imageInfo;
+
+            vkUpdateDescriptorSets(card()->device(),1,&write,0, nullptr);
+        }
+
+        void VulkanLib::setStorageTexture(void* handle, uint32_t binding, uint32_t arrayElement, Texture* texture, Texture::Layout layout)
+        {
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(handle);
+            auto tex = static_cast<VulkanTexture*>(texture);
+
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.imageLayout = VulkanLib::layout(layout);
+            imageInfo.imageView = tex->view();
+
+            VkWriteDescriptorSet write{};
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = descriptorSet;
+            write.dstBinding = binding;
+            write.dstArrayElement = arrayElement;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+            write.pImageInfo = &imageInfo;
+
+            vkUpdateDescriptorSets(card()->device(),1,&write,0, nullptr);
+        }
+
+        void VulkanLib::setUniformTexelBuffer(void* handle, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
+        {
+            throw std::runtime_error("VulkanLib::setUniformTexelBuffer is not implemented");
+        }
+
+        void VulkanLib::setStorageTexelBuffer(void* handle, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
+        {
+            throw std::runtime_error("VulkanLib::setStorageTexelBuffer is not implemented");
+        }
+
+        void VulkanLib::setUniformBuffer(void* handle, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
+        {
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(handle);
+            auto buf = static_cast<VulkanBuffer*>(buffer);
+
+            VkDescriptorBufferInfo bufferInfo{};
+            bufferInfo.buffer = buf->underlyingBuffer();
+            bufferInfo.offset = offset;
+            bufferInfo.range = length;
+
+            VkWriteDescriptorSet write{};
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = descriptorSet;
+            write.dstBinding = binding;
+            write.dstArrayElement = arrayElement;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            write.pBufferInfo = &bufferInfo;
+
+            vkUpdateDescriptorSets(card()->device(),1,&write,0, nullptr);
+        }
+
+        void VulkanLib::setStorageBuffer(void* handle, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
+        {
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(handle);
+            auto buf = static_cast<VulkanBuffer*>(buffer);
+
+            VkDescriptorBufferInfo bufferInfo{};
+            bufferInfo.buffer = buf->underlyingBuffer();
+            bufferInfo.offset = offset;
+            bufferInfo.range = length;
+
+            VkWriteDescriptorSet write{};
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = descriptorSet;
+            write.dstBinding = binding;
+            write.dstArrayElement = arrayElement;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            write.pBufferInfo = &bufferInfo;
+
+            vkUpdateDescriptorSets(card()->device(),1,&write,0, nullptr);
+        }
+
+        void VulkanLib::setInputAttachment(void* handle,uint32_t binding, uint32_t arrayElement, Texture* texture, Texture::Layout layout)
+        {
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(handle);
+            auto tex = static_cast<VulkanTexture*>(texture);
+
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.imageLayout = VulkanLib::layout(layout);
+            imageInfo.imageView = tex->view();
+
+            VkWriteDescriptorSet write{};
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = descriptorSet;
+            write.dstBinding = binding;
+            write.dstArrayElement = arrayElement;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+            write.pImageInfo = &imageInfo;
+
+            vkUpdateDescriptorSets(card()->device(),1,&write,0, nullptr);
         }
 
     } // vulkan

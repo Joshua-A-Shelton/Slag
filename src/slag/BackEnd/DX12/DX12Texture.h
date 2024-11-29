@@ -16,7 +16,7 @@ namespace slag
         class DX12Texture: public Texture, resources::Resource
         {
         public:
-            DX12Texture(ID3D12Resource* dx12Texture, bool ownTexture, DXGI_FORMAT textureFormat, uint32_t width, uint32_t height, uint32_t  mipLevels, D3D12_RESOURCE_FLAGS usage, bool destroyImmediately);
+            DX12Texture(ID3D12Resource* dx12Texture, bool ownTexture, Pixels::Format textureFormat, uint32_t width, uint32_t height, uint32_t  mipLevels, D3D12_RESOURCE_FLAGS usage, bool destroyImmediately);
 
             DX12Texture(void** texelDataArray, size_t texelDataCount, uint64_t dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, D3D12_RESOURCE_FLAGS usage, Texture::Layout initializedLayout, bool destroyImmediately);
             DX12Texture(Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, uint32_t layers, uint8_t sampleCount, D3D12_RESOURCE_FLAGS usage, bool destroyImmediately);
@@ -31,6 +31,7 @@ namespace slag
             uint32_t layers()override;
             uint32_t mipLevels()override;
             uint8_t sampleCount()override;
+            Pixels::Format format()override;
             ID3D12Resource* texture();
             DXGI_FORMAT underlyingFormat();
             D3D12_RESOURCE_FLAGS usage()const;
@@ -49,7 +50,7 @@ namespace slag
             uint32_t _layers=1;
             uint32_t _mipLevels=1;
             uint8_t _sampleCount=1;
-            DXGI_FORMAT _format;
+            Pixels::Format _format;
             D3D12_RESOURCE_FLAGS _usage;
 
         };

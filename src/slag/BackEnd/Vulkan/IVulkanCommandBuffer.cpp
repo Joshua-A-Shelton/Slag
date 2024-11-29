@@ -239,6 +239,25 @@ namespace slag
             vkCmdBlitImage(_buffer,src->image(),VulkanLib::layout(sourceLayout),dst->image(),VulkanLib::layout(destinationLayout),1,&blit,VulkanLib::filter(filter));
         }
 
+        void IVulkanCommandBuffer::setViewPort(float x, float y, float width, float height, float minDepth, float maxDepth)
+        {
+            VkViewport viewport{};
+            viewport.x = x;
+            viewport.y = y;
+            viewport.width = width;
+            viewport.height = height;//flips y axis to point up like DX12
+            viewport.minDepth = minDepth;
+            viewport.maxDepth = maxDepth;
+
+            vkCmdSetViewport(_buffer,0,1,&viewport);
+        }
+
+        void IVulkanCommandBuffer::setScissors(Rectangle rectangle)
+        {
+            VkRect2D rect{.offset{rectangle.offset.x,rectangle.offset.y},.extent{rectangle.extent.width,rectangle.extent.height}};
+            vkCmdSetScissor(_buffer,0,1,&rect);
+        }
+
         void IVulkanCommandBuffer::beginQuery(QueryPool* queryPool, uint32_t query, bool precise)
         {
             throw std::runtime_error("IVulkanCommandBuffer::beginQuery is not implemented");
@@ -252,7 +271,7 @@ namespace slag
             for(auto i=0; i< colorAttachmentCount; i++)
             {
                 auto attachment = colorAttachments[i];
-                auto colorTexture = static_cast<VulkanTexture*>(colorAttachments->texture);
+                auto colorTexture = static_cast<VulkanTexture*>(attachment.texture);
                 descriptions[i]=VkRenderingAttachmentInfo
                 {
                     .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
@@ -270,6 +289,29 @@ namespace slag
                     descriptions[i].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
                 }
             }
+            VkRenderingAttachmentInfo depth{};
+            bool hasStencil = false;
+            if(depthAttachment)
+            {
+                auto depthTex = static_cast<VulkanTexture*>(depthAttachment->texture);
+                depth.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+                depth.imageView = depthTex->view();
+                depth.imageLayout = VulkanLib::layout(depthAttachment->layout);
+                depth.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+                depth.clearValue = VulkanLib::clearValue(depthAttachment->clear);
+                if(depthAttachment->clearOnLoad)
+                {
+                    depth.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+                }
+                else
+                {
+                    depth.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+                }
+                if(Pixels::hasStencilComponent(depthAttachment->texture->format()))
+                {
+                    hasStencil = true;
+                }
+            }
             VkRenderingInfoKHR render_info
             {
                 .sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
@@ -277,10 +319,26 @@ namespace slag
                 .layerCount = 1,
                 .colorAttachmentCount = static_cast<uint32_t>(colorAttachmentCount),
                 .pColorAttachments = descriptions.data(),
-                .pDepthAttachment = nullptr,
-                .pStencilAttachment = nullptr
+                .pDepthAttachment = depthAttachment == nullptr? nullptr : &depth,
+                .pStencilAttachment = hasStencil ? &depth : nullptr
             };
             vkCmdBeginRendering(_buffer,&render_info);
+        }
+
+        void IVulkanCommandBuffer::bindGraphicsDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)
+        {
+            auto s = static_cast<VulkanShader*>(shader);
+            auto h = bundle.handle();
+            auto handle = std::bit_cast<VkDescriptorSet>(h);
+            vkCmdBindDescriptorSets(_buffer,VK_PIPELINE_BIND_POINT_GRAPHICS,s->layout(),index,1,&handle,0, nullptr);
+        }
+
+        void IVulkanCommandBuffer::bindComputeDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)
+        {
+            auto s = static_cast<VulkanShader*>(shader);
+            auto h = bundle.handle();
+            auto handle = std::bit_cast<VkDescriptorSet>(h);
+            vkCmdBindDescriptorSets(_buffer,VK_PIPELINE_BIND_POINT_COMPUTE,s->layout(),index,1,&handle,0, nullptr);
         }
 
         void IVulkanCommandBuffer::bindIndexBuffer(Buffer* buffer, Buffer::IndexSize indexSize, size_t offset)
@@ -441,6 +499,7 @@ namespace slag
         {
             throw std::runtime_error("IVulkanCommandBuffer::resetQueryPool is not implemented");
         }
+
 
         /*void IVulkanCommandBuffer::resolve(Texture* source,Texture::Layout sourceLayout,uint32_t sourceLayer, uint32_t sourceMip,Rectangle sourceArea, Texture* destination, Texture::Layout destinationLayout,uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea)
         {

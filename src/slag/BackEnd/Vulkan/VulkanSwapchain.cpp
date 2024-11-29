@@ -10,7 +10,7 @@ namespace slag
 {
     namespace vulkan
     {
-        VulkanSwapchain::VulkanSwapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode,  VulkanizedFormat imageFormat)
+        VulkanSwapchain::VulkanSwapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode,  Pixels::Format imageFormat)
         {
             _surface = createNativeSurface(platformData);
             _width = width;
@@ -115,8 +115,9 @@ namespace slag
                 presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
             }
 
+            auto localFormat = VulkanLib::format(_imageFormat);
             vkb::SwapchainBuilder swapchainBuilder(VulkanLib::card()->physicalDevice(),VulkanLib::card()->device(),_surface);
-            auto chain = swapchainBuilder.set_desired_format(VkSurfaceFormatKHR{_imageFormat.format,VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
+            auto chain = swapchainBuilder.set_desired_format(VkSurfaceFormatKHR{localFormat.format,VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
                     .set_desired_present_mode(presentMode)
                     .set_desired_extent(_width,_height)
                     .set_desired_min_image_count(_backBufferCount)
@@ -284,7 +285,7 @@ namespace slag
             _needsRebuild = true;
         }
 
-        VulkanizedFormat VulkanSwapchain::imageFormat()
+        Pixels::Format VulkanSwapchain::imageFormat()
         {
             return _imageFormat;
         }

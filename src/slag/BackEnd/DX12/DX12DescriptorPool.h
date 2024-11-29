@@ -18,6 +18,7 @@ namespace slag
             DX12DescriptorPool(DX12DescriptorPool&& from);
             DX12DescriptorPool& operator=(DX12DescriptorPool&& from);
             void reset()override;
+            void* makeBundleLowLevelHandle(DescriptorGroup* forGroup)override;
         private:
             void move(DX12DescriptorPool&& from);
             ID3D12DescriptorHeap* _descriptorHeap = nullptr;

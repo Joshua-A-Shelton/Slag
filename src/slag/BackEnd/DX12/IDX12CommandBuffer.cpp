@@ -247,6 +247,16 @@ namespace slag
             throw std::runtime_error("IDX12CommandBuffer::blit is not implemented");
         }
 
+        void IDX12CommandBuffer::setViewPort(float x, float y, float width, float height, float minDepth, float maxDepth)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::setViewPort is not implemented");
+        }
+
+        void IDX12CommandBuffer::setScissors(Rectangle rectangle)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::setScissors is not implemented");
+        }
+
         void IDX12CommandBuffer::beginQuery(QueryPool* queryPool, uint32_t query, bool precise)
         {
             throw std::runtime_error("IDX12CommandBuffer::beginQuery is not implemented");
@@ -255,6 +265,15 @@ namespace slag
         void IDX12CommandBuffer::beginRendering(Attachment* colorAttachments, size_t colorAttachmentCount, Attachment* depthAttachment,Rectangle bounds)
         {
             throw std::runtime_error("IDX12CommandBuffer::beginRendering is not implemented");
+        }
+
+        void IDX12CommandBuffer::bindGraphicsDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::bindGraphicsDescriptorBundle is not implemented");
+        }
+        void IDX12CommandBuffer::bindComputeDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::bindComputeDescriptorBundle is not implemented");
         }
 
         void IDX12CommandBuffer::bindIndexBuffer(Buffer* buffer, Buffer::IndexSize indexSize, size_t offset)

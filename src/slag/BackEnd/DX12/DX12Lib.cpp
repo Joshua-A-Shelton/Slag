@@ -374,7 +374,7 @@ namespace slag
 
         Swapchain* DX12Lib::newSwapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode, Pixels::Format imageFormat)
         {
-            return new DX12Swapchain(platformData,width,height,backBuffers,mode, format(imageFormat));
+            return new DX12Swapchain(platformData,width,height,backBuffers,mode, imageFormat);
         }
 
         Sampler* DX12Lib::newSampler(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, Sampler::AddressMode u, Sampler::AddressMode v, Sampler::AddressMode w,
@@ -391,6 +391,15 @@ namespace slag
         Shader* DX12Lib::newShader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)
         {
             throw std::runtime_error("DX12Lib::newShader not implemented");
+        }
+
+        DescriptorPool*
+        DX12Lib::newDescriptorPool(uint32_t samplers, uint32_t sampledTextures, uint32_t samplerAndTextureCombined,
+                                     uint32_t storageTextures, uint32_t uniformTexelBuffers,
+                                     uint32_t storageTexelBuffers, uint32_t uniformBuffers, uint32_t storageBuffers,
+                                     uint32_t inputAttachments, uint32_t accelerationStructures)
+        {
+            throw std::runtime_error("DX12Lib::newDescriptorPool not implemented");
         }
 
     } // dx

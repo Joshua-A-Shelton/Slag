@@ -9,6 +9,7 @@
 #include "DescriptorGroup.h"
 #include "Attachment.h"
 #include "QueryPool.h"
+#include "DescriptorBundle.h"
 
 namespace slag
 {
@@ -29,10 +30,13 @@ namespace slag
         virtual void copyBufferToImage(Buffer* source, size_t sourceOffset, Texture* destination, Texture::Layout destinationLayout, size_t layer, size_t mipLevel)=0;
         virtual void blit(Texture* source,Texture::Layout sourceLayout,uint32_t sourceLayer, uint32_t sourceMip,Rectangle sourceArea, Texture* destination, Texture::Layout destinationLayout,uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea,Sampler::Filter filter)=0;
 
+        virtual void setViewPort(float x, float y, float width, float height, float minDepth,float maxDepth)=0;
+        virtual void setScissors(Rectangle rectangle)=0;
+
         virtual void beginQuery(QueryPool* queryPool, uint32_t query, bool precise)=0;
         virtual void beginRendering(Attachment* colorAttachments, size_t colorAttachmentCount,Attachment* depthAttachment,Rectangle bounds)=0;
-        //virtual void bindGraphicsDescriptorGroup();
-        //virtual void bindComputeDescriptorGroup();
+        virtual void bindGraphicsDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)=0;
+        virtual void bindComputeDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)=0;
         virtual void bindIndexBuffer(Buffer* buffer,Buffer::IndexSize indexSize, size_t offset)=0;
         virtual void bindGraphicsShader(Shader* shader)=0;
         virtual void bindComputeShader(Shader* shader)=0;

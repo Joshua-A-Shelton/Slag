@@ -461,6 +461,14 @@ TEST_F(CommandBufferTests, BeginRendering)
     SlagLib::graphicsCard()->graphicsQueue()->submit(commandBuffer.get());
     commandBuffer->waitUntilFinished();
 }
+TEST_F(CommandBufferTests, BindGraphicsDescriptorBundle)
+{
+    GTEST_FAIL();
+}
+TEST_F(CommandBufferTests, BindComputeDescriptorBundle)
+{
+    GTEST_FAIL();
+}
 TEST_F(CommandBufferTests, BindIndexBuffer)
 {
     std::vector<uint16_t> indicies = {0,1,2};

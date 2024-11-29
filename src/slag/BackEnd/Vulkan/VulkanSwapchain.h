@@ -12,7 +12,7 @@ namespace slag
         class VulkanSwapchain: public Swapchain
         {
         public:
-            VulkanSwapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, PresentMode mode, VulkanizedFormat imageFormat);
+            VulkanSwapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, PresentMode mode, Pixels::Format imageFormat);
             ~VulkanSwapchain()override;
             VulkanSwapchain(const VulkanSwapchain&)=delete;
             VulkanSwapchain& operator=(const VulkanSwapchain&)=delete;
@@ -30,7 +30,7 @@ namespace slag
             PresentMode presentMode()override;
             void presentMode(PresentMode mode)override;
 
-            VulkanizedFormat imageFormat();
+            Pixels::Format imageFormat();
 
             void rebuild();
             bool needsRebuild();
@@ -44,7 +44,7 @@ namespace slag
             static VkSurfaceKHR createNativeSurface(PlatformData platformData);
             VkSurfaceKHR _surface = nullptr;
             VkSwapchainKHR _swapchain = nullptr;
-            VulkanizedFormat _imageFormat{};
+            Pixels::Format _imageFormat{};
             uint32_t _width=0;
             uint32_t _height=0;
             uint8_t _backBufferCount=0;

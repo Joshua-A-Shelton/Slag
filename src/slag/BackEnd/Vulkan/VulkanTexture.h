@@ -16,8 +16,8 @@ namespace slag
         class VulkanTexture: public Texture, resources::Resource
         {
         public:
-            VulkanTexture(VkImage image, bool ownImage, VkImageView view, bool ownView, VulkanizedFormat format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageAspectFlags aspects, bool destroyImmediately);
-            VulkanTexture(VkImage image, bool ownImage, VulkanizedFormat format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageAspectFlags aspects, bool destroyImmediately);
+            VulkanTexture(VkImage image, bool ownImage, VkImageView view, bool ownView, Pixels::Format format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageAspectFlags aspects, bool destroyImmediately);
+            VulkanTexture(VkImage image, bool ownImage, Pixels::Format format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageAspectFlags aspects, bool destroyImmediately);
 
             VulkanTexture(void** texelDataArray, size_t texelDataCount, VkDeviceSize dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, Texture::Layout initializedLayout, bool destroyImmediately);
             VulkanTexture(Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, uint32_t layers, uint8_t sampleCount, VkImageUsageFlags usage, bool destroyImmediately);
@@ -33,6 +33,7 @@ namespace slag
             uint32_t mipLevels()override;
             uint32_t layers()override;
             uint8_t sampleCount()override;
+            Pixels::Format format()override;
 
 
             VkImage image();
@@ -42,8 +43,7 @@ namespace slag
         private:
             void move(VulkanTexture&& from);
             void construct(Pixels::Format dataFormat, Texture::Type textureType, uint32_t width, uint32_t height,uint32_t layers, uint32_t mipLevels, uint8_t samples, VkImageUsageFlags usage);
-            VkImage copyVkImage();
-            VulkanizedFormat _baseFormat{};
+            Pixels::Format _format{};
             Texture::Type _type=TEXTURE_2D;
             VkImageUsageFlags _usage=0;
             VkImageAspectFlags _aspects=0;

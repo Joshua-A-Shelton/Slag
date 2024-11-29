@@ -6,7 +6,7 @@ namespace slag
 {
     namespace dx
     {
-        DX12Swapchain::DX12Swapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode, DXGI_FORMAT format)
+        DX12Swapchain::DX12Swapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode, Pixels::Format format)
         {
             _surface = (HWND)platformData.nativeWindowHandle;
             _width = width;
@@ -39,7 +39,7 @@ namespace slag
             DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
             swapChainDesc.Width = _width;
             swapChainDesc.Height = _height;
-            swapChainDesc.Format = _format;
+            swapChainDesc.Format = DX12Lib::format(_format);
             swapChainDesc.Stereo = false;
             swapChainDesc.SampleDesc = { 1, 0 };
             swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHADER_INPUT | DXGI_USAGE_BACK_BUFFER;

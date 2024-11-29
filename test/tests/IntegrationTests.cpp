@@ -1,6 +1,8 @@
 #include "gtest/gtest.h"
 #include "slag/SlagLib.h"
 #include <glm/glm.hpp>
+#include <lodepng.h>
+
 using namespace slag;
 class IntegrationTests: public ::testing::Test
 {
@@ -36,15 +38,6 @@ public:
 };
 TEST_F(IntegrationTests, BasicTriangle)
 {
-    /*auto frameBuffer = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UNORM,slag::Texture::TEXTURE_2D,500,500,1,1,1,TextureUsageFlags::RENDER_TARGET_ATTACHMENT));
-    ShaderModule modules[2] = {ShaderModule(ShaderStageFlags::VERTEX,"resources\\integration\\flat.frag.spv"),ShaderModule(ShaderStageFlags::FRAGMENT,"resources\\integration\\flat.vert.spv")};
-    ShaderProperties shaderProps{};
-    FrameBufferDescription description;
-    description.addColorTarget(Pixels::R8G8B8A8_UNORM);
-    auto shader = std::unique_ptr<Shader>(Shader::newShader(modules,2, nullptr,0,shaderProps,&vertexPosUVDescription,description));
-    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::GRAPHICS));
-    auto descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool)
-    commandBuffer->begin();
-    commandBuffer->bindDescriptorPool()*/
+    GTEST_FAIL();
 
 }
