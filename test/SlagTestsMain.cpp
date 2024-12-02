@@ -26,6 +26,7 @@ int main(int argc, char **argv)
             useVulkan = false;
         }
     }
+    useVulkan=true;
     if(useVulkan)
     {
         ::testing::AddGlobalTestEnvironment(new slag::tests::VulkanEnvironment());

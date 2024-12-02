@@ -402,5 +402,50 @@ namespace slag
             throw std::runtime_error("DX12Lib::newDescriptorPool not implemented");
         }
 
+        void DX12Lib::setSampler(void* handle, uint32_t binding, uint32_t arrayElement, Sampler* sampler, Texture::Layout layout)
+        {
+            throw std::runtime_error("DX12Lib::setSampler not implemented");
+        }
+
+        void DX12Lib::setSampledTexture(void* handle, uint32_t binding, uint32_t arrayElement, Texture* texture, Texture::Layout layout)
+        {
+            throw std::runtime_error("DX12Lib::setSampledTexture not implemented");
+        }
+
+        void DX12Lib::setSamplerAndTexture(void* handle, uint32_t binding, uint32_t arrayElement, Texture* texture, Texture::Layout layout, Sampler* sampler)
+        {
+            throw std::runtime_error("DX12Lib::setSamplerAndTexture not implemented");
+        }
+
+        void DX12Lib::setStorageTexture(void* handle, uint32_t binding, uint32_t arrayElement, Texture* texture, Texture::Layout layout)
+        {
+            throw std::runtime_error("DX12Lib::setStorageTexture not implemented");
+        }
+
+        void DX12Lib::setUniformTexelBuffer(void* handle, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
+        {
+            throw std::runtime_error("DX12Lib::setUniformTexelBuffer not implemented");
+        }
+
+        void DX12Lib::setStorageTexelBuffer(void* handle, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
+        {
+            throw std::runtime_error("DX12Lib::setStorageTexelBuffer not implemented");
+        }
+
+        void DX12Lib::setUniformBuffer(void* handle, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
+        {
+            throw std::runtime_error("DX12Lib::setUniformBuffer not implemented");
+        }
+
+        void DX12Lib::setStorageBuffer(void* handle, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
+        {
+            throw std::runtime_error("DX12Lib::setStorageBuffer not implemented");
+        }
+
+        void DX12Lib::setInputAttachment(void* handle, uint32_t binding, uint32_t arrayElement, Texture* texture, Texture::Layout layout)
+        {
+            throw std::runtime_error("DX12Lib::setInputAttachment not implemented");
+        }
+
     } // dx
 } // slag

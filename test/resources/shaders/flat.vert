@@ -8,6 +8,6 @@ layout (location = 0) out vec2 texCoord;
 
 void main()
 {
-    gl_Position = vec4(vPosition+sharedData,1.0f);
+    gl_Position = vec4(vPosition,1.0f);
     texCoord = vUV;
 }

@@ -232,6 +232,11 @@ namespace slag
             };
         }
 
+        DXGI_FORMAT DX12Texture::underlyingFormat()
+        {
+            return DX12Lib::format(_format);
+        }
+
         D3D12_RESOURCE_FLAGS DX12Texture::usage()const
         {
             return _usage;

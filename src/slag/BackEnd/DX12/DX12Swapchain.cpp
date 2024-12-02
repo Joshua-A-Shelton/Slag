@@ -112,7 +112,7 @@ namespace slag
         void DX12Swapchain::backBuffers(uint8_t count)
         {
             _backBuffers = count;
-            _swapchain->ResizeBuffers(_backBuffers,_width,_height,_format,0);
+            _swapchain->ResizeBuffers(_backBuffers,_width,_height,DX12Lib::format(_format),0);
         }
 
         uint32_t DX12Swapchain::width()
@@ -129,7 +129,7 @@ namespace slag
         {
             _width = width;
             _height = height;
-            _swapchain->ResizeBuffers(_backBuffers,_width,_height,_format,0);
+            _swapchain->ResizeBuffers(_backBuffers,_width,_height,DX12Lib::format(_format),0);
             _swapchain->SetMaximumFrameLatency(_backBuffers-1);
         }
 

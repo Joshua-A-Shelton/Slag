@@ -218,6 +218,8 @@ if(BUILD_SLAG_TESTS)
             test/third-party/LodePNG/lodepng.cpp
             test/third-party/LodePNG/lodepng.h
             test/tests/IntegrationTests.cpp
+            test/utils/Window.cpp
+            test/utils/Window.h
     )
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)
     target_include_directories(SlagTests PRIVATE src ${SDL2_LIBRARIES} third-party/stb test/third-party/LodePNG)
@@ -225,6 +227,44 @@ if(BUILD_SLAG_TESTS)
     gtest_discover_tests(SlagTests)
 
     add_custom_command(TARGET SlagTests COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/test/resources ${CMAKE_CURRENT_BINARY_DIR}/resources)
+
+    # SHADERS------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    set(SLAG_TESTS_SHADER_SOURCE_DIR test/resources/shaders)
+    set(SLAG_TESTS_SHADER_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/resources/shaders)
+
+    file(GLOB SHADERS
+            ${SLAG_TESTS_SHADER_SOURCE_DIR}/*.vert
+            ${SLAG_TESTS_SHADER_SOURCE_DIR}/*.frag
+            ${SLAG_TESTS_SHADER_SOURCE_DIR}/*.comp)
+
+    add_custom_command(
+            COMMAND
+            ${CMAKE_COMMAND} -E make_directory ${SLAG_TESTS_SHADER_BINARY_DIR}
+            OUTPUT ${SLAG_TESTS_SHADER_BINARY_DIR}
+            COMMENT "Creating ${SLAG_TESTS_SHADER_BINARY_DIR}"
+    )
+
+    foreach(source IN LISTS SHADERS)
+        get_filename_component(FILENAME ${source} NAME)
+        add_custom_command(
+                COMMAND
+                glslc
+                #      -MD -MF ${SHADER_BINARY_DIR}/${FILENAME}.d
+                -o ${SLAG_TESTS_SHADER_BINARY_DIR}/${FILENAME}.spv
+                ${source}
+                OUTPUT ${SLAG_TESTS_SHADER_BINARY_DIR}/${FILENAME}.spv
+                DEPENDS ${source} ${SLAG_TESTS_SHADER_BINARY_DIR}
+                COMMENT "Compiling ${FILENAME}"
+        )
+        list(APPEND SLAG_TESTS_SPV_SHADERS ${SLAG_TESTS_SHADER_BINARY_DIR}/${FILENAME}.spv)
+    endforeach()
+
+    add_custom_target(slagTestShaders ALL DEPENDS ${SLAG_TESTS_SPV_SHADERS})
+
+    add_dependencies(SlagTests slagTestShaders)
+
+
+
 endif()
 
 target_include_directories(Slag PUBLIC src)
