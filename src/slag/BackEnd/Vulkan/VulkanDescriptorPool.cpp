@@ -6,74 +6,18 @@ namespace slag
 {
     namespace vulkan
     {
-        VulkanDescriptorPool::VulkanDescriptorPool(uint32_t samplers,
-                                                   uint32_t sampledTextures,
-                                                   uint32_t samplerAndTextureCombined,
-                                                   uint32_t storageTextures,
-                                                   uint32_t uniformTexelBuffers,
-                                                   uint32_t storageTexelBuffers,
-                                                   uint32_t uniformBuffers,
-                                                   uint32_t storageBuffers,
-                                                   uint32_t inputAttachments,
-                                                   uint32_t accelerationStructures)
+        VulkanDescriptorPool::VulkanDescriptorPool(const DescriptorPoolPageInfo& pageInfo)
         {
-            std::vector<VkDescriptorPoolSize> sizes;
-            if(samplers)
-            {
-                sizes.push_back({VK_DESCRIPTOR_TYPE_SAMPLER,samplers});
-            }
-            if(sampledTextures)
-            {
-                sizes.push_back({VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,sampledTextures});
-            }
-            if(samplerAndTextureCombined)
-            {
-                sizes.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,samplerAndTextureCombined});
-            }
-            if(storageTextures)
-            {
-                sizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,storageTextures});
-            }
-            if(uniformTexelBuffers)
-            {
-                sizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,uniformTexelBuffers});
-            }
-            if(storageTexelBuffers)
-            {
-                sizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,storageTexelBuffers});
-            }
-            if(uniformBuffers)
-            {
-                sizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,uniformBuffers});
-            }
-            if(storageBuffers)
-            {
-                sizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,storageBuffers});
-            }
-            if(inputAttachments)
-            {
-                sizes.push_back({VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,inputAttachments});
-            }
-            if(accelerationStructures)
-            {
-                sizes.push_back({VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,accelerationStructures});
-            }
-
-            VkDescriptorPoolCreateInfo info{};
-            info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-            //TODO: make this number.... correct
-            info.maxSets = 10000000;//arbitrary
-            info.pPoolSizes = sizes.data();
-            info.poolSizeCount = sizes.size();
-
-            auto success = vkCreateDescriptorPool(VulkanLib::card()->device(),&info, nullptr,&_pool);
+            _pageInfo = pageInfo;
+            _pages.push_back(allocatePage());
         }
 
         VulkanDescriptorPool::~VulkanDescriptorPool()
         {
-            if(_pool)
+            auto device = VulkanLib::card()->device();
+            for(size_t i=0; i< _pages.size(); i++)
             {
-                vkDestroyDescriptorPool(VulkanLib::card()->device(),_pool, nullptr);
+                vkDestroyDescriptorPool(device,_pages[i], nullptr);
             }
         }
 
@@ -90,26 +34,126 @@ namespace slag
 
         void VulkanDescriptorPool::move(VulkanDescriptorPool&& from)
         {
-            std::swap(_pool,from._pool);
+            _pages.swap(from._pages);
+            _currentPage = from._currentPage;
+            _pageInfo = from._pageInfo;
         }
 
         void VulkanDescriptorPool::reset()
         {
-            vkResetDescriptorPool(VulkanLib::card()->device(),_pool,0);
+            auto device = VulkanLib::card()->device();
+            for(auto i=0; i< _pages.size(); i++)
+            {
+                vkResetDescriptorPool(device,_pages[i],0);
+            }
+            _currentPage=0;
         }
 
         void* VulkanDescriptorPool::makeBundleLowLevelHandle(DescriptorGroup* forGroup)
         {
+            VkDescriptorPool page = _pages[_currentPage];
             auto group = static_cast<VulkanDescriptorGroup*>(forGroup);
             auto layout = group->layout();
             VkDescriptorSet handle;
             VkDescriptorSetAllocateInfo info{};
             info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            info.descriptorPool = _pool;
+            info.descriptorPool = page;
             info.descriptorSetCount = 1;
             info.pSetLayouts = &layout;
-            vkAllocateDescriptorSets(VulkanLib::card()->device(),&info,&handle);
+            auto result = vkAllocateDescriptorSets(VulkanLib::card()->device(),&info,&handle);
+
+            bool needReallocate = false;
+
+            switch (result) {
+                case VK_SUCCESS:
+                    //all good, return
+                    return handle;
+                case VK_ERROR_FRAGMENTED_POOL:
+                case VK_ERROR_OUT_OF_POOL_MEMORY:
+                    //reallocate pool
+                    needReallocate = true;
+                    break;
+                default:
+                    //unrecoverable error
+                    throw std::runtime_error("Unable to create bundle in pool");
+            }
+
+            if (needReallocate)
+            {
+                page = allocatePage();
+                _pages.push_back(page);
+                info.descriptorPool = page;
+                result = vkAllocateDescriptorSets(VulkanLib::card()->device(),&info,&handle);
+                //if it still fails then we have big issues
+                if (result != VK_SUCCESS)
+                {
+                    throw std::runtime_error("Unable to create bundle in newly allocated page. Out of memory or page insufficient for bundle size");
+                }
+            }
             return handle;
+        }
+
+        VkDescriptorPool VulkanDescriptorPool::allocatePage()
+        {
+            std::vector<VkDescriptorPoolSize> sizes;
+            if(_pageInfo.samplers)
+            {
+                sizes.push_back({VK_DESCRIPTOR_TYPE_SAMPLER,_pageInfo.samplers});
+            }
+            if(_pageInfo.sampledTextures)
+            {
+                sizes.push_back({VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,_pageInfo.sampledTextures});
+            }
+            if(_pageInfo.combinedSamplerTextures)
+            {
+                sizes.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,_pageInfo.combinedSamplerTextures});
+            }
+            if(_pageInfo.storageTextures)
+            {
+                sizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,_pageInfo.storageTextures});
+            }
+            if(_pageInfo.uniformTexelBuffers)
+            {
+                sizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,_pageInfo.uniformTexelBuffers});
+            }
+            if(_pageInfo.storageTexelBuffers)
+            {
+                sizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,_pageInfo.storageTexelBuffers});
+            }
+            if(_pageInfo.uniformBuffers)
+            {
+                sizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,_pageInfo.uniformBuffers});
+            }
+            if(_pageInfo.storageBuffers)
+            {
+                sizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,_pageInfo.storageBuffers});
+            }
+            if(_pageInfo.inputAttachments)
+            {
+                sizes.push_back({VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,_pageInfo.inputAttachments});
+            }
+            if(_pageInfo.accelerationStructures)
+            {
+                sizes.push_back({VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,_pageInfo.accelerationStructures});
+            }
+
+            VkDescriptorPoolCreateInfo info{};
+            info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+            //TODO: make this number.... correct
+            info.maxSets = _pageInfo.descriptorBundles;//arbitrary
+            info.pPoolSizes = sizes.data();
+            info.poolSizeCount = sizes.size();
+
+            VkDescriptorPool _page{};
+            auto success = vkCreateDescriptorPool(VulkanLib::card()->device(),&info, nullptr,&_page);
+            if(success == VK_SUCCESS)
+            {
+                return _page;
+            }
+            else
+            {
+                throw std::runtime_error("Unable to allocate new descriptor pool page");
+            }
         }
 
     } // vulkan

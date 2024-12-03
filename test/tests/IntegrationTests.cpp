@@ -56,7 +56,7 @@ TEST_F(IntegrationTests, BasicTriangle)
     auto verts = triangleVerts.get();
     size_t offset = 0;
     auto indexes = triangleIndicies.get();
-    auto pool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool(10,10,10,10,10,10,10,10,10,0));
+    auto pool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
 
     auto data = std::unique_ptr<Buffer>(Buffer::newBuffer(backBuffer->width()*backBuffer->height()*4,Buffer::CPU_AND_GPU,Buffer::DATA_BUFFER));
 

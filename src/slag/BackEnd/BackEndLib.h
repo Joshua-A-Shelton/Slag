@@ -34,7 +34,7 @@ namespace slag
             virtual DescriptorGroup* newDescriptorGroup(Descriptor* descriptors, size_t descriptorCount)=0;
             virtual Shader* newShader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)=0;
             //Descriptor Pools
-            virtual DescriptorPool* newDescriptorPool(uint32_t samplers,uint32_t sampledTextures,uint32_t samplerAndTextureCombined,uint32_t storageTextures,uint32_t uniformTexelBuffers,uint32_t storageTexelBuffers,uint32_t uniformBuffers,uint32_t storageBuffers,uint32_t inputAttachments,uint32_t accelerationStructures)=0;
+            virtual DescriptorPool* newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)=0;
             //Descriptor Bundles
             virtual void setSampler(void* handle,uint32_t binding,uint32_t arrayElement, Sampler* sampler, Texture::Layout layout)=0;
             virtual void setSampledTexture(void* handle,uint32_t binding, uint32_t arrayElement, Texture* texture, Texture::Layout layout)=0;

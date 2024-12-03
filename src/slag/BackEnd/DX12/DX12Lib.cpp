@@ -394,10 +394,7 @@ namespace slag
         }
 
         DescriptorPool*
-        DX12Lib::newDescriptorPool(uint32_t samplers, uint32_t sampledTextures, uint32_t samplerAndTextureCombined,
-                                     uint32_t storageTextures, uint32_t uniformTexelBuffers,
-                                     uint32_t storageTexelBuffers, uint32_t uniformBuffers, uint32_t storageBuffers,
-                                     uint32_t inputAttachments, uint32_t accelerationStructures)
+        DX12Lib::newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)
         {
             throw std::runtime_error("DX12Lib::newDescriptorPool not implemented");
         }

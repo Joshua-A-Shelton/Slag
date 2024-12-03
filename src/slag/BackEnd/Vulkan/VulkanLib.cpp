@@ -606,12 +606,9 @@ namespace slag
         }
 
         DescriptorPool*
-        VulkanLib::newDescriptorPool(uint32_t samplers, uint32_t sampledTextures, uint32_t samplerAndTextureCombined,
-                                     uint32_t storageTextures, uint32_t uniformTexelBuffers,
-                                     uint32_t storageTexelBuffers, uint32_t uniformBuffers, uint32_t storageBuffers,
-                                     uint32_t inputAttachments, uint32_t accelerationStructures)
+        VulkanLib::newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)
         {
-            return new VulkanDescriptorPool(samplers,sampledTextures,samplerAndTextureCombined,storageTextures,uniformTexelBuffers,storageTexelBuffers,uniformBuffers,storageBuffers,inputAttachments,accelerationStructures);
+            return new VulkanDescriptorPool(pageInfo);
         }
 
         void VulkanLib::setSampler(void* handle, uint32_t binding, uint32_t arrayElement, Sampler* sampler, Texture::Layout layout)
