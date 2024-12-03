@@ -158,7 +158,7 @@ namespace slag
             rasterizationInfo.pNext = nullptr;
             rasterizationInfo.flags = 0;
             rasterizationInfo.depthClampEnable = properties.rasterizationState.depthClampEnable;
-            rasterizationInfo.rasterizerDiscardEnable = false;
+            rasterizationInfo.rasterizerDiscardEnable = properties.rasterizationState.rasterizerDicardEnable;
             rasterizationInfo.polygonMode = VulkanLib::polygonMode(properties.rasterizationState.drawMode);
             rasterizationInfo.cullMode = VulkanLib::cullMode(properties.rasterizationState.culling);
             rasterizationInfo.frontFace = VulkanLib::frontFace(properties.rasterizationState.frontFacing);

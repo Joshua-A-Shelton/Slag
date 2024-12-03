@@ -245,7 +245,7 @@ namespace slag
             viewport.x = x;
             viewport.y = y;
             viewport.width = width;
-            viewport.height = -height;//flips y axis to point up like DX12
+            viewport.height = height;//TODO: negate to flip y axis? (if you do, it doesn't draw..., figure it out)
             viewport.minDepth = minDepth;
             viewport.maxDepth = maxDepth;
 

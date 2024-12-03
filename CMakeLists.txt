@@ -226,11 +226,11 @@ if(BUILD_SLAG_TESTS)
     include(GoogleTest)
     gtest_discover_tests(SlagTests)
 
-    add_custom_command(TARGET SlagTests COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/test/resources ${CMAKE_CURRENT_BINARY_DIR}/resources)
+    add_custom_command(TARGET SlagTests COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/test/resources ${CMAKE_BINARY_DIR}/resources)
 
     # SHADERS------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     set(SLAG_TESTS_SHADER_SOURCE_DIR test/resources/shaders)
-    set(SLAG_TESTS_SHADER_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/resources/shaders)
+    set(SLAG_TESTS_SHADER_BINARY_DIR ${CMAKE_BINARY_DIR}/resources/shaders)
 
     file(GLOB SHADERS
             ${SLAG_TESTS_SHADER_SOURCE_DIR}/*.vert

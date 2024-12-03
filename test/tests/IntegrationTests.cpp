@@ -40,27 +40,21 @@ public:
 TEST_F(IntegrationTests, BasicTriangle)
 {
 
-    ShaderModule modules[2] = {ShaderModule(ShaderStageFlags::VERTEX,"resources\\shaders\\orange.vert.spv"),ShaderModule(ShaderStageFlags::FRAGMENT,"resources\\shaders\\orange.frag.spv")};
+    ShaderModule modules[2] = {ShaderModule(ShaderStageFlags::VERTEX,"resources/shaders/orange.vert.spv"),ShaderModule(ShaderStageFlags::FRAGMENT,"resources/shaders/orange.frag.spv")};
     ShaderProperties props;
-    props.blendState.logicOperationEnable = false;
-    props.blendState.attachmentBlendStates[0].blendingEnabled = false;
-    props.depthStencilState.depthTestEnable = false;
-    props.depthStencilState.depthWriteEnable = false;
-    props.rasterizationState.rasterizerDicardEnable = false;
-    props.rasterizationState.culling = RasterizationState::NONE;
-    props.multiSampleState.rasterizationSamples = 1;
     FrameBufferDescription description;
-    description.addColorTarget(Pixels::R8G8B8A8_UNORM_SRGB);
+    description.addColorTarget(Pixels::B8G8R8A8_UNORM_SRGB);
     auto shader = std::unique_ptr<Shader>(Shader::newShader(modules,2, nullptr,0,props, nullptr,description));
-    auto window = Window::makeWindow("Integration::BasicTriangle",500,500);
-    auto swapchain = Window::makeSwapchain(window.get(),3,Swapchain::PresentMode::MAILBOX,Pixels::R8G8B8A8_UNORM_SRGB);
-    auto texture = std::unique_ptr<Texture>(Texture::newTexture("resources\\test-img.png",Pixels::R8G8B8A8_UNORM,1,TextureUsageFlags::SAMPLED_IMAGE,Texture::SHADER_RESOURCE));
+    auto window = slag::Window::makeWindow("Integration::BasicTriangle",500,500);
+    auto swapchain = slag::Window::makeSwapchain(window.get(),3,Swapchain::PresentMode::MAILBOX,Pixels::B8G8R8A8_UNORM_SRGB);
+    auto texture = std::unique_ptr<Texture>(Texture::newTexture("resources/test-img.png",Pixels::R8G8B8A8_UNORM,1,TextureUsageFlags::SAMPLED_IMAGE,Texture::SHADER_RESOURCE));
     SamplerBuilder sb{};
     auto sampler = std::unique_ptr<Sampler>(sb.newSampler());
     size_t count = 0;
     auto verts = triangleVerts.get();
     size_t offset = 0;
     auto indexes = triangleIndicies.get();
+
     while(count < 10000)
     {
         if(auto frame = swapchain->next())
