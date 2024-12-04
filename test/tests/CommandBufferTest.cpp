@@ -492,7 +492,7 @@ TEST_F(CommandBufferTests, BindGraphicsShader)
     FrameBufferDescription description;
     description.addColorTarget(Pixels::R8G8B8A8_UNORM);
 
-    ShaderModule modules[2]={ShaderModule(ShaderStageFlags::VERTEX,"resources\\basic.vert.spv"),ShaderModule(ShaderStageFlags::FRAGMENT,"resources\\basic.frag.spv")};
+    ShaderModule modules[2]={ShaderModule(ShaderStageFlags::VERTEX,"resources/basic.vert.spv"),ShaderModule(ShaderStageFlags::FRAGMENT,"resources/basic.frag.spv")};
     ShaderProperties shaderProps;
     auto shader = std::unique_ptr<Shader>(Shader::newShader(modules,2, nullptr,0,shaderProps, nullptr,description));
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::GRAPHICS));
@@ -818,7 +818,7 @@ TEST_F(CommandBufferTests, DisallowGraphics_bindGraphicsShader)
     FrameBufferDescription description;
     description.addColorTarget(Pixels::R8G8B8A8_UNORM);
 
-    ShaderModule modules[2]={ShaderModule(ShaderStageFlags::VERTEX,"resources\\basic.vert.spv"),ShaderModule(ShaderStageFlags::FRAGMENT,"resources\\basic.frag.spv")};
+    ShaderModule modules[2]={ShaderModule(ShaderStageFlags::VERTEX,"resources/basic.vert.spv"),ShaderModule(ShaderStageFlags::FRAGMENT,"resources/basic.frag.spv")};
     ShaderProperties shaderProps;
     auto shader = std::unique_ptr<Shader>(Shader::newShader(modules,2, nullptr,0,shaderProps, nullptr,description));
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::COMPUTE));
@@ -840,7 +840,7 @@ TEST_F(CommandBufferTests, DisallowTransfer_bindGraphicsShader)
     FrameBufferDescription description;
     description.addColorTarget(Pixels::R8G8B8A8_UNORM);
 
-    ShaderModule modules[2]={ShaderModule(ShaderStageFlags::VERTEX,"resources\\basic.vert.spv"),ShaderModule(ShaderStageFlags::FRAGMENT,"resources\\basic.frag.spv")};
+    ShaderModule modules[2]={ShaderModule(ShaderStageFlags::VERTEX,"resources/basic.vert.spv"),ShaderModule(ShaderStageFlags::FRAGMENT,"resources/basic.frag.spv")};
     ShaderProperties shaderProps;
     auto shader = std::unique_ptr<Shader>(Shader::newShader(modules,2, nullptr,0,shaderProps, nullptr,description));
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::TRANSFER));
