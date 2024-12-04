@@ -63,13 +63,9 @@ namespace slag
             ID3D12GraphicsCommandList7* underlyingCommandBuffer();
         protected:
             void move(IDX12CommandBuffer& from);
-            void insertBarriersEnhanced(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount);
-            void insertBarriersLegacy(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount);
             GpuQueue::QueueType _commandType = GpuQueue::GRAPHICS;
             ID3D12GraphicsCommandList7* _buffer = nullptr;
             ID3D12CommandAllocator* _pool = nullptr;
-
-            void (IDX12CommandBuffer::*_insertBarriers_ptr)(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount)= nullptr;
         };
 
     } // dx

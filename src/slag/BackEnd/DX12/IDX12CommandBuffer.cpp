@@ -11,14 +11,7 @@ namespace slag
     {
         IDX12CommandBuffer::IDX12CommandBuffer()
         {
-            if(DX12Lib::card()->supportsEnhancedBarriers())
-            {
-                _insertBarriers_ptr = &IDX12CommandBuffer::insertBarriersEnhanced;
-            }
-            else
-            {
-                _insertBarriers_ptr = &IDX12CommandBuffer::insertBarriersLegacy;
-            }
+
         }
 
         void IDX12CommandBuffer::move(IDX12CommandBuffer& from)
@@ -26,7 +19,6 @@ namespace slag
             std::swap(_pool,from._pool);
             std::swap(_buffer,from._buffer);
             _commandType = from._commandType;
-            _insertBarriers_ptr = from._insertBarriers_ptr;
         }
 
         ID3D12GraphicsCommandList7* IDX12CommandBuffer::underlyingCommandBuffer()
@@ -45,11 +37,6 @@ namespace slag
         }
 
         void IDX12CommandBuffer::insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers,size_t memoryBarrierCount)
-        {
-            (this->*(this->_insertBarriers_ptr))(imageBarriers, imageBarrierCount, bufferBarriers, bufferBarrierCount, memoryBarriers,memoryBarrierCount);
-        }
-
-        void IDX12CommandBuffer::insertBarriersEnhanced(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount)
         {
             std::vector<D3D12_BARRIER_GROUP> barrierGroups;
             std::vector<D3D12_TEXTURE_BARRIER> textureBarriers(imageBarrierCount);
@@ -71,14 +58,14 @@ namespace slag
                     dxBarrier.SyncBefore = std::bit_cast<D3D12_BARRIER_SYNC>(barrier.syncBefore);
                     dxBarrier.SyncAfter = std::bit_cast<D3D12_BARRIER_SYNC>(barrier.syncAfter);
                     dxBarrier.Subresources = D3D12_BARRIER_SUBRESOURCE_RANGE
-                    {
-                        .IndexOrFirstMipLevel = barrier.baseMipLevel,
-                        .NumMipLevels = barrier.mipCount == 0? image->mipLevels()-barrier.baseMipLevel : barrier.mipCount,
-                        .FirstArraySlice = barrier.baseLayer,
-                        .NumArraySlices = barrier.layerCount == 0? image->layers()-barrier.baseLayer : barrier.layerCount,
-                        .FirstPlane = 0,
-                        .NumPlanes = D3D12GetFormatPlaneCount(DX12Lib::card()->device(),image->underlyingFormat()) //there's room  for optimization here, I should probably make a lookup table when I first create the card
-                    };
+                            {
+                                    .IndexOrFirstMipLevel = barrier.baseMipLevel,
+                                    .NumMipLevels = barrier.mipCount == 0? image->mipLevels()-barrier.baseMipLevel : barrier.mipCount,
+                                    .FirstArraySlice = barrier.baseLayer,
+                                    .NumArraySlices = barrier.layerCount == 0? image->layers()-barrier.baseLayer : barrier.layerCount,
+                                    .FirstPlane = 0,
+                                    .NumPlanes = D3D12GetFormatPlaneCount(DX12Lib::card()->device(),image->underlyingFormat()) //there's room  for optimization here, I should probably make a lookup table when I first create the card
+                            };
                     if (barrier.oldLayout == Texture::Layout::UNDEFINED)
                     {
                         dxBarrier.Flags = D3D12_TEXTURE_BARRIER_FLAG_DISCARD;
@@ -122,56 +109,6 @@ namespace slag
             }
 
             _buffer->Barrier(barrierGroups.size(), barrierGroups.data());
-        }
-
-        void IDX12CommandBuffer::insertBarriersLegacy(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount)
-        {
-            std::vector<D3D12_RESOURCE_BARRIER> barriers;
-
-            for(size_t i=0; i< imageBarrierCount; i++)
-            {
-
-                auto& barrierDesc = imageBarriers[i];
-                auto image = static_cast<DX12Texture*>(barrierDesc.texture);
-                //TODO, not sure about plane slice being 0, especially for depth/stencil
-                auto mipCount = barrierDesc.mipCount != 0 ? barrierDesc.mipCount : image->mipLevels() - barrierDesc.baseMipLevel;
-                auto layerCount = barrierDesc.layerCount != 0 ? barrierDesc.layerCount : image->layers() - barrierDesc.baseLayer;
-                UINT subresource = D3D12CalcSubresource(barrierDesc.baseMipLevel,barrierDesc.baseLayer,0,mipCount,layerCount);
-
-                auto before = DX12Lib::stateLayout(barrierDesc.oldLayout);
-                auto after = DX12Lib::stateLayout(barrierDesc.newLayout);
-                if(before != after)
-                {
-                    barriers.push_back(
-                    {
-                        .Type=D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-                        .Transition={.pResource=image->texture(),.Subresource=subresource,.StateBefore=before,.StateAfter=after}
-                    });
-                }
-                if(before == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
-                {
-                    barriers.push_back(
-                    {
-                        .Type=D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_UAV,
-                        .UAV={.pResource=image->texture()}
-                    });
-                }
-            }
-            for(size_t i=0; i< bufferBarrierCount; i++)
-            {
-                auto& barrierDesc = bufferBarriers[i];
-                auto buffer = static_cast<DX12Buffer*>(barrierDesc.buffer);
-                barriers.push_back({.Type=D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_UAV,.UAV={.pResource =buffer->underlyingBuffer()}});
-            }
-            if(memoryBarrierCount)
-            {
-                barriers.push_back({.Type=D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_UAV,.UAV={.pResource =nullptr}});
-            }
-            if(!barriers.empty())
-            {
-                _buffer->ResourceBarrier(barriers.size(),barriers.data());
-            }
-
         }
 
         void IDX12CommandBuffer::clearColorImage(Texture* texture, ClearColor color, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore, PipelineStages syncAfter)
