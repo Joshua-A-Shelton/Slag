@@ -413,7 +413,7 @@ TEST_F(CommandBufferTests, CopyBufferToImage)
 TEST_F(CommandBufferTests, Blit)
 {
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::GRAPHICS));
-    auto sourceTexture = std::unique_ptr<Texture>(Texture::newTexture("resources\\solid-color.png",Pixels::R8G8B8A8_UNORM,1,TextureUsageFlags::SAMPLED_IMAGE,slag::Texture::TRANSFER_SOURCE));
+    auto sourceTexture = std::unique_ptr<Texture>(Texture::newTexture("resources/solid-color.png",Pixels::R8G8B8A8_UNORM,1,TextureUsageFlags::SAMPLED_IMAGE,slag::Texture::TRANSFER_SOURCE));
     auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R32G32B32A32_FLOAT,slag::Texture::TEXTURE_2D,10,10,2,1,1,TextureUsageFlags::SAMPLED_IMAGE));
     auto memory = std::unique_ptr<Buffer>(Buffer::newBuffer(5*5*4*sizeof(float),Buffer::CPU,Buffer::DATA_BUFFER));
     commandBuffer->begin();
