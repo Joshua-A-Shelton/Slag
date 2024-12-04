@@ -80,9 +80,18 @@ namespace slag
 
             if (needReallocate)
             {
-                page = allocatePage();
-                _pages.push_back(page);
-                info.descriptorPool = page;
+                if(_currentPage == _pages.size()-1)
+                {
+                    page = allocatePage();
+                    _pages.push_back(page);
+                    info.descriptorPool = page;
+                    _currentPage++;
+                }
+                else
+                {
+                    _currentPage++;
+                    info.descriptorPool = _pages[_currentPage];
+                }
                 result = vkAllocateDescriptorSets(VulkanLib::card()->device(),&info,&handle);
                 //if it still fails then we have big issues
                 if (result != VK_SUCCESS)
