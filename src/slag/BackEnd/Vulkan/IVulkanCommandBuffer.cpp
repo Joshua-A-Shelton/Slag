@@ -243,9 +243,9 @@ namespace slag
         {
             VkViewport viewport{};
             viewport.x = x;
-            viewport.y = y;
+            viewport.y = height-y;
             viewport.width = width;
-            viewport.height = height;//TODO: negate to flip y axis? (if you do, it doesn't draw..., figure it out)
+            viewport.height = -height;
             viewport.minDepth = minDepth;
             viewport.maxDepth = maxDepth;
 

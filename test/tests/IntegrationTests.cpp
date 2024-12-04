@@ -25,7 +25,7 @@ protected:
 public:
     IntegrationTests()
     {
-        std::vector<Vertex> tverts = {{{1.f, 1.f, 0.0f},{1,1}},{{ -1.f, 1.f, 0.0f},{0,1}},{{0.f,-1.f, 0.0f},{.5,0}}};
+        std::vector<Vertex> tverts = {{{1.f, -1.f, 0.0f},{1,1}},{{ -1.f, -1.f, 0.0f},{0,1}},{{0.f,1.f, 0.0f},{.5,0}}};
         std::vector<uint16_t> tindexes = {0,1,2};
         std::vector<glm::vec3> tnormals = {{0,0,1},{0,0,1},{0,0,1}};
         triangleVerts = std::unique_ptr<Buffer>(Buffer::newBuffer(tverts.data(),tverts.size()*sizeof(Vertex),Buffer::GPU,Buffer::VERTEX_BUFFER));
@@ -47,7 +47,6 @@ TEST_F(IntegrationTests, BasicTriangle)
     description.addColorTarget(Pixels::R8G8B8A8_UNORM);
     auto shader = std::unique_ptr<Shader>(Shader::newShader(modules,2, nullptr,0,props, nullptr,description));
     auto window = slag::Window::makeWindow("Integration::BasicTriangle",500,500);
-    //auto swapchain = slag::Window::makeSwapchain(window.get(),3,Swapchain::PresentMode::MAILBOX,Pixels::B8G8R8A8_UNORM_SRGB);
     auto texture = std::unique_ptr<Texture>(Texture::newTexture("resources/test-img.png",Pixels::R8G8B8A8_UNORM,1,TextureUsageFlags::SAMPLED_IMAGE,Texture::SHADER_RESOURCE));
     auto backBuffer = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UNORM,slag::Texture::TEXTURE_2D,500,500,1,1,1,TextureUsageFlags::RENDER_TARGET_ATTACHMENT));
     SamplerBuilder sb{};
@@ -87,7 +86,6 @@ TEST_F(IntegrationTests, BasicTriangle)
     commandBuffer->waitUntilFinished();
 
     auto pixelData = data->downloadData();
-
     int w, h, channels;
 
     auto rawBytes = stbi_load(std::filesystem::absolute("resources/Integration-BasicTriangle-Render.png").string().c_str(),&w,&h,&channels,4);
