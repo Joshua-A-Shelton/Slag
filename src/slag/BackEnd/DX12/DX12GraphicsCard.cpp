@@ -36,6 +36,7 @@ namespace slag
             D3D12_FEATURE_DATA_D3D12_OPTIONS12 features{};
             auto res = _device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS12,&features,sizeof(features));
             _supportsEnhancedBarriers = features.EnhancedBarriersSupported;
+            assert(_supportsEnhancedBarriers && "Graphics Card must support DX12 enhanced barriers");
             D3D12_FEATURE_DATA_D3D12_OPTIONS13 features13{};
             res = _device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS13,&features13,sizeof(features13));
             assert(features13.UnrestrictedBufferTextureCopyPitchSupported && "DX12 renderer must support arbitrary texture copy pitch");
