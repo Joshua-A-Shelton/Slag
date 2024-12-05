@@ -182,6 +182,7 @@ if(SLAG_DX12_BACKEND)
     add_subdirectory(third-party/d3dma)
     target_include_directories(Slag SYSTEM BEFORE PUBLIC DirectX-Headers)
     target_link_libraries(Slag DirectX-Headers D3D12MemoryAllocator)
+    add_custom_command(TARGET Slag COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/third-party/D3D12 ${CMAKE_BINARY_DIR}/D3D12)
 endif()
 
 
