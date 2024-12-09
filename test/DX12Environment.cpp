@@ -21,7 +21,7 @@ namespace slag
 
         void DX12Environment::SetUp()
         {
-            SlagInitDetails details{.backend = DirectX12,.debug=true,.slagDebugHandler=DX12DebugTest};
+            SlagInitDetails details{.backend = DIRECTX12,.debug=true,.slagDebugHandler=DX12DebugTest};
             slag::SlagLib::initialize(details);
             DX12_TESTS_POST_SET_UP = true;
         }

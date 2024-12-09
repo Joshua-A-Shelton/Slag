@@ -26,7 +26,7 @@ TEST(Swapchain, PresentModes)
 #endif
 #endif
     SDL_WindowFlags flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE);
-    if(SlagLib::usingBackEnd() == BackEnd::Vulkan)
+    if(SlagLib::usingBackEnd() == BackEnd::VULKAN)
     {
         flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE | SDL_WINDOW_VULKAN);
     }
@@ -91,7 +91,7 @@ TEST(Swapchain, NextIfReady)
 #endif
 #endif
     SDL_WindowFlags flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE);
-    if(SlagLib::usingBackEnd() == BackEnd::Vulkan)
+    if(SlagLib::usingBackEnd() == BackEnd::VULKAN)
     {
         flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE | SDL_WINDOW_VULKAN);
     }

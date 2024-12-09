@@ -72,7 +72,7 @@ namespace slag
                     .oldLayout=Texture::Layout::TRANSFER_DESTINATION,
                     .newLayout=initializedLayout,
                     .accessBefore = BarrierAccessFlags::TRANSFER_WRITE,
-                    .accessAfter=BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE,
+                    .accessAfter=BarrierAccessFlags::COLOR_ATTACHMENT_READ |  BarrierAccessFlags::SHADER_READ | BarrierAccessFlags::TRANSFER_READ | BarrierAccessFlags::COLOR_ATTACHMENT_WRITE |  BarrierAccessFlags::SHADER_WRITE | BarrierAccessFlags::TRANSFER_WRITE,
                     .syncBefore=PipelineStageFlags::TRANSFER,
                     .syncAfter =PipelineStageFlags::ALL_COMMANDS
             };

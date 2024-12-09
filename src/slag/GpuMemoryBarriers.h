@@ -16,9 +16,6 @@ DEFINITION(DEPTH_STENCIL_READ, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT , D3D
 DEFINITION(DEPTH_STENCIL_WRITE, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT , D3D12_BARRIER_ACCESS_DEPTH_STENCIL_WRITE) \
 DEFINITION(TRANSFER_READ, VK_ACCESS_TRANSFER_READ_BIT , D3D12_BARRIER_ACCESS_COPY_SOURCE) \
 DEFINITION(TRANSFER_WRITE, VK_ACCESS_TRANSFER_WRITE_BIT , D3D12_BARRIER_ACCESS_COPY_DEST) \
-DEFINITION(ALL_READ, VK_ACCESS_MEMORY_READ_BIT , D3D12_BARRIER_ACCESS_INDIRECT_ARGUMENT | D3D12_BARRIER_ACCESS_INDEX_BUFFER | D3D12_BARRIER_ACCESS_VERTEX_BUFFER | D3D12_BARRIER_ACCESS_CONSTANT_BUFFER | D3D12_BARRIER_ACCESS_SHADER_RESOURCE | D3D12_BARRIER_ACCESS_UNORDERED_ACCESS | D3D12_BARRIER_ACCESS_RENDER_TARGET | D3D12_BARRIER_ACCESS_COPY_SOURCE | D3D12_BARRIER_ACCESS_DEPTH_STENCIL_READ) \
-DEFINITION(ALL_WRITE, VK_ACCESS_MEMORY_WRITE_BIT , D3D12_BARRIER_ACCESS_INDIRECT_ARGUMENT | D3D12_BARRIER_ACCESS_INDEX_BUFFER | D3D12_BARRIER_ACCESS_VERTEX_BUFFER | D3D12_BARRIER_ACCESS_CONSTANT_BUFFER | D3D12_BARRIER_ACCESS_SHADER_RESOURCE | D3D12_BARRIER_ACCESS_UNORDERED_ACCESS | D3D12_BARRIER_ACCESS_RENDER_TARGET | D3D12_BARRIER_ACCESS_DEPTH_STENCIL_WRITE | D3D12_BARRIER_ACCESS_COPY_DEST) \
-
 
 #define MEMORY_PIPELINE_STAGE_DEFINITIONS(DEFINITION) \
 DEFINITION(NONE, VK_PIPELINE_STAGE_NONE, D3D12_BARRIER_SYNC_NONE) \
@@ -168,9 +165,9 @@ namespace slag
         Texture::Layout oldLayout = Texture::UNDEFINED;
         Texture::Layout newLayout = Texture::UNDEFINED;
         ///Synchronize (flush from cache [cache->Memory]) this kind of memory before barrier executes
-        BarrierAccess accessBefore = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+        BarrierAccess accessBefore = BarrierAccessFlags::NONE;
         ///Synchronize (invalidate cache [cache<-Memory]) this kind of memory after barrier executes
-        BarrierAccess accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+        BarrierAccess accessAfter = BarrierAccessFlags::NONE;
         ///Finish all work of this kind before barrier executes
         PipelineStages syncBefore = PipelineStageFlags::ALL_COMMANDS;
         ///Make all work of this kind wait until after barrier executes
@@ -184,9 +181,9 @@ namespace slag
         ///Size of section of barrier to require barrier, 0 = entire size of the buffer
         size_t size = 0;
         ///Synchronize (flush from cache [cache->Memory]) this kind of memory before barrier executes
-        BarrierAccess accessBefore = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+        BarrierAccess accessBefore = BarrierAccessFlags::NONE;
         ///Synchronize (invalidate cache [cache<-Memory]) this kind of memory after barrier executes
-        BarrierAccess accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+        BarrierAccess accessAfter = BarrierAccessFlags::NONE;
         ///Finish all work of this kind before barrier executes
         PipelineStages syncBefore = PipelineStageFlags::ALL_COMMANDS;
         ///Make all work of this kind wait until after barrier executes
@@ -196,9 +193,9 @@ namespace slag
     struct GPUMemoryBarrier
     {
         ///Synchronize (flush from cache [cache->Memory]) this kind of memory before barrier executes
-        BarrierAccess accessBefore = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+        BarrierAccess accessBefore = BarrierAccessFlags::NONE;
         ///Synchronize (invalidate cache [cache<-Memory]) this kind of memory after barrier executes
-        BarrierAccess accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+        BarrierAccess accessAfter = BarrierAccessFlags::NONE;
         ///Finish all work of this kind before barrier executes
         PipelineStages syncBefore = PipelineStageFlags::ALL_COMMANDS;
         ///Make all work of this kind wait until after barrier executes

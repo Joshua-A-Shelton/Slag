@@ -57,7 +57,7 @@ namespace slag
             barrier.oldLayout = Texture::TRANSFER_DESTINATION;
             barrier.newLayout = endingLayout;
             barrier.accessBefore = BarrierAccessFlags::TRANSFER_WRITE;
-            barrier.accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+            barrier.accessAfter = BarrierAccessFlags::COLOR_ATTACHMENT_READ | BarrierAccessFlags::COLOR_ATTACHMENT_WRITE | BarrierAccessFlags::SHADER_READ | BarrierAccessFlags::SHADER_WRITE | BarrierAccessFlags::TRANSFER_READ | BarrierAccessFlags::TRANSFER_WRITE;
             barrier.syncBefore = PipelineStageFlags::TRANSFER;
             barrier.syncAfter = syncAfter;
             insertBarriers(&barrier,1, nullptr,0, nullptr,0);
@@ -68,8 +68,9 @@ namespace slag
             assert(commandType() == GpuQueue::GRAPHICS && "updateMipChain is a graphics queue only operation");
             auto tex = static_cast<VulkanTexture*>(texture);
             ImageBarrier barriers[2];
-            barriers[0]={.texture=texture,.baseLayer=0,.layerCount=0,.baseMipLevel=sourceMipLevel,.mipCount=1,.oldLayout=sourceLayout,.newLayout=Texture::TRANSFER_SOURCE,.accessBefore=BarrierAccessFlags::ALL_WRITE | BarrierAccessFlags::TRANSFER_READ,.accessAfter=BarrierAccessFlags::NONE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::TRANSFER};
-            barriers[1]={.texture=texture,.baseLayer=0,.layerCount=0,.baseMipLevel=sourceMipLevel+1,.mipCount=0,.oldLayout=destinationLayout,.newLayout=Texture::TRANSFER_DESTINATION,.accessBefore=BarrierAccessFlags::NONE,.accessAfter=BarrierAccessFlags::NONE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::TRANSFER};
+            ;
+            barriers[0]={.texture=texture,.baseLayer=0,.layerCount=0,.baseMipLevel=sourceMipLevel,.mipCount=1,.oldLayout=sourceLayout,.newLayout=Texture::TRANSFER_SOURCE,.accessBefore=std::bit_cast<BarrierAccess>(VK_ACCESS_MEMORY_WRITE_BIT),.accessAfter=BarrierAccessFlags::NONE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::TRANSFER};
+            barriers[1]={.texture=texture,.baseLayer=0,.layerCount=0,.baseMipLevel=sourceMipLevel+1,.mipCount=0,.oldLayout=destinationLayout,.newLayout=Texture::TRANSFER_DESTINATION,.accessBefore=std::bit_cast<BarrierAccess>(VK_ACCESS_MEMORY_READ_BIT),.accessAfter=BarrierAccessFlags::NONE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::TRANSFER};
             insertBarriers(barriers,2, nullptr,0, nullptr,0);
             int32_t width = tex->width() >> sourceMipLevel;
             int32_t height = tex->height() >> sourceMipLevel;
@@ -95,14 +96,14 @@ namespace slag
             sourceBarrier.oldLayout = Texture::TRANSFER_SOURCE;
             sourceBarrier.newLayout = endingSourceLayout;
             sourceBarrier.accessBefore = BarrierAccessFlags::TRANSFER_READ;
-            sourceBarrier.accessAfter = BarrierAccessFlags::NONE;
+            sourceBarrier.accessAfter = std::bit_cast<BarrierAccess>(VK_ACCESS_MEMORY_READ_BIT);
             sourceBarrier.syncBefore = PipelineStageFlags::TRANSFER;
             sourceBarrier.syncAfter = syncAfter;
 
             destBarrier.oldLayout = Texture::TRANSFER_DESTINATION;
             destBarrier.newLayout = endingDestinationLayout;
             destBarrier.accessBefore = BarrierAccessFlags::TRANSFER_WRITE;
-            destBarrier.accessAfter = BarrierAccessFlags::ALL_READ;
+            destBarrier.accessAfter = std::bit_cast<BarrierAccess>(VK_ACCESS_MEMORY_READ_BIT);
             destBarrier.syncBefore = PipelineStageFlags::TRANSFER;
             destBarrier.syncAfter = syncAfter;
             insertBarriers(barriers,2, nullptr,0, nullptr,0);
@@ -397,7 +398,7 @@ namespace slag
             barrier.oldLayout = Texture::TRANSFER_DESTINATION;
             barrier.newLayout = endingLayout;
             barrier.accessBefore = BarrierAccessFlags::TRANSFER_WRITE;
-            barrier.accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+            barrier.accessAfter = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE |  BarrierAccessFlags::SHADER_WRITE | BarrierAccessFlags::TRANSFER_WRITE | BarrierAccessFlags::COLOR_ATTACHMENT_READ |  BarrierAccessFlags::SHADER_READ | BarrierAccessFlags::TRANSFER_READ;
             barrier.syncBefore = PipelineStageFlags::TRANSFER;
             barrier.syncAfter = syncAfter;
             insertBarriers(&barrier,1, nullptr,0, nullptr,0);

@@ -7,8 +7,8 @@ DEFINITION(UNDEFINED,VK_IMAGE_LAYOUT_UNDEFINED,D3D12_BARRIER_LAYOUT_UNDEFINED,D3
 DEFINITION(RENDER_TARGET,VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,D3D12_BARRIER_LAYOUT_RENDER_TARGET,D3D12_RESOURCE_STATE_RENDER_TARGET ) \
 DEFINITION(GENERAL,VK_IMAGE_LAYOUT_GENERAL,D3D12_BARRIER_LAYOUT_COMMON,D3D12_RESOURCE_STATE_COMMON)        \
 DEFINITION(UNORDERED,VK_IMAGE_LAYOUT_GENERAL,D3D12_BARRIER_LAYOUT_UNORDERED_ACCESS,D3D12_RESOURCE_STATE_UNORDERED_ACCESS)        \
-DEFINITION(DEPTH_READ,VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_READ,D3D12_RESOURCE_STATE_DEPTH_READ ) \
-DEFINITION(DEPTH_WRITE,VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_WRITE,D3D12_RESOURCE_STATE_DEPTH_WRITE ) \
+DEFINITION(DEPTH_TARGET_READ_ONLY,VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_READ,D3D12_RESOURCE_STATE_DEPTH_READ ) \
+DEFINITION(DEPTH_TARGET,VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_WRITE,D3D12_RESOURCE_STATE_DEPTH_WRITE ) \
 DEFINITION(SHADER_RESOURCE,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,D3D12_BARRIER_LAYOUT_SHADER_RESOURCE,D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE) \
 DEFINITION(TRANSFER_DESTINATION,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,D3D12_BARRIER_LAYOUT_COPY_DEST,D3D12_RESOURCE_STATE_COPY_DEST) \
 DEFINITION(TRANSFER_SOURCE,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,D3D12_BARRIER_LAYOUT_COPY_SOURCE,D3D12_RESOURCE_STATE_COPY_SOURCE) \
@@ -137,22 +137,28 @@ namespace slag
          */
         virtual Pixels::Format format()=0;
 
-
         /**
-         * Raw dogging it texture. Give it the data it needs, and it assumes it's all correct. should be *fast*, but requires the user of the API to be doing the homework
-         * @param data
-         * @param dataSize
-         * @param dataFormat
-         * @param width
-         * @param height
-         * @param mipLevels
-         * @param layers
-         * @param sampleCount
-         * @param usage
-         * @param initializedLayout
+         * Creates an texture from a variety of image files
+         * @param imagePath Filepath to the image
+         * @param dataFormat How to interpret the texels of the final image (R8G8B8A8_UINT/R8G8B8A8_UNORM/R8G8B8A8_UNORM_SRGB)
+         * @param mipLevels Number of mip levels the final texture should have
+         * @param usage Flags that describe how the texture will be used
+         * @param initializedLayout The layout the texture will be in after it loads
          * @return
          */
         static Texture* newTexture(const std::filesystem::path& imagePath, Pixels::Format dataFormat, uint32_t mipLevels, TextureUsage usage, Layout initializedLayout);
+        /**
+         * Creates a new texture with given parameters
+         * @param dataFormat The format the texels will be
+         * @param type The kind of texture it will be
+         * @param width The width of the texture's base level
+         * @param height The height of the texture's base level
+         * @param mipLevels Number of mip levels the final texture should have
+         * @param layers How many images in the array of the texture (1 for most cases,6 for cubemaps, or number of elements in array otherwise)
+         * @param sampleCount Number of samples per texel to use for multisampling (must be power of 2)
+         * @param usage Flags that describe how the texture will be used
+         * @return
+         */
         static Texture* newTexture(Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, uint32_t layers, uint8_t sampleCount, TextureUsage usage);
     };
 

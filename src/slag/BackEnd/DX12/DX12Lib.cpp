@@ -23,17 +23,18 @@ namespace slag
         {
             Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory;
             UINT createFactoryFlags = 0;
-#ifndef NDEBUG
-            Microsoft::WRL::ComPtr<ID3D12Debug> debugInterface = nullptr;
-            D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface));
-            Microsoft::WRL::ComPtr<ID3D12Debug1> debugController;
-            debugInterface->QueryInterface(IID_PPV_ARGS(&debugController));
-            debugController->EnableDebugLayer();
-            debugController->SetEnableGPUBasedValidation(true);
+            if(details.debug)
+            {
+                Microsoft::WRL::ComPtr<ID3D12Debug> debugInterface = nullptr;
+                D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface));
+                Microsoft::WRL::ComPtr<ID3D12Debug1> debugController;
+                debugInterface->QueryInterface(IID_PPV_ARGS(&debugController));
+                debugController->EnableDebugLayer();
+                debugController->SetEnableGPUBasedValidation(true);
 
-            createFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
+                createFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
+            }
 
-#endif
             CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&dxgiFactory));
 
             Microsoft::WRL::ComPtr<IDXGIAdapter1> dxgiAdapter1;
@@ -289,7 +290,7 @@ namespace slag
 
         BackEnd DX12Lib::identifier()
         {
-            return DirectX12;
+            return DIRECTX12;
         }
 
         GraphicsCard* DX12Lib::graphicsCard()

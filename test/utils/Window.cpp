@@ -4,7 +4,7 @@ namespace slag
     std::unique_ptr<SDL_Window, SDL_WindowCustomDeleter> Window::makeWindow(const std::string& name, int width, int height)
     {
         SDL_WindowFlags flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE);
-        if(SlagLib::usingBackEnd() == BackEnd::Vulkan)
+        if(SlagLib::usingBackEnd() == BackEnd::VULKAN)
         {
             flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE | SDL_WINDOW_VULKAN);
         }

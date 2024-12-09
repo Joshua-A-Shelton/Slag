@@ -6,6 +6,7 @@ namespace slag
 
     class Texture;
     class CommandBuffer;
+    ///Resources used for each instance of the swapchain::next
     class Frame
     {
     public:

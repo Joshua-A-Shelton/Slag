@@ -78,7 +78,7 @@ TEST_F(IntegrationTests, BasicTriangle)
     commandBuffer->bindGraphicsDescriptorBundle(shader.get(),0,bundle);
     commandBuffer->drawIndexed(3,1,0,0,0);
     commandBuffer->endRendering();
-    ImageBarrier toCopy{.texture=backBuffer.get(),.oldLayout=slag::Texture::RENDER_TARGET,.newLayout=Texture::TRANSFER_SOURCE,.accessBefore=BarrierAccessFlags::SHADER_WRITE,.accessAfter=BarrierAccessFlags::ALL_READ,.syncBefore=PipelineStageFlags::ALL_GRAPHICS,.syncAfter=PipelineStageFlags::ALL_COMMANDS};
+    ImageBarrier toCopy{.texture=backBuffer.get(),.oldLayout=slag::Texture::RENDER_TARGET,.newLayout=Texture::TRANSFER_SOURCE,.accessBefore=BarrierAccessFlags::SHADER_WRITE,.accessAfter=BarrierAccessFlags::COLOR_ATTACHMENT_READ |  BarrierAccessFlags::SHADER_READ | BarrierAccessFlags::TRANSFER_READ,.syncBefore=PipelineStageFlags::ALL_GRAPHICS,.syncAfter=PipelineStageFlags::ALL_COMMANDS};
     commandBuffer->insertBarriers(&toCopy,1, nullptr,0, nullptr,0);
     commandBuffer->copyImageToBuffer(backBuffer.get(),Texture::TRANSFER_SOURCE,0,1,0,data.get(),0);
     commandBuffer->end();

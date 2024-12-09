@@ -16,16 +16,18 @@ DEFINITION(LINEAR,VK_FILTER_LINEAR) \
 #include "Operations.h"
 namespace slag
 {
-
+    ///An oject that determines how to acquire pixel data from a texture
     class Sampler
     {
     public:
+        ///How to return pixel data beyond the actual bounds of a texture
         enum AddressMode
         {
 #define DEFINITION(slagName, vulkanName, dx12Name) slagName,
             SAMPLER_ADDRESS_MODES_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
         };
+        ///Method to upscale/downscale texel data
         enum Filter
         {
 #define DEFINITION(slagName, vulkanName) slagName,
@@ -34,22 +36,35 @@ namespace slag
         };
 
         virtual ~Sampler()=default;
+        ///Method to downscale texel data
         virtual Filter minFilter()=0;
+        ///Method to upscale texel data
         virtual Filter magFilter()=0;
+        ///Method to scale between mip maps
         virtual Filter mipMapFilter()=0;
+        ///How to return texel data outside texture's width
         virtual AddressMode addressU()=0;
+        ///How to return texel data outside texture's height
         virtual AddressMode addressV()=0;
+        ///How to return texel data outside texture's depth
         virtual AddressMode addressW()=0;
+        ///Bias towards mip level selection (negative is towards higher level, positive is towards lower level)
         virtual float mipLODBias()=0;
+        ///If anisotrophic filtering is enabled (reduces blurriness at oblique angles)
         virtual bool anisotrophyEnabled()=0;
+        ///Maximum levels of anisotrphic filtering possible if enabled
         virtual uint8_t maxAnisotrophy()=0;
+        ///Comparison applied to texel data before filtering in Depth Comparison
         virtual Operations::ComparisonFunction comparisonFunction()=0;
+        ///Border color to use in the case CLAMP_TO_BORDER is used
         virtual Color borderColor()=0;
+        ///Minimum number of mips to use in acquiring texel data
         virtual float minLOD()=0;
+        ///Maximum number of mips to use in acquiring texel data
         virtual float maxLOD()=0;
 
     };
-
+    ///Helps to build Texture Samplers
     class SamplerBuilder
     {
     public:

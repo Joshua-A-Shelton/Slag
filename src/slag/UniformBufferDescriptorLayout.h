@@ -6,7 +6,7 @@
 #include "GraphicsTypes.h"
 namespace slag
 {
-
+    ///Describes the structure for data in a uniform buffer
     class UniformBufferDescriptorLayout
     {
     public:

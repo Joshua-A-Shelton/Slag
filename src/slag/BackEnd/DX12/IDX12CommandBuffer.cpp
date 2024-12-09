@@ -50,6 +50,8 @@ namespace slag
                     auto& barrier = imageBarriers[i];
                     auto image = static_cast<DX12Texture*>(barrier.texture);
                     auto& dxBarrier = textureBarriers[i];
+
+
                     dxBarrier.pResource = image->texture();
                     dxBarrier.LayoutBefore = DX12Lib::barrierLayout(barrier.oldLayout);
                     dxBarrier.LayoutAfter = DX12Lib::barrierLayout(barrier.newLayout);
@@ -120,7 +122,7 @@ namespace slag
             _buffer->ClearRenderTargetView(image->descriptorHandle(),color.floats,0, nullptr);
             barrier.oldLayout = Texture::RENDER_TARGET;
             barrier.newLayout = endingLayout;
-            barrier.accessBefore = BarrierAccessFlags::ALL_READ;
+            barrier.accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_READ |  BarrierAccessFlags::SHADER_READ | BarrierAccessFlags::TRANSFER_READ;
             barrier.accessAfter = BarrierAccessFlags::NONE;
             barrier.syncBefore = PipelineStageFlags::TRANSFER;
             barrier.syncAfter = syncAfter;

@@ -71,7 +71,7 @@ TEST_F(CommandBufferTests, InsertBarriersMultiUseTexture)
         for(size_t i=0; i< layouts.size(); i++)
         {
             auto newLayout = layouts[i];
-            if(newLayout != Texture::UNDEFINED && newLayout != Texture::DEPTH_READ && newLayout != Texture::DEPTH_WRITE)
+            if(newLayout != Texture::UNDEFINED && newLayout != Texture::DEPTH_TARGET_READ_ONLY && newLayout != Texture::DEPTH_TARGET)
             {
                 imageBarrier.newLayout = newLayout;
             }
@@ -112,7 +112,7 @@ TEST_F(CommandBufferTests, InsertBarriersSampledTexture)
         for(size_t i=0; i< layouts.size(); i++)
         {
             auto newLayout = layouts[i];
-            if(newLayout != Texture::UNDEFINED && newLayout != Texture::DEPTH_READ && newLayout != Texture::DEPTH_WRITE && newLayout != Texture::RENDER_TARGET && newLayout != Texture::UNORDERED)
+            if(newLayout != Texture::UNDEFINED && newLayout != Texture::DEPTH_TARGET_READ_ONLY && newLayout != Texture::DEPTH_TARGET && newLayout != Texture::RENDER_TARGET && newLayout != Texture::UNORDERED)
             {
                 imageBarrier.newLayout = newLayout;
             }
@@ -152,10 +152,10 @@ TEST_F(CommandBufferTests, InsertBarriersDepthTexture)
         imageBarrier.newLayout = Texture::TRANSFER_DESTINATION;
         buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
         imageBarrier.oldLayout = Texture::TRANSFER_DESTINATION;
-        imageBarrier.newLayout = Texture::DEPTH_READ;
+        imageBarrier.newLayout = Texture::DEPTH_TARGET_READ_ONLY;
         buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-        imageBarrier.oldLayout = Texture::DEPTH_READ;
-        imageBarrier.newLayout = Texture::DEPTH_WRITE;
+        imageBarrier.oldLayout = Texture::DEPTH_TARGET_READ_ONLY;
+        imageBarrier.newLayout = Texture::DEPTH_TARGET;
         buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
         buffer->end();
         submissionQueues[qt]->submit(buffer.get());
@@ -204,7 +204,7 @@ TEST_F(CommandBufferTests, InsertBarriersGlobal)
         auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(commandBufferQueueTypes[qt]));
         commandBuffer->begin();
 
-        GPUMemoryBarrier barrier{.accessBefore = BarrierAccessFlags::NONE,.accessAfter=BarrierAccessFlags::ALL_WRITE,.syncBefore=PipelineStageFlags::NONE,.syncAfter=PipelineStageFlags::ALL_COMMANDS};
+        GPUMemoryBarrier barrier{.accessBefore = BarrierAccessFlags::NONE,.accessAfter= BarrierAccessFlags::COLOR_ATTACHMENT_WRITE |  BarrierAccessFlags::SHADER_WRITE | BarrierAccessFlags::TRANSFER_WRITE,.syncBefore=PipelineStageFlags::NONE,.syncAfter=PipelineStageFlags::ALL_COMMANDS};
         commandBuffer->insertBarriers(nullptr,0, nullptr,0,&barrier,1);
 
         commandBuffer->end();
@@ -285,8 +285,8 @@ TEST_F(CommandBufferTests, UpdateMipChain)
         .texture = flatMipped.get(),
         .oldLayout = Texture::TRANSFER_DESTINATION,
         .newLayout = Texture::TRANSFER_SOURCE,
-        .accessBefore = BarrierAccessFlags::ALL_WRITE,
-        .accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE,
+        .accessBefore = BarrierAccessFlags::TRANSFER_WRITE,
+        .accessAfter = BarrierAccessFlags::COLOR_ATTACHMENT_READ |  BarrierAccessFlags::SHADER_READ | BarrierAccessFlags::TRANSFER_READ | BarrierAccessFlags::COLOR_ATTACHMENT_WRITE |  BarrierAccessFlags::SHADER_WRITE | BarrierAccessFlags::TRANSFER_WRITE,
         .syncBefore = PipelineStageFlags::TRANSFER,
         .syncAfter = PipelineStageFlags::ALL_COMMANDS
     };
@@ -357,7 +357,7 @@ TEST_F(CommandBufferTests, CopyImageToBuffer)
         barrier.newLayout = slag::Texture::TRANSFER_SOURCE;
         barrier.syncBefore = PipelineStageFlags::TRANSFER;
         barrier.syncAfter = PipelineStageFlags::TRANSFER;
-        barrier.accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+        barrier.accessAfter = BarrierAccessFlags::TRANSFER_READ | BarrierAccessFlags::TRANSFER_WRITE;
         commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
         commandBuffer->copyImageToBuffer(texture.get(),slag::Texture::TRANSFER_SOURCE,0,1,0,downloadBuffer.get(),0);
         commandBuffer->end();
@@ -393,7 +393,7 @@ TEST_F(CommandBufferTests, CopyBufferToImage)
         barrier.newLayout = slag::Texture::TRANSFER_SOURCE;
         barrier.syncBefore = PipelineStageFlags::TRANSFER;
         barrier.syncAfter = PipelineStageFlags::TRANSFER;
-        barrier.accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+        barrier.accessAfter = BarrierAccessFlags::TRANSFER_READ | BarrierAccessFlags::TRANSFER_WRITE;
         commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
         commandBuffer->copyImageToBuffer(texture.get(),slag::Texture::TRANSFER_SOURCE,0,1,0,downloadBuffer.get(),0);
         commandBuffer->end();

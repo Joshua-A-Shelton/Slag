@@ -22,6 +22,7 @@ DEFINITION(TASK,VK_SHADER_STAGE_TASK_BIT_EXT,D3D12_SHVER_AMPLIFICATION_SHADER) \
 
 namespace slag
 {
+    ///Set of stages that occurs in shader execution
     class ShaderStages
     {
     private:
@@ -77,7 +78,7 @@ namespace slag
         SHADER_STAGE_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
     };
-
+    ///Small amount of data that is saved to the command buffer itself for shaders to use
     struct PushConstantRange
     {
         ShaderStages stageFlags;
@@ -86,6 +87,7 @@ namespace slag
     };
 
     class DescriptorGroup;
+    ///Represents a stage of shader execution in SPIR-V
     class ShaderModule
     {
     public:
@@ -95,8 +97,11 @@ namespace slag
         ShaderModule& operator=(const ShaderModule&)=delete;
         ShaderModule(ShaderModule&& from);
         ShaderModule& operator=(ShaderModule&& from);
+        ///Raw bytes of the shader code
         void* data();
+        ///Size of the shader code data
         size_t dataSize();
+        ///Which stage of execution this module represents
         ShaderStages stage();
     private:
         void move(ShaderModule&& from);
@@ -104,16 +109,32 @@ namespace slag
         std::vector<char> _shaderData;
     };
 
+    ///Program run on the GPU run highly in parallel
     class Shader
     {
     public:
         virtual ~Shader()=default;
+        ///Number of descriptor groups this shader has
         virtual size_t descriptorGroupCount()=0;
+        ///Retrieve descriptor group at index
         virtual DescriptorGroup* descriptorGroup(size_t index)=0;
+        ///Retrieve descriptor group at index
         virtual DescriptorGroup* operator[](size_t index)=0;
+        ///Number of push constant ranges
         virtual size_t pushConstantRangeCount()=0;
+        ///Retrieve push constant at index
         virtual PushConstantRange pushConstantRange(size_t index)=0;
-
+        /**
+         * Create a new shader
+         * @param modules Array of stages of shader execution
+         * @param moduleCount Number of objects in modules array
+         * @param descriptorGroups Array of descriptor groups this shader contains, nullptr to get via reflection
+         * @param descriptorGroupCount Number of descriptor groupps in descriptorGroups array
+         * @param properties Specific details that determine a number of shader execution properties
+         * @param vertexDescription Definition of the vertex structure this shader will output to, nullptr to get via reflection
+         * @param frameBufferDescription Description of the Render targets this shader will render to
+         * @return
+         */
         static Shader* newShader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription);
     };
 

@@ -86,13 +86,14 @@ namespace slag
 {
     struct Pixels
     {
+        ///Memory format backing a texture
         enum Format
         {
 #define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits) SlagName,
             TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
         };
-
+        ///Retrieve number of bits in a given format
         static uint32_t pixelBits(Format format)
         {
             switch (format)
@@ -103,7 +104,7 @@ namespace slag
             }
             return 0;
         }
-
+        ///Retrieve number of bytes in a given format
         static uint32_t pixelBytes(Format format)
         {
             switch (format)
@@ -114,7 +115,7 @@ namespace slag
             }
             return 0;
         }
-
+        ///Retrieves whether or not a format accommodates a stencil component
         static bool hasStencilComponent(Format format)
         {
             switch (format)

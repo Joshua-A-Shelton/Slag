@@ -9,7 +9,7 @@ namespace slag
 {
     namespace dx
     {
-
+        class DX12Texture;
         class DX12Lib:public lib::BackEndLib
         {
         public:

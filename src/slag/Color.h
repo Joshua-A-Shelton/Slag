@@ -4,10 +4,11 @@
 #include <string>
 namespace slag
 {
-
+    ///Represents a color, stored as 4 floating point components
     class Color
     {
     public:
+        ///Used Internally
         enum ComponentFlags
         {
             RED_COMPONENT = 0b00000001,
@@ -19,11 +20,20 @@ namespace slag
         Color();
         Color(float r, float g, float b, float a);
         Color(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+        /**
+         * Create color from hex code string
+         * @param hex hex string of color to use
+         */
         Color(std::string hex);
+        ///red represented as byte from 0-255
         unsigned char redByte();
+        ///green represented as byte from 0-255
         unsigned char greenByte();
+        ///blue represented as byte from 0-255
         unsigned char blueByte();
+        ///alpha represented as byte from 0-255
         unsigned char alphaByte();
+        ///color hex code representation
         std::string hexCode();
         bool operator==(const Color& comp) const
         {

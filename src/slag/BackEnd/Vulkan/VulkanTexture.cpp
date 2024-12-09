@@ -129,7 +129,7 @@ namespace slag
             imageBarrier.syncBefore = PipelineStageFlags::TRANSFER;
             imageBarrier.syncAfter = PipelineStageFlags::ALL_COMMANDS;
             imageBarrier.accessBefore = BarrierAccessFlags::TRANSFER_WRITE;
-            imageBarrier.accessAfter = BarrierAccessFlags::ALL_READ | BarrierAccessFlags::ALL_WRITE;
+            imageBarrier.accessAfter = BarrierAccessFlags::NONE;
             commandBuffer.insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
 
             commandBuffer.end();

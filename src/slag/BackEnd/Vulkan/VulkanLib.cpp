@@ -486,7 +486,7 @@ namespace slag
 
         BackEnd VulkanLib::identifier()
         {
-            return Vulkan;
+            return VULKAN;
         }
 
         GraphicsCard* VulkanLib::graphicsCard()
