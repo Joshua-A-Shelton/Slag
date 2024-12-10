@@ -355,8 +355,9 @@ TEST_F(CommandBufferTests, CopyImageToBuffer)
         commandBuffer->copyBufferToImage(uploadBuffer.get(),0,texture.get(),slag::Texture::TRANSFER_DESTINATION,0,0);
         barrier.oldLayout = slag::Texture::TRANSFER_DESTINATION;
         barrier.newLayout = slag::Texture::TRANSFER_SOURCE;
-        barrier.syncBefore = PipelineStageFlags::TRANSFER;
-        barrier.syncAfter = PipelineStageFlags::TRANSFER;
+        barrier.syncBefore = PipelineStageFlags::ALL_COMMANDS;
+        barrier.syncAfter = PipelineStageFlags::ALL_COMMANDS;
+        barrier.accessBefore = BarrierAccessFlags::TRANSFER_READ | BarrierAccessFlags::TRANSFER_WRITE;
         barrier.accessAfter = BarrierAccessFlags::TRANSFER_READ | BarrierAccessFlags::TRANSFER_WRITE;
         commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
         commandBuffer->copyImageToBuffer(texture.get(),slag::Texture::TRANSFER_SOURCE,0,1,0,downloadBuffer.get(),0);
@@ -391,8 +392,9 @@ TEST_F(CommandBufferTests, CopyBufferToImage)
         commandBuffer->copyBufferToImage(uploadBuffer.get(),0,texture.get(),slag::Texture::TRANSFER_DESTINATION,0,0);
         barrier.oldLayout = slag::Texture::TRANSFER_DESTINATION;
         barrier.newLayout = slag::Texture::TRANSFER_SOURCE;
-        barrier.syncBefore = PipelineStageFlags::TRANSFER;
-        barrier.syncAfter = PipelineStageFlags::TRANSFER;
+        barrier.syncBefore = PipelineStageFlags::ALL_COMMANDS;
+        barrier.syncAfter = PipelineStageFlags::ALL_COMMANDS;
+        barrier.accessBefore = BarrierAccessFlags::TRANSFER_READ | BarrierAccessFlags::TRANSFER_WRITE;
         barrier.accessAfter = BarrierAccessFlags::TRANSFER_READ | BarrierAccessFlags::TRANSFER_WRITE;
         commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
         commandBuffer->copyImageToBuffer(texture.get(),slag::Texture::TRANSFER_SOURCE,0,1,0,downloadBuffer.get(),0);
@@ -417,7 +419,7 @@ TEST_F(CommandBufferTests, Blit)
     auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R32G32B32A32_FLOAT,slag::Texture::TEXTURE_2D,10,10,2,1,1,TextureUsageFlags::SAMPLED_IMAGE));
     auto memory = std::unique_ptr<Buffer>(Buffer::newBuffer(5*5*4*sizeof(float),Buffer::CPU,Buffer::DATA_BUFFER));
     commandBuffer->begin();
-    ImageBarrier barrier{.texture=texture.get(),.baseLayer=0,.layerCount=1,.baseMipLevel=0,.mipCount=0,.oldLayout=Texture::UNDEFINED,.newLayout=Texture::TRANSFER_DESTINATION};
+    ImageBarrier barrier{.texture=texture.get(),.baseLayer=0,.layerCount=1,.baseMipLevel=0,.mipCount=0,.oldLayout=Texture::UNDEFINED,.newLayout=Texture::TRANSFER_DESTINATION,.accessBefore=BarrierAccessFlags::TRANSFER_READ|BarrierAccessFlags::TRANSFER_WRITE, .accessAfter=BarrierAccessFlags::TRANSFER_READ|BarrierAccessFlags::TRANSFER_WRITE,.syncBefore=PipelineStageFlags::ALL_COMMANDS,.syncAfter=PipelineStageFlags::ALL_COMMANDS};
     commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
     commandBuffer->blit(sourceTexture.get(),Texture::TRANSFER_SOURCE,0,0,Rectangle{{0,0},{sourceTexture->width(),sourceTexture->height()}},texture.get(),Texture::TRANSFER_DESTINATION,0,0,Rectangle{{0,0},{10,10}},Sampler::NEAREST);
     barrier.mipCount=1;
