@@ -4,7 +4,9 @@
 #include <slag/SlagLib.h>
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
+
 #ifdef _WIN32
+#include <intsafe.h>
 //TODO: see if there's a way to automate this, this part must be in the final executable, not a library
 // For Direct3D 12 Agility SDK
 extern "C"
