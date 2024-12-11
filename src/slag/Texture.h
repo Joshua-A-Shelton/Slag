@@ -66,6 +66,21 @@ namespace slag
         {
             return TextureUsage(~_value);
         }
+
+        explicit operator bool()const
+        {
+            return _value;
+        }
+
+        bool operator==(const TextureUsage b)const
+        {
+            return _value == b._value;
+        }
+
+        bool operator!=(const TextureUsage b)const
+        {
+            return _value != b._value;
+        }
     };
 
     class TextureUsageFlags
@@ -136,6 +151,11 @@ namespace slag
          * @return
          */
         virtual Pixels::Format format()=0;
+        /**
+         * What capabilities this texture has
+         * @return
+         */
+        virtual TextureUsage usage()=0;
 
         /**
          * Creates an texture from a variety of image files

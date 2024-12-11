@@ -161,6 +161,11 @@ namespace slag
             return _format;
         }
 
+        TextureUsage DX12Texture::usage()
+        {
+            return std::bit_cast<TextureUsage>(_usage);
+        }
+
         ID3D12Resource* DX12Texture::texture()
         {
             return _texture;
@@ -237,7 +242,7 @@ namespace slag
             return DX12Lib::format(_format);
         }
 
-        D3D12_RESOURCE_FLAGS DX12Texture::usage()const
+        D3D12_RESOURCE_FLAGS DX12Texture::resourceUsageFlags()const
         {
             return _usage;
         }

@@ -34,6 +34,7 @@ namespace slag
             uint32_t layers()override;
             uint8_t sampleCount()override;
             Pixels::Format format()override;
+            TextureUsage usage()override;
 
 
             VkImage image();

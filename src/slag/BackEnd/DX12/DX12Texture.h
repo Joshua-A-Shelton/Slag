@@ -32,9 +32,10 @@ namespace slag
             uint32_t mipLevels()override;
             uint8_t sampleCount()override;
             Pixels::Format format()override;
+            TextureUsage usage()override;
             ID3D12Resource* texture();
             DXGI_FORMAT underlyingFormat();
-            D3D12_RESOURCE_FLAGS usage()const;
+            D3D12_RESOURCE_FLAGS resourceUsageFlags()const;
             D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle();
 
         private:

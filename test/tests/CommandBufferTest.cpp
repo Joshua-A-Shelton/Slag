@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 #include "slag/SlagLib.h"
+#include "../utils/BarrierUtils.h"
 #include <stb_image.h>
 #include <lodepng.h>
 
@@ -39,6 +40,42 @@ public:
         return false;
     }
 
+    void textureBarrierTest(Pixels::Format textureFormat,TextureUsage usage)
+    {
+        for(auto qt=0; qt< commandBufferQueueTypes.size(); qt++)
+        {
+            std::unique_ptr<CommandBuffer> buffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(commandBufferQueueTypes[qt]));
+            std::unique_ptr<Texture> img = std::unique_ptr<Texture>(Texture::newTexture(textureFormat,slag::Texture::TEXTURE_2D,100,100,1,1,1,usage));
+            std::unique_ptr<Buffer> dummy = std::unique_ptr<Buffer>(Buffer::newBuffer(64,Buffer::CPU_AND_GPU,Buffer::DATA_BUFFER));
+            ImageBarrier imageBarrier
+                    {
+                            .texture = img.get(),
+                    };
+            imageBarrier.syncBefore = PipelineStageFlags::ALL_COMMANDS;
+            imageBarrier.syncAfter = PipelineStageFlags::ALL_COMMANDS;
+            imageBarrier.accessBefore = BarrierAccessFlags::NONE;
+
+            buffer->begin();
+            auto layouts = BarrierUtils::compatibleLayouts(buffer->commandType(),img.get());
+            imageBarrier.oldLayout = Texture::UNDEFINED;
+            for(size_t i=0; i< layouts.size(); i++)
+            {
+                auto newLayout = layouts[i];
+                imageBarrier.newLayout = newLayout;
+                imageBarrier.accessAfter = BarrierUtils::compatibleAccess(img.get(),newLayout,buffer->commandType());
+                buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
+                buffer->fillBuffer(dummy.get(),0,64,1);//Dummy call, because DX12 won't let us do nothing between barriers :(
+                imageBarrier.oldLayout = newLayout;
+                imageBarrier.accessBefore = imageBarrier.accessAfter;
+
+            }
+
+            buffer->end();
+            submissionQueues[qt]->submit(buffer.get());
+            buffer->waitUntilFinished();
+        }
+    }
+
 };
 
 TEST_F(CommandBufferTests, StartFinished)
@@ -52,115 +89,38 @@ TEST_F(CommandBufferTests, StartFinished)
 
 TEST_F(CommandBufferTests, InsertBarriersMultiUseTexture)
 {
-    for(auto qt=0; qt< commandBufferQueueTypes.size(); qt++)
-    {
-        std::unique_ptr<CommandBuffer> buffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(commandBufferQueueTypes[qt]));
-        std::unique_ptr<Texture> img = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::SAMPLED_IMAGE | TextureUsageFlags::RENDER_TARGET_ATTACHMENT | TextureUsageFlags::STORAGE));
-        ImageBarrier imageBarrier
-                {
-                        .texture = img.get(),
-                };
-        buffer->begin();
-        std::vector<Texture::Layout> layouts =
-                {
-#define DEFINITION(slagName, vulkanName, directXName,directXResourceName) Texture::slagName,
-                        TEXTURE_LAYOUT_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-                };
-        imageBarrier.oldLayout = Texture::UNDEFINED;
-        for(size_t i=0; i< layouts.size(); i++)
-        {
-            auto newLayout = layouts[i];
-            if(newLayout != Texture::UNDEFINED && newLayout != Texture::DEPTH_TARGET_READ_ONLY && newLayout != Texture::DEPTH_TARGET)
-            {
-                imageBarrier.newLayout = newLayout;
-            }
-            else
-            {
-                break;
-            }
-            buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-            imageBarrier.oldLayout = newLayout;
-
-        }
-
-        buffer->end();
-        submissionQueues[qt]->submit(buffer.get());
-        buffer->waitUntilFinished();
-    }
-
+    textureBarrierTest(Pixels::R8G8B8A8_UINT,TextureUsageFlags::SAMPLED_IMAGE | TextureUsageFlags::RENDER_TARGET_ATTACHMENT | TextureUsageFlags::STORAGE | TextureUsageFlags::INPUT_ATTACHMENT);
 }
 
 TEST_F(CommandBufferTests, InsertBarriersSampledTexture)
 {
-    for(auto qt=0; qt< commandBufferQueueTypes.size(); qt++)
-    {
-        std::unique_ptr<CommandBuffer> buffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(commandBufferQueueTypes[qt]));
-        std::unique_ptr<Texture> img = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,slag::Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
-        ImageBarrier imageBarrier
-                {
-                        .texture = img.get(),
-                };
-        buffer->begin();
-        std::vector<Texture::Layout> layouts =
-                {
-#define DEFINITION(slagName, vulkanName, directXName,directXResourceName) Texture::slagName,
-                        TEXTURE_LAYOUT_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-                };
-        imageBarrier.oldLayout = Texture::UNDEFINED;
-        for(size_t i=0; i< layouts.size(); i++)
-        {
-            auto newLayout = layouts[i];
-            if(newLayout != Texture::UNDEFINED && newLayout != Texture::DEPTH_TARGET_READ_ONLY && newLayout != Texture::DEPTH_TARGET && newLayout != Texture::RENDER_TARGET && newLayout != Texture::UNORDERED)
-            {
-                imageBarrier.newLayout = newLayout;
-            }
-            else
-            {
-                continue;
-            }
-            buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-            imageBarrier.oldLayout = newLayout;
-
-        }
-
-        buffer->end();
-        submissionQueues[qt]->submit(buffer.get());
-        buffer->waitUntilFinished();
-    }
+    textureBarrierTest(Pixels::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED_IMAGE);
 }
 
 TEST_F(CommandBufferTests, InsertBarriersDepthTexture)
 {
-    for(auto qt=0; qt< commandBufferQueueTypes.size(); qt++)
-    {
-        std::unique_ptr<CommandBuffer> buffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(commandBufferQueueTypes[qt]));
-        std::unique_ptr<Texture> img = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,slag::Texture::TEXTURE_2D,100,100,1,1,1,TextureUsageFlags::DEPTH_STENCIL_ATTACHMENT));
-        ImageBarrier imageBarrier
-                {
-                        .texture = img.get(),
-                };
-        buffer->begin();
-        imageBarrier.oldLayout = Texture::UNDEFINED;
-        imageBarrier.newLayout = Texture::GENERAL;
-        buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-        imageBarrier.oldLayout = Texture::GENERAL;
-        imageBarrier.newLayout = Texture::TRANSFER_SOURCE;
-        buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-        imageBarrier.oldLayout = Texture::TRANSFER_SOURCE;
-        imageBarrier.newLayout = Texture::TRANSFER_DESTINATION;
-        buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-        imageBarrier.oldLayout = Texture::TRANSFER_DESTINATION;
-        imageBarrier.newLayout = Texture::DEPTH_TARGET_READ_ONLY;
-        buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-        imageBarrier.oldLayout = Texture::DEPTH_TARGET_READ_ONLY;
-        imageBarrier.newLayout = Texture::DEPTH_TARGET;
-        buffer->insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
-        buffer->end();
-        submissionQueues[qt]->submit(buffer.get());
-        buffer->waitUntilFinished();
-    }
+    textureBarrierTest(Pixels::D32_FLOAT_S8X24_UINT,TextureUsageFlags::DEPTH_STENCIL_ATTACHMENT);
+}
+
+TEST_F(CommandBufferTests, InsertBarriersRenderTargetTexture)
+{
+    textureBarrierTest(Pixels::R8G8B8A8_UNORM,TextureUsageFlags::RENDER_TARGET_ATTACHMENT);
+}
+
+TEST_F(CommandBufferTests, InsertBarriersInputAttachmentTexture)
+{
+    //must have either sampled image, depth stencil, or render target.
+    textureBarrierTest(Pixels::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED_IMAGE | TextureUsageFlags::INPUT_ATTACHMENT);
+    textureBarrierTest(Pixels::R8G8B8A8_UNORM,TextureUsageFlags::RENDER_TARGET_ATTACHMENT | TextureUsageFlags::INPUT_ATTACHMENT);
+    textureBarrierTest(Pixels::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_ATTACHMENT | TextureUsageFlags::INPUT_ATTACHMENT);
+}
+
+TEST_F(CommandBufferTests, InsertBarriersStorageTexture)
+{
+    //must have either sampled image, depth stencil, or render target.
+    textureBarrierTest(Pixels::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED_IMAGE | TextureUsageFlags::STORAGE);
+    textureBarrierTest(Pixels::R8G8B8A8_UNORM,TextureUsageFlags::RENDER_TARGET_ATTACHMENT | TextureUsageFlags::STORAGE);
+    //textureBarrierTest(Pixels::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_ATTACHMENT | TextureUsageFlags::STORAGE); //TODO: not sure if depth can be used as storage texture....
 }
 
 TEST_F(CommandBufferTests, InsertBarriersBuffers)
@@ -170,10 +130,8 @@ TEST_F(CommandBufferTests, InsertBarriersBuffers)
         auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(commandBufferQueueTypes[qt]));
         std::vector<Color> colors(100, {1.0f, 0.0f, 0.2f, 1.0f});
         std::vector<Color> colors2(100, {0.0f, 0.5f, 0.5f, 1.0f});
-        auto data = std::unique_ptr<Buffer>(
-                Buffer::newBuffer(colors.data(), colors.size() * sizeof(float) * 4, Buffer::GPU, Buffer::DATA_BUFFER));
-        auto intermediate = std::unique_ptr<Buffer>(
-                Buffer::newBuffer(colors.data(), colors.size() * sizeof(float) * 4, Buffer::CPU, Buffer::DATA_BUFFER));
+        auto data = std::unique_ptr<Buffer>(Buffer::newBuffer(colors.data(), colors.size() * sizeof(float) * 4, Buffer::GPU, Buffer::DATA_BUFFER));
+        auto intermediate = std::unique_ptr<Buffer>(Buffer::newBuffer(colors.data(), colors.size() * sizeof(float) * 4, Buffer::CPU, Buffer::DATA_BUFFER));
         auto final = std::unique_ptr<Buffer>(Buffer::newBuffer(data->size(), Buffer::CPU_AND_GPU, Buffer::DATA_BUFFER));
         BufferBarrier barrier{.buffer=data.get(), .offset=0, .size=data->size(), .syncBefore=PipelineStageFlags::NONE, .syncAfter=PipelineStageFlags::TRANSFER};
         commandBuffer->begin();
@@ -849,4 +807,12 @@ TEST_F(CommandBufferTests, DisallowTransfer_bindGraphicsShader)
     commandBuffer->begin();
     ASSERT_DEATH(commandBuffer->bindGraphicsShader(shader.get()),"");
 
+}
+
+TEST_F(CommandBufferTests, DisallowInvalidTransition)
+{
+#ifdef NDEBUG
+    GTEST_SKIP();
+#endif
+    GTEST_FAIL();
 }

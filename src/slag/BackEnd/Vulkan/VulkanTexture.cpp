@@ -129,7 +129,7 @@ namespace slag
             imageBarrier.syncBefore = PipelineStageFlags::TRANSFER;
             imageBarrier.syncAfter = PipelineStageFlags::ALL_COMMANDS;
             imageBarrier.accessBefore = BarrierAccessFlags::TRANSFER_WRITE;
-            imageBarrier.accessAfter = BarrierAccessFlags::NONE;
+            imageBarrier.accessAfter = std::bit_cast<BarrierAccess>(VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT);
             commandBuffer.insertBarriers(&imageBarrier,1, nullptr,0, nullptr,0);
 
             commandBuffer.end();
@@ -323,6 +323,11 @@ namespace slag
                 smartDestroy();
                 throw std::runtime_error("unable to create image view");
             }
+        }
+
+        TextureUsage VulkanTexture::usage()
+        {
+            return std::bit_cast<TextureUsage>(_usage);
         }
 
     }

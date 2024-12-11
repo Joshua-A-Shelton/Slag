@@ -131,7 +131,7 @@ namespace slag
 
         void IDX12CommandBuffer::updateMipChain(Texture* texture, uint32_t sourceMipLevel, Texture::Layout sourceLayout, Texture::Layout endingSourceLayout, Texture::Layout destinationLayout,Texture::Layout endingDestinationLayout, PipelineStages syncBefore, PipelineStages syncAfter)
         {
-            assert(commandType() == GpuQueue::GRAPHICS && "clearColorImage is a graphics queue only operation");
+            assert(commandType() == GpuQueue::GRAPHICS && "updateMipChain is a graphics queue only operation");
             throw std::runtime_error("IDX12CommandBuffer::updateMipChain is not implemented");
         }
 
@@ -303,7 +303,14 @@ namespace slag
 
         void IDX12CommandBuffer::fillBuffer(Buffer* buffer, size_t offset, size_t length, uint32_t data)
         {
-            throw std::runtime_error("IDX12CommandBuffer::fillBuffer is not implemented");
+            auto buf = static_cast<DX12Buffer*>(buffer);
+            std::vector<D3D12_WRITEBUFFERIMMEDIATE_PARAMETER> rdata(length/4);
+            for(size_t i=0; i< rdata.size(); i++)
+            {
+                rdata[i].Dest = buf->underlyingBuffer()->GetGPUVirtualAddress()+offset+(i*4);
+                rdata[i].Value=data;
+            }
+            _buffer->WriteBufferImmediate(rdata.size(),rdata.data(), nullptr);
         }
 
         void IDX12CommandBuffer::resetQueryPool(QueryPool* pool, uint32_t firstQuery, uint32_t queryCount)
