@@ -26,6 +26,7 @@ namespace slag
             static D3D12_COMPARISON_FUNC comparisonFunction(Operations::ComparisonFunction compFunction);
             static uint32_t formatSize(DXGI_FORMAT format);
             static D3D12_DESCRIPTOR_RANGE_TYPE rangeType(Descriptor::DescriptorType type);
+            static DXGI_FORMAT indexType(Buffer::IndexSize indexSize);
 
             explicit DX12Lib(DX12GraphicsCard* card);
             ~DX12Lib() override;

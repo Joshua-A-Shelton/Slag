@@ -177,6 +177,18 @@ namespace slag
             }
         }
 
+        DXGI_FORMAT DX12Lib::indexType(Buffer::IndexSize indexSize)
+        {
+            switch(indexSize)
+            {
+                case Buffer::UINT16:
+                    return DXGI_FORMAT_R16_UINT;
+                case Buffer::UINT32:
+                    return DXGI_FORMAT_R32_UINT;
+            }
+            return DXGI_FORMAT_R16_UINT;
+        }
+
         D3D12_TEXTURE_ADDRESS_MODE DX12Lib::addressMode(Sampler::AddressMode mode)
         {
             switch(mode)
@@ -327,44 +339,12 @@ namespace slag
         Buffer* DX12Lib::newBuffer(void* data, size_t dataSize, Buffer::Accessibility accessibility, Buffer::Usage usage)
         {
             D3D12_RESOURCE_STATES states = D3D12_RESOURCE_STATE_COMMON;
-            if(usage & Buffer::Usage::VERTEX_BUFFER)
-            {
-                states |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER ;
-            }
-            if(usage & Buffer::Usage::INDEX_BUFFER)
-            {
-                states |= D3D12_RESOURCE_STATE_INDEX_BUFFER;
-            }
-            if(usage & Buffer::Usage::STORAGE_BUFFER)
-            {
-                states |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-            }
-            if(usage & Buffer::Usage::INDIRECT_BUFFER)
-            {
-                states |= D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT ;
-            }
             return new DX12Buffer(data,dataSize,accessibility,states, false);
         }
 
         Buffer* DX12Lib::newBuffer(size_t bufferSize, Buffer::Accessibility accessibility, Buffer::Usage usage)
         {
             D3D12_RESOURCE_STATES states = D3D12_RESOURCE_STATE_COMMON;
-            if(usage & Buffer::Usage::VERTEX_BUFFER)
-            {
-                states |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER ;
-            }
-            if(usage & Buffer::Usage::INDEX_BUFFER)
-            {
-                states |= D3D12_RESOURCE_STATE_INDEX_BUFFER;
-            }
-            if(usage & Buffer::Usage::STORAGE_BUFFER)
-            {
-                states |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-            }
-            if(usage & Buffer::Usage::INDIRECT_BUFFER)
-            {
-                states |= D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT ;
-            }
             return new DX12Buffer(bufferSize,accessibility,states, false);
         }
 

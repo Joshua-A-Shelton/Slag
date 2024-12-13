@@ -16,7 +16,7 @@ struct RawImageDeleter
 
 TEST(Texture, LoadFromFile)
 {
-    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture("resources/Crucible.png",Pixels::R8G8B8A8_UINT,1,TextureUsageFlags::SAMPLED_IMAGE,Texture::Layout::TRANSFER_SOURCE));
+    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture("resources/Crucible.png",Pixels::R8G8B8A8_UINT,1,TextureUsageFlags::SAMPLED_IMAGE,Texture::Layout::GENERAL));
     GTEST_ASSERT_GE(texture->sampleCount() ,1);
     GTEST_ASSERT_GE(texture->mipLevels() ,1);
     GTEST_ASSERT_GE(texture->type() ,Texture::Type::TEXTURE_2D);
@@ -26,7 +26,7 @@ TEST(Texture, LoadFromFile)
     std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::TRANSFER));
     std::unique_ptr<Buffer> dataBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(1920*1080*sizeof(unsigned char)*4,Buffer::CPU_AND_GPU,Buffer::DATA_BUFFER));
     commandBuffer->begin();
-    commandBuffer->copyImageToBuffer(texture.get(),Texture::Layout::TRANSFER_SOURCE,0,1,0,dataBuffer.get(),0);
+    commandBuffer->copyImageToBuffer(texture.get(),Texture::Layout::GENERAL,0,1,0,dataBuffer.get(),0);
     commandBuffer->end();
     SlagLib::graphicsCard()->transferQueue()->submit(commandBuffer.get());
     commandBuffer->waitUntilFinished();

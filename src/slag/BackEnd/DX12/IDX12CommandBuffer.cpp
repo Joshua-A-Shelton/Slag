@@ -75,10 +75,9 @@ namespace slag
                 }
                 barrierGroups.push_back(D3D12_BARRIER_GROUP(D3D12_BARRIER_TYPE::D3D12_BARRIER_TYPE_TEXTURE, static_cast<UINT32>(imageBarrierCount), {.pTextureBarriers=textureBarriers.data()}));
             }
-
+            std::vector<D3D12_BUFFER_BARRIER> gpuBufferBarriers(bufferBarrierCount);
             if (bufferBarrierCount > 0)
             {
-                std::vector<D3D12_BUFFER_BARRIER> gpuBufferBarriers(bufferBarrierCount);
                 for (size_t i = 0; i < bufferBarrierCount; i++)
                 {
                     auto& barrierDesc = bufferBarriers[i];
@@ -89,18 +88,24 @@ namespace slag
                     barrier.AccessAfter = std::bit_cast<D3D12_BARRIER_ACCESS>(barrierDesc.accessAfter);
                     barrier.SyncBefore = std::bit_cast<D3D12_BARRIER_SYNC>(barrierDesc.syncBefore);
                     barrier.SyncAfter = std::bit_cast<D3D12_BARRIER_SYNC>(barrierDesc.syncAfter);
+                    barrier.Size = barrierDesc.size;
+                    barrier.Offset = barrierDesc.offset;
                 }
-                barrierGroups.push_back(D3D12_BARRIER_GROUP(D3D12_BARRIER_TYPE::D3D12_BARRIER_TYPE_BUFFER, static_cast<UINT32>(bufferBarrierCount), {.pBufferBarriers=gpuBufferBarriers.data()}));
+                D3D12_BARRIER_GROUP group{};
+                group.Type = D3D12_BARRIER_TYPE::D3D12_BARRIER_TYPE_BUFFER;
+                group.NumBarriers = bufferBarrierCount;
+                group.pBufferBarriers=gpuBufferBarriers.data();
+                barrierGroups.push_back(group);
             }
 
-
+            std::vector<D3D12_GLOBAL_BARRIER> globalBarriers(memoryBarrierCount);
             if (memoryBarrierCount > 0)
             {
-                std::vector<D3D12_GLOBAL_BARRIER> globalBarriers(memoryBarrierCount);
+
                 for (size_t i = 0; i < memoryBarrierCount; i++)
                 {
                     auto& barrierDesc = memoryBarriers[i];
-                    auto barrier = globalBarriers[i];
+                    auto& barrier = globalBarriers[i];
                     barrier.AccessBefore = std::bit_cast<D3D12_BARRIER_ACCESS>(barrierDesc.accessBefore);
                     barrier.AccessAfter = std::bit_cast<D3D12_BARRIER_ACCESS>(barrierDesc.accessAfter);
                     barrier.SyncBefore = std::bit_cast<D3D12_BARRIER_SYNC>(barrierDesc.syncBefore);
@@ -117,14 +122,14 @@ namespace slag
         {
             assert(commandType() == GpuQueue::GRAPHICS && "clearColorImage is a graphics queue only operation");
             auto image = static_cast<DX12Texture*>(texture);
-            ImageBarrier barrier{.texture=texture,.oldLayout=currentLayout,.newLayout=Texture::RENDER_TARGET,.accessBefore=BarrierAccessFlags::NONE,.accessAfter=BarrierAccessFlags::NONE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::NONE};
+            ImageBarrier barrier{.texture=texture,.oldLayout=currentLayout,.newLayout=Texture::RENDER_TARGET,.accessBefore=BarrierAccess::compatibleAccess(currentLayout),.accessAfter=BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.syncBefore=syncBefore,.syncAfter=PipelineStageFlags::COLOR_ATTACHMENT};
             insertBarriers(&barrier,1, nullptr,0, nullptr,0);
             _buffer->ClearRenderTargetView(image->descriptorHandle(),color.floats,0, nullptr);
             barrier.oldLayout = Texture::RENDER_TARGET;
             barrier.newLayout = endingLayout;
-            barrier.accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_READ |  BarrierAccessFlags::SHADER_READ | BarrierAccessFlags::TRANSFER_READ;
-            barrier.accessAfter = BarrierAccessFlags::NONE;
-            barrier.syncBefore = PipelineStageFlags::TRANSFER;
+            barrier.accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE;
+            barrier.accessAfter = BarrierAccess::compatibleAccess(endingLayout);
+            barrier.syncBefore = PipelineStageFlags::COLOR_ATTACHMENT;
             barrier.syncAfter = syncAfter;
             insertBarriers(&barrier,1, nullptr,0, nullptr,0);
         }
@@ -217,7 +222,15 @@ namespace slag
 
         void IDX12CommandBuffer::bindIndexBuffer(Buffer* buffer, Buffer::IndexSize indexSize, size_t offset)
         {
-            throw std::runtime_error("IDX12CommandBuffer::bindIndexBuffer is not implemented");
+            assert(_commandType == GpuQueue::GRAPHICS && "bindIndexBuffer is a graphics queue only operation");
+            auto buf = static_cast<DX12Buffer*>(buffer);
+            D3D12_INDEX_BUFFER_VIEW view
+            {
+                .BufferLocation = buf->underlyingBuffer()->GetGPUVirtualAddress() + offset,
+                .SizeInBytes = static_cast<UINT>(buffer->size()-offset),
+                .Format = DX12Lib::indexType(indexSize)
+            };
+            _buffer->IASetIndexBuffer(&view);
         }
 
         void IDX12CommandBuffer::bindGraphicsShader(Shader* shader)

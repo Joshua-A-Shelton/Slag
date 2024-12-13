@@ -40,7 +40,7 @@ namespace slag
 
         private:
             void move(DX12Texture&& from);
-            void construct(Pixels::Format dataFormat, Texture::Type textureType, uint32_t width, uint32_t height,uint32_t layers, uint32_t mipLevels, uint8_t samples, D3D12_RESOURCE_FLAGS usage, Texture::Layout initialLayout);
+            void construct(Pixels::Format dataFormat, Texture::Type textureType, uint32_t width, uint32_t height,uint32_t layers, uint32_t mipLevels, uint8_t samples, D3D12_RESOURCE_FLAGS usage);
             ID3D12Resource* _texture = nullptr;
             D3D12MA::Allocation* _allocation = nullptr;
             ID3D12DescriptorHeap* _heap = nullptr;

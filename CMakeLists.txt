@@ -123,6 +123,7 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/PlatformData.h
         src/slag/Clear.h
         src/slag/GpuMemoryBarriers.h
+        src/slag/GpuMemoryBarriers.cpp
         src/slag/Buffer.cpp
         src/slag/Buffer.h
         src/slag/Rectangle.h
@@ -154,6 +155,7 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/QueryPool.h
         src/slag/DescriptorBundle.cpp
         src/slag/DescriptorBundle.h
+
 )
 target_link_libraries(Slag ${Boost_LIBRARIES})
 target_include_directories(Slag PRIVATE ${Boost_INCLUDE_DIRS} third-party/stb)
@@ -221,8 +223,6 @@ if(BUILD_SLAG_TESTS)
             test/tests/IntegrationTests.cpp
             test/utils/Window.cpp
             test/utils/Window.h
-            test/utils/BarrierUtils.cpp
-            test/utils/BarrierUtils.h
     )
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)
     target_include_directories(SlagTests PRIVATE src ${SDL2_LIBRARIES} third-party/stb test/third-party/LodePNG)

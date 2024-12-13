@@ -39,6 +39,7 @@ DEFINITION(ALL_COMMANDS, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,D3D12_BARRIER_SYNC_A
 
 #include "Texture.h"
 #include "Buffer.h"
+#include "GpuQueue.h"
 
 namespace slag
 {
@@ -49,42 +50,17 @@ namespace slag
         explicit BarrierAccess(int val){ _value=val;}
     public:
         friend class BarrierAccessFlags;
-        BarrierAccess operator| (BarrierAccess b) const
-        {
-            return BarrierAccess(_value | b._value);
-        }
-
-        BarrierAccess& operator |=(BarrierAccess b)
-        {
-            _value = _value|b._value;
-            return *this;
-        }
-
-        BarrierAccess operator&(BarrierAccess b) const
-        {
-            return BarrierAccess(_value & b._value);
-        }
-
-        BarrierAccess& operator&=(BarrierAccess b)
-        {
-            _value = _value&b._value;
-            return *this;
-        }
-
-        BarrierAccess operator~() const
-        {
-            return BarrierAccess(~_value);
-        }
-
-        bool operator==(BarrierAccess b)const
-        {
-            return _value==b._value;
-        }
-
-        bool operator!=(BarrierAccess b)const
-        {
-            return _value!=b._value;
-        }
+        BarrierAccess operator| (BarrierAccess b) const;
+        BarrierAccess& operator |=(BarrierAccess b);
+        BarrierAccess operator&(BarrierAccess b) const;
+        BarrierAccess& operator&=(BarrierAccess b);
+        BarrierAccess operator~() const;
+        bool operator==(BarrierAccess b)const;
+        bool operator!=(BarrierAccess b)const;
+        static BarrierAccess compatibleAccess(Texture::Layout layout);
+        static BarrierAccess compatibleAccess(Texture* texture);
+        static BarrierAccess compatibleAccess(GpuQueue::QueueType queueType);
+        static BarrierAccess compatibleAccess(Texture* texture, Texture::Layout toLayout, GpuQueue::QueueType queueType);
     };
     class BarrierAccessFlags
     {
@@ -201,6 +177,14 @@ namespace slag
         ///Make all work of this kind wait until after barrier executes
         PipelineStages syncAfter = PipelineStageFlags::ALL_COMMANDS;
     };
+
+    struct BarrierUtils
+    {
+        static std::vector<Texture::Layout> compatibleLayouts(GpuQueue::QueueType queueType);
+        static std::vector<Texture::Layout> compatibleLayouts(Texture* texture);
+        static std::vector<Texture::Layout> compatibleLayouts(GpuQueue::QueueType queueType, Texture* texture);
+    };
+
 }
 
 #endif //SLAG_GPUMEMORYBARRIERS_H
