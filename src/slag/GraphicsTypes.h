@@ -6,7 +6,7 @@ namespace slag
 {
     struct GraphicsTypes
     {
-        enum GraphicsTypeBits
+        enum GraphicsTypeBits: unsigned int
         {
             NONE_BIT                = 0b0000000000000000,
             BOOLEAN_BIT             = 0b0000000000000001,
@@ -26,7 +26,7 @@ namespace slag
             STRUCT_BIT              = 0b0100000000000000
         };
 
-        enum GraphicsType
+        enum GraphicsType: unsigned int
         {
             UNKNOWN = NONE_BIT,
             BOOLEAN = BOOLEAN_BIT,
@@ -78,32 +78,32 @@ namespace slag
             }
             uint32_t dim1 = 1;
             uint32_t dim2 = 1;
-            if (type & (MATRIX4N_BIT))
+            if ((unsigned int)type & (unsigned int)(MATRIX4N_BIT))
             {
                 dim1 = 4;
             }
-            else if (type & MATRIX3N_BIT)
+            else if ((unsigned int)type & (unsigned int)MATRIX3N_BIT)
             {
                 dim1 = 3;
             }
-            else if (type & MATRIX2N_BIT)
+            else if ((unsigned int)type & (unsigned int)MATRIX2N_BIT)
             {
                 dim1 = 2;
             }
-            if (type & (VECTOR4_BIT))
+            if ((unsigned int)type & (unsigned int)(VECTOR4_BIT))
             {
                 dim2 = 4;
             }
-            else if (type & VECTOR3_BIT)
+            else if ((unsigned int)type & (unsigned int)VECTOR3_BIT)
             {
                 dim2 = 3;
             }
-            else if (type & VECTOR2_BIT)
+            else if ((unsigned int)type & (unsigned int)VECTOR2_BIT)
             {
                 dim2 = 2;
             }
             uint32_t size = 0;
-            switch (type & ANY_PRIMITIVE_BIT)
+            switch ((unsigned int)type & (unsigned int)ANY_PRIMITIVE_BIT)
             {
                 case BOOLEAN_BIT:
                     size = sizeof(bool);
@@ -134,20 +134,20 @@ namespace slag
             {
                 dim1=4;
             }
-            else if(type & MATRIX2N_BIT)
+            else if((unsigned int)type & (unsigned int)MATRIX2N_BIT)
             {
                 dim1=2;
             }
-            if(type & (VECTOR4_BIT | VECTOR3_BIT))
+            if((unsigned int)type & (unsigned int)(VECTOR4_BIT | VECTOR3_BIT))
             {
                 dim2=4;
             }
-            else if(type & VECTOR2_BIT)
+            else if((unsigned int)type & (unsigned int)VECTOR2_BIT)
             {
                 dim2=2;
             }
             uint32_t size = 0;
-            switch (type & ANY_PRIMITIVE_BIT)
+            switch ((unsigned int)type & (unsigned int)ANY_PRIMITIVE_BIT)
             {
                 case BOOLEAN_BIT:
                     size = sizeof(bool);
