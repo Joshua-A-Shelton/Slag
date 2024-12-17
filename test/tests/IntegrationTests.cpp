@@ -88,7 +88,6 @@ TEST_F(IntegrationTests, BasicTriangle)
     commandBuffer->waitUntilFinished();
 
     auto pixelData = data->downloadData();
-    lodepng::encode("C:/Users/jshelton.CHEMTECH2008/Desktop/Slag.png",std::bit_cast<unsigned char*>(pixelData.data()),texture->width(),texture->height());
     int w, h, channels;
 
     auto rawBytes = stbi_load(std::filesystem::absolute("resources/Integration-BasicTriangle-Render.png").string().c_str(),&w,&h,&channels,4);
