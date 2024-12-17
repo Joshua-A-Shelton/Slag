@@ -367,19 +367,23 @@ namespace slag
             vkCmdBindPipeline(_buffer,VK_PIPELINE_BIND_POINT_COMPUTE,pipeLine->pipeline());
         }
 
-        void IVulkanCommandBuffer::bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, size_t* offsets, size_t bindingCount)
+        void IVulkanCommandBuffer::bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, size_t* offsets, size_t* sizes, size_t* strides, size_t bindingCount)
         {
             assert(commandType() == GpuQueue::GRAPHICS && "bindVertexBuffers is a graphics queue only operation");
 
             std::vector<VkBuffer> nativeBuffers(bindingCount);
-            //TODO: I don't like allocating this, possibly change offsets to be uint64_t
+            //TODO: I don't like allocating these, possibly change parameters to be uint64_t
             std::vector<VkDeviceSize> nativeOffsets(bindingCount);
+            std::vector<VkDeviceSize> nativeSizes(bindingCount);
+            std::vector<VkDeviceSize> nativeStrides(bindingCount);
             for(size_t i=0; i< nativeBuffers.size(); i++)
             {
                 nativeBuffers[i] = static_cast<VulkanBuffer*>(buffers[i])->underlyingBuffer();
                 nativeOffsets[i] = offsets[i];
+                nativeSizes[i] = sizes[i];
+                nativeStrides[i] = strides[i];
             }
-            vkCmdBindVertexBuffers(_buffer,firstBinding,bindingCount,nativeBuffers.data(),nativeOffsets.data());
+            vkCmdBindVertexBuffers2(_buffer,firstBinding,bindingCount,nativeBuffers.data(),nativeOffsets.data(),nativeSizes.data(),nativeStrides.data());
         }
 
         void IVulkanCommandBuffer::clearDepthStencilImage(Texture* texture, ClearDepthStencil clear, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore,PipelineStages syncAfter)

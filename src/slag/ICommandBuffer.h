@@ -131,7 +131,7 @@ namespace slag
         virtual void bindIndexBuffer(Buffer* buffer,Buffer::IndexSize indexSize, size_t offset)=0;
         virtual void bindGraphicsShader(Shader* shader)=0;
         virtual void bindComputeShader(Shader* shader)=0;
-        virtual void bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, size_t* offsets, size_t bindingCount)=0;
+        virtual void bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, size_t* offsets, size_t* sizes, size_t* strides, size_t bindingCount)=0;
         //virtual void clearAttachments(Attachment* attachments, size_t attachmentCount)
         virtual void clearDepthStencilImage(Texture* texture, ClearDepthStencil color, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore, PipelineStages syncAfter)=0;
         //virtual void copyImageToImage();

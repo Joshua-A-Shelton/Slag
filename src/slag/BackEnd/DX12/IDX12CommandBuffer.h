@@ -37,7 +37,7 @@ namespace slag
             void bindIndexBuffer(Buffer* buffer,Buffer::IndexSize indexSize, size_t offset)override;
             void bindGraphicsShader(Shader* shader)override;
             void bindComputeShader(Shader* shader)override;
-            void bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, size_t* offsets, size_t bindingCount)override;
+            void bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, size_t* offsets, size_t* sizes, size_t* strides, size_t bindingCount)override;
             //void clearAttachments(Attachment* attachments, size_t attachmentCount)override;
             void clearDepthStencilImage(Texture* texture, ClearDepthStencil clear, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore, PipelineStages syncAfter)override;
             //void copyImageToImage()override;

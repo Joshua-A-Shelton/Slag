@@ -43,17 +43,19 @@ TEST_F(IntegrationTests, BasicTriangle)
 
     ShaderModule modules[2] = {ShaderModule(ShaderStageFlags::VERTEX,"resources/shaders/flat.vert.spv"),ShaderModule(ShaderStageFlags::FRAGMENT,"resources/shaders/flat.frag.spv")};
     ShaderProperties props;
+    props.rasterizationState.culling = RasterizationState::NONE;
     FrameBufferDescription description;
     description.addColorTarget(Pixels::R8G8B8A8_UNORM);
     auto shader = std::unique_ptr<Shader>(Shader::newShader(modules,2, nullptr,0,props, nullptr,description));
-    auto window = slag::Window::makeWindow("Integration::BasicTriangle",500,500);
     auto texture = std::unique_ptr<Texture>(Texture::newTexture("resources/test-img.png",Pixels::R8G8B8A8_UNORM,1,TextureUsageFlags::SAMPLED_IMAGE,Texture::SHADER_RESOURCE));
     auto backBuffer = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UNORM,slag::Texture::TEXTURE_2D,500,500,1,1,1,TextureUsageFlags::RENDER_TARGET_ATTACHMENT));
     SamplerBuilder sb{};
     auto sampler = std::unique_ptr<Sampler>(sb.newSampler());
-    size_t count = 0;
+
     auto verts = triangleVerts.get();
     size_t offset = 0;
+    size_t size = verts->size();
+    size_t stride = sizeof(Vertex);
     auto indexes = triangleIndicies.get();
     auto pool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
 
@@ -71,7 +73,7 @@ TEST_F(IntegrationTests, BasicTriangle)
     Attachment attachment(backBuffer.get(),Texture::RENDER_TARGET, true,cv);
     commandBuffer->beginRendering(&attachment,1, nullptr,slag::Rectangle{{0,0},{backBuffer->width(),backBuffer->height()}});
     commandBuffer->bindGraphicsShader(shader.get());
-    commandBuffer->bindVertexBuffers(0,&verts,&offset,1);
+    commandBuffer->bindVertexBuffers(0,&verts,&offset,&size,&stride,1);
     commandBuffer->bindIndexBuffer(indexes,Buffer::UINT16,0);
     auto bundle = pool->makeBundle(shader->descriptorGroup(0));
     bundle.setSamplerAndTexture(0,0,texture.get(),Texture::SHADER_RESOURCE,sampler.get());
@@ -86,6 +88,7 @@ TEST_F(IntegrationTests, BasicTriangle)
     commandBuffer->waitUntilFinished();
 
     auto pixelData = data->downloadData();
+    lodepng::encode("C:/Users/jshelton.CHEMTECH2008/Desktop/Slag.png",std::bit_cast<unsigned char*>(pixelData.data()),texture->width(),texture->height());
     int w, h, channels;
 
     auto rawBytes = stbi_load(std::filesystem::absolute("resources/Integration-BasicTriangle-Render.png").string().c_str(),&w,&h,&channels,4);

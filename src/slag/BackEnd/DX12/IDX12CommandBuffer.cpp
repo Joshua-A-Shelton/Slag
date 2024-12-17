@@ -243,9 +243,20 @@ namespace slag
             throw std::runtime_error("IDX12CommandBuffer::bindComputeShader is not implemented");
         }
 
-        void IDX12CommandBuffer::bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, size_t* offsets, size_t bindingCount)
+        void IDX12CommandBuffer::bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, size_t* offsets, size_t* sizes, size_t* strides, size_t bindingCount)
         {
-            throw std::runtime_error("IDX12CommandBuffer::bindVertexBuffers is not implemented");
+            assert(_commandType == GpuQueue::GRAPHICS && "bindVertexBuffers is a graphics queue only operation");
+            std::vector<D3D12_VERTEX_BUFFER_VIEW> views(bindingCount);
+            for(size_t i=0; i< bindingCount; i++)
+            {
+                auto buffer = static_cast<DX12Buffer*>(buffers[i]);
+                auto& binding = views[i];
+                auto offset = offsets[i];
+                binding.BufferLocation = buffer->underlyingBuffer()->GetGPUVirtualAddress()+offsets[i];
+                binding.SizeInBytes = sizes[i];
+                binding.StrideInBytes = strides[i];
+            }
+            _buffer->IASetVertexBuffers(firstBinding,bindingCount,views.data());
         }
 
         void IDX12CommandBuffer::clearDepthStencilImage(Texture* texture, ClearDepthStencil clear, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore,
