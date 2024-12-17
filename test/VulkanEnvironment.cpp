@@ -12,7 +12,9 @@ namespace slag
         void VulkanDebugTest(std::string& message, SlagInitDetails::DebugLevel level, int32_t messageID)
         {
             std::cout << message <<std::endl;
-            if(level != SlagInitDetails::SLAG_MESSAGE && VULKAN_TESTS_POST_SET_UP)
+            if(level != SlagInitDetails::SLAG_MESSAGE && VULKAN_TESTS_POST_SET_UP &&
+            messageID != 1303270965 //optimal performance layout warning
+            )
             {
                 GTEST_FAIL();
             }
