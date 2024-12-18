@@ -3,6 +3,7 @@
 #include "../../Resources/ResourceManager.h"
 #include "DX12DescriptorPool.h"
 
+
 namespace slag
 {
     namespace dx
@@ -104,9 +105,11 @@ namespace slag
 
         void DX12CommandBuffer::bindDescriptorPool(DescriptorPool* pool)
         {
+            ID3D12DescriptorHeap* heaps[2];
             auto descriptorPool = static_cast<DX12DescriptorPool*>(pool);
-            //_buffer->SetDescriptorHeaps(2,)
-            throw std::runtime_error("DX12CommandBuffer::bindDescriptorPool not implemented");
+            heaps[0] = descriptorPool->underlyingHeap();
+            heaps[1] = DX12Lib::card()->samplerHeap();
+            _buffer->SetDescriptorHeaps(2,heaps);
         }
 
     } // dx

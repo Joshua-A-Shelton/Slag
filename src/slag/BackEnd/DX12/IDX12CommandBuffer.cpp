@@ -213,11 +213,14 @@ namespace slag
 
         void IDX12CommandBuffer::bindGraphicsDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)
         {
-            throw std::runtime_error("IDX12CommandBuffer::bindGraphicsDescriptorBundle is not implemented");
+            assert(_commandType == GpuQueue::GRAPHICS && "bindIndexBuffer is a graphics queue only operation");
+            _buffer->SetGraphicsRootDescriptorTable(index,std::bit_cast<D3D12_GPU_DESCRIPTOR_HANDLE>(bundle.gpuHandle()));
         }
+
         void IDX12CommandBuffer::bindComputeDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)
         {
-            throw std::runtime_error("IDX12CommandBuffer::bindComputeDescriptorBundle is not implemented");
+            assert(_commandType != GpuQueue::TRANSFER && "bindIndexBuffer is a graphics and transfer queue only operation");
+            _buffer->SetComputeRootDescriptorTable(index,std::bit_cast<D3D12_GPU_DESCRIPTOR_HANDLE>(bundle.gpuHandle()));
         }
 
         void IDX12CommandBuffer::bindIndexBuffer(Buffer* buffer, Buffer::IndexSize indexSize, size_t offset)

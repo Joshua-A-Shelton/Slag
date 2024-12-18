@@ -8,11 +8,11 @@
 #include "DX12Sampler.h"
 #include "DX12Shader.h"
 #include "DX12DescriptorGroup.h"
+#include "DX12DescriptorPool.h"
 #include <wrl.h>
 #include <dxgi1_4.h>
 #include <dxgi1_6.h>
 #include <dxgidebug.h>
-
 
 namespace slag
 {
@@ -374,10 +374,9 @@ namespace slag
             throw std::runtime_error("DX12Lib::newShader not implemented");
         }
 
-        DescriptorPool*
-        DX12Lib::newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)
+        DescriptorPool* DX12Lib::newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)
         {
-            throw std::runtime_error("DX12Lib::newDescriptorPool not implemented");
+            return new DX12DescriptorPool(1000000);
         }
 
         void DX12Lib::setSampler(void* handle, uint32_t binding, uint32_t arrayElement, Sampler* sampler, Texture::Layout layout)

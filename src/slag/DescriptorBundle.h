@@ -94,15 +94,21 @@ namespace slag
         void setInputAttachment(uint32_t binding, uint32_t arrayElement, Texture* texture, Texture::Layout layout);
         //TODO: setAccelerationStructure()
         /**
-         * Low level handle to the underlying object, used internally, not terribly useful generally
+         * Low level handle to the underlying object for use on the gpu, used internally, not terribly useful generally
          * @return
          */
-        const void* handle()const;
+        const void* gpuHandle()const;
+        /**
+         * Low level handle to the underlying object for use on the cpu, used internally, not terribly useful generally
+         * @return
+         */
+        const void* cpuHandle()const;
         friend class DescriptorPool;
     private:
         void move(DescriptorBundle&& from);
         DescriptorBundle()=default;
-        void* _handle= nullptr;
+        void* _gpuhandle = nullptr;
+        void* _cpuhandle = nullptr;
     };
 
 } // slag

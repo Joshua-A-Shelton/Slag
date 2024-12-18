@@ -49,7 +49,7 @@ namespace slag
             _currentPage=0;
         }
 
-        void* VulkanDescriptorPool::makeBundleLowLevelHandle(DescriptorGroup* forGroup)
+        void VulkanDescriptorPool::setBundleLowLevelHandles(void** gpuHandle, void** cpuHandle, DescriptorGroup* forGroup)
         {
             VkDescriptorPool page = _pages[_currentPage];
             auto group = static_cast<VulkanDescriptorGroup*>(forGroup);
@@ -67,7 +67,8 @@ namespace slag
             switch (result) {
                 case VK_SUCCESS:
                     //all good, return
-                    return handle;
+                    *gpuHandle = handle;
+                    return;
                 case VK_ERROR_FRAGMENTED_POOL:
                 case VK_ERROR_OUT_OF_POOL_MEMORY:
                     //reallocate pool
@@ -99,7 +100,7 @@ namespace slag
                     throw std::runtime_error("Unable to create bundle in newly allocated page. Out of memory or page insufficient for bundle size");
                 }
             }
-            return handle;
+            *gpuHandle = handle;
         }
 
         VkDescriptorPool VulkanDescriptorPool::allocatePage()

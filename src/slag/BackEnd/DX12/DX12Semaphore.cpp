@@ -1,5 +1,6 @@
 #include "DX12Semaphore.h"
 #include "DX12Lib.h"
+
 namespace slag
 {
     namespace dx

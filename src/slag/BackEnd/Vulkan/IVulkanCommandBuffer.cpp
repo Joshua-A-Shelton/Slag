@@ -329,7 +329,7 @@ namespace slag
         void IVulkanCommandBuffer::bindGraphicsDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)
         {
             auto s = static_cast<VulkanShader*>(shader);
-            auto h = bundle.handle();
+            auto h = bundle.gpuHandle();
             auto handle = std::bit_cast<VkDescriptorSet>(h);
             vkCmdBindDescriptorSets(_buffer,VK_PIPELINE_BIND_POINT_GRAPHICS,s->layout(),index,1,&handle,0, nullptr);
         }
@@ -337,7 +337,7 @@ namespace slag
         void IVulkanCommandBuffer::bindComputeDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)
         {
             auto s = static_cast<VulkanShader*>(shader);
-            auto h = bundle.handle();
+            auto h = bundle.gpuHandle();
             auto handle = std::bit_cast<VkDescriptorSet>(h);
             vkCmdBindDescriptorSets(_buffer,VK_PIPELINE_BIND_POINT_COMPUTE,s->layout(),index,1,&handle,0, nullptr);
         }

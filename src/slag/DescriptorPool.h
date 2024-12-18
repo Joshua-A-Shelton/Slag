@@ -46,7 +46,7 @@ namespace slag
         static DescriptorPool* newDescriptorPool();
         static DescriptorPool* newDescriptorPool(const DescriptorPoolPageInfo& pageInfo);
     protected:
-        virtual void* makeBundleLowLevelHandle(DescriptorGroup* forGroup)=0;
+        virtual void setBundleLowLevelHandles(void** gpuHandle, void** cpuHandle, DescriptorGroup* forGroup) =0;
     };
 
 } // slag

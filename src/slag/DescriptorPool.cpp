@@ -5,7 +5,7 @@ namespace slag
     DescriptorBundle DescriptorPool::makeBundle(DescriptorGroup* forGroup)
     {
         DescriptorBundle bundle;
-        bundle._handle = makeBundleLowLevelHandle(forGroup);
+        setBundleLowLevelHandles(&bundle._gpuhandle, &bundle._cpuhandle, forGroup);
         return bundle;
     }
 

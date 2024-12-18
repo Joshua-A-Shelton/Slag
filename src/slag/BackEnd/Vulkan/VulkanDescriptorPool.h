@@ -17,7 +17,7 @@ namespace slag
             VulkanDescriptorPool(VulkanDescriptorPool&& from);
             VulkanDescriptorPool& operator=(VulkanDescriptorPool&& from);
             void reset()override;
-            void* makeBundleLowLevelHandle(DescriptorGroup* forGroup)override;
+            void setBundleLowLevelHandles(void** gpuHandle, void** cpuHandle, DescriptorGroup* forGroup) override;
         private:
             void move(VulkanDescriptorPool&& from);
             VkDescriptorPool allocatePage();
