@@ -12,7 +12,7 @@ namespace slag
         class VulkanSwapchain: public Swapchain
         {
         public:
-            VulkanSwapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, PresentMode mode, Pixels::Format imageFormat);
+            VulkanSwapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, PresentMode mode, Pixels::Format imageFormat,FrameResources* (*createResourceFunction)(size_t frameIndex, Swapchain* inChain));
             ~VulkanSwapchain()override;
             VulkanSwapchain(const VulkanSwapchain&)=delete;
             VulkanSwapchain& operator=(const VulkanSwapchain&)=delete;

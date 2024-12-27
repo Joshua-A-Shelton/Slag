@@ -6,7 +6,7 @@ namespace slag
 {
     namespace dx
     {
-        DX12Swapchain::DX12Swapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode, Pixels::Format format)
+        DX12Swapchain::DX12Swapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode, Pixels::Format format,FrameResources* (*createResourceFunction)(size_t frameIndex, Swapchain* inChain)):Swapchain(createResourceFunction)
         {
             _surface = (HWND)platformData.nativeWindowHandle;
             _width = width;
@@ -28,6 +28,32 @@ namespace slag
             semaphore.waitForValue(1);
             _swapchain->Release();
         }
+
+        DX12Swapchain::DX12Swapchain(DX12Swapchain&& from): Swapchain(nullptr)
+        {
+            move(std::move(from));
+        }
+
+        DX12Swapchain& DX12Swapchain::operator=(DX12Swapchain&& from)
+        {
+            move(std::move(from));
+            return *this;
+        }
+
+        void DX12Swapchain::move(DX12Swapchain&& from)
+        {
+            Swapchain::move(from);
+            std::swap(_surface,from._surface);
+            std::swap(_swapchain,from._swapchain);
+            _width=from._width;
+            _height=from._height;
+            _backBuffers=from._backBuffers;
+            _presentMode = from._presentMode;
+            _format = from._format;
+
+            _frames.swap(from._frames);
+        }
+
 
         void DX12Swapchain::rebuild()
         {
@@ -65,9 +91,14 @@ namespace slag
             for(int i=0; i< _backBuffers; i++)
             {
                 ID3D12Resource* backBuffer = nullptr;
+                FrameResources* fr = nullptr;
+                if(createResources)
+                {
+                    fr = createResources(i,this);
+                }
                 _swapchain->GetBuffer(i, IID_PPV_ARGS(&backBuffer));
                 //not too sure about D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE
-                auto frame = DX12Frame(backBuffer,_format,_width,_height,D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE,this);
+                auto frame = DX12Frame(backBuffer,_format,_width,_height,D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE,this,fr);
                 _frames.push_back(std::move(frame));
             }
         }
@@ -142,7 +173,6 @@ namespace slag
         {
             _presentMode = mode;
         }
-
 
     } // dx
 } // slag

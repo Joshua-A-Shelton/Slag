@@ -11,7 +11,7 @@ namespace slag
         class DX12Frame: public Frame
         {
         public:
-            DX12Frame(ID3D12Resource* texture, Pixels::Format textureFormat, uint32_t width, uint32_t height, D3D12_RESOURCE_FLAGS textureUsage, DX12Swapchain* from);
+            DX12Frame(ID3D12Resource* texture, Pixels::Format textureFormat, uint32_t width, uint32_t height, D3D12_RESOURCE_FLAGS textureUsage, DX12Swapchain* from, FrameResources* frameResources);
             ~DX12Frame()override;
             DX12Frame(const DX12Frame&)=delete;
             DX12Frame& operator=(const DX12Frame&)=delete;

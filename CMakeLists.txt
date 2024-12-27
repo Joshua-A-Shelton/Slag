@@ -155,6 +155,8 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/QueryPool.h
         src/slag/DescriptorBundle.cpp
         src/slag/DescriptorBundle.h
+        src/slag/FrameResources.cpp
+        src/slag/FrameResources.h
 
 )
 target_link_libraries(Slag ${Boost_LIBRARIES})

@@ -13,7 +13,7 @@ namespace slag
         class VulkanFrame: public Frame
         {
         public:
-            VulkanFrame(VkImage backBuffer, uint32_t width, uint32_t height, uint32_t imageIndex, VkImageUsageFlags flags, VulkanSwapchain* from);
+            VulkanFrame(VkImage backBuffer, uint32_t width, uint32_t height, uint32_t imageIndex, VkImageUsageFlags flags, VulkanSwapchain* from,FrameResources* frameResources);
             ~VulkanFrame()override;
             VulkanFrame(const VulkanFrame&)=delete;
             VulkanFrame& operator=(const VulkanFrame&)=delete;

@@ -14,8 +14,12 @@ namespace slag
         class DX12Swapchain: public Swapchain
         {
         public:
-            DX12Swapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, PresentMode mode, Pixels::Format format);
+            DX12Swapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, PresentMode mode, Pixels::Format format, FrameResources* (*createResourceFunction)(size_t frameIndex, Swapchain* inChain));
             ~DX12Swapchain()override;
+            DX12Swapchain(const DX12Swapchain&)=delete;
+            DX12Swapchain& operator=(const DX12Swapchain&)=delete;
+            DX12Swapchain(DX12Swapchain&& from);
+            DX12Swapchain& operator=(DX12Swapchain&& from);
             Frame* next()override;
             Frame* nextIfReady()override;
             Frame* currentFrame()override;
@@ -30,6 +34,7 @@ namespace slag
             IDXGISwapChain4* underlyingSwapchain();
 
         private:
+            void move(DX12Swapchain&& from);
             void rebuild();
             HWND _surface= nullptr;
             Microsoft::WRL::ComPtr<IDXGISwapChain4> _swapchain = nullptr;

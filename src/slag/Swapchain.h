@@ -20,6 +20,7 @@ namespace slag
             ///First back buffer in queue is the one shown when presented to window, and advances the queue
             FIFO
         };
+        Swapchain(FrameResources* (*createResourceFunction)(size_t frameIndex, Swapchain* inChain));
         virtual ~Swapchain()=default;
         ///Acquire the next frame, blocks until the frame is ready, or null if there's none to acquire (usually minimized window)
         virtual Frame* next() = 0;
@@ -56,7 +57,11 @@ namespace slag
          * @param format Texture format for backbuffers in chain
          * @return
          */
-        static Swapchain* newSwapchain(PlatformData platformData,uint32_t width, uint32_t height, uint8_t backBuffers, PresentMode mode, Pixels::Format format);
+        static Swapchain* newSwapchain(PlatformData platformData,uint32_t width, uint32_t height, uint8_t backBuffers, PresentMode mode, Pixels::Format format, FrameResources* (*createResourceFunction)(size_t frameIndex, Swapchain* inChain)=nullptr);
+
+    protected:
+        void move(Swapchain& from);
+        FrameResources* (*createResources)(size_t frameIndex, Swapchain* inChain) = nullptr;
     };
 
 } // slag

@@ -7,7 +7,7 @@ namespace slag
     namespace dx
     {
 
-        DX12Frame::DX12Frame(ID3D12Resource* texture, Pixels::Format textureFormat, uint32_t width, uint32_t height, D3D12_RESOURCE_FLAGS textureUsage, DX12Swapchain* from)
+        DX12Frame::DX12Frame(ID3D12Resource* texture, Pixels::Format textureFormat, uint32_t width, uint32_t height, D3D12_RESOURCE_FLAGS textureUsage, DX12Swapchain* from, FrameResources* frameResources): Frame(frameResources)
         {
             _backBuffer = new DX12Texture(texture,false,textureFormat,width,height,1,textureUsage, true);
             _commandBuffer = new DX12CommandBuffer(GpuQueue::GRAPHICS);
@@ -20,7 +20,7 @@ namespace slag
             delete _commandBuffer;
         }
 
-        DX12Frame::DX12Frame(DX12Frame&& from)
+        DX12Frame::DX12Frame(DX12Frame&& from): Frame(nullptr)
         {
             move(std::move(from));
         }
@@ -43,6 +43,7 @@ namespace slag
 
         void DX12Frame::move(DX12Frame&& from)
         {
+            Frame::move(from);
             std::swap(_backBuffer,from._backBuffer);
             std::swap(_commandBuffer,from._commandBuffer);
             std::swap(_from, from._from);

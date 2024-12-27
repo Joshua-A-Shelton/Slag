@@ -513,9 +513,9 @@ namespace slag
             return new DX12Semaphore(startingValue);
         }
 
-        Swapchain* DX12Lib::newSwapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode, Pixels::Format imageFormat)
+        Swapchain* DX12Lib::newSwapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode, Pixels::Format imageFormat,FrameResources* (*createResourceFunction)(size_t frameIndex, Swapchain* inChain))
         {
-            return new DX12Swapchain(platformData,width,height,backBuffers,mode, imageFormat);
+            return new DX12Swapchain(platformData,width,height,backBuffers,mode, imageFormat,createResourceFunction);
         }
 
         Sampler* DX12Lib::newSampler(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, Sampler::AddressMode u, Sampler::AddressMode v, Sampler::AddressMode w,

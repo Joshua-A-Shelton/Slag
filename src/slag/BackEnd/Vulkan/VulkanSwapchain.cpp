@@ -10,7 +10,7 @@ namespace slag
 {
     namespace vulkan
     {
-        VulkanSwapchain::VulkanSwapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode,  Pixels::Format imageFormat)
+        VulkanSwapchain::VulkanSwapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode,  Pixels::Format imageFormat, FrameResources* (*createResourceFunction)(size_t frameIndex, Swapchain* inChain)): Swapchain(createResourceFunction)
         {
             _surface = createNativeSurface(platformData);
             _width = width;
@@ -42,7 +42,7 @@ namespace slag
             }
         }
 
-        VulkanSwapchain::VulkanSwapchain(VulkanSwapchain&& from)
+        VulkanSwapchain::VulkanSwapchain(VulkanSwapchain&& from): Swapchain(nullptr)
         {
             move(std::move(from));
         }
@@ -55,6 +55,7 @@ namespace slag
 
         void VulkanSwapchain::move(VulkanSwapchain&& from)
         {
+            Swapchain::move(from);
             std::swap(_surface,from._surface);
             std::swap(_imageFormat,from._imageFormat);
             _width = from._width;
@@ -151,7 +152,12 @@ namespace slag
             auto images = chain->get_images().value();
             for(int i=0; i< images.size(); i++)
             {
-                VulkanFrame frame(images[i],_width,_height,i,chain->image_usage_flags,this);
+                FrameResources* fr = nullptr;
+                if(createResources)
+                {
+                    fr = createResources(i,this);
+                }
+                VulkanFrame frame(images[i],_width,_height,i,chain->image_usage_flags,this,fr);
                 _frames.push_back(std::move(frame));
 
                 VkSemaphoreCreateInfo semaphoreCreateInfo{};

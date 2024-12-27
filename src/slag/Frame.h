@@ -1,6 +1,6 @@
 #ifndef SLAG_FRAME_H
 #define SLAG_FRAME_H
-
+#include "FrameResources.h"
 namespace slag
 {
 
@@ -10,10 +10,17 @@ namespace slag
     class Frame
     {
     public:
-        virtual ~Frame()=default;
+        Frame(FrameResources* resources);
+        virtual ~Frame();
+        Frame(const Frame&)=delete;
+        Frame& operator=(const Frame&)=delete;
+        Frame(Frame&& from);
+        Frame& operator=(Frame&& from);
         virtual Texture* backBuffer()=0;
         virtual CommandBuffer* commandBuffer()=0;
-
+        FrameResources* resources = nullptr;
+    protected:
+        void move(Frame& from);
     };
 
 } // slag

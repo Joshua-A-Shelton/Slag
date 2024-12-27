@@ -10,6 +10,7 @@
 #include "DescriptorGroup.h"
 #include "DescriptorPool.h"
 #include "Frame.h"
+#include "FrameResources.h"
 #include "FrameBufferDescription.h"
 #include "GpuMemoryBarriers.h"
 #include "GpuQueue.h"
