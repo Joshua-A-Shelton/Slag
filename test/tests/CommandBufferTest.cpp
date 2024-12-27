@@ -447,7 +447,8 @@ TEST_F(CommandBufferTests, BeginRendering)
 }
 TEST_F(CommandBufferTests, BindGraphicsDescriptorBundle)
 {
-    GTEST_FAIL();
+    //tested in integration tests
+    //GTEST_FAIL();
 }
 TEST_F(CommandBufferTests, BindComputeDescriptorBundle)
 {
@@ -467,7 +468,6 @@ TEST_F(CommandBufferTests, BindIndexBuffer)
         SlagLib::graphicsCard()->graphicsQueue()->submit(commandBuffer.get());
         commandBuffer->waitUntilFinished();
     }
-
 
 }
 
@@ -493,12 +493,28 @@ TEST_F(CommandBufferTests, BindComputeShader)
 }
 TEST_F(CommandBufferTests, BindVertexBuffers)
 {
-    GTEST_FAIL();
+    //tested in integration tests
+    //GTEST_FAIL();
 }
 
 TEST_F(CommandBufferTests, ClearDepthStencilImage)
 {
-    GTEST_FAIL();
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::GRAPHICS));
+    auto depthTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::D32_FLOAT,slag::Texture::TEXTURE_2D,25,25,1,1,1,TextureUsageFlags::DEPTH_STENCIL_ATTACHMENT));
+    auto dataBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(4*depthTexture->width()*depthTexture->height(),Buffer::CPU_AND_GPU,Buffer::DATA_BUFFER));
+    commandBuffer->begin();
+    commandBuffer->clearDepthStencilImage(depthTexture.get(),ClearDepthStencil{.depth=.5,.stencil=0},Texture::UNDEFINED,Texture::TRANSFER_SOURCE,PipelineStageFlags::ALL_COMMANDS,PipelineStageFlags::ALL_COMMANDS);
+    commandBuffer->copyImageToBuffer(depthTexture.get(),Texture::TRANSFER_SOURCE,0,1,0,dataBuffer.get(),0);
+    commandBuffer->end();
+    SlagLib::graphicsCard()->graphicsQueue()->submit(commandBuffer.get());
+    commandBuffer->waitUntilFinished();
+
+    auto data = dataBuffer->downloadData();
+    for(size_t i=0; i< data.size(); i+=sizeof(float))
+    {
+        float value = *std::bit_cast<float*>(&data[i]);
+        GTEST_ASSERT_EQ(value,.5);
+    }
 }
 
 TEST_F(CommandBufferTests, CopyQueryPoolResults)
@@ -528,7 +544,8 @@ TEST_F(CommandBufferTests, Draw)
 
 TEST_F(CommandBufferTests, DrawIndexed)
 {
-    GTEST_FAIL();
+    //tested in integration tests
+    //GTEST_FAIL();
 }
 
 TEST_F(CommandBufferTests, DrawIndexedIndirect)
@@ -857,7 +874,9 @@ TEST_F(CommandBufferTests, DisallowSetBlendConstantsInComputeQueue)
 #ifdef NDEBUG
     GTEST_SKIP();
 #endif
-    GTEST_FAIL();
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::COMPUTE));
+    commandBuffer->begin();
+    ASSERT_DEATH(commandBuffer->setBlendConstants(1,1,1,1),"");
 }
 
 TEST_F(CommandBufferTests, DisallowSetBlendConstantsInTransferQueue)
@@ -865,7 +884,9 @@ TEST_F(CommandBufferTests, DisallowSetBlendConstantsInTransferQueue)
 #ifdef NDEBUG
     GTEST_SKIP();
 #endif
-    GTEST_FAIL();
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::TRANSFER));
+    commandBuffer->begin();
+    ASSERT_DEATH(commandBuffer->setBlendConstants(1,1,1,1),"");
 }
 
 TEST_F(CommandBufferTests, DisallowSetStencilRefInComputeQueue)
@@ -873,7 +894,9 @@ TEST_F(CommandBufferTests, DisallowSetStencilRefInComputeQueue)
 #ifdef NDEBUG
     GTEST_SKIP();
 #endif
-    GTEST_FAIL();
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::COMPUTE));
+    commandBuffer->begin();
+    ASSERT_DEATH(commandBuffer->setStencilReference(1),"");
 }
 
 TEST_F(CommandBufferTests, DisallowSetStencilRefInTransferQueue)
@@ -881,5 +904,7 @@ TEST_F(CommandBufferTests, DisallowSetStencilRefInTransferQueue)
 #ifdef NDEBUG
     GTEST_SKIP();
 #endif
-    GTEST_FAIL();
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::TRANSFER));
+    commandBuffer->begin();
+    ASSERT_DEATH(commandBuffer->setStencilReference(1),"");
 }
