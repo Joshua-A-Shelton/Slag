@@ -189,6 +189,166 @@ namespace slag
             return DXGI_FORMAT_R16_UINT;
         }
 
+        D3D12_BLEND DX12Lib::blendFactor(Operations::BlendFactor factor)
+        {
+            switch(factor)
+            {
+#define DEFINITION(SlagName, VulkanName, DXName) case Operations::SlagName: return DXName;
+                BLEND_FACTOR_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            return D3D12_BLEND::D3D12_BLEND_ZERO;
+        }
+
+        D3D12_BLEND_OP DX12Lib::blendOperation(Operations::BlendOperation op)
+        {
+            switch(op)
+            {
+#define DEFINITION(SlagName, VulkanName, DXName) case Operations::SlagName: return DXName;
+                BLEND_OP_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            return D3D12_BLEND_OP_SUBTRACT;
+        }
+
+        D3D12_LOGIC_OP DX12Lib::logicalOperation(Operations::LogicalOperation op)
+        {
+            switch(op)
+            {
+#define DEFINITION(SlagName,VulkanName,DX12Name) case Operations::SlagName: return DX12Name;
+                FRAMEBUFFER_LOGICAL_OP_DEFINITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            return D3D12_LOGIC_OP_COPY;
+        }
+
+        D3D12_FILL_MODE DX12Lib::fillMode(RasterizationState::DrawMode fill)
+        {
+            switch(fill)
+            {
+                case RasterizationState::FACE:
+                    return D3D12_FILL_MODE_SOLID;
+                case RasterizationState::EDGE:
+                    return D3D12_FILL_MODE_WIREFRAME;
+                case RasterizationState::VERTEX://TODO: DX12 has no vertex fill mode, it's pretty pointless anyway, possibly remove it from slag api
+                    return D3D12_FILL_MODE_WIREFRAME;
+            }
+            return D3D12_FILL_MODE_SOLID;
+        }
+
+        D3D12_CULL_MODE DX12Lib::cullMode(RasterizationState::CullOptions cullOptions)
+        {
+            switch(cullOptions)
+            {
+                case RasterizationState::NONE:
+                    return D3D12_CULL_MODE_NONE;
+                case RasterizationState::BACK_FACING:
+                    return D3D12_CULL_MODE_BACK;
+                case RasterizationState::FRONT_FACING:
+                    return D3D12_CULL_MODE_FRONT;
+            }
+            return D3D12_CULL_MODE_NONE;
+        }
+
+        D3D12_DEPTH_STENCILOP_DESC DX12Lib::stencilopState(StencilOpState state)
+        {
+            D3D12_DEPTH_STENCILOP_DESC desc{};
+            desc.StencilFailOp = stencilOp(state.failOp);
+            desc.StencilDepthFailOp = stencilOp(state.depthFailOp);
+            desc.StencilPassOp = stencilOp(state.passOp);
+            desc.StencilFunc = comparisonFunction(state.compareOp);
+            return desc;
+        }
+
+        D3D12_STENCIL_OP DX12Lib::stencilOp(Operations::StencilOperation op)
+        {
+            switch(op)
+            {
+#define DEFINITION(SlagName,VulkanName, DX12Name) case Operations::SlagName: return DX12Name;
+                STENCIL_OP_DEFINITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            return D3D12_STENCIL_OP_ZERO;
+        }
+
+        std::vector<DXGI_FORMAT> DX12Lib::graphicsType(GraphicsTypes::GraphicsType type)
+        {
+            std::vector<DXGI_FORMAT> formats;
+            switch(type)
+            {
+                case GraphicsTypes::GraphicsType::UNKNOWN:
+                    formats.push_back(DXGI_FORMAT_UNKNOWN);
+                    break;
+                case GraphicsTypes::GraphicsType::BOOLEAN:
+                    formats.push_back(DXGI_FORMAT_R8_UINT);
+                    break;
+                case GraphicsTypes::GraphicsType::INTEGER:
+                    formats.push_back(DXGI_FORMAT_R32_SINT);
+                    break;
+                case GraphicsTypes::GraphicsType::UNSIGNED_INTEGER:
+                    formats.push_back(DXGI_FORMAT_R32_UINT);
+                    break;
+                case GraphicsTypes::GraphicsType::FLOAT:
+                    formats.push_back(DXGI_FORMAT_R32_FLOAT);
+                    break;
+                case GraphicsTypes::GraphicsType::DOUBLE:
+                    formats.push_back(DXGI_FORMAT_R32G32_UINT);//notice we have to pass in as two components, each with 32 bits
+                    break;
+                case GraphicsTypes::GraphicsType::VECTOR2:
+                    formats.push_back(DXGI_FORMAT_R32G32_FLOAT);
+                    break;
+                case GraphicsTypes::GraphicsType::VECTOR3:
+                    formats.push_back(DXGI_FORMAT_R32G32B32_FLOAT);
+                    break;
+                case GraphicsTypes::GraphicsType::VECTOR4:
+                    formats.push_back(DXGI_FORMAT_R32G32B32A32_FLOAT);
+                    break;
+                case GraphicsTypes::GraphicsType::BOOLEAN_VECTOR2:
+                    formats.push_back(DXGI_FORMAT_R8G8_UINT);
+                    break;
+                case GraphicsTypes::GraphicsType::BOOLEAN_VECTOR3:
+                    formats.push_back(DXGI_FORMAT_R8_UINT);
+                    formats.push_back(DXGI_FORMAT_R8_UINT);
+                    formats.push_back(DXGI_FORMAT_R8_UINT);
+                    break;
+                case GraphicsTypes::GraphicsType::BOOLEAN_VECTOR4:
+                    formats.push_back(DXGI_FORMAT_R8G8B8A8_UINT);
+                    break;
+                case GraphicsTypes::GraphicsType::INTEGER_VECTOR2:
+                    formats.push_back(DXGI_FORMAT_R32G32_SINT);
+                    break;
+                case GraphicsTypes::GraphicsType::INTEGER_VECTOR3:
+                    formats.push_back(DXGI_FORMAT_R32G32B32_SINT);
+                    break;
+                case GraphicsTypes::GraphicsType::INTEGER_VECTOR4:
+                    formats.push_back(DXGI_FORMAT_R32G32B32A32_SINT);
+                    break;
+                case GraphicsTypes::GraphicsType::UNSIGNED_INTEGER_VECTOR2:
+                    formats.push_back(DXGI_FORMAT_R32G32_UINT);
+                    break;
+                case GraphicsTypes::GraphicsType::UNSIGNED_INTEGER_VECTOR3:
+                    formats.push_back(DXGI_FORMAT_R32G32B32_UINT);
+                    break;
+                case GraphicsTypes::GraphicsType::UNSIGNED_INTEGER_VECTOR4:
+                    formats.push_back(DXGI_FORMAT_R32G32B32A32_UINT);
+                    break;
+                case GraphicsTypes::GraphicsType::DOUBLE_VECTOR2:
+                    formats.push_back(DXGI_FORMAT_R32G32B32A32_UINT);//notice we have to pass in as two components, each with 32 bits for each component
+                    break;
+                case GraphicsTypes::GraphicsType::DOUBLE_VECTOR3:
+                    formats.push_back(DXGI_FORMAT_R32G32_UINT);//notice we have to pass in as two components, each with 32 bits for each component
+                    formats.push_back(DXGI_FORMAT_R32G32_UINT);
+                    formats.push_back(DXGI_FORMAT_R32G32_UINT);
+                    break;
+                case GraphicsTypes::GraphicsType::DOUBLE_VECTOR4:
+                    formats.push_back(DXGI_FORMAT_R32G32B32A32_UINT);//notice we have to pass in as two components, each with 32 bits for each component
+                    formats.push_back(DXGI_FORMAT_R32G32B32A32_UINT);
+                    break;
+            }
+            return formats;
+        }
+
+
         D3D12_TEXTURE_ADDRESS_MODE DX12Lib::addressMode(Sampler::AddressMode mode)
         {
             switch(mode)

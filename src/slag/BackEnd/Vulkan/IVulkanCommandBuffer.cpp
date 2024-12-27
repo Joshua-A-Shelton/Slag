@@ -259,6 +259,23 @@ namespace slag
             vkCmdSetScissor(_buffer,0,1,&rect);
         }
 
+        void IVulkanCommandBuffer::setBlendConstants(float r, float g, float b, float a)
+        {
+            assert(commandType() == GpuQueue::GRAPHICS && "setBlendConstants is a graphics queue only operation");
+            float floats[4];
+            floats[0]=r;
+            floats[1]=g;
+            floats[2]=b;
+            floats[3]=a;
+            vkCmdSetBlendConstants(_buffer,floats);
+        }
+
+        void IVulkanCommandBuffer::setStencilReference(uint32_t reference)
+        {
+            assert(commandType() == GpuQueue::GRAPHICS && "setStencilReference is a graphics queue only operation");
+            vkCmdSetStencilReference(_buffer,VK_STENCIL_FACE_FRONT_AND_BACK,reference);
+        }
+
         void IVulkanCommandBuffer::beginQuery(QueryPool* queryPool, uint32_t query, bool precise)
         {
             throw std::runtime_error("IVulkanCommandBuffer::beginQuery is not implemented");
@@ -504,7 +521,6 @@ namespace slag
         {
             throw std::runtime_error("IVulkanCommandBuffer::resetQueryPool is not implemented");
         }
-
 
         /*void IVulkanCommandBuffer::resolve(Texture* source,Texture::Layout sourceLayout,uint32_t sourceLayer, uint32_t sourceMip,Rectangle sourceArea, Texture* destination, Texture::Layout destinationLayout,uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea)
         {

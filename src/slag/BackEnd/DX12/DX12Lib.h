@@ -27,6 +27,14 @@ namespace slag
             static uint32_t formatSize(DXGI_FORMAT format);
             static D3D12_DESCRIPTOR_RANGE_TYPE rangeType(Descriptor::DescriptorType type);
             static DXGI_FORMAT indexType(Buffer::IndexSize indexSize);
+            static D3D12_BLEND blendFactor(Operations::BlendFactor factor);
+            static D3D12_BLEND_OP blendOperation(Operations::BlendOperation op);
+            static D3D12_LOGIC_OP logicalOperation(Operations::LogicalOperation op);
+            static D3D12_FILL_MODE fillMode(RasterizationState::DrawMode fill);
+            static D3D12_CULL_MODE cullMode(RasterizationState::CullOptions cullOptions);
+            static D3D12_DEPTH_STENCILOP_DESC stencilopState(StencilOpState state);
+            static D3D12_STENCIL_OP stencilOp(Operations::StencilOperation op);
+            static std::vector<DXGI_FORMAT> graphicsType(GraphicsTypes::GraphicsType type);
 
             explicit DX12Lib(DX12GraphicsCard* card);
             ~DX12Lib() override;

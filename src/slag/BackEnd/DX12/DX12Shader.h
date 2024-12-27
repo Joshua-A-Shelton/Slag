@@ -22,6 +22,7 @@ namespace slag
             PushConstantRange pushConstantRange(size_t index)override;
         private:
             void move(DX12Shader&& from);
+            ID3D12PipelineState* _pipeline = nullptr;
             std::vector<DX12DescriptorGroup> _descriptorGroups;
             std::vector<PushConstantRange> _pushConstantRanges;
         };

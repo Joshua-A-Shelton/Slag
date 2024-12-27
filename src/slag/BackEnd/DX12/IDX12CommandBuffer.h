@@ -29,6 +29,8 @@ namespace slag
 
             void setViewPort(float x, float y, float width, float height, float minDepth,float maxDepth)override;
             void setScissors(Rectangle rectangle)override;
+            void setBlendConstants(float r, float g, float b, float a)override;
+            void setStencilReference(uint32_t reference)override;
 
             void beginQuery(QueryPool* queryPool, uint32_t query, bool precise)override;
             void beginRendering(Attachment* colorAttachments, size_t colorAttachmentCount,Attachment* depthAttachment,Rectangle bounds)override;

@@ -201,6 +201,23 @@ namespace slag
             throw std::runtime_error("IDX12CommandBuffer::setScissors is not implemented");
         }
 
+        void IDX12CommandBuffer::setBlendConstants(float r, float g, float b, float a)
+        {
+            assert(commandType() == GpuQueue::GRAPHICS && "setBlendConstants is a graphics queue only operation");
+            float floats[4];
+            floats[0]=r;
+            floats[1]=g;
+            floats[2]=b;
+            floats[3]=a;
+            _buffer->OMSetBlendFactor(floats);
+        }
+
+        void IDX12CommandBuffer::setStencilReference(uint32_t reference)
+        {
+            assert(commandType() == GpuQueue::GRAPHICS && "setStencilReference is a graphics queue only operation");
+            _buffer->OMSetStencilRef(reference);
+        }
+
         void IDX12CommandBuffer::beginQuery(QueryPool* queryPool, uint32_t query, bool precise)
         {
             throw std::runtime_error("IDX12CommandBuffer::beginQuery is not implemented");

@@ -417,6 +417,16 @@ TEST_F(CommandBufferTests, Blit)
     }
 }
 
+TEST_F(CommandBufferTests, SetBlendConstants)
+{
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, SetStencilReference)
+{
+    GTEST_FAIL();
+}
+
 TEST_F(CommandBufferTests, BeginQuery)
 {
     GTEST_FAIL();
@@ -835,6 +845,38 @@ TEST_F(CommandBufferTests, DisallowCopyToCPUBuffer)
 }
 
 TEST_F(CommandBufferTests, DisallowNonGeneralLayoutsAndLayoutOperationsInTransferQueue)
+{
+#ifdef NDEBUG
+    GTEST_SKIP();
+#endif
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, DisallowSetBlendConstantsInComputeQueue)
+{
+#ifdef NDEBUG
+    GTEST_SKIP();
+#endif
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, DisallowSetBlendConstantsInTransferQueue)
+{
+#ifdef NDEBUG
+    GTEST_SKIP();
+#endif
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, DisallowSetStencilRefInComputeQueue)
+{
+#ifdef NDEBUG
+    GTEST_SKIP();
+#endif
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, DisallowSetStencilRefInTransferQueue)
 {
 #ifdef NDEBUG
     GTEST_SKIP();

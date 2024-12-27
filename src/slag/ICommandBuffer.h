@@ -123,6 +123,19 @@ namespace slag
          * @param rectangle
          */
         virtual void setScissors(Rectangle rectangle)=0;
+        /**
+         *
+         * @param r Red constant
+         * @param g Green constant
+         * @param b Blue constant
+         * @param a Alpha constant
+         */
+        virtual void setBlendConstants(float r, float g, float b, float a)=0;
+        /**
+         * Set the value to compare against in stencil test
+         * @param reference
+         */
+        virtual void setStencilReference(uint32_t reference)=0;
         //TODO: Finish documenting command buffer methods
         virtual void beginQuery(QueryPool* queryPool, uint32_t query, bool precise)=0;
         virtual void beginRendering(Attachment* colorAttachments, size_t colorAttachmentCount,Attachment* depthAttachment,Rectangle bounds)=0;

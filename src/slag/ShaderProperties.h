@@ -53,7 +53,7 @@ namespace slag
         ///Enable depth biasing for drawn fragments
         bool depthBiasEnable = false;
         ///Extra nudge to bias fragments in the depth buffer if depthBiasEnable is true
-        float depthBiasConstantFactor = 0.0f;
+        int depthBiasConstantFactor = 0;
         ///Maximum (or minimum) depth bias of a fragment
         float depthBiasClamp = 0.0f;
         ///Scalar applied to a fragments slope in depth bias calculations
@@ -68,8 +68,8 @@ namespace slag
         uint8_t rasterizationSamples = 1;
         ///Enable sample shading (require multiple samples to generate a fragment)
         bool sampleShadingEnable = false;
-        ///Minimum number of samples needed to generate a fragment is sampleShadingEnable is true
-        float minSampleShading = 1.0f;
+        ///Minimum number of samples (1/2/4/8/16) needed to generate a fragment is sampleShadingEnable is true
+        uint8_t minSampleShading = 1;
         ///Controls if an alpha component of a fragment's first color is replaced in multisampling
         bool alphaToOneEnable = false;
     };
@@ -102,8 +102,6 @@ namespace slag
         Operations::LogicalOperation logicalOperation = Operations::LogicalOperation::LOGIC_OP_COPY;
         ///Blend states for color attachments, up to 8, that correspond to FrameBufferDescription color attachments
         BlendAttachmentState attachmentBlendStates[8]{};
-        ///RGBA components of blend constant color (only used if BlendFactor that requires constant on an attachment is used)
-        float blendConstants[4]{0.0f};
     };
 
     //TODO: set to sensible defaults
@@ -118,12 +116,6 @@ namespace slag
         Operations::StencilOperation depthFailOp = Operations::StencilOperation::STENCIL_OP_KEEP;
         ///Comparison to use in the stencil test
         Operations::ComparisonFunction compareOp = Operations::ComparisonFunction::COMPARISION_NEVER;
-        ///Bits of the unsigned int in the stencil that are used in the stencil test
-        uint32_t compareMask = 0;
-        ///Bits of the unsigned int in the stencil that are written to in the stencil
-        uint32_t writeMask = 0;
-        ///Integer stencil reference value used in the unsigned stencil comparison
-        uint32_t reference = 0;
     };
     ///Details on the depth stencil usage
     struct DepthStencilState
@@ -134,14 +126,12 @@ namespace slag
         bool depthWriteEnable = true;
         ///Operation to use to determine if a fragment passes the depth test
         Operations::ComparisonFunction depthCompareOperation = Operations::COMPARISION_LESS;
-        ///Whether to check if the the fragment is within the depth bounds
-        bool depthBoundsTestEnable = false;
-        ///Minimum depth for bounds for depthBoundsTest
-        float minDepthBounds = 0;
-        ///Maximum depth for bounds for depthBoundsTest
-        float maxDepthBounds = 1;
         ///Whether or not to enable stencil buffer testing
         bool stencilTestEnable = false;
+        ///Which bits of the stencil part of the buffer are part of the stencil test
+        uint8_t stencilReadMask = 0xFF;
+        ///Which bits of the stencil buffer are update by the stencil test
+        uint8_t stencilWriteMask = 0xFF;
         ///Parameter for stencil test on front facing polygons
         StencilOpState front{};
         ///Parameter for stencil test on back facing polygons

@@ -163,7 +163,7 @@ namespace slag
             rasterizationInfo.cullMode = VulkanLib::cullMode(properties.rasterizationState.culling);
             rasterizationInfo.frontFace = VulkanLib::frontFace(properties.rasterizationState.frontFacing);
             rasterizationInfo.depthBiasEnable = properties.rasterizationState.depthBiasEnable;
-            rasterizationInfo.depthBiasConstantFactor = properties.rasterizationState.depthBiasConstantFactor;
+            rasterizationInfo.depthBiasConstantFactor = static_cast<float>(properties.rasterizationState.depthBiasConstantFactor);
             rasterizationInfo.depthBiasClamp = properties.rasterizationState.depthBiasClamp;
             rasterizationInfo.depthBiasSlopeFactor = properties.rasterizationState.depthBiasSlopeFactor;
             rasterizationInfo.lineWidth = properties.rasterizationState.lineWidth;
@@ -175,7 +175,7 @@ namespace slag
             multisampleInfo.flags = 0;
             multisampleInfo.rasterizationSamples = static_cast<VkSampleCountFlagBits>(properties.multiSampleState.rasterizationSamples);
             multisampleInfo.sampleShadingEnable = properties.multiSampleState.sampleShadingEnable;
-            multisampleInfo.minSampleShading = properties.multiSampleState.minSampleShading;
+            multisampleInfo.minSampleShading = properties.multiSampleState.minSampleShading == 0? 0: static_cast<float>(properties.multiSampleState.rasterizationSamples) / static_cast<float>(properties.multiSampleState.minSampleShading);
             //multisampleInfo.pSampleMask = 0;
             multisampleInfo.alphaToCoverageEnable = false;
             multisampleInfo.alphaToOneEnable = properties.multiSampleState.alphaToOneEnable;
@@ -204,10 +204,6 @@ namespace slag
             colorBlendingInfo.logicOp = VulkanLib::logicOp(properties.blendState.logicalOperation);
             colorBlendingInfo.attachmentCount = attachmentStates.size();
             colorBlendingInfo.pAttachments = attachmentStates.data();
-            colorBlendingInfo.blendConstants[0] = properties.blendState.blendConstants[0];
-            colorBlendingInfo.blendConstants[1] = properties.blendState.blendConstants[1];
-            colorBlendingInfo.blendConstants[2] = properties.blendState.blendConstants[2];
-            colorBlendingInfo.blendConstants[3] = properties.blendState.blendConstants[3];
 
             VkPipelineDepthStencilStateCreateInfo depthStencilInfo{};
             depthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -216,24 +212,24 @@ namespace slag
             depthStencilInfo.depthTestEnable = properties.depthStencilState.depthTestEnable;
             depthStencilInfo.depthWriteEnable = properties.depthStencilState.depthWriteEnable;
             depthStencilInfo.depthCompareOp = VulkanLib::compareOp(properties.depthStencilState.depthCompareOperation);
-            depthStencilInfo.depthBoundsTestEnable = properties.depthStencilState.depthBoundsTestEnable;
             depthStencilInfo.stencilTestEnable = properties.depthStencilState.stencilTestEnable;
             depthStencilInfo.front.failOp = VulkanLib::stencilOp(properties.depthStencilState.front.failOp);
             depthStencilInfo.front.passOp = VulkanLib::stencilOp(properties.depthStencilState.front.passOp);
             depthStencilInfo.front.depthFailOp = VulkanLib::stencilOp(properties.depthStencilState.front.depthFailOp);
             depthStencilInfo.front.compareOp = VulkanLib::compareOp(properties.depthStencilState.front.compareOp);
-            depthStencilInfo.front.compareMask = properties.depthStencilState.front.compareMask;
-            depthStencilInfo.front.writeMask = properties.depthStencilState.front.writeMask;
-            depthStencilInfo.front.reference = properties.depthStencilState.front.reference;
+            depthStencilInfo.front.compareMask = properties.depthStencilState.stencilReadMask;//I think only lest significant digits need to be set
+            depthStencilInfo.front.writeMask = properties.depthStencilState.stencilWriteMask;//I think only lest significant digits need to be set
+            depthStencilInfo.front.reference = 0;//set via command buffer dynamically
             depthStencilInfo.back.failOp = VulkanLib::stencilOp(properties.depthStencilState.back.failOp);
             depthStencilInfo.back.passOp = VulkanLib::stencilOp(properties.depthStencilState.back.passOp);
             depthStencilInfo.back.depthFailOp = VulkanLib::stencilOp(properties.depthStencilState.back.depthFailOp);
             depthStencilInfo.back.compareOp = VulkanLib::compareOp(properties.depthStencilState.back.compareOp);
-            depthStencilInfo.back.compareMask = properties.depthStencilState.back.compareMask;
-            depthStencilInfo.back.writeMask = properties.depthStencilState.back.writeMask;
-            depthStencilInfo.back.reference = properties.depthStencilState.back.reference;
-            depthStencilInfo.minDepthBounds = properties.depthStencilState.minDepthBounds;
-            depthStencilInfo.maxDepthBounds = properties.depthStencilState.maxDepthBounds;
+            depthStencilInfo.back.compareMask = properties.depthStencilState.stencilReadMask;//I think only lest significant digits need to be set
+            depthStencilInfo.back.writeMask = properties.depthStencilState.stencilWriteMask;//I think only lest significant digits need to be set
+            depthStencilInfo.back.reference = 0;//set via command buffer dynamically
+            depthStencilInfo.depthBoundsTestEnable = false;
+            depthStencilInfo.minDepthBounds = 0;//we're not doing depth bounds testing, ignore
+            depthStencilInfo.maxDepthBounds = 0;//we're not doing depth bounds testing, ignore
 
 
             std::vector<VkVertexInputAttributeDescription> attributes;
@@ -254,6 +250,10 @@ namespace slag
                         attr.location = attribute;
                         attr.binding = channel;
                         attr.format = VulkanLib::graphicsType(description.dataType());
+                        if(attr.format == VK_FORMAT_UNDEFINED)
+                        {
+                            throw std::runtime_error("Unable to convert graphicsType type into underlying API type");
+                        }
                         attr.offset = description.offset();
                         attIndex++;
                         size_t end = attr.offset + GraphicsTypes::typeSize(description.dataType());
@@ -345,7 +345,7 @@ namespace slag
             }
 
             //TODO: most of the interesting stuff is in here.... I may need to enable more
-            std::vector<VkDynamicState> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR,VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE};
+            std::vector<VkDynamicState> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR,VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE,VK_DYNAMIC_STATE_BLEND_CONSTANTS, VK_DYNAMIC_STATE_STENCIL_REFERENCE};
             VkPipelineDynamicStateCreateInfo dynamicInfo{};
             dynamicInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
             dynamicInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
