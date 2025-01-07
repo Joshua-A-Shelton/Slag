@@ -1,66 +1,64 @@
 #ifndef SLAG_VULKANTEXTURE_H
 #define SLAG_VULKANTEXTURE_H
 #include "../../Texture.h"
-#include <vulkan/vulkan.h>
+#include "../../Semaphore.h"
+#include "../../Resources/Resource.h"
 #include "vk_mem_alloc.h"
-#include "../Resource.h"
-#include "../../ClearValue.h"
+#include "VulkanCommandBuffer.h"
+#include "VulkanLib.h"
+#include "VulkanGPUMemoryReference.h"
+#include <vulkan/vulkan.h>
 
 namespace slag
 {
     namespace vulkan
     {
-        class VulkanTexture: public Texture, Resource
+        class VulkanTexture: public Texture, resources::Resource
         {
         public:
-            VulkanTexture(VkImage image, VkImageView view, VkFormat format, VkImageAspectFlags usage, uint32_t width, uint32_t height, bool destroyImmediate);
+            VulkanTexture(VkImage image, bool ownImage, VkImageView view, bool ownView, Pixels::Format format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageAspectFlags aspects, bool destroyImmediately);
+            VulkanTexture(VkImage image, bool ownImage, Pixels::Format format, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, VkImageAspectFlags aspects, bool destroyImmediately);
 
-            VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels,VkImageAspectFlags usage, Pixels::PixelFormat format, Texture::Layout layout, Features features, bool destroyImmediate);
+            VulkanTexture(void** texelDataArray, size_t texelDataCount, VkDeviceSize dataSize, Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, VkImageUsageFlags usage, Texture::Layout initializedLayout, bool destroyImmediately);
+            VulkanTexture(Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, uint32_t layers, uint8_t sampleCount, VkImageUsageFlags usage, bool destroyImmediately);
 
-            VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels,VkImageAspectFlags usage, Pixels::PixelFormat format, void* pixelData, Texture::Layout layout, Features features, bool destroyImmediate);
-
-            VulkanTexture(uint32_t width, uint32_t height, uint32_t mipLevels,VkImageAspectFlags usage, Pixels::PixelFormat pixelDataFormat, void* pixelData, Pixels::PixelFormat textureFormat, Texture::Layout layout, Features features, bool destroyImmediate);
-
+            ~VulkanTexture()override;
             VulkanTexture(const VulkanTexture&)=delete;
             VulkanTexture& operator=(const VulkanTexture&)=delete;
             VulkanTexture(VulkanTexture&& from);
             VulkanTexture& operator=(VulkanTexture&& from);
-            ~VulkanTexture()override;
-            void* GPUID()override;
-            Pixels::PixelFormat format()override;
-            uint32_t mipLevels()override;
+            Type type()override;
             uint32_t width()override;
             uint32_t height()override;
-            Usage usage()override;
-            void blitImmediate(Texture* source,Rectangle sourceArea, Texture::Layout sourceLayout, Rectangle destinationArea, Texture::Layout destinationLayout,TextureSampler::Filter filter = TextureSampler::Filter::NEAREST)override;
-            ColorArray pixels(Texture::Layout layout)override;
-            VkImageAspectFlags usageVulkan();
-            VkImage vulkanImage();
-            VkImageView vulkanView();
-            VkFormat vulkanFormat();
-            static Pixels::PixelFormat formatFromNative(VkFormat format);
-            static VkFormat formatFromCrossPlatform(Pixels::PixelFormat format);
-            static Texture::Layout layoutFromNative(VkImageLayout layout);
-            static VkImageLayout layoutFromCrossPlatform(Texture::Layout layout);
-            static VkImageAspectFlags usageFromCrossPlatform(Texture::Usage usage);
-            static VkImageUsageFlags featuresFromCrossPlatform(Texture::Features features);
-            static uint32_t formatSize(VkFormat format);
-            static VkClearValue clearValueFromCrossPlatform(ClearValue& value);
+            uint32_t mipLevels()override;
+            uint32_t layers()override;
+            uint8_t sampleCount()override;
+            Pixels::Format format()override;
+            TextureUsage usage()override;
+
+
+            VkImage image();
+            VkImageView view();
+            VkImageAspectFlags aspectFlags();
+            friend class VulkanGraphicsCard;
         private:
             void move(VulkanTexture&& from);
-            void create(uint32_t width, uint32_t height, uint32_t mipLevels, VkImageAspectFlags usage, Pixels::PixelFormat format, VkImageLayout toLayout, void* pixelData, VkDeviceSize bufferSize, VkImageUsageFlags features, bool destroyImmdediate);
-
-            void updateMipMaps();
-            VkFormat _baseFormat = VK_FORMAT_UNDEFINED;
-            VkImageAspectFlags _usage=0;
+            void construct(Pixels::Format dataFormat, Texture::Type textureType, uint32_t width, uint32_t height,uint32_t layers, uint32_t mipLevels, uint8_t samples, VkImageUsageFlags usage);
+            Pixels::Format _format{};
+            Texture::Type _type=TEXTURE_2D;
+            VkImageUsageFlags _usage=0;
+            VkImageAspectFlags _aspects=0;
             VkImage _image = nullptr;
             VmaAllocation _allocation = nullptr;
             VkImageView _view = nullptr;
             uint32_t _width = 0;
             uint32_t _height = 0;
             uint32_t _mipLevels=1;
-
+            uint32_t _layers=1;
+            uint8_t _sampleCount=1;
+            VulkanGPUMemoryReference _selfReference{.memoryType = VulkanGPUMemoryReference::Texture, .reference={this}};
         };
-    } // slag
-} // Texture
+    }//vulkan
+} // slag
+
 #endif //SLAG_VULKANTEXTURE_H

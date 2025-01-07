@@ -1,112 +1,19 @@
 #include "Swapchain.h"
-#include "BackEnd/Resource.h"
-#include "BackEnd/ResourceManager.h"
-#include "SlagLib.h"
-#include "BackEnd/Vulkan/VulkanSwapchain.h"
-
+#include "BackEnd/BackEndLib.h"
 namespace slag
 {
-
-    Swapchain::Swapchain()
+    Swapchain::Swapchain(FrameResources* (*createResourceFunction)(size_t, Swapchain*))
     {
-        backend::ResourceManager::addSwapchain(this);
+        createResources = createResourceFunction;
     }
 
-    Swapchain::~Swapchain()
+    Swapchain* Swapchain::newSwapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode, Pixels::Format format,FrameResources* (*createResourceFunction)(size_t frameIndex, Swapchain* inChain))
     {
-        backend::ResourceManager::removeSwapchain(this);
+        return lib::BackEndLib::get()->newSwapchain(platformData,width,height,backBuffers,mode,format,createResourceFunction);
     }
 
-    SwapchainBuilder::SwapchainBuilder(PlatformData platformData)
+    void Swapchain::move(Swapchain& from)
     {
-        _platformData = platformData;
+        std::swap(createResources,from.createResources);
     }
-
-    SwapchainBuilder& SwapchainBuilder::setWidth(uint32_t width)
-    {
-        _width = width;
-        return *this;
-    }
-
-    SwapchainBuilder& SwapchainBuilder::setHeight(uint32_t height)
-    {
-        _height = height;
-        return *this;
-    }
-
-    SwapchainBuilder& SwapchainBuilder::setDesiredBackBuffers(uint8_t count)
-    {
-        if(count > 3)
-        {
-            count = 3;
-        }
-        _backBufferCount = count;
-        return *this;
-    }
-
-    SwapchainBuilder& SwapchainBuilder::setVSyncEnabled(bool enabled)
-    {
-        _vsyncEnabled = enabled;
-        return *this;
-    }
-
-    SwapchainBuilder& SwapchainBuilder::addTextureResource(std::string name, TextureResourceDescription description)
-    {
-        _textureDescriptions[name] = description;
-        return *this;
-    }
-
-    SwapchainBuilder& SwapchainBuilder::addCommandBufferResource(std::string name)
-    {
-        _commandBufferNames.insert(name);
-        return *this;
-    }
-
-    SwapchainBuilder& SwapchainBuilder::addUniformBufferResource(std::string name, UniformBufferResourceDescription description)
-    {
-        _uniformBufferDescriptions[name] = description;
-        return *this;
-    }
-
-    SwapchainBuilder &SwapchainBuilder::addVertexBufferResource(std::string name, VertexBufferResourceDescription description)
-    {
-        _vertexBufferDescriptions[name] = description;
-        return *this;
-    }
-
-    SwapchainBuilder &SwapchainBuilder::addIndexBufferResource(std::string name, IndexBufferResourceDescription description)
-    {
-        _indexBufferDescriptions[name] = description;
-        return *this;
-    }
-
-    Swapchain* SwapchainBuilder::create()
-    {
-        switch (SlagLib::usingBackEnd())
-        {
-            case VULKAN:
-#ifdef SLAG_VULKAN_BACKEND
-                return new vulkan::VulkanSwapchain(_platformData,_width,_height,_backBufferCount,_defaultFormat,_vsyncEnabled,_drawOnMinimized,_textureDescriptions,_commandBufferNames,_uniformBufferDescriptions,_vertexBufferDescriptions,_indexBufferDescriptions);
-#else
-                return nullptr;
-#endif
-            case DX12:
-                return nullptr;
-        }
-        return nullptr;
-    }
-
-    SwapchainBuilder& SwapchainBuilder::setDesiredPixelFormat(Pixels::PixelFormat format)
-    {
-        _defaultFormat = format;
-        return *this;
-    }
-
-    SwapchainBuilder &SwapchainBuilder::setDrawOnMinimized(bool draw)
-    {
-        _drawOnMinimized = draw;
-        return *this;
-    }
-
-
-}
+} // slag

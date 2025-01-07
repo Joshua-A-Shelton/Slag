@@ -1,28 +1,111 @@
 #define VMA_IMPLEMENTATION
 #include "VulkanGraphicsCard.h"
 #include "VulkanLib.h"
-#include "VulkanCommandBuffer.h"
+#include "VulkanTexture.h"
+#include "VulkanGPUMemoryReference.h"
 
 namespace slag
 {
     namespace vulkan
     {
-        VulkanGraphicsCard::VulkanGraphicsCard(vkb::Device& device)
+        VulkanGraphicsCard::VulkanGraphicsCard(VkInstance instance,vkb::Device& device)
         {
             this->_device = device.device;
             this->_physicalDevice = device.physical_device;
-            _graphicsQueue = device.get_queue(vkb::QueueType::graphics).value();
-            _transferQueue = device.get_queue(vkb::QueueType::transfer).value();
-            _computeQueue = device.get_queue(vkb::QueueType::compute).value();
+
             _graphicsQueueFamily = device.get_queue_index(vkb::QueueType::graphics).value();
-            _transferQueueFamily = device.get_queue_index(vkb::QueueType::transfer).value();
-            _computeQueueFamily = device.get_queue_index(vkb::QueueType::compute).value();
+            auto tqf = device.get_queue_index(vkb::QueueType::transfer);
+            if(tqf.has_value())
+            {
+                _transferQueueFamily = tqf.value();
+            }
+            else
+            {
+                _transferQueueFamily = _graphicsQueueFamily;
+            }
+            auto cqf = device.get_queue_index(vkb::QueueType::compute);
+            if(cqf.has_value())
+            {
+                _computeQueueFamily = cqf.value();
+            }
+            else
+            {
+                _computeQueueFamily = _graphicsQueueFamily;
+            }
+
+            auto gqueue = device.get_dedicated_queue(vkb::QueueType::graphics);
+            if(gqueue.has_value())
+            {
+                _graphicsQueue = new VulkanQueue(gqueue.value(), slag::GpuQueue::QueueType::GRAPHICS);
+            }
+            else
+            {
+                gqueue = device.get_queue(vkb::QueueType::graphics);
+                _graphicsQueue = new VulkanQueue(gqueue.value(),slag::GpuQueue::QueueType::GRAPHICS);
+            }
+
+            auto cqueue = device.get_dedicated_queue(vkb::QueueType::compute);
+            if(cqueue.has_value())
+            {
+                _computeQueue = new VulkanQueue(cqueue.value(), slag::GpuQueue::QueueType::COMPUTE);
+            }
+            else
+            {
+                cqueue = device.get_queue(vkb::QueueType::compute);
+                if(cqueue.has_value())
+                {
+                    _computeQueue = new VulkanQueue(cqueue.value(), slag::GpuQueue::QueueType::COMPUTE);
+                }
+                else
+                {
+                    _computeQueue = _graphicsQueue;
+                    _seperateCompute = false;
+                }
+            }
+
+            auto tqueue = device.get_dedicated_queue(vkb::QueueType::transfer);
+            if(tqueue.has_value())
+            {
+                _transferQueue = new VulkanQueue(tqueue.value(), slag::GpuQueue::QueueType::TRANSFER);
+            }
+            else
+            {
+                tqueue = device.get_queue(vkb::QueueType::transfer);
+                if(tqueue.has_value())
+                {
+                    _transferQueue = new VulkanQueue(tqueue.value(), slag::GpuQueue::QueueType::TRANSFER);
+                }
+                else
+                {
+                    _transferQueue = _computeQueue;
+                    _seperateTransfer = false;
+                }
+            }
+
+            auto pqueue = device.get_dedicated_queue(vkb::QueueType::present);
+            if(pqueue.has_value())
+            {
+                _presentQueue = pqueue.value();
+            }
+            else
+            {
+                pqueue = device.get_queue(vkb::QueueType::present);
+                if(pqueue.has_value())
+                {
+                    _presentQueue = pqueue.value();
+                }
+                else
+                {
+                    _presentQueue = _transferQueue->underlyingQueue();
+                }
+            }
+
             _properties = device.physical_device.properties;
 
             VmaAllocatorCreateInfo allocatorInfo = {};
             allocatorInfo.physicalDevice = _physicalDevice;
             allocatorInfo.device = _device;
-            allocatorInfo.instance = VulkanLib::instance();
+            allocatorInfo.instance = instance;
             vmaCreateAllocator(&allocatorInfo, &_allocator);
         }
 
@@ -41,6 +124,19 @@ namespace slag
         {
             if(_device)
             {
+                if(_graphicsQueue)
+                {
+                    delete _graphicsQueue;
+                }
+                if(_transferQueue && _seperateTransfer)
+                {
+                    delete _transferQueue;
+                }
+                if(_computeQueue && _seperateCompute)
+                {
+                    delete _computeQueue;
+                }
+
                 vmaDestroyAllocator(_allocator);
                 vkDeviceWaitIdle(_device);
                 vkDestroyDevice(_device, nullptr);
@@ -86,20 +182,6 @@ namespace slag
             return _allocator;
         }
 
-        VkQueue VulkanGraphicsCard::graphicsQueue()
-        {
-            return _graphicsQueue;
-        }
-
-        VkQueue VulkanGraphicsCard::transferQueue()
-        {
-            return _transferQueue;
-        }
-
-        VkQueue VulkanGraphicsCard::computeQueue()
-        {
-            return _computeQueue;
-        }
 
         uint32_t VulkanGraphicsCard::graphicsQueueFamily()
         {
@@ -113,7 +195,7 @@ namespace slag
 
         uint32_t VulkanGraphicsCard::computeQueueFamily()
         {
-            return _transferQueueFamily;
+            return _computeQueueFamily;
         }
 
         const VkPhysicalDeviceProperties& VulkanGraphicsCard::properties()
@@ -121,104 +203,34 @@ namespace slag
             return _properties;
         }
 
-        void VulkanGraphicsCard::runOneTimeCommands(VkQueue submissionQueue, uint32_t queueFamily,std::function<void(VkCommandBuffer)> commands)
+        GpuQueue* VulkanGraphicsCard::graphicsQueue()
         {
+            return _graphicsQueue;
+        }
 
-            VkCommandPool pool;
-            VkCommandPoolCreateInfo commandPoolInfo{};
-            commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-            commandPoolInfo.pNext = nullptr;
+        GpuQueue* VulkanGraphicsCard::transferQueue()
+        {
+            return _transferQueue;
+        }
 
-            //the command pool will be one that can submit graphics commands
-            commandPoolInfo.queueFamilyIndex = queueFamily;
-            //we also want the pool to allow for resetting of individual command buffers
-            commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+        GpuQueue* VulkanGraphicsCard::computeQueue()
+        {
+            return _computeQueue;
+        }
 
-            if(vkCreateCommandPool(VulkanLib::graphicsCard()->device(), &commandPoolInfo, nullptr, &pool)!=VK_SUCCESS)
-            {
-                throw std::runtime_error("Unable to initialize local Command Pool");
-            }
+        VkQueue VulkanGraphicsCard::presentQueue()
+        {
+            return _presentQueue;
+        }
 
-            VkCommandBufferAllocateInfo allocInfo{};
-            allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-            allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-            allocInfo.commandPool = pool;
-            allocInfo.commandBufferCount = 1;
-
-            VkCommandBuffer commandBuffer;
-            vkAllocateCommandBuffers(_device, &allocInfo, &commandBuffer);
-
-            VkCommandBufferBeginInfo beginInfo{};
-            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-            vkBeginCommandBuffer(commandBuffer,&beginInfo);
-
-            commands(commandBuffer);
-
-            vkEndCommandBuffer(commandBuffer);
-
-
-            VkFence finished;
-            VkFenceCreateInfo fenceInfo{};
-            fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-            vkCreateFence(VulkanLib::graphicsCard()->device(), &fenceInfo, nullptr,&finished);
-
-            VkSubmitInfo submitInfo{};
-            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            submitInfo.commandBufferCount = 1;
-            submitInfo.pCommandBuffers = &commandBuffer;
-
-            vkQueueSubmit(submissionQueue, 1, &submitInfo, finished);
-            vkWaitForFences(_device,1,&finished,true, 1000000000);
-
-            vkDestroyFence(_device,finished, nullptr);
-            vkDestroyCommandPool(_device,pool, nullptr);
+        void VulkanGraphicsCard::defragmentMemory()
+        {
+            //see https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/defragmentation.html
+            //https://www.khronos.org/blog/copying-images-on-the-host-in-vulkan
+            //https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_EXT_host_image_copy.html
+            throw std::runtime_error("not implemented");
 
         }
 
-        void VulkanGraphicsCard::executeArbitrary(std::function<void(CommandBuffer *)> execution, GraphicsCard::QueueType queue)
-        {
-            VkQueue submissionQueue = nullptr;
-            uint32_t submissionQueueFamily = 0;
-            switch (queue)
-            {
-                case QueueType::GRAPHICS:
-                    submissionQueue = VulkanGraphicsCard::_graphicsQueue;
-                    submissionQueueFamily = VulkanGraphicsCard::_graphicsQueueFamily;
-                    break;
-                case QueueType::TRANSFER:
-                    submissionQueue = VulkanGraphicsCard::_transferQueue;
-                    submissionQueueFamily = VulkanGraphicsCard::_transferQueueFamily;
-                    break;
-                case QueueType::COMPUTE:
-                    submissionQueue = VulkanGraphicsCard::_computeQueue;
-                    submissionQueueFamily = VulkanGraphicsCard::_computeQueueFamily;
-                    break;
-            }
-
-            VulkanCommandBuffer cb(true,submissionQueue,submissionQueueFamily,true);
-            cb.begin();
-
-            execution(&cb);
-
-            cb.end();
-
-            VkFence finished;
-            VkFenceCreateInfo fenceInfo{};
-            fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-            vkCreateFence(VulkanLib::graphicsCard()->device(), &fenceInfo, nullptr,&finished);
-
-            VkSubmitInfo submitInfo{};
-            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            submitInfo.commandBufferCount = 1;
-            submitInfo.pCommandBuffers = &cb.vulkanCommandBuffer();
-
-            vkQueueSubmit(submissionQueue, 1, &submitInfo, finished);
-            vkWaitForFences(_device,1,&finished,true, 1000000000);
-
-            vkDestroyFence(_device,finished, nullptr);
-        }
-
-    } // slag
-} // vulkan
+    } // vulkan
+} // slag

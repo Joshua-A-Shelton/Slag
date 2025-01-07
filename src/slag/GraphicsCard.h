@@ -1,21 +1,24 @@
 #ifndef SLAG_GRAPHICSCARD_H
 #define SLAG_GRAPHICSCARD_H
-#include <functional>
+#include "GpuQueue.h"
+
 namespace slag
 {
-    struct CommandBuffer;
+    ///Representation of hardware that excels at parallel operations
     class GraphicsCard
     {
     public:
-        enum QueueType
-        {
-            GRAPHICS,
-            TRANSFER,
-            COMPUTE
-        };
         virtual ~GraphicsCard()=default;
-        //stay away from this unless you know what you're doing. It's used internally in some places, but it will stall GPU execution on the queue it's submitted to until it's finished
-        virtual void executeArbitrary(std::function<void(CommandBuffer* commandBuffer)> execution,QueueType queue = GRAPHICS)=0;
+        ///Queue that accepts CommandBuffers of type GRAPHICS
+        virtual GpuQueue* graphicsQueue()=0;
+        ///Queue that accepts CommandBuffers of type TRANSFER (may actually be graphics queue depending on underlying hardware)
+        virtual GpuQueue* transferQueue()=0;
+        ///Queue that accepts CommandBuffers of type COMPUTE (may actually be graphics queue depending on underlying hardware)
+        virtual GpuQueue* computeQueue()=0;
+        ///Rearrange memory to be packed together, allowing more room for contiguous memory allocations (do not execute while there are executing or recording command buffers)
+        virtual void defragmentMemory()=0;
+
     };
-}
+} // slag
+
 #endif //SLAG_GRAPHICSCARD_H

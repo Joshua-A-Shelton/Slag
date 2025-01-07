@@ -1,34 +1,28 @@
 #ifndef SLAG_FRAME_H
 #define SLAG_FRAME_H
-#include <vector>
-#include <mutex>
-#include "CommandBuffer.h"
-#include "UniformSetDataAllocator.h"
-
+#include "FrameResources.h"
 namespace slag
 {
+
+    class Texture;
+    class CommandBuffer;
+    ///Resources used for each instance of the swapchain::next
     class Frame
     {
     public:
+        Frame(FrameResources* resources);
         virtual ~Frame();
-        virtual void begin()=0;
-        virtual void end()=0;
-        virtual CommandBuffer* getCommandBuffer()=0;
-        virtual Texture* getBackBuffer()=0;
-        virtual UniformBuffer* getUniformBuffer()=0;
-        virtual UniformSetDataAllocator* getUniformSetDataAllocator()=0;
-        virtual Texture* getTextureResource(std::string resourceName)=0;
-        virtual CommandBuffer* getCommandBufferResource(std::string resourceName)=0;
-        virtual UniformBuffer* getUniformBufferResource(std::string resourceName)=0;
-        virtual VertexBuffer* getVertexBufferResource(std::string resourceName)=0;
-        virtual IndexBuffer* getIndexBufferResource(std::string resourceName)=0;
-        ///Internal use only, automatically called for resources
-        void queueResourceForDeletion(void* gpuID);
+        Frame(const Frame&)=delete;
+        Frame& operator=(const Frame&)=delete;
+        Frame(Frame&& from);
+        Frame& operator=(Frame&& from);
+        virtual Texture* backBuffer()=0;
+        virtual CommandBuffer* commandBuffer()=0;
+        FrameResources* resources = nullptr;
     protected:
-        void freeResourceReferences();
-    private:
-        std::mutex _freedResourcesMutex;
-        std::vector<void*> _freedResourceReferences;
+        void move(Frame& from);
     };
-}
+
+} // slag
+
 #endif //SLAG_FRAME_H

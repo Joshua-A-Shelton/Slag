@@ -1,110 +1,68 @@
-#include <filesystem>
-#include <fstream>
 #include "Shader.h"
-#include "SlagLib.h"
-#ifdef SLAG_VULKAN_BACKEND
-#include "BackEnd/Vulkan/VulkanShader.h"
-#endif
-
+#include "BackEnd/BackEndLib.h"
+#include <spirv_reflect.h>
+#include <fstream>
 namespace slag
 {
-    Shader *Shader::create(const char *vertexFile, const char *fragmentFile, FramebufferDescription& framebufferDescription)
+    ShaderModule::ShaderModule(ShaderStages stage, void* data, size_t size): _stage(stage)
     {
-        auto vertexPath = std::filesystem::absolute(vertexFile);
-        auto fragPath = std::filesystem::absolute(fragmentFile);
-
-        std::ifstream vertFile(vertexPath, std::ios::ate | std::ios::binary);
-        if(!vertFile.is_open())
-        {
-            throw std::runtime_error("Unable to open vertex file");
-        }
-
-        size_t vertSize = (size_t)vertFile.tellg();
-
-        std::vector<char> vertbuffer(vertSize);
-
-        vertFile.seekg(0);
-
-        vertFile.read(vertbuffer.data(), vertSize);
-
-        vertFile.close();
-
-
-        std::ifstream fragFile(fragPath, std::ios::ate | std::ios::binary);
-        if(!fragFile.is_open())
-        {
-            throw std::runtime_error("Unable to open fragment file");
-        }
-
-        size_t fragSize = (size_t)fragFile.tellg();
-
-        std::vector<char> fragbuffer(fragSize);
-
-        fragFile.seekg(0);
-
-        fragFile.read(fragbuffer.data(), fragSize);
-
-        fragFile.close();
-
-
-        switch (SlagLib::usingBackEnd())
-        {
-            case VULKAN:
-#ifdef SLAG_VULKAN_BACKEND
-                return new vulkan::VulkanShader(vertbuffer,fragbuffer,framebufferDescription);
-#endif
-                break;
-        }
-        return nullptr;
+        _shaderData.resize(size);
+        memcpy(_shaderData.data(),data,size);
     }
 
-    Shader *Shader::create(const char *vertexFile, const char *fragmentFile, VertexDescription &vertexDescription, FramebufferDescription &framebufferDescription)
+    ShaderModule::ShaderModule(ShaderStages stage, std::filesystem::path path): _stage(stage)
     {
-        auto vertexPath = std::filesystem::absolute(vertexFile);
-        auto fragPath = std::filesystem::absolute(fragmentFile);
-
-        std::ifstream vertFile(vertexPath, std::ios::ate | std::ios::binary);
-        if(!vertFile.is_open())
+        std::ifstream file(path, std::ios::ate | std::ios::binary);
+        if(!file.is_open())
         {
-            throw std::runtime_error("Unable to open vertex file");
+            throw std::runtime_error("Unable to open shader module file");
         }
 
-        size_t vertSize = (size_t)vertFile.tellg();
+        size_t size = (size_t)file.tellg();
 
-        std::vector<char> vertbuffer(vertSize);
+        _shaderData.resize(size);
 
-        vertFile.seekg(0);
+        file.seekg(0);
 
-        vertFile.read(vertbuffer.data(), vertSize);
+        file.read(_shaderData.data(), size);
 
-        vertFile.close();
-
-
-        std::ifstream fragFile(fragPath, std::ios::ate | std::ios::binary);
-        if(!fragFile.is_open())
-        {
-            throw std::runtime_error("Unable to open fragment file");
-        }
-
-        size_t fragSize = (size_t)fragFile.tellg();
-
-        std::vector<char> fragbuffer(fragSize);
-
-        fragFile.seekg(0);
-
-        fragFile.read(fragbuffer.data(), fragSize);
-
-        fragFile.close();
-
-
-        switch (SlagLib::usingBackEnd())
-        {
-            case VULKAN:
-#ifdef SLAG_VULKAN_BACKEND
-                return new vulkan::VulkanShader(vertbuffer,fragbuffer,framebufferDescription,&vertexDescription);
-#endif
-                break;
-        }
-        return nullptr;
+        file.close();
     }
-}
+
+    ShaderModule::ShaderModule(ShaderModule&& from): _stage(from._stage)
+    {
+        move(std::move(from));
+    }
+
+    ShaderModule& ShaderModule::operator=(ShaderModule&& from)
+    {
+        move(std::move(from));
+        return *this;
+    }
+
+    void ShaderModule::move(ShaderModule&& from)
+    {
+        _stage = from._stage;
+        _shaderData.swap(from._shaderData);
+    }
+
+    void* ShaderModule::data()
+    {
+        return _shaderData.data();
+    }
+
+    size_t ShaderModule::dataSize()
+    {
+        return _shaderData.size();
+    }
+
+    ShaderStages ShaderModule::stage()
+    {
+        return _stage;
+    }
+
+    Shader* Shader::newShader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)
+    {
+        return lib::BackEndLib::get()->newShader(modules,moduleCount,descriptorGroups,descriptorGroupCount,properties,vertexDescription,frameBufferDescription);
+    }
+} // slag

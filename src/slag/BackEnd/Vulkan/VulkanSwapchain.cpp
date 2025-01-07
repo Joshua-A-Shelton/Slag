@@ -4,170 +4,265 @@
 #define VK_USE_PLATFORM_XLIB_KHR
 #endif
 #include "VulkanSwapchain.h"
-#include "VulkanLib.h"
-#include <algorithm>
-#include <iostream>
+#include "VkBootstrap.h"
 
 namespace slag
 {
     namespace vulkan
     {
-        VulkanSwapchain::VulkanSwapchain(PlatformData platformData,
-                                         uint32_t width,
-                                         uint32_t height,
-                                         size_t desiredBackbuffers,
-                                         Pixels::PixelFormat desiredFormat,
-                                         bool vsync,
-                                         bool drawOnMinimized,
-                                         std::unordered_map<std::string,TextureResourceDescription>& textureDescriptions,
-                                         std::unordered_set<std::string>& commandBufferNames,
-                                         std::unordered_map<std::string, UniformBufferResourceDescription>& uniformBufferDescriptions,
-                                         std::unordered_map<std::string, VertexBufferResourceDescription>& vertexBufferDescriptions,
-                                         std::unordered_map<std::string, IndexBufferResourceDescription>& indexBufferDescriptions
-                                        )
+        VulkanSwapchain::VulkanSwapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode,  Pixels::Format imageFormat, FrameResources* (*createResourceFunction)(size_t frameIndex, Swapchain* inChain)): Swapchain(createResourceFunction)
         {
             _surface = createNativeSurface(platformData);
             _width = width;
             _height = height;
-            _desiredBackbufferCount = std::clamp(static_cast<int>(desiredBackbuffers),1,3);
-            _defaultImageFormat = VulkanTexture::formatFromCrossPlatform(desiredFormat);
-            if(vsync && _desiredBackbufferCount > 1)
-            {
-                if(_desiredBackbufferCount == 2)
-                {
-                    _presentMode = VK_PRESENT_MODE_FIFO_KHR;
-                }
-                else
-                {
-                    _presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
-                }
-
-            }
-            else
-            {
-                _presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
-            }
-            _drawOnMinimized = drawOnMinimized;
-            _textureDescriptions = textureDescriptions;
-            _commandBufferNames = commandBufferNames;
-            _uniformBufferDescriptions = uniformBufferDescriptions;
-            _vertexBufferDescriptions = vertexBufferDescriptions;
-            _indexBufferDescriptions = indexBufferDescriptions;
-
-            VkCommandPoolCreateInfo commandPoolInfo{};
-            commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-            commandPoolInfo.pNext = nullptr;
-
-            //the command pool will be one that can submit graphics commands
-            commandPoolInfo.queueFamilyIndex = VulkanLib::graphicsCard()->graphicsQueueFamily();
-            //we also want the pool to allow for resetting of individual command buffers
-            commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-
-            if(vkCreateCommandPool(VulkanLib::graphicsCard()->device(), &commandPoolInfo, nullptr, &_commandPool)!=VK_SUCCESS)
-            {
-                throw std::runtime_error("Unable to initialize Graphics Card Command Pool");
-            }
+            _backBufferCount = backBuffers;
+            _presentMode = mode;
+            _imageFormat = imageFormat;
 
             rebuild();
-
         }
 
         VulkanSwapchain::~VulkanSwapchain()
         {
-            vkDeviceWaitIdle(VulkanLib::graphicsCard()->device());
-            //anything that gets deferred deleted must be deleted before the frames are destroyed
-            _swapchainImages.clear();
-            _frames.clear();
-            vkDestroySwapchainKHR(VulkanLib::graphicsCard()->device(),_swapchain, nullptr);
-            _swapchain = nullptr;
-            vkDestroyCommandPool(VulkanLib::graphicsCard()->device(),_commandPool, nullptr);
-            _commandPool = nullptr;
-            vkDestroySurfaceKHR(VulkanLib::instance(),_surface, nullptr);
-            _surface = nullptr;
+            if(_swapchain)
+            {
+                vkDeviceWaitIdle(VulkanLib::card()->device());
+                for (int i = 0; i < _frames.size(); i++)
+                {
+                    _frames[i].commandBuffer()->waitUntilFinished();
+                }
+                _frames.clear();
+                vkDestroySwapchainKHR(VulkanLib::card()->device(), _swapchain, nullptr);
+                vkDestroySurfaceKHR(VulkanLib::get()->instance(), _surface, nullptr);
+                for(auto i=0; i<_imageAcquiredSemaphores.size(); i++)
+                {
+                    vkDestroySemaphore(VulkanLib::card()->device(),_imageAcquiredSemaphores[i], nullptr);
+                    vkDestroyFence(VulkanLib::card()->device(),_imageAcquiredFences[i], nullptr);
+                }
+            }
         }
 
-        Frame* VulkanSwapchain::currentFrame()
+        VulkanSwapchain::VulkanSwapchain(VulkanSwapchain&& from): Swapchain(nullptr)
         {
-            if(_frames.empty())
+            move(std::move(from));
+        }
+
+        VulkanSwapchain& VulkanSwapchain::operator=(VulkanSwapchain&& from)
+        {
+            move(std::move(from));
+            return *this;
+        }
+
+        void VulkanSwapchain::move(VulkanSwapchain&& from)
+        {
+            Swapchain::move(from);
+            std::swap(_surface,from._surface);
+            std::swap(_imageFormat,from._imageFormat);
+            _width = from._width;
+            _height = from._height;
+            _backBufferCount = from._backBufferCount;
+            _presentMode = from._presentMode;
+
+            _currentFrameIndex = from._currentFrameIndex;
+            _currentSemaphoreIndex = from._currentSemaphoreIndex;
+            _needsRebuild = from._needsRebuild;
+            _frames.swap(from._frames);
+            _imageAcquiredSemaphores.swap(from._imageAcquiredSemaphores);
+            _imageAcquiredFences.swap(from._imageAcquiredFences);
+            for(auto i=0; i<_frames.size(); i++)
             {
-                return nullptr;
+                _frames[i]._from = this;
             }
-            return &_frames[_currentFrameIndex];
+        }
+
+        VkSurfaceKHR VulkanSwapchain::createNativeSurface(PlatformData platformData)
+        {
+            VkSurfaceKHR surface = nullptr;
+#ifdef _WIN32
+            VkWin32SurfaceCreateInfoKHR createInfo{};
+            createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+            createInfo.hwnd = static_cast<HWND>(platformData.nativeWindowHandle);
+            //kinda messy, but apparently correct?
+            createInfo.hinstance = static_cast<HINSTANCE>(platformData.nativeDisplayType);
+            vkCreateWin32SurfaceKHR(VulkanLib::get()->instance(),&createInfo, nullptr,&surface);
+#elif __linux
+            //TODO: include wayland
+            VkXlibSurfaceCreateInfoKHR createInfo{};
+            createInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
+            createInfo.window = reinterpret_cast<Window>(platformData.nativeWindowHandle);
+            createInfo.dpy = static_cast<Display*>(platformData.nativeDisplayType);
+            vkCreateXlibSurfaceKHR(VulkanLib::get()->instance(),&createInfo, nullptr,&surface);
+#endif
+            assert(surface!= nullptr && "Unable to make rendering surface");
+            return surface;
+        }
+
+        void VulkanSwapchain::rebuild()
+        {
+            vkDeviceWaitIdle(VulkanLib::card()->device());
+            for(int i=0; i< _frames.size(); i++)
+            {
+                _frames[i].commandBuffer()->waitUntilFinished();
+            }
+            if(_imageAcquiredFences.size()>0)
+            {
+                vkWaitForFences(VulkanLib::card()->device(), _imageAcquiredFences.size(), _imageAcquiredFences.data(), true, 1000000);
+            }
+            VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
+            if(_presentMode == PresentMode::FIFO)
+            {
+                presentMode = VK_PRESENT_MODE_FIFO_KHR;
+            }
+            else if(_presentMode == PresentMode::MAILBOX)
+            {
+                presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+            }
+
+            auto localFormat = VulkanLib::format(_imageFormat);
+            vkb::SwapchainBuilder swapchainBuilder(VulkanLib::card()->physicalDevice(),VulkanLib::card()->device(),_surface);
+            auto chain = swapchainBuilder.set_desired_format(VkSurfaceFormatKHR{localFormat.format,VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
+                    .set_desired_present_mode(presentMode)
+                    .set_desired_extent(_width,_height)
+                    .set_desired_min_image_count(_backBufferCount)
+                    //.set_desired_min_image_count()
+                    .set_old_swapchain(_swapchain)
+                    .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+                    .build();
+            if(_swapchain)
+            {
+                vkDestroySwapchainKHR(VulkanLib::card()->device(),_swapchain, nullptr);
+                _frames.clear();
+                for(auto i=0; i<_imageAcquiredSemaphores.size(); i++)
+                {
+                    vkDestroySemaphore(VulkanLib::card()->device(),_imageAcquiredSemaphores[i], nullptr);
+                    vkDestroyFence(VulkanLib::card()->device(),_imageAcquiredFences[i], nullptr);
+                }
+                _imageAcquiredSemaphores.clear();
+                _imageAcquiredFences.clear();
+            }
+            _swapchain = chain.value();
+            if(chain->present_mode == VK_PRESENT_MODE_FIFO_KHR)
+            {
+                _presentMode = PresentMode::FIFO;
+            }
+            else if(chain->present_mode == VK_PRESENT_MODE_MAILBOX_KHR)
+            {
+                _presentMode = PresentMode::MAILBOX;
+            }
+            auto images = chain->get_images().value();
+            for(int i=0; i< images.size(); i++)
+            {
+                FrameResources* fr = nullptr;
+                if(createResources)
+                {
+                    fr = createResources(i,this);
+                }
+                VulkanFrame frame(images[i],_width,_height,i,chain->image_usage_flags,this,fr);
+                _frames.push_back(std::move(frame));
+
+                VkSemaphoreCreateInfo semaphoreCreateInfo{};
+                semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+                VkSemaphore semaphore = nullptr;
+                auto value = vkCreateSemaphore(VulkanLib::card()->device(),&semaphoreCreateInfo, nullptr,&semaphore);
+                _imageAcquiredSemaphores.push_back(semaphore);
+
+                VkFenceCreateInfo fenceCreateInfo{};
+                fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+                fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+                VkFence fence = nullptr;
+                vkCreateFence(VulkanLib::card()->device(),&fenceCreateInfo, nullptr,&fence);
+                _imageAcquiredFences.push_back(fence);
+
+            }
+
+            _currentFrameIndex = 0;
+            _currentSemaphoreIndex = 0;
+            _needsRebuild = false;
         }
 
         Frame* VulkanSwapchain::next()
         {
-            if((_width == 0 || _height == 0) && !_drawOnMinimized)
+            if(_width == 0 || _height == 0)
             {
                 return nullptr;
             }
 
-            _frames[_currentFrameIndex].waitTillFinished();
+            //_frames[_currentFrameIndex].commandBuffer()->waitUntilFinished();
+            auto fence = currentImageAcquiredFence();
+            vkWaitForFences(VulkanLib::card()->device(),1,&fence,true,1000000000);
+            vkResetFences(VulkanLib::card()->device(),1,&fence);
+
+            auto result = vkAcquireNextImageKHR(VulkanLib::card()->device(), _swapchain, 1000000000, _imageAcquiredSemaphores[_currentSemaphoreIndex], nullptr, &_currentFrameIndex);
 
 
-            VkResult result = vkAcquireNextImageKHR(VulkanLib::graphicsCard()->device(), _swapchain, 1000000000, _frames[_currentFrameIndex].imageAvailableSemaphore(), nullptr, &_swapchainImageIndex);
             if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _needsRebuild)
             {
                 rebuild();
-                vkAcquireNextImageKHR(VulkanLib::graphicsCard()->device(), _swapchain, 1000000000, _frames[_currentFrameIndex].imageAvailableSemaphore(), nullptr, &_swapchainImageIndex);
+                auto fence = currentImageAcquiredFence();
+                vkWaitForFences(VulkanLib::card()->device(),1,&fence,true,1000000000);
+                vkResetFences(VulkanLib::card()->device(),1,&fence);
+                vkAcquireNextImageKHR(VulkanLib::card()->device(), _swapchain, 1000000000, _imageAcquiredSemaphores[_currentSemaphoreIndex], nullptr, &_currentFrameIndex);
             }
             else if(result != VK_SUCCESS)
             {
-                throw std::runtime_error("Failed to acquire next image in swap chain");
+                throw std::runtime_error("unable to acquire next frame");
             }
-            _inFrame = true;
-            _frames[_currentFrameIndex].resetWait();
-            _frames[_currentFrameIndex].setSwapchainImageTexture(&_swapchainImages[_swapchainImageIndex]);
+
             return &_frames[_currentFrameIndex];
         }
 
-        size_t VulkanSwapchain::backBufferCount()
+        Frame* VulkanSwapchain::nextIfReady()
+        {
+            if(_width == 0 || _height == 0)
+            {
+                return nullptr;
+            }
+
+            auto fence = currentImageAcquiredFence();
+            if(vkGetFenceStatus(VulkanLib::card()->device(),fence) == VK_SUCCESS)
+            {
+                vkResetFences(VulkanLib::card()->device(),1,&fence);
+
+                auto result = vkAcquireNextImageKHR(VulkanLib::card()->device(), _swapchain, 1000000000, _imageAcquiredSemaphores[_currentSemaphoreIndex], nullptr, &_currentFrameIndex);
+
+
+                if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _needsRebuild)
+                {
+                    rebuild();
+                    auto fence = currentImageAcquiredFence();
+                    vkWaitForFences(VulkanLib::card()->device(),1,&fence,true,1000000000);
+                    vkResetFences(VulkanLib::card()->device(),1,&fence);
+                    vkAcquireNextImageKHR(VulkanLib::card()->device(), _swapchain, 1000000000, _imageAcquiredSemaphores[_currentSemaphoreIndex], nullptr, &_currentFrameIndex);
+                }
+                else if(result != VK_SUCCESS)
+                {
+                    throw std::runtime_error("unable to acquire next frame");
+                }
+
+                return &_frames[_currentFrameIndex];
+            }
+            return nullptr;
+        }
+
+        Frame* VulkanSwapchain::currentFrame()
+        {
+            return &_frames[_currentFrameIndex];
+        }
+
+        uint8_t VulkanSwapchain::currentFrameIndex()
+        {
+            return _currentFrameIndex;
+        }
+
+        uint8_t VulkanSwapchain::backBuffers()
         {
             return _frames.size();
         }
 
-        void VulkanSwapchain::backBufferCount(size_t count)
+        void VulkanSwapchain::backBuffers(uint8_t count)
         {
-            if(_desiredBackbufferCount != count)
-            {
-                if (count > 3)
-                {
-                    count = 3;
-                } else if (count == 0)
-                {
-                    count = 1;
-                }
-                _desiredBackbufferCount = count;
-                updateParameters();
-            }
-        }
-
-        bool VulkanSwapchain::vsyncEnabled()
-        {
-            if(_presentMode == VK_PRESENT_MODE_FIFO_KHR || _presentMode == VK_PRESENT_MODE_MAILBOX_KHR)
-            {
-                return true;
-            }
-            updateParameters();
-            return false;
-        }
-
-        void VulkanSwapchain::vsyncEnabled(bool enabled)
-        {
-            if(vsyncEnabled() != enabled)
-            {
-                if (enabled && _desiredBackbufferCount > 1)
-                {
-                    if (_desiredBackbufferCount == 2)
-                    {
-                        _presentMode = VK_PRESENT_MODE_FIFO_KHR;
-                    } else
-                    {
-                        _presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
-                    }
-                }
-                updateParameters();
-            }
+            _backBufferCount = count;
+            _needsRebuild = true;
         }
 
         uint32_t VulkanSwapchain::width()
@@ -184,220 +279,49 @@ namespace slag
         {
             _width = width;
             _height = height;
-            for(auto& textureDescPair: _textureDescriptions)
-            {
-                if(textureDescPair.second.sizingMode == TextureResourceDescription::SizingMode::FrameRelative)
-                {
-                    _requiredTextureUpdates.insert(textureDescPair.first);
-                }
-            }
-            updateParameters();
-        }
-
-        Pixels::PixelFormat VulkanSwapchain::imageFormat()
-        {
-            return VulkanTexture::formatFromNative(_defaultImageFormat);
-        }
-
-        void VulkanSwapchain::setResource(const char *name, TextureResourceDescription description)
-        {
-            _textureDescriptions[name] = description;
-            _requiredTextureUpdates.insert(name);
-            updateParameters();
-        }
-
-        void VulkanSwapchain::setResource(const char *name, VertexBufferResourceDescription description)
-        {
-            _vertexBufferDescriptions[name] = description;
-            _requiredVertexBufferUpdates.insert(name);
-            updateParameters();
-        }
-
-        void VulkanSwapchain::setResource(const char *name, IndexBufferResourceDescription description)
-        {
-            _indexBufferDescriptions[name] = description;
-            _requiredIndexBufferUpdates.insert(name);
-            updateParameters();
-        }
-
-        void VulkanSwapchain::setResources(const char **textureNames, TextureResourceDescription *textureDescriptions, size_t textureCount, const char **vertexBufferNames,
-                                           VertexBufferResourceDescription *vertexBufferDescriptions, size_t vertexBufferCount, const char **indexBufferNames,
-                                           IndexBufferResourceDescription *indexBufferDescriptions, size_t indexBufferCount)
-        {
-            for(size_t i=0; i< textureCount; i++)
-            {
-                _textureDescriptions[textureNames[i]] = textureDescriptions[i];
-                _requiredTextureUpdates.insert(textureNames[i]);
-            }
-            for(size_t i=0; i< vertexBufferCount; i++)
-            {
-                _vertexBufferDescriptions[vertexBufferNames[i]] = vertexBufferDescriptions[i];
-                _requiredVertexBufferUpdates.insert(vertexBufferNames[i]);
-            }
-            for(size_t i=0; i< indexBufferCount; i++)
-            {
-                _indexBufferDescriptions[indexBufferNames[i]] = indexBufferDescriptions[i];
-                _requiredIndexBufferUpdates.insert(indexBufferNames[i]);
-            }
-            updateParameters();
-        }
-
-        void VulkanSwapchain::rebuild()
-        {
-            vkDeviceWaitIdle(VulkanLib::graphicsCard()->device());
-            VulkanGraphicsCard* card = VulkanLib::graphicsCard();
-            vkb::SwapchainBuilder swapchainBuilder{card->physicalDevice(),card->device(),_surface};
-
-            auto vkbSwapchain = swapchainBuilder
-                    .set_desired_format(VkSurfaceFormatKHR{_defaultImageFormat, VK_COLORSPACE_SRGB_NONLINEAR_KHR})
-                    .set_desired_present_mode(_presentMode)
-                    .set_desired_extent(_width,_height)
-                    .set_desired_min_image_count(_desiredBackbufferCount)
-                    .set_old_swapchain(_swapchain)
-                    .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-                    .build().value();
-            if(_swapchain)
-            {
-                cleanup();
-            }
-            else if(_frames.size()!=0)
-            {
-                //LOG_ERROR("Unable to rebuild swapchain");
-            }
-            _presentMode = vkbSwapchain.present_mode;
-            _swapchain = vkbSwapchain.swapchain;
-            _width = vkbSwapchain.extent.width;
-            _height = vkbSwapchain.extent.height;
-            _defaultImageFormat = vkbSwapchain.image_format;
-            auto images = vkbSwapchain.get_images().value();
-            auto views = vkbSwapchain.get_image_views().value();
-            int oldSize = _swapchainImages.size();
-            _swapchainImages.clear();
-
-            //update the frames that will still exist
-            for(auto i=0; i< oldSize; i++)
-            {
-                for(auto& name: _requiredTextureUpdates)
-                {
-                    _frames[i].updateTextureResource(name,_textureDescriptions[name]);
-                }
-                for(auto& name: _requiredVertexBufferUpdates)
-                {
-                    _frames[i].updateVertexBufferResource(name,_vertexBufferDescriptions[name]);
-                }
-                for(auto& name: _requiredIndexBufferUpdates)
-                {
-                    _frames[i].updateIndexBufferResource(name,_indexBufferDescriptions[name]);
-                }
-
-            }
-            _requiredTextureUpdates.clear();
-            _requiredVertexBufferUpdates.clear();
-            _requiredIndexBufferUpdates.clear();
-
-            for(auto i=0; i< images.size(); i++)
-            {
-                _swapchainImages.emplace_back(std::move(VulkanTexture(images[i],views[i],_defaultImageFormat,VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT,_width,_height,true)));
-            }
-
-            if(_frames.size()>_swapchainImages.size())
-            {
-                while(_swapchainImages.size()>_frames.size())
-                {
-                    _frames.pop_back();
-                }
-            }
-            else
-            {
-                VkDeviceSize bufferSize = 1250000;
-                if(_frames.size()>0)
-                {
-                    bufferSize = _frames[0].uniformBufferSize();
-                }
-                while(_frames.size()<_swapchainImages.size())
-                {
-                    _frames.emplace_back(this,bufferSize,_textureDescriptions,_commandBufferNames,_uniformBufferDescriptions,_vertexBufferDescriptions,_indexBufferDescriptions);
-                }
-            }
-            vkResetCommandPool(VulkanLib::graphicsCard()->device(),_commandPool,0);
-            _needsRebuild = false;
-
-        }
-
-        void VulkanSwapchain::cleanup()
-        {
-            vkDeviceWaitIdle(VulkanLib::graphicsCard()->device());
-
-            //destroying the swapchain automatically destroys the images
-            vkDestroySwapchainKHR(VulkanLib::graphicsCard()->device(),_swapchain, nullptr);
-            _swapchain = nullptr;
-            _currentFrameIndex = 0;
-        }
-
-        VkCommandPool VulkanSwapchain::commandPool()
-        {
-            return _commandPool;
-        }
-
-        VkSurfaceKHR VulkanSwapchain::createNativeSurface(PlatformData platformData)
-        {
-            VkSurfaceKHR surface = nullptr;
-#ifdef _WIN32
-            VkWin32SurfaceCreateInfoKHR createInfo{};
-            createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-            createInfo.hwnd = static_cast<HWND>(platformData.nativeWindowHandle);
-            //kinda messy, but apparently correct?
-            createInfo.hinstance = static_cast<HINSTANCE>(platformData.nativeDisplayType);
-            vkCreateWin32SurfaceKHR(VulkanLib::instance(),&createInfo, nullptr,&surface);
-#elif __linux
-            VkXlibSurfaceCreateInfoKHR createInfo{};
-            createInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
-            createInfo.window = reinterpret_cast<Window>(platformData.nativeWindowHandle);
-            createInfo.dpy = static_cast<Display*>(platformData.nativeDisplayType);
-            vkCreateXlibSurfaceKHR(VulkanLib::instance(),&createInfo, nullptr,&surface);
-#endif
-            assert(surface!= nullptr && "Unable to make rendering surface");
-            return surface;
-        }
-
-        void VulkanSwapchain::queueToPresent(VulkanFrame* frame)
-        {
-            VkSemaphore renderFinished = frame->renderFinishedSemaphore();
-            VkPresentInfoKHR presentInfo{};
-            presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-            presentInfo.waitSemaphoreCount = 1;
-            presentInfo.pWaitSemaphores = &renderFinished;
-
-            presentInfo.swapchainCount = 1;
-            presentInfo.pSwapchains = &_swapchain;
-
-            presentInfo.pImageIndices = &_swapchainImageIndex;
-
-            auto& card = VulkanLib::graphicsCard;
-
-            auto result = vkQueuePresentKHR(card()->graphicsQueue(), &presentInfo);
-            if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _needsRebuild)
-            {
-                _needsRebuild = true;
-                rebuild();
-            }
-            else if (result != VK_SUCCESS) {
-                throw std::runtime_error("failed to present swap chain image!");
-            }
-            //increment frame index
-            _currentFrameIndex = (_currentFrameIndex + 1) % _frames.size();
-            _inFrame = false;
-        }
-
-        void VulkanSwapchain::updateParameters()
-        {
             _needsRebuild = true;
-            if(!_inFrame)
-            {
-                rebuild();
-            }
         }
 
-    } // slag
-} // vulkan
+        Swapchain::PresentMode VulkanSwapchain::presentMode()
+        {
+            return _presentMode;
+        }
+
+        void VulkanSwapchain::presentMode(Swapchain::PresentMode mode)
+        {
+            _presentMode = mode;
+            _needsRebuild = true;
+        }
+
+        Pixels::Format VulkanSwapchain::imageFormat()
+        {
+            return _imageFormat;
+        }
+
+        bool VulkanSwapchain::needsRebuild()
+        {
+            return _needsRebuild;
+        }
+
+        VkSwapchainKHR VulkanSwapchain::vulkanSwapchain()
+        {
+            return _swapchain;
+        }
+
+        VkSemaphore VulkanSwapchain::currentImageAcquiredSemaphore()
+        {
+            return _imageAcquiredSemaphores[_currentSemaphoreIndex];
+        }
+
+        VkFence VulkanSwapchain::currentImageAcquiredFence()
+        {
+            return _imageAcquiredFences[_currentSemaphoreIndex];
+        }
+
+        void VulkanSwapchain::finishedFrame()
+        {
+            _currentSemaphoreIndex = (_currentSemaphoreIndex + 1) % _imageAcquiredSemaphores.size();
+        }
+
+    } // vulkan
+} // slag

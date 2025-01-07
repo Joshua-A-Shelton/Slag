@@ -1,27 +1,65 @@
 #include "VertexDescription.h"
+#include <cassert>
 
 namespace slag
 {
-    VertexDescription::VertexDescription(std::vector<VertexAttribute> &attributes)
+    VertexAttribute::VertexAttribute(GraphicsTypes::GraphicsType dataType, uint32_t offset)
     {
-        _attributes = attributes;
+        assert(dataType != GraphicsTypes::GraphicsType::STRUCT && "dataType cannot be struct for vertex attribute");
+        _dataType = dataType;
+        _offset = offset;
     }
 
-    std::vector<VertexAttribute> &VertexDescription::attributes()
+
+    GraphicsTypes::GraphicsType VertexAttribute::dataType() const
     {
-        return _attributes;
+        return _dataType;
     }
 
-    VertexDescriptionBuilder &VertexDescriptionBuilder::add(Pixels::PixelFormat backingStorageType)
+    uint32_t VertexAttribute::offset() const
     {
-        _attributes.push_back({.location = _location, .storageType = backingStorageType, .offset = _offset});
-        _location++;
-        _offset+= Pixels::pixelBytes(backingStorageType);
+        return _offset;
+    }
+
+    VertexDescription::VertexDescription(size_t attributeChannels)
+    {
+        _attributes.resize(attributeChannels);
+    }
+
+    VertexDescription& VertexDescription::add(const VertexAttribute& attribute, size_t attributeChannel)
+    {
+        _attributes.at(attributeChannel).push_back(attribute);
         return *this;
     }
 
-    VertexDescription VertexDescriptionBuilder::build()
+    VertexDescription& VertexDescription::add(GraphicsTypes::GraphicsType dataType, uint32_t offset, size_t attributeChannel)
     {
-        return VertexDescription(_attributes);
+        _attributes.at(attributeChannel).emplace_back(dataType,offset);
+        return *this;
+    }
+
+    size_t VertexDescription::attributeCount() const
+    {
+        size_t count = 0;
+        for(auto& channel: _attributes)
+        {
+            count += channel.size();
+        }
+        return count;
+    }
+
+    size_t VertexDescription::attributeCount(size_t channel) const
+    {
+        return _attributes.at(channel).size();
+    }
+
+    size_t VertexDescription::attributeChannels() const
+    {
+        return _attributes.size();
+    }
+
+    VertexAttribute& VertexDescription::attribute(size_t channel,size_t index)
+    {
+        return _attributes.at(channel).at(index);
     }
 } // slag

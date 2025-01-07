@@ -1,228 +1,360 @@
 #include "VulkanShader.h"
 #include "VulkanLib.h"
-#include "VulkanTexture.h"
-#include <stdexcept>
+#include <sstream>
 #include <spirv_reflect.h>
-#include <algorithm>
 
 namespace slag
 {
     namespace vulkan
     {
-        VulkanShader::~VulkanShader()
+        struct VulkanShaderData
         {
-            if(_pipeline)
+        public:
+            VkShaderModule shaderModule= nullptr;
+            SpvReflectShaderModule reflectModule;
+            VulkanShaderData(ShaderModule& module)
             {
-                smartDestroy();
+                VkShaderModuleCreateInfo createVertexInfo = {};
+                createVertexInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+                createVertexInfo.codeSize = module.dataSize();
+                createVertexInfo.pCode = reinterpret_cast<const uint32_t*>(module.data());
+                if(vkCreateShaderModule(VulkanLib::card()->device(),&createVertexInfo, nullptr,&shaderModule)!= VK_SUCCESS)
+                {
+                    throw std::runtime_error("invalid shader module");
+                }
+                spvReflectCreateShaderModule(module.dataSize(),module.data(),&reflectModule);
             }
-        }
+            ~VulkanShaderData()
+            {
+                if(shaderModule)
+                {
+                    vkDestroyShaderModule(VulkanLib::card()->device(), shaderModule, nullptr);
+                    spvReflectDestroyShaderModule(&reflectModule);
+                }
+            }
+            VulkanShaderData(VulkanShaderData&& from)
+            {
+                std::swap(shaderModule,from.shaderModule);
+                std::swap(reflectModule,from.reflectModule);
+            }
+            VulkanShaderData& operator=(VulkanShaderData&& from)
+            {
+                std::swap(shaderModule,from.shaderModule);
+                std::swap(reflectModule,from.reflectModule);
+                return *this;
+            }
+        };
 
-        VulkanShader::VulkanShader(const std::vector<char> &vertexCode, const std::vector<char> &fragmentCode, FramebufferDescription& framebufferDescription, VertexDescription* vertexDescription)
+        VulkanShader::VulkanShader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, const ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
-            VkShaderModuleCreateInfo createVertexInfo = {};
-            createVertexInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-            createVertexInfo.codeSize = vertexCode.size();
-            createVertexInfo.pCode = reinterpret_cast<const uint32_t*>(vertexCode.data());
+            std::vector<VulkanShaderData> shaderStageData;
+            std::vector<VkPipelineShaderStageCreateInfo> shaderStages(moduleCount,VkPipelineShaderStageCreateInfo{});
+            size_t vertexStageIndex = SIZE_MAX;
+            size_t fragmentStageIndex = SIZE_MAX;
 
-            VkShaderModule vshaderModule = nullptr;
-            if(vkCreateShaderModule(VulkanLib::graphicsCard()->device(),&createVertexInfo, nullptr,&vshaderModule)!= VK_SUCCESS)
+            for(size_t i=0; i< moduleCount; i++)
             {
-                throw std::runtime_error("Unable to use vertex shader");
+                auto& module = modules[i];
+                shaderStageData.emplace_back(module);
+
+                auto& createInfo = shaderStages[i];
+                createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+                createInfo.stage = std::bit_cast<VkShaderStageFlagBits>(module.stage());
+                createInfo.module = shaderStageData[i].shaderModule;
+                createInfo.pName = "main";
+                if(module.stage() == ShaderStageFlags::VERTEX)
+                {
+                    vertexStageIndex = i;
+                }
+                if(module.stage() == ShaderStageFlags::FRAGMENT)
+                {
+                    fragmentStageIndex = i;
+                }
+
+            }
+            if(vertexStageIndex==SIZE_MAX || fragmentStageIndex==SIZE_MAX)
+            {
+                throw std::runtime_error("Must define both a vertex stage and fragment stage");
             }
 
-            VkShaderModuleCreateInfo createFragmentInfo = {};
-            createFragmentInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-            createFragmentInfo.codeSize = fragmentCode.size();
-            createFragmentInfo.pCode = reinterpret_cast<const uint32_t*>(fragmentCode.data());
-
-            VkShaderModule fshaderModule = nullptr;
-            if(vkCreateShaderModule(VulkanLib::graphicsCard()->device(),&createFragmentInfo, nullptr,&fshaderModule)!= VK_SUCCESS)
+            //get descriptor groups via reflection
+            std::unordered_map<size_t,std::vector<VulkanDescriptorGroup>> reflectedDescriptorGroups;
+            size_t maxDescriptorGroup = descriptorGroupCount;
+            bool hasDescriptorGroups = false;
+            for(size_t i=0; i< shaderStageData.size(); i++)
             {
-                throw std::runtime_error("Unable to use fragment shader");
+                auto& module = modules[i];
+                auto& reflectModule = shaderStageData[i].reflectModule;
+                uint32_t setCount = 0;
+                auto result = spvReflectEnumerateDescriptorSets(&reflectModule,&setCount, nullptr);
+                if(setCount > 0)
+                {
+                    hasDescriptorGroups = true;
+                }
+                for(size_t set = 0; set< setCount; set++)
+                {
+                    auto binding = reflectModule.descriptor_bindings[set];
+                    //if we've passed an override, don't bother figuring all this out
+                    if(binding.set < descriptorGroupCount)
+                    {
+                        continue;
+                    }
+                    else if(binding.set > maxDescriptorGroup)
+                    {
+                        maxDescriptorGroup = binding.set;
+                    }
+                    auto descriptorSet = spvReflectGetDescriptorSet(&reflectModule,binding.set,&result);
+                    if(descriptorSet != nullptr)
+                    {
+                        std::vector<Descriptor> setDescriptors;
+                        for(uint32_t descriptorIndex=0; descriptorIndex<descriptorSet->binding_count; descriptorIndex++)
+                        {
+                            auto desc = descriptorSet->bindings[descriptorIndex];
+                            setDescriptors.push_back(Descriptor(desc->name,lib::BackEndLib::descriptorTypeFromSPV(desc->descriptor_type),desc->count,desc->binding,module.stage()));
+                        }
+                        if(reflectedDescriptorGroups.contains(binding.set))
+                        {
+                            reflectedDescriptorGroups[binding.set] = std::vector<VulkanDescriptorGroup>();
+                        }
+                        auto& group = reflectedDescriptorGroups[binding.set];
+                        group.push_back(VulkanDescriptorGroup(setDescriptors.data(),setDescriptors.size()));
+                    }
+                }
+                uint32_t blockCount = 0;
+                result = spvReflectEnumeratePushConstantBlocks(&reflectModule,&blockCount, nullptr);
+                for(uint32_t blockIndex=0; blockIndex<blockCount; blockIndex++)
+                {
+                    auto& range = *spvReflectGetPushConstantBlock(&reflectModule,blockIndex,&result);
+                    _pushConstantRanges.push_back(PushConstantRange{.stageFlags = module.stage(),.offset = range.offset,.size = range.size});
+                    //TODO: acquire actual variables and assign them to the ranges
+                }
             }
 
-            std::vector<VkPipelineShaderStageCreateInfo> shaderStages(2);
+            //add descriptor groups to shader
+            for(size_t i=0; i<=maxDescriptorGroup && hasDescriptorGroups; i++)
+            {
+                //if we provided an override for a group, use that
+                if(i < descriptorGroupCount)
+                {
+                    _descriptorGroups.push_back(*static_cast<VulkanDescriptorGroup*>(descriptorGroups[i]));
+                }
+                //otherwise, merge the groups we found from reflection and use that
+                else
+                {
+                    auto& groups = reflectedDescriptorGroups[i];
+                    std::vector<DescriptorGroup*> groupPointers(groups.size());
+                    for(size_t j=0; j<groups.size(); j++)
+                    {
+                        groupPointers[j] = &groups[j];
+                    }
+                    auto descriptors = DescriptorGroup::combine(groupPointers.data(),groupPointers.size());
+                    _descriptorGroups.push_back(VulkanDescriptorGroup(descriptors.data(),descriptors.size()));
+                }
+            }
 
-            shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-            shaderStages[0].pNext = nullptr;
+/*************************************************************************/
+            VkPipelineRasterizationStateCreateInfo rasterizationInfo = {};
+            rasterizationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+            rasterizationInfo.pNext = nullptr;
+            rasterizationInfo.flags = 0;
+            rasterizationInfo.depthClampEnable = properties.rasterizationState.depthClampEnable;
+            rasterizationInfo.rasterizerDiscardEnable = properties.rasterizationState.rasterizerDicardEnable;
+            rasterizationInfo.polygonMode = VulkanLib::polygonMode(properties.rasterizationState.drawMode);
+            rasterizationInfo.cullMode = VulkanLib::cullMode(properties.rasterizationState.culling);
+            rasterizationInfo.frontFace = VulkanLib::frontFace(properties.rasterizationState.frontFacing);
+            rasterizationInfo.depthBiasEnable = properties.rasterizationState.depthBiasEnable;
+            rasterizationInfo.depthBiasConstantFactor = static_cast<float>(properties.rasterizationState.depthBiasConstantFactor);
+            rasterizationInfo.depthBiasClamp = properties.rasterizationState.depthBiasClamp;
+            rasterizationInfo.depthBiasSlopeFactor = properties.rasterizationState.depthBiasSlopeFactor;
+            rasterizationInfo.lineWidth = properties.rasterizationState.lineWidth;
 
-            shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-            shaderStages[0].pName = "main";
-            shaderStages[0].module = vshaderModule;
 
-            shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-            shaderStages[1].pNext = nullptr;
+            VkPipelineMultisampleStateCreateInfo multisampleInfo = {};
+            multisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+            multisampleInfo.pNext = nullptr;
+            multisampleInfo.flags = 0;
+            multisampleInfo.rasterizationSamples = static_cast<VkSampleCountFlagBits>(properties.multiSampleState.rasterizationSamples);
+            multisampleInfo.sampleShadingEnable = properties.multiSampleState.sampleShadingEnable;
+            multisampleInfo.minSampleShading = properties.multiSampleState.minSampleShading == 0? 0: static_cast<float>(properties.multiSampleState.rasterizationSamples) / static_cast<float>(properties.multiSampleState.minSampleShading);
+            //multisampleInfo.pSampleMask = 0;
+            multisampleInfo.alphaToCoverageEnable = false;
+            multisampleInfo.alphaToOneEnable = properties.multiSampleState.alphaToOneEnable;
 
-            shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-            shaderStages[1].pName = "main";
-            shaderStages[1].module = fshaderModule;
+            std::vector<VkPipelineColorBlendAttachmentState> attachmentStates(std::clamp(frameBufferDescription.colorTargetCount(),size_t(0),size_t(8)),VkPipelineColorBlendAttachmentState{});
+            for(size_t i=0; i<attachmentStates.size(); i++)
+            {
+                auto& colorBlendAttachment = attachmentStates[i];
+                auto& colorBlendDescription = properties.blendState.attachmentBlendStates[i];
+
+                colorBlendAttachment.blendEnable = colorBlendDescription.blendingEnabled;
+                colorBlendAttachment.srcColorBlendFactor = VulkanLib::blendFactor(colorBlendDescription.srcColorBlendFactor);
+                colorBlendAttachment.dstColorBlendFactor = VulkanLib::blendFactor(colorBlendDescription.dstColorBlendFactor);
+                colorBlendAttachment.colorBlendOp = VulkanLib::blendOp(colorBlendDescription.colorBlendOperation);
+                colorBlendAttachment.srcAlphaBlendFactor = VulkanLib::blendFactor(colorBlendDescription.srcAlphaBlendFactor);
+                colorBlendAttachment.dstAlphaBlendFactor = VulkanLib::blendFactor(colorBlendDescription.dstAlphaBlendFactor);
+                colorBlendAttachment.alphaBlendOp = VulkanLib::blendOp(colorBlendDescription.alphaBlendOperation);
+                colorBlendAttachment.colorWriteMask = VulkanLib::colorComponents(colorBlendDescription.colorWriteMask);
+            }
+
+            VkPipelineColorBlendStateCreateInfo colorBlendingInfo = {};
+            colorBlendingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+            colorBlendingInfo.pNext = nullptr;
+            colorBlendingInfo.flags = 0;
+            colorBlendingInfo.logicOpEnable = properties.blendState.logicOperationEnable;
+            colorBlendingInfo.logicOp = VulkanLib::logicOp(properties.blendState.logicalOperation);
+            colorBlendingInfo.attachmentCount = attachmentStates.size();
+            colorBlendingInfo.pAttachments = attachmentStates.data();
+
+            VkPipelineDepthStencilStateCreateInfo depthStencilInfo{};
+            depthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+            depthStencilInfo.pNext = nullptr;
+            depthStencilInfo.flags = 0;
+            depthStencilInfo.depthTestEnable = properties.depthStencilState.depthTestEnable;
+            depthStencilInfo.depthWriteEnable = properties.depthStencilState.depthWriteEnable;
+            depthStencilInfo.depthCompareOp = VulkanLib::compareOp(properties.depthStencilState.depthCompareOperation);
+            depthStencilInfo.stencilTestEnable = properties.depthStencilState.stencilTestEnable;
+            depthStencilInfo.front.failOp = VulkanLib::stencilOp(properties.depthStencilState.front.failOp);
+            depthStencilInfo.front.passOp = VulkanLib::stencilOp(properties.depthStencilState.front.passOp);
+            depthStencilInfo.front.depthFailOp = VulkanLib::stencilOp(properties.depthStencilState.front.depthFailOp);
+            depthStencilInfo.front.compareOp = VulkanLib::compareOp(properties.depthStencilState.front.compareOp);
+            depthStencilInfo.front.compareMask = properties.depthStencilState.stencilReadMask;//I think only lest significant digits need to be set
+            depthStencilInfo.front.writeMask = properties.depthStencilState.stencilWriteMask;//I think only lest significant digits need to be set
+            depthStencilInfo.front.reference = 0;//set via command buffer dynamically
+            depthStencilInfo.back.failOp = VulkanLib::stencilOp(properties.depthStencilState.back.failOp);
+            depthStencilInfo.back.passOp = VulkanLib::stencilOp(properties.depthStencilState.back.passOp);
+            depthStencilInfo.back.depthFailOp = VulkanLib::stencilOp(properties.depthStencilState.back.depthFailOp);
+            depthStencilInfo.back.compareOp = VulkanLib::compareOp(properties.depthStencilState.back.compareOp);
+            depthStencilInfo.back.compareMask = properties.depthStencilState.stencilReadMask;//I think only lest significant digits need to be set
+            depthStencilInfo.back.writeMask = properties.depthStencilState.stencilWriteMask;//I think only lest significant digits need to be set
+            depthStencilInfo.back.reference = 0;//set via command buffer dynamically
+            depthStencilInfo.depthBoundsTestEnable = false;
+            depthStencilInfo.minDepthBounds = 0;//we're not doing depth bounds testing, ignore
+            depthStencilInfo.maxDepthBounds = 0;//we're not doing depth bounds testing, ignore
+
+
+            std::vector<VkVertexInputAttributeDescription> attributes;
+            std::vector<VkVertexInputBindingDescription> bindingDescriptions;
+            //if we have provided a description for the vertex, use that
+            if(vertexDescription)
+            {
+                attributes.resize(vertexDescription->attributeCount());
+                bindingDescriptions.resize(vertexDescription->attributeChannels());
+                size_t attIndex = 0;
+                for (size_t channel = 0; channel < vertexDescription->attributeChannels(); channel++)
+                {
+                    uint32_t stride = 0;
+                    for (size_t attribute = 0; attribute < vertexDescription->attributeCount(channel); attribute++)
+                    {
+                        auto& attr = attributes[attIndex];
+                        auto& description = vertexDescription->attribute(channel, attribute);
+                        attr.location = attribute;
+                        attr.binding = channel;
+                        attr.format = VulkanLib::graphicsType(description.dataType());
+                        if(attr.format == VK_FORMAT_UNDEFINED)
+                        {
+                            throw std::runtime_error("Unable to convert graphicsType type into underlying API type");
+                        }
+                        attr.offset = description.offset();
+                        attIndex++;
+                        size_t end = attr.offset + GraphicsTypes::typeSize(description.dataType());
+                        if (end > stride)
+                        {
+                            stride = end;
+                        }
+                    }
+                    auto& bindingDescription = bindingDescriptions[channel];
+                    bindingDescription.binding = channel;
+                    bindingDescription.stride = stride;
+                    bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX; //TODO: I need to make this selectable, but I'm not sure how....
+                }
+            }
+            //otherwise get vertex info from reflection
+            else
+            {
+                auto& vertexModule = shaderStageData[vertexStageIndex].reflectModule;
+                uint32_t offset = 0;
+
+                for(uint32_t i=0; i< vertexModule.input_variable_count; i++)
+                {
+                    auto inputVar = vertexModule.input_variables[i];
+                    if(inputVar->decoration_flags & SPV_REFLECT_DECORATION_BUILT_IN)
+                    {
+                        continue;
+                    }
+                    auto type = lib::BackEndLib::graphicsTypeFromSPV(inputVar->format);
+                    if(type == GraphicsTypes::UNKNOWN)
+                    {
+                        throw std::runtime_error("Vertex Shader Module contains vertex attribute of unknown type");
+                    }
+                    attributes.emplace_back(inputVar->location,0,static_cast<VkFormat>(inputVar->format),offset);
+                    offset+= GraphicsTypes::typeSize(type);
+                }
+                bindingDescriptions.emplace_back(0,offset,VK_VERTEX_INPUT_RATE_VERTEX);
+
+            }
+
+            VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+            vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+            vertexInputInfo.pNext = nullptr;
+            vertexInputInfo.flags = 0;
+            vertexInputInfo.vertexBindingDescriptionCount = bindingDescriptions.size();
+            vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
+            vertexInputInfo.vertexAttributeDescriptionCount = attributes.size();
+            vertexInputInfo.pVertexAttributeDescriptions = attributes.data();
 
             VkPipelineInputAssemblyStateCreateInfo assemblyStateInfo = {};
             assemblyStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
             assemblyStateInfo.pNext = nullptr;
-
             assemblyStateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
             assemblyStateInfo.primitiveRestartEnable = VK_FALSE;
 
             VkPipelineViewportStateCreateInfo viewportState = {};
             viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
             viewportState.pNext = nullptr;
-
             viewportState.viewportCount = 1;
             viewportState.pViewports = nullptr;
             viewportState.scissorCount = 1;
             viewportState.pScissors = nullptr;
 
-
-
-            VkPipelineRasterizationStateCreateInfo rasterizationInfo = {};
-            rasterizationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-            rasterizationInfo.pNext = nullptr;
-
-            rasterizationInfo.depthClampEnable = VK_FALSE;
-            rasterizationInfo.rasterizerDiscardEnable = VK_FALSE;
-            //TODO: set this to make wireframes
-            rasterizationInfo.polygonMode = VK_POLYGON_MODE_FILL;
-            rasterizationInfo.lineWidth = 1.0f;
-            //TODO: set this to change cull mode
-            rasterizationInfo.cullMode = VK_CULL_MODE_NONE;
-            rasterizationInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
-            //TODO: figure out what depth bias even is
-            rasterizationInfo.depthBiasEnable = VK_FALSE;
-            rasterizationInfo.depthBiasConstantFactor = 0.0f;
-            rasterizationInfo.depthBiasClamp = 0.0f;
-            rasterizationInfo.depthBiasSlopeFactor = 0.0f;
-
-
-            VkPipelineMultisampleStateCreateInfo multisampleInfo = {};
-            multisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-            multisampleInfo.pNext = nullptr;
-
-            multisampleInfo.sampleShadingEnable = VK_FALSE;
-            //multisampling defaulted to no multisampling (1 sample per pixel)
-            multisampleInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-            multisampleInfo.minSampleShading = 1.0f;
-            multisampleInfo.pSampleMask = nullptr;
-            multisampleInfo.alphaToCoverageEnable = VK_FALSE;
-            multisampleInfo.alphaToOneEnable = VK_FALSE;
-
-
-            //TODO: make this an option per shader
-            VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-            colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-                                                  VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-            colorBlendAttachment.blendEnable = VK_TRUE;
-            colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-            colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-            colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;              // Optional
-            colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
-            colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
-            colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;              // Optional
-
-            //TODO: set blend state
-            //setup dummy color blending. We aren't using transparent objects yet
-            //the blending is just "no blend", but we do write to the color attachment
-            VkPipelineColorBlendStateCreateInfo colorBlendingInfo = {};
-            colorBlendingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-            colorBlendingInfo.pNext = nullptr;
-
-            colorBlendingInfo.logicOpEnable = VK_FALSE;
-            colorBlendingInfo.logicOp = VK_LOGIC_OP_COPY;
-            colorBlendingInfo.attachmentCount = 1;
-            colorBlendingInfo.pAttachments = &colorBlendAttachment;
-            colorBlendingInfo.logicOp = VK_LOGIC_OP_COPY;   // Optional
-            colorBlendingInfo.blendConstants[0] = 0.0f;     // Optional
-            colorBlendingInfo.blendConstants[1] = 0.0f;     // Optional
-            colorBlendingInfo.blendConstants[2] = 0.0f;     // Optional
-            colorBlendingInfo.blendConstants[3] = 0.0f;     // Optional
-
-
-
-            VkPipelineDepthStencilStateCreateInfo depthStencilInfo{};
-            depthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-
-            depthStencilInfo.depthTestEnable = VK_TRUE;
-            depthStencilInfo.depthWriteEnable = VK_TRUE;
-
-            depthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;
-            depthStencilInfo.depthBoundsTestEnable = VK_FALSE;
-            depthStencilInfo.minDepthBounds = 0.0f;  // Optional
-            depthStencilInfo.maxDepthBounds = 1.0f;  // Optional
-            depthStencilInfo.stencilTestEnable = VK_FALSE;
-            depthStencilInfo.front = {};  // Optional
-            depthStencilInfo.back = {};   // Optional
-
-
-            VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-            vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-            vertexInputInfo.pNext = nullptr;
-
-            std::vector<VkVertexInputAttributeDescription> attributes;
-            VkVertexInputBindingDescription bindingDescription{};
-
-            if(vertexDescription != nullptr)
+            std::vector<VkDescriptorSetLayout> layouts(_descriptorGroups.size());
+            std::vector<VkPushConstantRange> pushConstantRanges(_pushConstantRanges.size());
+            for(size_t i=0; i< _descriptorGroups.size(); i++)
             {
-                for(auto& att : vertexDescription->attributes())
-                {
-                    attributes.push_back({.location = att.location, .binding = 0, .format = VulkanTexture::formatFromCrossPlatform(att.storageType), .offset = att.offset});
-                }
+                layouts[i] = _descriptorGroups[i].layout();
             }
-
-
-            //TODO: add overwrites
-            std::vector<VulkanUniformSet> overwrites;
-
-            generateReflectionData(vertexCode,fragmentCode,attributes,bindingDescription,overwrites);
-            vertexInputInfo.pVertexAttributeDescriptions = attributes.data();
-            vertexInputInfo.vertexAttributeDescriptionCount = attributes.size();
-            vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-            vertexInputInfo.vertexBindingDescriptionCount = 1;
-
-            std::vector<VkDescriptorSetLayout> setLayouts;
-            for(int i=0; i< _uniformSets.size(); i++)
+            for(size_t i=0; i< _pushConstantRanges.size(); i++)
             {
-                VkDescriptorSetLayout layout = _uniformSets[i].descriptorSetLayout();
-                if(layout !=nullptr)
-                {
-                    setLayouts.push_back(layout);
-                }
+                auto& range = pushConstantRanges[i];
+                auto& templ = _pushConstantRanges[i];
+                range.size = templ.size;
+                range.offset = templ.offset;
+                range.stageFlags = std::bit_cast<VkShaderStageFlags>(templ.stageFlags);
             }
-
-            std::vector<VkPushConstantRange> setPushConstants;
-            for(int i=0; i< _pushConstantRanges.size(); i++)
-            {
-                setPushConstants.push_back(_pushConstantRanges[i].range());
-            }
-
             VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
             pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             pipelineLayoutInfo.pNext = nullptr;
             pipelineLayoutInfo.flags = 0;
-            pipelineLayoutInfo.setLayoutCount = setLayouts.size();
-            pipelineLayoutInfo.pSetLayouts = setLayouts.data();
-            pipelineLayoutInfo.pushConstantRangeCount = setPushConstants.size();
-            pipelineLayoutInfo.pPushConstantRanges = setPushConstants.data();
+            pipelineLayoutInfo.setLayoutCount = layouts.size();
+            pipelineLayoutInfo.pSetLayouts = layouts.data();
+            pipelineLayoutInfo.pushConstantRangeCount = pushConstantRanges.size();
+            pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.data();
 
-
-            if(vkCreatePipelineLayout(static_cast<VkDevice>(VulkanLib::graphicsCard()->device()),&pipelineLayoutInfo, nullptr,&_pipelineLayout)!= VK_SUCCESS)
+            if(vkCreatePipelineLayout(static_cast<VkDevice>(VulkanLib::card()->device()),&pipelineLayoutInfo, nullptr,&_layout)!= VK_SUCCESS)
             {
                 throw std::runtime_error("Unable to create shader layout");
             }
 
-
-
             //TODO: most of the interesting stuff is in here.... I may need to enable more
-            std::vector<VkDynamicState> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+            std::vector<VkDynamicState> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR,VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE,VK_DYNAMIC_STATE_BLEND_CONSTANTS, VK_DYNAMIC_STATE_STENCIL_REFERENCE};
             VkPipelineDynamicStateCreateInfo dynamicInfo{};
             dynamicInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
             dynamicInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
             dynamicInfo.pDynamicStates = dynamicStates.data();
 
-
             VkGraphicsPipelineCreateInfo pipelineInfo = {};
             pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 
-            pipelineInfo.stageCount = 2;
+            pipelineInfo.stageCount = shaderStages.size();
             pipelineInfo.pStages = shaderStages.data();
 
             pipelineInfo.pVertexInputState = &vertexInputInfo;
@@ -232,218 +364,85 @@ namespace slag
             pipelineInfo.pMultisampleState = &multisampleInfo;
             pipelineInfo.pColorBlendState = &colorBlendingInfo;
             pipelineInfo.pDepthStencilState = &depthStencilInfo;
-            pipelineInfo.layout = _pipelineLayout;
+            pipelineInfo.layout = _layout;
             pipelineInfo.renderPass = VK_NULL_HANDLE;
             pipelineInfo.subpass = 0;
             pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
             pipelineInfo.pDynamicState = &dynamicInfo;
 
-            auto colorAttachments =std::vector<VkFormat>(framebufferDescription.colorTargetCount());
-            for(int i=0; i< framebufferDescription.colorTargetCount(); i++)
+            auto colorAttachments =std::vector<VkFormat>(frameBufferDescription.colorTargetCount());
+            for(int i=0; i< frameBufferDescription.colorTargetCount(); i++)
             {
-                colorAttachments[i] = VulkanTexture::formatFromCrossPlatform(framebufferDescription.colorFormat(i));
+                colorAttachments[i] = VulkanLib::format(frameBufferDescription.colorFormat(i)).format;
             }
 
-            VkPipelineRenderingCreateInfoKHR pipeline_rendering_create_info {
+            VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo {
                     .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+                    .pNext = nullptr,
                     .colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size()),
                     .pColorAttachmentFormats = colorAttachments.data(),
+                    .depthAttachmentFormat = VulkanLib::format(frameBufferDescription.depthFormat()).format,
+                    .stencilAttachmentFormat = Pixels::hasStencilComponent(frameBufferDescription.depthFormat()) ?  VulkanLib::format(frameBufferDescription.depthFormat()).format : VK_FORMAT_UNDEFINED
             };
-            pipeline_rendering_create_info.depthAttachmentFormat = VulkanTexture::formatFromCrossPlatform(framebufferDescription.depthFormat());
-            //TODO: stencil?
 
-            pipelineInfo.pNext = &pipeline_rendering_create_info;
+            pipelineInfo.pNext = &pipelineRenderingCreateInfo;
 
-            //it's easy to error out on create graphics pipeline, so we handle it a bit better than the common VK_CHECK case
-
-            auto result = vkCreateGraphicsPipelines(static_cast<VkDevice>(VulkanLib::graphicsCard()->device()), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline);
-            assert(result == VK_SUCCESS && "Unable to create shader");
-
-            vkDestroyShaderModule(static_cast<VkDevice>(VulkanLib::graphicsCard()->device()),vshaderModule, nullptr);
-            vkDestroyShaderModule(static_cast<VkDevice>(VulkanLib::graphicsCard()->device()),fshaderModule, nullptr);
+            auto result = vkCreateGraphicsPipelines(static_cast<VkDevice>(VulkanLib::card()->device()), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline);
 
             auto pipeline = _pipeline;
-            auto pipelineLayout = _pipelineLayout;
+            auto pipelineLayout = _layout;
 
-            freeResources = [=]()
+            _disposeFunction = [=]()
             {
-                vkDestroyPipeline(VulkanLib::graphicsCard()->device(),static_cast<VkPipeline>(pipeline), nullptr);
-                vkDestroyPipelineLayout(VulkanLib::graphicsCard()->device(),static_cast<VkPipelineLayout>(pipelineLayout),nullptr);
+                vkDestroyPipeline(VulkanLib::card()->device(),static_cast<VkPipeline>(pipeline), nullptr);
+                vkDestroyPipelineLayout(VulkanLib::card()->device(),static_cast<VkPipelineLayout>(pipelineLayout),nullptr);
             };
 
+            assert(result == VK_SUCCESS && "Unable to create shader");
+
         }
 
-        void VulkanShader::generateReflectionData(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, std::vector<VkVertexInputAttributeDescription>& attributes, VkVertexInputBindingDescription& binding, std::vector<VulkanUniformSet>& overwrites)
+        VulkanShader::~VulkanShader()
         {
-            SpvReflectShaderModule vertexModule, fragmentModule;
-            spvReflectCreateShaderModule(vertexCode.size(),vertexCode.data(),&vertexModule);
-            spvReflectCreateShaderModule(fragmentCode.size(),fragmentCode.data(),&fragmentModule);
-            try
+            if(_layout)
             {
-                std::vector<VulkanUniformSet> vertexGroups, fragmentGroups;
-                uint32_t vertGroupCount = 0;
-                auto result = spvReflectEnumerateDescriptorSets(&vertexModule,&vertGroupCount, nullptr);
-                assert(result == SPV_REFLECT_RESULT_SUCCESS && "Unable to get reflection data");
-                for(uint32_t i =0; i< vertGroupCount; i++)
-                {
-                    auto binding = vertexModule.descriptor_bindings[i];
-                    auto set = spvReflectGetDescriptorSet(&vertexModule,binding.set,&result);
-                    if(set!= nullptr)
-                    {
-                        vertexGroups.push_back(VulkanUniformSet(set, VK_SHADER_STAGE_VERTEX_BIT));
-                    }
-                }
-
-
-                uint32_t fragGroupCount = 0;
-                result = spvReflectEnumerateDescriptorSets(&fragmentModule,&fragGroupCount, nullptr);
-                assert(result == SPV_REFLECT_RESULT_SUCCESS && "Unable to get reflection data");
-                for(uint32_t i =0; i< fragGroupCount; i++)
-                {
-                    auto binding = fragmentModule.descriptor_bindings[i];
-                    auto set = spvReflectGetDescriptorSet(&fragmentModule,binding.set,&result);
-                    if(set != nullptr)
-                    {
-                        fragmentGroups.push_back(VulkanUniformSet(set, VK_SHADER_STAGE_FRAGMENT_BIT));
-                    }
-                }
-
-                for(int i=0; i<4; i++)
-                {
-                    VulkanUniformSet fullGroup(i);
-                    for(auto vertexIterator = vertexGroups.begin(); vertexIterator < vertexGroups.end(); vertexIterator++)
-                    {
-                        if(vertexIterator->index()==i)
-                        {
-                            fullGroup = std::move(*vertexIterator);
-                        }
-                    }
-
-                    for(auto fragmentIterator = fragmentGroups.begin(); fragmentIterator < fragmentGroups.end(); fragmentIterator++)
-                    {
-                        if(fragmentIterator->index()==i)
-                        {
-                            fullGroup.merge(std::move(*fragmentIterator));
-                        }
-                    }
-
-                    _uniformSets.push_back(std::move(fullGroup));
-                }
-
-                //emplace overwrites
-                for(auto& overwrite : overwrites)
-                {
-                    _uniformSets[overwrite.index()] = std::move(overwrite);
-                }
-
-                //push constants
-                uint32_t blockCount = 0;
-                result = spvReflectEnumeratePushConstantBlocks(&vertexModule,&blockCount, nullptr);
-                assert(result == SPV_REFLECT_RESULT_SUCCESS && "Unable to get push constant data");
-                for(uint32_t i=0; i< blockCount; i++)
-                {
-                    auto& pushConstantRangeData = *spvReflectGetPushConstantBlock(&vertexModule,i,&result);
-                    VkPushConstantRange range{};
-                    range.size = pushConstantRangeData.size;
-                    range.offset = pushConstantRangeData.offset;
-                    range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-                    _pushConstantRanges.push_back(VulkanPushConstantRange(range));
-                }
-
-                result = spvReflectEnumeratePushConstantBlocks(&fragmentModule,&blockCount, nullptr);
-                assert(result == SPV_REFLECT_RESULT_SUCCESS && "Unable to get push constant data");
-                for(uint32_t i=0; i< blockCount; i++)
-                {
-                    auto& pushConstantRangeData = *spvReflectGetPushConstantBlock(&fragmentModule,i,&result);
-                    VkPushConstantRange range{};
-                    range.size = pushConstantRangeData.size;
-                    range.offset = pushConstantRangeData.offset;
-                    range.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-                    _pushConstantRanges.push_back(range);
-                }
-
-
-                uint32_t count = 0;
-                result = spvReflectEnumerateInputVariables(&vertexModule, &count, NULL);
-                assert(result == SPV_REFLECT_RESULT_SUCCESS);
-
-
-                //vertex attributes
-                //only get attributes via reflection if they weren't supplied automatically
-                if(attributes.empty())
-                {
-
-                    std::vector<SpvReflectInterfaceVariable *> input_vars(count);
-                    result =
-                            spvReflectEnumerateInputVariables(&vertexModule, &count, input_vars.data());
-                    assert(result == SPV_REFLECT_RESULT_SUCCESS);
-
-                    count = 0;
-                    result = spvReflectEnumerateOutputVariables(&vertexModule, &count, NULL);
-                    assert(result == SPV_REFLECT_RESULT_SUCCESS);
-
-                    binding.binding = 0;
-                    binding.stride = 0;  // computed below
-                    binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-                    attributes.reserve(input_vars.size());
-                    for (size_t i_var = 0; i_var < input_vars.size(); ++i_var)
-                    {
-                        const SpvReflectInterfaceVariable &refl_var = *(input_vars[i_var]);
-                        // ignore built-in variables
-                        if (refl_var.decoration_flags & SPV_REFLECT_DECORATION_BUILT_IN)
-                        {
-                            continue;
-                        }
-                        VkVertexInputAttributeDescription attr_desc{};
-                        attr_desc.location = refl_var.location;
-                        attr_desc.binding = binding.binding;
-                        attr_desc.format = static_cast<VkFormat>(refl_var.format);
-                        attr_desc.offset = 0;  // final offset computed below after sorting.
-                        attributes.push_back(attr_desc);
-                    }
-                    // Sort attributes by location
-                    std::sort(std::begin(attributes),
-                              std::end(attributes),
-                              [](const VkVertexInputAttributeDescription &a,
-                                 const VkVertexInputAttributeDescription &b)
-                              {
-                                  return a.location < b.location;
-                              });
-                }
-
-                // Compute final offsets of each attribute, and total vertex stride.
-                for (auto &attribute: attributes)
-                {
-                    uint32_t format_size = VulkanTexture::formatSize(attribute.format) / 8;
-                    attribute.offset = binding.stride;
-                    binding.stride += format_size;
-                }
+                smartDestroy();
             }
-            catch (std::runtime_error err)
-            {
-                //cleanup
-                spvReflectDestroyShaderModule(&vertexModule);
-                spvReflectDestroyShaderModule(&fragmentModule);
-                //throw
-                throw err;
-            }
-            spvReflectDestroyShaderModule(&vertexModule);
-            spvReflectDestroyShaderModule(&fragmentModule);
         }
 
-        void *VulkanShader::GPUID()
+        VulkanShader::VulkanShader(VulkanShader&& from): resources::Resource(from._destroyImmediately)
         {
-            return _pipeline;
+            move(std::move(from));
         }
 
-        UniformSet *VulkanShader::getUniformSet(size_t index)
+        VulkanShader& VulkanShader::operator=(VulkanShader&& from)
         {
-            return &_uniformSets[index];
+            move(std::move(from));
+            return *this;
         }
 
-        PushConstantRange *VulkanShader::getPushConstantRange(size_t index)
+        void VulkanShader::move(VulkanShader&& from)
         {
-            return &_pushConstantRanges[index];
+            resources::Resource::move(from);
+            _descriptorGroups.swap(from._descriptorGroups);
+            _pushConstantRanges.swap(from._pushConstantRanges);
+            std::swap(_pipeline,from._pipeline);
+            std::swap(_layout,from._layout);
+        }
+
+        size_t VulkanShader::descriptorGroupCount()
+        {
+            return _descriptorGroups.size();
+        }
+
+        DescriptorGroup* VulkanShader::descriptorGroup(size_t index)
+        {
+            return &_descriptorGroups.at(index);
+        }
+
+        DescriptorGroup* VulkanShader::operator[](size_t index)
+        {
+            return &_descriptorGroups[index];
         }
 
         size_t VulkanShader::pushConstantRangeCount()
@@ -451,35 +450,20 @@ namespace slag
             return _pushConstantRanges.size();
         }
 
-        VkPipeline VulkanShader::pipeline()
+        PushConstantRange VulkanShader::pushConstantRange(size_t index)
+        {
+            return _pushConstantRanges[index];
+        }
+
+        VkPipeline VulkanShader::pipeline() const
         {
             return _pipeline;
         }
 
-        VkPipelineLayout VulkanShader::layout()
+        VkPipelineLayout VulkanShader::layout() const
         {
-            return _pipelineLayout;
+            return _layout;
         }
 
-        VulkanShader::VulkanShader(VulkanShader&& from): Resource(std::move(from))
-        {
-            move(std::move(from));
-        }
-
-        VulkanShader& VulkanShader::operator=(VulkanShader&& from)
-        {
-            Resource::operator=(std::move(from));
-            move(std::move(from));
-            return *this;
-        }
-
-        void VulkanShader::move(VulkanShader&& from)
-        {
-            std::swap(_pipelineLayout,from._pipelineLayout);
-            std::swap(_pipeline, from._pipeline);
-            _uniformSets.swap(from._uniformSets);
-            _pushConstantRanges.swap(from._pushConstantRanges);
-        }
-
-    } // slag
-} // vulkan
+    } // vulkan
+} // slag

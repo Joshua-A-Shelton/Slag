@@ -1,40 +1,76 @@
-#ifndef CRUCIBLEEDITOR_VERTEXDESCRIPTION_H
-#define CRUCIBLEEDITOR_VERTEXDESCRIPTION_H
+#ifndef SLAG_VERTEXDESCRIPTION_H
+#define SLAG_VERTEXDESCRIPTION_H
 
-#include <cstdint>
+#include "GraphicsTypes.h"
 #include <vector>
-#include "PixelFormat.h"
 
 namespace slag
 {
-
-    struct VertexAttribute
+    ///Describes member of vertex
+    class VertexAttribute
     {
-        uint32_t location;
-        Pixels::PixelFormat storageType;
-        uint32_t offset;
-    };
+    public:
+        ///What data type this member of the vertex is
+        GraphicsTypes::GraphicsType dataType()const;
+        ///The offset in bytes from the start of the buffer this member is
+        uint32_t offset()const;
+        /**
+         * Create a vertex attribute
+         * @param dataType What data type this member of the vertex is
+         * @param offset The offset in bytes from the start of the vertex this member is
+         */
+        VertexAttribute(GraphicsTypes::GraphicsType dataType, uint32_t offset);
 
+    private:
+        GraphicsTypes::GraphicsType _dataType = GraphicsTypes::STRUCT;
+        uint32_t _offset = 0;
+
+    };
+    ///Describes how a vertex will be read from a shader
     class VertexDescription
     {
     public:
-        VertexDescription(std::vector<VertexAttribute>& attributes);
-        std::vector<VertexAttribute>& attributes();
+        /**
+         * Create a new description of a vertex
+         * @param attributeChannels Number of different buffers vertex data can be sourced from
+         */
+        VertexDescription(size_t attributeChannels);
+        /**
+         * Add a new attribute to the description of a vertex
+         * @param attribute Data member of a vertex
+         * @param attributeChannel Index of the buffer the attribute will be in
+         * @return
+         */
+        VertexDescription& add(const VertexAttribute& attribute, size_t attributeChannel);
+        /**
+         * Add a new attribute to the description of a vertex
+         * @param dataType What data type this member of the vertex is
+         * @param offset The offset in bytes from the start of the vertex this member is
+         * @param attributeChannel Index of the buffer the attribute will be in
+         * @return
+         */
+        VertexDescription& add(GraphicsTypes::GraphicsType dataType, uint32_t offset, size_t attributeChannel);
+        ///Number of attributes across all channels
+        size_t attributeCount()const;
+        /**
+         * Number of attributes in a given channel
+         * @param channel Index of the channel
+         * @return
+         */
+        size_t attributeCount(size_t channel)const;
+        ///Number of different buffers vertex data can be sourced from
+        size_t attributeChannels()const;
+        /**
+         * Retrieve the attribute in a given channel
+         * @param channel The channel to retrieve from
+         * @param index The index of the attribute to retrieve
+         * @return
+         */
+        VertexAttribute& attribute(size_t channel, size_t index);
     private:
-        std::vector<VertexAttribute> _attributes;
-    };
-
-    class VertexDescriptionBuilder
-    {
-    public:
-        VertexDescriptionBuilder& add(Pixels::PixelFormat backingStorageType);
-        VertexDescription build();
-    private:
-        std::vector<VertexAttribute> _attributes;
-        uint32_t _location = 0;
-        uint32_t _offset = 0;
+        std::vector<std::vector<VertexAttribute>> _attributes;
     };
 
 } // slag
 
-#endif //CRUCIBLEEDITOR_VERTEXDESCRIPTION_H
+#endif //SLAG_VERTEXDESCRIPTION_H

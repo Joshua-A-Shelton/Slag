@@ -1,48 +1,38 @@
 #ifndef SLAG_VULKANSHADER_H
 #define SLAG_VULKANSHADER_H
 #include "../../Shader.h"
-#include "../Resource.h"
-#include <vector>
-#include <vulkan/vulkan.h>
-#include "VulkanUniformSet.h"
-#include "../../FramebufferDescription.h"
-#include "VulkanPushConstantRange.h"
+#include "../../Resources/Resource.h"
+#include "VulkanDescriptorGroup.h"
 
 namespace slag
 {
     namespace vulkan
     {
-
-        class VulkanShader: public Shader, Resource
+        class VulkanShader: public Shader, resources::Resource
         {
         public:
-            ///
-            /// \param vertexCode
-            /// \param fragmentCode
-            /// \param framebufferDescription what the framebuffer that this shader outputs to looks like
-            /// \param vertexAttributes optional, manually define what the vertexes will look like instead of getting them through shader reflection
-            VulkanShader(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, FramebufferDescription& framebufferDescription, VertexDescription* vertexDescription = nullptr);
+            VulkanShader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, const ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription, bool destroyImmediately);
             ~VulkanShader()override;
             VulkanShader(const VulkanShader&)=delete;
             VulkanShader& operator=(const VulkanShader&)=delete;
             VulkanShader(VulkanShader&& from);
             VulkanShader& operator=(VulkanShader&& from);
-            void* GPUID()override;
-            UniformSet* getUniformSet(size_t index)override;
-            PushConstantRange* getPushConstantRange(size_t index)override;
+            size_t descriptorGroupCount()override;
+            DescriptorGroup* descriptorGroup(size_t index)override;
+            DescriptorGroup* operator[](size_t index)override;
             size_t pushConstantRangeCount()override;
-            VkPipeline pipeline();
-            VkPipelineLayout layout();
+            PushConstantRange pushConstantRange(size_t index)override;
+            VkPipeline pipeline()const;
+            VkPipelineLayout layout()const;
         private:
-            VkPipelineLayout _pipelineLayout = nullptr;
-            VkPipeline _pipeline = nullptr;
-            std::vector<VulkanUniformSet> _uniformSets;
-            std::vector<VulkanPushConstantRange> _pushConstantRanges;
-            void generateReflectionData(const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, std::vector<VkVertexInputAttributeDescription>& attributes,VkVertexInputBindingDescription& binding, std::vector<VulkanUniformSet>& overwrites);
             void move(VulkanShader&& from);
+            std::vector<VulkanDescriptorGroup> _descriptorGroups;
+            std::vector<PushConstantRange> _pushConstantRanges;
+            VkPipeline _pipeline = nullptr;
+            VkPipelineLayout _layout = nullptr;
         };
 
-    } // slag
-} // vulkan
+    } // vulkan
+} // slag
 
 #endif //SLAG_VULKANSHADER_H
