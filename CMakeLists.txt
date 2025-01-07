@@ -107,7 +107,6 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/Color.h
         src/slag/Pixel.cpp
         src/slag/Pixel.h
-        src/slag/GraphicsCard.cpp
         src/slag/GraphicsCard.h
         src/slag/GpuQueue.h
         src/slag/Texture.cpp
