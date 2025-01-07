@@ -494,7 +494,7 @@ TEST_F(CommandBufferTests, BindComputeShader)
 TEST_F(CommandBufferTests, BindVertexBuffers)
 {
     //tested in integration tests
-    //GTEST_FAIL();
+    GTEST_FAIL();
 }
 
 TEST_F(CommandBufferTests, ClearDepthStencilImage)
@@ -545,7 +545,7 @@ TEST_F(CommandBufferTests, Draw)
 TEST_F(CommandBufferTests, DrawIndexed)
 {
     //tested in integration tests
-    //GTEST_FAIL();
+    GTEST_FAIL();
 }
 
 TEST_F(CommandBufferTests, DrawIndexedIndirect)
