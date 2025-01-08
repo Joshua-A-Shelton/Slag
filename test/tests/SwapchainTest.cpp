@@ -18,6 +18,33 @@ struct SDL_WindowCustomDeleter
     }
 };
 
+class DefaultFrameResources: public slag::FrameResources
+{
+public:
+    slag::CommandBuffer* commandBuffer = nullptr;
+    DefaultFrameResources()
+    {
+        commandBuffer = CommandBuffer::newCommandBuffer(slag::GpuQueue::GRAPHICS);
+    }
+    ~DefaultFrameResources()override
+    {
+        delete(commandBuffer);
+    }
+    void waitForResourcesToFinish()override
+    {
+        commandBuffer->waitUntilFinished();
+    }
+    bool isFinished()override
+    {
+        return commandBuffer->isFinished();
+    }
+};
+
+FrameResources* defaultResource(size_t index, Swapchain* from)
+{
+    return new DefaultFrameResources();
+}
+
 TEST(Swapchain, PresentModes)
 {
     SDL_WindowFlags flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE);
@@ -41,14 +68,14 @@ TEST(Swapchain, PresentModes)
     pd.nativeDisplayType = wmInfo.info.x11.display;
 #endif
 
-    auto swapchain = std::unique_ptr<Swapchain>(Swapchain::newSwapchain(pd, 500, 500, 3, Swapchain::PresentMode::MAILBOX, Pixels::Format::B8G8R8A8_UNORM));
+    auto swapchain = std::unique_ptr<Swapchain>(Swapchain::newSwapchain(pd, 500, 500, 3, Swapchain::PresentMode::MAILBOX, Pixels::Format::B8G8R8A8_UNORM,defaultResource));
     Uint64 totalStart = SDL_GetPerformanceCounter();
     Uint64 last = totalStart;
     for(int i=0; i< 300; i++)
     {
         if(auto frame = swapchain->next())
         {
-            auto cb = frame->commandBuffer();
+            auto cb = static_cast<DefaultFrameResources*>(frame->resources)->commandBuffer;
             cb->begin();
             cb->clearColorImage(frame->backBuffer(), {.floats={i/300.0f, 0, 0, 1}}, Texture::Layout::UNDEFINED, Texture::Layout::PRESENT,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
             cb->end();
@@ -65,7 +92,7 @@ TEST(Swapchain, PresentModes)
     {
         if(auto frame = swapchain->next())
         {
-            auto cb = frame->commandBuffer();
+            auto cb = static_cast<DefaultFrameResources*>(frame->resources)->commandBuffer;
             cb->begin();
             cb->clearColorImage(frame->backBuffer(), {.floats={i/300.0f, 0, i/300.0f, 1}}, Texture::Layout::UNDEFINED, Texture::Layout::PRESENT,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
             cb->end();
@@ -101,7 +128,7 @@ TEST(Swapchain, NextIfReady)
     pd.nativeDisplayType = wmInfo.info.x11.display;
 #endif
 
-    auto swapchain = std::unique_ptr<Swapchain>(Swapchain::newSwapchain(pd, 500, 500, 2, Swapchain::PresentMode::FIFO, Pixels::Format::B8G8R8A8_UNORM));
+    auto swapchain = std::unique_ptr<Swapchain>(Swapchain::newSwapchain(pd, 500, 500, 2, Swapchain::PresentMode::FIFO, Pixels::Format::B8G8R8A8_UNORM,defaultResource));
     int frameCount = 0;
     int i=0;
     for(;;)
@@ -109,7 +136,7 @@ TEST(Swapchain, NextIfReady)
         i++;
         if(auto frame = swapchain->nextIfReady())
         {
-            auto cb = frame->commandBuffer();
+            auto cb = static_cast<DefaultFrameResources*>(frame->resources)->commandBuffer;
             cb->begin();
             cb->clearColorImage(frame->backBuffer(), {.floats={0, 1, 0, 1}}, Texture::Layout::UNDEFINED, Texture::Layout::PRESENT,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
             cb->end();
@@ -128,7 +155,7 @@ TEST(Swapchain, NextIfReady)
     {
         if(auto frame = swapchain->next())
         {
-            auto cb = frame->commandBuffer();
+            auto cb = static_cast<DefaultFrameResources*>(frame->resources)->commandBuffer;
             cb->begin();
             cb->clearColorImage(frame->backBuffer(), {.floats={0, 0, 1, 1}}, Texture::Layout::UNDEFINED, Texture::Layout::PRESENT,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
             cb->end();

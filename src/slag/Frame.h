@@ -17,7 +17,6 @@ namespace slag
         Frame(Frame&& from);
         Frame& operator=(Frame&& from);
         virtual Texture* backBuffer()=0;
-        virtual CommandBuffer* commandBuffer()=0;
         FrameResources* resources = nullptr;
     protected:
         void move(Frame& from);

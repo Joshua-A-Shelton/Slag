@@ -29,7 +29,10 @@ namespace slag
                 vkDeviceWaitIdle(VulkanLib::card()->device());
                 for (int i = 0; i < _frames.size(); i++)
                 {
-                    _frames[i].commandBuffer()->waitUntilFinished();
+                    if(_frames[i].resources)
+                    {
+                        _frames[i].resources->waitForResourcesToFinish();
+                    }
                 }
                 _frames.clear();
                 vkDestroySwapchainKHR(VulkanLib::card()->device(), _swapchain, nullptr);
@@ -102,7 +105,10 @@ namespace slag
             vkDeviceWaitIdle(VulkanLib::card()->device());
             for(int i=0; i< _frames.size(); i++)
             {
-                _frames[i].commandBuffer()->waitUntilFinished();
+                if(_frames[i].resources)
+                {
+                    _frames[i].resources->waitForResourcesToFinish();
+                }
             }
             if(_imageAcquiredFences.size()>0)
             {

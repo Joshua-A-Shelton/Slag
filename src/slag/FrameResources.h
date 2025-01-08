@@ -8,6 +8,8 @@ namespace slag
     {
     public:
         virtual ~FrameResources()=default;
+        virtual void waitForResourcesToFinish()=0;
+        virtual bool isFinished()=0;
     };
 
 } // slag

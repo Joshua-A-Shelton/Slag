@@ -9,7 +9,6 @@ namespace slag
         {
             _from = from;
             _backBuffer = new VulkanTexture(backBuffer, false,_from->imageFormat(),width,height,1,flags, VK_IMAGE_ASPECT_COLOR_BIT, true);
-            _commandBuffer = new VulkanCommandBuffer(VulkanLib::card()->graphicsQueueFamily());
             VkSemaphoreCreateInfo semaphoreCreateInfo{};
             semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
             vkCreateSemaphore(VulkanLib::card()->device(),&semaphoreCreateInfo, nullptr,&_commandsFinished);
@@ -22,7 +21,6 @@ namespace slag
             if(_backBuffer)
             {
                 delete _backBuffer;
-                delete _commandBuffer;
                 vkDestroySemaphore(VulkanLib::card()->device(),_commandsFinished, nullptr);
             }
         }
@@ -42,7 +40,6 @@ namespace slag
         {
             Frame::move(from);
             std::swap(_backBuffer,from._backBuffer);
-            std::swap(_commandBuffer,from._commandBuffer);
             std::swap(_from,from._from);
             std::swap(_commandsFinished,from._commandsFinished);
             _imageIndex = from._imageIndex;
@@ -51,11 +48,6 @@ namespace slag
         Texture* VulkanFrame::backBuffer()
         {
             return _backBuffer;
-        }
-
-        CommandBuffer* VulkanFrame::commandBuffer()
-        {
-            return _commandBuffer;
         }
 
         VulkanSwapchain* VulkanFrame::from()

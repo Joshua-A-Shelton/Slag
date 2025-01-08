@@ -21,7 +21,10 @@ namespace slag
         {
             for(int i=0; i< _frames.size(); i++)
             {
-                _frames[i].commandBuffer()->waitUntilFinished();
+                if(_frames[i].resources)
+                {
+                    _frames[i].resources->waitForResourcesToFinish();
+                }
             }
             DX12Semaphore semaphore(0,true);
             static_cast<DX12Queue*>(DX12Lib::card()->graphicsQueue())->signal(&semaphore,1);
@@ -106,18 +109,22 @@ namespace slag
         Frame* DX12Swapchain::next()
         {
             auto frame = &_frames[_swapchain->GetCurrentBackBufferIndex()];
-            frame->commandBuffer()->waitUntilFinished();
+            frame->resources->waitForResourcesToFinish();
             return frame;
         }
 
         Frame* DX12Swapchain::nextIfReady()
         {
             auto frame = &_frames[_swapchain->GetCurrentBackBufferIndex()];
-            if(frame->commandBuffer()->isFinished())
+            if(frame->resources)
             {
-                return frame;
+                if(frame->resources->isFinished())
+                {
+                    return frame;
+                }
+                return nullptr;
             }
-            return nullptr;
+            return frame;
         }
 
         IDXGISwapChain4* DX12Swapchain::underlyingSwapchain()

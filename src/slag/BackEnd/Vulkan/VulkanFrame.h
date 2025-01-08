@@ -20,7 +20,6 @@ namespace slag
             VulkanFrame(VulkanFrame&& from);
             VulkanFrame& operator=(VulkanFrame&& from);
             Texture* backBuffer()override;
-            CommandBuffer* commandBuffer()override;
 
             VulkanSwapchain* from();
             VkSemaphore commandsFinishedSemaphore();
@@ -30,7 +29,6 @@ namespace slag
             void move(VulkanFrame&& from);
             VulkanSwapchain* _from = nullptr;
             VulkanTexture* _backBuffer = nullptr;
-            VulkanCommandBuffer* _commandBuffer = nullptr;
             VkSemaphore _commandsFinished = nullptr;
             uint32_t _imageIndex = 0;
 
