@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 project(Slag)
+# make cache variables for install destinations
+include(GNUInstallDirs)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -280,3 +282,53 @@ target_include_directories(Slag
         # where external projects will look for the library's public headers
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
+#TOTALLY NOT SURE IF THIS IS RIGHT... BUT ITS WORKING FOR NOW!!!!!!!!!!!!!!!!!
+set_target_properties(spirv-reflect-static PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${_IMPORT_PREFIX}/include)
+
+install(TARGETS Slag vk-bootstrap vk-bootstrap-compiler-warnings VulkanMemoryAllocator DirectX-Headers spirv-reflect-static
+        EXPORT SlagTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(FILES
+        src/slag/Attachment.h
+        src/slag/Buffer.h
+        src/slag/Clear.h
+        src/slag/Color.h
+        src/slag/CommandBuffer.h
+        src/slag/Descriptor.h
+        src/slag/DescriptorBundle.h
+        src/slag/DescriptorGroup.h
+        src/slag/DescriptorPool.h
+        src/slag/Frame.h
+        src/slag/FrameBufferDescription.h
+        src/slag/FrameResources.h
+        src/slag/GpuMemoryBarriers.h
+        src/slag/GpuQueue.h
+        src/slag/GraphicsCard.h
+        src/slag/GraphicsTypes.h
+        src/slag/ICommandBuffer.h
+        src/slag/Operations.h
+        src/slag/Pixel.h
+        src/slag/PlatformData.h
+        src/slag/QueryPool.h
+        src/slag/Rectangle.h
+        src/slag/Sampler.h
+        src/slag/Semaphore.h
+        src/slag/Shader.h
+        src/slag/ShaderProperties.h
+        src/slag/SlagLib.h
+        src/slag/Swapchain.h
+        src/slag/Texture.h
+        src/slag/UniformBufferDescriptorLayout.h
+        src/slag/VertexDescription.h
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/slag)
+
+install(EXPORT SlagTargets
+        FILE SlagTargets.cmake
+        NAMESPACE Slag::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Slag
+)
