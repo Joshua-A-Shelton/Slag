@@ -273,6 +273,9 @@ if(BUILD_SLAG_TESTS)
 
 endif()
 
+################################################################Exporting stuff...###################################################################################################
+
+#Dunno what I'm doing here, following https://cmake.org/cmake/help/latest/guide/importing-exporting/index.html
 target_include_directories(Slag
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -330,5 +333,18 @@ install(FILES
 install(EXPORT SlagTargets
         FILE SlagTargets.cmake
         NAMESPACE Slag::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Slag
+)
+
+include(CMakePackageConfigHelpers)
+
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+        "${CMAKE_CURRENT_BINARY_DIR}/SlagConfig.cmake"
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Slag
+)
+
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/SlagConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/SlagConfigVersion.cmake"
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Slag
 )
