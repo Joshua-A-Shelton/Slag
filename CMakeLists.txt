@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 project(Slag)
+# make cache variables for install destinations
+include(GNUInstallDirs)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -271,12 +273,4 @@ if(BUILD_SLAG_TESTS)
 
 endif()
 
-target_include_directories(Slag
-        PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        PUBLIC
-        # where top-level project will look for the library's public headers
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-        # where external projects will look for the library's public headers
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-
+target_include_directories(Slag PUBLIC src)
