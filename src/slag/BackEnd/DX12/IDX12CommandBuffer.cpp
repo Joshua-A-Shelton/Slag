@@ -118,6 +118,21 @@ namespace slag
             _buffer->Barrier(barrierGroups.size(), barrierGroups.data());
         }
 
+        void IDX12CommandBuffer::insertBarrier(const ImageBarrier& barrier)
+        {
+            insertBarriers(const_cast<ImageBarrier*>(&barrier), 1, nullptr, 0, nullptr, 0);
+        }
+
+        void IDX12CommandBuffer::insertBarrier(const BufferBarrier& barrier)
+        {
+            insertBarriers(nullptr, 0, const_cast<BufferBarrier*>(&barrier), 1, nullptr, 0);
+        }
+
+        void IDX12CommandBuffer::insertBarrier(const GPUMemoryBarrier& barrier)
+        {
+            insertBarriers(nullptr, 0, nullptr, 0, const_cast<GPUMemoryBarrier*>(&barrier), 1);
+        }
+
         void IDX12CommandBuffer::clearColorImage(Texture* texture, ClearColor color, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore, PipelineStages syncAfter)
         {
             assert(commandType() == GpuQueue::GRAPHICS && "clearColorImage is a graphics queue only operation");

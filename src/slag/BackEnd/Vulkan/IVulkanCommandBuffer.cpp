@@ -166,6 +166,21 @@ namespace slag
             vkCmdPipelineBarrier2(_buffer,&dependencyInfo);
         }
 
+        void IVulkanCommandBuffer::insertBarrier(const ImageBarrier& barrier)
+        {
+            insertBarriers(const_cast<ImageBarrier*>(&barrier), 1, nullptr, 0, nullptr, 0);
+        }
+
+        void IVulkanCommandBuffer::insertBarrier(const BufferBarrier& barrier)
+        {
+            insertBarriers(nullptr, 0, const_cast<BufferBarrier*>(&barrier), 1, nullptr, 0);
+        }
+
+        void IVulkanCommandBuffer::insertBarrier(const GPUMemoryBarrier& barrier)
+        {
+            insertBarriers(nullptr, 0, nullptr, 0, const_cast<GPUMemoryBarrier*>(&barrier), 1);
+        }
+
         void IVulkanCommandBuffer::copyBuffer(Buffer* source, size_t sourceOffset, size_t length, Buffer* destination, size_t destinationOffset)
         {
             VulkanBuffer* src = static_cast<VulkanBuffer*>(source);

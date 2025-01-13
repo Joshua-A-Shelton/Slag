@@ -37,6 +37,21 @@ namespace slag
          */
         virtual void insertBarriers(ImageBarrier* imageBarriers, size_t imageBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount)=0;
         /**
+         * Insert image barrier that transitions texture memory into a different format, and/ or require/read write operations are finished before continuing execution
+         * @param barrier
+         */
+        virtual void insertBarrier(const ImageBarrier& barrier)=0;
+        /**
+         * Insert buffer barrier that required read/write operations are finished before continuing execution
+         * @param barrier
+         */
+        virtual void insertBarrier(const BufferBarrier& barrier)=0;
+        /**
+         * Insert generic barrier that requires certain kinds of read/write operations are all finished before continuing execution
+         * @param barrier
+         */
+        virtual void insertBarrier(const GPUMemoryBarrier& barrier)=0;
+        /**
          * Clears a color texture
          * @param texture Texture to clear
          * @param color Color to clear to
@@ -103,10 +118,6 @@ namespace slag
          * @param filter The filter that handles how drawing resizes is handled
          */
         virtual void blit(Texture* source,Texture::Layout sourceLayout,uint32_t sourceLayer, uint32_t sourceMip,Rectangle sourceArea, Texture* destination, Texture::Layout destinationLayout,uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea,Sampler::Filter filter)=0;
-
-
-
-
 
         /**
          * Sets the drawing area relative to the window, final image will be drawn scaled to the drawing area
