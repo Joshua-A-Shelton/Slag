@@ -25,7 +25,7 @@ protected:
 public:
     IntegrationTests()
     {
-        std::vector<Vertex> tverts = {{{1.f, -1.f, 0.0f},{1,1}},{{ -1.f, -1.f, 0.0f},{0,1}},{{0.f,1.f, 0.0f},{.5,0}}};
+        std::vector<Vertex> tverts = {{{ -1.f, -1.f, 0.0f},{0,1}},{{0.f,1.f, 0.0f},{.5,0}},{{1.f, -1.f, 0.0f},{1,1}}};
         std::vector<uint16_t> tindexes = {0,1,2};
         std::vector<glm::vec3> tnormals = {{0,0,1},{0,0,1},{0,0,1}};
         triangleVerts = std::unique_ptr<Buffer>(Buffer::newBuffer(tverts.data(),tverts.size()*sizeof(Vertex),Buffer::GPU,Buffer::VERTEX_BUFFER));
@@ -43,7 +43,6 @@ TEST_F(IntegrationTests, BasicTriangle)
 
     ShaderModule modules[2] = {ShaderModule(ShaderStageFlags::VERTEX,"resources/shaders/flat.vert.spv"),ShaderModule(ShaderStageFlags::FRAGMENT,"resources/shaders/flat.frag.spv")};
     ShaderProperties props;
-    props.rasterizationState.culling = RasterizationState::NONE;
     FrameBufferDescription description;
     description.addColorTarget(Pixels::R8G8B8A8_UNORM);
     auto shader = std::unique_ptr<Shader>(Shader::newShader(modules,2, nullptr,0,props, nullptr,description));

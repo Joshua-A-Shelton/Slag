@@ -28,7 +28,7 @@ int main()
         description.addColorTarget(Pixels::B8G8R8A8_UNORM);
         auto shader = Shader::newShader(modules,2, nullptr,0,props, nullptr,description);
         
-        float triangleVertices[9];//populate this with the vertexPositions, x,y,z for each of three vertices
+        float triangleVertices[9]={ -1.f, -1.f, 0.0f,  0.f,1.f, 0.0f,  1.f, -1.f, 0.0f};//vertices of triangle
         size_t vertsBufferSizeInBytes = sizeof(float)*9;//the size in bytes triangleVertices takes
         auto vertices = Buffer::newBuffer(triangleVertices,vertsBufferSizeInBytes,Buffer::GPU,Buffer::VERTEX_BUFFER)
         
@@ -94,7 +94,7 @@ int main()
     slag::SlagLib::cleanup();
 }
 ```
-Not nothing, but less than 100 lines of commented (minus windowing code) seems a lot more manageable than the crazy setup for Vulkan!
+Not nothing, but less than 100 lines of commented (minus windowing) code seems a lot more manageable than the crazy setup for Vulkan!
 
 ## Including in your project
 
