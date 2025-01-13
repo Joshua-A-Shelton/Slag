@@ -99,7 +99,7 @@ Not nothing, but less than 100 lines of commented (minus windowing) code seems a
 
 ## Including in your project
 
-SLAG is built with cmake. The easiest way to include SLAG in your project is as follows (requires cmake >= 3.24)
+Slag is built with cmake. The easiest way to include SLAG in your project is as follows (requires cmake >= 3.24)
 
 ```cmake
 #get slag library
@@ -118,7 +118,7 @@ find_package(Slag REQUIRED)
 #link to slag library
 target_link_libraries(YourProject Slag)
 ```
-Start using SLAG by including the library header
+Start using Slag by including the library header
 ```c++
 #include <slag/SlagLib.h>
 ```
