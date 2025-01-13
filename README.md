@@ -1,4 +1,5 @@
 # Slag
+*Slag is under active development. Many features, even core ones, are not implemented, and the API is not yet stable. Use at your own risk!*
 ## Simplified Lightweight Accelerated Graphics
 Graphics are hard. Slag is designed to make it a little more manageable by thinly abstracting over the low level APIs, and providing sane defaults for them. The idea is to provide a level of abstraction somewhere between that of earlier APIs like openGL, and more modern ones like Vulkan. Getting a triangle on screen in modern APIs like Vulkan notoriously take ~1000 lines of code, all without providing good abstractions to then make a real application on top of it. Here's what it looks like in Slag
 
