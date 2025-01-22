@@ -99,7 +99,7 @@ Not nothing, but less than 100 lines of commented (minus windowing) code seems a
 
 ## Including in your project
 
-Slag is built with cmake. The easiest way to include SLAG in your project is as follows (requires cmake >= 3.24)
+Slag is built with cmake. The easiest way to include Slag in your project is as follows (requires cmake >= 3.24)
 
 ```cmake
 #get slag library
