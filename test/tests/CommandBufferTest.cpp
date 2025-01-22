@@ -222,8 +222,8 @@ TEST_F(CommandBufferTests, UpdateMipChain)
     commandBuffer->begin();
     commandBuffer->updateMipChain(texture.get(),0,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,PipelineStageFlags::TRANSFER,PipelineStageFlags::ALL_GRAPHICS);
     commandBuffer->clearColorImage(flatMipped.get(),ClearColor{0,0,0,0},slag::Texture::UNDEFINED,slag::Texture::TRANSFER_DESTINATION,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
-    Rectangle srcArea{.offset{},.extent{100,100}};
-    Rectangle dstArea{.offset{},.extent{100,100}};
+    slag::Rectangle srcArea{.offset{},.extent{100,100}};
+    slag::Rectangle dstArea{.offset{},.extent{100,100}};
     commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,0,srcArea,flatMipped.get(),Texture::TRANSFER_DESTINATION,0,0,dstArea,Sampler::Filter::NEAREST);
     dstArea.offset.x = 100;
     for(uint32_t i=1; i< texture->mipLevels(); i++)
@@ -393,12 +393,12 @@ TEST_F(CommandBufferTests, Blit)
     commandBuffer->begin();
     ImageBarrier barrier{.texture=texture.get(),.baseLayer=0,.layerCount=1,.baseMipLevel=0,.mipCount=0,.oldLayout=Texture::UNDEFINED,.newLayout=Texture::TRANSFER_DESTINATION,.accessBefore=BarrierAccessFlags::TRANSFER_READ|BarrierAccessFlags::TRANSFER_WRITE, .accessAfter=BarrierAccessFlags::TRANSFER_READ|BarrierAccessFlags::TRANSFER_WRITE,.syncBefore=PipelineStageFlags::ALL_COMMANDS,.syncAfter=PipelineStageFlags::ALL_COMMANDS};
     commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
-    commandBuffer->blit(sourceTexture.get(),Texture::TRANSFER_SOURCE,0,0,Rectangle{{0,0},{sourceTexture->width(),sourceTexture->height()}},texture.get(),Texture::TRANSFER_DESTINATION,0,0,Rectangle{{0,0},{10,10}},Sampler::NEAREST);
+    commandBuffer->blit(sourceTexture.get(),Texture::TRANSFER_SOURCE,0,0,slag::Rectangle{{0,0},{sourceTexture->width(),sourceTexture->height()}},texture.get(),Texture::TRANSFER_DESTINATION,0,0,slag::Rectangle{{0,0},{10,10}},Sampler::NEAREST);
     barrier.mipCount=1;
     barrier.baseMipLevel = 0;
     barrier.newLayout = slag::Texture::TRANSFER_SOURCE;
     commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
-    commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,0,Rectangle{{0,0},{10,10}},texture.get(),Texture::TRANSFER_DESTINATION,0,1,Rectangle{{0,0},{5,5}},Sampler::NEAREST);
+    commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,0,slag::Rectangle{{0,0},{10,10}},texture.get(),Texture::TRANSFER_DESTINATION,0,1,slag::Rectangle{{0,0},{5,5}},Sampler::NEAREST);
     barrier.oldLayout = Texture::TRANSFER_DESTINATION;
     barrier.newLayout = Texture::TRANSFER_SOURCE;
     barrier.baseMipLevel = 1;
@@ -439,7 +439,7 @@ TEST_F(CommandBufferTests, BeginRendering)
     ImageBarrier barrier{.texture = texture.get(),.oldLayout=Texture::UNDEFINED,.newLayout=Texture::RENDER_TARGET};
     commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
     Attachment colorAttachment{.texture=texture.get(),.layout=Texture::RENDER_TARGET,.clearOnLoad=false};
-    commandBuffer->beginRendering(&colorAttachment,1, nullptr,Rectangle{{0,0},{texture->width(),texture->height()}});
+    commandBuffer->beginRendering(&colorAttachment,1, nullptr,slag::Rectangle{{0,0},{texture->width(),texture->height()}});
     commandBuffer->endRendering();
     commandBuffer->end();
     SlagLib::graphicsCard()->graphicsQueue()->submit(commandBuffer.get());
@@ -581,7 +581,7 @@ TEST_F(CommandBufferTests, EndRendering)
     ImageBarrier barrier{.texture = texture.get(),.oldLayout=Texture::UNDEFINED,.newLayout=Texture::RENDER_TARGET};
     commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
     Attachment colorAttachment{.texture=texture.get(),.layout=Texture::RENDER_TARGET,.clearOnLoad=false};
-    commandBuffer->beginRendering(&colorAttachment,1, nullptr,Rectangle{{0,0},{texture->width(),texture->height()}});
+    commandBuffer->beginRendering(&colorAttachment,1, nullptr,slag::Rectangle{{0,0},{texture->width(),texture->height()}});
     commandBuffer->endRendering();
     commandBuffer->end();
     SlagLib::graphicsCard()->graphicsQueue()->submit(commandBuffer.get());
@@ -709,7 +709,7 @@ TEST_F(CommandBufferTests, DisallowCompute_blit)
     barrier.newLayout = slag::Texture::TRANSFER_DESTINATION;
     barrier.accessAfter = BarrierAccessFlags::TRANSFER_WRITE;
     commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
-    ASSERT_DEATH(commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,0,Rectangle{{0,0,},{10,10}},texture.get(),Texture::TRANSFER_DESTINATION,0,1,Rectangle{{0,0},{5,5}},Sampler::NEAREST),"");
+    ASSERT_DEATH(commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,0,slag::Rectangle{{0,0,},{10,10}},texture.get(),Texture::TRANSFER_DESTINATION,0,1,slag::Rectangle{{0,0},{5,5}},Sampler::NEAREST),"");
 }
 
 TEST_F(CommandBufferTests, DisallowTransfer_blit)
@@ -731,7 +731,7 @@ TEST_F(CommandBufferTests, DisallowTransfer_blit)
     barrier.newLayout = slag::Texture::GENERAL;
     barrier.accessAfter = BarrierAccessFlags::TRANSFER_WRITE;
     commandBuffer->insertBarriers(&barrier,1, nullptr,0, nullptr,0);
-    ASSERT_DEATH(commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,0,Rectangle{{0,0,},{10,10}},texture.get(),Texture::TRANSFER_DESTINATION,0,1,Rectangle{{0,0},{5,5}},Sampler::NEAREST),"");
+    ASSERT_DEATH(commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,0,slag::Rectangle{{0,0,},{10,10}},texture.get(),Texture::TRANSFER_DESTINATION,0,1,slag::Rectangle{{0,0},{5,5}},Sampler::NEAREST),"");
 }
 
 TEST_F(CommandBufferTests, DisallowCompute_beginRendering)
@@ -748,7 +748,7 @@ TEST_F(CommandBufferTests, DisallowCompute_beginRendering)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::COMPUTE));
     commandBuffer->begin();
     Attachment colorAttachment{.texture=texture.get(),.layout=Texture::RENDER_TARGET,.clearOnLoad=false};
-    ASSERT_DEATH(commandBuffer->beginRendering(&colorAttachment,1, nullptr,Rectangle{{0,0},{texture->width(),texture->height()}}),"");
+    ASSERT_DEATH(commandBuffer->beginRendering(&colorAttachment,1, nullptr,slag::Rectangle{{0,0},{texture->width(),texture->height()}}),"");
 }
 
 TEST_F(CommandBufferTests, DisallowTransfer_beginRendering)
@@ -766,7 +766,7 @@ TEST_F(CommandBufferTests, DisallowTransfer_beginRendering)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::COMPUTE));
     commandBuffer->begin();
     Attachment colorAttachment{.texture=texture.get(),.layout=Texture::RENDER_TARGET,.clearOnLoad=false};
-    ASSERT_DEATH(commandBuffer->beginRendering(&colorAttachment,1, nullptr,Rectangle{{0,0},{texture->width(),texture->height()}}),"");
+    ASSERT_DEATH(commandBuffer->beginRendering(&colorAttachment,1, nullptr,slag::Rectangle{{0,0},{texture->width(),texture->height()}}),"");
 }
 
 TEST_F(CommandBufferTests, DisallowCompute_bindIndexBuffer)

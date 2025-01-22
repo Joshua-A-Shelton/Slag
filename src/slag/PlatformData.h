@@ -1,15 +1,71 @@
 #ifndef SLAG_PLATFORMDATA_H
 #define SLAG_PLATFORMDATA_H
 
+#ifdef SLAG_WINDOWS_BACKEND
+#define NOMINMAX
+#include <windows.h>
+#define SLAG_WINDOWS_HWND HWND
+#define SLAG_WINDOWS_HINSTANCE HINSTANCE
+#else
+#define SLAG_WINDOWS_HWND void*
+#define SLAG_WINDOWS_HINSTANCE void*
+#endif
+
+#ifdef SLAG_X11_BACKEND
+#include <X11/X.h>
+#define SLAG_X11_WINDOW Window
+#define SLAG_X11_Display Display*
+#else
+#define SLAG_X11_WINDOW void*
+#define SLAG_X11_Display void*
+#endif
+
+#ifdef SLAG_WAYLAND_BACKEND
+<wayland-client.h>
+#define SLAG_WAYLAND_SURFACE wl_surface*
+#define SLAG_WAYLAND_DISPLAY wl_display*
+#else
+#define SLAG_WAYLAND_SURFACE void*
+#define SLAG_WAYLAND_DISPLAY void*
+#endif
+
 namespace slag
 {
+    struct WindowsPlatformData
+    {
+        ///Window Handle
+        SLAG_WINDOWS_HWND hwnd{};
+        ///Program instance the window is tied to
+        SLAG_WINDOWS_HINSTANCE hinstance{};
+    };
+    struct X11PlatformData
+    {
+        SLAG_X11_WINDOW window{};
+        SLAG_X11_Display display{};
+    };
+    struct WaylandPlatformData
+    {
+        SLAG_WAYLAND_SURFACE surface{};
+        SLAG_WAYLAND_DISPLAY display{};
+    };
+
+    union PlatformDetails
+    {
+        WindowsPlatformData windows;
+        X11PlatformData x11;
+        WaylandPlatformData wayland;
+    };
     ///Platform specific data required for creating a swapchain
     struct PlatformData
     {
-        ///A window's HWND (Windows) or native window handle (Unix)
-        void* nativeWindowHandle = nullptr;
-        ///A window's HINSTANCE (Windows) or display(Unix)
-        void* nativeDisplayType = nullptr;
+        enum Platform
+        {
+          WINDOWS,
+          X11,
+          WAYLAND
+        };
+        Platform platform = WINDOWS;
+        PlatformDetails data{};
     };
 
 } // slag

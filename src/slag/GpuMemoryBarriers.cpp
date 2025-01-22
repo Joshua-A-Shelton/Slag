@@ -223,6 +223,7 @@ namespace slag
                         BarrierAccessFlags::TRANSFER_READ |
                         BarrierAccessFlags::TRANSFER_WRITE;
         }
+        return BarrierAccessFlags::NONE;
     }
 
     BarrierAccess BarrierAccess::compatibleAccess(Texture* texture)
@@ -390,6 +391,7 @@ namespace slag
                                 Texture::PRESENT
                         };
         }
+        return std::vector<Texture::Layout>();
     }
 
     std::vector<Texture::Layout> BarrierUtils::compatibleLayouts(Texture* texture)

@@ -1,22 +1,8 @@
 #include "gtest/gtest.h"
 #include "slag/SlagLib.h"
-#include <SDL.h>
-#include <SDL_syswm.h>
-#ifdef _WIN32
-#include <windows.h>
-#elif __linux
-
-#endif
+#include "../utils/Window.h"
 
 using namespace slag;
-
-struct SDL_WindowCustomDeleter
-{
-    void operator()(SDL_Window* window)
-    {
-        SDL_DestroyWindow(window);
-    }
-};
 
 class DefaultFrameResources: public slag::FrameResources
 {
@@ -47,28 +33,9 @@ FrameResources* defaultResource(size_t index, Swapchain* from)
 
 TEST(Swapchain, PresentModes)
 {
-    SDL_WindowFlags flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE);
-    if(SlagLib::usingBackEnd() == BackEnd::VULKAN)
-    {
-        flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE | SDL_WINDOW_VULKAN);
-    }
-    auto window = std::unique_ptr<SDL_Window,SDL_WindowCustomDeleter>(SDL_CreateWindow("Hello, Slag",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,500,500,flags));
+    auto window = Window::makeWindow("Swapchain Present Modes",500,500);
+    auto swapchain = Window::makeSwapchain(window.get(),3,Swapchain::PresentMode::MAILBOX,Pixels::Format::B8G8R8A8_UNORM,defaultResource);
 
-
-    slag::PlatformData pd{};
-
-    SDL_SysWMinfo wmInfo;
-    SDL_VERSION(&wmInfo.version);
-    SDL_GetWindowWMInfo(window.get(), &wmInfo);
-#ifdef _WIN32
-    pd.nativeWindowHandle = wmInfo.info.win.window;
-    pd.nativeDisplayType = wmInfo.info.win.hinstance;
-#elif __linux
-    pd.nativeWindowHandle = reinterpret_cast<void*>(wmInfo.info.x11.window);
-    pd.nativeDisplayType = wmInfo.info.x11.display;
-#endif
-
-    auto swapchain = std::unique_ptr<Swapchain>(Swapchain::newSwapchain(pd, 500, 500, 3, Swapchain::PresentMode::MAILBOX, Pixels::Format::B8G8R8A8_UNORM,defaultResource));
     Uint64 totalStart = SDL_GetPerformanceCounter();
     Uint64 last = totalStart;
     for(int i=0; i< 300; i++)
@@ -107,28 +74,9 @@ TEST(Swapchain, PresentModes)
 
 TEST(Swapchain, NextIfReady)
 {
-    SDL_WindowFlags flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE);
-    if(SlagLib::usingBackEnd() == BackEnd::VULKAN)
-    {
-        flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE | SDL_WINDOW_VULKAN);
-    }
-    auto window = std::unique_ptr<SDL_Window,SDL_WindowCustomDeleter>(SDL_CreateWindow("Hello, Slag",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,500,500,flags));
+    auto window = Window::makeWindow("Swapchain Next If Ready",500,500);
+    auto swapchain = Window::makeSwapchain(window.get(),3,Swapchain::PresentMode::MAILBOX,Pixels::Format::B8G8R8A8_UNORM,defaultResource);
 
-
-    slag::PlatformData pd{};
-
-    SDL_SysWMinfo wmInfo;
-    SDL_VERSION(&wmInfo.version);
-    SDL_GetWindowWMInfo(window.get(), &wmInfo);
-#ifdef _WIN32
-    pd.nativeWindowHandle = wmInfo.info.win.window;
-    pd.nativeDisplayType = wmInfo.info.win.hinstance;
-#elif __linux
-    pd.nativeWindowHandle = reinterpret_cast<void*>(wmInfo.info.x11.window);
-    pd.nativeDisplayType = wmInfo.info.x11.display;
-#endif
-
-    auto swapchain = std::unique_ptr<Swapchain>(Swapchain::newSwapchain(pd, 500, 500, 2, Swapchain::PresentMode::FIFO, Pixels::Format::B8G8R8A8_UNORM,defaultResource));
     int frameCount = 0;
     int i=0;
     for(;;)

@@ -21,7 +21,7 @@ namespace slag
     {
     public:
         static std::unique_ptr<SDL_Window,SDL_WindowCustomDeleter> makeWindow(const std::string& name, int width, int height);
-        static std::unique_ptr<Swapchain> makeSwapchain(SDL_Window* window, uint8_t backBuffers, Swapchain::PresentMode presentMode, Pixels::Format format);
+        static std::unique_ptr<Swapchain> makeSwapchain(SDL_Window* window, uint8_t backBuffers, Swapchain::PresentMode presentMode, Pixels::Format format,FrameResources* (*createResourceFunction)(size_t frameIndex, Swapchain* inChain));
     };
 
 } // slag

@@ -75,8 +75,8 @@ TEST(Texture, MipMapped)
     commandBuffer->begin();
     commandBuffer->updateMipChain(texture.get(),0,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,Texture::Layout::TRANSFER_SOURCE,PipelineStageFlags::TRANSFER,PipelineStageFlags::ALL_GRAPHICS);
     commandBuffer->clearColorImage(flatMipped.get(),ClearColor{0,0,0,0},slag::Texture::UNDEFINED,slag::Texture::TRANSFER_DESTINATION,PipelineStageFlags::NONE,PipelineStageFlags::ALL_GRAPHICS);
-    Rectangle srcArea{.offset{},.extent{100,100}};
-    Rectangle dstArea{.offset{},.extent{100,100}};
+    slag::Rectangle srcArea{.offset{},.extent{100,100}};
+    slag::Rectangle dstArea{.offset{},.extent{100,100}};
     commandBuffer->blit(texture.get(),Texture::TRANSFER_SOURCE,0,0,srcArea,flatMipped.get(),Texture::TRANSFER_DESTINATION,0,0,dstArea,Sampler::Filter::NEAREST);
     dstArea.offset.x = 100;
     for(uint32_t i=1; i< texture->mipLevels(); i++)

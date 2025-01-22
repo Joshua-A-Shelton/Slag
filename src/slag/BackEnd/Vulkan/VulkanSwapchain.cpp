@@ -1,7 +1,11 @@
-#ifdef _WIN32
+#ifdef SLAG_WINDOWS_BACKEND
 #define VK_USE_PLATFORM_WIN32_KHR
-#elif __linux
+#endif
+#ifdef SLAG_X11_BACKEND
 #define VK_USE_PLATFORM_XLIB_KHR
+#endif
+#ifdef SLAG_WAYLAND_BACKEND
+#define VK_USE_PLATFORM_WAYLAND_KHR
 #endif
 #include "VulkanSwapchain.h"
 #include "VkBootstrap.h"
@@ -78,26 +82,71 @@ namespace slag
             }
         }
 
+        VkSurfaceKHR createVulkanWindowsSurface(const PlatformData& platformData)
+        {
+#ifdef SLAG_WINDOWS_BACKEND
+            VkSurfaceKHR surface = nullptr;
+            VkWin32SurfaceCreateInfoKHR createWindowsInfo{};
+            createWindowsInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+            createWindowsInfo.hwnd = static_cast<HWND>(platformData.data.windows.hwnd);
+            //kinda messy, but apparently correct?
+            createWindowsInfo.hinstance = static_cast<HINSTANCE>(platformData.data.windows.hinstance);
+            vkCreateWin32SurfaceKHR(VulkanLib::get()->instance(),&createWindowsInfo, nullptr,&surface);
+            return surface;
+#else
+            throw std::runtime_error("Cannot initialize Vulkan Swapchain on Windows backend");
+#endif
+        }
+
+        VkSurfaceKHR createVulkanX11Surface(const PlatformData& platformData)
+        {
+#if SLAG_X11_BACKEND
+            VkSurfaceKHR surface = nullptr;
+
+            VkXlibSurfaceCreateInfoKHR createX11Info{};
+            createX11Info.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
+            createX11Info.window = reinterpret_cast<Window>(platformData.data.x11.window);
+            createX11Info.dpy = static_cast<Display*>(platformData.data.x11.display);
+            vkCreateXlibSurfaceKHR(VulkanLib::get()->instance(),&createX11Info, nullptr,&surface);
+            return surface;
+#else
+            throw std::runtime_error("Cannot initialize Vulkan Swapchain on X11 backend");
+#endif
+        }
+
+        VkSurfaceKHR createVulkanWaylandSurface(const PlatformData& platformData)
+        {
+#ifdef SLAG_WAYLAND_BACKEND
+            VkSurfaceKHR surface = nullptr;
+
+            VkWaylandSurfaceCreateInfoKHR createWaylandInfo{};
+            createWaylandInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
+            createWaylandInfo.display = static_cast<wl_display*>(platformData.data.wayland.display);
+            createWaylandInfo.surface = static_cast<wl_surface*>(platformData.data.wayland.surface);
+            vkCreateWaylandSurfaceKHR(VulkanLib::get()->instance(),&createWaylandInfo, nullptr,&surface);
+            return surface;
+#else
+            throw std::runtime_error("Cannot initialize Vulkan Swapchain on X11 backend");
+#endif
+        }
+
+
+
         VkSurfaceKHR VulkanSwapchain::createNativeSurface(PlatformData platformData)
         {
-            VkSurfaceKHR surface = nullptr;
-#ifdef _WIN32
-            VkWin32SurfaceCreateInfoKHR createInfo{};
-            createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-            createInfo.hwnd = static_cast<HWND>(platformData.nativeWindowHandle);
-            //kinda messy, but apparently correct?
-            createInfo.hinstance = static_cast<HINSTANCE>(platformData.nativeDisplayType);
-            vkCreateWin32SurfaceKHR(VulkanLib::get()->instance(),&createInfo, nullptr,&surface);
-#elif __linux
-            //TODO: include wayland
-            VkXlibSurfaceCreateInfoKHR createInfo{};
-            createInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
-            createInfo.window = reinterpret_cast<Window>(platformData.nativeWindowHandle);
-            createInfo.dpy = static_cast<Display*>(platformData.nativeDisplayType);
-            vkCreateXlibSurfaceKHR(VulkanLib::get()->instance(),&createInfo, nullptr,&surface);
-#endif
-            assert(surface!= nullptr && "Unable to make rendering surface");
-            return surface;
+
+            switch (platformData.platform)
+            {
+                case PlatformData::WINDOWS:
+                    return createVulkanWindowsSurface(platformData);
+                case PlatformData::X11:
+                    return createVulkanX11Surface(platformData);
+                case PlatformData::WAYLAND:
+                    return createVulkanWaylandSurface(platformData);
+                default:
+                    throw std::runtime_error("Cannot initialize Vulkan Swapchain on given backend, must be Windows, X11, or Wayland");
+
+            }
         }
 
         void VulkanSwapchain::rebuild()

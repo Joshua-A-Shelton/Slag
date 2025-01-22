@@ -13,9 +13,11 @@ int main()
     {
         auto window = createWindow(); //whatever is required to create a window in whatever library you choose
         
+        //give data for the swapchain's backing window, in this case a WIN32 window. This will be slightly different depending on platform
         slag::PlatformData platformData{};
-        platformData.nativeWindowHandle = window.handle; //HWND in Windows, X11 window in *nix
-        platformData.nativeDisplayType = window.display; //hinstance in Windows, X11 display in *nix
+        platformData.platform = slag::PlatformData::Platform::WINDOWS;//tell Slag our window is a WIN32 window
+        platformData.data.windows.hwnd = window.hwnd;//provide window handle
+        platformData.data.windows.hinstance = window.hinstance;//provide application hinstance
         
         auto graphicsQueue = slag::SlagLib::graphicsCard()->graphicsQueue();
         auto swapchain = slag::Swapchain::newSwapchain(pd, 500, 500, 2, Swapchain::PresentMode::MAILBOX, Pixels::Format::B8G8R8A8_UNORM,nullptr);
