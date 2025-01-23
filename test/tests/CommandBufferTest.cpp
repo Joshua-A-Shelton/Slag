@@ -619,6 +619,11 @@ TEST_F(CommandBufferTests, FillBuffer)
 
 }
 
+TEST_F(CommandBufferTests, PushConstants)
+{
+    GTEST_FAIL();
+}
+
 TEST_F(CommandBufferTests, ResetQueryPool)
 {
     GTEST_FAIL();

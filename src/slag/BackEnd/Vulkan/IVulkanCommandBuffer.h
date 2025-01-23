@@ -59,7 +59,7 @@ namespace slag
             void endRendering()override;
             //void executeCommands(ICommandBuffer** commands, size_t commandsCount)override;
             void fillBuffer(Buffer* buffer, size_t offset, size_t length, uint32_t data)override;
-            //void pushConstants()override;
+            void pushConstants(Shader* shader,ShaderStages stageFlags, uint32_t offset, uint32_t size, const void* data)override;
             void resetQueryPool(QueryPool* pool, uint32_t firstQuery, uint32_t queryCount)override;
             //void resolve(Texture* source,Texture::Layout sourceLayout,uint32_t sourceLayer, uint32_t sourceMip,Rectangle sourceArea, Texture* destination, Texture::Layout destinationLayout,uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea)override;
 

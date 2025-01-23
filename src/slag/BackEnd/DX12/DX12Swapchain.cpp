@@ -8,11 +8,11 @@ namespace slag
     {
         DX12Swapchain::DX12Swapchain(PlatformData platformData, uint32_t width, uint32_t height, uint8_t backBuffers, Swapchain::PresentMode mode, Pixels::Format format,FrameResources* (*createResourceFunction)(size_t frameIndex, Swapchain* inChain)):Swapchain(createResourceFunction)
         {
-            if(platformData.platform!= PlatformData::Platform::WINDOWS)
+            if(platformData.platform!= PlatformData::Platform::WIN_32)
             {
                 throw std::runtime_error("Cannot initialize DX12 Swapchain on any backend except Windows");
             }
-            _surface = (HWND)platformData.data.windows.hwnd;
+            _surface = (HWND)platformData.data.win32.hwnd;
             _width = width;
             _height = height;
             _backBuffers = backBuffers;

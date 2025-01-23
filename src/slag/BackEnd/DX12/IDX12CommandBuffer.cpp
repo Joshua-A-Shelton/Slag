@@ -372,6 +372,11 @@ namespace slag
             _buffer->WriteBufferImmediate(rdata.size(),rdata.data(), nullptr);
         }
 
+        void IDX12CommandBuffer::pushConstants(Shader* shader, ShaderStages stageFlags, uint32_t offset, uint32_t size, const void* data)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::pushConstants is not implemented");
+        }
+
         void IDX12CommandBuffer::resetQueryPool(QueryPool* pool, uint32_t firstQuery, uint32_t queryCount)
         {
             throw std::runtime_error("IDX12CommandBuffer::resetQueryPool is not implemented");

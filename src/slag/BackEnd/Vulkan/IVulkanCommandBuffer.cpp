@@ -532,6 +532,12 @@ namespace slag
             vkCmdFillBuffer(_buffer,buf->underlyingBuffer(),offset,length,data);
         }
 
+        void IVulkanCommandBuffer::pushConstants(Shader* shader, ShaderStages stageFlags, uint32_t offset, uint32_t size, const void* data)
+        {
+            auto vshader = static_cast<VulkanShader*>(shader);
+            vkCmdPushConstants(_buffer,vshader->layout(),std::bit_cast<VkShaderStageFlags>(stageFlags),offset,size,data);
+        }
+
         void IVulkanCommandBuffer::resetQueryPool(QueryPool* pool, uint32_t firstQuery, uint32_t queryCount)
         {
             throw std::runtime_error("IVulkanCommandBuffer::resetQueryPool is not implemented");

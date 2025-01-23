@@ -180,7 +180,7 @@ namespace slag
          * @param data
          */
         virtual void fillBuffer(Buffer* buffer, size_t offset, size_t length, uint32_t data)=0;
-        //virtual void pushConstants();
+        virtual void pushConstants(Shader* shader,ShaderStages stageFlags, uint32_t offset, uint32_t size, const void* data)=0;
         virtual void resetQueryPool(QueryPool* pool, uint32_t firstQuery, uint32_t queryCount)=0;
         //virtual void resolve(Texture* source,Texture::Layout sourceLayout,uint32_t sourceLayer, uint32_t sourceMip, Texture* destination, Texture::Layout destinationLayout,uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea)=0;
 

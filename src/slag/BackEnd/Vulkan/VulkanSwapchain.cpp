@@ -137,7 +137,7 @@ namespace slag
 
             switch (platformData.platform)
             {
-                case PlatformData::WIN32:
+                case PlatformData::WIN_32:
                     return createVulkanWindowsSurface(platformData);
                 case PlatformData::X11:
                     return createVulkanX11Surface(platformData);
