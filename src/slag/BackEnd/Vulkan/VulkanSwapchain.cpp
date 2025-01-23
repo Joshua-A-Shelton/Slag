@@ -1,4 +1,4 @@
-#ifdef SLAG_WINDOWS_BACKEND
+#ifdef SLAG_WIN32_BACKEND
 #define VK_USE_PLATFORM_WIN32_KHR
 #endif
 #ifdef SLAG_X11_BACKEND
@@ -84,7 +84,7 @@ namespace slag
 
         VkSurfaceKHR createVulkanWindowsSurface(const PlatformData& platformData)
         {
-#ifdef SLAG_WINDOWS_BACKEND
+#ifdef SLAG_WIN32_BACKEND
             VkSurfaceKHR surface = nullptr;
             VkWin32SurfaceCreateInfoKHR createWindowsInfo{};
             createWindowsInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
