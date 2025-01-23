@@ -12,16 +12,16 @@
 #endif
 
 #ifdef SLAG_X11_BACKEND
-#include <X11/X.h>
+#include <X11/Xlib.h>
 #define SLAG_X11_WINDOW Window
-#define SLAG_X11_Display Display*
+#define SLAG_X11_DISPLAY Display*
 #else
 #define SLAG_X11_WINDOW void*
-#define SLAG_X11_Display void*
+#define SLAG_X11_DISPLAY void*
 #endif
 
 #ifdef SLAG_WAYLAND_BACKEND
-<wayland-client.h>
+#include <wayland-client.h>
 #define SLAG_WAYLAND_SURFACE wl_surface*
 #define SLAG_WAYLAND_DISPLAY wl_display*
 #else
@@ -41,7 +41,7 @@ namespace slag
     struct X11PlatformData
     {
         SLAG_X11_WINDOW window{};
-        SLAG_X11_Display display{};
+        SLAG_X11_DISPLAY display{};
     };
     struct WaylandPlatformData
     {

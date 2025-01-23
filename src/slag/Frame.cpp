@@ -1,5 +1,6 @@
+#include <algorithm>
 #include "Frame.h"
-#include <xutility>
+
 namespace slag
 {
     Frame::Frame(FrameResources* resources)

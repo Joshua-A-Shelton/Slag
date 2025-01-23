@@ -195,9 +195,9 @@ if(SLAG_VULKAN_BACKEND)
     add_subdirectory(third-party/vma)
     add_subdirectory(third-party/vk-bootstrap)
 
-    SET(SPIRV_REFLECT_EXECUTABLE OFF)
-    SET(SPIRV_REFLECT_EXAMPLES OFF)
-    SET(SPIRV_REFLECT_STATIC_LIB ON)
+    OPTION(SPIRV_REFLECT_EXECUTABLE "build spirv reflect executable" OFF)
+    OPTION(SPIRV_REFLECT_EXAMPLES "build spirv reflect examples" OFF)
+    OPTION(SPIRV_REFLECT_STATIC_LIB "build spirv reflect library" ON)
     add_subdirectory(third-party/spirv-reflect)
 
     target_include_directories(Slag PRIVATE ${Vulkan_INCLUDE_DIR} third-party/spirv-reflect)
