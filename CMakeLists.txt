@@ -19,7 +19,19 @@ if(NOT WIN32)
     set(SLAG_DX12_BACKEND OFF)
     set(SLAG_WINDOWS_BACKEND OFF)
 endif()
-
+#enable backend macros
+if(SLAG_WIN32_BACKEND)
+    add_definitions(-DSLAG_WIN32_BACKEND=1)
+    message("added win32 backend")
+endif()
+if(SLAG_X11_BACKEND)
+    add_definitions(-DSLAG_X11_BACKEND=1)
+    message("added x11 backend")
+endif()
+if(SLAG_WAYLAND_BACKEND)
+    add_definitions(-DSLAG_WAYLAND_BACKEND=1)
+    message("added wayland backend")
+endif()
 
 find_package(Boost REQUIRED)
 
@@ -172,20 +184,6 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
 )
 target_link_libraries(Slag ${Boost_LIBRARIES})
 target_include_directories(Slag PRIVATE ${Boost_INCLUDE_DIRS} third-party/stb)
-
-#enable backend macros
-if(SLAG_WIN32_BACKEND)
-    target_compile_definitions(Slag PUBLIC -DSLAG_WIN32_BACKEND=1)
-    message("added win32 backend")
-endif()
-if(SLAG_X11_BACKEND)
-    target_compile_definitions(Slag PUBLIC -DSLAG_X11_BACKEND=1)
-    message("added x11 backend")
-endif()
-if(SLAG_WAYLAND_BACKEND)
-    target_compile_definitions(Slag PUBLIC -DSLAG_WAYLAND_BACKEND=1)
-    message("added wayland backend")
-endif()
 
 #needed for boost uuid
 if(WIN32)
