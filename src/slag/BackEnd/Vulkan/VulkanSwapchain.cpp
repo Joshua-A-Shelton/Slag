@@ -88,9 +88,9 @@ namespace slag
             VkSurfaceKHR surface = nullptr;
             VkWin32SurfaceCreateInfoKHR createWindowsInfo{};
             createWindowsInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-            createWindowsInfo.hwnd = static_cast<HWND>(platformData.data.windows.hwnd);
+            createWindowsInfo.hwnd = static_cast<HWND>(platformData.data.win32.hwnd);
             //kinda messy, but apparently correct?
-            createWindowsInfo.hinstance = static_cast<HINSTANCE>(platformData.data.windows.hinstance);
+            createWindowsInfo.hinstance = static_cast<HINSTANCE>(platformData.data.win32.hinstance);
             vkCreateWin32SurfaceKHR(VulkanLib::get()->instance(),&createWindowsInfo, nullptr,&surface);
             return surface;
 #else
@@ -137,7 +137,7 @@ namespace slag
 
             switch (platformData.platform)
             {
-                case PlatformData::WINDOWS:
+                case PlatformData::WIN32:
                     return createVulkanWindowsSurface(platformData);
                 case PlatformData::X11:
                     return createVulkanX11Surface(platformData);

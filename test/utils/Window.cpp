@@ -19,9 +19,9 @@ namespace slag
         SDL_VERSION(&wmInfo.version);
         SDL_GetWindowWMInfo(window, &wmInfo);
 #ifdef _WIN32
-        pd.platform = PlatformData::WINDOWS;
-        pd.data.windows.hwnd = wmInfo.info.win.window;
-        pd.data.windows.hinstance = wmInfo.info.win.hinstance;
+        pd.platform = PlatformData::WIN32;
+        pd.data.win32.hwnd = wmInfo.info.win.window;
+        pd.data.win32.hinstance = wmInfo.info.win.hinstance;
 #elif __linux
         pd.platform = PlatformData::X11;
         pd.data.x11.window = wmInfo.info.x11.window;

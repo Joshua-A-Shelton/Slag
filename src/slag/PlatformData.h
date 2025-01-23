@@ -1,7 +1,7 @@
 #ifndef SLAG_PLATFORMDATA_H
 #define SLAG_PLATFORMDATA_H
 
-#ifdef SLAG_WINDOWS_BACKEND
+#ifdef SLAG_WIN32_BACKEND
 #define NOMINMAX
 #include <windows.h>
 #define SLAG_WINDOWS_HWND HWND
@@ -31,7 +31,7 @@
 
 namespace slag
 {
-    struct WindowsPlatformData
+    struct Win32PlatformData
     {
         ///Window Handle
         SLAG_WINDOWS_HWND hwnd{};
@@ -51,7 +51,7 @@ namespace slag
 
     union PlatformDetails
     {
-        WindowsPlatformData windows;
+        Win32PlatformData win32;
         X11PlatformData x11;
         WaylandPlatformData wayland;
     };
@@ -60,11 +60,11 @@ namespace slag
     {
         enum Platform
         {
-          WINDOWS,
+          WIN32,
           X11,
           WAYLAND
         };
-        Platform platform = WINDOWS;
+        Platform platform = WIN32;
         PlatformDetails data{};
     };
 
