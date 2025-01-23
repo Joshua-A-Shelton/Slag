@@ -60,11 +60,11 @@ namespace slag
     {
         enum Platform
         {
-          WIN32,
+          WIN_32,
           X11,
           WAYLAND
         };
-        Platform platform = WIN32;
+        Platform platform = WIN_32;
         PlatformDetails data{};
     };
 

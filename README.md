@@ -15,7 +15,7 @@ int main()
         
         //give data for the swapchain's backing window, in this case a WIN32 window. This will be slightly different depending on platform
         slag::PlatformData platformData{};
-        platformData.platform = slag::PlatformData::Platform::WIN32;//tell Slag our window is a WIN32 window
+        platformData.platform = slag::PlatformData::Platform::WIN_32;//tell Slag our window is a WIN32 window
         platformData.data.win32.hwnd = window.hwnd;//provide window handle
         platformData.data.win32.hinstance = window.hinstance;//provide application hinstance
         
