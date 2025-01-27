@@ -341,7 +341,7 @@ namespace slag
 
             if(vkCreatePipelineLayout(static_cast<VkDevice>(VulkanLib::card()->device()),&pipelineLayoutInfo, nullptr,&_layout)!= VK_SUCCESS)
             {
-                throw std::runtime_error("Unable to create shader layout");
+                throw std::runtime_error("Unable to create shader pipeline layout");
             }
 
             //TODO: most of the interesting stuff is in here.... I may need to enable more
@@ -398,7 +398,7 @@ namespace slag
                 vkDestroyPipelineLayout(VulkanLib::card()->device(),static_cast<VkPipelineLayout>(pipelineLayout),nullptr);
             };
 
-            assert(result == VK_SUCCESS && "Unable to create shader");
+            assert(result == VK_SUCCESS && "Unable to create shader pipeline");
 
         }
 
