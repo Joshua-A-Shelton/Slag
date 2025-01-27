@@ -180,6 +180,18 @@ namespace slag
          * @return
          */
         static Texture* newTexture(Pixels::Format dataFormat, Texture::Type type, uint32_t width, uint32_t height, uint32_t mipLevels, uint32_t layers, uint8_t sampleCount, TextureUsage usage);
+        /**
+         * Creates a texture directly from pixel data
+         * @param pixelData Raw pixel data array
+         * @param dataFormat Format that pixel data is in
+         * @param width Width of the final texture (must match pixelData)
+         * @param height Height of the final texture (must match pixelData)
+         * @param mipLevels Number of mip levels the final texture should have
+         * @param usage Flags that describe how the texture will be used
+         * @param initializedLayout The layout the texture will be in after it loads
+         * @return
+         */
+        static Texture* newTexture(void* pixelData, Pixels::Format dataFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage usage, Layout initializedLayout);
     };
 
 } // slag

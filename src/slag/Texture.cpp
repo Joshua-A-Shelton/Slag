@@ -44,4 +44,10 @@ namespace slag
         return lib::BackEndLib::get()->newTexture(dataFormat,type,width,height,mipLevels,layers,sampleCount,usage);
     }
 
+    Texture* Texture::newTexture(void* pixelData, Pixels::Format dataFormat, uint32_t width, uint32_t height, uint32_t mipLevels, TextureUsage usage, Texture::Layout initializedLayout)
+    {
+        return lib::BackEndLib::get()->newTexture((void**) (&pixelData), 1, width * height * Pixels::pixelBytes(dataFormat), dataFormat, Texture::Type::TEXTURE_2D, width, height, mipLevels, usage,
+                                                 initializedLayout);
+    }
+
 } // slag
