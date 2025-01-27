@@ -478,7 +478,7 @@ TEST_F(CommandBufferTests, BindGraphicsShader)
 
     ShaderModule modules[2]={ShaderModule(ShaderStageFlags::VERTEX,"resources/basic.vert.spv"),ShaderModule(ShaderStageFlags::FRAGMENT,"resources/basic.frag.spv")};
     ShaderProperties shaderProps;
-    auto shader = std::unique_ptr<Shader>(Shader::newShader(modules,2, nullptr,0,shaderProps, nullptr,description));
+    auto shader = std::unique_ptr<ShaderPipeline>(ShaderPipeline::newShaderPipeline(modules, 2, nullptr, 0, shaderProps, nullptr, description));
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::GRAPHICS));
     commandBuffer->begin();
     commandBuffer->bindGraphicsShader(shader.get());
@@ -821,7 +821,7 @@ TEST_F(CommandBufferTests, DisallowGraphics_bindGraphicsShader)
 
     ShaderModule modules[2]={ShaderModule(ShaderStageFlags::VERTEX,"resources/basic.vert.spv"),ShaderModule(ShaderStageFlags::FRAGMENT,"resources/basic.frag.spv")};
     ShaderProperties shaderProps;
-    auto shader = std::unique_ptr<Shader>(Shader::newShader(modules,2, nullptr,0,shaderProps, nullptr,description));
+    auto shader = std::unique_ptr<ShaderPipeline>(ShaderPipeline::newShaderPipeline(modules, 2, nullptr, 0, shaderProps, nullptr, description));
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::COMPUTE));
     commandBuffer->begin();
     ASSERT_DEATH(commandBuffer->bindGraphicsShader(shader.get()),"");
@@ -843,7 +843,7 @@ TEST_F(CommandBufferTests, DisallowTransfer_bindGraphicsShader)
 
     ShaderModule modules[2]={ShaderModule(ShaderStageFlags::VERTEX,"resources/basic.vert.spv"),ShaderModule(ShaderStageFlags::FRAGMENT,"resources/basic.frag.spv")};
     ShaderProperties shaderProps;
-    auto shader = std::unique_ptr<Shader>(Shader::newShader(modules,2, nullptr,0,shaderProps, nullptr,description));
+    auto shader = std::unique_ptr<ShaderPipeline>(ShaderPipeline::newShaderPipeline(modules, 2, nullptr, 0, shaderProps, nullptr, description));
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GpuQueue::TRANSFER));
     commandBuffer->begin();
     ASSERT_DEATH(commandBuffer->bindGraphicsShader(shader.get()),"");

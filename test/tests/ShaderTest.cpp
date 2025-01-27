@@ -21,8 +21,10 @@ TEST(Shader, VertexDescription)
     FrameBufferDescription frameBufferDescription;
     frameBufferDescription.addColorTarget(Pixels::R8G8B8A8_UNORM);
     frameBufferDescription.setDepthTarget(Pixels::D32_FLOAT);
-    std::unique_ptr<Shader> basicShader = std::unique_ptr<Shader>(Shader::newShader(modules.data(),modules.size(), nullptr,0,properties,&vertexDescription,frameBufferDescription));
-    std::unique_ptr<Shader> reflectedShader = std::unique_ptr<Shader>(Shader::newShader(modules.data(),modules.size(), nullptr,0,properties, nullptr,frameBufferDescription));
+    std::unique_ptr<ShaderPipeline> basicShader = std::unique_ptr<ShaderPipeline>(
+            ShaderPipeline::newShaderPipeline(modules.data(), modules.size(), nullptr, 0, properties, &vertexDescription, frameBufferDescription));
+    std::unique_ptr<ShaderPipeline> reflectedShader = std::unique_ptr<ShaderPipeline>(
+            ShaderPipeline::newShaderPipeline(modules.data(), modules.size(), nullptr, 0, properties, nullptr, frameBufferDescription));
 
     //actually test something
     GTEST_FAIL();

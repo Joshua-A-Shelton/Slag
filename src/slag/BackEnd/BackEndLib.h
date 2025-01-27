@@ -32,7 +32,7 @@ namespace slag
             virtual Sampler* newSampler(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, Sampler::AddressMode u, Sampler::AddressMode v, Sampler::AddressMode w, float mipLODBias, bool enableAnisotrophy, uint8_t maxAnisotrophy,Operations::ComparisonFunction comparisonFunction, Color borderColor, float minLOD, float maxLOD)=0;
             //Shaders
             virtual DescriptorGroup* newDescriptorGroup(Descriptor* descriptors, size_t descriptorCount)=0;
-            virtual Shader* newShader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)=0;
+            virtual ShaderPipeline* newShaderPipeline(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)=0;
             //Descriptor Pools
             virtual DescriptorPool* newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)=0;
             //Descriptor Bundles

@@ -37,11 +37,11 @@ namespace slag
 
             void beginQuery(QueryPool* queryPool, uint32_t query, bool precise)override;
             void beginRendering(Attachment* colorAttachments, size_t colorAttachmentCount,Attachment* depthAttachment,Rectangle bounds)override;
-            void bindGraphicsDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)override;
-            void bindComputeDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)override;
+            void bindGraphicsDescriptorBundle(ShaderPipeline* shader, uint32_t index, DescriptorBundle& bundle)override;
+            void bindComputeDescriptorBundle(ShaderPipeline* shader, uint32_t index, DescriptorBundle& bundle)override;
             void bindIndexBuffer(Buffer* buffer,Buffer::IndexSize indexSize, size_t offset)override;
-            void bindGraphicsShader(Shader* shader)override;
-            void bindComputeShader(Shader* shader)override;
+            void bindGraphicsShader(ShaderPipeline* shader)override;
+            void bindComputeShader(ShaderPipeline* shader)override;
             void bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, size_t* offsets, size_t* sizes, size_t* strides, size_t bindingCount)override;
             //void clearAttachments(Attachment* attachments, size_t attachmentCount)override;
             void clearDepthStencilImage(Texture* texture, ClearDepthStencil clear, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore, PipelineStages syncAfter)override;
@@ -60,7 +60,7 @@ namespace slag
             void endRendering()override;
             //void executeCommands(ICommandBuffer** commands, size_t commandsCount)override;
             void fillBuffer(Buffer* buffer, size_t offset, size_t length, uint32_t data)override;
-            void pushConstants(Shader* shader,ShaderStages stageFlags, uint32_t offset, uint32_t size, const void* data)override;
+            void pushConstants(ShaderPipeline* shader, ShaderStages stageFlags, uint32_t offset, uint32_t size, const void* data)override;
             void resetQueryPool(QueryPool* pool, uint32_t firstQuery, uint32_t queryCount)override;
             //void resolve(Texture* source,Texture::Layout sourceLayout,uint32_t sourceLayer, uint32_t sourceMip,Rectangle sourceArea, Texture* destination, Texture::Layout destinationLayout,uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea)override;
 

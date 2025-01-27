@@ -45,7 +45,7 @@ TEST_F(IntegrationTests, BasicTriangle)
     ShaderProperties props;
     FrameBufferDescription description;
     description.addColorTarget(Pixels::R8G8B8A8_UNORM);
-    auto shader = std::unique_ptr<Shader>(Shader::newShader(modules,2, nullptr,0,props, nullptr,description));
+    auto shader = std::unique_ptr<ShaderPipeline>(ShaderPipeline::newShaderPipeline(modules, 2, nullptr, 0, props, nullptr, description));
     auto texture = std::unique_ptr<Texture>(Texture::newTexture("resources/test-img.png",Pixels::R8G8B8A8_UNORM,1,TextureUsageFlags::SAMPLED_IMAGE,Texture::SHADER_RESOURCE));
     auto backBuffer = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UNORM,slag::Texture::TEXTURE_2D,500,500,1,1,1,TextureUsageFlags::RENDER_TARGET_ATTACHMENT));
     SamplerBuilder sb{};

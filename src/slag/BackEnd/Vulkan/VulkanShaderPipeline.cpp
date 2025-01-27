@@ -1,4 +1,4 @@
-#include "VulkanShader.h"
+#include "VulkanShaderPipeline.h"
 #include "VulkanLib.h"
 #include <sstream>
 #include <spirv_reflect.h>
@@ -45,7 +45,7 @@ namespace slag
             }
         };
 
-        VulkanShader::VulkanShader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, const ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription, bool destroyImmediately): resources::Resource(destroyImmediately)
+        VulkanShaderPipeline::VulkanShaderPipeline(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, const ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
             std::vector<VulkanShaderData> shaderStageData;
             std::vector<VkPipelineShaderStageCreateInfo> shaderStages(moduleCount,VkPipelineShaderStageCreateInfo{});
@@ -402,7 +402,7 @@ namespace slag
 
         }
 
-        VulkanShader::~VulkanShader()
+        VulkanShaderPipeline::~VulkanShaderPipeline()
         {
             if(_layout)
             {
@@ -410,18 +410,18 @@ namespace slag
             }
         }
 
-        VulkanShader::VulkanShader(VulkanShader&& from): resources::Resource(from._destroyImmediately)
+        VulkanShaderPipeline::VulkanShaderPipeline(VulkanShaderPipeline&& from): resources::Resource(from._destroyImmediately)
         {
             move(std::move(from));
         }
 
-        VulkanShader& VulkanShader::operator=(VulkanShader&& from)
+        VulkanShaderPipeline& VulkanShaderPipeline::operator=(VulkanShaderPipeline&& from)
         {
             move(std::move(from));
             return *this;
         }
 
-        void VulkanShader::move(VulkanShader&& from)
+        void VulkanShaderPipeline::move(VulkanShaderPipeline&& from)
         {
             resources::Resource::move(from);
             _descriptorGroups.swap(from._descriptorGroups);
@@ -430,37 +430,37 @@ namespace slag
             std::swap(_layout,from._layout);
         }
 
-        size_t VulkanShader::descriptorGroupCount()
+        size_t VulkanShaderPipeline::descriptorGroupCount()
         {
             return _descriptorGroups.size();
         }
 
-        DescriptorGroup* VulkanShader::descriptorGroup(size_t index)
+        DescriptorGroup* VulkanShaderPipeline::descriptorGroup(size_t index)
         {
             return &_descriptorGroups.at(index);
         }
 
-        DescriptorGroup* VulkanShader::operator[](size_t index)
+        DescriptorGroup* VulkanShaderPipeline::operator[](size_t index)
         {
             return &_descriptorGroups[index];
         }
 
-        size_t VulkanShader::pushConstantRangeCount()
+        size_t VulkanShaderPipeline::pushConstantRangeCount()
         {
             return _pushConstantRanges.size();
         }
 
-        PushConstantRange VulkanShader::pushConstantRange(size_t index)
+        PushConstantRange VulkanShaderPipeline::pushConstantRange(size_t index)
         {
             return _pushConstantRanges[index];
         }
 
-        VkPipeline VulkanShader::pipeline() const
+        VkPipeline VulkanShaderPipeline::pipeline() const
         {
             return _pipeline;
         }
 
-        VkPipelineLayout VulkanShader::layout() const
+        VkPipelineLayout VulkanShaderPipeline::layout() const
         {
             return _layout;
         }

@@ -29,7 +29,7 @@ int main()
         
         FrameBufferDescription description;
         description.addColorTarget(Pixels::B8G8R8A8_UNORM);
-        auto shader = Shader::newShader(modules,2, nullptr,0,props, nullptr,description);
+        auto shader = Shader::newShaderPipeline(modules,2, nullptr,0,props, nullptr,description);
         
         float triangleVertices[9]={ -1.f, -1.f, 0.0f,  0.f,1.f, 0.0f,  1.f, -1.f, 0.0f};//vertices of triangle
         size_t vertsBufferSizeInBytes = sizeof(float)*9;//the size in bytes triangleVertices takes

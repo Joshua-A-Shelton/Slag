@@ -243,13 +243,13 @@ namespace slag
             throw std::runtime_error("IDX12CommandBuffer::beginRendering is not implemented");
         }
 
-        void IDX12CommandBuffer::bindGraphicsDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)
+        void IDX12CommandBuffer::bindGraphicsDescriptorBundle(ShaderPipeline* shader, uint32_t index, DescriptorBundle& bundle)
         {
             assert(_commandType == GpuQueue::GRAPHICS && "bindIndexBuffer is a graphics queue only operation");
             _buffer->SetGraphicsRootDescriptorTable(index,std::bit_cast<D3D12_GPU_DESCRIPTOR_HANDLE>(bundle.gpuHandle()));
         }
 
-        void IDX12CommandBuffer::bindComputeDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)
+        void IDX12CommandBuffer::bindComputeDescriptorBundle(ShaderPipeline* shader, uint32_t index, DescriptorBundle& bundle)
         {
             assert(_commandType != GpuQueue::TRANSFER && "bindIndexBuffer is a graphics and transfer queue only operation");
             _buffer->SetComputeRootDescriptorTable(index,std::bit_cast<D3D12_GPU_DESCRIPTOR_HANDLE>(bundle.gpuHandle()));
@@ -268,12 +268,12 @@ namespace slag
             _buffer->IASetIndexBuffer(&view);
         }
 
-        void IDX12CommandBuffer::bindGraphicsShader(Shader* shader)
+        void IDX12CommandBuffer::bindGraphicsShader(ShaderPipeline* shader)
         {
             throw std::runtime_error("IDX12CommandBuffer::bindGraphicsShader is not implemented");
         }
 
-        void IDX12CommandBuffer::bindComputeShader(Shader* shader)
+        void IDX12CommandBuffer::bindComputeShader(ShaderPipeline* shader)
         {
             throw std::runtime_error("IDX12CommandBuffer::bindComputeShader is not implemented");
         }
@@ -372,7 +372,7 @@ namespace slag
             _buffer->WriteBufferImmediate(rdata.size(),rdata.data(), nullptr);
         }
 
-        void IDX12CommandBuffer::pushConstants(Shader* shader, ShaderStages stageFlags, uint32_t offset, uint32_t size, const void* data)
+        void IDX12CommandBuffer::pushConstants(ShaderPipeline* shader, ShaderStages stageFlags, uint32_t offset, uint32_t size, const void* data)
         {
             throw std::runtime_error("IDX12CommandBuffer::pushConstants is not implemented");
         }

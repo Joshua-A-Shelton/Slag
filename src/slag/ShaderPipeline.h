@@ -1,5 +1,5 @@
-#ifndef SLAG_SHADER_H
-#define SLAG_SHADER_H
+#ifndef SLAG_SHADERPIPELINE_H
+#define SLAG_SHADERPIPELINE_H
 
 #define SHADER_STAGE_DEFINTITIONS(DEFINITION) \
 DEFINITION(VERTEX,VK_SHADER_STAGE_VERTEX_BIT,D3D12_SHVER_VERTEX_SHADER) \
@@ -110,10 +110,10 @@ namespace slag
     };
 
     ///Program run on the GPU run highly in parallel
-    class Shader
+    class ShaderPipeline
     {
     public:
-        virtual ~Shader()=default;
+        virtual ~ShaderPipeline()=default;
         ///Number of descriptor groups this shader has
         virtual size_t descriptorGroupCount()=0;
         ///Retrieve descriptor group at index
@@ -135,9 +135,9 @@ namespace slag
          * @param frameBufferDescription Description of the Render targets this shader will render to
          * @return
          */
-        static Shader* newShader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription);
+        static ShaderPipeline* newShaderPipeline(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription);
     };
 
 } // slag
 
-#endif //SLAG_SHADER_H
+#endif //SLAG_SHADERPIPELINE_H

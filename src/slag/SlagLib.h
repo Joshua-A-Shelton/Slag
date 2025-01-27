@@ -21,7 +21,7 @@
 #include "Rectangle.h"
 #include "Sampler.h"
 #include "Semaphore.h"
-#include "Shader.h"
+#include "ShaderPipeline.h"
 #include "ShaderProperties.h"
 #include "Swapchain.h"
 #include "Texture.h"

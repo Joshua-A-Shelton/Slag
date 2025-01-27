@@ -3,7 +3,7 @@
 #include "VulkanLib.h"
 #include "VulkanTexture.h"
 #include "VulkanBuffer.h"
-#include "VulkanShader.h"
+#include "VulkanShaderPipeline.h"
 
 namespace slag
 {
@@ -358,17 +358,17 @@ namespace slag
             vkCmdBeginRendering(_buffer,&render_info);
         }
 
-        void IVulkanCommandBuffer::bindGraphicsDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)
+        void IVulkanCommandBuffer::bindGraphicsDescriptorBundle(ShaderPipeline* shader, uint32_t index, DescriptorBundle& bundle)
         {
-            auto s = static_cast<VulkanShader*>(shader);
+            auto s = static_cast<VulkanShaderPipeline*>(shader);
             auto h = bundle.gpuHandle();
             auto handle = std::bit_cast<VkDescriptorSet>(h);
             vkCmdBindDescriptorSets(_buffer,VK_PIPELINE_BIND_POINT_GRAPHICS,s->layout(),index,1,&handle,0, nullptr);
         }
 
-        void IVulkanCommandBuffer::bindComputeDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)
+        void IVulkanCommandBuffer::bindComputeDescriptorBundle(ShaderPipeline* shader, uint32_t index, DescriptorBundle& bundle)
         {
-            auto s = static_cast<VulkanShader*>(shader);
+            auto s = static_cast<VulkanShaderPipeline*>(shader);
             auto h = bundle.gpuHandle();
             auto handle = std::bit_cast<VkDescriptorSet>(h);
             vkCmdBindDescriptorSets(_buffer,VK_PIPELINE_BIND_POINT_COMPUTE,s->layout(),index,1,&handle,0, nullptr);
@@ -383,19 +383,19 @@ namespace slag
             vkCmdBindIndexBuffer(_buffer,buf->underlyingBuffer(),offset,VulkanLib::indexType(indexSize));
         }
 
-        void IVulkanCommandBuffer::bindGraphicsShader(Shader* shader)
+        void IVulkanCommandBuffer::bindGraphicsShader(ShaderPipeline* shader)
         {
             assert(commandType() == GpuQueue::GRAPHICS && "bindGraphicsShader is a graphics queue only operation");
 
-            auto pipeLine = static_cast<VulkanShader*>(shader);
+            auto pipeLine = static_cast<VulkanShaderPipeline*>(shader);
             vkCmdBindPipeline(_buffer,VK_PIPELINE_BIND_POINT_GRAPHICS,pipeLine->pipeline());
         }
 
-        void IVulkanCommandBuffer::bindComputeShader(Shader* shader)
+        void IVulkanCommandBuffer::bindComputeShader(ShaderPipeline* shader)
         {
             assert(commandType() != GpuQueue::TRANSFER && "bindComputeShader is a graphics/compute queue only operation");
 
-            auto pipeLine = static_cast<VulkanShader*>(shader);
+            auto pipeLine = static_cast<VulkanShaderPipeline*>(shader);
             vkCmdBindPipeline(_buffer,VK_PIPELINE_BIND_POINT_COMPUTE,pipeLine->pipeline());
         }
 
@@ -532,9 +532,9 @@ namespace slag
             vkCmdFillBuffer(_buffer,buf->underlyingBuffer(),offset,length,data);
         }
 
-        void IVulkanCommandBuffer::pushConstants(Shader* shader, ShaderStages stageFlags, uint32_t offset, uint32_t size, const void* data)
+        void IVulkanCommandBuffer::pushConstants(ShaderPipeline* shader, ShaderStages stageFlags, uint32_t offset, uint32_t size, const void* data)
         {
-            auto vshader = static_cast<VulkanShader*>(shader);
+            auto vshader = static_cast<VulkanShaderPipeline*>(shader);
             vkCmdPushConstants(_buffer,vshader->layout(),std::bit_cast<VkShaderStageFlags>(stageFlags),offset,size,data);
         }
 

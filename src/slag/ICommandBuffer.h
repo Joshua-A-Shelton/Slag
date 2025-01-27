@@ -150,11 +150,11 @@ namespace slag
         //TODO: Finish documenting command buffer methods
         virtual void beginQuery(QueryPool* queryPool, uint32_t query, bool precise)=0;
         virtual void beginRendering(Attachment* colorAttachments, size_t colorAttachmentCount,Attachment* depthAttachment,Rectangle bounds)=0;
-        virtual void bindGraphicsDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)=0;
-        virtual void bindComputeDescriptorBundle(Shader* shader, uint32_t index, DescriptorBundle& bundle)=0;
+        virtual void bindGraphicsDescriptorBundle(ShaderPipeline* shader, uint32_t index, DescriptorBundle& bundle)=0;
+        virtual void bindComputeDescriptorBundle(ShaderPipeline* shader, uint32_t index, DescriptorBundle& bundle)=0;
         virtual void bindIndexBuffer(Buffer* buffer,Buffer::IndexSize indexSize, size_t offset)=0;
-        virtual void bindGraphicsShader(Shader* shader)=0;
-        virtual void bindComputeShader(Shader* shader)=0;
+        virtual void bindGraphicsShader(ShaderPipeline* shader)=0;
+        virtual void bindComputeShader(ShaderPipeline* shader)=0;
         virtual void bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, size_t* offsets, size_t* sizes, size_t* strides, size_t bindingCount)=0;
         //virtual void clearAttachments(Attachment* attachments, size_t attachmentCount)
         virtual void clearDepthStencilImage(Texture* texture, ClearDepthStencil color, Texture::Layout currentLayout, Texture::Layout endingLayout, PipelineStages syncBefore, PipelineStages syncAfter)=0;
@@ -180,7 +180,7 @@ namespace slag
          * @param data
          */
         virtual void fillBuffer(Buffer* buffer, size_t offset, size_t length, uint32_t data)=0;
-        virtual void pushConstants(Shader* shader,ShaderStages stageFlags, uint32_t offset, uint32_t size, const void* data)=0;
+        virtual void pushConstants(ShaderPipeline* shader, ShaderStages stageFlags, uint32_t offset, uint32_t size, const void* data)=0;
         virtual void resetQueryPool(QueryPool* pool, uint32_t firstQuery, uint32_t queryCount)=0;
         //virtual void resolve(Texture* source,Texture::Layout sourceLayout,uint32_t sourceLayer, uint32_t sourceMip, Texture* destination, Texture::Layout destinationLayout,uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea)=0;
 

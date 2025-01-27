@@ -6,7 +6,7 @@
 #include "DX12Swapchain.h"
 #include "DX12Buffer.h"
 #include "DX12Sampler.h"
-#include "DX12Shader.h"
+#include "DX12ShaderPipeline.h"
 #include "DX12DescriptorGroup.h"
 #include "DX12DescriptorPool.h"
 #include <wrl.h>
@@ -529,9 +529,9 @@ namespace slag
             return new DX12DescriptorGroup(descriptors, descriptorCount);
         }
 
-        Shader* DX12Lib::newShader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)
+        ShaderPipeline* DX12Lib::newShaderPipeline(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)
         {
-            throw std::runtime_error("DX12Lib::newShader not implemented");
+            throw std::runtime_error("DX12Lib::newShaderPipeline not implemented");
         }
 
         DescriptorPool* DX12Lib::newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)

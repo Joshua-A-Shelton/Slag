@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include "Shader.h"
+#include "ShaderPipeline.h"
 
 namespace slag
 {

@@ -9,7 +9,7 @@
 #include "Extensions.h"
 #include "VulkanSampler.h"
 #include "VulkanDescriptorGroup.h"
-#include "VulkanShader.h"
+#include "VulkanShaderPipeline.h"
 #include "VulkanDescriptorPool.h"
 
 namespace slag
@@ -600,9 +600,9 @@ namespace slag
             return new VulkanDescriptorGroup(descriptors,descriptorCount);
         }
 
-        Shader* VulkanLib::newShader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)
+        ShaderPipeline* VulkanLib::newShaderPipeline(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)
         {
-            return new VulkanShader(modules,moduleCount,descriptorGroups,descriptorGroupCount,properties,vertexDescription,frameBufferDescription,false);
+            return new VulkanShaderPipeline(modules, moduleCount, descriptorGroups, descriptorGroupCount, properties, vertexDescription, frameBufferDescription, false);
         }
 
         DescriptorPool*

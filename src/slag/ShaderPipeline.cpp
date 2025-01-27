@@ -1,4 +1,4 @@
-#include "Shader.h"
+#include "ShaderPipeline.h"
 #include "BackEnd/BackEndLib.h"
 #include <spirv_reflect.h>
 #include <fstream>
@@ -61,8 +61,8 @@ namespace slag
         return _stage;
     }
 
-    Shader* Shader::newShader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)
+    ShaderPipeline* ShaderPipeline::newShaderPipeline(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)
     {
-        return lib::BackEndLib::get()->newShader(modules,moduleCount,descriptorGroups,descriptorGroupCount,properties,vertexDescription,frameBufferDescription);
+        return lib::BackEndLib::get()->newShaderPipeline(modules, moduleCount, descriptorGroups, descriptorGroupCount, properties, vertexDescription, frameBufferDescription);
     }
 } // slag

@@ -1,10 +1,10 @@
-#include "DX12Shader.h"
+#include "DX12ShaderPipeline.h"
 #include "DX12Lib.h"
 namespace slag
 {
     namespace dx
     {
-        DX12Shader::DX12Shader(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, const ShaderProperties& properties,VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription, bool destroyImmediately): resources::Resource(destroyImmediately)
+        DX12ShaderPipeline::DX12ShaderPipeline(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, const ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
             D3D12_GRAPHICS_PIPELINE_STATE_DESC shaderDescription{};
             size_t vertexStageIndex = SIZE_MAX;
@@ -174,7 +174,7 @@ namespace slag
             };
         }
 
-        DX12Shader::~DX12Shader()
+        DX12ShaderPipeline::~DX12ShaderPipeline()
         {
             if(_pipeline)
             {
@@ -182,34 +182,34 @@ namespace slag
             }
         }
 
-        void DX12Shader::move(DX12Shader&& from)
+        void DX12ShaderPipeline::move(DX12ShaderPipeline&& from)
         {
             std::swap(_pipeline,from._pipeline);
             _descriptorGroups.swap(from._descriptorGroups);
             _pushConstantRanges.swap(from._pushConstantRanges);
         }
 
-        size_t DX12Shader::descriptorGroupCount()
+        size_t DX12ShaderPipeline::descriptorGroupCount()
         {
             return _descriptorGroups.size();
         }
 
-        DescriptorGroup* DX12Shader::descriptorGroup(size_t index)
+        DescriptorGroup* DX12ShaderPipeline::descriptorGroup(size_t index)
         {
             return &_descriptorGroups.at(index);
         }
 
-        DescriptorGroup* DX12Shader::operator[](size_t index)
+        DescriptorGroup* DX12ShaderPipeline::operator[](size_t index)
         {
             return &_descriptorGroups[index];
         }
 
-        size_t DX12Shader::pushConstantRangeCount()
+        size_t DX12ShaderPipeline::pushConstantRangeCount()
         {
             return _pushConstantRanges.size();
         }
 
-        PushConstantRange DX12Shader::pushConstantRange(size_t index)
+        PushConstantRange DX12ShaderPipeline::pushConstantRange(size_t index)
         {
             return _pushConstantRanges.at(index);
         }

@@ -71,8 +71,8 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/BackEnd/Vulkan/IVulkanCommandBuffer.h
             src/slag/BackEnd/Vulkan/VulkanSampler.cpp
             src/slag/BackEnd/Vulkan/VulkanSampler.h
-            src/slag/BackEnd/Vulkan/VulkanShader.cpp
-            src/slag/BackEnd/Vulkan/VulkanShader.h
+            src/slag/BackEnd/Vulkan/VulkanShaderPipeline.cpp
+            src/slag/BackEnd/Vulkan/VulkanShaderPipeline.h
             src/slag/BackEnd/Vulkan/VulkanDescriptorGroup.cpp
             src/slag/BackEnd/Vulkan/VulkanDescriptorGroup.h
             src/slag/BackEnd/Vulkan/VulkanDescriptorGroupCache.cpp
@@ -113,8 +113,8 @@ if(SLAG_DX12_BACKEND)
             src/slag/BackEnd/DX12/DX12DescriptorPool.h
             src/slag/BackEnd/DX12/DX12Sampler.cpp
             src/slag/BackEnd/DX12/DX12Sampler.h
-            src/slag/BackEnd/DX12/DX12Shader.cpp
-            src/slag/BackEnd/DX12/DX12Shader.h
+            src/slag/BackEnd/DX12/DX12ShaderPipeline.cpp
+            src/slag/BackEnd/DX12/DX12ShaderPipeline.h
             src/slag/BackEnd/DX12/DX12DescriptorGroup.cpp
             src/slag/BackEnd/DX12/DX12DescriptorGroup.h
     )
@@ -159,8 +159,8 @@ add_library(Slag ${VULKAN_SOURCES} ${DX12_SOURCES}
         src/slag/DescriptorPool.h
         src/slag/Sampler.cpp
         src/slag/Sampler.h
-        src/slag/Shader.cpp
-        src/slag/Shader.h
+        src/slag/ShaderPipeline.cpp
+        src/slag/ShaderPipeline.h
         src/slag/Descriptor.cpp
         src/slag/Descriptor.h
         src/slag/DescriptorGroup.cpp
