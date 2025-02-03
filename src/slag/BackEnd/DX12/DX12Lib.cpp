@@ -531,7 +531,12 @@ namespace slag
 
         ShaderPipeline* DX12Lib::newShaderPipeline(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)
         {
-            throw std::runtime_error("DX12Lib::newShaderPipeline not implemented");
+            return new DX12ShaderPipeline(modules,moduleCount,descriptorGroups,descriptorGroupCount,properties,vertexDescription,frameBufferDescription,false);
+        }
+
+        ShaderPipeline* DX12Lib::newShaderPipeline(ShaderModule** modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties,VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)
+        {
+            return new DX12ShaderPipeline(modules,moduleCount,descriptorGroups,descriptorGroupCount,properties,vertexDescription,frameBufferDescription,false);
         }
 
         DescriptorPool* DX12Lib::newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)

@@ -1,49 +1,13 @@
 #include "VulkanShaderPipeline.h"
-#include "VulkanLib.h"
+
 #include <sstream>
-#include <spirv_reflect.h>
+
 
 namespace slag
 {
     namespace vulkan
     {
-        struct VulkanShaderData
-        {
-        public:
-            VkShaderModule shaderModule= nullptr;
-            SpvReflectShaderModule reflectModule;
-            VulkanShaderData(ShaderModule& module)
-            {
-                VkShaderModuleCreateInfo createVertexInfo = {};
-                createVertexInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-                createVertexInfo.codeSize = module.dataSize();
-                createVertexInfo.pCode = reinterpret_cast<const uint32_t*>(module.data());
-                if(vkCreateShaderModule(VulkanLib::card()->device(),&createVertexInfo, nullptr,&shaderModule)!= VK_SUCCESS)
-                {
-                    throw std::runtime_error("invalid shader module");
-                }
-                spvReflectCreateShaderModule(module.dataSize(),module.data(),&reflectModule);
-            }
-            ~VulkanShaderData()
-            {
-                if(shaderModule)
-                {
-                    vkDestroyShaderModule(VulkanLib::card()->device(), shaderModule, nullptr);
-                    spvReflectDestroyShaderModule(&reflectModule);
-                }
-            }
-            VulkanShaderData(VulkanShaderData&& from)
-            {
-                std::swap(shaderModule,from.shaderModule);
-                std::swap(reflectModule,from.reflectModule);
-            }
-            VulkanShaderData& operator=(VulkanShaderData&& from)
-            {
-                std::swap(shaderModule,from.shaderModule);
-                std::swap(reflectModule,from.reflectModule);
-                return *this;
-            }
-        };
+
 
         VulkanShaderPipeline::VulkanShaderPipeline(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, const ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
@@ -76,14 +40,81 @@ namespace slag
             {
                 throw std::runtime_error("Must define both a vertex stage and fragment stage");
             }
+            constructPipeline(descriptorGroups, descriptorGroupCount, properties, vertexDescription, frameBufferDescription, shaderStageData, shaderStages, vertexStageIndex);
 
-            //get descriptor groups via reflection
+        }
+
+        VulkanShaderPipeline::VulkanShaderPipeline(ShaderModule** modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, const ShaderProperties& properties,VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription, bool destroyImmediately):resources::Resource(destroyImmediately)
+        {
+            std::vector<VulkanShaderData> shaderStageData;
+            std::vector<VkPipelineShaderStageCreateInfo> shaderStages(moduleCount,VkPipelineShaderStageCreateInfo{});
+            size_t vertexStageIndex = SIZE_MAX;
+            size_t fragmentStageIndex = SIZE_MAX;
+
+            for(size_t i=0; i< moduleCount; i++)
+            {
+                auto& module = modules[i];
+                shaderStageData.emplace_back(*module);
+
+                auto& createInfo = shaderStages[i];
+                createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+                createInfo.stage = std::bit_cast<VkShaderStageFlagBits>(module->stage());
+                createInfo.module = shaderStageData[i].shaderModule;
+                createInfo.pName = "main";
+                if(module->stage() == ShaderStageFlags::VERTEX)
+                {
+                    vertexStageIndex = i;
+                }
+                if(module->stage() == ShaderStageFlags::FRAGMENT)
+                {
+                    fragmentStageIndex = i;
+                }
+
+            }
+            if(vertexStageIndex==SIZE_MAX || fragmentStageIndex==SIZE_MAX)
+            {
+                throw std::runtime_error("Must define both a vertex stage and fragment stage");
+            }
+            constructPipeline(descriptorGroups, descriptorGroupCount, properties, vertexDescription, frameBufferDescription, shaderStageData, shaderStages, vertexStageIndex);
+        }
+        VulkanShaderPipeline::~VulkanShaderPipeline()
+        {
+            if(_layout)
+            {
+                smartDestroy();
+            }
+        }
+
+        VulkanShaderPipeline::VulkanShaderPipeline(VulkanShaderPipeline&& from): resources::Resource(from._destroyImmediately)
+        {
+            move(std::move(from));
+        }
+
+        VulkanShaderPipeline& VulkanShaderPipeline::operator=(VulkanShaderPipeline&& from)
+        {
+            move(std::move(from));
+            return *this;
+        }
+
+        void VulkanShaderPipeline::move(VulkanShaderPipeline&& from)
+        {
+            resources::Resource::move(from);
+            _descriptorGroups.swap(from._descriptorGroups);
+            _pushConstantRanges.swap(from._pushConstantRanges);
+            std::swap(_pipeline,from._pipeline);
+            std::swap(_layout,from._layout);
+        }
+
+        void VulkanShaderPipeline::constructPipeline(DescriptorGroup* const* descriptorGroups, size_t descriptorGroupCount, const ShaderProperties& properties,
+                                                     VertexDescription* vertexDescription, const FrameBufferDescription& frameBufferDescription, const std::vector<VulkanShaderData>& shaderStageData,
+                                                     std::vector<VkPipelineShaderStageCreateInfo>& shaderStages, size_t vertexStageIndex)
+        {//get descriptor groups via reflection
             std::unordered_map<size_t,std::vector<VulkanDescriptorGroup>> reflectedDescriptorGroups;
             size_t maxDescriptorGroup = descriptorGroupCount;
             bool hasDescriptorGroups = false;
             for(size_t i=0; i< shaderStageData.size(); i++)
             {
-                auto& module = modules[i];
+                auto& module = shaderStageData[i];
                 auto& reflectModule = shaderStageData[i].reflectModule;
                 uint32_t setCount = 0;
                 auto result = spvReflectEnumerateDescriptorSets(&reflectModule,&setCount, nullptr);
@@ -110,7 +141,7 @@ namespace slag
                         for(uint32_t descriptorIndex=0; descriptorIndex<descriptorSet->binding_count; descriptorIndex++)
                         {
                             auto desc = descriptorSet->bindings[descriptorIndex];
-                            setDescriptors.push_back(Descriptor(desc->name,lib::BackEndLib::descriptorTypeFromSPV(desc->descriptor_type),desc->count,desc->binding,module.stage()));
+                            setDescriptors.push_back(Descriptor(desc->name,lib::BackEndLib::descriptorTypeFromSPV(desc->descriptor_type),desc->count,desc->binding,module.stageFlags));
                         }
                         if(reflectedDescriptorGroups.contains(binding.set))
                         {
@@ -125,7 +156,7 @@ namespace slag
                 for(uint32_t blockIndex=0; blockIndex<blockCount; blockIndex++)
                 {
                     auto& range = *spvReflectGetPushConstantBlock(&reflectModule,blockIndex,&result);
-                    _pushConstantRanges.push_back(PushConstantRange{.stageFlags = module.stage(),.offset = range.offset,.size = range.size});
+                    _pushConstantRanges.push_back(PushConstantRange{.stageFlags = module.stageFlags,.offset = range.offset,.size = range.size});
                     //TODO: acquire actual variables and assign them to the ranges
                 }
             }
@@ -138,7 +169,7 @@ namespace slag
                 {
                     _descriptorGroups.push_back(*static_cast<VulkanDescriptorGroup*>(descriptorGroups[i]));
                 }
-                //otherwise, merge the groups we found from reflection and use that
+                    //otherwise, merge the groups we found from reflection and use that
                 else
                 {
                     auto& groups = reflectedDescriptorGroups[i];
@@ -148,7 +179,7 @@ namespace slag
                         groupPointers[j] = &groups[j];
                     }
                     auto descriptors = DescriptorGroup::combine(groupPointers.data(),groupPointers.size());
-                    _descriptorGroups.push_back(VulkanDescriptorGroup(descriptors.data(),descriptors.size()));
+                    _descriptorGroups.push_back(VulkanDescriptorGroup(descriptors.data(), descriptors.size()));
                 }
             }
 
@@ -268,7 +299,7 @@ namespace slag
                     bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX; //TODO: I need to make this selectable, but I'm not sure how....
                 }
             }
-            //otherwise get vertex info from reflection
+                //otherwise get vertex info from reflection
             else
             {
                 auto& vertexModule = shaderStageData[vertexStageIndex].reflectModule;
@@ -318,11 +349,11 @@ namespace slag
 
             std::vector<VkDescriptorSetLayout> layouts(_descriptorGroups.size());
             std::vector<VkPushConstantRange> pushConstantRanges(_pushConstantRanges.size());
-            for(size_t i=0; i< _descriptorGroups.size(); i++)
+            for(size_t i=0; i < _descriptorGroups.size(); i++)
             {
                 layouts[i] = _descriptorGroups[i].layout();
             }
-            for(size_t i=0; i< _pushConstantRanges.size(); i++)
+            for(size_t i=0; i < _pushConstantRanges.size(); i++)
             {
                 auto& range = pushConstantRanges[i];
                 auto& templ = _pushConstantRanges[i];
@@ -339,7 +370,7 @@ namespace slag
             pipelineLayoutInfo.pushConstantRangeCount = pushConstantRanges.size();
             pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.data();
 
-            if(vkCreatePipelineLayout(static_cast<VkDevice>(VulkanLib::card()->device()),&pipelineLayoutInfo, nullptr,&_layout)!= VK_SUCCESS)
+            if(vkCreatePipelineLayout(static_cast<VkDevice>(VulkanLib::card()->device()),&pipelineLayoutInfo, nullptr,&_layout) != VK_SUCCESS)
             {
                 throw std::runtime_error("Unable to create shader pipeline layout");
             }
@@ -399,35 +430,6 @@ namespace slag
             };
 
             assert(result == VK_SUCCESS && "Unable to create shader pipeline");
-
-        }
-
-        VulkanShaderPipeline::~VulkanShaderPipeline()
-        {
-            if(_layout)
-            {
-                smartDestroy();
-            }
-        }
-
-        VulkanShaderPipeline::VulkanShaderPipeline(VulkanShaderPipeline&& from): resources::Resource(from._destroyImmediately)
-        {
-            move(std::move(from));
-        }
-
-        VulkanShaderPipeline& VulkanShaderPipeline::operator=(VulkanShaderPipeline&& from)
-        {
-            move(std::move(from));
-            return *this;
-        }
-
-        void VulkanShaderPipeline::move(VulkanShaderPipeline&& from)
-        {
-            resources::Resource::move(from);
-            _descriptorGroups.swap(from._descriptorGroups);
-            _pushConstantRanges.swap(from._pushConstantRanges);
-            std::swap(_pipeline,from._pipeline);
-            std::swap(_layout,from._layout);
         }
 
         size_t VulkanShaderPipeline::descriptorGroupCount()

@@ -13,6 +13,8 @@ namespace slag
         {
         public:
             DX12ShaderPipeline(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, const ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription, bool destroyImmediately);
+            DX12ShaderPipeline(ShaderModule** modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, const ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription, bool destroyImmediately);
+
             ~DX12ShaderPipeline()override;
 
             size_t descriptorGroupCount()override;
@@ -25,6 +27,9 @@ namespace slag
             ID3D12PipelineState* _pipeline = nullptr;
             std::vector<DX12DescriptorGroup> _descriptorGroups;
             std::vector<PushConstantRange> _pushConstantRanges;
+
+            void constructPipeline(const ShaderProperties& properties, VertexDescription* vertexDescription, const FrameBufferDescription& frameBufferDescription,
+                                   D3D12_GRAPHICS_PIPELINE_STATE_DESC& shaderDescription);
         };
 
     } // dx

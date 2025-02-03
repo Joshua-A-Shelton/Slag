@@ -47,6 +47,73 @@ namespace slag
                 throw std::runtime_error("Must define both a vertex stage and fragment stage");
             }
 
+            constructPipeline(properties, vertexDescription, frameBufferDescription, shaderDescription);
+
+        }
+
+        DX12ShaderPipeline::DX12ShaderPipeline(ShaderModule** modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, const ShaderProperties& properties,VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription, bool destroyImmediately): resources::Resource(destroyImmediately)
+        {
+            D3D12_GRAPHICS_PIPELINE_STATE_DESC shaderDescription{};
+            size_t vertexStageIndex = SIZE_MAX;
+            size_t fragmentStageIndex = SIZE_MAX;
+            for(int i=0; i< moduleCount; i++)
+            {
+                auto& module = *modules[i];
+                auto type = std::bit_cast<D3D12_SHADER_VERSION_TYPE>(module.stage());
+                switch(type)
+                {
+                    case D3D12_SHVER_PIXEL_SHADER:
+                        shaderDescription.PS.pShaderBytecode = module.data();
+                        shaderDescription.PS.BytecodeLength = module.dataSize();
+                        fragmentStageIndex = i;
+                        break;
+                    case D3D12_SHVER_VERTEX_SHADER:
+                        shaderDescription.VS.pShaderBytecode = module.data();
+                        shaderDescription.VS.BytecodeLength = module.dataSize();
+                        vertexStageIndex = i;
+                        break;
+                    case D3D12_SHVER_GEOMETRY_SHADER:
+                        shaderDescription.GS.pShaderBytecode = module.data();
+                        shaderDescription.GS.BytecodeLength = module.dataSize();
+                        break;
+                    case D3D12_SHVER_HULL_SHADER:
+                        shaderDescription.HS.pShaderBytecode = module.data();
+                        shaderDescription.HS.BytecodeLength = module.dataSize();
+                        break;
+                    case D3D12_SHVER_DOMAIN_SHADER:
+                        shaderDescription.DS.pShaderBytecode = module.data();
+                        shaderDescription.DS.BytecodeLength = module.dataSize();
+                        break;
+                    default:
+                        throw std::runtime_error("Stage not permitted for graphics shader at index");
+                        break;
+                }
+            }
+            if(vertexStageIndex==SIZE_MAX || fragmentStageIndex==SIZE_MAX)
+            {
+                throw std::runtime_error("Must define both a vertex stage and fragment stage");
+            }
+
+            constructPipeline(properties, vertexDescription, frameBufferDescription, shaderDescription);
+        }
+
+        DX12ShaderPipeline::~DX12ShaderPipeline()
+        {
+            if(_pipeline)
+            {
+                smartDestroy();
+            }
+        }
+
+        void DX12ShaderPipeline::move(DX12ShaderPipeline&& from)
+        {
+            std::swap(_pipeline,from._pipeline);
+            _descriptorGroups.swap(from._descriptorGroups);
+            _pushConstantRanges.swap(from._pushConstantRanges);
+        }
+
+        void DX12ShaderPipeline::constructPipeline(const ShaderProperties& properties, VertexDescription* vertexDescription, const FrameBufferDescription& frameBufferDescription,D3D12_GRAPHICS_PIPELINE_STATE_DESC& shaderDescription)
+        {
             //TODO: get push constant and descriptor groups via reflection
 
             //shaderDescription.StreamOutput = ; //TODO: I don't think this is required to make a shader work, but may be required if I'm enabling streaming in the API....
@@ -172,21 +239,6 @@ namespace slag
             {
                 pline->Release();
             };
-        }
-
-        DX12ShaderPipeline::~DX12ShaderPipeline()
-        {
-            if(_pipeline)
-            {
-                smartDestroy();
-            }
-        }
-
-        void DX12ShaderPipeline::move(DX12ShaderPipeline&& from)
-        {
-            std::swap(_pipeline,from._pipeline);
-            _descriptorGroups.swap(from._descriptorGroups);
-            _pushConstantRanges.swap(from._pushConstantRanges);
         }
 
         size_t DX12ShaderPipeline::descriptorGroupCount()

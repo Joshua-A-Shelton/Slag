@@ -605,6 +605,12 @@ namespace slag
             return new VulkanShaderPipeline(modules, moduleCount, descriptorGroups, descriptorGroupCount, properties, vertexDescription, frameBufferDescription, false);
         }
 
+        ShaderPipeline* VulkanLib::newShaderPipeline(ShaderModule** modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties,
+                                                     VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)
+        {
+            return new VulkanShaderPipeline(modules, moduleCount, descriptorGroups, descriptorGroupCount, properties, vertexDescription, frameBufferDescription, false);;
+        }
+
         DescriptorPool*
         VulkanLib::newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)
         {

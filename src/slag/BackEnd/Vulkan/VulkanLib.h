@@ -72,6 +72,7 @@ namespace slag
             //Shaders
             DescriptorGroup* newDescriptorGroup(Descriptor* descriptors, size_t descriptorCount)override;
             ShaderPipeline* newShaderPipeline(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)override;
+            ShaderPipeline* newShaderPipeline(ShaderModule** modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription)override;
             //Descriptor Pools
             DescriptorPool* newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)override;
             //Descriptor Bundles
