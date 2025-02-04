@@ -122,3 +122,14 @@ TEST(Texture, MipMapped)
     }
 
 }
+//At least DX12 doesn't like it when creating textures with the SRGB, test to make sure it's handled correctly
+TEST(Texture, createSRGBTextures)
+{
+    auto texture1 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::R8G8B8A8_UNORM_SRGB,slag::Texture::TEXTURE_2D,50,50,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+    auto texture2 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::B8G8R8A8_UNORM_SRGB,slag::Texture::TEXTURE_2D,50,50,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+    auto texture3 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::B8G8R8X8_UNORM_SRGB,slag::Texture::TEXTURE_2D,50,50,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+    auto texture4 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::BC1_UNORM_SRGB,slag::Texture::TEXTURE_2D,50,50,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+    auto texture5 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::BC2_UNORM_SRGB,slag::Texture::TEXTURE_2D,50,50,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+    auto texture6 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::BC3_UNORM_SRGB,slag::Texture::TEXTURE_2D,50,50,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+    auto texture7 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::BC7_UNORM_SRGB,slag::Texture::TEXTURE_2D,50,50,1,1,1,TextureUsageFlags::SAMPLED_IMAGE));
+}

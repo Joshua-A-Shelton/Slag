@@ -200,7 +200,7 @@ namespace slag
             _type = textureType;
 
             auto localFormat = DX12Lib::format(dataFormat);
-
+            auto storageFormat = DX12Lib::storableFormat(localFormat);
             D3D12_RESOURCE_DESC resourceDesc = {};
             resourceDesc.Dimension = DX12Lib::dimension(textureType);
             resourceDesc.Alignment = 0;
@@ -208,7 +208,7 @@ namespace slag
             resourceDesc.Height = height;
             resourceDesc.DepthOrArraySize = layers;
             resourceDesc.MipLevels = mipLevels;
-            resourceDesc.Format = localFormat;
+            resourceDesc.Format = storageFormat;
             resourceDesc.SampleDesc.Count = samples;
             resourceDesc.SampleDesc.Quality = 0;
             resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;

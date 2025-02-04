@@ -18,6 +18,7 @@ namespace slag
             static DX12Lib* get();
             static DX12GraphicsCard* card();
             static DXGI_FORMAT format(Pixels::Format pixelFormat);
+            static DXGI_FORMAT storableFormat(DXGI_FORMAT pixelFormat);
             static D3D12_RESOURCE_DIMENSION dimension(Texture::Type type);
             static D3D12_BARRIER_LAYOUT barrierLayout(Texture::Layout texLayout);
             static D3D12_RESOURCE_STATES stateLayout(Texture::Layout texLayout);

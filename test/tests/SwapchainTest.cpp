@@ -34,7 +34,7 @@ FrameResources* defaultResource(size_t index, Swapchain* from)
 TEST(Swapchain, PresentModes)
 {
     auto window = slag::Window::makeWindow("Swapchain Present Modes",500,500);
-    auto swapchain = slag::Window::makeSwapchain(window.get(),3,Swapchain::PresentMode::MAILBOX,Pixels::Format::B8G8R8A8_UNORM,defaultResource);
+    auto swapchain = slag::Window::makeSwapchain(window.get(),3,Swapchain::PresentMode::MAILBOX,Pixels::Format::B8G8R8A8_UNORM_SRGB,defaultResource);
 
     Uint64 totalStart = SDL_GetPerformanceCounter();
     Uint64 last = totalStart;
@@ -75,7 +75,7 @@ TEST(Swapchain, PresentModes)
 TEST(Swapchain, NextIfReady)
 {
     auto window = slag::Window::makeWindow("Swapchain Next If Ready",500,500);
-    auto swapchain = slag::Window::makeSwapchain(window.get(),3,Swapchain::PresentMode::MAILBOX,Pixels::Format::B8G8R8A8_UNORM,defaultResource);
+    auto swapchain = slag::Window::makeSwapchain(window.get(),3,Swapchain::PresentMode::MAILBOX,Pixels::Format::B8G8R8A8_UNORM_SRGB,defaultResource);
 
     int frameCount = 0;
     int i=0;

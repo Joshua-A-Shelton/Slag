@@ -74,7 +74,6 @@ public:
             buffer->waitUntilFinished();
         }
     }
-
 };
 
 TEST_F(CommandBufferTests, StartFinished)
@@ -851,6 +850,14 @@ TEST_F(CommandBufferTests, DisallowTransfer_bindGraphicsShader)
 }
 
 TEST_F(CommandBufferTests, DisallowInvalidTransition)
+{
+#ifdef NDEBUG
+    GTEST_SKIP();
+#endif
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTests, DisallowInvalidTransitionAccess)
 {
 #ifdef NDEBUG
     GTEST_SKIP();
