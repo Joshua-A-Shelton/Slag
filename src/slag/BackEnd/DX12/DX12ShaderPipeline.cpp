@@ -6,12 +6,14 @@ namespace slag
     {
         DX12ShaderPipeline::DX12ShaderPipeline(ShaderModule* modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, const ShaderProperties& properties, VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
+            std::vector<stageDetails> shaderStageData;
             D3D12_GRAPHICS_PIPELINE_STATE_DESC shaderDescription{};
             size_t vertexStageIndex = SIZE_MAX;
             size_t fragmentStageIndex = SIZE_MAX;
             for(int i=0; i< moduleCount; i++)
             {
                 auto& module = modules[i];
+                shaderStageData.push_back(stageDetails(module));
                 auto type = std::bit_cast<D3D12_SHADER_VERSION_TYPE>(module.stage());
                 switch(type)
                 {
@@ -47,18 +49,20 @@ namespace slag
                 throw std::runtime_error("Must define both a vertex stage and fragment stage");
             }
 
-            constructPipeline(properties, vertexDescription, frameBufferDescription, shaderDescription);
+            constructPipeline(descriptorGroups,descriptorGroupCount,properties, vertexDescription, frameBufferDescription, shaderDescription,shaderStageData,vertexStageIndex);
 
         }
 
         DX12ShaderPipeline::DX12ShaderPipeline(ShaderModule** modules, size_t moduleCount, DescriptorGroup** descriptorGroups, size_t descriptorGroupCount, const ShaderProperties& properties,VertexDescription* vertexDescription, FrameBufferDescription& frameBufferDescription, bool destroyImmediately): resources::Resource(destroyImmediately)
         {
+            std::vector<stageDetails> shaderStageData;
             D3D12_GRAPHICS_PIPELINE_STATE_DESC shaderDescription{};
             size_t vertexStageIndex = SIZE_MAX;
             size_t fragmentStageIndex = SIZE_MAX;
             for(int i=0; i< moduleCount; i++)
             {
                 auto& module = *modules[i];
+                shaderStageData.push_back(stageDetails(module));
                 auto type = std::bit_cast<D3D12_SHADER_VERSION_TYPE>(module.stage());
                 switch(type)
                 {
@@ -94,7 +98,7 @@ namespace slag
                 throw std::runtime_error("Must define both a vertex stage and fragment stage");
             }
 
-            constructPipeline(properties, vertexDescription, frameBufferDescription, shaderDescription);
+            constructPipeline(descriptorGroups,descriptorGroupCount,properties, vertexDescription, frameBufferDescription, shaderDescription,shaderStageData,vertexStageIndex);
         }
 
         DX12ShaderPipeline::~DX12ShaderPipeline()
@@ -112,9 +116,91 @@ namespace slag
             _pushConstantRanges.swap(from._pushConstantRanges);
         }
 
-        void DX12ShaderPipeline::constructPipeline(const ShaderProperties& properties, VertexDescription* vertexDescription, const FrameBufferDescription& frameBufferDescription,D3D12_GRAPHICS_PIPELINE_STATE_DESC& shaderDescription)
+        void DX12ShaderPipeline::constructPipeline(DescriptorGroup** descriptorGroups, const size_t descriptorGroupCount,const ShaderProperties& properties, VertexDescription* vertexDescription, const FrameBufferDescription& frameBufferDescription,D3D12_GRAPHICS_PIPELINE_STATE_DESC& shaderDescription,std::vector<stageDetails>& shaderStageData, size_t vertexStageIndex)
         {
-            //TODO: get push constant and descriptor groups via reflection
+            //get push constant and descriptor groups via reflection
+            std::unordered_map<size_t,std::vector<DX12DescriptorGroup>> reflectedDescriptorGroups;
+            size_t maxDescriptorGroup = descriptorGroupCount;
+            bool hasDescriptorGroups = false;
+            for(size_t i=0; i< shaderStageData.size(); i++)
+            {
+                auto& reflectModule = shaderStageData[i].reflectModule;
+                auto stageFlags = shaderStageData[i].stageFlags;
+                uint32_t setCount = 0;
+                auto result = spvReflectEnumerateDescriptorSets(&reflectModule,&setCount, nullptr);
+                if(setCount > 0)
+                {
+                    hasDescriptorGroups = true;
+                }
+                for(size_t set = 0; set< setCount; set++)
+                {
+                    auto binding = reflectModule.descriptor_bindings[set];
+                    //if we've passed an override, don't bother figuring all this out
+                    if(binding.set < descriptorGroupCount)
+                    {
+                        continue;
+                    }
+                    else if(binding.set > maxDescriptorGroup)
+                    {
+                        maxDescriptorGroup = binding.set;
+                    }
+                    auto descriptorSet = spvReflectGetDescriptorSet(&reflectModule,binding.set,&result);
+                    if(descriptorSet != nullptr)
+                    {
+                        std::vector<Descriptor> setDescriptors;
+                        for(uint32_t descriptorIndex=0; descriptorIndex<descriptorSet->binding_count; descriptorIndex++)
+                        {
+                            auto desc = descriptorSet->bindings[descriptorIndex];
+                            setDescriptors.push_back(Descriptor(desc->name,lib::BackEndLib::descriptorTypeFromSPV(desc->descriptor_type),desc->count,desc->binding,stageFlags));
+                        }
+                        if(reflectedDescriptorGroups.contains(binding.set))
+                        {
+                            reflectedDescriptorGroups[binding.set] = std::vector<DX12DescriptorGroup>();
+                        }
+                        auto& group = reflectedDescriptorGroups[binding.set];
+                        group.push_back(DX12DescriptorGroup(setDescriptors.data(),setDescriptors.size()));
+                    }
+                }
+                uint32_t blockCount = 0;
+                result = spvReflectEnumeratePushConstantBlocks(&reflectModule,&blockCount, nullptr);
+                for(uint32_t blockIndex=0; blockIndex<blockCount; blockIndex++)
+                {
+                    auto& range = *spvReflectGetPushConstantBlock(&reflectModule,blockIndex,&result);
+                    _pushConstantRanges.push_back(PushConstantRange{.stageFlags = stageFlags,.offset = range.offset,.size = range.size});
+                    //TODO: acquire actual variables and assign them to the ranges
+                }
+            }
+
+            //add descriptor groups to shader
+            for(size_t i=0; i<=maxDescriptorGroup && hasDescriptorGroups; i++)
+            {
+                //if we provided an override for a group, use that
+                if(i < descriptorGroupCount)
+                {
+                    _descriptorGroups.push_back(*static_cast<DX12DescriptorGroup*>(descriptorGroups[i]));
+                }
+                    //otherwise, merge the groups we found from reflection and use that
+                else
+                {
+                    auto& groups = reflectedDescriptorGroups[i];
+                    std::vector<DescriptorGroup*> groupPointers(groups.size());
+                    for(size_t j=0; j<groups.size(); j++)
+                    {
+                        groupPointers[j] = &groups[j];
+                    }
+                    auto descriptors = DescriptorGroup::combine(groupPointers.data(),groupPointers.size());
+                    _descriptorGroups.push_back(DX12DescriptorGroup(descriptors.data(), descriptors.size()));
+                }
+            }
+
+
+
+
+
+
+
+
+
 
             //shaderDescription.StreamOutput = ; //TODO: I don't think this is required to make a shader work, but may be required if I'm enabling streaming in the API....
 
@@ -198,13 +284,13 @@ namespace slag
                         semanticName+="_";
                         semanticName+=std::to_string(j);
 
-                        for(auto k=0; k<formats.size(); i++)
+                        for(auto k=0; k<formats.size(); k++)
                         {
                             D3D12_INPUT_ELEMENT_DESC description{};
                             description.SemanticName = semanticName.c_str();
-                            description.SemanticIndex = k;
+                            description.SemanticIndex = i;
                             description.Format = formats[k];
-                            description.InputSlot = i;//not too sure about this, but I think it's right
+                            description.InputSlot = j;//not too sure about this, but I think it's right
                             description.AlignedByteOffset = attr.offset() + (k*DX12Lib::formatSize(description.Format));
                             description.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
                             inputElements.push_back(description);
@@ -214,8 +300,47 @@ namespace slag
             }
             else
             {
-                throw std::runtime_error("vertex description parsing not available for DX12 yet");
+                auto& vertexModule = shaderStageData[vertexStageIndex].reflectModule;
+                uint32_t offset = 0;
+                for(uint32_t i=0; i< vertexModule.input_variable_count; i++)
+                {
+                    auto inputVar = vertexModule.input_variables[i];
+                    if(inputVar->decoration_flags & SPV_REFLECT_DECORATION_BUILT_IN)
+                    {
+                        continue;
+                    }
+                    auto type = lib::BackEndLib::graphicsTypeFromSPV(inputVar->format);
+                    if(type == GraphicsTypes::UNKNOWN)
+                    {
+                        throw std::runtime_error("Vertex Shader Module contains vertex attribute of unknown type");
+                    }
+
+                    auto formats = DX12Lib::graphicsType(type);
+                    if(formats.empty())
+                    {
+                        throw std::runtime_error("Unable to convert graphicsType type into underlying API type");
+                    }
+                    std::string semanticName("element");
+                    semanticName+="0_";
+                    semanticName+=std::to_string(i);
+
+                    for(auto k=0; k<formats.size(); k++)
+                    {
+                        D3D12_INPUT_ELEMENT_DESC description{};
+                        description.SemanticName = semanticName.c_str();
+                        description.SemanticIndex = i;
+                        description.Format = formats[k];
+                        description.InputSlot = 0;//not too sure about this, but I think it's right
+                        description.AlignedByteOffset = offset;
+                        description.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+                        inputElements.push_back(description);
+
+                        offset+= DX12Lib::formatSize(formats[k]);
+                    }
+                }
+
             }
+
             inputLayout.pInputElementDescs = inputElements.data();
             inputLayout.NumElements = inputElements.size();
 

@@ -4,6 +4,8 @@
 #include <directx/d3d12shader.h>
 #include "DX12DescriptorGroup.h"
 #include "../../Resources/Resource.h"
+#include "spirv_reflect.h"
+
 namespace slag
 {
     namespace dx
@@ -28,8 +30,38 @@ namespace slag
             std::vector<DX12DescriptorGroup> _descriptorGroups;
             std::vector<PushConstantRange> _pushConstantRanges;
 
-            void constructPipeline(const ShaderProperties& properties, VertexDescription* vertexDescription, const FrameBufferDescription& frameBufferDescription,
-                                   D3D12_GRAPHICS_PIPELINE_STATE_DESC& shaderDescription);
+            struct stageDetails
+            {
+                SpvReflectShaderModule reflectModule;
+                ShaderStages stageFlags;
+                bool own = false;
+                stageDetails(ShaderModule& module): stageFlags(module.stage())
+                {
+                    spvReflectCreateShaderModule(module.dataSize(),module.data(),&reflectModule);
+                    own = true;
+                }
+                ~stageDetails()
+                {
+                    if(own)
+                    {
+                        spvReflectDestroyShaderModule(&reflectModule);
+                    }
+                }
+                stageDetails(stageDetails&& from):stageFlags(from.stageFlags)
+                {
+                    std::swap(reflectModule,from.reflectModule);
+                    std::swap(own,from.own);
+                }
+                stageDetails& operator=(stageDetails&& from)
+                {
+                    std::swap(reflectModule,from.reflectModule);
+                    std::swap(stageFlags,from.stageFlags);
+                    std::swap(own,from.own);
+                    return *this;
+                }
+            };
+
+            void constructPipeline(DescriptorGroup** descriptorGroups, const size_t descriptorGroupCount, const ShaderProperties& properties, VertexDescription* vertexDescription, const FrameBufferDescription& frameBufferDescription,D3D12_GRAPHICS_PIPELINE_STATE_DESC& shaderDescription,std::vector<stageDetails>& shaderStageData,size_t vertexStageIndex);
         };
 
     } // dx
