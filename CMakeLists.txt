@@ -215,7 +215,7 @@ if(SLAG_DX12_BACKEND)
 endif()
 
 
-OPTION(BUILD_SLAG_TESTS "Build tests" ON)
+OPTION(BUILD_SLAG_TESTS "Build tests" OFF)
 if(BUILD_SLAG_TESTS)
     find_package(SDL2 REQUIRED)
     find_package(glm CONFIG REQUIRED)
