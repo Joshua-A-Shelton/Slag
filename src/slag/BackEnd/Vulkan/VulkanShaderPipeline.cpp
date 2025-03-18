@@ -143,7 +143,7 @@ namespace slag
                             auto desc = descriptorSet->bindings[descriptorIndex];
                             setDescriptors.push_back(Descriptor(desc->name,lib::BackEndLib::descriptorTypeFromSPV(desc->descriptor_type),desc->count,desc->binding,module.stageFlags));
                         }
-                        if(reflectedDescriptorGroups.contains(binding.set))
+                        if(!reflectedDescriptorGroups.contains(binding.set))
                         {
                             reflectedDescriptorGroups[binding.set] = std::vector<VulkanDescriptorGroup>();
                         }
