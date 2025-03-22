@@ -386,6 +386,22 @@ namespace slag
             return _pushConstantRanges.size();
         }
 
+        UniformBufferDescriptorLayout* DX12ShaderPipeline::uniformBufferLayout(size_t descriptorGroup,uint32_t descriptorBinding)
+        {
+            auto it = _uniformBufferLayouts.find(descriptorGroup);
+            if(it == _uniformBufferLayouts.end())
+            {
+                return nullptr;
+            }
+            auto& layouts = it->second;
+            auto it2 = layouts.find(descriptorBinding);
+            if(it2 == layouts.end())
+            {
+                return nullptr;
+            }
+            return &layouts.at(descriptorBinding);
+        }
+
         PushConstantRange DX12ShaderPipeline::pushConstantRange(size_t index)
         {
             return _pushConstantRanges.at(index);

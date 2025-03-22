@@ -19,6 +19,7 @@ DEFINITION(TASK,VK_SHADER_STAGE_TASK_BIT_EXT,D3D12_SHVER_AMPLIFICATION_SHADER) \
 #include "VertexDescription.h"
 #include "FrameBufferDescription.h"
 #include "ShaderProperties.h"
+#include "UniformBufferDescriptorLayout.h"
 
 namespace slag
 {
@@ -122,6 +123,13 @@ namespace slag
         virtual DescriptorGroup* operator[](size_t index)=0;
         ///Number of push constant ranges
         virtual size_t pushConstantRangeCount()=0;
+        /**
+         * Retrieve the layout of a uniform buffer descriptor
+         * @param descriptorGroup the descriptor group index
+         * @param descriptorBinding the binding of the uniform buffer
+         * @return Layout of a uniform buffer descriptor, or null if the index isn't a uniform buffer
+         */
+        virtual UniformBufferDescriptorLayout* uniformBufferLayout(size_t descriptorGroup,uint32_t descriptorBinding)=0;
         ///Retrieve push constant at index
         virtual PushConstantRange pushConstantRange(size_t index)=0;
         /**

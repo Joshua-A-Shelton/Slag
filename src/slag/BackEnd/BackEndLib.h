@@ -49,6 +49,8 @@ namespace slag
 
             static Descriptor::DescriptorType descriptorTypeFromSPV(SpvReflectDescriptorType type);
             static GraphicsTypes::GraphicsType graphicsTypeFromSPV(SpvReflectFormat format);
+            static GraphicsTypes::GraphicsType graphicsTypeFromSPV(SpvReflectTypeDescription* typeDescription);
+            static UniformBufferDescriptorLayout uniformBufferDescriptorLayoutFromSPV(SpvReflectBlockVariable* block);
         };
 
     }

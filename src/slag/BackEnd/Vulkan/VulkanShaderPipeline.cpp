@@ -100,6 +100,7 @@ namespace slag
         {
             resources::Resource::move(from);
             _descriptorGroups.swap(from._descriptorGroups);
+            _uniformBufferLayouts.swap(from._uniformBufferLayouts);
             _pushConstantRanges.swap(from._pushConstantRanges);
             std::swap(_pipeline,from._pipeline);
             std::swap(_layout,from._layout);
@@ -125,12 +126,7 @@ namespace slag
                 for(size_t set = 0; set< setCount; set++)
                 {
                     auto binding = reflectModule.descriptor_bindings[set];
-                    //if we've passed an override, don't bother figuring all this out
-                    if(binding.set < descriptorGroupCount)
-                    {
-                        continue;
-                    }
-                    else if(binding.set > maxDescriptorGroup)
+                    if(binding.set > maxDescriptorGroup)
                     {
                         maxDescriptorGroup = binding.set;
                     }
@@ -141,7 +137,23 @@ namespace slag
                         for(uint32_t descriptorIndex=0; descriptorIndex<descriptorSet->binding_count; descriptorIndex++)
                         {
                             auto desc = descriptorSet->bindings[descriptorIndex];
-                            setDescriptors.push_back(Descriptor(desc->name,lib::BackEndLib::descriptorTypeFromSPV(desc->descriptor_type),desc->count,desc->binding,module.stageFlags));
+                            auto descType = lib::BackEndLib::descriptorTypeFromSPV(desc->descriptor_type);
+                            setDescriptors.push_back(Descriptor(desc->name,descType,desc->count,desc->binding,module.stageFlags));
+                            if (descType == Descriptor::UNIFORM_BUFFER)
+                            {
+                                if (_uniformBufferLayouts.contains(set))
+                                {
+                                    auto& uset =_uniformBufferLayouts[set];
+                                    uset.emplace(std::make_pair(descriptorIndex,lib::BackEndLib::uniformBufferDescriptorLayoutFromSPV(&desc->block)));
+                                }
+                                else
+                                {
+                                    auto it = _uniformBufferLayouts.emplace(set,std::unordered_map<uint32_t,UniformBufferDescriptorLayout>());
+                                    it.first->second.emplace(descriptorIndex,lib::BackEndLib::uniformBufferDescriptorLayoutFromSPV(&desc->block));
+                                }
+
+                            }
+
                         }
                         if(!reflectedDescriptorGroups.contains(binding.set))
                         {
@@ -450,6 +462,22 @@ namespace slag
         size_t VulkanShaderPipeline::pushConstantRangeCount()
         {
             return _pushConstantRanges.size();
+        }
+
+        UniformBufferDescriptorLayout* VulkanShaderPipeline::uniformBufferLayout(size_t descriptorGroup,uint32_t descriptorBinding)
+        {
+            auto it = _uniformBufferLayouts.find(descriptorGroup);
+            if(it == _uniformBufferLayouts.end())
+            {
+                return nullptr;
+            }
+            auto& layouts = it->second;
+            auto it2 = layouts.find(descriptorBinding);
+            if(it2 == layouts.end())
+            {
+                return nullptr;
+            }
+            return &layouts.at(descriptorBinding);
         }
 
         PushConstantRange VulkanShaderPipeline::pushConstantRange(size_t index)

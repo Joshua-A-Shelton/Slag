@@ -128,5 +128,116 @@ namespace slag
             }
             return GraphicsTypes::GraphicsType::UNKNOWN;
         }
+
+        GraphicsTypes::GraphicsType BackEndLib::graphicsTypeFromSPV(SpvReflectTypeDescription* typeDescription)
+        {
+            if (typeDescription)
+            {
+                if (typeDescription->type_flags & SPV_REFLECT_TYPE_FLAG_STRUCT)
+                {
+                    return GraphicsTypes::GraphicsType::STRUCT;
+                }
+
+                auto vectorComponents = typeDescription->traits.numeric.vector.component_count;
+                auto matrixColumns = typeDescription->traits.numeric.matrix.column_count;
+                auto matrixRows = typeDescription->traits.numeric.matrix.row_count;
+                auto numericSignedness = typeDescription->traits.numeric.scalar.signedness;
+                auto numericSize = typeDescription->traits.numeric.scalar.width;
+
+                bool boolType = typeDescription->type_flags & SPV_REFLECT_TYPE_FLAG_BOOL;
+                bool intType = typeDescription->type_flags & SPV_REFLECT_TYPE_FLAG_INT;
+                bool floatType = typeDescription->type_flags & SPV_REFLECT_TYPE_FLAG_FLOAT;
+                unsigned int returnType = 0;
+                if (boolType)
+                {
+                    returnType|=GraphicsTypes::BOOLEAN_BIT;
+                }
+                else if (intType)
+                {
+                    if (numericSignedness)
+                    {
+                        returnType|=GraphicsTypes::INTEGER_BIT;
+                    }
+                    else
+                    {
+                        returnType|=GraphicsTypes::UNSIGNED_INTEGER_BIT;
+                    }
+                }
+                else if (floatType)
+                {
+                    if (numericSize == 32)
+                    {
+                        returnType|=GraphicsTypes::FLOAT_BIT;
+                    }
+                    else
+                    {
+                        returnType|=GraphicsTypes::DOUBLE_BIT;
+                    }
+                }
+
+                if (matrixColumns)
+                {
+                    switch (matrixColumns)
+                    {
+                    case 2:
+                        returnType|=GraphicsTypes::MATRIX2N_BIT;
+                        break;
+                    case 3:
+                        returnType|=GraphicsTypes::MATRIX3N_BIT;
+                        break;
+                    case 4:
+                        returnType|=GraphicsTypes::MATRIX4N_BIT;
+                        break;
+                    }
+                    switch (matrixRows)
+                    {
+                    case 2:
+                        returnType|=GraphicsTypes::VECTOR2_BIT;
+                        break;
+                    case 3:
+                        returnType|=GraphicsTypes::VECTOR3_BIT;
+                        break;
+                    case 4:
+                        returnType|=GraphicsTypes::VECTOR4_BIT;
+                        break;
+                    }
+                }
+                else if (vectorComponents)
+                {
+                    switch (vectorComponents)
+                    {
+                    case 2:
+                        returnType|=GraphicsTypes::VECTOR2_BIT;
+                        break;
+                    case 3:
+                        returnType|=GraphicsTypes::VECTOR3_BIT;
+                        break;
+                    case 4:
+                        returnType|=GraphicsTypes::VECTOR4_BIT;
+                        break;
+                    }
+                }
+                return (GraphicsTypes::GraphicsType)returnType;
+            }
+            return GraphicsTypes::UNKNOWN;
+        }
+
+        UniformBufferDescriptorLayout BackEndLib::uniformBufferDescriptorLayoutFromSPV(SpvReflectBlockVariable* block)
+        {
+            std::string name = block->name;
+            auto type = graphicsTypeFromSPV(block->type_description);
+            std::vector<UniformBufferDescriptorLayout> children;
+            for (auto i=0; i< block->member_count; i++)
+            {
+                children.push_back(uniformBufferDescriptorLayoutFromSPV(block->members+i));
+            }
+            if (block->array.dims_count > 1)
+            {
+                throw std::invalid_argument("Invalid array dimensions");
+            }
+            auto dims = block->array.dims[0];
+            auto arrayDepth = dims == 0? 1 : dims;
+            return UniformBufferDescriptorLayout(name,type,arrayDepth,std::move(children),block->size,block->offset,block->absolute_offset);
+        }
     }
 }

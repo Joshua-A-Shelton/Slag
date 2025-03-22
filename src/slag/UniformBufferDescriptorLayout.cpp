@@ -3,8 +3,7 @@
 
 namespace slag
 {
-    UniformBufferDescriptorLayout::UniformBufferDescriptorLayout(const std::string& name, GraphicsTypes::GraphicsType type, uint32_t arrayDepth, std::vector<UniformBufferDescriptorLayout>&& children,
-                                                                 size_t size, size_t offset)
+    UniformBufferDescriptorLayout::UniformBufferDescriptorLayout(const std::string& name, GraphicsTypes::GraphicsType type, uint32_t arrayDepth, std::vector<UniformBufferDescriptorLayout>&& children, size_t size, size_t offset, size_t absoluteOffset)
     {
         _name = name;
         _type = type;
@@ -12,6 +11,7 @@ namespace slag
         _children = std::move(children);
         _size = size;
         _offset = offset;
+        _absoluteOffset = absoluteOffset;
     }
 
     UniformBufferDescriptorLayout::UniformBufferDescriptorLayout(UniformBufferDescriptorLayout&& from)
@@ -62,5 +62,10 @@ namespace slag
     size_t UniformBufferDescriptorLayout::offset() const
     {
         return _offset;
+    }
+
+    size_t UniformBufferDescriptorLayout::absoluteOffset() const
+    {
+        return _absoluteOffset;
     }
 } // slag
