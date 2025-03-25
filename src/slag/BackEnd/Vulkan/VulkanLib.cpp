@@ -554,9 +554,21 @@ namespace slag
             {
                 usageFlags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
             }
+            if (usage & Buffer::Usage::UNIFORM_BUFFER)
+            {
+                usageFlags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+            }
             if(usage & Buffer::Usage::STORAGE_BUFFER)
             {
                 usageFlags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+            }
+            if (usage & Buffer::Usage::UNIFORM_TEXEL_BUFFER)
+            {
+                usageFlags |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+            }
+            if (usage & Buffer::Usage::STORAGE_TEXEL_BUFFER)
+            {
+                usageFlags |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
             }
             if(usage & Buffer::Usage::INDIRECT_BUFFER)
             {

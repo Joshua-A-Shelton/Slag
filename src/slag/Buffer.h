@@ -27,10 +27,16 @@ namespace slag
             VERTEX_BUFFER = 0b00000001,
             ///Indicates the buffer contains vertex indexes
             INDEX_BUFFER = 0b00000010,
+            ///Indicates the buffer contains uniform buffer data
+            UNIFORM_BUFFER = 0b00000100,
             ///Indicates the buffer is shader writeable
-            STORAGE_BUFFER = 0b00000100,
+            STORAGE_BUFFER = 0b00001000,
+            ///Indicates the buffer contains texel data
+            UNIFORM_TEXEL_BUFFER = 0b00010000,
+            ///Indicates the buffer contains texel data and is shader writable
+            STORAGE_TEXEL_BUFFER = 0b00100000,
             ///Indicates the buffer is suitable as a parameter to indirect calls
-            INDIRECT_BUFFER = 0b00001000
+            INDIRECT_BUFFER = 0b01000000
         };
         enum IndexSize
         {
