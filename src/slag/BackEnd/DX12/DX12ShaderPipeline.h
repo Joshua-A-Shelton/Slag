@@ -23,11 +23,13 @@ namespace slag
             DescriptorGroup* descriptorGroup(size_t index)override;
             DescriptorGroup* operator[](size_t index)override;
             size_t pushConstantRangeCount()override;
+            UniformBufferDescriptorLayout* uniformBufferLayout(size_t descriptorGroup,uint32_t descriptorBinding)override;
             PushConstantRange pushConstantRange(size_t index)override;
         private:
             void move(DX12ShaderPipeline&& from);
             ID3D12PipelineState* _pipeline = nullptr;
             std::vector<DX12DescriptorGroup> _descriptorGroups;
+            std::unordered_map<size_t,std::unordered_map<uint32_t,UniformBufferDescriptorLayout>> _uniformBufferLayouts;
             std::vector<PushConstantRange> _pushConstantRanges;
 
             struct stageDetails

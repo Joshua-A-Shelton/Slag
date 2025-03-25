@@ -19,7 +19,7 @@ namespace slag
          * @param size
          * @param offset
          */
-        UniformBufferDescriptorLayout(const std::string& name, GraphicsTypes::GraphicsType type, uint32_t arrayDepth, std::vector<UniformBufferDescriptorLayout>&& children, size_t size, size_t offset);
+        UniformBufferDescriptorLayout(const std::string& name, GraphicsTypes::GraphicsType type, uint32_t arrayDepth, std::vector<UniformBufferDescriptorLayout>&& children, size_t size, size_t offset, size_t absoluteOffset);
         UniformBufferDescriptorLayout()=delete;
         UniformBufferDescriptorLayout(const UniformBufferDescriptorLayout&)=delete;
         UniformBufferDescriptorLayout& operator=(const UniformBufferDescriptorLayout&)=delete;
@@ -33,8 +33,10 @@ namespace slag
         size_t childrenCount()const;
         ///Size in bytes this layout takes in the memory buffer
         size_t size()const;
-        ///the offset position in bytes from the root of the buffer
+        ///The offset position in bytes from the parent of this descriptor
         size_t offset()const;
+        ///The offset from the beginning of the buffer
+        size_t absoluteOffset()const;
         const UniformBufferDescriptorLayout& operator[](size_t index)const;
     private:
         void move(UniformBufferDescriptorLayout&& from);
@@ -44,6 +46,7 @@ namespace slag
         std::vector<UniformBufferDescriptorLayout> _children;
         size_t _size = 0;
         size_t _offset=0;
+        size_t _absoluteOffset=0;
 
     };
 
