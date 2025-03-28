@@ -141,15 +141,15 @@ namespace slag
                             setDescriptors.push_back(Descriptor(desc->name,descType,desc->count,desc->binding,module.stageFlags));
                             if (descType == Descriptor::UNIFORM_BUFFER)
                             {
-                                if (_uniformBufferLayouts.contains(set))
+                                if (_uniformBufferLayouts.contains(desc->set))
                                 {
-                                    auto& uset =_uniformBufferLayouts[set];
-                                    uset.emplace(std::make_pair(descriptorIndex,lib::BackEndLib::uniformBufferDescriptorLayoutFromSPV(&desc->block)));
+                                    auto& uset =_uniformBufferLayouts[desc->set];
+                                    uset.emplace(std::make_pair(desc->binding,lib::BackEndLib::uniformBufferDescriptorLayoutFromSPV(&desc->block)));
                                 }
                                 else
                                 {
-                                    auto it = _uniformBufferLayouts.emplace(set,std::unordered_map<uint32_t,UniformBufferDescriptorLayout>());
-                                    it.first->second.emplace(descriptorIndex,lib::BackEndLib::uniformBufferDescriptorLayoutFromSPV(&desc->block));
+                                    auto it = _uniformBufferLayouts.emplace(desc->set,std::unordered_map<uint32_t,UniformBufferDescriptorLayout>());
+                                    it.first->second.emplace(desc->binding,lib::BackEndLib::uniformBufferDescriptorLayoutFromSPV(&desc->block));
                                 }
 
                             }
