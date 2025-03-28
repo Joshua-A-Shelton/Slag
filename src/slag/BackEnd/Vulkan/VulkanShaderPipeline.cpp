@@ -280,6 +280,7 @@ namespace slag
             //if we have provided a description for the vertex, use that
             if(vertexDescription)
             {
+                uint32_t location = 0;
                 attributes.resize(vertexDescription->attributeCount());
                 bindingDescriptions.resize(vertexDescription->attributeChannels());
                 size_t attIndex = 0;
@@ -290,7 +291,7 @@ namespace slag
                     {
                         auto& attr = attributes[attIndex];
                         auto& description = vertexDescription->attribute(channel, attribute);
-                        attr.location = attribute;
+                        attr.location = location;
                         attr.binding = channel;
                         attr.format = VulkanLib::graphicsType(description.dataType());
                         if(attr.format == VK_FORMAT_UNDEFINED)
@@ -298,6 +299,7 @@ namespace slag
                             throw std::runtime_error("Unable to convert graphicsType type into underlying API type");
                         }
                         attr.offset = description.offset();
+                        location++;
                         attIndex++;
                         size_t end = attr.offset + GraphicsTypes::typeSize(description.dataType());
                         if (end > stride)
