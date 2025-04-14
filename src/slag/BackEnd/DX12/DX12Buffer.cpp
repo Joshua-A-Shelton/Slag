@@ -136,6 +136,11 @@ namespace slag
             return _accessibility;
         }
 
+        unsigned char* DX12Buffer::cpuHandle()
+        {
+            return static_cast<unsigned char*>(_memoryLocation);
+        }
+
         ID3D12Resource* DX12Buffer::underlyingBuffer()
         {
             return _buffer;

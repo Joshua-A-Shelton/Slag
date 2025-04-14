@@ -178,6 +178,11 @@ namespace slag
             return _accessibility;
         }
 
+        unsigned char* VulkanBuffer::cpuHandle()
+        {
+            return static_cast<unsigned char*>(_memoryLocation);
+        }
+
         VkBuffer VulkanBuffer::underlyingBuffer()
         {
             return _buffer;

@@ -24,6 +24,7 @@ namespace slag
             std::vector<std::byte> downloadData()override;
             size_t size()override;
             Accessibility accessibility()override;
+            unsigned char* cpuHandle()override;
             VkBuffer underlyingBuffer();
         private:
             void move(VulkanBuffer&& from);

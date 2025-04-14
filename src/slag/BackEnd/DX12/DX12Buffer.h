@@ -26,6 +26,7 @@ namespace slag
             std::vector<std::byte> downloadData()override;
             size_t size()override;
             Accessibility accessibility()override;
+            unsigned char* cpuHandle()override;
             ID3D12Resource* underlyingBuffer();
 
         private:

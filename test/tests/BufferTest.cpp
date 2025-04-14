@@ -42,3 +42,13 @@ TEST(BufferTest, Copy)
     }
 
 }
+
+TEST(BufferTest, CpuHandle)
+{
+    auto gpuBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(64,Buffer::GPU,Buffer::DATA_BUFFER));
+    auto cpuBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(64,Buffer::CPU,Buffer::DATA_BUFFER));
+    auto bothBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(64,Buffer::CPU_AND_GPU,Buffer::DATA_BUFFER));
+    GTEST_ASSERT_EQ(gpuBuffer->cpuHandle(),nullptr);
+    GTEST_ASSERT_NE(cpuBuffer->cpuHandle(),nullptr);
+    GTEST_ASSERT_NE(bothBuffer->cpuHandle(),nullptr);
+}
