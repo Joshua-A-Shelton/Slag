@@ -28,7 +28,7 @@ namespace slag
             STORAGE_TEXEL_BUFFER,
             ///Represents a section of a buffer that contains arbitrary data
             UNIFORM_BUFFER,
-            ///Represents a section of a buffer that contains arbitrary data that both read and write operations can be performed on in the same shader (Generally GPU shaders)
+            ///Represents a section of a buffer that contains arbitrary data that both read and write operations can be performed on in the same shader (Generally GPU shaders or unsized arrays in pixel shaders)
             STORAGE_BUFFER,
             ///Texture that can be used for framebuffer local operations
             INPUT_ATTACHMENT,
