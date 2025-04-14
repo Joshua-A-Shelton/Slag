@@ -105,6 +105,10 @@ namespace slag
             _usage = from._usage;
             _size = from._size;
             std::swap(_memoryLocation, from._memoryLocation);
+            if(_allocation)
+            {
+                vmaSetAllocationUserData(VulkanLib::card()->memoryAllocator(),_allocation,&_selfReference);
+            }
         }
 
         void VulkanBuffer::update(size_t offset, void* data, size_t dataLength)
