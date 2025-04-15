@@ -183,5 +183,61 @@ namespace slag
             return _buffer;
         }
 
+        void VulkanBuffer::moveMemory(VmaAllocation allocation, VulkanCommandBuffer* commandBuffer)
+        {
+            VkBuffer buffer = nullptr;
+            VkBufferCreateInfo bufferCreateInfo{};
+            bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+            bufferCreateInfo.size = _size;
+            bufferCreateInfo.usage = _usage;
+            VkBufferCreateFlags createFlags = 0;
+            if(_accessibility & CPU)
+            {
+                createFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            }
+            if(_accessibility & GPU)
+            {
+                createFlags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            }
+            bufferCreateInfo.flags = createFlags;
+
+            auto result = vkCreateBuffer(VulkanLib::card()->device(),&bufferCreateInfo,nullptr,&buffer);
+            if (result != VK_SUCCESS)
+            {
+                throw std::runtime_error("failed to create buffer for defragmenting");
+            }
+            result = vmaBindBufferMemory(VulkanLib::card()->memoryAllocator(),allocation,buffer);
+            if (result != VK_SUCCESS)
+            {
+                vkDestroyBuffer(VulkanLib::card()->device(),buffer,nullptr);
+                throw std::runtime_error("failed to bind buffer for defragmenting");
+            }
+            auto b = commandBuffer->underlyingCommandBuffer();
+            VkBufferCopy copyRegion{};
+            copyRegion.srcOffset = 0;
+            copyRegion.dstOffset = 0;
+            copyRegion.size = _size;
+            vkCmdCopyBuffer(b,_buffer,buffer,1,&copyRegion);
+
+            smartMove();
+            if(_accessibility & CPU)
+            {
+                vmaMapMemory(VulkanLib::card()->memoryAllocator(),allocation,&_memoryLocation);
+                _disposeFunction = [=]
+                {
+                    vmaUnmapMemory(VulkanLib::card()->memoryAllocator(),allocation);
+                    vmaDestroyBuffer(VulkanLib::card()->memoryAllocator(),buffer,allocation);
+                };
+            }
+            else
+            {
+                _disposeFunction = [=]
+                {
+                    vmaDestroyBuffer(VulkanLib::card()->memoryAllocator(),buffer,allocation);
+                };
+            }
+            _buffer = buffer;
+            _allocation = allocation;
+        }
     } // vulkan
 } // slag

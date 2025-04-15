@@ -301,7 +301,7 @@ namespace slag
             info.viewType = VulkanLib::viewType(textureType,layers);
             info.image = _image;
             info.format = localFormat.format;
-            info.subresourceRange.layerCount = 1;
+            info.subresourceRange.layerCount = _layers;
             info.subresourceRange.baseMipLevel = 0;
             info.subresourceRange.levelCount = _mipLevels;
             info.subresourceRange.baseArrayLayer = 0;
@@ -330,5 +330,85 @@ namespace slag
             return std::bit_cast<TextureUsage>(_usage);
         }
 
+        void VulkanTexture::moveMemory(VmaAllocation newAllocation,VulkanCommandBuffer* commandBuffer)
+        {
+            auto localFormat = VulkanLib::format(_format);
+            VkImageCreateInfo dimg_info{};
+            dimg_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+            dimg_info.format = localFormat.format;
+            dimg_info.usage = _usage;
+
+            VkExtent3D imageExtent;
+            imageExtent.width = static_cast<uint32_t>(_width);
+            imageExtent.height = static_cast<uint32_t>(_height);
+            imageExtent.depth = 1;
+
+
+            dimg_info.extent = imageExtent;
+            dimg_info.imageType = VulkanLib::imageType(_type);
+            if(_type == Texture::CUBE_MAP)
+            {
+                dimg_info.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+            }
+            dimg_info.mipLevels = _mipLevels;
+            dimg_info.arrayLayers = _layers;
+            dimg_info.samples = static_cast<VkSampleCountFlagBits>(_sampleCount);
+            dimg_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+
+            VkImage image;
+            auto result =vkCreateImage(VulkanLib::card()->device(),&dimg_info,nullptr,&_image);
+            if (result != VK_SUCCESS)
+            {
+                throw std::runtime_error("unable to create texture while defraggimg memory");
+            }
+
+            VkImageView view;
+            VkImageViewCreateInfo info = {};
+            info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            info.pNext = nullptr;
+
+            info.viewType = VulkanLib::viewType(_type,_layers);
+            info.image = _image;
+            info.format = localFormat.format;
+            info.subresourceRange.layerCount = _layers;
+            info.subresourceRange.baseMipLevel = 0;
+            info.subresourceRange.levelCount = _mipLevels;
+            info.subresourceRange.baseArrayLayer = 0;
+            info.subresourceRange.aspectMask = _aspects;
+            info.components = localFormat.mapping;
+
+            result = vkCreateImageView(VulkanLib::card()->device(),&info, nullptr,&_view);
+            if (result != VK_SUCCESS)
+            {
+                vkDestroyImage(VulkanLib::card()->device(),image, nullptr);
+                throw std::runtime_error("unable to create texture while defraggimg memory");
+            }
+
+
+            result = vmaBindImageMemory(VulkanLib::card()->memoryAllocator(),newAllocation,image);
+            std::vector<VkImageCopy> copyRegions(_mipLevels);
+            size_t currentRegionIndex = 0;
+            for (auto level = 0; level < _mipLevels; level++)
+            {
+                auto& copyRegion = copyRegions[currentRegionIndex];
+                copyRegion.extent = {.width = static_cast<uint32_t>(_width)>>level,.height=static_cast<uint32_t>(_height)>>level,.depth = _layers};
+                copyRegion.srcOffset = {0,0};
+                copyRegion.dstOffset = {0,0};
+                copyRegion.srcSubresource = {.aspectMask = _aspects,.mipLevel = level,.baseArrayLayer = 0,.layerCount = _layers};
+                currentRegionIndex++;
+            }
+            auto b = commandBuffer->underlyingCommandBuffer();
+            vkCmdCopyImage(b,_image,VK_IMAGE_LAYOUT_UNDEFINED,image,VK_IMAGE_LAYOUT_UNDEFINED,copyRegions.size(),copyRegions.data());
+
+            smartMove();
+            _disposeFunction = [=]()
+            {
+                vmaDestroyImage(VulkanLib::card()->memoryAllocator(),image,newAllocation);
+                vkDestroyImageView(VulkanLib::card()->device(),view, nullptr);
+            };
+            _image = image;
+            _allocation = newAllocation;
+            _view = view;
+        }
     }
 } // slag

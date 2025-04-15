@@ -228,7 +228,47 @@ namespace slag
             //see https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/defragmentation.html
             //https://www.khronos.org/blog/copying-images-on-the-host-in-vulkan
             //https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VK_EXT_host_image_copy.html
-            throw std::runtime_error("not implemented");
+            //throw std::runtime_error("not implemented");
+
+            VmaDefragmentationInfo defragInfo = {};
+            defragInfo.flags = VMA_DEFRAGMENTATION_FLAG_ALGORITHM_FAST_BIT;
+
+
+            VmaDefragmentationContext defragCtx;
+            VkResult res = vmaBeginDefragmentation(VulkanLib::card()->memoryAllocator(), &defragInfo, &defragCtx);
+            if (res != VK_SUCCESS)
+            {
+                throw std::runtime_error("failed to begin defragmentation");
+            }
+            VulkanCommandBuffer commandBuffer(VulkanLib::card()->graphicsQueueFamily());
+            while (true)
+            {
+                VmaDefragmentationPassMoveInfo pass;
+                res = vmaBeginDefragmentationPass(VulkanLib::card()->memoryAllocator(), defragCtx, &pass);
+                if(res == VK_SUCCESS)
+                    break;
+                else if(res != VK_INCOMPLETE)
+                {
+                    for(uint32_t i = 0; i < pass.moveCount; ++i)
+                    {
+                        // Inspect pass.pMoves[i].srcAllocation, identify what buffer/image it represents.
+                        VmaAllocationInfo allocInfo;
+                        vmaGetAllocationInfo(VulkanLib::card()->memoryAllocator(), pass.pMoves[i].srcAllocation, &allocInfo);
+                        VulkanGPUMemoryReference* userData = (VulkanGPUMemoryReference*)allocInfo.pUserData;
+                        if (userData->memoryType == VulkanGPUMemoryReference::Texture)
+                        {
+                            auto texture = userData->reference.texture;
+                            texture->moveMemory(pass.pMoves[i].dstTmpAllocation,&commandBuffer);
+                        }
+                        else
+                        {
+                            auto buffer = userData->reference.buffer;
+                            buffer->moveMemory(pass.pMoves[i].dstTmpAllocation,&commandBuffer);
+                        }
+
+                    }
+                }
+            }
 
         }
 

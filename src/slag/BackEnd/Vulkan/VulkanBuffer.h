@@ -9,7 +9,7 @@ namespace slag
 {
     namespace vulkan
     {
-
+        class VulkanCommandBuffer;
         class VulkanBuffer: public Buffer, resources::Resource
         {
         public:
@@ -25,6 +25,7 @@ namespace slag
             size_t size()override;
             Accessibility accessibility()override;
             VkBuffer underlyingBuffer();
+            void moveMemory(VmaAllocation allocation, VulkanCommandBuffer* commandBuffer);
         private:
             void move(VulkanBuffer&& from);
             void updateCPU(size_t offset, void* data, size_t dataLength);

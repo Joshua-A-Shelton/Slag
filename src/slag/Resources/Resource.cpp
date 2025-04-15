@@ -27,6 +27,15 @@ namespace slag
             }
         }
 
+        void Resource::smartMove()
+        {
+            if(_disposeFunction)
+            {
+                resources::ResourceManager::queueResourceForDeletion((Resource*)this);
+                _gpuID = RESOURCE_UUID_GENERATOR();
+            }
+        }
+
         void Resource::move(Resource& from)
         {
             _destroyImmediately = from._destroyImmediately;

@@ -35,7 +35,7 @@ namespace slag
             uint8_t sampleCount()override;
             Pixels::Format format()override;
             TextureUsage usage()override;
-
+            void moveMemory(VmaAllocation newAllocation, VulkanCommandBuffer* commandBuffer);
 
             VkImage image();
             VkImageView view();

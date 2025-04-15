@@ -250,6 +250,7 @@ if(BUILD_SLAG_TESTS)
             test/tests/IntegrationTests.cpp
             test/utils/Window.cpp
             test/utils/Window.h
+            test/tests/GraphicsCardTests.cpp
     )
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)
     target_include_directories(SlagTests PRIVATE src ${SDL2_LIBRARIES} third-party/stb test/third-party/LodePNG)
