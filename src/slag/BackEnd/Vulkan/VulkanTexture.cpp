@@ -414,6 +414,7 @@ namespace slag
             });
             _image = newImage;
             _view = newImageView;
+            return true;
         }
 
         void VulkanTexture::setDestructor()
