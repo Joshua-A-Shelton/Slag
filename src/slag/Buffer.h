@@ -27,10 +27,16 @@ namespace slag
             VERTEX_BUFFER = 0b00000001,
             ///Indicates the buffer contains vertex indexes
             INDEX_BUFFER = 0b00000010,
+            ///Indicates the buffer contains uniform buffer data
+            UNIFORM_BUFFER = 0b00000100,
             ///Indicates the buffer is shader writeable
-            STORAGE_BUFFER = 0b00000100,
+            STORAGE_BUFFER = 0b00001000,
+            ///Indicates the buffer contains texel data
+            UNIFORM_TEXEL_BUFFER = 0b00010000,
+            ///Indicates the buffer contains texel data and is shader writable
+            STORAGE_TEXEL_BUFFER = 0b00100000,
             ///Indicates the buffer is suitable as a parameter to indirect calls
-            INDIRECT_BUFFER = 0b00001000
+            INDIRECT_BUFFER = 0b01000000
         };
         enum IndexSize
         {
@@ -44,8 +50,10 @@ namespace slag
         virtual std::vector<std::byte> downloadData()=0;
         ///size of the buffer in bytes
         virtual size_t size()=0;
-        //Whether or not the buffer is natively accessible from the CPU, GPU, or both
+        ///Whether or not the buffer is natively accessible from the CPU, GPU, or both
         virtual Accessibility accessibility()=0;
+        ///The location of the buffer in host memory (if cpu accessible)
+        virtual unsigned char* cpuHandle()=0;
 
         static Buffer* newBuffer(void* data, size_t dataSize, Accessibility accessibility, Usage usage);
         static Buffer* newBuffer(size_t  bufferSize, Accessibility accessibility, Usage usage);

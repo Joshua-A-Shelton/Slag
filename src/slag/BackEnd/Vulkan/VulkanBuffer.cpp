@@ -105,6 +105,10 @@ namespace slag
             _usage = from._usage;
             _size = from._size;
             std::swap(_memoryLocation, from._memoryLocation);
+            if(_allocation)
+            {
+                vmaSetAllocationUserData(VulkanLib::card()->memoryAllocator(),_allocation,&_selfReference);
+            }
         }
 
         void VulkanBuffer::update(size_t offset, void* data, size_t dataLength)
@@ -176,6 +180,11 @@ namespace slag
         Buffer::Accessibility VulkanBuffer::accessibility()
         {
             return _accessibility;
+        }
+
+        unsigned char* VulkanBuffer::cpuHandle()
+        {
+            return static_cast<unsigned char*>(_memoryLocation);
         }
 
         VkBuffer VulkanBuffer::underlyingBuffer()

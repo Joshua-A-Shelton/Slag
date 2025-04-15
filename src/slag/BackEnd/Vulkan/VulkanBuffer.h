@@ -4,6 +4,7 @@
 #include "../../Resources/Resource.h"
 #include <vulkan/vulkan.h>
 #include "vk_mem_alloc.h"
+#include "VulkanGPUMemoryReference.h"
 
 namespace slag
 {
@@ -24,6 +25,7 @@ namespace slag
             std::vector<std::byte> downloadData()override;
             size_t size()override;
             Accessibility accessibility()override;
+            unsigned char* cpuHandle()override;
             VkBuffer underlyingBuffer();
             void moveMemory(VmaAllocation allocation, VulkanCommandBuffer* commandBuffer);
         private:
@@ -38,6 +40,7 @@ namespace slag
             Accessibility _accessibility=CPU_AND_GPU;
             Usage _usage = static_cast<Usage>(0);
             void* _memoryLocation = nullptr;
+            VulkanGPUMemoryReference _selfReference{.memoryType = VulkanGPUMemoryReference::Buffer, .reference={.buffer = this}};
         };
 
     } // vulkan

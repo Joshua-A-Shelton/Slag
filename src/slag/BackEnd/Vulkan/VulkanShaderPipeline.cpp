@@ -141,15 +141,15 @@ namespace slag
                             setDescriptors.push_back(Descriptor(desc->name,descType,desc->count,desc->binding,module.stageFlags));
                             if (descType == Descriptor::UNIFORM_BUFFER)
                             {
-                                if (_uniformBufferLayouts.contains(set))
+                                if (_uniformBufferLayouts.contains(desc->set))
                                 {
-                                    auto& uset =_uniformBufferLayouts[set];
-                                    uset.emplace(std::make_pair(descriptorIndex,lib::BackEndLib::uniformBufferDescriptorLayoutFromSPV(&desc->block)));
+                                    auto& uset =_uniformBufferLayouts[desc->set];
+                                    uset.emplace(std::make_pair(desc->binding,lib::BackEndLib::uniformBufferDescriptorLayoutFromSPV(&desc->block)));
                                 }
                                 else
                                 {
-                                    auto it = _uniformBufferLayouts.emplace(set,std::unordered_map<uint32_t,UniformBufferDescriptorLayout>());
-                                    it.first->second.emplace(descriptorIndex,lib::BackEndLib::uniformBufferDescriptorLayoutFromSPV(&desc->block));
+                                    auto it = _uniformBufferLayouts.emplace(desc->set,std::unordered_map<uint32_t,UniformBufferDescriptorLayout>());
+                                    it.first->second.emplace(desc->binding,lib::BackEndLib::uniformBufferDescriptorLayoutFromSPV(&desc->block));
                                 }
 
                             }
@@ -280,6 +280,7 @@ namespace slag
             //if we have provided a description for the vertex, use that
             if(vertexDescription)
             {
+                uint32_t location = 0;
                 attributes.resize(vertexDescription->attributeCount());
                 bindingDescriptions.resize(vertexDescription->attributeChannels());
                 size_t attIndex = 0;
@@ -290,7 +291,7 @@ namespace slag
                     {
                         auto& attr = attributes[attIndex];
                         auto& description = vertexDescription->attribute(channel, attribute);
-                        attr.location = attribute;
+                        attr.location = location;
                         attr.binding = channel;
                         attr.format = VulkanLib::graphicsType(description.dataType());
                         if(attr.format == VK_FORMAT_UNDEFINED)
@@ -298,6 +299,7 @@ namespace slag
                             throw std::runtime_error("Unable to convert graphicsType type into underlying API type");
                         }
                         attr.offset = description.offset();
+                        location++;
                         attIndex++;
                         size_t end = attr.offset + GraphicsTypes::typeSize(description.dataType());
                         if (end > stride)
