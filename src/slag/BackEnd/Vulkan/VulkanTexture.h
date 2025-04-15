@@ -35,7 +35,9 @@ namespace slag
             uint8_t sampleCount()override;
             Pixels::Format format()override;
             TextureUsage usage()override;
-            void moveMemory(VmaAllocation newAllocation, VulkanCommandBuffer* commandBuffer);
+            bool moveMemory(VmaAllocation tempAllocation, VulkanCommandBuffer* commandBuffer);
+            ///Only need to call if the allocation has been moved (GPU defragment)
+            void setDestructor();
 
             VkImage image();
             VkImageView view();

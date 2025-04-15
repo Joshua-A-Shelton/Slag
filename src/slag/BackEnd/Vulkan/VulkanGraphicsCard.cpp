@@ -240,15 +240,18 @@ namespace slag
             {
                 throw std::runtime_error("failed to begin defragmentation");
             }
-            VulkanCommandBuffer commandBuffer(VulkanLib::card()->graphicsQueueFamily());
+            std::vector<VulkanTexture*> movedTextures;
+            std::vector<VulkanBuffer*> movedBuffers;
             while (true)
             {
                 VmaDefragmentationPassMoveInfo pass;
                 res = vmaBeginDefragmentationPass(VulkanLib::card()->memoryAllocator(), defragCtx, &pass);
                 if(res == VK_SUCCESS)
                     break;
-                else if(res != VK_INCOMPLETE)
+                else if(res == VK_INCOMPLETE)
                 {
+                    VulkanCommandBuffer commandBuffer(VulkanLib::card()->graphicsQueueFamily());
+                    commandBuffer.begin();
                     for(uint32_t i = 0; i < pass.moveCount; ++i)
                     {
                         // Inspect pass.pMoves[i].srcAllocation, identify what buffer/image it represents.
@@ -258,18 +261,56 @@ namespace slag
                         if (userData->memoryType == VulkanGPUMemoryReference::Texture)
                         {
                             auto texture = userData->reference.texture;
-                            texture->moveMemory(pass.pMoves[i].dstTmpAllocation,&commandBuffer);
+                            if (texture->moveMemory(pass.pMoves[i].dstTmpAllocation,&commandBuffer))
+                            {
+                                movedTextures.push_back(texture);
+                            }
+                            else
+                            {
+                                pass.pMoves[i].operation = VMA_DEFRAGMENTATION_MOVE_OPERATION_IGNORE;
+                            }
                         }
                         else
                         {
                             auto buffer = userData->reference.buffer;
-                            buffer->moveMemory(pass.pMoves[i].dstTmpAllocation,&commandBuffer);
+                            if (buffer->moveMemory(pass.pMoves[i].dstTmpAllocation,&commandBuffer))
+                            {
+                                movedBuffers.push_back(buffer);
+                            }
+                            else
+                            {
+                                pass.pMoves[i].operation = VMA_DEFRAGMENTATION_MOVE_OPERATION_IGNORE;
+                            }
                         }
 
                     }
+                    commandBuffer.end();
+                    VulkanLib::card()->graphicsQueue()->submit(&commandBuffer);
+                    commandBuffer.waitUntilFinished();
+                    res = vmaEndDefragmentationPass(VulkanLib::card()->memoryAllocator(), defragCtx, &pass);
+                    if(res == VK_SUCCESS)
+                        break;
+                    else if(res != VK_INCOMPLETE)
+                    {
+                        throw std::runtime_error("failed to defragment graphics memory");
+                    }
+
+                }
+                else
+                {
+                    throw std::runtime_error("failed to defragment graphics memory");
                 }
             }
-
+            vmaEndDefragmentation(VulkanLib::card()->memoryAllocator(),defragCtx,nullptr);
+            for (auto texture : movedTextures)
+            {
+                texture->setDestructor();
+            }
+            for(auto buffer : movedBuffers)
+            {
+                //reset the destructor because the allocation and buffer reference changed
+                buffer->setDestructor();
+            }
         }
 
     } // vulkan

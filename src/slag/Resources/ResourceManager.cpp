@@ -11,13 +11,33 @@ namespace slag
             std::lock_guard<std::mutex> bufferGuard(_activeCommandMutex);
             std::lock_guard<std::mutex> resourceGuard(_resourcesMutex);
             auto id = resource->gpuID();
-            _resources[id] = {.references = _activeConsumers.size(), .disposalFunction = resource->_disposeFunction};
             if(_activeConsumers.empty())
             {
                 resource->_disposeFunction();
             }
             else
             {
+                _resources[id] = {.references = _activeConsumers.size(), .disposalFunction = resource->_disposeFunction};
+
+                for (auto consumer: _activeConsumers)
+                {
+                    consumer->addResourceReference(id);
+                }
+            }
+        }
+
+        void ResourceManager::queueResourceForDeletion(boost::uuids::uuid id, const std::function<void()>& disposeNonAllocations)
+        {
+            std::lock_guard<std::mutex> bufferGuard(_activeCommandMutex);
+            std::lock_guard<std::mutex> resourceGuard(_resourcesMutex);
+
+            if(_activeConsumers.empty())
+            {
+                disposeNonAllocations();
+            }
+            else
+            {
+                _resources[id] = {.references = _activeConsumers.size(), .disposalFunction = disposeNonAllocations};
                 for (auto consumer: _activeConsumers)
                 {
                     consumer->addResourceReference(id);

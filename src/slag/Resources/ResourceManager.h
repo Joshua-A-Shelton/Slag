@@ -22,6 +22,7 @@ namespace slag
         {
         public:
             static void queueResourceForDeletion(Resource* resource);
+            static void queueResourceForDeletion(boost::uuids::uuid id, const std::function<void()>& disposeNonAllocations);
             static void setConsumerAsActive(ResourceConsumer* buffer);
             static void removeConsumerFromActive(ResourceConsumer* buffer);
             friend class ResourceConsumer;

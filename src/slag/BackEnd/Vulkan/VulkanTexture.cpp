@@ -330,7 +330,7 @@ namespace slag
             return std::bit_cast<TextureUsage>(_usage);
         }
 
-        void VulkanTexture::moveMemory(VmaAllocation newAllocation,VulkanCommandBuffer* commandBuffer)
+        bool VulkanTexture::moveMemory(VmaAllocation tempAllocation,VulkanCommandBuffer* commandBuffer)
         {
             auto localFormat = VulkanLib::format(_format);
             VkImageCreateInfo dimg_info{};
@@ -355,20 +355,20 @@ namespace slag
             dimg_info.samples = static_cast<VkSampleCountFlagBits>(_sampleCount);
             dimg_info.tiling = VK_IMAGE_TILING_OPTIMAL;
 
-            VkImage image;
-            auto result =vkCreateImage(VulkanLib::card()->device(),&dimg_info,nullptr,&_image);
+            VkImage newImage;
+
+            auto result = vkCreateImage(VulkanLib::card()->device(),&dimg_info,nullptr,&newImage);
             if (result != VK_SUCCESS)
             {
-                throw std::runtime_error("unable to create texture while defraggimg memory");
+                return false;
             }
 
-            VkImageView view;
             VkImageViewCreateInfo info = {};
             info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             info.pNext = nullptr;
 
             info.viewType = VulkanLib::viewType(_type,_layers);
-            info.image = _image;
+            info.image = newImage;
             info.format = localFormat.format;
             info.subresourceRange.layerCount = _layers;
             info.subresourceRange.baseMipLevel = 0;
@@ -376,39 +376,56 @@ namespace slag
             info.subresourceRange.baseArrayLayer = 0;
             info.subresourceRange.aspectMask = _aspects;
             info.components = localFormat.mapping;
-
-            result = vkCreateImageView(VulkanLib::card()->device(),&info, nullptr,&_view);
+            VkImageView newImageView;
+            result = vkCreateImageView(VulkanLib::card()->device(),&info, nullptr,&newImageView);
             if (result != VK_SUCCESS)
             {
-                vkDestroyImage(VulkanLib::card()->device(),image, nullptr);
-                throw std::runtime_error("unable to create texture while defraggimg memory");
+                vkDestroyImage(VulkanLib::card()->device(),newImage, nullptr);
+                return false;
             }
-
-
-            result = vmaBindImageMemory(VulkanLib::card()->memoryAllocator(),newAllocation,image);
-            std::vector<VkImageCopy> copyRegions(_mipLevels);
-            size_t currentRegionIndex = 0;
-            for (auto level = 0; level < _mipLevels; level++)
+            result = vmaBindImageMemory(VulkanLib::card()->memoryAllocator(),tempAllocation,newImage);
+            if (result != VK_SUCCESS)
             {
-                auto& copyRegion = copyRegions[currentRegionIndex];
-                copyRegion.extent = {.width = static_cast<uint32_t>(_width)>>level,.height=static_cast<uint32_t>(_height)>>level,.depth = _layers};
-                copyRegion.srcOffset = {0,0};
-                copyRegion.dstOffset = {0,0};
-                copyRegion.srcSubresource = {.aspectMask = _aspects,.mipLevel = level,.baseArrayLayer = 0,.layerCount = _layers};
-                currentRegionIndex++;
+                vkDestroyImage(VulkanLib::card()->device(),newImage, nullptr);
+                vkDestroyImageView(VulkanLib::card()->device(),newImageView, nullptr);
+                return false;
             }
             auto b = commandBuffer->underlyingCommandBuffer();
-            vkCmdCopyImage(b,_image,VK_IMAGE_LAYOUT_UNDEFINED,image,VK_IMAGE_LAYOUT_UNDEFINED,copyRegions.size(),copyRegions.data());
+            std::vector<VkImageCopy> copies(_mipLevels);
+            for (auto i = 0; i < _mipLevels; i++)
+            {
+                auto& copy = copies[i];
+                copy.extent = {0,0,_layers};
+                copy.dstOffset = {0,0,0};
+                copy.srcOffset = {0,0,0};
+                copy.srcSubresource.aspectMask = _aspects;
+                copy.srcSubresource.baseArrayLayer = 0;
+                copy.srcSubresource.layerCount = _layers;
+                copy.dstSubresource.mipLevel = i;
+                copy.dstSubresource = copy.srcSubresource;
+            }
+            vkCmdCopyImage(b,_image,VK_IMAGE_LAYOUT_UNDEFINED,newImage,VK_IMAGE_LAYOUT_UNDEFINED,copies.size(),copies.data());
+            auto oldImage = _image;
+            auto oldImageView = _view;
+            smartMove([=]
+            {
+                vkDestroyImage(VulkanLib::card()->device(),oldImage,nullptr);
+                vkDestroyImageView(VulkanLib::card()->device(),oldImageView,nullptr);
+            });
+            _image = newImage;
+            _view = newImageView;
+        }
 
-            smartMove();
+        void VulkanTexture::setDestructor()
+        {
+            auto img = _image;
+            auto allocation = _allocation;
+            auto view = _view;
             _disposeFunction = [=]()
             {
-                vmaDestroyImage(VulkanLib::card()->memoryAllocator(),image,newAllocation);
+                vmaDestroyImage(VulkanLib::card()->memoryAllocator(),img,allocation);
                 vkDestroyImageView(VulkanLib::card()->device(),view, nullptr);
             };
-            _image = image;
-            _allocation = newAllocation;
-            _view = view;
         }
     }
 } // slag

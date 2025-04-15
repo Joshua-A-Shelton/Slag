@@ -18,7 +18,7 @@ namespace slag
         protected:
             void move(Resource& from);
             void smartDestroy();
-            void smartMove();
+            void smartMove(const std::function<void()>& disposeNonAllocations);
 
             std::function<void()> _disposeFunction = nullptr;
             bool _destroyImmediately = false;

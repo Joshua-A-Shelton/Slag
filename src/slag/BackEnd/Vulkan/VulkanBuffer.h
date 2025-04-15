@@ -27,7 +27,9 @@ namespace slag
             Accessibility accessibility()override;
             unsigned char* cpuHandle()override;
             VkBuffer underlyingBuffer();
-            void moveMemory(VmaAllocation allocation, VulkanCommandBuffer* commandBuffer);
+            bool moveMemory(VmaAllocation tempAllocation, VulkanCommandBuffer* commandBuffer);
+            ///Only need to call if the allocation has been moved (GPU defragment)
+            void setDestructor();
         private:
             void move(VulkanBuffer&& from);
             void updateCPU(size_t offset, void* data, size_t dataLength);

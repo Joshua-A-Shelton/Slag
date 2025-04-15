@@ -27,11 +27,11 @@ namespace slag
             }
         }
 
-        void Resource::smartMove()
+        void Resource::smartMove(const std::function<void()>& disposeNonAllocations)
         {
-            if(_disposeFunction)
+            if(disposeNonAllocations)
             {
-                resources::ResourceManager::queueResourceForDeletion((Resource*)this);
+                resources::ResourceManager::queueResourceForDeletion(_gpuID,disposeNonAllocations);
                 _gpuID = RESOURCE_UUID_GENERATOR();
             }
         }
