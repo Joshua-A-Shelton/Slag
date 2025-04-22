@@ -126,6 +126,92 @@ namespace slag
             }
             return false;
         }
+
+        static bool isColorFormat(Format format)
+        {
+            if( format == R32G32B32A32_FLOAT){return true;}
+            else if( format == R32G32B32A32_UINT){return true;}
+            else if( format == R32G32B32A32_SINT){return true;}
+            else if( format == R32G32B32_FLOAT){return true;}
+            else if( format == R32G32B32_UINT){return true;}
+            else if( format == R32G32B32_SINT){return true;}
+            else if( format == R16G16B16A16_FLOAT){return true;}
+            else if( format == R16G16B16A16_UNORM){return true;}
+            else if( format == R16G16B16A16_UINT){return true;}
+            else if( format == R16G16B16A16_SNORM){return true;}
+            else if( format == R16G16B16A16_SINT){return true;}
+            else if( format == R32G32_FLOAT){return true;}
+            else if( format == R32G32_UINT){return true;}
+            else if( format == R32G32_SINT){return true;}
+            else if( format == R10G10B10A2_UNORM){return true;}
+            else if( format == R10G10B10A2_UINT){return true;}
+            else if( format == R11G11B10_FLOAT){return true;}
+            else if( format == R8G8B8A8_UNORM){return true;}
+            else if( format == R8G8B8A8_UNORM_SRGB){return true;}
+            else if( format == R8G8B8A8_UINT){return true;}
+            else if( format == R8G8B8A8_SNORM){return true;}
+            else if( format == R8G8B8A8_SINT){return true;}
+            else if( format == R16G16_FLOAT){return true;}
+            else if( format == R16G16_UNORM){return true;}
+            else if( format == R16G16_UINT){return true;}
+            else if( format == R16G16_SNORM){return true;}
+            else if( format == R16G16_SINT){return true;}
+            else if( format == R32_FLOAT){return true;}
+            else if( format == R32_UINT){return true;}
+            else if( format == R32_SINT){return true;}
+            else if( format == R8G8_UNORM){return true;}
+            else if( format == R8G8_UINT){return true;}
+            else if( format == R8G8_SNORM){return true;}
+            else if( format == R8G8_SINT){return true;}
+            else if( format == R16_FLOAT){return true;}
+            else if( format == R16_UNORM){return true;}
+            else if( format == R16_UINT){return true;}
+            else if( format == R16_SNORM){return true;}
+            else if( format == R16_SINT){return true;}
+            else if( format == R8_UNORM){return true;}
+            else if( format == R8_UINT){return true;}
+            else if( format == R8_SNORM){return true;}
+            else if( format == R8_SINT){return true;}
+            else if( format == A8_UNORM){return true;}
+            else if( format == R9G9B9E5_SHAREDEXP){return true;}
+            else if( format == R8G8_B8G8_UNORM){return true;}
+            else if( format == G8R8_G8B8_UNORM){return true;}
+            else if( format == BC1_UNORM){return true;}
+            else if( format == BC1_UNORM_SRGB){return true;}
+            else if( format == BC2_UNORM){return true;}
+            else if( format == BC2_UNORM_SRGB){return true;}
+            else if( format == BC3_UNORM){return true;}
+            else if( format == BC3_UNORM_SRGB){return true;}
+            else if( format == BC4_UNORM){return true;}
+            else if( format == BC4_SNORM){return true;}
+            else if( format == BC5_UNORM){return true;}
+            else if( format == BC5_SNORM){return true;}
+            else if( format == B5G6R5_UNORM){return true;}
+            else if( format == B5G5R5A1_UNORM){return true;}
+            else if( format == B8G8R8A8_UNORM){return true;}
+            else if( format == B8G8R8X8_UNORM){return true;}
+            else if( format == B8G8R8A8_UNORM_SRGB){return true;}
+            else if( format == B8G8R8X8_UNORM_SRGB){return true;}
+            else if( format == BC6H_UF16){return true;}
+            else if( format == BC6H_SF16){return true;}
+            else if( format == BC7_UNORM){return true;}
+            else if( format == BC7_UNORM_SRGB){return true;}
+            else if( format == AYUV){return true;}
+            else if( format == NV12){return true;}
+            else if( format == OPAQUE_420){return true;}
+            else if( format == YUY2){return true;}
+            else if( format == B4G4R4A4_UNORM){return true;}
+            return false;
+        }
+
+        static bool isDepthFormat(Format format)
+        {
+            if( format == D32_FLOAT_S8X24_UINT){return true;}
+            else if( format == D32_FLOAT){return true;}
+            else if( format == D24_UNORM_S8_UINT){return true;}
+            else if( format == D16_UNORM){return true;}
+            return false;
+        }
     };
 
 } // slag
