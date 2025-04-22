@@ -42,6 +42,7 @@ namespace slag
             static VkStencilOp stencilOp(Operations::StencilOperation op);
             static VkIndexType indexType(Buffer::IndexSize iSize);
             static VkClearValue clearValue(slag::ClearValue clearValue);
+            static VkBufferUsageFlags bufferUsage(Buffer::Usage usage);
 
             VulkanLib(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VulkanGraphicsCard* card);
             ~VulkanLib();

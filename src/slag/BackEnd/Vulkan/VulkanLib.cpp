@@ -461,6 +461,40 @@ namespace slag
             return std::bit_cast<VkClearValue>(clearValue);
         }
 
+        VkBufferUsageFlags VulkanLib::bufferUsage(Buffer::Usage usage)
+        {
+            VkBufferUsageFlags usageFlags = 0;
+            if(usage & Buffer::Usage::VERTEX_BUFFER)
+            {
+                usageFlags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+            }
+            if(usage & Buffer::Usage::INDEX_BUFFER)
+            {
+                usageFlags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+            }
+            if (usage & Buffer::Usage::UNIFORM_BUFFER)
+            {
+                usageFlags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+            }
+            if(usage & Buffer::Usage::STORAGE_BUFFER)
+            {
+                usageFlags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+            }
+            if (usage & Buffer::Usage::UNIFORM_TEXEL_BUFFER)
+            {
+                usageFlags |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+            }
+            if (usage & Buffer::Usage::STORAGE_TEXEL_BUFFER)
+            {
+                usageFlags |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+            }
+            if(usage & Buffer::Usage::INDIRECT_BUFFER)
+            {
+                usageFlags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+            }
+            return usageFlags;
+        }
+
         VulkanLib::VulkanLib(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VulkanGraphicsCard* card)
         {
             _instance = instance;
@@ -544,36 +578,7 @@ namespace slag
 
         Buffer* VulkanLib::newBuffer(void* data, size_t dataSize, Buffer::Accessibility accessibility, Buffer::Usage usage)
         {
-            VkBufferUsageFlags usageFlags = 0;
-
-            if(usage & Buffer::Usage::VERTEX_BUFFER)
-            {
-                usageFlags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-            }
-            if(usage & Buffer::Usage::INDEX_BUFFER)
-            {
-                usageFlags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-            }
-            if (usage & Buffer::Usage::UNIFORM_BUFFER)
-            {
-                usageFlags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-            }
-            if(usage & Buffer::Usage::STORAGE_BUFFER)
-            {
-                usageFlags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-            }
-            if (usage & Buffer::Usage::UNIFORM_TEXEL_BUFFER)
-            {
-                usageFlags |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
-            }
-            if (usage & Buffer::Usage::STORAGE_TEXEL_BUFFER)
-            {
-                usageFlags |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
-            }
-            if(usage & Buffer::Usage::INDIRECT_BUFFER)
-            {
-                usageFlags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-            }
+            VkBufferUsageFlags usageFlags = bufferUsage(usage);
 
             return new VulkanBuffer(data,dataSize,accessibility,usageFlags, false);
         }
