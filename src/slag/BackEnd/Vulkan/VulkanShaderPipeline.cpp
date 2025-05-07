@@ -126,9 +126,9 @@ namespace slag
                 for(size_t set = 0; set< setCount; set++)
                 {
                     auto binding = reflectModule.descriptor_bindings[set];
-                    if(binding.set > maxDescriptorGroup)
+                    if(binding.set >= maxDescriptorGroup)
                     {
-                        maxDescriptorGroup = binding.set;
+                        maxDescriptorGroup = binding.set+1;
                     }
                     auto descriptorSet = spvReflectGetDescriptorSet(&reflectModule,binding.set,&result);
                     if(descriptorSet != nullptr)
@@ -174,7 +174,7 @@ namespace slag
             }
 
             //add descriptor groups to shader
-            for(size_t i=0; i<=maxDescriptorGroup && hasDescriptorGroups; i++)
+            for(size_t i=0; i<maxDescriptorGroup && hasDescriptorGroups; i++)
             {
                 //if we provided an override for a group, use that
                 if(i < descriptorGroupCount)
