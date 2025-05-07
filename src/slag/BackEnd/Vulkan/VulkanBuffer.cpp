@@ -202,7 +202,7 @@ namespace slag
             bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
             bufferInfo.size = _size;
             //every buffer should support transfer
-            bufferInfo.usage = _usage | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            bufferInfo.usage = VulkanLib::bufferUsage(_usage) | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
             auto result = vkCreateBuffer(VulkanLib::card()->device(),&bufferInfo,nullptr,&buffer);
             if (result != VK_SUCCESS)
             {
@@ -221,7 +221,8 @@ namespace slag
             copyRegion.dstOffset = 0;
             copyRegion.size = _size;
             vkCmdCopyBuffer(b,_buffer,buffer,1,&copyRegion);
-            smartMove([=]{vkDestroyBuffer(VulkanLib::card()->device(),_buffer,nullptr);});
+            auto bufferHandle = _buffer;
+            smartMove([=]{vkDestroyBuffer(VulkanLib::card()->device(),bufferHandle,nullptr);});
             _buffer = buffer;
             _memoryLocation = nullptr;
             return true;
@@ -229,17 +230,19 @@ namespace slag
 
         void VulkanBuffer::setDestructor()
         {
+            auto allocation = _allocation;
+            auto buffer = _buffer;
             if(_accessibility & CPU)
             {
                 _disposeFunction = [=]
                 {
-                    vmaUnmapMemory(VulkanLib::card()->memoryAllocator(),_allocation);
-                    vmaDestroyBuffer(VulkanLib::card()->memoryAllocator(),_buffer,_allocation);
+                    vmaUnmapMemory(VulkanLib::card()->memoryAllocator(),allocation);
+                    vmaDestroyBuffer(VulkanLib::card()->memoryAllocator(),buffer,allocation);
                 };
                 if (_memoryLocation == nullptr)
                 {
                     VmaAllocationInfo allocationInfo = {};
-                    vmaGetAllocationInfo(VulkanLib::card()->memoryAllocator(),_allocation,&allocationInfo);
+                    vmaGetAllocationInfo(VulkanLib::card()->memoryAllocator(),allocation,&allocationInfo);
                     _memoryLocation = allocationInfo.pMappedData;
                 }
             }
@@ -247,7 +250,7 @@ namespace slag
             {
                 _disposeFunction = [=]
                 {
-                    vmaDestroyBuffer(VulkanLib::card()->memoryAllocator(),_buffer,_allocation);
+                    vmaDestroyBuffer(VulkanLib::card()->memoryAllocator(),buffer,allocation);
                 };
             }
         }
