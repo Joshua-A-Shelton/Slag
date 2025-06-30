@@ -1,0 +1,84 @@
+#ifndef SLAG_TEXTURE_H
+#define SLAG_TEXTURE_H
+#include <cstdint>
+
+#include "Pixels.h"
+
+namespace slag
+{
+    ///Holds texel data for many different kinds of uses, such as color data, depth, cubemaps, etc.
+    class Texture
+    {
+    public:
+        enum Type
+        {
+            TEXTURE_1D,
+            TEXTURE_2D,
+            TEXTURE_3D,
+            TEXTURE_CUBE,
+        };
+
+        enum UsageFlags: uint8_t
+        {
+            ///Texture can be sampled from (filtered) in rasterization shaders
+            SAMPLED_IMAGE=0b00000001,
+            ///Texture can be directly read from in rasterization shaders
+            INPUT_ATTACHMENT=0b00000010,
+            ///Texture supports compute shader read and writes
+            STORAGE=0b00000100,
+            ///Texture can be written to as a color texture in rasterization shaders
+            RENDER_TARGET_ATTACHMENT=0b00001000,
+            ///Texture can be written to as a depth texture in rasterization shaders
+            DEPTH_STENCIL_ATTACHMENT=0b00010000,
+        };
+
+        enum SampleCount
+        {
+            ONE = 1,
+            TWO = 2,
+            FOUR = 4,
+            EIGHT = 8,
+            SIXTEEN = 16,
+            THIRTY_TWO = 32,
+            SIXTY_FOUR = 64,
+        };
+
+        virtual ~Texture()=default;
+        ///What kind of type this texture is
+        virtual Type type()=0;
+        ///What kind of usage does this texture support
+        virtual UsageFlags usageFlags()=0;
+        ///Samples used in multisampling
+        virtual SampleCount sampleCount()=0;
+        ///Width in texels
+        virtual uint32_t width()=0;
+
+        /**
+         * Width in texels at a given mip level
+         * @param mipLevel mip to calculate the pixel width for
+         * @return
+         */
+        uint32_t width(uint32_t mipLevel);
+        ///Height in pixels
+        virtual uint32_t height()=0;
+
+        /**
+         * Height in texels at a fiben mip level
+         * @param mipLevel mip to calculate the pixel height for
+         * @return
+         */
+        uint32_t height(uint32_t mipLevel);
+        ///Number of elements in the array (1D or 2D textures), or number of depth slices (3D texture), (or 6 in cubemaps, one for each face of the cube)
+        virtual uint32_t layers()=0;
+        ///Number of mip levels (lower LOD images used in shader sampling)
+        virtual uint32_t mipLevels()=0;
+        ///The type of texel format backing the image
+        virtual Pixels::Format format()=0;
+
+        static Texture* newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels);
+        static Texture* newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers);
+
+    };
+} // slag
+
+#endif //SLAG_TEXTURE_H
