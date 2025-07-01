@@ -1,5 +1,6 @@
 #include "Texture.h"
-
+#include <slag/backends/Backend.h>
+#include <slag/utilities/SLAG_ASSERT.h>
 #include <stdexcept>
 
 namespace slag
@@ -16,12 +17,14 @@ namespace slag
 
     Texture* Texture::newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels)
     {
-        throw std::runtime_error("Texture::newTexture(): Not implemented");
+        SLAG_ASSERT(Backend::current()!=nullptr);
+        return Backend::current()->newTexture(texelFormat,type,usageFlags,width,height,layers,mipLevels);
     }
 
     Texture* Texture::newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers)
     {
-        throw std::runtime_error("Texture::newTexture(): Not implemented");
+        SLAG_ASSERT(Backend::current()!=nullptr);
+        return Backend::current()->newTexture(texelFormat,type,usageFlags,width,height,layers,mipLevels,texelData,providedDataMips,providedDataLayers);
     }
 
 

@@ -1,6 +1,7 @@
 #ifndef SLAG_SEMAPHORE_H
 #define SLAG_SEMAPHORE_H
 #include <cstdint>
+#include <cstddef>
 
 namespace slag
 {

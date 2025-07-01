@@ -52,7 +52,7 @@ namespace slag
         virtual GPUQueue* TransferQueue(uint32_t index)=0;
 
         ///Defragment video memory, blocks until finished
-        virtual void defragmentMemory()=0;
+        virtual void defragmentMemory(SemaphoreValue* waitFor, size_t waitForCount, SemaphoreValue* signal, size_t signalCount)=0;
     };
 } // slag
 
