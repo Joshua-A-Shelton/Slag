@@ -12,12 +12,22 @@ namespace slag
 {
     std::unique_ptr<GraphicsCard> SLAG_CHOSEN_GRAPHICS_CARD=nullptr;
 
-    bool initialize(const SlagInitInfo& initInfo)
+    SlagInitializationResult initialize(const SlagInitInfo& initInfo)
     {
         SLAG_ASSERT(Backend::current()==nullptr && SLAG_CHOSEN_GRAPHICS_CARD==nullptr);
 
         switch (initInfo.graphicsBackend)
         {
+        case GraphicsBackend::CUSTOM_GRAPHICS_BACKEND:
+            if (initInfo.customBackend)
+            {
+                Backend::_current = static_cast<Backend*>(initInfo.customBackend);
+            }
+            else
+            {
+                return SLAG_BACKEND_NOT_AVAILABLE;
+            }
+            break;
         case GraphicsBackend::DEFAULT_GRAPHICS_BACKEND:
 #ifdef SLAG_VULKAN_BACKEND
         case GraphicsBackend::VULKAN_GRAPHICS_BACKEND:
@@ -25,11 +35,11 @@ namespace slag
             break;
 #endif
         default:
-            return false;
+            return SLAG_BACKEND_NOT_AVAILABLE;
         }
         if (Backend::current()==nullptr)
         {
-            return false;
+            return SLAG_BACKEND_NOT_AVAILABLE;
         }
 
 
@@ -39,7 +49,7 @@ namespace slag
         {
             delete Backend::_current;
             Backend::_current = nullptr;
-            return false;
+            return SLAG_NO_GRAPHICS_CARDS;
         }
         if (cards.size()==1)
         {
@@ -63,7 +73,7 @@ namespace slag
             }
             SLAG_CHOSEN_GRAPHICS_CARD = std::move(cards.front());
         }
-        return true;
+        return SLAG_INITIALIZATION_SUCCESS;
     }
 
     void cleanup()

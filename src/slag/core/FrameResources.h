@@ -1,5 +1,5 @@
-#ifndef FRAMERESOURCES_H
-#define FRAMERESOURCES_H
+#ifndef SLAG_FRAMERESOURCES_H
+#define SLAG_FRAMERESOURCES_H
 
 namespace slag
 {
@@ -8,4 +8,4 @@ namespace slag
     public:
     };
 }
-#endif //FRAMERESOURCES_H
+#endif //SLAG_FRAMERESOURCES_H

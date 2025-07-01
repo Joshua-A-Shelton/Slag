@@ -10,7 +10,7 @@ namespace slag
     std::array<uint32_t,Pixels::PIXELS_FORMAT_MAX> PIXEL_SIZES
     {
 #define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits) totalBits/8,
-        TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
+        SLAG_TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
     };
 

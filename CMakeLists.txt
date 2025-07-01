@@ -3,6 +3,10 @@ project(Slag)
 set(CMAKE_CXX_STANDARD 20)
 include(FetchContent)
 
+OPTION(SLAG_DISCREET_TEXTURE_LAYOUTS "Switch the API of the library to toggle manual texture layout transitions" OFF)
+if(SLAG_DISCREET_TEXTURE_LAYOUTS)
+    add_definitions(-DSLAG_DISCREET_TEXTURE_LAYOUTS=1)
+endif()
 
 OPTION(SLAG_VULKAN_BACKEND "Include Vulkan Renderer backend" ON)
 OPTION(SLAG_DX12_BACKEND "Include DX12 Renderer backend" ON)
@@ -70,7 +74,10 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES}
         src/slag/core/SwapChain.h
         src/slag/core/Frame.cpp
         src/slag/core/Frame.h
-        src/slag/core/FrameResources.h)
+        src/slag/core/FrameResources.h
+        src/slag/core/PlatformData.h
+        src/slag/core/GPUBarriers.cpp
+        src/slag/core/GPUBarriers.h)
 
 target_include_directories(Slag PUBLIC src)
 
