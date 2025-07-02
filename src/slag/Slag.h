@@ -1,7 +1,10 @@
 #ifndef SLAG_SLAG_H
 #define SLAG_SLAG_H
 
+#include "core/Buffer.h"
+#include "core/Clear.h"
 #include "core/CommandBuffer.h"
+#include "core/Dimensions.h"
 #include "core/Frame.h"
 #include "core/FrameResources.h"
 #include "core/GPUBarriers.h"

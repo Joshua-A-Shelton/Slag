@@ -68,7 +68,6 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES}
         src/slag/core/Pixels.cpp
         src/slag/utilities/SLAG_ASSERT.h
         src/slag/backends/Backend.h
-        src/slag/core/ICommandBuffer.cpp
         src/slag/core/ICommandBuffer.h
         src/slag/core/SwapChain.cpp
         src/slag/core/SwapChain.h
@@ -77,7 +76,12 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES}
         src/slag/core/FrameResources.h
         src/slag/core/PlatformData.h
         src/slag/core/GPUBarriers.cpp
-        src/slag/core/GPUBarriers.h)
+        src/slag/core/GPUBarriers.h
+        src/slag/core/Buffer.cpp
+        src/slag/core/Buffer.h
+        src/slag/core/Clear.h
+        src/slag/core/Dimensions.h
+)
 
 target_include_directories(Slag PUBLIC src)
 

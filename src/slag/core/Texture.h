@@ -74,6 +74,15 @@ namespace slag
         virtual uint32_t mipLevels()=0;
         ///The type of texel format backing the image
         virtual Pixels::Format format()=0;
+        ///Get the size of the entire texture (assuming tightly packed, may be actually stored differently on hardware) in bytes
+        uint64_t byteSize();
+
+        /**
+         * Get the size of a mip level in bytes (assuming tightly packed, may be actually stored differently on hardware) in bytes
+         * @param mipLevel
+         * @return
+         */
+        uint64_t byteSize(uint32_t mipLevel);
 
         static Texture* newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels);
         static Texture* newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers);

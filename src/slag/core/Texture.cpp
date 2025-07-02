@@ -15,6 +15,26 @@ namespace slag
         return height() >> mipLevel;
     }
 
+    uint64_t Texture::byteSize()
+    {
+
+        auto mipLevels = mipLevels();
+        uint64_t bytes = 0;
+        for (uint32_t i = 0; i < mipLevels; i++)
+        {
+            bytes += byteSize(i);
+        }
+        bytes*=layers();
+        return bytes;
+    }
+
+    uint64_t Texture::byteSize(uint32_t mipLevel)
+    {
+        auto format = format();
+        auto formatSize = Pixels::size(format);
+        return formatSize * width(mipLevel) * height(mipLevel);
+    }
+
     Texture* Texture::newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels)
     {
         SLAG_ASSERT(Backend::current()!=nullptr);
