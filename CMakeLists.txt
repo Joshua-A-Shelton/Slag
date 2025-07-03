@@ -81,6 +81,12 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES}
         src/slag/core/Buffer.h
         src/slag/core/Clear.h
         src/slag/core/Dimensions.h
+        src/slag/core/Sampler.cpp
+        src/slag/core/Sampler.h
+        src/slag/core/Color.cpp
+        src/slag/core/Color.h
+        src/slag/core/Operations.h
+        src/slag/core/Attachment.h
 )
 
 target_include_directories(Slag PUBLIC src)

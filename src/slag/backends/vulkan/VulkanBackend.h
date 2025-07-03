@@ -28,6 +28,8 @@ namespace slag
             virtual Buffer* newBuffer(void* data, size_t dataSize, Buffer::Accessibility accessibility,Buffer::UsageFlags usage)override;
             //swapchains
             virtual SwapChain* newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, SwapChain::PresentMode presentMode, uint8_t desiredBackbufferCount, Pixels::Format format, FrameResources*(* createResourceFunction)(uint8_t frameIndex, SwapChain* inChain))override;
+            //samplers
+            virtual Sampler* newSampler(SamplerParameters parameters)override;
 
         };
     } // vulkan

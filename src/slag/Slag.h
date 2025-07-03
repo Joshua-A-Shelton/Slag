@@ -13,6 +13,7 @@
 #include "core/ICommandBuffer.h"
 #include "core/Pixels.h"
 #include "core/PlatformData.h"
+#include "core/Sampler.h"
 #include "core/Semaphore.h"
 #include "core/SwapChain.h"
 #include "core/Texture.h"
