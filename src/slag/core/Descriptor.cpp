@@ -12,7 +12,7 @@ namespace slag
         return !(*this == to);
     }
 
-    Descriptor::Descriptor(const std::string& name, DescriptorType type, uint32_t arrayDepth, uint32_t binding, ShaderStage::Flags visibleStages):_shape(type,arrayDepth,binding,visibleStages)
+    Descriptor::Descriptor(const std::string& name, DescriptorType type, uint32_t arrayDepth, uint32_t binding, ShaderStageFlags visibleStages):_shape(type,arrayDepth,binding,visibleStages)
     {
         _name = name;
     }

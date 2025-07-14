@@ -99,6 +99,11 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES}
         src/slag/core/Descriptor.cpp
         src/slag/core/Descriptor.h
         src/slag/core/GraphicsTypes.h
+        src/slag/core/DescriptorPool.cpp
+        src/slag/core/DescriptorPool.h
+        src/slag/core/VertexDescription.cpp
+        src/slag/core/VertexDescription.h
+
 )
 
 target_include_directories(Slag PUBLIC src)
@@ -123,6 +128,7 @@ if(PROJECT_IS_TOP_LEVEL)
 
     add_executable(SlagTests
             tests/SlagTestsMain.cpp
+            tests/GraphicsAPIEnvironment.h
             tests/VulkanEnvironment.cpp
             tests/VulkanEnvironment.h
             tests/tests/general/CommandBuffer.cpp

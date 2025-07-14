@@ -7,6 +7,7 @@
 #include "core/Descriptor.h"
 #include "core/DescriptorBundle.h"
 #include "core/DescriptorGroup.h"
+#include "core/DescriptorPool.h"
 #include "core/Dimensions.h"
 #include "core/Frame.h"
 #include "core/FrameResources.h"
@@ -22,6 +23,7 @@
 #include "core/ShaderPipeline.h"
 #include "core/SwapChain.h"
 #include "core/Texture.h"
+#include "core/VertexDescription.h"
 
 namespace slag
 {

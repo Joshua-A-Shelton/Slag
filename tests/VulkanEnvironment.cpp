@@ -33,4 +33,23 @@ namespace slag
         }
         Environment::TearDown();
     }
+
+    std::unique_ptr<slag::ShaderPipeline> VulkanEnvironment::loadPipelineFromFiles(ShaderFile* stages, size_t stageCount,ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription)
+    {
+        std::vector<ShaderCode> shaderCode;
+        std::vector<ShaderCode*> compiledStages(stageCount);
+        for (size_t i = 0; i < stageCount; ++i)
+        {
+            std::vector<unsigned char> compiledStagesCode(stageCount);
+            auto path = stages[i].pathIndicator+".spv";
+            shaderCode.push_back(ShaderCode(stages[i].stage,ShaderCode::SPIRV,path));
+
+        }
+        for (size_t i = 0; i < stageCount; ++i)
+        {
+            compiledStages[i] = &shaderCode[i];
+        }
+        return std::unique_ptr<slag::ShaderPipeline>(slag::ShaderPipeline::newShaderPipeline(compiledStages.data(),compiledStages.size(),properties,vertexDescription,framebufferDescription));
+
+    }
 } // slag

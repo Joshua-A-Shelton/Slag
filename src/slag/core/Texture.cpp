@@ -35,16 +35,16 @@ namespace slag
         return formatSize * width(mipLevel) * height(mipLevel);
     }
 
-    Texture* Texture::newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels)
+    Texture* Texture::newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels,Texture::SampleCount sampleCount)
     {
         SLAG_ASSERT(Backend::current()!=nullptr);
-        return Backend::current()->newTexture(texelFormat,type,usageFlags,width,height,layers,mipLevels);
+        return Backend::current()->newTexture(texelFormat,type,usageFlags,width,height,layers,mipLevels,sampleCount);
     }
 
-    Texture* Texture::newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers)
+    Texture* Texture::newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels,Texture::SampleCount sampleCount, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers)
     {
         SLAG_ASSERT(Backend::current()!=nullptr);
-        return Backend::current()->newTexture(texelFormat,type,usageFlags,width,height,layers,mipLevels,texelData,providedDataMips,providedDataLayers);
+        return Backend::current()->newTexture(texelFormat,type,usageFlags,width,height,layers,mipLevels,sampleCount,texelData,providedDataMips,providedDataLayers);
     }
 
 

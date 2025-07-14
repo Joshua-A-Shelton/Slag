@@ -22,11 +22,11 @@ namespace slag
             virtual void waitFor(SemaphoreValue* values, size_t count)override;
             //textures
 #ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
-            virtual Texture* newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels)override;
-            virtual Texture* newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers)override;
+            virtual Texture* newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount)override;
+            virtual Texture* newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers)override;
 #else
-            virtual Texture* newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels)override;
-            virtual Texture* newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers)override;
+            virtual Texture* newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels,Texture::SampleCount sampleCount)override;
+            virtual Texture* newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers)override;
 #endif
             //Buffers
             virtual Buffer* newBuffer(size_t dataSize, Buffer::Accessibility accessibility,Buffer::UsageFlags usage)override;
@@ -37,6 +37,11 @@ namespace slag
             virtual Sampler* newSampler(SamplerParameters parameters)override;
             //shaders
             virtual std::vector<ShaderCode::CodeLanguage> acceptedLanuages()override;
+            virtual ShaderPipeline* newShaderPipeline(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription)override;
+            virtual ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader)override;
+            //descriptor pools
+            virtual DescriptorPool* newDescriptorPool()override;
+            virtual DescriptorPool* newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)override;
 
         };
     } // vulkan

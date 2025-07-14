@@ -13,7 +13,7 @@ namespace slag
     {
     public:
         ///The type this descriptor describes
-        enum DescriptorType
+        enum class DescriptorType: uint16_t
         {
             ///Object that selects what texels to select from texture (layer, mip, etc)
             SAMPLER,
@@ -46,7 +46,7 @@ namespace slag
             ///The corresponding index to be bound to in the shader
             uint32_t binding=0;
             ///What stages of the shader this descriptor is visible to
-            ShaderStage::Flags visibleStages = ShaderStage::VERTEX;
+            ShaderStageFlags visibleStages = ShaderStageFlags::VERTEX;
 
             bool operator == (const Shape& to)const;
             bool operator != (const Shape& to)const;
@@ -60,7 +60,7 @@ namespace slag
          * @param binding Corresponding index to be bound to in the shader
          * @param visibleStages Stages of the shader is descriptor is visible to
          */
-        Descriptor(const std::string& name, DescriptorType type, uint32_t arrayDepth, uint32_t binding, ShaderStage::Flags visibleStages);
+        Descriptor(const std::string& name, DescriptorType type, uint32_t arrayDepth, uint32_t binding, ShaderStageFlags visibleStages);
         ~Descriptor()=default;
         Descriptor(const Descriptor& from);
         Descriptor& operator=(const Descriptor& from);
@@ -92,7 +92,7 @@ namespace slag
          * @param size
          * @param offset
          */
-        UniformBufferDescriptorLayout(const std::string& name, GraphicsTypes::GraphicsType type, uint32_t arrayDepth, std::vector<UniformBufferDescriptorLayout>&& children, size_t size, size_t offset, size_t absoluteOffset);
+        UniformBufferDescriptorLayout(const std::string& name, GraphicsType type, uint32_t arrayDepth, std::vector<UniformBufferDescriptorLayout>&& children, size_t size, size_t offset, size_t absoluteOffset);
         UniformBufferDescriptorLayout()=delete;
         UniformBufferDescriptorLayout(const UniformBufferDescriptorLayout&)=delete;
         UniformBufferDescriptorLayout& operator=(const UniformBufferDescriptorLayout&)=delete;
@@ -101,7 +101,7 @@ namespace slag
         ///The descriptive name of the object in the buffer, may be empty string
         const std::string& name()const;
         ///The type this layout represents
-        GraphicsTypes::GraphicsType type()const;
+        GraphicsType type()const;
         ///How many children layouts this layout has. Zero for non-struct layouts
         size_t childrenCount()const;
         ///Size in bytes this layout takes in the memory buffer
@@ -114,7 +114,7 @@ namespace slag
     private:
         void move(UniformBufferDescriptorLayout&& from);
         std::string _name;
-        GraphicsTypes::GraphicsType _type= GraphicsTypes::STRUCT;
+        GraphicsType _type= GraphicsType::STRUCT;
         uint32_t _arrayDepth = 1;
         std::vector<UniformBufferDescriptorLayout> _children;
         size_t _size = 0;

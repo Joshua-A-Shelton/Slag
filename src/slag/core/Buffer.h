@@ -1,6 +1,7 @@
 #ifndef SLAG_BUFFER_H
 #define SLAG_BUFFER_H
 #include <cstdint>
+#include <cstddef>
 
 namespace slag
 {

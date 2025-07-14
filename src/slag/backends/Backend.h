@@ -4,6 +4,8 @@
 #include <vector>
 #include <slag/Slag.h>
 
+#include "slag/core/DescriptorPool.h"
+
 namespace slag
 {
     class Backend
@@ -29,11 +31,11 @@ namespace slag
         virtual void waitFor(SemaphoreValue* values, size_t count)=0;
         //textures
 #ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
-        virtual Texture* newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels)=0;
-        virtual Texture* newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers)=0;
+        virtual Texture* newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels,Texture::SampleCount sampleCount)=0;
+        virtual Texture* newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers)=0;
 #else
-        virtual Texture* newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels)=0;
-        virtual Texture* newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers)=0;
+        virtual Texture* newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels,Texture::SampleCount sampleCount)=0;
+        virtual Texture* newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers)=0;
 #endif
         //Buffers
         virtual Buffer* newBuffer(size_t size, Buffer::Accessibility accessibility,Buffer::UsageFlags usage)=0;
@@ -44,6 +46,11 @@ namespace slag
         virtual Sampler* newSampler(SamplerParameters parameters)=0;
         //shaders
         virtual std::vector<ShaderCode::CodeLanguage> acceptedLanuages()=0;
+        virtual ShaderPipeline* newShaderPipeline(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription)=0;
+        virtual ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader)=0;
+        //descriptor pools
+        virtual DescriptorPool* newDescriptorPool()=0;
+        virtual DescriptorPool* newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)=0;
 
     };
 }

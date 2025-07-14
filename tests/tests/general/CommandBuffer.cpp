@@ -1,3 +1,5 @@
+#include "slag/core/DescriptorBundle.h"
+#include "slag/core/DescriptorPool.h"
 #ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
 #include <gtest/gtest.h>
 #include <slag/Slag.h>
@@ -285,7 +287,7 @@ TEST(CommandBuffer, UpdateMip)
         unsigned char a;
     };
     std::vector<byteColor> texels(32*32,byteColor{255,127,50,25});
-    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,2,texels.data(),1,1));
+    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,2,Texture::SampleCount::ONE,texels.data(),1,1));
     std::unique_ptr<Buffer> textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(texture->byteSize(1),Buffer::Accessibility::CPU_AND_GPU));
     commandBuffer->begin();
 
@@ -343,7 +345,7 @@ TEST(CommandBuffer, UpdateMipFailInRenderPass)
         unsigned char a;
     };
     std::vector<byteColor> texels(32*32,byteColor{255,127,50,25});
-    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,2,texels.data(),1,1));
+    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,2,Texture::SampleCount::ONE,texels.data(),1,1));
     std::unique_ptr<Texture> frameBuffer = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,1));
 
     commandBuffer->begin();
@@ -411,7 +413,7 @@ TEST(CommandBuffer, CopyTextureToBuffer)
     {
         texels[i] = byteColor{122,36,15,100};
     }
-    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,2,2,texels.data(),2,2));
+    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,2,2,Texture::SampleCount::ONE,texels.data(),2,2));
     std::unique_ptr<Buffer> textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(texture->byteSize(0)+texture->byteSize(1)+30,Buffer::Accessibility::CPU_AND_GPU));
 
     commandBuffer->begin();
@@ -496,8 +498,8 @@ TEST(CommandBuffer, Blit)
     }
     std::vector<byteColor> byteTexels(32*32,{0,255,0,255});
 
-    std::unique_ptr<Texture> floatTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,1,floatTexels.data(),1,1));
-    std::unique_ptr<Texture> byteTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,1,byteTexels.data(),1,1));
+    std::unique_ptr<Texture> floatTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,1,Texture::SampleCount::ONE,floatTexels.data(),1,1));
+    std::unique_ptr<Texture> byteTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,1,Texture::SampleCount::ONE, byteTexels.data(),1,1));
     std::unique_ptr<Buffer> textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(byteTexture->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
 
     commandBuffer->begin();
@@ -531,6 +533,8 @@ TEST(CommandBuffer, Blit)
     slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
     finished->waitForValue(1);
 
+    //TODO: implement software blit and test against it
+
     for (auto height = 1; height < 31; height++)
     {
         for (auto width = 1; width < 31; width++)
@@ -546,12 +550,91 @@ TEST(CommandBuffer, Blit)
 
 TEST(CommandBuffer, Resolve)
 {
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
+    std::unique_ptr<Texture> multiSampled = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,Texture::SampleCount::FOUR));
+    std::unique_ptr<Texture> input = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,100,100,1,1));
+    std::unique_ptr<Texture> output = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,150,150,1,1));
+    std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(output->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+
+
+    commandBuffer->begin();
+
+    commandBuffer->bindDescriptorPool(descriptorPool.get());
+    Attachment attachment = {.texture = multiSampled.get(),.autoClear = true,.clearValue = {.color = {.floats = {1,0,.5,1}}}};
+    commandBuffer->beginRendering(&attachment,1,nullptr,slag::Rectangle{.offset = {0,0},.extent = {multiSampled->width(),multiSampled->height()}});
+    //TODO: render to target
+    commandBuffer->endRendering();
+    commandBuffer->insertBarrier(
+        TextureBarrier
+        {
+            .texture = multiSampled.get(),
+            .accessBefore = BarrierAccessFlags::SHADER_WRITE,
+            .accessAfter = BarrierAccessFlags::BLIT_READ,
+            .syncBefore = PipelineStageFlags::FRAGMENT_SHADER,
+            .syncAfter = PipelineStageFlags::BLIT,
+        });
+    commandBuffer->resolve(multiSampled.get(),0,0,Rectangle{.offset = {0,0},.extent = {75,75}},output.get(),0,0,Rectangle{.offset = {75,75},.extent = {75,}});
+    commandBuffer->insertBarrier(
+        TextureBarrier
+        {
+            .texture = output.get(),
+            .accessBefore = BarrierAccessFlags::BLIT_WRITE,
+            .accessAfter = BarrierAccessFlags::TRANSFER_READ,
+            .syncBefore = PipelineStageFlags::BLIT,
+            .syncAfter = PipelineStageFlags::TRANSFER,
+        });
+    TextureToBufferCopyData copyData
+    {
+        .bufferOffset = 0,
+        .subresource =
+        {
+            .aspectFlags = Pixels::AspectFlags::COLOR,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        }
+    };
+    commandBuffer->copyTextureToBuffer(output.get(),&copyData,1,outputBuffer.get());
+    commandBuffer->end();
+
+    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
+    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
+    slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
+    finished->waitForValue(1);
+    //TODO: check end result
+
     GTEST_FAIL();
 }
 
 TEST(CommandBuffer, FillBuffer)
 {
-    GTEST_FAIL();
+    std::unique_ptr<Buffer> buffer = std::unique_ptr<Buffer>(Buffer::newBuffer(100*sizeof(uint32_t),Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
+
+    commandBuffer->begin();
+
+    commandBuffer->fillBuffer(buffer.get(),0,buffer->size()/2,15);
+    commandBuffer->fillBuffer(buffer.get(),buffer->size()/2,buffer->size()/2,255);
+
+    commandBuffer->end();
+
+    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
+    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
+    slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
+    finished->waitForValue(1);
+
+    uint32_t* uintPtr = buffer->as<uint32_t>();
+    for (auto i = 0; i < buffer->countAsArray<uint32_t>()/2; ++i)
+    {
+        GTEST_ASSERT_EQ(uintPtr[i],15);
+    }
+    for (auto i =  buffer->countAsArray<uint32_t>()/2; i < buffer->countAsArray<uint32_t>(); ++i)
+    {
+        GTEST_ASSERT_EQ(uintPtr[i],255);
+    }
 }
 
 TEST(CommandBuffer, SetBlendConstants)

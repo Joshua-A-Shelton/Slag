@@ -86,7 +86,7 @@ namespace slag
 {
     struct Pixels
     {
-        enum class Format
+        enum class Format:uint32_t
         {
 #define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits, aspects) SlagName,
             SLAG_TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)

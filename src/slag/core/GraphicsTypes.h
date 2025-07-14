@@ -25,28 +25,28 @@ namespace slag
         STRUCT_BIT              = 0b0100000000000000
     };
 
-    inline GraphicsTypeBits operator|(GraphicsTypeBits a, GraphicsTypeBits b)
+    inline constexpr GraphicsTypeBits operator|(GraphicsTypeBits a, GraphicsTypeBits b)
     {
         return static_cast<GraphicsTypeBits>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
     }
 
-    inline GraphicsTypeBits operator&(GraphicsTypeBits a, GraphicsTypeBits b)
+    inline constexpr GraphicsTypeBits operator&(GraphicsTypeBits a, GraphicsTypeBits b)
     {
         return static_cast<GraphicsTypeBits>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
     }
 
-    inline GraphicsTypeBits operator~(GraphicsTypeBits a)
+    inline constexpr GraphicsTypeBits operator~(GraphicsTypeBits a)
     {
         return static_cast<GraphicsTypeBits>(~static_cast<uint32_t>(a));
     }
 
-    inline GraphicsTypeBits operator|=(GraphicsTypeBits& a, GraphicsTypeBits b)
+    inline constexpr GraphicsTypeBits operator|=(GraphicsTypeBits& a, GraphicsTypeBits b)
     {
         a = a | b;
         return a;
     }
 
-    inline GraphicsTypeBits operator&=(GraphicsTypeBits& a, GraphicsTypeBits b)
+    inline constexpr GraphicsTypeBits operator&=(GraphicsTypeBits& a, GraphicsTypeBits b)
     {
         a = a & b;
         return a;
@@ -56,59 +56,59 @@ namespace slag
 
     enum class GraphicsType: uint32_t
     {
-        UNKNOWN = GraphicsTypeBits::NONE_BIT,
-        BOOLEAN = GraphicsTypeBits::BOOLEAN_BIT,
-        INTEGER = GraphicsTypeBits::INTEGER_BIT,
-        UNSIGNED_INTEGER = GraphicsTypeBits::UNSIGNED_INTEGER_BIT,
-        FLOAT = GraphicsTypeBits::FLOAT_BIT,
-        DOUBLE = GraphicsTypeBits::DOUBLE_BIT,
-        VECTOR2 = GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::FLOAT_BIT,
-        VECTOR3 = GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::FLOAT_BIT,
-        VECTOR4 = GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::FLOAT_BIT,
-        BOOLEAN_VECTOR2 = GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::BOOLEAN_BIT,
-        BOOLEAN_VECTOR3 = GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::BOOLEAN_BIT,
-        BOOLEAN_VECTOR4 = GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::BOOLEAN_BIT,
-        INTEGER_VECTOR2 = GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::INTEGER_BIT,
-        INTEGER_VECTOR3 = GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::INTEGER_BIT,
-        INTEGER_VECTOR4 = GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::INTEGER_BIT,
-        UNSIGNED_INTEGER_VECTOR2 = GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::UNSIGNED_INTEGER_BIT,
-        UNSIGNED_INTEGER_VECTOR3 = GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::UNSIGNED_INTEGER_BIT,
-        UNSIGNED_INTEGER_VECTOR4 = GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::UNSIGNED_INTEGER_BIT,
-        DOUBLE_VECTOR2 = GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::DOUBLE_BIT,
-        DOUBLE_VECTOR3 = GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::DOUBLE_BIT,
-        DOUBLE_VECTOR4 = GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::DOUBLE_BIT,
-        MATRIX_2X2 = GraphicsTypeBits::MATRIX2N_BIT | GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::FLOAT_BIT,
-        MATRIX_2X3 = GraphicsTypeBits::MATRIX2N_BIT | GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::FLOAT_BIT,
-        MATRIX_2X4 = GraphicsTypeBits::MATRIX2N_BIT | GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::FLOAT_BIT,
-        MATRIX_3X2 = GraphicsTypeBits::MATRIX3N_BIT | GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::FLOAT_BIT,
-        MATRIX_3X3 = GraphicsTypeBits::MATRIX3N_BIT | GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::FLOAT_BIT,
-        MATRIX_3X4 = GraphicsTypeBits::MATRIX3N_BIT | GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::FLOAT_BIT,
-        MATRIX_4X2 = GraphicsTypeBits::MATRIX4N_BIT | GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::FLOAT_BIT,
-        MATRIX_4X3 = GraphicsTypeBits::MATRIX4N_BIT | GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::FLOAT_BIT,
-        MATRIX_4X4 = GraphicsTypeBits::MATRIX4N_BIT | GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::FLOAT_BIT,
-        DOUBLE_MATRIX_2X2 = GraphicsTypeBits::MATRIX2N_BIT | GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::DOUBLE_BIT,
-        DOUBLE_MATRIX_2X3 = GraphicsTypeBits::MATRIX2N_BIT | GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::DOUBLE_BIT,
-        DOUBLE_MATRIX_2X4 = GraphicsTypeBits::MATRIX2N_BIT | GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::DOUBLE_BIT,
-        DOUBLE_MATRIX_3X2 = GraphicsTypeBits::MATRIX3N_BIT | GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::DOUBLE_BIT,
-        DOUBLE_MATRIX_3X3 = GraphicsTypeBits::MATRIX3N_BIT | GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::DOUBLE_BIT,
-        DOUBLE_MATRIX_3X4 = GraphicsTypeBits::MATRIX3N_BIT | GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::DOUBLE_BIT,
-        DOUBLE_MATRIX_4X2 = GraphicsTypeBits::MATRIX4N_BIT | GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::DOUBLE_BIT,
-        DOUBLE_MATRIX_4X3 = GraphicsTypeBits::MATRIX4N_BIT | GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::DOUBLE_BIT,
-        DOUBLE_MATRIX_4X4 = GraphicsTypeBits::MATRIX4N_BIT | GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::DOUBLE_BIT,
-        STRUCT = GraphicsTypeBits::STRUCT_BIT
+        UNKNOWN = (uint32_t)(GraphicsTypeBits::NONE_BIT),
+        BOOLEAN = (uint32_t)(GraphicsTypeBits::BOOLEAN_BIT),
+        INTEGER = (uint32_t)(GraphicsTypeBits::INTEGER_BIT),
+        UNSIGNED_INTEGER = (uint32_t)(GraphicsTypeBits::UNSIGNED_INTEGER_BIT),
+        FLOAT = (uint32_t)(GraphicsTypeBits::FLOAT_BIT),
+        DOUBLE = (uint32_t)(GraphicsTypeBits::DOUBLE_BIT),
+        VECTOR2 = (uint32_t)(GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::FLOAT_BIT),
+        VECTOR3 = (uint32_t)(GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::FLOAT_BIT),
+        VECTOR4 = (uint32_t)(GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::FLOAT_BIT),
+        BOOLEAN_VECTOR2 = (uint32_t)(GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::BOOLEAN_BIT),
+        BOOLEAN_VECTOR3 = (uint32_t)(GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::BOOLEAN_BIT),
+        BOOLEAN_VECTOR4 = (uint32_t)(GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::BOOLEAN_BIT),
+        INTEGER_VECTOR2 = (uint32_t)(GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::INTEGER_BIT),
+        INTEGER_VECTOR3 = (uint32_t)(GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::INTEGER_BIT),
+        INTEGER_VECTOR4 = (uint32_t)(GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::INTEGER_BIT),
+        UNSIGNED_INTEGER_VECTOR2 = (uint32_t)(GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::UNSIGNED_INTEGER_BIT),
+        UNSIGNED_INTEGER_VECTOR3 = (uint32_t)(GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::UNSIGNED_INTEGER_BIT),
+        UNSIGNED_INTEGER_VECTOR4 = (uint32_t)(GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::UNSIGNED_INTEGER_BIT),
+        DOUBLE_VECTOR2 = (uint32_t)(GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::DOUBLE_BIT),
+        DOUBLE_VECTOR3 = (uint32_t)(GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::DOUBLE_BIT),
+        DOUBLE_VECTOR4 = (uint32_t)(GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::DOUBLE_BIT),
+        MATRIX_2X2 = (uint32_t)(GraphicsTypeBits::MATRIX2N_BIT | GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::FLOAT_BIT),
+        MATRIX_2X3 = (uint32_t)(GraphicsTypeBits::MATRIX2N_BIT | GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::FLOAT_BIT),
+        MATRIX_2X4 = (uint32_t)(GraphicsTypeBits::MATRIX2N_BIT | GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::FLOAT_BIT),
+        MATRIX_3X2 = (uint32_t)(GraphicsTypeBits::MATRIX3N_BIT | GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::FLOAT_BIT),
+        MATRIX_3X3 = (uint32_t)(GraphicsTypeBits::MATRIX3N_BIT | GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::FLOAT_BIT),
+        MATRIX_3X4 = (uint32_t)(GraphicsTypeBits::MATRIX3N_BIT | GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::FLOAT_BIT),
+        MATRIX_4X2 = (uint32_t)(GraphicsTypeBits::MATRIX4N_BIT | GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::FLOAT_BIT),
+        MATRIX_4X3 = (uint32_t)(GraphicsTypeBits::MATRIX4N_BIT | GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::FLOAT_BIT),
+        MATRIX_4X4 = (uint32_t)(GraphicsTypeBits::MATRIX4N_BIT | GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::FLOAT_BIT),
+        DOUBLE_MATRIX_2X2 = (uint32_t)(GraphicsTypeBits::MATRIX2N_BIT | GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::DOUBLE_BIT),
+        DOUBLE_MATRIX_2X3 = (uint32_t)(GraphicsTypeBits::MATRIX2N_BIT | GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::DOUBLE_BIT),
+        DOUBLE_MATRIX_2X4 = (uint32_t)(GraphicsTypeBits::MATRIX2N_BIT | GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::DOUBLE_BIT),
+        DOUBLE_MATRIX_3X2 = (uint32_t)(GraphicsTypeBits::MATRIX3N_BIT | GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::DOUBLE_BIT),
+        DOUBLE_MATRIX_3X3 = (uint32_t)(GraphicsTypeBits::MATRIX3N_BIT | GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::DOUBLE_BIT),
+        DOUBLE_MATRIX_3X4 = (uint32_t)(GraphicsTypeBits::MATRIX3N_BIT | GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::DOUBLE_BIT),
+        DOUBLE_MATRIX_4X2 = (uint32_t)(GraphicsTypeBits::MATRIX4N_BIT | GraphicsTypeBits::VECTOR2_BIT | GraphicsTypeBits::DOUBLE_BIT),
+        DOUBLE_MATRIX_4X3 = (uint32_t)(GraphicsTypeBits::MATRIX4N_BIT | GraphicsTypeBits::VECTOR3_BIT | GraphicsTypeBits::DOUBLE_BIT),
+        DOUBLE_MATRIX_4X4 = (uint32_t)(GraphicsTypeBits::MATRIX4N_BIT | GraphicsTypeBits::VECTOR4_BIT | GraphicsTypeBits::DOUBLE_BIT),
+        STRUCT = (uint32_t)(GraphicsTypeBits::STRUCT_BIT)
     };
 
-    inline GraphicsTypeBits operator|(GraphicsType a, GraphicsTypeBits b)
+    inline constexpr GraphicsTypeBits operator|(GraphicsType a, GraphicsTypeBits b)
     {
         return static_cast<GraphicsTypeBits>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
     }
 
-    inline GraphicsTypeBits operator&(GraphicsType a, GraphicsTypeBits b)
+    inline constexpr GraphicsTypeBits operator&(GraphicsType a, GraphicsTypeBits b)
     {
         return static_cast<GraphicsTypeBits>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
     }
 
-    inline GraphicsTypeBits operator~(GraphicsType a)
+    inline constexpr GraphicsTypeBits operator~(GraphicsType a)
     {
         return static_cast<GraphicsTypeBits>(~static_cast<uint32_t>(a));
     }
@@ -146,7 +146,7 @@ namespace slag
             dim2 = 2;
         }
         uint32_t size = 0;
-        switch ((uint32_t)type & (uint32_t)GraphicsTypeBits::ANY_PRIMITIVE_BIT)
+        switch ((GraphicsTypeBits)((uint32_t)type & (uint32_t)GraphicsTypeBits::ANY_PRIMITIVE_BIT))
         {
             case GraphicsTypeBits::BOOLEAN_BIT:
                 size = sizeof(bool);
@@ -161,11 +161,13 @@ namespace slag
             case GraphicsTypeBits::DOUBLE_BIT:
                 size = sizeof(double);
                 break;
+            default:
+                break;
         }
         return size * dim1 * dim2;
     }
 
-    uint32_t graphicsTypeAlignmentSize(GraphicsType type)
+    static uint32_t graphicsTypeAlignmentSize(GraphicsType type)
     {
         if(static_cast<bool>(type & GraphicsTypeBits::STRUCT_BIT))
         {
@@ -190,7 +192,7 @@ namespace slag
             dim2=2;
         }
         uint32_t size = 0;
-        switch ((uint32_t)type & (uint32_t)GraphicsTypeBits::ANY_PRIMITIVE_BIT)
+        switch ((GraphicsTypeBits)((uint32_t)type & (uint32_t)GraphicsTypeBits::ANY_PRIMITIVE_BIT))
         {
             case GraphicsTypeBits::BOOLEAN_BIT:
                 size = sizeof(bool);
@@ -204,6 +206,8 @@ namespace slag
                 break;
             case GraphicsTypeBits::DOUBLE_BIT:
                 size = sizeof(double);
+                break;
+            default:
                 break;
         }
         return size*dim1*dim2;
