@@ -28,8 +28,13 @@ namespace slag
         virtual Semaphore* newSemaphore(uint64_t initialValue)=0;
         virtual void waitFor(SemaphoreValue* values, size_t count)=0;
         //textures
+#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
         virtual Texture* newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels)=0;
         virtual Texture* newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers)=0;
+#else
+        virtual Texture* newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels)=0;
+        virtual Texture* newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers)=0;
+#endif
         //Buffers
         virtual Buffer* newBuffer(size_t size, Buffer::Accessibility accessibility,Buffer::UsageFlags usage)=0;
         virtual Buffer* newBuffer(void* data, size_t dataSize, Buffer::Accessibility accessibility,Buffer::UsageFlags usage)=0;
@@ -37,6 +42,8 @@ namespace slag
         virtual SwapChain* newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, SwapChain::PresentMode presentMode, uint8_t desiredBackbufferCount, Pixels::Format format, FrameResources*(* createResourceFunction)(uint8_t frameIndex, SwapChain* inChain))=0;
         //samplers
         virtual Sampler* newSampler(SamplerParameters parameters)=0;
+        //shaders
+        virtual std::vector<ShaderCode::CodeLanguage> acceptedLanuages()=0;
 
     };
 }

@@ -23,14 +23,14 @@ namespace slag
     {
     public:
         ///How to return pixel data beyond the actual bounds of a texture
-        enum AddressMode
+        enum class AddressMode
         {
 #define DEFINITION(slagName, vulkanName, dx12Name) slagName,
             SAMPLER_ADDRESS_MODES_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
         };
         ///Method to upscale/downscale texel data
-        enum Filter
+        enum class Filter
         {
 #define DEFINITION(slagName, vulkanName) slagName,
             SAMPLER_FILTER_DEFINTITIONS(DEFINITION)

@@ -86,23 +86,22 @@ namespace slag
 {
     struct Pixels
     {
-        enum Format
+        enum class Format
         {
-#define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits) SlagName,
+#define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits, aspects) SlagName,
             SLAG_TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
             ///Number of pixel formats
             PIXELS_FORMAT_MAX
         };
 
-        enum AspectFlags:uint8_t
+        enum class AspectFlags:uint8_t
         {
             NONE = 0b00000000,
             COLOR = 0b00000001,
             DEPTH = 0b00000010,
             STENCIL = 0b00000100,
             DEPTH_STENCIL = DEPTH | STENCIL
-
         };
 
         static uint32_t size(Format format);

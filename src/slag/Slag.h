@@ -4,17 +4,22 @@
 #include "core/Buffer.h"
 #include "core/Clear.h"
 #include "core/CommandBuffer.h"
+#include "core/Descriptor.h"
+#include "core/DescriptorBundle.h"
+#include "core/DescriptorGroup.h"
 #include "core/Dimensions.h"
 #include "core/Frame.h"
 #include "core/FrameResources.h"
 #include "core/GPUBarriers.h"
 #include "core/GPUQueue.h"
 #include "core/GraphicsCard.h"
+#include "core/GraphicsTypes.h"
 #include "core/ICommandBuffer.h"
 #include "core/Pixels.h"
 #include "core/PlatformData.h"
 #include "core/Sampler.h"
 #include "core/Semaphore.h"
+#include "core/ShaderPipeline.h"
 #include "core/SwapChain.h"
 #include "core/Texture.h"
 
@@ -53,7 +58,7 @@ namespace slag
 
     SlagInitializationResult initialize(const SlagInitInfo& initInfo={});
     void cleanup();
-    GraphicsCard* graphicsCard();
+    GraphicsCard* slagGraphicsCard();
 }
 
 #endif //SLAG_SLAG_H

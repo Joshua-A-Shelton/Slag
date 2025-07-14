@@ -10,7 +10,7 @@ namespace slag
     class Texture
     {
     public:
-        enum Type
+        enum class Type
         {
             TEXTURE_1D,
             TEXTURE_2D,
@@ -18,7 +18,7 @@ namespace slag
             TEXTURE_CUBE,
         };
 
-        enum UsageFlags: uint8_t
+        enum class UsageFlags: uint8_t
         {
             ///Texture can be sampled from (filtered) in rasterization shaders
             SAMPLED_IMAGE=0b00000001,
@@ -32,7 +32,7 @@ namespace slag
             DEPTH_STENCIL_ATTACHMENT=0b00010000,
         };
 
-        enum SampleCount
+        enum class SampleCount
         {
             ONE = 1,
             TWO = 2,
@@ -84,8 +84,14 @@ namespace slag
          */
         uint64_t byteSize(uint32_t mipLevel);
 
+#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
         static Texture* newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels);
         static Texture* newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers);
+#else
+        static Texture* newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels);
+        static Texture* newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers);
+#endif
+
 
     };
 } // slag

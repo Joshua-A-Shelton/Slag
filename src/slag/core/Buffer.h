@@ -9,7 +9,7 @@ namespace slag
     class Buffer
     {
     public:
-        enum UsageFlags:uint8_t
+        enum class UsageFlags:uint8_t
         {
             ///every buffer is implicitly a data buffer, use this when no other buffer usage flags apply
             DATA_BUFFER = 0b00000000,
@@ -28,13 +28,13 @@ namespace slag
             ///Indicates the buffer is suitable as a parameter to indirect calls
             INDIRECT_BUFFER = 0b01000000
         };
-        enum Accessibility
+        enum class Accessibility
         {
             GPU=0b00000001,
             CPU_AND_GPU = 0b000000110
         };
         ///Type of numeric inside an index array
-        enum IndexSize
+        enum class IndexSize
         {
             UINT16,
             UINT32
@@ -70,8 +70,8 @@ namespace slag
             return size() / sizeof(T);
         }
 
-        static Buffer* create(void* data, size_t dataSize, Accessibility accessibility,UsageFlags usage = DATA_BUFFER);
-        static Buffer* create(size_t size, Accessibility accessibility,UsageFlags usage= DATA_BUFFER);
+        static Buffer* newBuffer(void* data, size_t dataSize, Accessibility accessibility,UsageFlags usage = UsageFlags::DATA_BUFFER);
+        static Buffer* newBuffer(size_t size, Accessibility accessibility,UsageFlags usage= UsageFlags::DATA_BUFFER);
     };
 } // slag
 

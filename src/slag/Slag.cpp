@@ -83,7 +83,7 @@ namespace slag
         Backend::_current = nullptr;
     }
 
-    GraphicsCard* graphicsCard()
+    GraphicsCard* slagGraphicsCard()
     {
         return SLAG_CHOSEN_GRAPHICS_CARD.get();
     }

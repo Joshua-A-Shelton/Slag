@@ -43,5 +43,11 @@ namespace slag
         uint32_t layerCount;
     };
 
+    struct TextureToBufferCopyData
+    {
+        uint64_t bufferOffset;
+        TextureSubresource subresource;
+    };
+
 }
 #endif //SLAG_DIMENSIONS_H

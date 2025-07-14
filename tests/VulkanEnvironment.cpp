@@ -18,7 +18,7 @@ namespace slag
 #endif
         Environment::SetUp();
         //clean up previous environment if it exists
-        if (slag::graphicsCard()!=nullptr)
+        if (slag::slagGraphicsCard()!=nullptr)
         {
             slag::cleanup();
         }
@@ -27,7 +27,7 @@ namespace slag
 
     void VulkanEnvironment::TearDown()
     {
-        if (slag::graphicsCard()!=nullptr)
+        if (slag::slagGraphicsCard()!=nullptr)
         {
             slag::cleanup();
         }

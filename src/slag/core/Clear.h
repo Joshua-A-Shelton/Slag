@@ -7,9 +7,9 @@ namespace slag
     ///Clear color for Color textures
     union ClearColor
     {
-        float floats[4]{0,0,0,0};
-        int32_t ints[4]{0,0,0,0};
-        uint32_t uints[4]{0,0,0,0};
+        float floats[4];
+        int32_t ints[4];
+        uint32_t uints[4];
     };
 
     ///Clear color for Depth textures

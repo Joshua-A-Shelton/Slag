@@ -17,11 +17,11 @@ namespace slag
         virtual std::string name()=0;
 
         ///Gets the graphics queue
-        virtual GPUQueue* GraphicsQueue()=0;
+        virtual GPUQueue* graphicsQueue()=0;
         ///Gets the compute queue, or a default queue that processes it's commands
-        virtual GPUQueue* ComputeQueue()=0;
+        virtual GPUQueue* computeQueue()=0;
         ///Gets the transfer queue, or a queue that processes it's commands
-        virtual GPUQueue* TransferQueue()=0;
+        virtual GPUQueue* transferQueue()=0;
 
         ///Total number of graphics queues (minimum 1 guaranteed)
         virtual uint32_t graphicsQueueCount()=0;
@@ -35,21 +35,21 @@ namespace slag
          * @param index
          * @return
          */
-        virtual GPUQueue* GraphicsQueue(uint32_t index)=0;
+        virtual GPUQueue* graphicsQueue(uint32_t index)=0;
 
         /**
          * Gets a dedicated compute queue at a given index
          * @param index
          * @return
          */
-        virtual GPUQueue* ComputeQueue(uint32_t index)=0;
+        virtual GPUQueue* computeQueue(uint32_t index)=0;
 
         /**
          * Gets a dedicated transfer queue at a given index
          * @param index
          * @return
          */
-        virtual GPUQueue* TransferQueue(uint32_t index)=0;
+        virtual GPUQueue* transferQueue(uint32_t index)=0;
 
         ///Defragment video memory, blocks until finished
         virtual void defragmentMemory(SemaphoreValue* waitFor, size_t waitForCount, SemaphoreValue* signal, size_t signalCount)=0;

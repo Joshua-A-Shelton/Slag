@@ -18,7 +18,7 @@ namespace slag
     uint64_t Texture::byteSize()
     {
 
-        auto mipLevels = mipLevels();
+        auto mipLevels = this->mipLevels();
         uint64_t bytes = 0;
         for (uint32_t i = 0; i < mipLevels; i++)
         {
@@ -30,7 +30,7 @@ namespace slag
 
     uint64_t Texture::byteSize(uint32_t mipLevel)
     {
-        auto format = format();
+        auto format = this->format();
         auto formatSize = Pixels::size(format);
         return formatSize * width(mipLevel) * height(mipLevel);
     }

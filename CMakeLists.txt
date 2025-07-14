@@ -8,6 +8,10 @@ if(SLAG_DISCREET_TEXTURE_LAYOUTS)
     add_definitions(-DSLAG_DISCREET_TEXTURE_LAYOUTS=1)
 endif()
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_definitions(-DSLAG_DEBUG=1)
+endif()
+
 OPTION(SLAG_VULKAN_BACKEND "Include Vulkan Renderer backend" ON)
 OPTION(SLAG_DX12_BACKEND "Include DX12 Renderer backend" ON)
 
@@ -87,6 +91,14 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES}
         src/slag/core/Color.h
         src/slag/core/Operations.h
         src/slag/core/Attachment.h
+        src/slag/core/DescriptorBundle.cpp
+        src/slag/core/DescriptorBundle.h
+        src/slag/core/ShaderPipeline.cpp
+        src/slag/core/ShaderPipeline.h
+        src/slag/core/DescriptorGroup.h
+        src/slag/core/Descriptor.cpp
+        src/slag/core/Descriptor.h
+        src/slag/core/GraphicsTypes.h
 )
 
 target_include_directories(Slag PUBLIC src)
@@ -113,6 +125,7 @@ if(PROJECT_IS_TOP_LEVEL)
             tests/SlagTestsMain.cpp
             tests/VulkanEnvironment.cpp
             tests/VulkanEnvironment.h
+            tests/tests/general/CommandBuffer.cpp
     )
 
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)
