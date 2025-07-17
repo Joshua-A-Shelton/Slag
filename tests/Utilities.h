@@ -1,5 +1,6 @@
 #ifndef SLAG_UTILITIES_H
 #define SLAG_UTILITIES_H
+
 #include <slag/Slag.h>
 namespace slag
 {

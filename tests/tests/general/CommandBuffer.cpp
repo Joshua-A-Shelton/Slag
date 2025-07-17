@@ -871,7 +871,7 @@ TEST_F(CommandBufferTest, SetStencilReference)
     barriers[1].syncBefore = PipelineStageFlags::BLIT;
     barriers[1].syncAfter = PipelineStageFlags::ALL_GRAPHICS;
     commandBuffer->insertBarriers(barriers,2,nullptr,0,nullptr,0);
-    Attachment colorAttachment{.texture = target.get(),.autoClear = true, .clearValue = {.color = {.floats = 0,.2,1,1}}};
+    Attachment colorAttachment{.texture = target.get(),.autoClear = true, .clearValue = {.color = {.floats = {0,.2f,1,1}}}};
     Attachment depth1Attachment{.texture = depth1.get(),.autoClear = false};
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
@@ -967,7 +967,7 @@ TEST_F(CommandBufferTest, Draw)
     objectBundle.setSamplerAndTexture(1,0,objectTexture.get(),DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
-    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = 0,0,0,1}}};
+    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,Rectangle{.extent = {target->width(),target->height()}});
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
@@ -1041,7 +1041,7 @@ TEST_F(CommandBufferTest, DrawIndexed)
     objectBundle.setSamplerAndTexture(1,0,objectTexture.get(),DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
-    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = 0,0,0,1}}};
+    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,Rectangle{.extent = {target->width(),target->height()}});
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
@@ -1116,7 +1116,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
     objectBundle.setSamplerAndTexture(1,0,objectTexture.get(),DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
-    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = 0,0,0,1}}};
+    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,Rectangle{.extent = {target->width(),target->height()}});
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
@@ -1200,7 +1200,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
     objectBundle.setSamplerAndTexture(1,0,objectTexture.get(),DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
-    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = 0,0,0,1}}};
+    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,Rectangle{.extent = {target->width(),target->height()}});
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
@@ -1286,7 +1286,7 @@ TEST_F(CommandBufferTest, DrawIndirect)
     objectBundle.setSamplerAndTexture(1,0,objectTexture.get(),DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
-    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = 0,0,0,1}}};
+    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,Rectangle{.extent = {target->width(),target->height()}});
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
@@ -1367,7 +1367,7 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
     objectBundle.setSamplerAndTexture(1,0,objectTexture.get(),DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
-    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = 0,0,0,1}}};
+    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,Rectangle{.extent = {target->width(),target->height()}});
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());

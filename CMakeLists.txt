@@ -147,7 +147,7 @@ if(PROJECT_IS_TOP_LEVEL)
             tests/Utilities.h
     )
 
-    target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm STB_IMAGE Slag)
+    target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)
     target_include_directories(SlagTests PRIVATE src ${SDL2_LIBRARIES} ${stb_image_SOURCE_DIR})
     include(GoogleTest)
     gtest_discover_tests(SlagTests)
