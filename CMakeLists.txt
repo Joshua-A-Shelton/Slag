@@ -95,6 +95,7 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES}
         src/slag/core/DescriptorBundle.h
         src/slag/core/ShaderPipeline.cpp
         src/slag/core/ShaderPipeline.h
+        src/slag/core/DescriptorGroup.cpp
         src/slag/core/DescriptorGroup.h
         src/slag/core/Descriptor.cpp
         src/slag/core/Descriptor.h
@@ -111,6 +112,15 @@ target_include_directories(Slag PUBLIC src)
 if(PROJECT_IS_TOP_LEVEL)
     find_package(SDL2 REQUIRED)
     find_package(glm CONFIG REQUIRED)
+    fetchcontent_declare(
+            STB_IMAGE
+            GIT_REPOSITORY https://github.com/nothings/stb
+            GIT_TAG origin/master
+            GIT_SHALLOW TRUE
+            OVERRIDE_FIND_PACKAGE
+    )
+    FetchContent_MakeAvailable(STB_IMAGE)
+    find_package(STB_IMAGE)
     message("building tests")
 
     FetchContent_Declare(
@@ -128,14 +138,17 @@ if(PROJECT_IS_TOP_LEVEL)
 
     add_executable(SlagTests
             tests/SlagTestsMain.cpp
+            tests/GraphicsAPIEnvironment.cpp
             tests/GraphicsAPIEnvironment.h
             tests/VulkanEnvironment.cpp
             tests/VulkanEnvironment.h
             tests/tests/general/CommandBuffer.cpp
+            tests/Utilities.cpp
+            tests/Utilities.h
     )
 
-    target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)
-    target_include_directories(SlagTests PRIVATE src ${SDL2_LIBRARIES} third-party/stb test/third-party/LodePNG)
+    target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm STB_IMAGE Slag)
+    target_include_directories(SlagTests PRIVATE src ${SDL2_LIBRARIES} ${stb_image_SOURCE_DIR})
     include(GoogleTest)
     gtest_discover_tests(SlagTests)
 

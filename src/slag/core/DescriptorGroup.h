@@ -33,6 +33,14 @@ namespace slag
         ///Order and types of descriptors in group
         Shape shape();
 
+        /**
+         * Manually create a descriptor group, allows for creating a group that's shared between shaders. Groups created from shader reflection can also be shared, but if the need to have a common group occurs before shader loading, you have this option
+         * @param descriptors
+         * @param descriptorCount
+         * @return
+         */
+        static DescriptorGroup* newDescriptorGroup(Descriptor* descriptors, size_t descriptorCount);
+
     };
 }
 

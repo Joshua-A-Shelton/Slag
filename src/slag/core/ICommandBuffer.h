@@ -13,6 +13,33 @@
 
 namespace slag
 {
+    ///Structure that contains the data for indirect draw calls
+    struct IndirectDrawCommand
+    {
+        ///Number of vertices per instance
+        uint32_t vertexCount;
+        ///Number of instances
+        uint32_t instanceCount;
+        ///Offset into bound vertex buffer to start drawing from
+        uint32_t firstVertex;
+        ///First instance ID (used in shaders)
+        uint32_t firstInstance;
+    };
+
+    ///Structure that contains the data for indirect indexed draw calls
+    struct IndirectDrawIndexedCommand
+    {
+        ///indexCount Number of indexes per instance
+        uint32_t indexCount;
+        ///Number of instances
+        uint32_t instanceCount;
+        ///Offset into bound buffer to start drawing from
+        uint32_t firstIndex;
+        ///Offset into bound vertex buffer to start drawing from
+        int32_t vertexOffset;
+        ///First instance ID (used in shaders)
+        uint32_t firstInstance;
+    };
     ///Provides the set of universal command buffer commands
     class ICommandBuffer
     {
@@ -154,6 +181,20 @@ namespace slag
          * @param destinationArea The area of the texture to draw to (sized to chosen mip level)
          */
         virtual void blit(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceArea, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Rectangle destinationArea)=0;
+        /**
+         * Draw the contents of one texture into another
+         * @param source source The texture to copy from
+         * @param sourceLayer The index of the source texture layer in the texture array (0 for non-arrayed images) to copy from
+         * @param sourceMip sourceMip The mipmap level of the source texture to copy from
+         * @param sourceArea The area of the texture to copy (sized to chosen mip level)
+         * @param destination The texture to draw to
+         * @param destinationLayer The index of the source texture layer in the texture array (0 for non-arrayed images) to draw to
+         * @param destinationMip The mipmap level of the source texture to draw to
+         * @param destinationArea The area of the texture to draw to (sized to chosen mip level)
+         * @param aspects The pixel aspects to copy over from the old image to the new
+         */
+        virtual void blit(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceArea, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Rectangle destinationArea,Pixels::AspectFlags aspects)=0;
+
 #else
         /**
         * Draw the contents of one texture into another
@@ -167,9 +208,23 @@ namespace slag
         * @param destinationLayer The index of the source texture layer in the texture array (0 for non-arrayed images) to draw to
         * @param destinationMip The mipmap level of the source texture to draw to
         * @param destinationArea The area of the texture to draw to (sized to chosen mip level)
-        * @param filter The filter that handles how drawing resizes is handled
         */
-        virtual void blit(Texture* source,TextureLayouts::Layout sourceLayout,uint32_t sourceLayer, uint32_t sourceMip,Rectangle sourceArea, Texture* destination, TextureLayouts::Layout destinationLayout,uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea,Sampler::Filter filter)=0;
+        virtual void blit(Texture* source,TextureLayouts::Layout sourceLayout,uint32_t sourceLayer, uint32_t sourceMip,Rectangle sourceArea, Texture* destination, TextureLayouts::Layout destinationLayout,uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea)=0;
+        /**
+        * Draw the contents of one texture into another
+        * @param source The texture to copy from
+        * @param sourceLayout The layout of the source texture at the time of execution (BLIT_SOURCE/GENERAL)
+        * @param sourceLayer The index of the source texture layer in the texture array (0 for non-arrayed images) to copy from
+        * @param sourceMip The mipmap level of the source texture to copy from
+        * @param sourceArea The area of the texture to copy (sized to chosen mip level)
+        * @param destination The texture to draw to
+        * @param destinationLayout The layout of the destination texture at the time of execution (BLIT_DESTINATION/GENERAL)
+        * @param destinationLayer The index of the source texture layer in the texture array (0 for non-arrayed images) to draw to
+        * @param destinationMip The mipmap level of the source texture to draw to
+        * @param destinationArea The area of the texture to draw to (sized to chosen mip level)
+        * @param aspects The pixel aspects to copy over from the old image to the new
+        */
+        virtual void blit(Texture* source,TextureLayouts::Layout sourceLayout,uint32_t sourceLayer, uint32_t sourceMip,Rectangle sourceArea, Texture* destination, TextureLayouts::Layout destinationLayout,uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea,Pixels::AspectFlags aspects)=0;
 #endif
 
 

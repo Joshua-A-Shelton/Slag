@@ -92,8 +92,45 @@ namespace slag
         static Texture* newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers);
 #endif
 
-
     };
+
+    inline Texture::UsageFlags operator|(const Texture::UsageFlags& a, const Texture::UsageFlags& b)
+    {
+        return static_cast<Texture::UsageFlags>(static_cast<uint8_t>(a) | static_cast<uint8_t>(b));
+    }
+
+    inline Texture::UsageFlags operator&(const Texture::UsageFlags& a, const Texture::UsageFlags& b)
+    {
+        return static_cast<Texture::UsageFlags>(static_cast<uint8_t>(a) & static_cast<uint8_t>(b));
+    }
+
+    inline Texture::UsageFlags operator~(const Texture::UsageFlags& a)
+    {
+        return static_cast<Texture::UsageFlags>(~static_cast<uint8_t>(a));
+    }
+
+    inline Texture::UsageFlags operator^(const Texture::UsageFlags& a, const Texture::UsageFlags& b)
+    {
+        return static_cast<Texture::UsageFlags>(static_cast<uint8_t>(a) ^ static_cast<uint8_t>(b));
+    }
+
+    inline Texture::UsageFlags operator|=(Texture::UsageFlags& a, const Texture::UsageFlags& b)
+    {
+        a = a | b;
+        return a;
+    }
+
+    inline Texture::UsageFlags operator&=(Texture::UsageFlags& a, const Texture::UsageFlags& b)
+    {
+        a = a & b;
+        return a;
+    }
+
+    inline Texture::UsageFlags operator^=(Texture::UsageFlags& a, const Texture::UsageFlags& b)
+    {
+        a = a ^ b;
+        return a;
+    }
 } // slag
 
 #endif //SLAG_TEXTURE_H

@@ -23,6 +23,7 @@ namespace slag
             slag::cleanup();
         }
         slag::initialize(SlagInitInfo{.graphicsBackend = VULKAN_GRAPHICS_BACKEND, .slagDebugHandler=vulkanDebugHandler});
+        SetAsCurrentEnv();
     }
 
     void VulkanEnvironment::TearDown()

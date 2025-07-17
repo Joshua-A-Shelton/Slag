@@ -51,6 +51,8 @@ namespace slag
         //descriptor pools
         virtual DescriptorPool* newDescriptorPool()=0;
         virtual DescriptorPool* newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)=0;
+        //descriptor groups
+        virtual DescriptorGroup* newDescriptorGroup(Descriptor* descriptors, size_t descriptorCount)=0;
 
     };
 }

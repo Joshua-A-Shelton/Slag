@@ -42,6 +42,8 @@ namespace slag
             //descriptor pools
             virtual DescriptorPool* newDescriptorPool()override;
             virtual DescriptorPool* newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)override;
+            //descriptor groups
+            virtual DescriptorGroup* newDescriptorGroup(Descriptor* descriptors, size_t descriptorCount)override;
 
         };
     } // vulkan
