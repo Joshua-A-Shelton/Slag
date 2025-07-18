@@ -640,7 +640,7 @@ TEST_F(CommandBufferTest, Resolve)
             .syncBefore = PipelineStageFlags::FRAGMENT_SHADER,
             .syncAfter = PipelineStageFlags::BLIT,
         });
-    commandBuffer->resolve(multiSampled.get(),0,0,Rectangle{.offset = {0,0},.extent = {75,75}},output.get(),0,0,Rectangle{.offset = {75,75},.extent = {75,}});
+    commandBuffer->resolve(multiSampled.get(),0,0,slag::Rectangle{.offset = {0,0},.extent = {75,75}},output.get(),0,0,slag::Rectangle{.offset = {75,75},.extent = {75,}});
     commandBuffer->insertBarrier(
         TextureBarrier
         {
@@ -723,10 +723,10 @@ TEST_F(CommandBufferTest, SetBlendConstants)
     descriptorPool.reset();
     commandBuffer->bindDescriptorPool(descriptorPool.get());
     commandBuffer->setViewPort(0,0,target->width(),target->height(),0,1);
-    commandBuffer->setScissors(Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
+    commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {.5,.5,.5,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
-    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
+    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
 
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindIndexBuffer(TriangleIndices.get(),Buffer::IndexSize::UINT16,0);
@@ -858,10 +858,10 @@ TEST_F(CommandBufferTest, SetStencilReference)
         }
     };
     commandBuffer->insertBarriers(barriers,3,nullptr,0,nullptr,0);
-    commandBuffer->blit(stencil.get(),0,0,Rectangle{.offset = {0,0},.extent = {stencil->width(),stencil->height()}},depth1.get(),0,0,Rectangle{.extent = {stencil->width()/2,stencil->height()/2}},Pixels::AspectFlags::DEPTH_STENCIL);
-    commandBuffer->blit(stencil.get(),0,0,Rectangle{.offset = {0,0},.extent = {stencil->width(),stencil->height()}},depth1.get(),0,0,Rectangle{.offset={(int32_t)stencil->width()/2,(int32_t)stencil->height()/2}, .extent = {stencil->width()/2,stencil->height()/2}},Pixels::AspectFlags::DEPTH_STENCIL);
-    commandBuffer->blit(stencil.get(),0,0,Rectangle{.offset = {0,0},.extent = {stencil->width(),stencil->height()}},depth2.get(),0,0,Rectangle{.extent = {stencil->width()/2,stencil->height()/2}},Pixels::AspectFlags::DEPTH_STENCIL);
-    commandBuffer->blit(stencil.get(),0,0,Rectangle{.offset = {0,0},.extent = {stencil->width(),stencil->height()}},depth2.get(),0,0,Rectangle{.offset={(int32_t)stencil->width()/2,(int32_t)stencil->height()/2}, .extent = {stencil->width()/2,stencil->height()/2}},Pixels::AspectFlags::DEPTH_STENCIL);
+    commandBuffer->blit(stencil.get(),0,0,slag::Rectangle{.offset = {0,0},.extent = {stencil->width(),stencil->height()}},depth1.get(),0,0,slag::Rectangle{.extent = {stencil->width()/2,stencil->height()/2}},Pixels::AspectFlags::DEPTH_STENCIL);
+    commandBuffer->blit(stencil.get(),0,0,slag::Rectangle{.offset = {0,0},.extent = {stencil->width(),stencil->height()}},depth1.get(),0,0,slag::Rectangle{.offset={(int32_t)stencil->width()/2,(int32_t)stencil->height()/2}, .extent = {stencil->width()/2,stencil->height()/2}},Pixels::AspectFlags::DEPTH_STENCIL);
+    commandBuffer->blit(stencil.get(),0,0,slag::Rectangle{.offset = {0,0},.extent = {stencil->width(),stencil->height()}},depth2.get(),0,0,slag::Rectangle{.extent = {stencil->width()/2,stencil->height()/2}},Pixels::AspectFlags::DEPTH_STENCIL);
+    commandBuffer->blit(stencil.get(),0,0,slag::Rectangle{.offset = {0,0},.extent = {stencil->width(),stencil->height()}},depth2.get(),0,0,slag::Rectangle{.offset={(int32_t)stencil->width()/2,(int32_t)stencil->height()/2}, .extent = {stencil->width()/2,stencil->height()/2}},Pixels::AspectFlags::DEPTH_STENCIL);
     barriers[0].accessBefore = BarrierAccessFlags::BLIT_WRITE;
     barriers[0].accessAfter = BarrierAccessFlags::DEPTH_STENCIL_READ | BarrierAccessFlags::DEPTH_STENCIL_WRITE;
     barriers[0].syncBefore = PipelineStageFlags::BLIT;
@@ -884,7 +884,7 @@ TEST_F(CommandBufferTest, SetStencilReference)
     };
     uint64_t vertexOffsets[]{0,0};
     commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,2);
-    commandBuffer->beginRendering(&colorAttachment,1,&depth1Attachment,Rectangle{.extent = {target->width(),target->height()}});
+    commandBuffer->beginRendering(&colorAttachment,1,&depth1Attachment,slag::Rectangle{.extent = {target->width(),target->height()}});
     commandBuffer->setStencilReference(0);
     commandBuffer->drawIndexed(3,1,0,0,0);
 
@@ -910,7 +910,7 @@ TEST_F(CommandBufferTest, SetStencilReference)
 
 
     Attachment depth2Attachment{.texture = depth2.get(),.autoClear = false};
-    commandBuffer->beginRendering(&colorAttachment,1,&depth2Attachment,Rectangle{.extent = {target->width(),target->height()}});
+    commandBuffer->beginRendering(&colorAttachment,1,&depth2Attachment,slag::Rectangle{.extent = {target->width(),target->height()}});
     commandBuffer->setStencilReference(1);
     commandBuffer->drawIndexed(3,1,0,0,0);
     commandBuffer->endRendering();
@@ -969,7 +969,7 @@ TEST_F(CommandBufferTest, Draw)
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
-    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,Rectangle{.extent = {target->width(),target->height()}});
+    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     Buffer* vertexBuffers[]
     {
@@ -1043,7 +1043,7 @@ TEST_F(CommandBufferTest, DrawIndexed)
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
-    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,Rectangle{.extent = {target->width(),target->height()}});
+    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     Buffer* vertexBuffers[]
     {
@@ -1118,7 +1118,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
-    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,Rectangle{.extent = {target->width(),target->height()}});
+    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     Buffer* vertexBuffers[]
     {
@@ -1202,7 +1202,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
-    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,Rectangle{.extent = {target->width(),target->height()}});
+    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     Buffer* vertexBuffers[]
     {
@@ -1288,7 +1288,7 @@ TEST_F(CommandBufferTest, DrawIndirect)
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
-    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,Rectangle{.extent = {target->width(),target->height()}});
+    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     Buffer* vertexBuffers[]
     {
@@ -1369,7 +1369,7 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
-    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,Rectangle{.extent = {target->width(),target->height()}});
+    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     Buffer* vertexBuffers[]
     {

@@ -80,6 +80,11 @@ namespace slag
         std::swap(_data, from._data);
     }
 
+    std::vector<ShaderCode::CodeLanguage> ShaderPipeline::acceptedLanguages()
+    {
+        return Backend::current()->acceptedLanuages();
+    }
+
     ShaderPipeline* ShaderPipeline::newShaderPipeline(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription,FrameBufferDescription& framebufferDescription)
     {
         return Backend::current()->newShaderPipeline(shaders, shaderCount, properties, vertexDescription, framebufferDescription);
