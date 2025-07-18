@@ -10,12 +10,51 @@ namespace slag
 {
     class DescriptorBundle
     {
-        public:
+    public:
         DescriptorBundle(const DescriptorBundle&)=delete;
         DescriptorBundle& operator=(const DescriptorBundle&)=delete;
         DescriptorBundle(DescriptorBundle&& from);
         DescriptorBundle& operator=(DescriptorBundle&& from);
-#ifdef SLAG_DISCREET_TEXTURE_LAYOUTS
+#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
+        /**
+         * Assign a sampler to the descriptor bundle
+         * @param binding The binding index of the descriptor
+         * @param arrayElement The index of the array to assign
+         * @param sampler The sampler to assign
+         */
+        void setSampler(uint32_t binding,uint32_t arrayElement, Sampler* sampler);
+        /**
+         * Assign a texture (that will be sampled) to the descriptor bundle
+         * @param binding The binding index of the descriptor
+         * @param arrayElement The index of the array to assign
+         * @param texture The texture to assign
+         */
+        void setSampledTexture(uint32_t binding, uint32_t arrayElement, Texture* texture);
+        /**
+         * Assign a texture and corresponding sampler together to the descriptor bundle
+         * @param binding The binding index of the descriptor
+         * @param arrayElement The index of the array to assign
+         * @param texture The texture to assign
+         * @param sampler The sampler to assign
+         */
+        void setTextureAndSampler(uint32_t binding, uint32_t arrayElement, Texture* texture, Sampler* sampler);
+        /**
+         * Assign a texture that can have both read/write operations performed on it (usually compute shaders) to the descriptor bundle
+         * @param binding The binding index of the descriptor
+         * @param arrayElement The index of the array to assign
+         * @param texture The texture to assign
+         */
+        void setStorageTexture(uint32_t binding, uint32_t arrayElement, Texture* texture);
+        /**
+         * Assign a texture that can be used for framebuffer local operations to the descriptor bundle
+         * @param binding The binding index of the descriptor
+         * @param arrayElement The index of the array to assign
+         * @param texture The texture to assign
+         */
+        void setInputAttachment(uint32_t binding, uint32_t arrayElement, Texture* texture);
+
+#else
+
         /**
          * Assign a sampler to the descriptor bundle
          * @param binding The binding index of the descriptor
@@ -57,43 +96,6 @@ namespace slag
          * @param layout The layout the texture will be in during shader execution
          */
         void setInputAttachment(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout);
-#else
-        /**
-         * Assign a sampler to the descriptor bundle
-         * @param binding The binding index of the descriptor
-         * @param arrayElement The index of the array to assign
-         * @param sampler The sampler to assign
-         */
-        void setSampler(uint32_t binding,uint32_t arrayElement, Sampler* sampler);
-        /**
-         * Assign a texture (that will be sampled) to the descriptor bundle
-         * @param binding The binding index of the descriptor
-         * @param arrayElement The index of the array to assign
-         * @param texture The texture to assign
-         */
-        void setSampledTexture(uint32_t binding, uint32_t arrayElement, Texture* texture);
-        /**
-         * Assign a texture and corresponding sampler together to the descriptor bundle
-         * @param binding The binding index of the descriptor
-         * @param arrayElement The index of the array to assign
-         * @param texture The texture to assign
-         * @param sampler The sampler to assign
-         */
-        void setSamplerAndTexture(uint32_t binding, uint32_t arrayElement, Texture* texture, Sampler* sampler);
-        /**
-         * Assign a texture that can have both read/write operations performed on it (usually compute shaders) to the descriptor bundle
-         * @param binding The binding index of the descriptor
-         * @param arrayElement The index of the array to assign
-         * @param texture The texture to assign
-         */
-        void setStorageTexture(uint32_t binding, uint32_t arrayElement, Texture* texture);
-        /**
-         * Assign a texture that can be used for framebuffer local operations to the descriptor bundle
-         * @param binding The binding index of the descriptor
-         * @param arrayElement The index of the array to assign
-         * @param texture The texture to assign
-         */
-        void setInputAttachment(uint32_t binding, uint32_t arrayElement, Texture* texture);
 #endif
 
         /**
@@ -146,7 +148,7 @@ namespace slag
         const void* cpuHandle()const;
         friend class DescriptorPool;
     private:
-        void move(DescriptorBundle&& from);
+        void move(DescriptorBundle& from);
         DescriptorBundle()=default;
         void* _gpuhandle = nullptr;
         void* _cpuhandle = nullptr;

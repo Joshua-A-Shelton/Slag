@@ -53,4 +53,9 @@ namespace slag
         return std::unique_ptr<slag::ShaderPipeline>(slag::ShaderPipeline::newShaderPipeline(compiledStages.data(),compiledStages.size(),properties,vertexDescription,framebufferDescription));
 
     }
+
+    std::unique_ptr<slag::ShaderPipeline> VulkanEnvironment::newShaderPipeline(ShaderCode* computeCode)
+    {
+        throw std::runtime_error("Not implemented");
+    }
 } // slag

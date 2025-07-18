@@ -40,7 +40,7 @@ namespace slag
     public:
         virtual ~DescriptorPool()=default;
         virtual void reset()=0;
-        DescriptorBundle makeBundle(DescriptorGroup* forGroup);
+        virtual DescriptorBundle makeBundle(DescriptorGroup* forGroup)=0;
 
         static DescriptorPool* newDescriptorPool();
         static DescriptorPool* newDescriptorPool(const DescriptorPoolPageInfo& pageInfo);

@@ -65,7 +65,7 @@ namespace slag
         ///Maximum number of mips to use in acquiring texel data
         virtual float maxLOD()=0;
 
-        static Sampler* newSampler(SamplerParameters parameters);
+        static Sampler* newSampler(const SamplerParameters& parameters);
     };
     struct SamplerParameters
     {
