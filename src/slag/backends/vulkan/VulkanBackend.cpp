@@ -4,9 +4,13 @@ namespace slag
 {
     namespace vulkan
     {
+
         VulkanBackend::VulkanBackend(const SlagInitInfo& initInfo)
         {
-            throw std::runtime_error("Not implemented");
+            if (initInfo.slagDebugHandler)
+            {
+
+            }
         }
 
         VulkanBackend::~VulkanBackend()

@@ -107,6 +107,30 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES}
 
 )
 
+if(SLAG_VULKAN_BACKEND)
+    message("vulkan directory: ${Vulkan_INCLUDE_DIR}")
+    FetchContent_Declare(
+            VMA
+            GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+            GIT_TAG v3.3.0
+            GIT_SHALLOW TRUE
+            OVERRIDE_FIND_PACKAGE
+    )
+    FetchContent_MakeAvailable(VMA)
+
+    FetchContent_Declare(
+            VKBOOTSTRAP
+            GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
+            GIT_TAG v1.4.321
+            GIT_SHALLOW TRUE
+            OVERRIDE_FIND_PACKAGE
+    )
+    FetchContent_MakeAvailable(VKBOOTSTRAP)
+
+    target_include_directories(Slag PRIVATE ${Vulkan_INCLUDE_DIR})
+    target_link_libraries(Slag GPUOpen::VulkanMemoryAllocator vk-bootstrap)
+endif()
+
 target_include_directories(Slag PUBLIC src)
 
 if(PROJECT_IS_TOP_LEVEL)
@@ -126,7 +150,7 @@ if(PROJECT_IS_TOP_LEVEL)
     FetchContent_Declare(
             googletest
             GIT_REPOSITORY https://github.com/google/googletest
-            GIT_TAG origin/main
+            GIT_TAG v1.17.0
             GIT_SHALLOW TRUE
             OVERRIDE_FIND_PACKAGE
     )
