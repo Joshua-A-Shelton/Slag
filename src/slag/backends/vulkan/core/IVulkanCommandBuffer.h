@@ -71,6 +71,7 @@ namespace slag
             virtual void bindVertexBuffers(uint32_t firstBindingIndex, Buffer** buffers, uint64_t* bufferOffsets,uint64_t* strides,size_t bufferCount) override;
 
 
+            void transitionToLayout(Texture* texture,VkImageLayout oldLayout, VkImageLayout newLayout,VkAccessFlags2 accessBefore, VkAccessFlags2 accessAfter, VkPipelineStageFlags2 syncBefore, VkPipelineStageFlags2 syncAfter) const;
             VkCommandBuffer vulkanCommandBufferHandle();
             VkCommandPool vulkanCommandPoolHandle();
 
@@ -80,6 +81,7 @@ namespace slag
             GPUQueue::QueueType _type = GPUQueue::QueueType::GRAPHICS;
 #ifdef SLAG_DEBUG
             DescriptorPool* _boundDescriptorPool = nullptr;
+            bool _inRenderPass = false;
 #endif
         };
     } // vulkan

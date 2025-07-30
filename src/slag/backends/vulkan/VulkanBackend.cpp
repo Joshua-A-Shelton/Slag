@@ -27,8 +27,8 @@ namespace slag
             VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT, //3
             VK_IMAGE_ASPECT_STENCIL_BIT, //4
             VK_IMAGE_ASPECT_STENCIL_BIT | VK_IMAGE_ASPECT_COLOR_BIT, //5
-            VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT, //6
-            VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT //7
+            VK_IMAGE_ASPECT_STENCIL_BIT | VK_IMAGE_ASPECT_DEPTH_BIT, //6
+            VK_IMAGE_ASPECT_STENCIL_BIT | VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT //7
         };
 
         VulkanizedFormat VulkanBackend::vulkanizedFormat(Pixels::Format format)
@@ -152,7 +152,7 @@ namespace slag
             return flags;
         }
 
-        VkAccessFlagBits2 VulkanBackend::vulkanizedAccessMask(BarrierAccessFlags accessFlags)
+        VkAccessFlagBits2 VulkanBackend::vulkanizedBarrierAccessMask(BarrierAccessFlags accessFlags)
         {
             VkAccessFlagBits2 bits = 0;
 #define DEFINITION(slagName, slagValue, vulkanName, directXName) if((bool)(accessFlags & BarrierAccessFlags::slagName)){ bits |= vulkanName;}

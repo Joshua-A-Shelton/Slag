@@ -46,10 +46,7 @@ namespace slag
 
         VulkanBuffer::VulkanBuffer(void* data, size_t size, Accessibility accessibility, UsageFlags usage):VulkanBuffer(size,accessibility,usage)
         {
-            VulkanSemaphore finished(0);
-            SemaphoreValue signal{.semaphore = &finished,.value = 1};
-            VulkanBuffer::update(0,data,size,nullptr,0,&signal,1);
-            finished.waitForValue(1);
+            VulkanBuffer::update(0,data,size,nullptr,0,nullptr,0);
         }
 
         VulkanBuffer::~VulkanBuffer()
@@ -169,6 +166,7 @@ namespace slag
             }
             signals[signalCount] = {.semaphore = &finished,.value = 1};
             VulkanGraphicsCard::selected()->transferQueue()->submit(&ptr,1,wait,waitCount,signals.data(),signals.size());
+            finished.waitForValue(1);
 
         }
     } // vulkan

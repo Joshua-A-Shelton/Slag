@@ -15,13 +15,22 @@ namespace slag
 #ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
         VulkanTexture::VulkanTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount)
         {
-            initialize(texelFormat,type,usageFlags,width,height,layers,mipLevels,sampleCount,VK_IMAGE_LAYOUT_GENERAL);
+            initialize(texelFormat,type,usageFlags,width,height,layers,mipLevels,sampleCount,VK_IMAGE_LAYOUT_UNDEFINED);
+            VulkanCommandBuffer commandBuffer(GPUQueue::QueueType::TRANSFER);
+            VulkanSemaphore finished(0);
+            commandBuffer.begin();
+            commandBuffer.transitionToLayout(this,VK_IMAGE_LAYOUT_UNDEFINED,VK_IMAGE_LAYOUT_GENERAL,VK_ACCESS_NONE,VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,VK_PIPELINE_STAGE_NONE,VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
+            commandBuffer.end();
+            CommandBuffer* cbptr = &commandBuffer;
+            SemaphoreValue sv{.semaphore = &finished,.value = 1};
+            VulkanGraphicsCard::selected()->transferQueue()->submit(&cbptr,1,nullptr,0,&sv,1);
+            finished.waitForValue(1);
         }
 
         VulkanTexture::VulkanTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width,uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount, void* texelData,uint32_t providedDataMips, uint32_t providedDataLayers)
         {
             SLAG_ASSERT(texelData != nullptr && providedDataLayers > 0 && providedDataMips > 0);
-            initialize(texelFormat,type,usageFlags,width,height,layers,mipLevels,sampleCount,VK_IMAGE_LAYOUT_GENERAL);
+            initialize(texelFormat,type,usageFlags,width,height,layers,mipLevels,sampleCount,VK_IMAGE_LAYOUT_UNDEFINED);
             VulkanCommandBuffer commandBuffer(GPUQueue::QueueType::TRANSFER);
             VulkanSemaphore finished(0);
             uint64_t bufferSize = 0;
@@ -32,6 +41,8 @@ namespace slag
             bufferSize*=layers;
             VulkanBuffer dataBuffer(texelData,bufferSize,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::DATA_BUFFER);
             commandBuffer.begin();
+            commandBuffer.transitionToLayout(this,VK_IMAGE_LAYOUT_UNDEFINED,VK_IMAGE_LAYOUT_GENERAL,VK_ACCESS_NONE,VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,VK_PIPELINE_STAGE_NONE,VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
+
             uint64_t offset = 0;
             auto aspectFlags = Pixels::aspectFlags(texelFormat);
             for (uint32_t layer = 0; layer < providedDataLayers; layer++)

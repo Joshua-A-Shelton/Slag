@@ -32,7 +32,7 @@ namespace slag
             static VkImageViewType vulkanizedImageViewType(Texture::Type type, uint32_t layers);
             static VkImageAspectFlags vulkanizedAspectFlags(Pixels::AspectFlags aspectFlags);
             static VkBufferUsageFlags vulkanizedBufferUsage(Buffer::UsageFlags usageFlags);
-            static VkAccessFlagBits2 vulkanizedAccessMask(BarrierAccessFlags accessFlags);
+            static VkAccessFlagBits2 vulkanizedBarrierAccessMask(BarrierAccessFlags accessFlags);
             static VkPipelineStageFlags2 vulkanizedStageMask(PipelineStageFlags stageFlags);
             static VkIndexType vulkanizedIndexType(Buffer::IndexSize indexSize);
 

@@ -39,7 +39,7 @@ protected:
     std::unique_ptr<ShaderPipeline> TexturedDepthPipeline;
     std::unique_ptr<Sampler> DefaultSampler;
 
-    void SetUp() override
+    CommandBufferTest()
     {
         std::vector<glm::vec3> tverts = {{ -1.f, -1.f, 0.0f},{0.f,1.f, 0.0f},{1.f, -1.f, 0.0f}};
         std::vector<glm::vec2> tuvs = {{0,1},{.5,0},{1,1}};
@@ -66,8 +66,8 @@ protected:
         framebufferDescription.depthTarget = Pixels::Format::D24_UNORM_S8_UINT;
         TexturedDepthPipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(shaderFiles.data(),shaderFiles.size(),properties,VertexPosUVDescription,framebufferDescription);
         DefaultSampler = std::unique_ptr<Sampler>(Sampler::newSampler(SamplerParameters()));*/
-
     }
+
 };
 
 TEST_F(CommandBufferTest, ClearColor)
@@ -320,8 +320,8 @@ TEST_F(CommandBufferTest, ClearDepthFailInRenderPass)
     std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     std::unique_ptr<Texture> color = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1));
-    std::unique_ptr<Texture> texture1 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1));
-    std::unique_ptr<Texture> texture2 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1));
+    std::unique_ptr<Texture> texture1 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1));
+    std::unique_ptr<Texture> texture2 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1));
     commandBuffer->begin();
 
     Attachment colorAttachment
@@ -421,7 +421,7 @@ TEST_F(CommandBufferTest, UpdateMipFailInRenderPass)
 }
 #endif
 
-TEST_F(CommandBufferTest, CopyBufferToBuffer)
+TEST_F(CommandBufferTest, CopyBufferToBuffer )
 {
     std::vector<unsigned char> rawData(100);
     for (int i=0; i < 100; i++)
@@ -456,6 +456,8 @@ TEST_F(CommandBufferTest, CopyBufferToBuffer)
     finished->waitForValue(1);
 
     unsigned char* dataPtr = buffer3->as<unsigned char>();
+    std::vector<unsigned char> data (buffer3->size());
+    memcpy(data.data(),dataPtr,buffer3->size());
     for (auto i=0; i<50; i++)
     {
         GTEST_ASSERT_EQ(dataPtr[25+i],i);

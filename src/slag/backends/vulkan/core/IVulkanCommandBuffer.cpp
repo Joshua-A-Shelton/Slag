@@ -39,8 +39,8 @@ namespace slag
                 auto barrier = textureBarriers[i];
                 auto texture = static_cast<VulkanTexture*>(barrier.texture);
                 vkbarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-                vkbarrier.srcAccessMask = VulkanBackend::vulkanizedAccessMask(barrier.accessBefore);
-                vkbarrier.dstAccessMask = VulkanBackend::vulkanizedAccessMask(barrier.accessAfter);
+                vkbarrier.srcAccessMask = VulkanBackend::vulkanizedBarrierAccessMask(barrier.accessBefore);
+                vkbarrier.dstAccessMask = VulkanBackend::vulkanizedBarrierAccessMask(barrier.accessAfter);
                 vkbarrier.image = texture->vulkanHandle();
                 vkbarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
                 vkbarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
@@ -57,12 +57,12 @@ namespace slag
                 auto buffer = static_cast<VulkanBuffer*>(bufferBarrierDesc.buffer);
                 bufferBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
                 bufferBarrier.buffer = buffer->vulkanHandle();
-                bufferBarrier.srcAccessMask = std::bit_cast<VkAccessFlags>(bufferBarrierDesc.accessBefore);
-                bufferBarrier.dstAccessMask = std::bit_cast<VkAccessFlags>(bufferBarrierDesc.accessAfter);
+                bufferBarrier.srcAccessMask = VulkanBackend::vulkanizedBarrierAccessMask(bufferBarrierDesc.accessBefore);
+                bufferBarrier.dstAccessMask = VulkanBackend::vulkanizedBarrierAccessMask(bufferBarrierDesc.accessAfter);
                 bufferBarrier.offset = bufferBarrierDesc.offset;
                 bufferBarrier.size = bufferBarrierDesc.size != 0 ? bufferBarrierDesc.size : VK_WHOLE_SIZE;
-                bufferBarrier.srcStageMask = std::bit_cast<VkPipelineStageFlags>(bufferBarrierDesc.syncBefore);
-                bufferBarrier.dstStageMask = std::bit_cast<VkPipelineStageFlags>(bufferBarrierDesc.syncAfter);
+                bufferBarrier.srcStageMask = VulkanBackend::vulkanizedStageMask(bufferBarrierDesc.syncBefore);
+                bufferBarrier.dstStageMask = VulkanBackend::vulkanizedStageMask(bufferBarrierDesc.syncAfter);
             }
             std::vector<VkMemoryBarrier2> memBarriers(memoryBarrierCount,VkMemoryBarrier2{});
             for(size_t i=0; i< memoryBarrierCount; i++)
@@ -70,10 +70,10 @@ namespace slag
                 auto& memoryBarrier = memBarriers[i];
                 auto& memoryBarrierDesc = memoryBarriers[i];
                 memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
-                memoryBarrier.srcAccessMask = std::bit_cast<VkAccessFlags>(memoryBarrierDesc.accessBefore);
-                memoryBarrier.dstAccessMask = std::bit_cast<VkAccessFlags>(memoryBarrierDesc.accessAfter);
-                memoryBarrier.srcStageMask = std::bit_cast<VkPipelineStageFlags>(memoryBarrierDesc.syncBefore);
-                memoryBarrier.dstStageMask = std::bit_cast<VkPipelineStageFlags>(memoryBarrierDesc.syncAfter);
+                memoryBarrier.srcAccessMask = VulkanBackend::vulkanizedBarrierAccessMask(memoryBarrierDesc.accessBefore);
+                memoryBarrier.dstAccessMask = VulkanBackend::vulkanizedBarrierAccessMask(memoryBarrierDesc.accessAfter);
+                memoryBarrier.srcStageMask = VulkanBackend::vulkanizedStageMask(memoryBarrierDesc.syncBefore);
+                memoryBarrier.dstStageMask = VulkanBackend::vulkanizedStageMask(memoryBarrierDesc.syncAfter);
             }
             VkDependencyInfo dependencyInfo{};
             dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
@@ -94,6 +94,9 @@ namespace slag
 
         void IVulkanCommandBuffer::clearTexture(Texture* texture, ClearColor color)
         {
+#if SLAG_DEBUG
+            SLAG_ASSERT(!_inRenderPass && "Cleared texture in renderpass (between beginRendering() and endRendering())");
+#endif
             SLAG_ASSERT(texture!=nullptr && (bool)(Pixels::aspectFlags(texture->format()) & Pixels::AspectFlags::COLOR) && "Texture must be a color texture");
             auto vulkanTexture = static_cast<VulkanTexture*>(texture);
             VkImageSubresourceRange range{};
@@ -107,10 +110,13 @@ namespace slag
 
         void IVulkanCommandBuffer::clearTexture(Texture* texture, ClearDepthStencilValue depthStencil)
         {
+#if SLAG_DEBUG
+            SLAG_ASSERT(!_inRenderPass && "Cleared texture in renderpass (between beginRendering() and endRendering())");
+#endif
             SLAG_ASSERT(texture!=nullptr && (bool)(Pixels::aspectFlags(texture->format()) & Pixels::AspectFlags::DEPTH) && "Texture must be a depth texture");
             auto vulkanTexture = static_cast<VulkanTexture*>(texture);
             VkImageSubresourceRange range{};
-            range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            range.aspectMask = VulkanBackend::vulkanizedAspectFlags(Pixels::aspectFlags(texture->format()));
             range.baseArrayLayer = 0;
             range.layerCount = vulkanTexture->layers();
             range.baseMipLevel = 0;
@@ -120,6 +126,10 @@ namespace slag
 
         void IVulkanCommandBuffer::updateMip(Texture* texture, uint32_t layer, uint32_t sourceMip, uint32_t destinationMip)
         {
+#if SLAG_DEBUG
+            SLAG_ASSERT(!_inRenderPass && "Updated mip in renderpass (between beginRendering() and endRendering()");
+#endif
+
             SLAG_ASSERT(texture!=nullptr && "texture cannot be null");
             SLAG_ASSERT(texture->mipLevels()>destinationMip && "Destination mip more than texture has");
             SLAG_ASSERT(sourceMip<destinationMip && "Source mip is greater than destination mip");
@@ -151,6 +161,8 @@ namespace slag
                 region.imageSubresource.mipLevel = subResource.subresource.mipLevel;
                 region.imageSubresource.baseArrayLayer = subResource.subresource.baseArrayLayer;
                 region.imageSubresource.layerCount = subResource.subresource.layerCount;
+                region.imageOffset = {0,0,0};
+                region.imageExtent = {source->width(subResource.subresource.mipLevel),source->height(subResource.subresource.mipLevel),1};
             }
 
             vkCmdCopyImageToBuffer(_commandBuffer,vulkanTexture->vulkanHandle(),VK_IMAGE_LAYOUT_GENERAL,vulkanBuffer->vulkanHandle(),subresourceCount,regions.data());
@@ -247,6 +259,11 @@ namespace slag
         {
             SLAG_ASSERT(colorAttachments != nullptr && "colorAttachment cannot be null");
             SLAG_ASSERT(colorAttachmentCount > 0 && "color attachment count must be positive");
+#ifdef SLAG_DEBUG
+            SLAG_ASSERT(!_inRenderPass && "Cannot start renderpass while inside another renderpass, call to endRendering must be made first");
+            _inRenderPass = true;
+#endif
+
             std::vector<VkRenderingAttachmentInfo> descriptions(colorAttachmentCount);
             for(auto i=0; i< colorAttachmentCount; i++)
             {
@@ -385,20 +402,33 @@ namespace slag
         void IVulkanCommandBuffer::endRendering()
         {
             vkCmdEndRendering(_commandBuffer);
+#if SLAG_DEBUG
+            _inRenderPass = false;
+#endif
         }
 
         void IVulkanCommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
         {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+#endif
+
             vkCmdDraw(_commandBuffer,vertexCount,instanceCount,firstVertex,firstInstance);
         }
 
         void IVulkanCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance)
         {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+#endif
             vkCmdDrawIndexed(_commandBuffer,indexCount,instanceCount,firstIndex,vertexOffset,firstInstance);
         }
 
         void IVulkanCommandBuffer::drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount,uint32_t stride)
         {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+#endif
             SLAG_ASSERT(buffer != nullptr && "Buffer cannot be null");
             SLAG_ASSERT(offset + drawCount*stride < buffer->size() && "drawIndexedIndirect will exceed length of buffer");
             SLAG_ASSERT((bool)(buffer->usage() & Buffer::UsageFlags::INDIRECT_BUFFER) && "buffer must have been created with usage flag INDIRECT_BUFFER");
@@ -408,6 +438,9 @@ namespace slag
 
         void IVulkanCommandBuffer::drawIndexedIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer,uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
         {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+#endif
             SLAG_ASSERT(buffer != nullptr && "Buffer cannot be null");
             SLAG_ASSERT(countBuffer != nullptr && "CountBuffer cannot be null");
             SLAG_ASSERT(offset + maxDrawCount*stride < buffer->size() && "drawIndexedIndirect can exceed length of buffer");
@@ -420,6 +453,9 @@ namespace slag
 
         void IVulkanCommandBuffer::drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount, uint32_t stride)
         {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+#endif
             SLAG_ASSERT(buffer != nullptr && "Buffer cannot be null");
             SLAG_ASSERT(offset + drawCount*stride < buffer->size() && "drawIndirect will exceed length of buffer");
             SLAG_ASSERT((bool)(buffer->usage() & Buffer::UsageFlags::INDIRECT_BUFFER) && "buffer must have been created with usage flag INDIRECT_BUFFER");
@@ -429,6 +465,9 @@ namespace slag
 
         void IVulkanCommandBuffer::drawIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer, uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
         {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+#endif
             SLAG_ASSERT(buffer != nullptr && "Buffer cannot be null");
             SLAG_ASSERT(countBuffer != nullptr && "CountBuffer cannot be null");
             SLAG_ASSERT(offset + maxDrawCount*stride < buffer->size() && "drawIndexedIndirect can exceed length of buffer");
@@ -509,6 +548,42 @@ namespace slag
                 nativeBuffers[i] = static_cast<VulkanBuffer*>(buffers[i])->vulkanHandle();
             }
             vkCmdBindVertexBuffers2(_commandBuffer,firstBindingIndex,bufferCount,nativeBuffers.data(),bufferOffsets,nullptr,strides);
+        }
+
+        void IVulkanCommandBuffer::transitionToLayout(Texture* texture, VkImageLayout oldLayout,VkImageLayout newLayout, VkAccessFlags2 accessBefore, VkAccessFlags2 accessAfter, VkPipelineStageFlags2 syncBefore, VkPipelineStageFlags2 syncAfter) const
+        {
+            auto vulkanTexture = static_cast<VulkanTexture*>(texture);
+            VkImageMemoryBarrier2 barrier{};
+
+            barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            barrier.pNext = nullptr,
+            barrier.srcStageMask = syncBefore,
+            barrier.srcAccessMask = accessBefore,
+            barrier.dstStageMask = syncAfter,
+            barrier.dstAccessMask = accessAfter,
+            barrier.oldLayout = oldLayout,
+            barrier.newLayout = newLayout,
+            barrier.image = vulkanTexture->vulkanHandle(),
+            barrier.subresourceRange = VkImageSubresourceRange
+            {
+                .aspectMask = VulkanBackend::vulkanizedAspectFlags(Pixels::aspectFlags(texture->format())),
+                .baseMipLevel = 0,
+                .levelCount = texture->mipLevels(),
+                .baseArrayLayer = 0,
+                .layerCount = texture->layers(),
+            };
+
+
+            VkDependencyInfo dependencyInfo{};
+            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+            //dependencyInfo.dependencyFlags = ;
+            dependencyInfo.memoryBarrierCount = 0;
+            dependencyInfo.pMemoryBarriers = nullptr;
+            dependencyInfo.bufferMemoryBarrierCount = 0;
+            dependencyInfo.pBufferMemoryBarriers = nullptr;
+            dependencyInfo.imageMemoryBarrierCount = 1;
+            dependencyInfo.pImageMemoryBarriers = &barrier;
+            vkCmdPipelineBarrier2(_commandBuffer,&dependencyInfo);
         }
 
         VkCommandBuffer IVulkanCommandBuffer::vulkanCommandBufferHandle()
