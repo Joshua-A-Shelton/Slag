@@ -137,13 +137,13 @@ namespace slag
             auto vulkanTexture = static_cast<VulkanTexture*>(source);
             auto vulkanBuffer = static_cast<VulkanBuffer*>(destination);
 
-            std::vector<VkBufferImageCopy2> regions(subresourceCount);
+            std::vector<VkBufferImageCopy> regions(subresourceCount);
             auto aspectMask = VulkanBackend::vulkanizedAspectFlags(Pixels::aspectFlags(source->format()));
             for (uint32_t i = 0; i < subresourceCount; ++i)
             {
                 auto& region = regions[i];
                 auto& subResource = copyData[i];
-                region.sType =  VK_STRUCTURE_TYPE_IMAGE_COPY_2;
+                
                 region.bufferOffset = subResource.bufferOffset;
                 region.bufferRowLength = 0;
                 region.bufferImageHeight = 0;
@@ -153,16 +153,7 @@ namespace slag
                 region.imageSubresource.layerCount = subResource.subresource.layerCount;
             }
 
-            VkCopyImageToBufferInfo2 copyImageToBufferInfo
-            {
-                .sType = VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2,
-                .srcImage = vulkanTexture->vulkanHandle(),
-                .srcImageLayout = VK_IMAGE_LAYOUT_GENERAL,
-                .dstBuffer = vulkanBuffer->vulkanHandle(),
-                .regionCount = subresourceCount,
-                .pRegions = regions.data()
-            };
-            vkCmdCopyImageToBuffer2(_commandBuffer,&copyImageToBufferInfo);
+            vkCmdCopyImageToBuffer(_commandBuffer,vulkanTexture->vulkanHandle(),VK_IMAGE_LAYOUT_GENERAL,vulkanBuffer->vulkanHandle(),subresourceCount,regions.data());
         }
 
         void IVulkanCommandBuffer::copyBufferToTexture(Buffer* source, uint64_t offset, Texture* destination,TextureSubresource subresource)
@@ -334,8 +325,8 @@ namespace slag
         {
             SLAG_ASSERT(source != nullptr && "Source buffer cannot be null");
             SLAG_ASSERT(destination != nullptr && "Destination buffer cannot be null");
-            SLAG_ASSERT(sourceOffset+length < source->size() && "Copy would exceed length of source buffer");
-            SLAG_ASSERT(destinationOffset+length < destination->size() && "Copy would exceed destination buffer");
+            SLAG_ASSERT(sourceOffset+length <= source->size() && "Copy would exceed length of source buffer");
+            SLAG_ASSERT(destinationOffset+length <= destination->size() && "Copy would exceed destination buffer");
 
             VulkanBuffer* src = static_cast<VulkanBuffer*>(source);
             VulkanBuffer* dst = static_cast<VulkanBuffer*>(destination);
@@ -352,7 +343,7 @@ namespace slag
         void IVulkanCommandBuffer::fillBuffer(Buffer* buffer, size_t offset, size_t length, uint32_t data)
         {
             SLAG_ASSERT(buffer != nullptr && "Buffer cannot be null");
-            SLAG_ASSERT(offset + length < buffer->size() && "Fill would exceed length of buffer");
+            SLAG_ASSERT(offset + length <= buffer->size() && "Fill would exceed length of buffer");
             auto buf = static_cast<VulkanBuffer*>(buffer);
             vkCmdFillBuffer(_commandBuffer,buf->vulkanHandle(),offset,length,data);
         }

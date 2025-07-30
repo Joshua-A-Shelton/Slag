@@ -133,11 +133,11 @@ if(SLAG_VULKAN_BACKEND)
     )
     FetchContent_MakeAvailable(VMA)
     find_package(VMA REQUIRED)
-
     FetchContent_Declare(
             VKBOOTSTRAP
             GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
-            GIT_TAG v1.4.321
+            #TODO: update this to vulkan 1.4, it's currently causing issues building on systems where the sdk isn't up to 1.4 yet, so we're waiting until it's widely available
+            GIT_TAG v1.3.302
             GIT_SHALLOW TRUE
             OVERRIDE_FIND_PACKAGE
     )

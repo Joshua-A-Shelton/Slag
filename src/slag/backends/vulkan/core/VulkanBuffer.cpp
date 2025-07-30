@@ -129,7 +129,7 @@ namespace slag
 
         void VulkanBuffer::cpuUpdate(uint64_t offset, void* data, uint64_t dataLength, SemaphoreValue* wait,size_t waitCount, SemaphoreValue* signal, size_t signalCount)
         {
-            SLAG_ASSERT(offset + dataLength < _size && "Update exceeds size of buffer");
+            SLAG_ASSERT(offset + dataLength <= _size && "Update exceeds size of buffer");
             if (waitCount)
             {
                 SLAG_ASSERT(wait != nullptr);
@@ -150,7 +150,7 @@ namespace slag
 
         void VulkanBuffer::gpuUpdate(uint64_t offset, void* data, uint64_t dataLength, SemaphoreValue* wait, size_t waitCount, SemaphoreValue* signal, size_t signalCount)
         {
-            SLAG_ASSERT(offset + dataLength < _size && "Update exceeds size of buffer");
+            SLAG_ASSERT(offset + dataLength <= _size && "Update exceeds size of buffer");
             VulkanCommandBuffer commandBuffer(GPUQueue::QueueType::TRANSFER);
             VulkanSemaphore finished(0);
             //this should technically be faster to not send that data initially, as we're not waiting on any semaphores this way

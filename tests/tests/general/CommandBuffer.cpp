@@ -55,8 +55,8 @@ protected:
         VertexPosUVDescription.add(GraphicsType::VECTOR3,0,0).add(GraphicsType::VECTOR2,0,1);
         VertexPosUVNormalDescription.add(GraphicsType::VECTOR3,0,0).add(GraphicsType::VECTOR2,0,1).add(GraphicsType::VECTOR3,0,2);
 
-        std::vector<ShaderFile> shaderFiles =
-    {
+        /*std::vector<ShaderFile> shaderFiles =
+        {
             ShaderFile("TexturedDepth.vert",ShaderStageFlags::VERTEX),
             ShaderFile("TexturedDepth.frag",ShaderStageFlags::FRAGMENT)
         };
@@ -65,7 +65,7 @@ protected:
         framebufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
         framebufferDescription.depthTarget = Pixels::Format::D24_UNORM_S8_UINT;
         TexturedDepthPipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(shaderFiles.data(),shaderFiles.size(),properties,VertexPosUVDescription,framebufferDescription);
-        DefaultSampler = std::unique_ptr<Sampler>(Sampler::newSampler(SamplerParameters()));
+        DefaultSampler = std::unique_ptr<Sampler>(Sampler::newSampler(SamplerParameters()));*/
 
     }
 };
@@ -411,7 +411,7 @@ TEST_F(CommandBufferTest, UpdateMipFailInRenderPass)
     };
     std::vector<byteColor> texels(32*32,byteColor{255,127,50,25});
     std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,2,Texture::SampleCount::ONE,texels.data(),1,1));
-    std::unique_ptr<Texture> frameBuffer = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,1));
+    std::unique_ptr<Texture> frameBuffer = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1));
 
     commandBuffer->begin();
 
@@ -515,21 +515,24 @@ TEST_F(CommandBufferTest, CopyTextureToBuffer)
     slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
     finished->waitForValue(1);
 
-    byteColor* colorPtr = textureBuffer->as<byteColor>();
-    for (auto i=15; i < texture->byteSize(0)+15; i++)
+    uint8_t* colorPtr = textureBuffer->as<uint8_t>();
+    for (auto i=15; i < texture->byteSize(0)+15; i+=4)
     {
-        GTEST_ASSERT_EQ(colorPtr[i].r,255);
-        GTEST_ASSERT_EQ(colorPtr[i].g,0);
-        GTEST_ASSERT_EQ(colorPtr[i].r,255);
-        GTEST_ASSERT_EQ(colorPtr[i].r,255);
+        auto color = *reinterpret_cast<byteColor*>(&colorPtr[i]);
+        GTEST_ASSERT_EQ(color.r,255);
+        GTEST_ASSERT_EQ(color.g,0);
+        GTEST_ASSERT_EQ(color.b,255);
+        GTEST_ASSERT_EQ(color.a,255);
     }
-    for (auto i=15+texture->byteSize(0); i < 15+texture->byteSize(0)+texture->byteSize(1); i++)
+    for (auto i=15+texture->byteSize(0); i < 15+texture->byteSize(0)+texture->byteSize(1); i+=4)
     {
-        GTEST_ASSERT_EQ(colorPtr[i].r,255);
-        GTEST_ASSERT_EQ(colorPtr[i].g,0);
-        GTEST_ASSERT_EQ(colorPtr[i].r,255);
-        GTEST_ASSERT_EQ(colorPtr[i].r,255);
+        auto color = *reinterpret_cast<byteColor*>(&colorPtr[i]);
+        GTEST_ASSERT_EQ(color.r,122);
+        GTEST_ASSERT_EQ(color.g,36);
+        GTEST_ASSERT_EQ(color.b,15);
+        GTEST_ASSERT_EQ(color.a,100);
     }
+
 }
 
 TEST_F(CommandBufferTest, Blit)
