@@ -2,10 +2,10 @@
 #include <slag/Slag.h>
 namespace slag
 {
-    void vulkanDebugHandler(const std::string& message, SlagInitInfo::DebugLevel debugLevel, int32_t messageID)
+    void vulkanDebugHandler(const std::string& message, SlagDebugLevel debugLevel, int32_t messageID)
     {
         std::cout << message << std::endl;
-        if (debugLevel != SlagInitInfo::DebugLevel::SLAG_INFO)
+        if (debugLevel != SlagDebugLevel::SLAG_INFO)
         {
             GTEST_FAIL();
         }
@@ -22,7 +22,7 @@ namespace slag
         {
             slag::cleanup();
         }
-        slag::initialize(SlagInitInfo{.graphicsBackend = VULKAN_GRAPHICS_BACKEND, .slagDebugHandler=vulkanDebugHandler});
+        slag::initialize(SlagInitInfo{.graphicsBackend = GraphicsBackend::VULKAN_GRAPHICS_BACKEND, .slagDebugHandler=vulkanDebugHandler});
         SetAsCurrentEnv();
     }
 

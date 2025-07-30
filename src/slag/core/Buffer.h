@@ -46,6 +46,8 @@ namespace slag
         virtual Accessibility accessibility()=0;
         ///Size in bytes of the buffer
         virtual uint64_t size()=0;
+        ///What kind of data this buffer can contain
+        virtual UsageFlags usage()=0;
 
         /**
          * Send data to buffer from CPU (goes through intermediate buffer automatically if required)
@@ -74,6 +76,45 @@ namespace slag
         static Buffer* newBuffer(void* data, size_t dataSize, Accessibility accessibility,UsageFlags usage = UsageFlags::DATA_BUFFER);
         static Buffer* newBuffer(size_t size, Accessibility accessibility,UsageFlags usage= UsageFlags::DATA_BUFFER);
     };
+
+    inline Buffer::UsageFlags operator|(Buffer::UsageFlags lhs, Buffer::UsageFlags rhs)
+    {
+        return static_cast<Buffer::UsageFlags>((uint8_t)lhs | (uint8_t)rhs);
+    }
+
+    inline Buffer::UsageFlags operator&(Buffer::UsageFlags lhs, Buffer::UsageFlags rhs)
+    {
+        return static_cast<Buffer::UsageFlags>((uint8_t)lhs & (uint8_t)rhs);
+    }
+
+    inline Buffer::UsageFlags operator^(Buffer::UsageFlags lhs, Buffer::UsageFlags rhs)
+    {
+        return static_cast<Buffer::UsageFlags>((uint8_t)lhs ^ (uint8_t)rhs);
+    }
+
+    inline Buffer::UsageFlags operator|=(Buffer::UsageFlags lhs, Buffer::UsageFlags rhs)
+    {
+        lhs = lhs | rhs;
+        return lhs;
+    }
+
+    inline Buffer::UsageFlags operator&=(Buffer::UsageFlags lhs, Buffer::UsageFlags rhs)
+    {
+        lhs = lhs & rhs;
+        return lhs;
+    }
+
+    inline Buffer::UsageFlags operator^=(Buffer::UsageFlags lhs, Buffer::UsageFlags rhs)
+    {
+        lhs = lhs ^ rhs;
+        return lhs;
+    }
+
+    inline Buffer::UsageFlags operator~(Buffer::UsageFlags rhs)
+    {
+        return static_cast<Buffer::UsageFlags>(~(uint8_t)rhs);
+    }
+
 } // slag
 
 #endif //SLAG_BUFFER_H

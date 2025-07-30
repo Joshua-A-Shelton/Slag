@@ -106,6 +106,51 @@ namespace slag
 
         static uint32_t size(Format format);
         static AspectFlags aspectFlags(Format format);
+        static bool isValidAspectFlags(AspectFlags aspectFlags);
     };
+
+    inline Pixels::AspectFlags operator|(Pixels::AspectFlags lhs, Pixels::AspectFlags rhs)
+    {
+        return static_cast<Pixels::AspectFlags>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
+    }
+
+    inline Pixels::AspectFlags operator&(Pixels::AspectFlags lhs, Pixels::AspectFlags rhs)
+    {
+        return static_cast<Pixels::AspectFlags>(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));
+    }
+
+    inline Pixels::AspectFlags operator^(Pixels::AspectFlags lhs, Pixels::AspectFlags rhs)
+    {
+        return static_cast<Pixels::AspectFlags>(static_cast<uint8_t>(lhs) ^ static_cast<uint8_t>(rhs));
+    }
+
+    inline Pixels::AspectFlags operator~(Pixels::AspectFlags lhs)
+    {
+        return static_cast<Pixels::AspectFlags>(~static_cast<uint8_t>(lhs));
+    }
+
+    inline Pixels::AspectFlags operator!(Pixels::AspectFlags lhs)
+    {
+        return static_cast<Pixels::AspectFlags>(!static_cast<uint8_t>(lhs));
+    }
+
+    inline Pixels::AspectFlags operator|=(Pixels::AspectFlags lhs, Pixels::AspectFlags rhs)
+    {
+        lhs = lhs | rhs;
+        return lhs;
+    }
+
+    inline Pixels::AspectFlags operator&=(Pixels::AspectFlags lhs, Pixels::AspectFlags rhs)
+    {
+        lhs = lhs & rhs;
+        return lhs;
+    }
+
+    inline Pixels::AspectFlags operator^=(Pixels::AspectFlags lhs, Pixels::AspectFlags rhs)
+    {
+        lhs = lhs ^ rhs;
+        return lhs;
+    }
+
 }
 #endif //SLAG_PIXELS_H

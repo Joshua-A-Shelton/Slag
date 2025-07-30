@@ -10,7 +10,7 @@ namespace slag
     class GPUQueue
     {
     public:
-        enum QueueType
+        enum class QueueType
         {
             ///Can process Graphics commands, Compute commands, and Transfer commands
             GRAPHICS,

@@ -1,16 +1,44 @@
 #ifndef SLAG_VULKANBACKEND_H
 #define SLAG_VULKANBACKEND_H
 #include <slag/backends/Backend.h>
+#include <vulkan/vulkan_core.h>
+
+#include "VkBootstrap.h"
+
 namespace slag
 {
     namespace vulkan
     {
+        struct VulkanizedFormat
+        {
+            VkFormat format = VK_FORMAT_UNDEFINED;
+            VkComponentMapping mapping{};
+            VulkanizedFormat(VkFormat format, VkComponentSwizzle r, VkComponentSwizzle g, VkComponentSwizzle b, VkComponentSwizzle a)
+            {
+                this->format = format;
+                this->mapping.r = r;
+                this->mapping.g = g;
+                this->mapping.b = b;
+                this->mapping.a = a;
+            }
+        };
+
         class VulkanBackend: public Backend
         {
         public:
+            static VulkanizedFormat vulkanizedFormat(Pixels::Format format);
+            static VkImageUsageFlags vulkanizedUsage(Texture::UsageFlags flags);
+            static VkImageType vulkanizedImageType(Texture::Type type);
+            static VkImageViewType vulkanizedImageViewType(Texture::Type type, uint32_t layers);
+            static VkImageAspectFlags vulkanizedAspectFlags(Pixels::AspectFlags aspectFlags);
+            static VkBufferUsageFlags vulkanizedBufferUsage(Buffer::UsageFlags usageFlags);
+            static VkAccessFlagBits2 vulkanizedAccessMask(BarrierAccessFlags accessFlags);
+            static VkPipelineStageFlags2 vulkanizedStageMask(PipelineStageFlags stageFlags);
+            static VkIndexType vulkanizedIndexType(Buffer::IndexSize indexSize);
+
             VulkanBackend(const SlagInitInfo& initInfo);
             ~VulkanBackend()override;
-
+            virtual bool valid()override;
             virtual std::vector<std::unique_ptr<GraphicsCard>> getGraphicsCards()override;
             virtual GraphicsBackend backendAPI()override;
 
@@ -62,7 +90,9 @@ namespace slag
             virtual void setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)override;
             virtual void setDescriptorBundleUniformBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)override;
             virtual void setDescriptorBundleStorageBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)override;
-
+        private:
+            vkb::Instance _instance{};
+            bool _isValid = false;
         };
     } // vulkan
 } // slag

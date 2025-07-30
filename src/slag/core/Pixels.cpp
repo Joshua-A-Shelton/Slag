@@ -32,4 +32,25 @@ namespace slag
         SLAG_ASSERT(format < Pixels::Format::PIXELS_FORMAT_MAX && (uint32_t)format >= 0);
         return PIXEL_ASPECTS[(uint32_t)format];
     }
+
+    bool Pixels::isValidAspectFlags(AspectFlags aspectFlags)
+    {
+        if ((bool)(aspectFlags & Pixels::AspectFlags::COLOR))
+        {
+            if ((bool)(aspectFlags & Pixels::AspectFlags::DEPTH) || (bool)(aspectFlags & Pixels::AspectFlags::STENCIL))
+            {
+                return false;
+            }
+            return true;
+        }
+        if ((bool)(aspectFlags & Pixels::AspectFlags::STENCIL))
+        {
+            if ((bool)(aspectFlags & Pixels::AspectFlags::DEPTH))
+            {
+                return true;
+            }
+            return false;
+        }
+        return true;
+    }
 }

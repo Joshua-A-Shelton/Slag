@@ -49,7 +49,22 @@ if(SLAG_VULKAN_BACKEND)
     message("adding vulkan backend")
     SET(SLAG_VULKAN_SOURCES
             src/slag/backends/vulkan/VulkanBackend.cpp
-            src/slag/backends/vulkan/VulkanBackend.h)
+            src/slag/backends/vulkan/VulkanBackend.h
+            src/slag/backends/vulkan/core/VulkanCommandBuffer.cpp
+            src/slag/backends/vulkan/core/VulkanCommandBuffer.h
+            src/slag/backends/vulkan/core/VulkanTexture.cpp
+            src/slag/backends/vulkan/core/VulkanTexture.h
+            src/slag/backends/vulkan/core/VulkanBuffer.cpp
+            src/slag/backends/vulkan/core/VulkanBuffer.h
+            src/slag/backends/vulkan/core/IVulkanCommandBuffer.cpp
+            src/slag/backends/vulkan/core/IVulkanCommandBuffer.h
+            src/slag/backends/vulkan/core/VulkanGPUMemoryReference.h
+            src/slag/backends/vulkan/core/VulkanGraphicsCard.cpp
+            src/slag/backends/vulkan/core/VulkanGraphicsCard.h
+            src/slag/backends/vulkan/core/VulkanQueue.cpp
+            src/slag/backends/vulkan/core/VulkanQueue.h
+            src/slag/backends/vulkan/core/VulkanSemaphore.cpp
+            src/slag/backends/vulkan/core/VulkanSemaphore.h)
 endif()
 if(SLAG_DX12_BACKEND)
     add_definitions(-DSLAG_DX12_BACKEND=1)
@@ -117,6 +132,7 @@ if(SLAG_VULKAN_BACKEND)
             OVERRIDE_FIND_PACKAGE
     )
     FetchContent_MakeAvailable(VMA)
+    find_package(VMA REQUIRED)
 
     FetchContent_Declare(
             VKBOOTSTRAP
@@ -127,15 +143,29 @@ if(SLAG_VULKAN_BACKEND)
     )
     FetchContent_MakeAvailable(VKBOOTSTRAP)
 
-    target_include_directories(Slag PRIVATE ${Vulkan_INCLUDE_DIR})
-    target_link_libraries(Slag GPUOpen::VulkanMemoryAllocator vk-bootstrap)
+    target_include_directories(Slag PRIVATE ${Vulkan_INCLUDE_DIR} ${vma_SOURCE_DIR})
+    target_link_libraries(Slag PRIVATE ${Vulkan_LIBRARIES} GPUOpen::VulkanMemoryAllocator vk-bootstrap)
 endif()
 
 target_include_directories(Slag PUBLIC src)
 
 if(PROJECT_IS_TOP_LEVEL)
-    find_package(SDL2 REQUIRED)
-    find_package(glm CONFIG REQUIRED)
+    fetchcontent_declare(
+            SDL2
+            GIT_REPOSITORY https://github.com/libsdl-org/SDL
+            GIT_TAG release-2.32.2
+            GIT_SHALLOW TRUE
+            OVERRIDE_FIND_PACKAGE
+    )
+    fetchcontent_makeavailable(SDL2)
+    fetchcontent_declare(
+            GLM
+            GIT_REPOSITORY https://github.com/g-truc/glm
+            GIT_TAG 1.0.1
+            GIT_SHALLOW TRUE
+            OVERRIDE_FIND_PACKAGE
+    )
+    fetchcontent_makeavailable(GLM)
     fetchcontent_declare(
             STB_IMAGE
             GIT_REPOSITORY https://github.com/nothings/stb
@@ -176,7 +206,7 @@ if(PROJECT_IS_TOP_LEVEL)
     include(GoogleTest)
     gtest_discover_tests(SlagTests)
 
-    add_custom_command(TARGET SlagTests COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/resources ${CMAKE_BINARY_DIR}/resources)
+    add_custom_command(TARGET SlagTests POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/resources ${CMAKE_BINARY_DIR}/resources)
 
     # SHADERS------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     set(SLAG_TESTS_SHADER_SOURCE_DIR tests/resources/shaders)

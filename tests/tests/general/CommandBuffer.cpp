@@ -72,7 +72,7 @@ protected:
 
 TEST_F(CommandBufferTest, ClearColor)
 {
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore());
     std::unique_ptr<Texture> renderTarget = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1));
     std::unique_ptr<Texture> sampled = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,4));
@@ -252,7 +252,7 @@ TEST_F(CommandBufferTest, ClearColor)
 #ifdef SLAG_DEBUG
 TEST_F(CommandBufferTest, ClearColorFailInRenderPass)
 {
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     std::unique_ptr<Texture> texture1 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1));
     std::unique_ptr<Texture> texture2 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1));
@@ -271,7 +271,7 @@ TEST_F(CommandBufferTest, ClearColorFailInRenderPass)
 
 TEST_F(CommandBufferTest, ClearDepth)
 {
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     std::unique_ptr<Texture> depthTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1));
     std::unique_ptr<Buffer> depthBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(depthTexture->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
@@ -317,7 +317,7 @@ TEST_F(CommandBufferTest, ClearDepth)
 #ifdef SLAG_DEBUG
 TEST_F(CommandBufferTest, ClearDepthFailInRenderPass)
 {
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     std::unique_ptr<Texture> color = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1));
     std::unique_ptr<Texture> texture1 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1));
@@ -342,7 +342,7 @@ TEST_F(CommandBufferTest, ClearDepthFailInRenderPass)
 
 TEST_F(CommandBufferTest, UpdateMip)
 {
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     struct byteColor
     {
@@ -400,7 +400,7 @@ TEST_F(CommandBufferTest, UpdateMip)
 #ifdef SLAG_DEBUG
 TEST_F(CommandBufferTest, UpdateMipFailInRenderPass)
 {
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     struct byteColor
     {
@@ -432,7 +432,7 @@ TEST_F(CommandBufferTest, CopyBufferToBuffer)
     std::unique_ptr<Buffer> buffer2 = std::unique_ptr<Buffer>(Buffer::newBuffer(rawData.size(),Buffer::Accessibility::GPU));
     std::unique_ptr<Buffer> buffer3 = std::unique_ptr<Buffer>(Buffer::newBuffer(rawData.size(),Buffer::Accessibility::CPU_AND_GPU));
 
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
 
     commandBuffer->begin();
@@ -464,7 +464,7 @@ TEST_F(CommandBufferTest, CopyBufferToBuffer)
 
 TEST_F(CommandBufferTest, CopyTextureToBuffer)
 {
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     struct byteColor
     {
@@ -534,7 +534,7 @@ TEST_F(CommandBufferTest, CopyTextureToBuffer)
 
 TEST_F(CommandBufferTest, Blit)
 {
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     struct byteColor
     {
@@ -615,7 +615,7 @@ TEST_F(CommandBufferTest, Blit)
 
 TEST_F(CommandBufferTest, Resolve)
 {
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     std::unique_ptr<Texture> multiSampled = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,Texture::SampleCount::FOUR));
     std::unique_ptr<Texture> input = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,100,100,1,1));
@@ -640,7 +640,7 @@ TEST_F(CommandBufferTest, Resolve)
             .syncBefore = PipelineStageFlags::FRAGMENT_SHADER,
             .syncAfter = PipelineStageFlags::BLIT,
         });
-    commandBuffer->resolve(multiSampled.get(),0,0,slag::Rectangle{.offset = {0,0},.extent = {75,75}},output.get(),0,0,slag::Rectangle{.offset = {75,75},.extent = {75,}});
+    commandBuffer->resolve(multiSampled.get(),0,0,Offset{0,0},output.get(),0,0,Offset{75,75}, Extent{75,75});
     commandBuffer->insertBarrier(
         TextureBarrier
         {
@@ -676,7 +676,7 @@ TEST_F(CommandBufferTest, Resolve)
 TEST_F(CommandBufferTest, FillBuffer)
 {
     std::unique_ptr<Buffer> buffer = std::unique_ptr<Buffer>(Buffer::newBuffer(100*sizeof(uint32_t),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
 
     commandBuffer->begin();
@@ -704,7 +704,7 @@ TEST_F(CommandBufferTest, FillBuffer)
 
 TEST_F(CommandBufferTest, SetBlendConstants)
 {
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8_B8G8_UNORM, Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,100,100,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,100,100,1,1));
@@ -732,12 +732,13 @@ TEST_F(CommandBufferTest, SetBlendConstants)
     commandBuffer->bindIndexBuffer(TriangleIndices.get(),Buffer::IndexSize::UINT16,0);
     Buffer* vertexBuffers[2]
     {
-        TriangleIndices.get(),
+        TriangleVerts.get(),
         TriangleUVs.get()
     };
     uint64_t bufferOffsets[2] = {0,0};
+    uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
 
-    commandBuffer->bindVertexBuffers(0,vertexBuffers,bufferOffsets,2);
+    commandBuffer->bindVertexBuffers(0,vertexBuffers,bufferOffsets,bufferStrides,2);
 
     auto group0 = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(0));
     auto group1A = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(1));
@@ -796,7 +797,7 @@ TEST_F(CommandBufferTest, SetBlendConstants)
 
 TEST_F(CommandBufferTest, SetStencilReference)
 {
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
     std::unique_ptr<Texture> depth1 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
@@ -883,7 +884,8 @@ TEST_F(CommandBufferTest, SetStencilReference)
         TriangleUVs.get()
     };
     uint64_t vertexOffsets[]{0,0};
-    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,2);
+    uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
+    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
     commandBuffer->beginRendering(&colorAttachment,1,&depth1Attachment,slag::Rectangle{.extent = {target->width(),target->height()}});
     commandBuffer->setStencilReference(0);
     commandBuffer->drawIndexed(3,1,0,0,0);
@@ -936,7 +938,7 @@ TEST_F(CommandBufferTest, SetStencilReference)
 
 TEST_F(CommandBufferTest, Draw)
 {
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
@@ -977,7 +979,8 @@ TEST_F(CommandBufferTest, Draw)
         TriangleUVs.get()
     };
     uint64_t vertexOffsets[]{0,0};
-    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,2);
+    uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
+    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
 
     commandBuffer->draw(3,1,0,0);
 
@@ -1010,7 +1013,7 @@ TEST_F(CommandBufferTest, Draw)
 
 TEST_F(CommandBufferTest, DrawIndexed)
 {
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
@@ -1051,7 +1054,8 @@ TEST_F(CommandBufferTest, DrawIndexed)
         CubeUVs.get()
     };
     uint64_t vertexOffsets[]{0,0};
-    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,2);
+    uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
+    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
     commandBuffer->bindIndexBuffer(CubeIndices.get(),Buffer::IndexSize::UINT16,0);
 
     commandBuffer->drawIndexed(CubeIndices->countAsArray<uint16_t>(),1,0,0,0);
@@ -1085,7 +1089,7 @@ TEST_F(CommandBufferTest, DrawIndexed)
 
 TEST_F(CommandBufferTest, DrawIndexedIndirect)
 {
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
@@ -1126,7 +1130,8 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
         CubeUVs.get()
     };
     uint64_t vertexOffsets[]{0,0};
-    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,2);
+    uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
+    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
     commandBuffer->bindIndexBuffer(CubeIndices.get(),Buffer::IndexSize::UINT16,0);
     std::unique_ptr<Buffer> drawParams = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(IndirectDrawIndexedCommand),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::INDIRECT_BUFFER));
     auto drawParamPtr = drawParams->as<IndirectDrawIndexedCommand>();
@@ -1169,7 +1174,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
 
 TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
 {
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
@@ -1210,7 +1215,8 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
         CubeUVs.get()
     };
     uint64_t vertexOffsets[]{0,0};
-    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,2);
+    uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
+    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
     commandBuffer->bindIndexBuffer(CubeIndices.get(),Buffer::IndexSize::UINT16,0);
     std::unique_ptr<Buffer> drawParams = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(IndirectDrawIndexedCommand),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::INDIRECT_BUFFER));
     auto drawParamPtr = drawParams->as<IndirectDrawIndexedCommand>();
@@ -1255,7 +1261,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
 
 TEST_F(CommandBufferTest, DrawIndirect)
 {
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
@@ -1296,7 +1302,8 @@ TEST_F(CommandBufferTest, DrawIndirect)
         TriangleUVs.get()
     };
     uint64_t vertexOffsets[]{0,0};
-    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,2);
+    uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
+    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
 
     std::unique_ptr<Buffer> drawCommands = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(IndirectDrawCommand),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::INDIRECT_BUFFER));
     auto drawCommandPtr = drawCommands->as<IndirectDrawCommand>();
@@ -1336,7 +1343,7 @@ TEST_F(CommandBufferTest, DrawIndirect)
 
 TEST_F(CommandBufferTest, DrawIndirectCount)
 {
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::GRAPHICS));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
@@ -1377,7 +1384,8 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
         TriangleUVs.get()
     };
     uint64_t vertexOffsets[]{0,0};
-    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,2);
+    uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
+    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
 
     std::unique_ptr<Buffer> drawCommands = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(IndirectDrawCommand),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::INDIRECT_BUFFER));
     auto drawCommandPtr = drawCommands->as<IndirectDrawCommand>();

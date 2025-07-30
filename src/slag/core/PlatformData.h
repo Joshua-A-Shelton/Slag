@@ -2,7 +2,9 @@
 #define SLAG_PLATFORMDATA_H
 
 #ifdef SLAG_WIN32_BACKEND
-#define NOMINMAX
+#ifndef NOMINMAX
+#define NOMINMAX 1
+#endif
 #include <windows.h>
 #define SLAG_WINDOWS_HWND HWND
 #define SLAG_WINDOWS_HINSTANCE HINSTANCE

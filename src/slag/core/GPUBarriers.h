@@ -140,7 +140,7 @@ namespace slag
     {
     public:
         ///Layouts for textures that are optimized for specific operations
-        enum Layout
+        enum class Layout
         {
 #define DEFINITION(slagName, vulkanName, directXName) slagName,
             SLAG_TEXTURE_LAYOUT_DEFINITIONS(DEFINITION)

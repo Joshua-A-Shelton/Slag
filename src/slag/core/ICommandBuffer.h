@@ -86,14 +86,14 @@ namespace slag
 
 #ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
         /**
-         * Clear a color texture
+         * Clear all sub-resources of a color texture
          * @param texture The texture to clear
          * @param color The color to clear it to
          */
         virtual void clearTexture(Texture* texture, ClearColor color)=0;
 
         /**
-         * clear a depth/stencil texture
+         * clear all sub-resources of a depth/stencil texture
          * @param texture The texture to clear
          * @param depthStencil The value to clear it to
          */
@@ -155,7 +155,7 @@ namespace slag
          * @param subresourceCount Number of items in subresources array
          * @param destination Buffer to copy to
          */
-        virtual void copyTextureToBuffer(Texture* source, TextureToBufferCopyData* copyData, size_t subresourceCount, Buffer* destination)=0;
+        virtual void copyTextureToBuffer(Texture* source, TextureToBufferCopyData* copyData, uint32_t subresourceCount, Buffer* destination)=0;
 #else
          /**
          * Copy texel data of a texture to a buffer
@@ -167,6 +167,28 @@ namespace slag
          */
          virtual void copyTextureToBuffer(Texture* source, TextureLayouts::Layout textureLayout, TextureSubresource* subresources, size_t subresourceCount, Buffer* destination)=0;
 #endif
+
+#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
+        /**
+         * Copy data from a buffer into a texture subresource
+         * @param source Buffer containing data to be copied
+         * @param offset Offset into the buffer in bytes to start copying from
+         * @param destination Texture to copy the data into
+         * @param subresource Subresource of the texture to copy into
+         */
+        virtual void copyBufferToTexture(Buffer* source, uint64_t offset, Texture* destination,TextureSubresource subresource)=0;
+#else
+            /**
+         * Copy data from a buffer into a texture subresource
+         * @param source Buffer containing data to be copied
+         * @param offset Offset into the buffer in bytes to start copying from
+         * @param destination Texture to copy the data into
+         * @param subresource Subresource of the texture to copy into
+         * @param destinationLayout layout the texture is in
+         */
+        virtual void copyBufferToTexture(Buffer* source, uint64_t offset, Texture* destination,TextureSubresource subresource,TextureLayouts::Layout destinationLayout)=0;
+#endif
+
 
 #ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
         /**
@@ -234,13 +256,14 @@ namespace slag
          * @param source The texture to copy from
          * @param sourceLayer The index of the source texture layer in the texture array (0 for non-arrayed images) to copy from
          * @param sourceMip The mipmap level of the source texture to copy from
-         * @param sourceArea The area of the texture to copy (sized to chosen mip level)
+         * @param sourceOffset The offset of the source to get resolve data from
          * @param destination The texture to draw to
          * @param destinationLayer The index of the source texture layer in the texture array (0 for non-arrayed images) to draw to
          * @param destinationMip The mipmap level of the source texture to draw to
-         * @param destinationArea The area of the texture to draw to (sized to chosen mip level)
+         * @param destinationOffset The offset of the destination to resolve data to
+         * @param resolveExtent The size of the area to get resolve data from and to draw to
          */
-        virtual void resolve(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceArea, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Rectangle destinationArea);
+        virtual void resolve(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Offset sourceOffset, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Offset destinationOffset, Extent resolveExtent)=0;
 #else
             /**
              * Resolve and draw the contents of a multi-sampled image into another
@@ -248,14 +271,15 @@ namespace slag
              * @param sourceLayout The layout of the source texture at the time of execution (TRANSFER_SOURCE/GENERAL)
              * @param sourceLayer The index of the source texture layer in the texture array (0 for non-arrayed images) to copy from
              * @param sourceMip The mipmap level of the source texture to copy from
-             * @param sourceArea The area of the texture to copy (sized to chosen mip level)
+             * @param sourceOffset The offset of the source to get resolve data from
              * @param destination The texture to draw to
              * @param destinationLayout The layout of the destination texture at the time of execution (TRANSFER_DESTINATION/GENERAL)
              * @param destinationLayer The index of the source texture layer in the texture array (0 for non-arrayed images) to draw to
              * @param destinationMip The mipmap level of the source texture to draw to
-             * @param destinationArea The area of the texture to draw to (sized to chosen mip level)
+             * @param destinationOffset The offset of the destination to resolve data to
+             * @param resolveExtent The size of the area to get resolve data from and to draw to
              */
-            virtual void resolve(Texture* source, TextureLayouts::Layout sourceLayout, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceArea, Texture* destination, TextureLayouts::Layout destinationLayout, uint32_t destinationLayer, uint32_t destinationMip, Rectangle destinationArea);
+            virtual void resolve(Texture* source, TextureLayouts::Layout sourceLayout, uint32_t sourceLayer, uint32_t sourceMip, Offset sourceOffset, Texture* destination, TextureLayouts::Layout destinationLayout, uint32_t destinationLayer, uint32_t destinationMip, Offset destinationOffset, Extent resolveExtent)=0;
 #endif
 
             /**
@@ -442,10 +466,11 @@ namespace slag
          * Bind buffers that contain drawing vertices
          * @param firstBindingIndex Index to start binding index buffers to (buffers are ordered per shader)
          * @param buffers Buffers containing vertex attribute data
-         * @param bufferOffsets Offsets into vertex buffers vertex data begins
+         * @param bufferOffsets Offsets into vertex buffers vertex where data begins in each vertex buffer
+         * @param strides Strides of vertex attributes in each vertex buffer
          * @param bufferCount Count of buffers passed in buffers array
          */
-        virtual void bindVertexBuffers(uint32_t firstBindingIndex, Buffer** buffers, uint64_t* bufferOffsets, size_t bufferCount)=0;
+        virtual void bindVertexBuffers(uint32_t firstBindingIndex, Buffer** buffers, uint64_t* bufferOffsets, uint64_t* strides, size_t bufferCount)=0;
 
 
 

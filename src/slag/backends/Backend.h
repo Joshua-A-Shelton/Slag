@@ -20,6 +20,8 @@ namespace slag
 
         static Backend* current(){return _current;}
 
+        virtual bool valid()=0;
+
         virtual std::vector<std::unique_ptr<GraphicsCard>> getGraphicsCards()=0;
 
         virtual GraphicsBackend backendAPI()=0;

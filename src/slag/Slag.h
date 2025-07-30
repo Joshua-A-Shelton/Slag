@@ -27,25 +27,25 @@
 
 namespace slag
 {
-    enum GraphicsBackend
+    enum class GraphicsBackend
     {
         DEFAULT_GRAPHICS_BACKEND = 0,
         VULKAN_GRAPHICS_BACKEND,
         CUSTOM_GRAPHICS_BACKEND
     };
+    enum class SlagDebugLevel
+    {
+        SLAG_ERROR,
+        SLAG_WARNING,
+        SLAG_INFO
+    };
     struct SlagInitInfo
     {
-        enum DebugLevel
-        {
-            SLAG_ERROR,
-            SLAG_WARNING,
-            SLAG_INFO
-        };
-        GraphicsBackend graphicsBackend = DEFAULT_GRAPHICS_BACKEND;
+        GraphicsBackend graphicsBackend = GraphicsBackend::DEFAULT_GRAPHICS_BACKEND;
         ///Pointer to object that implements slag::Backend if you need to provide your own instead of one of the provided ones
         void* customBackend = nullptr;
         ///Function pointer that forwards error messages from the underlying API, nullptr disables error handling
-        void(* slagDebugHandler)(const std::string& message, DebugLevel debugLevel, int32_t messageID)=nullptr;
+        void(* slagDebugHandler)(const std::string& message, SlagDebugLevel debugLevel, int32_t messageID)=nullptr;
         ///Function pointer that evaluates graphics cards when deciding which one to pick, returning true means we should pick a over b, nullptr uses default sorting
         bool(* graphicsCardEvaluationHandler)(const GraphicsCard* a, const GraphicsCard* b)=nullptr;
 

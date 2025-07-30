@@ -23,34 +23,6 @@ namespace slag
         ///Gets the transfer queue, or a queue that processes it's commands
         virtual GPUQueue* transferQueue()=0;
 
-        ///Total number of graphics queues (minimum 1 guaranteed)
-        virtual uint32_t graphicsQueueCount()=0;
-        ///Total number of compute queues
-        virtual uint32_t computeQueueCount()=0;
-        ///Total number of transfer queues
-        virtual uint32_t transferQueueCount()=0;
-
-        /**
-         * Gets the graphics queue at a given index
-         * @param index
-         * @return
-         */
-        virtual GPUQueue* graphicsQueue(uint32_t index)=0;
-
-        /**
-         * Gets a dedicated compute queue at a given index
-         * @param index
-         * @return
-         */
-        virtual GPUQueue* computeQueue(uint32_t index)=0;
-
-        /**
-         * Gets a dedicated transfer queue at a given index
-         * @param index
-         * @return
-         */
-        virtual GPUQueue* transferQueue(uint32_t index)=0;
-
         ///Defragment video memory, blocks until finished
         virtual void defragmentMemory(SemaphoreValue* waitFor, size_t waitForCount, SemaphoreValue* signal, size_t signalCount)=0;
     };

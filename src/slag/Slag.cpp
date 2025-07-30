@@ -41,6 +41,12 @@ namespace slag
         {
             return SLAG_BACKEND_NOT_AVAILABLE;
         }
+        if (!Backend::current()->valid())
+        {
+            delete Backend::_current;
+            Backend::_current = nullptr;
+            return SLAG_BACKEND_NOT_AVAILABLE;
+        }
 
 
         //set default graphics card
