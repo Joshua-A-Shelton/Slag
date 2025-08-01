@@ -182,6 +182,215 @@ namespace slag
             return VK_INDEX_TYPE_UINT16;
         }
 
+        std::vector<VkPolygonMode> VULKAN_POLYGON_MODES =
+        {
+            VK_POLYGON_MODE_FILL,
+            VK_POLYGON_MODE_LINE,
+            VK_POLYGON_MODE_POINT
+        };
+
+        VkPolygonMode VulkanBackend::vulkanizedPolygonMode(RasterizationState::DrawMode drawMode)
+        {
+            return VULKAN_POLYGON_MODES[static_cast<uint8_t>(drawMode)];
+        }
+
+        std::vector<VkCullModeFlags> VULKAN_CULL_FLAGS
+        {
+            VK_CULL_MODE_NONE,
+            VK_CULL_MODE_FRONT_BIT,
+            VK_CULL_MODE_BACK_BIT,
+            VK_CULL_MODE_FRONT_AND_BACK
+        };
+        VkCullModeFlags VulkanBackend::vulkanizedCullMode(RasterizationState::CullOptions cullOptions)
+        {
+            return VULKAN_CULL_FLAGS[static_cast<uint8_t>(cullOptions)];
+        }
+
+        std::vector<VkFrontFace> VULKAN_FRONT_FACES
+        {
+            VK_FRONT_FACE_CLOCKWISE,
+            VK_FRONT_FACE_COUNTER_CLOCKWISE
+        };
+        VkFrontFace VulkanBackend::vulkanizedFrontFace(RasterizationState::FrontFacing frontFace)
+        {
+            return VULKAN_FRONT_FACES[static_cast<uint8_t>(frontFace)];
+        }
+
+        std::vector<VkBlendFactor> VULKAN_BLEND_FACTORS
+        {
+#define DEFINITION(SlagName, VulkanName, DXName) VulkanName,
+            BLEND_FACTOR_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+        };
+        VkBlendFactor VulkanBackend::vulkanizedBlendFactor(Operations::BlendFactor blendFactor)
+        {
+            return VULKAN_BLEND_FACTORS[static_cast<uint8_t>(blendFactor)];
+        }
+
+        std::vector<VkBlendOp> VULKAN_BLEND_OPS
+        {
+#define DEFINITION(SlagName, VulkanName, DXName) VulkanName,
+            BLEND_OP_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+        };
+        VkBlendOp VulkanBackend::vulkanizedBlendOp(Operations::BlendOperation blendOperation)
+        {
+            return VULKAN_BLEND_OPS[static_cast<uint8_t>(blendOperation)];
+        }
+
+        VkColorComponentFlags VulkanBackend::vulkanizedColorComponentFlags(Color::ComponentFlags colorComponentFlags)
+        {
+            VkColorComponentFlags flags = 0;
+            if (static_cast<bool>(colorComponentFlags & Color::ComponentFlags::RED_COMPONENT))
+            {
+                flags |= VK_COLOR_COMPONENT_R_BIT;
+            }
+            if (static_cast<bool>(colorComponentFlags & Color::ComponentFlags::GREEN_COMPONENT))
+            {
+                flags |= VK_COLOR_COMPONENT_G_BIT;
+            }
+            if (static_cast<bool>(colorComponentFlags & Color::ComponentFlags::BLUE_COMPONENT))
+            {
+                flags |= VK_COLOR_COMPONENT_B_BIT;
+            }
+            if (static_cast<bool>(colorComponentFlags & Color::ComponentFlags::ALPHA_COMPONENT))
+            {
+                flags |= VK_COLOR_COMPONENT_A_BIT;
+            }
+            return flags;
+        }
+
+        std::vector<VkLogicOp> VULKAN_LOGIC_OPS
+        {
+#define DEFINITION(SlagName,VulkanName,DX12Name) VulkanName,
+            FRAMEBUFFER_LOGICAL_OP_DEFINITIONS(DEFINITION)
+#undef DEFINITION
+        };
+        VkLogicOp VulkanBackend::vulkanizedLogicOp(Operations::LogicalOperation operation)
+        {
+            return VULKAN_LOGIC_OPS[static_cast<uint8_t>(operation)];
+        }
+
+        std::vector<VkCompareOp> VULKAN_COMPARE_OPS
+        {
+#define DEFINITION(slagName, vulkanName, dx12Name) vulkanName,
+            COMPARISON_FUNCTION(DEFINITION)
+#undef DEFINITION
+        };
+        VkCompareOp VulkanBackend::vulkanizedCompareOp(Operations::ComparisonFunction comparisonFunction)
+        {
+            return VULKAN_COMPARE_OPS[static_cast<uint8_t>(comparisonFunction)];
+        }
+
+        std::vector<VkStencilOp> VULKAN_STENCIL_OPS
+        {
+#define DEFINITION(SlagName,VulkanName, DX12Name) VulkanName,
+            STENCIL_OP_DEFINITIONS(DEFINITION)
+#undef DEFINITION
+        };
+        VkStencilOp VulkanBackend::vulkanizedStencilOp(Operations::StencilOperation stencilOperation)
+        {
+            return VULKAN_STENCIL_OPS[static_cast<uint8_t>(stencilOperation)];
+        }
+
+        VkFormat VulkanBackend::vulkanizedGraphicsType(GraphicsType graphicsType)
+        {
+            switch(graphicsType)
+            {
+                case GraphicsType::UNKNOWN:
+                    return VK_FORMAT_UNDEFINED;
+                case GraphicsType::BOOLEAN:
+                    return VK_FORMAT_R8_UINT;
+                case GraphicsType::INTEGER:
+                    return VK_FORMAT_R32_SINT;
+                case GraphicsType::UNSIGNED_INTEGER:
+                    return VK_FORMAT_R32_UINT;
+                case GraphicsType::FLOAT:
+                    return VK_FORMAT_R32_SFLOAT;
+                case GraphicsType::DOUBLE:
+                    return VK_FORMAT_R64_SFLOAT;
+                case GraphicsType::VECTOR2:
+                    return VK_FORMAT_R32G32_SFLOAT;
+                case GraphicsType::VECTOR3:
+                    return VK_FORMAT_R32G32B32_SFLOAT;
+                case GraphicsType::VECTOR4:
+                    return VK_FORMAT_R32G32B32A32_SFLOAT;
+                case GraphicsType::BOOLEAN_VECTOR2:
+                    return VK_FORMAT_R8G8_UINT;
+                case GraphicsType::BOOLEAN_VECTOR3:
+                    return VK_FORMAT_R8G8B8_UINT;
+                case GraphicsType::BOOLEAN_VECTOR4:
+                    return VK_FORMAT_R8G8B8A8_UINT;
+                case GraphicsType::INTEGER_VECTOR2:
+                    return VK_FORMAT_R32G32_SINT;
+                case GraphicsType::INTEGER_VECTOR3:
+                    return VK_FORMAT_R32G32B32_SINT;
+                case GraphicsType::INTEGER_VECTOR4:
+                    return VK_FORMAT_R32G32B32A32_SINT;
+                case GraphicsType::UNSIGNED_INTEGER_VECTOR2:
+                    return VK_FORMAT_R32G32_UINT;
+                case GraphicsType::UNSIGNED_INTEGER_VECTOR3:
+                    return VK_FORMAT_R32G32B32_UINT;
+                case GraphicsType::UNSIGNED_INTEGER_VECTOR4:
+                    return VK_FORMAT_R32G32B32A32_UINT;
+                case GraphicsType::DOUBLE_VECTOR2:
+                    return VK_FORMAT_R64G64_SFLOAT;
+                case GraphicsType::DOUBLE_VECTOR3:
+                    return VK_FORMAT_R64G64B64_SFLOAT;
+                case GraphicsType::DOUBLE_VECTOR4:
+                    return VK_FORMAT_R64G64B64A64_SFLOAT;
+            }
+            return VK_FORMAT_UNDEFINED;
+        }
+
+        VkShaderStageFlagBits VulkanBackend::vulkanizedShaderStage(ShaderStageFlags stageFlags)
+        {
+            switch (stageFlags)
+            {
+#define DEFINITION(SlagName, SlagValue, VulkanName, DXName) case ShaderStageFlags::SlagName: return VulkanName;
+                SHADER_STAGE_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            throw std::invalid_argument("Invalid shader stage");
+        }
+
+        VkShaderStageFlags VulkanBackend::vulkanizedShaderFlags(ShaderStageFlags stageFlags)
+        {
+            VkShaderStageFlags flags = 0;
+#define DEFINITION(SlagName, SlagValue, VulkanName, DXName) if((bool)(stageFlags & ShaderStageFlags::SlagName)) {flags |= VulkanName;}
+            SHADER_STAGE_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            return flags;
+        }
+
+        VkDescriptorType VulkanBackend::vulkanizedDescriptorType(Descriptor::Type descriptorType)
+        {
+            switch (descriptorType)
+            {
+            case slag::Descriptor::Type::SAMPLER:
+                return  VK_DESCRIPTOR_TYPE_SAMPLER;
+            case slag::Descriptor::Type::SAMPLED_TEXTURE:
+                return  VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            case slag::Descriptor::Type::SAMPLER_AND_TEXTURE:
+                return  VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            case slag::Descriptor::Type::STORAGE_TEXTURE:
+                return  VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+            case slag::Descriptor::Type::UNIFORM_TEXEL_BUFFER:
+                return  VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+            case slag::Descriptor::Type::STORAGE_TEXEL_BUFFER:
+                return  VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+            case slag::Descriptor::Type::UNIFORM_BUFFER:
+                return  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            case slag::Descriptor::Type::STORAGE_BUFFER:
+                return  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            case slag::Descriptor::Type::INPUT_ATTACHMENT:
+                return  VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+            case slag::Descriptor::Type::ACCELERATION_STRUCTURE:
+                return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+            }
+            throw std::runtime_error("unable to convert descriptorType");
+        }
+
         void(* SLAG_VULKAN_DEBUG_HANDLER)(const std::string& message, SlagDebugLevel level, int32_t messageID)=nullptr;
         VkBool32 VULKAN_DEBUG_MESSENGER_CALLBACK(VkDebugUtilsMessageSeverityFlagBitsEXT           messageSeverity,
                                                  VkDebugUtilsMessageTypeFlagsEXT                  messageTypes,

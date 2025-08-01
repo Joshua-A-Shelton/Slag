@@ -12,7 +12,7 @@ namespace slag
         return !(*this == to);
     }
 
-    Descriptor::Descriptor(const std::string& name, DescriptorType type, uint32_t arrayDepth, uint32_t binding, ShaderStageFlags visibleStages):_shape(type,arrayDepth,binding,visibleStages)
+    Descriptor::Descriptor(const std::string& name, Type type, uint32_t arrayDepth, uint32_t binding, ShaderStageFlags visibleStages):_shape(type,arrayDepth,binding,visibleStages)
     {
         _name = name;
     }
@@ -60,5 +60,119 @@ namespace slag
         _name.swap(from._name);
         _shape = from._shape;
 
+    }
+
+    UniformBufferDescriptorLayout::UniformBufferDescriptorLayout(const std::string& name, GraphicsType type,
+        uint32_t arrayDepth, std::vector<UniformBufferDescriptorLayout>&& children, size_t size, size_t offset,
+        size_t absoluteOffset)
+    {
+        _name = name;
+        _type = type;
+        _arrayDepth = arrayDepth;
+        _children = std::move(children);
+        _size = size;
+        _offset = offset;
+        _absoluteOffset = absoluteOffset;
+    }
+
+    UniformBufferDescriptorLayout::UniformBufferDescriptorLayout(UniformBufferDescriptorLayout&& from)
+    {
+        move(from);
+    }
+
+    UniformBufferDescriptorLayout& UniformBufferDescriptorLayout::operator=(UniformBufferDescriptorLayout&& from)
+    {
+        move(from);
+        return *this;
+    }
+
+    const std::string& UniformBufferDescriptorLayout::name() const
+    {
+        return _name;
+    }
+
+    GraphicsType UniformBufferDescriptorLayout::type() const
+    {
+        return _type;
+    }
+
+    size_t UniformBufferDescriptorLayout::childrenCount() const
+    {
+        return _children.size();
+    }
+
+    size_t UniformBufferDescriptorLayout::size() const
+    {
+        return _size;
+    }
+
+    size_t UniformBufferDescriptorLayout::offset() const
+    {
+        return _offset;
+    }
+
+    size_t UniformBufferDescriptorLayout::absoluteOffset() const
+    {
+        return _absoluteOffset;
+    }
+
+    const UniformBufferDescriptorLayout& UniformBufferDescriptorLayout::operator[](size_t index) const
+    {
+        return _children[index];
+    }
+
+    int UniformBufferDescriptorLayout::compatible(UniformBufferDescriptorLayout& a, UniformBufferDescriptorLayout& b)
+    {
+        UniformBufferDescriptorLayout* superset = nullptr;
+        UniformBufferDescriptorLayout* subset = nullptr;
+        if (a.size() >= b.size())
+        {
+            superset = &a;
+            subset = &b;
+        }
+        else
+        {
+            superset = &b;
+            subset = &a;
+        }
+        for (auto i=0; i<subset->size(); i++)
+        {
+            if (!compatibleRecursive(superset->_children[i],subset->_children[i]))
+            {
+                return 0;
+            }
+        }
+        if (superset == &a)
+        {
+            return -1;
+        }
+        return 1;
+    }
+
+    bool UniformBufferDescriptorLayout::compatibleRecursive(UniformBufferDescriptorLayout& a,UniformBufferDescriptorLayout& b)
+    {
+        if (a.type() == b.type())
+        {
+            if (a.type() == GraphicsType::STRUCT)
+            {
+                if (a.size() == b.size() && a.childrenCount()==b.childrenCount())
+                {
+                    for (auto i=0; i<a.childrenCount(); i++)
+                    {
+                        if (!compatibleRecursive(a._children[i],b._children[i]))
+                        {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
     }
 } // slag

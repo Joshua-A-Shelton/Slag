@@ -19,6 +19,8 @@ OPTION(SLAG_WIN32_BACKEND "Use Win32 Windowing Backend" ON)
 OPTION(SLAG_X11_BACKEND "Use X11 Windowing Backend" ON)
 OPTION(SLAG_WAYLAND_BACKEND "Use Wayland Windowing Backend" ON)
 
+SET(USE_SPIRV_REFLECTION ON)
+
 if(WIN32)
     set(SLAG_X11_BACKEND OFF)
     set(SLAG_WAYLAND_BACKEND OFF)
@@ -46,6 +48,7 @@ endif()
 if(SLAG_VULKAN_BACKEND)
     find_package(Vulkan REQUIRED)
     add_definitions(-DSLAG_VULKAN_BACKEND=1)
+    SET(USE_SPIRV_REFLECTION ON)
     message("adding vulkan backend")
     SET(SLAG_VULKAN_SOURCES
             src/slag/backends/vulkan/VulkanBackend.cpp
@@ -64,7 +67,15 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/backends/vulkan/core/VulkanQueue.cpp
             src/slag/backends/vulkan/core/VulkanQueue.h
             src/slag/backends/vulkan/core/VulkanSemaphore.cpp
-            src/slag/backends/vulkan/core/VulkanSemaphore.h)
+            src/slag/backends/vulkan/core/VulkanSemaphore.h
+            src/slag/backends/vulkan/core/VulkanDescriptorPool.cpp
+            src/slag/backends/vulkan/core/VulkanDescriptorPool.h
+            src/slag/backends/vulkan/core/VulkanShaderPipeline.cpp
+            src/slag/backends/vulkan/core/VulkanShaderPipeline.h
+            src/slag/backends/vulkan/core/VulkanDescriptorGroup.cpp
+            src/slag/backends/vulkan/core/VulkanDescriptorGroup.h
+            src/slag/backends/vulkan/core/VulkanDescriptorGroupCache.cpp
+            src/slag/backends/vulkan/core/VulkanDescriptorGroupCache.h)
 endif()
 if(SLAG_DX12_BACKEND)
     add_definitions(-DSLAG_DX12_BACKEND=1)
@@ -72,7 +83,14 @@ if(SLAG_DX12_BACKEND)
     SET(SLAG_DX12_SOURCES)
 endif()
 
-add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES}
+if(USE_SPIRV_REFLECTION)
+    add_definitions(-DUSE_SLAG_SPIRV_REFLECTION)
+    SET(SLAG_SPIRV_REFLECT_SOURCES
+            src/slag/spirv/SPIRVReflection.cpp
+            src/slag/spirv/SPIRVReflection.h)
+endif()
+
+add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLECT_SOURCES}
         src/slag/Slag.cpp
         src/slag/Slag.h
         src/slag/core/GraphicsCard.h
@@ -121,6 +139,22 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES}
         src/slag/core/VertexDescription.h
 
 )
+#link spirv if we need to
+if(USE_SPIRV_REFLECTION)
+    OPTION(SPIRV_REFLECT_EXECUTABLE "build spirv reflect executable" OFF)
+    OPTION(SPIRV_REFLECT_EXAMPLES "build spirv reflect examples" OFF)
+    OPTION(SPIRV_REFLECT_STATIC_LIB "build spirv reflect library" ON)
+    FetchContent_Declare(
+            SPIRV_REFLECT
+            GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Reflect
+            #TODO: update this to vulkan 1.4, it's currently causing issues building on systems where the sdk isn't up to 1.4 yet, so we're waiting until it's widely available
+            GIT_TAG vulkan-sdk-1.3.296.0
+            GIT_SHALLOW TRUE
+            OVERRIDE_FIND_PACKAGE
+    )
+    FetchContent_MakeAvailable(SPIRV_REFLECT)
+    target_link_libraries(Slag PRIVATE spirv-reflect-static)
+endif ()
 
 if(SLAG_VULKAN_BACKEND)
     message("vulkan directory: ${Vulkan_INCLUDE_DIR}")

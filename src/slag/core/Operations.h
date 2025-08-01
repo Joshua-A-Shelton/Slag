@@ -71,31 +71,31 @@ namespace slag
 {
     struct Operations
     {
-        enum ComparisonFunction
+        enum class ComparisonFunction: uint8_t
         {
 #define DEFINITION(slagName, vulkanName, dx12Name) slagName,
             COMPARISON_FUNCTION(DEFINITION)
 #undef DEFINITION
         };
-        enum BlendFactor
+        enum class BlendFactor: uint8_t
         {
 #define DEFINITION(SlagName, VulkanName, DXName) SlagName,
             BLEND_FACTOR_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
         };
-        enum BlendOperation
+        enum class BlendOperation: uint8_t
         {
 #define DEFINITION(SlagName, VulkanName, DXName) SlagName,
             BLEND_OP_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
         };
-        enum LogicalOperation
+        enum class LogicalOperation: uint8_t
         {
 #define DEFINITION(SlagName,VulkanName,DX12Name) SlagName,
             FRAMEBUFFER_LOGICAL_OP_DEFINITIONS(DEFINITION)
 #undef DEFINITION
         };
-        enum StencilOperation
+        enum class StencilOperation: uint8_t
         {
 #define DEFINITION(SlagName,VulkanName, DX12Name) SlagName,
             STENCIL_OP_DEFINITIONS(DEFINITION)

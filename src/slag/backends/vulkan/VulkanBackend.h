@@ -35,6 +35,19 @@ namespace slag
             static VkAccessFlagBits2 vulkanizedBarrierAccessMask(BarrierAccessFlags accessFlags);
             static VkPipelineStageFlags2 vulkanizedStageMask(PipelineStageFlags stageFlags);
             static VkIndexType vulkanizedIndexType(Buffer::IndexSize indexSize);
+            static VkPolygonMode vulkanizedPolygonMode(RasterizationState::DrawMode drawMode);
+            static VkCullModeFlags vulkanizedCullMode(RasterizationState::CullOptions cullOptions);
+            static VkFrontFace vulkanizedFrontFace(RasterizationState::FrontFacing frontFace);
+            static VkBlendFactor vulkanizedBlendFactor(Operations::BlendFactor blendFactor);
+            static VkBlendOp vulkanizedBlendOp(Operations::BlendOperation blendOperation);
+            static VkColorComponentFlags vulkanizedColorComponentFlags(Color::ComponentFlags colorComponentFlags);
+            static VkLogicOp vulkanizedLogicOp(Operations::LogicalOperation operation);
+            static VkCompareOp vulkanizedCompareOp(Operations::ComparisonFunction comparisonFunction);
+            static VkStencilOp vulkanizedStencilOp(Operations::StencilOperation stencilOperation);
+            static VkFormat vulkanizedGraphicsType(GraphicsType graphicsType);
+            static VkShaderStageFlagBits vulkanizedShaderStage(ShaderStageFlags stageFlags);
+            static VkDescriptorType vulkanizedDescriptorType(Descriptor::Type descriptorType);
+            static VkShaderStageFlags vulkanizedShaderFlags(ShaderStageFlags stageFlags);
 
             VulkanBackend(const SlagInitInfo& initInfo);
             ~VulkanBackend()override;

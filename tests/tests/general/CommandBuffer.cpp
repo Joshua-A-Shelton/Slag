@@ -428,9 +428,10 @@ TEST_F(CommandBufferTest, CopyBufferToBuffer )
     {
         rawData[i] = i;
     }
+    std::vector<unsigned char> fixed(100,255);
     std::unique_ptr<Buffer> buffer1 = std::unique_ptr<Buffer>(Buffer::newBuffer(rawData.data(),rawData.size(),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<Buffer> buffer2 = std::unique_ptr<Buffer>(Buffer::newBuffer(rawData.size(),Buffer::Accessibility::GPU));
-    std::unique_ptr<Buffer> buffer3 = std::unique_ptr<Buffer>(Buffer::newBuffer(rawData.size(),Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<Buffer> buffer3 = std::unique_ptr<Buffer>(Buffer::newBuffer(fixed.data(),fixed.size(),Buffer::Accessibility::CPU_AND_GPU));
 
     std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
@@ -439,14 +440,14 @@ TEST_F(CommandBufferTest, CopyBufferToBuffer )
 
     commandBuffer->copyBufferToBuffer(buffer1.get(),0,50,buffer2.get(),50);
     commandBuffer->insertBarrier(BufferBarrier
-        {
-            .buffer = buffer2.get(),
-            .accessBefore = BarrierAccessFlags::TRANSFER_WRITE,
-            .accessAfter = BarrierAccessFlags::TRANSFER_READ,
-            .syncBefore = PipelineStageFlags::TRANSFER,
-            .syncAfter = PipelineStageFlags::TRANSFER
-        });
-    commandBuffer->copyBufferToBuffer(buffer2.get(),0,50,buffer3.get(),25);
+    {
+        .buffer = buffer2.get(),
+        .accessBefore = BarrierAccessFlags::TRANSFER_WRITE,
+        .accessAfter = BarrierAccessFlags::TRANSFER_READ,
+        .syncBefore = PipelineStageFlags::TRANSFER,
+        .syncAfter = PipelineStageFlags::TRANSFER
+    });
+    commandBuffer->copyBufferToBuffer(buffer2.get(),50,50,buffer3.get(),25);
 
     commandBuffer->end();
 
@@ -456,8 +457,6 @@ TEST_F(CommandBufferTest, CopyBufferToBuffer )
     finished->waitForValue(1);
 
     unsigned char* dataPtr = buffer3->as<unsigned char>();
-    std::vector<unsigned char> data (buffer3->size());
-    memcpy(data.data(),dataPtr,buffer3->size());
     for (auto i=0; i<50; i++)
     {
         GTEST_ASSERT_EQ(dataPtr[25+i],i);
@@ -481,14 +480,14 @@ TEST_F(CommandBufferTest, CopyTextureToBuffer)
         texels[i] = byteColor{122,36,15,100};
     }
     std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,2,2,Texture::SampleCount::ONE,texels.data(),2,2));
-    std::unique_ptr<Buffer> textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(texture->byteSize(0)+texture->byteSize(1)+30,Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<Buffer> textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(texture->byteSize(0)+texture->byteSize(1)+32,Buffer::Accessibility::CPU_AND_GPU));
 
     commandBuffer->begin();
 
     TextureToBufferCopyData copyData[]
     {
         {
-            .bufferOffset = 15,
+            .bufferOffset = 16,
             .subresource =
         {
                 .aspectFlags = Pixels::AspectFlags::COLOR,
@@ -498,7 +497,7 @@ TEST_F(CommandBufferTest, CopyTextureToBuffer)
             }
         },
         {
-            .bufferOffset = texture->byteSize(0)+15,
+            .bufferOffset = texture->byteSize(0)+16,
             .subresource =
             {
                 .aspectFlags = Pixels::AspectFlags::COLOR,
@@ -518,7 +517,7 @@ TEST_F(CommandBufferTest, CopyTextureToBuffer)
     finished->waitForValue(1);
 
     uint8_t* colorPtr = textureBuffer->as<uint8_t>();
-    for (auto i=15; i < texture->byteSize(0)+15; i+=4)
+    for (auto i=16; i < texture->byteSize(0)+16; i+=4)
     {
         auto color = *reinterpret_cast<byteColor*>(&colorPtr[i]);
         GTEST_ASSERT_EQ(color.r,255);
@@ -526,7 +525,7 @@ TEST_F(CommandBufferTest, CopyTextureToBuffer)
         GTEST_ASSERT_EQ(color.b,255);
         GTEST_ASSERT_EQ(color.a,255);
     }
-    for (auto i=15+texture->byteSize(0); i < 15+texture->byteSize(0)+texture->byteSize(1); i+=4)
+    for (auto i=16+texture->byteSize(0); i < 16+texture->byteSize(0)+texture->byteSize(1); i+=4)
     {
         auto color = *reinterpret_cast<byteColor*>(&colorPtr[i]);
         GTEST_ASSERT_EQ(color.r,122);
@@ -711,7 +710,7 @@ TEST_F(CommandBufferTest, SetBlendConstants)
 {
     std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8_B8G8_UNORM, Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,100,100,1,1));
+    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM, Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,100,100,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,100,100,1,1));
     std::unique_ptr<Buffer> targetBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());

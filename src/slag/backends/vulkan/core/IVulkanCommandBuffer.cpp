@@ -153,7 +153,7 @@ namespace slag
             {
                 auto& region = regions[i];
                 auto& subResource = copyData[i];
-                
+                SLAG_ASSERT(subResource.bufferOffset % Pixels::size(source->format())==0 && "Offset into buffer must be multiple of pixel size");
                 region.bufferOffset = subResource.bufferOffset;
                 region.bufferRowLength = 0;
                 region.bufferImageHeight = 0;

@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Color.h"
+#include "Color.h"
 #include "Operations.h"
 #include "Pixels.h"
 #include "VertexDescription.h"
@@ -30,17 +31,44 @@ namespace slag
     class UniformBufferDescriptorLayout;
     class DescriptorGroup;
 
-    enum ShaderStageFlags: uint16_t
+    enum class ShaderStageFlags: uint16_t
     {
 #define DEFINITION(SlagName, SlagValue, VulkanName, DXName) SlagName = SlagValue,
         SHADER_STAGE_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
     };
+
+    inline ShaderStageFlags operator|(ShaderStageFlags a, ShaderStageFlags b)
+    {
+        return static_cast<ShaderStageFlags>(static_cast<uint16_t>(a) | static_cast<uint16_t>(b));
+    }
+
+    inline ShaderStageFlags operator&(ShaderStageFlags a, ShaderStageFlags b)
+    {
+        return static_cast<ShaderStageFlags>(static_cast<uint16_t>(a) & static_cast<uint16_t>(b));
+    }
+
+    inline ShaderStageFlags operator~(ShaderStageFlags a)
+    {
+        return static_cast<ShaderStageFlags>(~static_cast<uint16_t>(a));
+    }
+
+    inline ShaderStageFlags operator|=(ShaderStageFlags& a, ShaderStageFlags b)
+    {
+        a = a | b;
+        return a;
+    }
+
+    inline ShaderStageFlags operator&=(ShaderStageFlags& a, ShaderStageFlags b)
+    {
+        a = a & b;
+        return a;
+    }
     ///Represents a stage of shader execution
     class ShaderCode
     {
     public:
-        enum CodeLanguage
+        enum class CodeLanguage
         {
             SPIRV,
             CUSTOM
@@ -70,7 +98,7 @@ namespace slag
     struct RasterizationState
     {
         ///How to fill the geometry with pixels
-        enum DrawMode
+        enum class DrawMode: uint8_t
         {
             ///Draw the entire triangle
             FACE,
@@ -80,14 +108,14 @@ namespace slag
             VERTEX
         };
         ///Which triangles to cull (not draw)
-        enum CullOptions
+        enum class CullOptions: uint8_t
         {
             NONE,
             FRONT_FACING,
             BACK_FACING
         };
         ///Which triangles are considered front facing for culling
-        enum FrontFacing
+        enum class FrontFacing: uint8_t
         {
             ///Triangles that specify vertices in a clockwise manner
             CLOCKWISE,
@@ -99,11 +127,11 @@ namespace slag
         ///Whether or not geometry is discarded before the rasterization stage
         bool rasterizerDicardEnable = false;
         ///How to fill drawn geometry
-        DrawMode drawMode = FACE;
+        DrawMode drawMode = DrawMode::FACE;
         ///Which faces of a mesh to not draw
-        CullOptions culling = BACK_FACING;
+        CullOptions culling = CullOptions::BACK_FACING;
         ///What winding order determines a face as front facing
-        FrontFacing frontFacing = CLOCKWISE;
+        FrontFacing frontFacing = FrontFacing::CLOCKWISE;
         ///Enable depth biasing for drawn fragments
         bool depthBiasEnable = false;
         ///Extra nudge to bias fragments in the depth buffer if depthBiasEnable is true
@@ -145,7 +173,7 @@ namespace slag
         ///Operation for combining Alpha components of mixing texels
         Operations::BlendOperation alphaBlendOperation = Operations::BlendOperation::BLEND_OP_ADD;
         ///Mask to only write certain components of the texels
-        Color::ComponentFlags colorWriteMask = Color::RED_COMPONENT | Color::GREEN_COMPONENT | Color::BLUE_COMPONENT | Color::ALPHA_COMPONENT;
+        Color::ComponentFlags colorWriteMask = Color::ComponentFlags::RED_COMPONENT | Color::ComponentFlags::GREEN_COMPONENT | Color::ComponentFlags::BLUE_COMPONENT | Color::ComponentFlags::ALPHA_COMPONENT;
     };
     ///Details about blending partially transparent pixels
     struct BlendState
@@ -179,7 +207,7 @@ namespace slag
         ///Whether to update the depth buffer if a fragment passes the depth test with that fragment's depth
         bool depthWriteEnable = true;
         ///Operation to use to determine if a fragment passes the depth test
-        Operations::ComparisonFunction depthCompareOperation = Operations::COMPARISION_LESS;
+        Operations::ComparisonFunction depthCompareOperation = Operations::ComparisonFunction::COMPARISION_LESS;
         ///Whether or not to enable stencil buffer testing
         bool stencilTestEnable = false;
         ///Which bits of the stencil part of the buffer are part of the stencil test

@@ -9,7 +9,7 @@ namespace slag
     {
     public:
         ///Used Internally
-        enum ComponentFlags
+        enum class ComponentFlags
         {
             RED_COMPONENT = 0b00000001,
             GREEN_COMPONENT = 0b00000010,

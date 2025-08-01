@@ -43,7 +43,7 @@ namespace slag
         {
             std::vector<unsigned char> compiledStagesCode(stageCount);
             auto path = stages[i].pathIndicator+".spv";
-            shaderCode.push_back(ShaderCode(stages[i].stage,ShaderCode::SPIRV,path));
+            shaderCode.push_back(ShaderCode(stages[i].stage,ShaderCode::CodeLanguage::SPIRV,path));
 
         }
         for (size_t i = 0; i < stageCount; ++i)

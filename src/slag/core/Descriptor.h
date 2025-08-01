@@ -13,7 +13,7 @@ namespace slag
     {
     public:
         ///The type this descriptor describes
-        enum class DescriptorType: uint16_t
+        enum class Type: uint16_t
         {
             ///Object that selects what texels to select from texture (layer, mip, etc)
             SAMPLER,
@@ -40,13 +40,13 @@ namespace slag
         struct Shape
         {
             ///The type of descriptor being described
-            DescriptorType type=DescriptorType::UNIFORM_BUFFER;
+            Type type=Type::UNIFORM_BUFFER;
             ///How many objects are being described in an array
             uint32_t arrayDepth=1;
             ///The corresponding index to be bound to in the shader
             uint32_t binding=0;
             ///What stages of the shader this descriptor is visible to
-            ShaderStageFlags visibleStages = ShaderStageFlags::VERTEX;
+            ShaderStageFlags visibleStages = std::bit_cast<ShaderStageFlags>(uint16_t(0));
 
             bool operator == (const Shape& to)const;
             bool operator != (const Shape& to)const;
@@ -60,7 +60,7 @@ namespace slag
          * @param binding Corresponding index to be bound to in the shader
          * @param visibleStages Stages of the shader is descriptor is visible to
          */
-        Descriptor(const std::string& name, DescriptorType type, uint32_t arrayDepth, uint32_t binding, ShaderStageFlags visibleStages);
+        Descriptor(const std::string& name, Type type, uint32_t arrayDepth, uint32_t binding, ShaderStageFlags visibleStages);
         ~Descriptor()=default;
         Descriptor(const Descriptor& from);
         Descriptor& operator=(const Descriptor& from);
@@ -93,7 +93,8 @@ namespace slag
          * @param offset
          */
         UniformBufferDescriptorLayout(const std::string& name, GraphicsType type, uint32_t arrayDepth, std::vector<UniformBufferDescriptorLayout>&& children, size_t size, size_t offset, size_t absoluteOffset);
-        UniformBufferDescriptorLayout()=delete;
+        ///Create an invalid uniform buffer descriptor layout
+        UniformBufferDescriptorLayout()=default;
         UniformBufferDescriptorLayout(const UniformBufferDescriptorLayout&)=delete;
         UniformBufferDescriptorLayout& operator=(const UniformBufferDescriptorLayout&)=delete;
         UniformBufferDescriptorLayout(UniformBufferDescriptorLayout&& from);
@@ -111,10 +112,18 @@ namespace slag
         ///The offset from the beginning of the buffer
         size_t absoluteOffset()const;
         const UniformBufferDescriptorLayout& operator[](size_t index)const;
+        /**
+         * Determines if two buffer layouts are compatible
+         * @param a first layout
+         * @param b second layout
+         * @return -1 if 'a' is a super-set of 'b', 1 if 'b' is a super-set of 'a', or zero if they're incompatible
+         */
+        static int compatible(UniformBufferDescriptorLayout& a, UniformBufferDescriptorLayout& b);
     private:
-        void move(UniformBufferDescriptorLayout&& from);
+        void move(UniformBufferDescriptorLayout& from);
+        static bool compatibleRecursive(UniformBufferDescriptorLayout& a, UniformBufferDescriptorLayout& b);
         std::string _name;
-        GraphicsType _type= GraphicsType::STRUCT;
+        GraphicsType _type= GraphicsType::UNKNOWN;
         uint32_t _arrayDepth = 1;
         std::vector<UniformBufferDescriptorLayout> _children;
         size_t _size = 0;

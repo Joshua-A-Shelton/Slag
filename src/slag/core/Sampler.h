@@ -78,7 +78,7 @@ namespace slag
         float mipLODBias=0;
         bool anisotrophyEnabled=false;
         uint8_t maxAnisotrophy=0;
-        Operations::ComparisonFunction comparisonFunction = Operations::COMPARISION_NEVER;
+        Operations::ComparisonFunction comparisonFunction = Operations::ComparisonFunction::COMPARISION_NEVER;
         Color borderColor=Color(0.0f,0.0f,0.0f,0.0f);
         float minLOD = 0;
         float maxLOD = 1000.0f;
