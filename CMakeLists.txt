@@ -233,6 +233,7 @@ if(PROJECT_IS_TOP_LEVEL)
             tests/tests/general/CommandBuffer.cpp
             tests/Utilities.cpp
             tests/Utilities.h
+            tests/tests/ShaderPipeline.cpp
     )
 
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)

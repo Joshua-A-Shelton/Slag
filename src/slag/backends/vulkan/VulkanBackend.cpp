@@ -5,6 +5,7 @@
 #include "core/VulkanCommandBuffer.h"
 #include "core/VulkanGraphicsCard.h"
 #include "core/VulkanSemaphore.h"
+#include "core/VulkanShaderPipeline.h"
 #include "core/VulkanTexture.h"
 #include "slag/utilities/SLAG_ASSERT.h"
 
@@ -566,7 +567,7 @@ namespace slag
 
         ShaderPipeline* VulkanBackend::newShaderPipeline(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription,FrameBufferDescription& framebufferDescription)
         {
-            throw std::runtime_error("Not implemented");
+            return new VulkanShaderPipeline(shaders, shaderCount, properties, vertexDescription, framebufferDescription);
         }
 
         ShaderPipeline* VulkanBackend::newShaderPipeline(const ShaderCode& computeShader)

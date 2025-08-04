@@ -26,9 +26,23 @@ namespace slag
                     throw std::runtime_error("invalid shader module");
                 }
             }
+            VulkanShaderModule(const VulkanShaderModule& other)=delete;
+            VulkanShaderModule& operator=(const VulkanShaderModule& other)=delete;
+            VulkanShaderModule(VulkanShaderModule&& other)
+            {
+                std::swap(shaderModule,other.shaderModule);
+            }
+            VulkanShaderModule& operator=(VulkanShaderModule&& other)
+            {
+                std::swap(shaderModule,other.shaderModule);
+                return *this;
+            }
             ~VulkanShaderModule()
             {
-                vkDestroyShaderModule(VulkanGraphicsCard::selected()->device(),shaderModule,nullptr);
+                if (shaderModule != nullptr)
+                {
+                    vkDestroyShaderModule(VulkanGraphicsCard::selected()->device(),shaderModule,nullptr);
+                }
             }
         };
 
@@ -294,6 +308,36 @@ namespace slag
             auto device = VulkanGraphicsCard::selected()->device();
             vkDestroyPipeline(device,_pipeline,nullptr);
             vkDestroyPipelineLayout(device,_pipelineLayout,nullptr);
+        }
+
+        uint32_t VulkanShaderPipeline::descriptorGroupCount()
+        {
+            return _descriptorGroups.size();
+        }
+
+        DescriptorGroup* VulkanShaderPipeline::descriptorGroup(size_t index)
+        {
+            return &_descriptorGroups.at(index);
+        }
+
+        DescriptorGroup* VulkanShaderPipeline::operator[](size_t index)
+        {
+            return &_descriptorGroups[index];
+        }
+
+        UniformBufferDescriptorLayout* VulkanShaderPipeline::uniformBufferLayout(uint32_t descriptorGroup,uint32_t descriptorBinding)
+        {
+            auto group = _uniformBufferLayouts.find(descriptorGroup);
+            if(group == _uniformBufferLayouts.end())
+            {
+                return nullptr;
+            }
+            auto description = group->second.find(descriptorBinding);
+            if(description == group->second.end())
+            {
+                return nullptr;
+            }
+            return &description->second;
         }
     } // vulkan
 } // slag

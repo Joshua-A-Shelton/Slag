@@ -245,7 +245,7 @@ namespace slag
             }
             SPVReflectionData reflectionData
             {
-                .groups = std::vector<SPVDescriptorGroupReflectionData>(totalSets),
+                .groups = std::vector<SPVDescriptorGroupReflectionData>(totalSets+1),
                 .bufferLayouts = std::move(uniformBufferLayouts)
             };
             for (auto& group : groups)

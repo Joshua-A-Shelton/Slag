@@ -135,7 +135,7 @@ namespace slag
             superset = &b;
             subset = &a;
         }
-        for (auto i=0; i<subset->size(); i++)
+        for (auto i=0; i<subset->_children.size(); i++)
         {
             if (!compatibleRecursive(superset->_children[i],subset->_children[i]))
             {
@@ -147,6 +147,17 @@ namespace slag
             return -1;
         }
         return 1;
+    }
+
+    void UniformBufferDescriptorLayout::move(UniformBufferDescriptorLayout& from)
+    {
+        _name.swap(from._name);
+        _type= from._type;
+        _arrayDepth = from._arrayDepth;
+        _children.swap(from._children);
+        _size = from._size;
+        _offset=from._offset;
+        _absoluteOffset=from._absoluteOffset;
     }
 
     bool UniformBufferDescriptorLayout::compatibleRecursive(UniformBufferDescriptorLayout& a,UniformBufferDescriptorLayout& b)

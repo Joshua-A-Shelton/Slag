@@ -1,7 +1,7 @@
+#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
 #include "../../GraphicsAPIEnvironment.h"
 #include "slag/core/DescriptorBundle.h"
 #include "slag/core/DescriptorPool.h"
-#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
 #include <gtest/gtest.h>
 #include <slag/Slag.h>
 #include <memory>
