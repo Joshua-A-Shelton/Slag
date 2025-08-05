@@ -38,12 +38,6 @@ public struct BoneWeights
     public BoneIndexWeightValue[4] weights;
 }
 
-//Data that is set once per scene per frame
-public struct SceneData
-{
-    public float4 wind;
-    public float time;
-}
 //Data that is set once per view (usually camera) per frame
 public struct ViewData
 {
@@ -55,9 +49,6 @@ public struct ViewData
 public struct ObjectInstanceData
 {
     public matrix<float,4,4> transform;
-    public StructuredBuffer<matrix<float,4,4>> bones;
 }
-
-public ParameterBlock<SceneData> Scene;
 
 public ParameterBlock<ViewData> Camera;

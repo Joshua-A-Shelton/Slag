@@ -204,18 +204,18 @@ namespace slag
 
                             if (descriptor->second.shape().type == Descriptor::Type::UNIFORM_BUFFER)
                             {
-                                auto bufferDescription = uniformBufferLayouts.find(binding->binding);
+                                auto bufferDescription = uniformBufferLayouts.find(set.set);
                                 if ( bufferDescription == uniformBufferLayouts.end())
                                 {
-                                    bufferDescription = uniformBufferLayouts.insert(std::pair<uint32_t,std::unordered_map<uint32_t,UniformBufferDescriptorLayout>>(binding->binding,std::unordered_map<uint32_t,UniformBufferDescriptorLayout>{})).first;
-                                    bufferDescription->second.insert(std::pair<uint32_t,UniformBufferDescriptorLayout>(descriptor->first,uniformBufferDescriptorLayoutFromSPV(&binding->block)));
+                                    bufferDescription = uniformBufferLayouts.insert(std::pair<uint32_t,std::unordered_map<uint32_t,UniformBufferDescriptorLayout>>(set.set,std::unordered_map<uint32_t,UniformBufferDescriptorLayout>{})).first;
+                                    bufferDescription->second.insert(std::pair<uint32_t,UniformBufferDescriptorLayout>(binding->binding,uniformBufferDescriptorLayoutFromSPV(&binding->block)));
                                 }
                                 else
                                 {
-                                    auto description = bufferDescription->second.find(descriptor->first);
+                                    auto description = bufferDescription->second.find(binding->binding);
                                     if (description == bufferDescription->second.end())
                                     {
-                                        bufferDescription->second.insert(std::pair<uint32_t,UniformBufferDescriptorLayout>(descriptor->first,uniformBufferDescriptorLayoutFromSPV(&binding->block)));
+                                        bufferDescription->second.insert(std::pair<uint32_t,UniformBufferDescriptorLayout>(binding->binding,uniformBufferDescriptorLayoutFromSPV(&binding->block)));
                                     }
                                     else
                                     {

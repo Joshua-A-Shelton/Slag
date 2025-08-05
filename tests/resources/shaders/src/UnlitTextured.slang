@@ -12,6 +12,7 @@ struct VertexStageOutput
 
 public struct FlatTextureMaterial
 {
+    float4 color;
     Sampler2D sampledTexture;
 }
 
@@ -32,5 +33,5 @@ VertexStageOutput vertexMain(Vertex3D vertex3d, UVCoordinates uvCoordinates)
 [shader("fragment")]
 float4 fragmentMain(FragmentParameters fragmentParameters : FragmentParameters) : SV_Target
 {
-    return FlatMaterialInstance.sampledTexture.Sample(fragmentParameters.uv);
+    return FlatMaterialInstance.sampledTexture.Sample(fragmentParameters.uv) * FlatMaterialInstance.color;
 }
