@@ -1,6 +1,7 @@
 #ifndef SLAG_DESCRIPTOR_H
 #define SLAG_DESCRIPTOR_H
 
+#include <bit>
 #include <string>
 
 #include "GraphicsTypes.h"

@@ -39,11 +39,11 @@ TEST(ShaderPipeline, DescriptorGroupReflection)
 
     GTEST_ASSERT_TRUE(group1->descriptor(0).shape().type == Descriptor::Type::UNIFORM_BUFFER);
     GTEST_ASSERT_EQ(group1->descriptor(0).shape().arrayDepth,1);
-    GTEST_ASSERT_EQ(group1->descriptor(0).shape().binding,1);
+    GTEST_ASSERT_EQ(group1->descriptor(0).shape().binding,0);
 
     GTEST_ASSERT_TRUE(group1->descriptor(1).shape().type == Descriptor::Type::SAMPLER_AND_TEXTURE);
     GTEST_ASSERT_EQ(group1->descriptor(1).shape().arrayDepth,1);
-    GTEST_ASSERT_EQ(group1->descriptor(1).shape().binding,0);
+    GTEST_ASSERT_EQ(group1->descriptor(1).shape().binding,1);
 
     GTEST_ASSERT_TRUE(group2->descriptor(0).shape().type == Descriptor::Type::UNIFORM_BUFFER);
     GTEST_ASSERT_EQ(group2->descriptor(0).shape().arrayDepth,1);
@@ -53,6 +53,23 @@ TEST(ShaderPipeline, DescriptorGroupReflection)
     auto layout1_0 = pipeline->uniformBufferLayout(1,0);
     auto layout1_1 = pipeline->uniformBufferLayout(1,1);
     auto layout2_0 = pipeline->uniformBufferLayout(2,1);
+
+    GTEST_ASSERT_EQ(layout0_0->childrenCount(),3);
+    GTEST_ASSERT_EQ(layout1_0->size(),64*3);
+    for (auto i=0; i<layout0_0->childrenCount(); i++)
+    {
+        GTEST_ASSERT_EQ(layout0_0[i].type(), GraphicsType::MATRIX_4X4);
+        GTEST_ASSERT_EQ(layout0_0[i].absoluteOffset(),64*i);
+    }
+
+    GTEST_ASSERT_EQ(layout1_0->childrenCount(),1);
+    GTEST_ASSERT_EQ(layout1_0->size(),16);
+    GTEST_ASSERT_EQ(layout1_0[0].type(), GraphicsType::VECTOR4);
+
+    GTEST_ASSERT_EQ(layout1_1,nullptr);
+
+    GTEST_ASSERT_EQ(layout2_0->size(),64);
+    GTEST_ASSERT_EQ(layout2_0[0].type(), GraphicsType::MATRIX_4X4);
 
     GTEST_FAIL();
 }
