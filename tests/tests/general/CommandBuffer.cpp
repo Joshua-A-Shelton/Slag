@@ -252,6 +252,7 @@ TEST_F(CommandBufferTest, ClearColor)
 #ifdef SLAG_DEBUG
 TEST_F(CommandBufferTest, ClearColorFailInRenderPass)
 {
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
     std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     std::unique_ptr<Texture> texture1 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1));
@@ -317,6 +318,7 @@ TEST_F(CommandBufferTest, ClearDepth)
 #ifdef SLAG_DEBUG
 TEST_F(CommandBufferTest, ClearDepthFailInRenderPass)
 {
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
     std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     std::unique_ptr<Texture> color = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1));
@@ -400,6 +402,7 @@ TEST_F(CommandBufferTest, UpdateMip)
 #ifdef SLAG_DEBUG
 TEST_F(CommandBufferTest, UpdateMipFailInRenderPass)
 {
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
     std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     struct byteColor
