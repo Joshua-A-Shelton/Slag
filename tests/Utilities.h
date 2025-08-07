@@ -7,6 +7,7 @@ namespace slag
     namespace utilities
     {
         std::unique_ptr<Texture> loadTextureFromFile(const std::filesystem::path& path);
+        std::vector<unsigned char> loadTexelsFromFile(const std::filesystem::path& path);
     }
 } // slag
 

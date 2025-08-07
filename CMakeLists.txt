@@ -235,6 +235,8 @@ if(PROJECT_IS_TOP_LEVEL)
             tests/Utilities.h
             tests/tests/ShaderPipeline.cpp
             tests/tests/UniformBufferDescriptorLayout.cpp
+            tests/third-party/LodePNG/lodepng.cpp
+            tests/third-party/LodePNG/lodepng.h
     )
 
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)

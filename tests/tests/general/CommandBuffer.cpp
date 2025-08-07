@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "../../Utilities.h"
+#include "../../third-party/LodePNG/lodepng.h"
 using namespace slag;
 
 struct GlobalSet0Group
@@ -605,19 +606,14 @@ TEST_F(CommandBufferTest, Blit)
     slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
     finished->waitForValue(1);
 
-    //TODO: implement software blit and test against it
+    unsigned char* colorPtr = textureBuffer->as<unsigned char>();
+    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/blit-test-result.png");
+    GTEST_ASSERT_EQ(textureBuffer->countAsArray<unsigned char>(),groundTruth.size());
 
-    for (auto height = 1; height < 31; height++)
+    for (auto i=0; i< textureBuffer->countAsArray<unsigned char>(); i++)
     {
-        for (auto width = 1; width < 31; width++)
-        {
-
-        }
+        GTEST_ASSERT_EQ(colorPtr[i],groundTruth[i]);
     }
-
-    byteColor* colorPtr = textureBuffer->as<byteColor>();
-
-    GTEST_FAIL();
 }
 
 TEST_F(CommandBufferTest, Resolve)
