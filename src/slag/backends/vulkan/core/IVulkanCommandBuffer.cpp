@@ -1,6 +1,7 @@
 #include "IVulkanCommandBuffer.h"
 
 #include "VulkanBuffer.h"
+#include "VulkanShaderPipeline.h"
 #include "VulkanTexture.h"
 #include "slag/backends/vulkan/VulkanBackend.h"
 #include "slag/utilities/SLAG_ASSERT.h"
@@ -28,6 +29,14 @@ namespace slag
         void IVulkanCommandBuffer::end()
         {
             vkEndCommandBuffer(_commandBuffer);
+#ifdef SLAG_DEBUG
+            _boundDescriptorPool = nullptr;
+            _boundVulkanComputePipelineLayout = nullptr;
+            _boundVulkanComputePipelineLayout = nullptr;
+            _setViewport = false;
+            _setScissor = false;
+#endif
+
         }
 #ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
         void IVulkanCommandBuffer::insertBarriers(TextureBarrier* textureBarriers, size_t textureBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GlobalBarrier* memoryBarriers, size_t memoryBarrierCount)
@@ -376,12 +385,14 @@ namespace slag
             viewport.maxDepth = maxDepth;
 
             vkCmdSetViewport(_commandBuffer,0,1,&viewport);
+            _setViewport = true;
         }
 
         void IVulkanCommandBuffer::setScissors(Rectangle rectangle)
         {
             VkRect2D rect{.offset{rectangle.offset.x,rectangle.offset.y},.extent{rectangle.extent.width,rectangle.extent.height}};
             vkCmdSetScissor(_commandBuffer,0,1,&rect);
+            _setScissor = true;
         }
 
         void IVulkanCommandBuffer::setBlendConstants(float r, float g, float b, float a)
@@ -411,6 +422,8 @@ namespace slag
         {
 #if SLAG_DEBUG
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+            SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
 #endif
 
             vkCmdDraw(_commandBuffer,vertexCount,instanceCount,firstVertex,firstInstance);
@@ -420,6 +433,8 @@ namespace slag
         {
 #if SLAG_DEBUG
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+            SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
 #endif
             vkCmdDrawIndexed(_commandBuffer,indexCount,instanceCount,firstIndex,vertexOffset,firstInstance);
         }
@@ -428,6 +443,8 @@ namespace slag
         {
 #if SLAG_DEBUG
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+            SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
 #endif
             SLAG_ASSERT(buffer != nullptr && "Buffer cannot be null");
             SLAG_ASSERT(offset + drawCount*stride < buffer->size() && "drawIndexedIndirect will exceed length of buffer");
@@ -440,6 +457,8 @@ namespace slag
         {
 #if SLAG_DEBUG
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+            SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
 #endif
             SLAG_ASSERT(buffer != nullptr && "Buffer cannot be null");
             SLAG_ASSERT(countBuffer != nullptr && "CountBuffer cannot be null");
@@ -455,9 +474,11 @@ namespace slag
         {
 #if SLAG_DEBUG
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+            SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
 #endif
             SLAG_ASSERT(buffer != nullptr && "Buffer cannot be null");
-            SLAG_ASSERT(offset + drawCount*stride < buffer->size() && "drawIndirect will exceed length of buffer");
+            SLAG_ASSERT(offset + drawCount*stride <= buffer->size() && "drawIndirect will exceed length of buffer");
             SLAG_ASSERT((bool)(buffer->usage() & Buffer::UsageFlags::INDIRECT_BUFFER) && "buffer must have been created with usage flag INDIRECT_BUFFER");
             auto buf = static_cast<VulkanBuffer*>(buffer);
             vkCmdDrawIndirect(_commandBuffer,buf->vulkanHandle(),offset,drawCount,stride);
@@ -467,10 +488,12 @@ namespace slag
         {
 #if SLAG_DEBUG
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+            SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
 #endif
             SLAG_ASSERT(buffer != nullptr && "Buffer cannot be null");
             SLAG_ASSERT(countBuffer != nullptr && "CountBuffer cannot be null");
-            SLAG_ASSERT(offset + maxDrawCount*stride < buffer->size() && "drawIndexedIndirect can exceed length of buffer");
+            SLAG_ASSERT(offset + maxDrawCount*stride <= buffer->size() && "drawIndexedIndirect can exceed length of buffer");
             SLAG_ASSERT((bool)(buffer->usage() & Buffer::UsageFlags::INDIRECT_BUFFER) && "buffer must have been created with usage flag INDIRECT_BUFFER");
             SLAG_ASSERT((bool)(countBuffer->usage() & Buffer::UsageFlags::INDIRECT_BUFFER) && "countBuffer must have been created with usage flag INDIRECT_BUFFER");
             auto buf = static_cast<VulkanBuffer*>(buffer);
@@ -498,34 +521,39 @@ namespace slag
 
         void IVulkanCommandBuffer::bindGraphicsShaderPipeline(ShaderPipeline* pipeline)
         {
-            throw std::runtime_error("not implemented");
-            //auto pipeLine = static_cast<VulkanShaderPipeline*>(pipeline);
-            //vkCmdBindPipeline(_commandBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,pipeLine->pipeline());
+            auto pipeLine = static_cast<VulkanShaderPipeline*>(pipeline);
+            _boundVulkanGraphicsShaderPipelineLayout = pipeLine->vulkanLayout();
+            vkCmdBindPipeline(_commandBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,pipeLine->vulkanHandle());
         }
 
         void IVulkanCommandBuffer::bindComputeShaderPipeline(ShaderPipeline* pipeline)
         {
-            throw std::runtime_error("not implemented");
-            //auto pipeLine = static_cast<VulkanShaderPipeline*>(pipeline);
-            //vkCmdBindPipeline(_commandBuffer,VK_PIPELINE_BIND_POINT_COMPUTE,pipeLine->pipeline());
+            auto pipeLine = static_cast<VulkanShaderPipeline*>(pipeline);
+            _boundVulkanComputePipelineLayout = pipeLine->vulkanLayout();
+            vkCmdBindPipeline(_commandBuffer,VK_PIPELINE_BIND_POINT_COMPUTE,pipeLine->vulkanHandle());
         }
 
         void IVulkanCommandBuffer::bindGraphicsDescriptorBundle(uint32_t index, DescriptorBundle& bundle)
         {
-            throw std::runtime_error("not implemented");
-            //auto s = static_cast<VulkanShaderPipeline*>(shader);
-            //auto h = bundle.gpuHandle();
-            //auto handle = std::bit_cast<VkDescriptorSet>(h);
-            //vkCmdBindDescriptorSets(_commandBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,s->layout(),index,1,&handle,0, nullptr);
+#ifdef SLAG_DEBUG
+            SLAG_ASSERT(bundle.cpuHandle() == _boundDescriptorPool && "Cannot bind descriptor from descriptor pool which is not currently bound");
+#endif
+
+            SLAG_ASSERT(_boundVulkanGraphicsShaderPipelineLayout != nullptr && "No graphics shader is bound, unable to bind descriptor bundle");
+            auto h = bundle.gpuHandle();
+            auto handle = std::bit_cast<VkDescriptorSet>(h);
+            vkCmdBindDescriptorSets(_commandBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS, _boundVulkanGraphicsShaderPipelineLayout,index,1,&handle,0, nullptr);
         }
 
         void IVulkanCommandBuffer::bindComputeDescriptorBundle(uint32_t index, DescriptorBundle& bundle)
         {
-            throw std::runtime_error("not implemented");
-            //auto s = static_cast<VulkanShaderPipeline*>(shader);
-            //auto h = bundle.gpuHandle();
-            //auto handle = std::bit_cast<VkDescriptorSet>(h);
-            //vkCmdBindDescriptorSets(_commandBuffer,VK_PIPELINE_BIND_POINT_COMPUTE,s->layout(),index,1,&handle,0, nullptr);
+#ifdef SLAG_DEBUG
+            SLAG_ASSERT(bundle.cpuHandle() == _boundDescriptorPool && "Cannot bind descriptor from descriptor pool which is not currently bound");
+#endif
+            SLAG_ASSERT(_boundVulkanGraphicsShaderPipelineLayout != nullptr && "No graphics shader is bound, unable to bind descriptor bundle");
+            auto h = bundle.gpuHandle();
+            auto handle = std::bit_cast<VkDescriptorSet>(h);
+            vkCmdBindDescriptorSets(_commandBuffer,VK_PIPELINE_BIND_POINT_COMPUTE,_boundVulkanGraphicsShaderPipelineLayout,index,1,&handle,0, nullptr);
 
         }
 

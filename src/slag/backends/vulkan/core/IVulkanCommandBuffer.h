@@ -4,6 +4,8 @@
 #include <slag/Slag.h>
 #include <vulkan/vulkan.h>
 
+#include "VulkanShaderPipeline.h"
+
 namespace slag
 {
     namespace vulkan
@@ -79,9 +81,13 @@ namespace slag
             VkCommandBuffer _commandBuffer = nullptr;
             VkCommandPool _pool = nullptr;
             GPUQueue::QueueType _type = GPUQueue::QueueType::GRAPHICS;
+            VkPipelineLayout _boundVulkanGraphicsShaderPipelineLayout = nullptr;
+            VkPipelineLayout _boundVulkanComputePipelineLayout = nullptr;
 #ifdef SLAG_DEBUG
             DescriptorPool* _boundDescriptorPool = nullptr;
             bool _inRenderPass = false;
+            bool _setViewport = false;
+            bool _setScissor = false;
 #endif
         };
     } // vulkan

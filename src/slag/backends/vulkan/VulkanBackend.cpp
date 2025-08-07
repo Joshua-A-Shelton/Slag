@@ -3,7 +3,9 @@
 #include "VkBootstrap.h"
 #include "core/VulkanBuffer.h"
 #include "core/VulkanCommandBuffer.h"
+#include "core/VulkanDescriptorPool.h"
 #include "core/VulkanGraphicsCard.h"
+#include "core/VulkanSampler.h"
 #include "core/VulkanSemaphore.h"
 #include "core/VulkanShaderPipeline.h"
 #include "core/VulkanTexture.h"
@@ -364,6 +366,38 @@ namespace slag
             return flags;
         }
 
+        VkFilter VulkanBackend::vulkanizedFilter(Sampler::Filter filter)
+        {
+            switch(filter)
+            {
+#define DEFINITION(slagName, vulkanName) case Sampler::Filter::slagName: return vulkanName;
+                SAMPLER_FILTER_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            return VK_FILTER_NEAREST;
+        }
+
+        VkSamplerMipmapMode VulkanBackend::vulkanizedMipMapMode(Sampler::Filter mipmapFilter)
+        {
+            switch (mipmapFilter)
+            {
+                case Sampler::Filter::NEAREST: return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+                case Sampler::Filter::LINEAR: return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            }
+            return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+        }
+
+        VkSamplerAddressMode VulkanBackend::vulkanizedAddressMode(Sampler::AddressMode addressMode)
+        {
+            switch (addressMode)
+            {
+#define DEFINITION(slagName, vulkanName, dx12Name) case Sampler::AddressMode::slagName: return vulkanName;
+                SAMPLER_ADDRESS_MODES_DEFINTITIONS(DEFINITION)
+#undef DEFINITION
+            }
+            return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+        }
+
         VkDescriptorType VulkanBackend::vulkanizedDescriptorType(Descriptor::Type descriptorType)
         {
             switch (descriptorType)
@@ -554,7 +588,7 @@ namespace slag
 
         Sampler* VulkanBackend::newSampler(SamplerParameters parameters)
         {
-            throw std::runtime_error("Not implemented");
+            return new VulkanSampler(parameters);
         }
 
         std::vector<ShaderCode::CodeLanguage> VulkanBackend::acceptedLanuages()
@@ -577,39 +611,121 @@ namespace slag
 
         DescriptorPool* VulkanBackend::newDescriptorPool()
         {
-            throw std::runtime_error("Not implemented");
+            return new VulkanDescriptorPool(DescriptorPoolPageInfo{});
         }
 
         DescriptorPool* VulkanBackend::newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)
         {
-            throw std::runtime_error("Not implemented");
+            return new VulkanDescriptorPool(pageInfo);
         }
 
         DescriptorGroup* VulkanBackend::newDescriptorGroup(Descriptor* descriptors, size_t descriptorCount)
         {
-            throw std::runtime_error("Not implemented");
+           return new VulkanDescriptorGroup(descriptors, descriptorCount);
         }
 
 #ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
         void VulkanBackend::setDescriptorBundleSampler(DescriptorBundle& descriptor, uint32_t binding,uint32_t arrayElement, Sampler* sampler)
         {
-            throw std::runtime_error("Not implemented");
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
+            auto s = static_cast<VulkanSampler*>(sampler);
+
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.sampler = s->vulkanHandle();
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+            VkWriteDescriptorSet write{};
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = descriptorSet;
+            write.dstBinding = binding;
+            write.dstArrayElement = arrayElement;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+            write.pImageInfo = &imageInfo;
+
+            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
         }
         void VulkanBackend::setDescriptorBundleSampledTexture(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Texture* texture)
         {
-            throw std::runtime_error("Not implemented");
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
+            auto tex = static_cast<VulkanTexture*>(texture);
+
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+            imageInfo.imageView = tex->vulkanViewHandle();
+
+            VkWriteDescriptorSet write{};
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = descriptorSet;
+            write.dstBinding = binding;
+            write.dstArrayElement = arrayElement;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            write.pImageInfo = &imageInfo;
+
+            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
         }
         void VulkanBackend::setDescriptorBundleTextureAndSampler(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Texture* texture, Sampler* sampler)
         {
-            throw std::runtime_error("Not implemented");
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
+            auto tex = static_cast<VulkanTexture*>(texture);
+            auto s = static_cast<VulkanSampler*>(sampler);
+
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.sampler = s->vulkanHandle();
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+            imageInfo.imageView = tex->vulkanViewHandle();
+
+            VkWriteDescriptorSet write{};
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = descriptorSet;
+            write.dstBinding = binding;
+            write.dstArrayElement = arrayElement;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            write.pImageInfo = &imageInfo;
+
+            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
         }
         void VulkanBackend::setDescriptorBundleStorageTexture(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Texture* texture)
         {
-            throw std::runtime_error("Not implemented");
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
+            auto tex = static_cast<VulkanTexture*>(texture);
+
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+            imageInfo.imageView = tex->vulkanViewHandle();
+
+            VkWriteDescriptorSet write{};
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = descriptorSet;
+            write.dstBinding = binding;
+            write.dstArrayElement = arrayElement;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+            write.pImageInfo = &imageInfo;
+
+            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
         }
         void VulkanBackend::setDescriptorBundleInputAttachment(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Texture* texture)
         {
-            throw std::runtime_error("Not implemented");
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
+            auto tex = static_cast<VulkanTexture*>(texture);
+
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+            imageInfo.imageView = tex->vulkanViewHandle();
+
+            VkWriteDescriptorSet write{};
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = descriptorSet;
+            write.dstBinding = binding;
+            write.dstArrayElement = arrayElement;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+            write.pImageInfo = &imageInfo;
+
+            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
         }
 #else
         void VulkanBackend::setDescriptorBundleSampler(uint32_t binding,uint32_t arrayElement, Sampler* sampler, TextureLayouts::Layout layout)
@@ -643,11 +759,45 @@ namespace slag
         }
         void VulkanBackend::setDescriptorBundleUniformBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
         {
-            throw std::runtime_error("Not implemented");
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
+            auto buf = static_cast<VulkanBuffer*>(buffer);
+
+            VkDescriptorBufferInfo bufferInfo{};
+            bufferInfo.buffer = buf->vulkanHandle();
+            bufferInfo.offset = offset;
+            bufferInfo.range = length;
+
+            VkWriteDescriptorSet write{};
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = descriptorSet;
+            write.dstBinding = binding;
+            write.dstArrayElement = arrayElement;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            write.pBufferInfo = &bufferInfo;
+
+            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
         }
         void VulkanBackend::setDescriptorBundleStorageBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
         {
-            throw std::runtime_error("Not implemented");
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
+            auto buf = static_cast<VulkanBuffer*>(buffer);
+
+            VkDescriptorBufferInfo bufferInfo{};
+            bufferInfo.buffer = buf->vulkanHandle();
+            bufferInfo.offset = offset;
+            bufferInfo.range = length;
+
+            VkWriteDescriptorSet write{};
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = descriptorSet;
+            write.dstBinding = binding;
+            write.dstArrayElement = arrayElement;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            write.pBufferInfo = &bufferInfo;
+
+            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
         }
     } // vulkan
 } // slag

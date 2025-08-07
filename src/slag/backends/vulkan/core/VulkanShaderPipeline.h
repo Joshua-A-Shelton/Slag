@@ -23,6 +23,9 @@ namespace slag
             virtual DescriptorGroup* descriptorGroup(size_t index)override;
             virtual DescriptorGroup* operator[](size_t index)override;
             virtual UniformBufferDescriptorLayout* uniformBufferLayout(uint32_t descriptorGroup,uint32_t descriptorBinding)override;
+
+            VkPipeline vulkanHandle()const;
+            VkPipelineLayout vulkanLayout()const;
         private:
             void move(VulkanShaderPipeline& from);
             VkPipeline _pipeline = nullptr;

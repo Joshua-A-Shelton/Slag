@@ -48,6 +48,9 @@ namespace slag
             static VkShaderStageFlagBits vulkanizedShaderStage(ShaderStageFlags stageFlags);
             static VkDescriptorType vulkanizedDescriptorType(Descriptor::Type descriptorType);
             static VkShaderStageFlags vulkanizedShaderFlags(ShaderStageFlags stageFlags);
+            static VkFilter vulkanizedFilter(Sampler::Filter filter);
+            static VkSamplerMipmapMode vulkanizedMipMapMode(Sampler::Filter mipmapFilter);
+            static VkSamplerAddressMode vulkanizedAddressMode(Sampler::AddressMode addressMode);
 
             VulkanBackend(const SlagInitInfo& initInfo);
             ~VulkanBackend()override;

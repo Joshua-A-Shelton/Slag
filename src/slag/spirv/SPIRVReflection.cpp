@@ -185,7 +185,7 @@ namespace slag
                         for (auto i=0; i< set.binding_count; i++)
                         {
                             auto& binding = set.bindings[i];
-                            auto descriptor = descriptorReflection.descriptors.find(i);
+                            auto descriptor = descriptorReflection.descriptors.find(binding->binding);
                             if (descriptor == descriptorReflection.descriptors.end())
                             {
                                 descriptor = descriptorReflection.descriptors.insert(std::pair<uint32_t,Descriptor>(binding->binding,Descriptor(binding->name,descriptorTypeFromSPV(binding->descriptor_type),binding->count,binding->binding,shader->stage()))).first;

@@ -140,12 +140,12 @@ namespace slag
          * Low level handle to the underlying object for use on the gpu, used internally, not terribly useful generally
          * @return
          */
-        const void* gpuHandle()const;
+        void* gpuHandle()const;
         /**
          * Low level handle to the underlying object for use on the cpu, used internally, not terribly useful generally
          * @return
          */
-        const void* cpuHandle()const;
+        void* cpuHandle()const;
         friend class DescriptorPool;
     private:
         void move(DescriptorBundle& from);

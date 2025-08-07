@@ -51,6 +51,11 @@ namespace slag
 
         void VulkanDescriptorPool::setBundleLowLevelHandles(void** gpuHandle, void** cpuHandle, DescriptorGroup* forGroup)
         {
+#ifdef SLAG_DEBUG
+            //so we can tell which pool allocated for debug checks in command buffer
+            *cpuHandle = this;
+#endif
+
             VkDescriptorPool page = _pages[_currentPage];
             auto group = static_cast<VulkanDescriptorGroup*>(forGroup);
             auto layout = group->layout();

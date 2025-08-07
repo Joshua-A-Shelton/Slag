@@ -87,12 +87,12 @@ namespace slag
         Backend::current()->setDescriptorBundleStorageBuffer(*this,binding,arrayElement,buffer,offset,length);
     }
 
-    const void* DescriptorBundle::gpuHandle() const
+    void* DescriptorBundle::gpuHandle() const
     {
         return _gpuhandle;
     }
 
-    const void* DescriptorBundle::cpuHandle() const
+    void* DescriptorBundle::cpuHandle() const
     {
         return _cpuhandle;
     }

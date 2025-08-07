@@ -75,7 +75,9 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/backends/vulkan/core/VulkanDescriptorGroup.cpp
             src/slag/backends/vulkan/core/VulkanDescriptorGroup.h
             src/slag/backends/vulkan/core/VulkanDescriptorGroupCache.cpp
-            src/slag/backends/vulkan/core/VulkanDescriptorGroupCache.h)
+            src/slag/backends/vulkan/core/VulkanDescriptorGroupCache.h
+            src/slag/backends/vulkan/core/VulkanSampler.cpp
+            src/slag/backends/vulkan/core/VulkanSampler.h)
 endif()
 if(SLAG_DX12_BACKEND)
     add_definitions(-DSLAG_DX12_BACKEND=1)
@@ -87,7 +89,8 @@ if(USE_SPIRV_REFLECTION)
     add_definitions(-DUSE_SLAG_SPIRV_REFLECTION)
     SET(SLAG_SPIRV_REFLECT_SOURCES
             src/slag/spirv/SPIRVReflection.cpp
-            src/slag/spirv/SPIRVReflection.h)
+            src/slag/spirv/SPIRVReflection.h
+            )
 endif()
 
 add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLECT_SOURCES}

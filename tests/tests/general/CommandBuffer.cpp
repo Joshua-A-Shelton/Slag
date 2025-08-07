@@ -56,17 +56,17 @@ protected:
         VertexPosUVDescription.add(GraphicsType::VECTOR3,0,0).add(GraphicsType::VECTOR2,0,1);
         VertexPosUVNormalDescription.add(GraphicsType::VECTOR3,0,0).add(GraphicsType::VECTOR2,0,1).add(GraphicsType::VECTOR3,0,2);
 
-        /*std::vector<ShaderFile> shaderFiles =
+        std::vector<ShaderFile> shaderFiles =
         {
-            ShaderFile("TexturedDepth.vert",ShaderStageFlags::VERTEX),
-            ShaderFile("TexturedDepth.frag",ShaderStageFlags::FRAGMENT)
+            ShaderFile("resources/shaders/TexturedDepth.vertex",ShaderStageFlags::VERTEX),
+            ShaderFile("resources/shaders/TexturedDepth.fragment",ShaderStageFlags::FRAGMENT)
         };
         ShaderProperties properties;
         FrameBufferDescription framebufferDescription;
         framebufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
         framebufferDescription.depthTarget = Pixels::Format::D24_UNORM_S8_UINT;
         TexturedDepthPipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(shaderFiles.data(),shaderFiles.size(),properties,VertexPosUVDescription,framebufferDescription);
-        DefaultSampler = std::unique_ptr<Sampler>(Sampler::newSampler(SamplerParameters()));*/
+        DefaultSampler = std::unique_ptr<Sampler>(Sampler::newSampler(SamplerParameters()));
     }
 
 };
@@ -832,7 +832,7 @@ TEST_F(CommandBufferTest, SetStencilReference)
     auto objectPtr = objectBuffer->as<TexturedDepthSet1Group>();
     objectPtr->position = glm::mat4(1.0f);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setTextureAndSampler(0,1,objectTexture.get(),DefaultSampler.get());
+    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
     commandBuffer->bindDescriptorPool(descriptorPool.get());
     commandBuffer->clearTexture(stencil.get(),ClearDepthStencilValue{.depth = 1, .stencil = 1});
     commandBuffer->clearTexture(depth1.get(),ClearDepthStencilValue{.depth = 1, .stencil = 0});
@@ -891,6 +891,8 @@ TEST_F(CommandBufferTest, SetStencilReference)
     commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
     commandBuffer->beginRendering(&colorAttachment,1,&depth1Attachment,slag::Rectangle{.extent = {target->width(),target->height()}});
     commandBuffer->setStencilReference(0);
+    commandBuffer->setViewPort(0,0,target->width(),target->height(),1,0);
+    commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
     commandBuffer->drawIndexed(3,1,0,0,0);
 
     commandBuffer->endRendering();
@@ -946,7 +948,7 @@ TEST_F(CommandBufferTest, Draw)
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
@@ -967,6 +969,7 @@ TEST_F(CommandBufferTest, Draw)
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::mat4(1.0f);
     globalBundle.setUniformBuffer(0,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
+    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
     objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
@@ -975,7 +978,7 @@ TEST_F(CommandBufferTest, Draw)
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
-    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
+
     Buffer* vertexBuffers[]
     {
         TriangleVerts.get(),
@@ -984,12 +987,13 @@ TEST_F(CommandBufferTest, Draw)
     uint64_t vertexOffsets[]{0,0};
     uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
     commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
-
+    commandBuffer->setViewPort(0,0,target->width(),target->height(),1,0);
+    commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
     commandBuffer->draw(3,1,0,0);
 
     commandBuffer->endRendering();
 
-    commandBuffer->end();
+
 
     commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::FRAGMENT_SHADER, .syncAfter = PipelineStageFlags::TRANSFER});
     TextureToBufferCopyData copyData
@@ -1004,6 +1008,8 @@ TEST_F(CommandBufferTest, Draw)
         }
     };
     commandBuffer->copyTextureToBuffer(target.get(),&copyData,1,outputBuffer.get());
+
+    commandBuffer->end();
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
@@ -1021,7 +1027,7 @@ TEST_F(CommandBufferTest, DrawIndexed)
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
@@ -1042,6 +1048,7 @@ TEST_F(CommandBufferTest, DrawIndexed)
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::mat4(1.0f);
     globalBundle.setUniformBuffer(0,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
+    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
     objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
@@ -1050,7 +1057,7 @@ TEST_F(CommandBufferTest, DrawIndexed)
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
-    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
+
     Buffer* vertexBuffers[]
     {
         CubeVerts.get(),
@@ -1060,12 +1067,11 @@ TEST_F(CommandBufferTest, DrawIndexed)
     uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
     commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
     commandBuffer->bindIndexBuffer(CubeIndices.get(),Buffer::IndexSize::UINT16,0);
-
+    commandBuffer->setViewPort(0,0,target->width(),target->height(),1,0);
+    commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
     commandBuffer->drawIndexed(CubeIndices->countAsArray<uint16_t>(),1,0,0,0);
 
     commandBuffer->endRendering();
-
-    commandBuffer->end();
 
     commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::FRAGMENT_SHADER, .syncAfter = PipelineStageFlags::TRANSFER});
     TextureToBufferCopyData copyData
@@ -1080,6 +1086,8 @@ TEST_F(CommandBufferTest, DrawIndexed)
         }
     };
     commandBuffer->copyTextureToBuffer(target.get(),&copyData,1,outputBuffer.get());
+
+    commandBuffer->end();
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
@@ -1097,7 +1105,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
@@ -1118,6 +1126,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::mat4(1.0f);
     globalBundle.setUniformBuffer(0,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
+    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
     objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
@@ -1126,7 +1135,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
-    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
+
     Buffer* vertexBuffers[]
     {
         CubeVerts.get(),
@@ -1145,12 +1154,11 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
     drawParamPtr->vertexOffset = 0;
     drawParamPtr->firstInstance = 0;
 
-
+    commandBuffer->setViewPort(0,0,target->width(),target->height(),1,0);
+    commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
     commandBuffer->drawIndexedIndirect(drawParams.get(),0,1,sizeof(IndirectDrawIndexedCommand));
 
     commandBuffer->endRendering();
-
-    commandBuffer->end();
 
     commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::FRAGMENT_SHADER, .syncAfter = PipelineStageFlags::TRANSFER});
     TextureToBufferCopyData copyData
@@ -1165,6 +1173,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
         }
     };
     commandBuffer->copyTextureToBuffer(target.get(),&copyData,1,outputBuffer.get());
+    commandBuffer->end();
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
@@ -1182,7 +1191,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
@@ -1203,6 +1212,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::mat4(1.0f);
     globalBundle.setUniformBuffer(0,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
+    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
     objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
@@ -1211,7 +1221,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
-    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
+
     Buffer* vertexBuffers[]
     {
         CubeVerts.get(),
@@ -1232,12 +1242,11 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
 
     uint32_t drawCount = 1;
     std::unique_ptr<Buffer> drawCountParams = std::unique_ptr<Buffer>(Buffer::newBuffer(&drawCount,sizeof(uint32_t),Buffer::Accessibility::CPU_AND_GPU));
-
+    commandBuffer->setViewPort(0,0,target->width(),target->height(),1,0);
+    commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
     commandBuffer->drawIndexedIndirectCount(drawParams.get(),0,drawCountParams.get(),0,1,sizeof(IndirectDrawIndexedCommand));
 
     commandBuffer->endRendering();
-
-    commandBuffer->end();
 
     commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::FRAGMENT_SHADER, .syncAfter = PipelineStageFlags::TRANSFER});
     TextureToBufferCopyData copyData
@@ -1252,6 +1261,8 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
         }
     };
     commandBuffer->copyTextureToBuffer(target.get(),&copyData,1,outputBuffer.get());
+
+    commandBuffer->end();
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
@@ -1269,7 +1280,7 @@ TEST_F(CommandBufferTest, DrawIndirect)
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
@@ -1290,6 +1301,7 @@ TEST_F(CommandBufferTest, DrawIndirect)
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::mat4(1.0f);
     globalBundle.setUniformBuffer(0,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
+    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
     objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
@@ -1298,7 +1310,7 @@ TEST_F(CommandBufferTest, DrawIndirect)
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
-    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
+
     Buffer* vertexBuffers[]
     {
         TriangleVerts.get(),
@@ -1314,10 +1326,9 @@ TEST_F(CommandBufferTest, DrawIndirect)
     drawCommandPtr->instanceCount = 1;
     drawCommandPtr->firstVertex = 0;
     drawCommandPtr->firstInstance = 0;
-
+    commandBuffer->setViewPort(0,0,target->width(),target->height(),1,0);
+    commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
     commandBuffer->drawIndirect(drawCommands.get(),0,1,sizeof(IndirectDrawCommand));
-
-    commandBuffer->endRendering();
 
     commandBuffer->end();
 
@@ -1334,6 +1345,7 @@ TEST_F(CommandBufferTest, DrawIndirect)
         }
     };
     commandBuffer->copyTextureToBuffer(target.get(),&copyData,1,outputBuffer.get());
+    commandBuffer->endRendering();
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
@@ -1351,7 +1363,7 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
@@ -1372,6 +1384,7 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::mat4(1.0f);
     globalBundle.setUniformBuffer(0,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
+    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
     objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
@@ -1380,7 +1393,7 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
-    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
+
     Buffer* vertexBuffers[]
     {
         TriangleVerts.get(),
@@ -1398,13 +1411,12 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
     drawCommandPtr->firstInstance = 0;
 
     uint32_t drawCount = 1;
-    std::unique_ptr<Buffer> drawCountParams = std::unique_ptr<Buffer>(Buffer::newBuffer(&drawCount,sizeof(uint32_t),Buffer::Accessibility::CPU_AND_GPU));
-
+    std::unique_ptr<Buffer> drawCountParams = std::unique_ptr<Buffer>(Buffer::newBuffer(&drawCount,sizeof(uint32_t),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::INDIRECT_BUFFER));
+    commandBuffer->setViewPort(0,0,target->width(),target->height(),1,0);
+    commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
     commandBuffer->drawIndirectCount(drawCommands.get(),0,drawCountParams.get(),0,1,sizeof(IndirectDrawCommand));
 
     commandBuffer->endRendering();
-
-    commandBuffer->end();
 
     commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::FRAGMENT_SHADER, .syncAfter = PipelineStageFlags::TRANSFER});
     TextureToBufferCopyData copyData
@@ -1419,6 +1431,8 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
         }
     };
     commandBuffer->copyTextureToBuffer(target.get(),&copyData,1,outputBuffer.get());
+
+    commandBuffer->end();
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};

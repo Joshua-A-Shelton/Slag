@@ -339,5 +339,15 @@ namespace slag
             }
             return &description->second;
         }
+
+        VkPipeline VulkanShaderPipeline::vulkanHandle() const
+        {
+            return _pipeline;
+        }
+
+        VkPipelineLayout VulkanShaderPipeline::vulkanLayout() const
+        {
+            return _pipelineLayout;
+        }
     } // vulkan
 } // slag
