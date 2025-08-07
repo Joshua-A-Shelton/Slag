@@ -227,7 +227,12 @@ namespace slag
                                         }
                                         else if (match == -1)
                                         {
-                                            bufferDescription->second[binding->binding] = std::move(block);
+                                            bufferDescription->second[binding->binding] = UniformBufferDescriptorLayout::merge(block,description->second);// std::move(block);
+                                        }
+                                        else
+                                        {
+                                            bufferDescription->second[binding->binding] = UniformBufferDescriptorLayout::merge(description->second,block);
+
                                         }
                                     }
                                 }

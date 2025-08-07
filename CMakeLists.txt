@@ -234,6 +234,7 @@ if(PROJECT_IS_TOP_LEVEL)
             tests/Utilities.cpp
             tests/Utilities.h
             tests/tests/ShaderPipeline.cpp
+            tests/tests/UniformBufferDescriptorLayout.cpp
     )
 
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)

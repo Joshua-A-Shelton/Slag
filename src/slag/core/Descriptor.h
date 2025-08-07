@@ -96,8 +96,8 @@ namespace slag
         UniformBufferDescriptorLayout(const std::string& name, GraphicsType type, uint32_t arrayDepth, std::vector<UniformBufferDescriptorLayout>&& children, size_t size, size_t offset, size_t absoluteOffset);
         ///Create an invalid uniform buffer descriptor layout
         UniformBufferDescriptorLayout()=default;
-        UniformBufferDescriptorLayout(const UniformBufferDescriptorLayout&)=delete;
-        UniformBufferDescriptorLayout& operator=(const UniformBufferDescriptorLayout&)=delete;
+        UniformBufferDescriptorLayout(const UniformBufferDescriptorLayout& from);
+        UniformBufferDescriptorLayout& operator=(const UniformBufferDescriptorLayout& from);
         UniformBufferDescriptorLayout(UniformBufferDescriptorLayout&& from);
         UniformBufferDescriptorLayout& operator=(UniformBufferDescriptorLayout&& from);
         ///The descriptive name of the object in the buffer, may be empty string
@@ -112,6 +112,9 @@ namespace slag
         size_t offset()const;
         ///The offset from the beginning of the buffer
         size_t absoluteOffset()const;
+        ///Number of elements in array
+        uint32_t arrayDepth()const;
+        const UniformBufferDescriptorLayout& child(size_t index);
         const UniformBufferDescriptorLayout& operator[](size_t index)const;
         /**
          * Determines if two buffer layouts are compatible
@@ -120,9 +123,19 @@ namespace slag
          * @return -1 if 'a' is a super-set of 'b', 1 if 'b' is a super-set of 'a', or zero if they're incompatible
          */
         static int compatible(UniformBufferDescriptorLayout& a, UniformBufferDescriptorLayout& b);
+        /**
+         * Merge two uniform Buffer Descriptor Layouts, where subset will fill in any un-named or untyped space in the superset
+         * @param superset Bigger of the two layouts
+         * @param subset Smaller of the two subsets
+         * @return
+         */
+        static UniformBufferDescriptorLayout merge(const UniformBufferDescriptorLayout& superset, const UniformBufferDescriptorLayout& subset);
     private:
         void move(UniformBufferDescriptorLayout& from);
+        void copy(const UniformBufferDescriptorLayout& from);
         static bool compatibleRecursive(UniformBufferDescriptorLayout& a, UniformBufferDescriptorLayout& b);
+        static bool proceeds(const UniformBufferDescriptorLayout& a, const UniformBufferDescriptorLayout& b);
+        static bool encompasses(const UniformBufferDescriptorLayout& a, const UniformBufferDescriptorLayout& b);
         std::string _name;
         GraphicsType _type= GraphicsType::UNKNOWN;
         uint32_t _arrayDepth = 1;

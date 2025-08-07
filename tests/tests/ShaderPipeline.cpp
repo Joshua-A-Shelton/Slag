@@ -2,6 +2,39 @@
 #include <slag/Slag.h>
 #include "../GraphicsAPIEnvironment.h"
 using namespace slag;
+//Some compilers (like slangc) may treat matrices as structs of 4 vector4s, we'll allow it
+bool is4x4MatrixType(const UniformBufferDescriptorLayout* layout)
+{
+    if (layout->type()==GraphicsType::DOUBLE_MATRIX_4X4)
+    {
+        return true;
+    }
+    else if (layout->type()==GraphicsType::STRUCT && layout->size() == 64)
+    {
+        if (layout->childrenCount() == 1)
+        {
+            auto& child = layout->operator[](0);
+            if (child.type() == GraphicsType::VECTOR4 && child.arrayDepth()==4)
+            {
+                return true;
+            }
+        }
+        else if (layout->childrenCount()==4)
+        {
+            bool uniformChildren = true;
+            for (auto i=0; i < layout->childrenCount(); i++)
+            {
+                if (layout[i].type() != GraphicsType::VECTOR4)
+                {
+                    uniformChildren = false;
+                }
+            }
+            return uniformChildren;
+        }
+    }
+    return false;
+}
+
 TEST(ShaderPipeline, DescriptorGroupReflection)
 {
     ShaderFile stages[] =
@@ -52,24 +85,23 @@ TEST(ShaderPipeline, DescriptorGroupReflection)
     auto layout0_0 = pipeline->uniformBufferLayout(0,0);
     auto layout1_0 = pipeline->uniformBufferLayout(1,0);
     auto layout1_1 = pipeline->uniformBufferLayout(1,1);
-    auto layout2_0 = pipeline->uniformBufferLayout(2,1);
+    auto layout2_0 = pipeline->uniformBufferLayout(2,0);
 
     GTEST_ASSERT_EQ(layout0_0->childrenCount(),3);
-    GTEST_ASSERT_EQ(layout1_0->size(),64*3);
+    GTEST_ASSERT_EQ(layout0_0->size(),64*3);
     for (auto i=0; i<layout0_0->childrenCount(); i++)
     {
-        GTEST_ASSERT_EQ(layout0_0[i].type(), GraphicsType::MATRIX_4X4);
-        GTEST_ASSERT_EQ(layout0_0[i].absoluteOffset(),64*i);
+        auto& child = layout0_0->child(i);
+        GTEST_ASSERT_TRUE(is4x4MatrixType(&child));
+        GTEST_ASSERT_EQ(child.absoluteOffset(),64*i);
     }
 
     GTEST_ASSERT_EQ(layout1_0->childrenCount(),1);
     GTEST_ASSERT_EQ(layout1_0->size(),16);
-    GTEST_ASSERT_EQ(layout1_0[0].type(), GraphicsType::VECTOR4);
+    GTEST_ASSERT_EQ(layout1_0->child(0).type(), GraphicsType::VECTOR4);
 
     GTEST_ASSERT_EQ(layout1_1,nullptr);
 
     GTEST_ASSERT_EQ(layout2_0->size(),64);
-    GTEST_ASSERT_EQ(layout2_0[0].type(), GraphicsType::MATRIX_4X4);
-
-    GTEST_FAIL();
+    GTEST_ASSERT_TRUE(is4x4MatrixType(&layout2_0->child(0)));
 }
