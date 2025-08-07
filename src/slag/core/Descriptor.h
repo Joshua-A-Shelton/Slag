@@ -122,7 +122,7 @@ namespace slag
          * @param b second layout
          * @return -1 if 'a' is a super-set of 'b', 1 if 'b' is a super-set of 'a', or zero if they're incompatible
          */
-        static int compatible(UniformBufferDescriptorLayout& a, UniformBufferDescriptorLayout& b);
+        static int compatible(const UniformBufferDescriptorLayout& a, const UniformBufferDescriptorLayout& b);
         /**
          * Merge two uniform Buffer Descriptor Layouts, where subset will fill in any un-named or untyped space in the superset
          * @param superset Bigger of the two layouts
@@ -133,7 +133,7 @@ namespace slag
     private:
         void move(UniformBufferDescriptorLayout& from);
         void copy(const UniformBufferDescriptorLayout& from);
-        static bool compatibleRecursive(UniformBufferDescriptorLayout& a, UniformBufferDescriptorLayout& b);
+        static bool compatibleRecursive(const UniformBufferDescriptorLayout& a, const UniformBufferDescriptorLayout& b);
         static bool proceeds(const UniformBufferDescriptorLayout& a, const UniformBufferDescriptorLayout& b);
         static bool encompasses(const UniformBufferDescriptorLayout& a, const UniformBufferDescriptorLayout& b);
         std::string _name;

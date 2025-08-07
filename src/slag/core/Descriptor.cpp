@@ -142,10 +142,10 @@ namespace slag
         return _children[index];
     }
 
-    int UniformBufferDescriptorLayout::compatible(UniformBufferDescriptorLayout& a, UniformBufferDescriptorLayout& b)
+    int UniformBufferDescriptorLayout::compatible(const UniformBufferDescriptorLayout& a, const UniformBufferDescriptorLayout& b)
     {
-        UniformBufferDescriptorLayout* superset = nullptr;
-        UniformBufferDescriptorLayout* subset = nullptr;
+        const UniformBufferDescriptorLayout* superset = nullptr;
+        const UniformBufferDescriptorLayout* subset = nullptr;
         if (a.size() >= b.size())
         {
             superset = &a;
@@ -206,6 +206,18 @@ namespace slag
 
             auto& super = superset._children[supersetIndex];
             auto& sub = subset._children[subsetIndex];
+
+            if (super.type()!= sub.type())
+            {
+                throw std::runtime_error("Layouts are incompatible");
+            }
+            if (super.type() == GraphicsType::STRUCT)
+            {
+                if (compatible(super,sub) == 0)
+                {
+                    throw std::runtime_error("Layouts are incompatible");
+                }
+            }
 
             if (proceeds(super,sub))
             {
@@ -274,7 +286,7 @@ namespace slag
         _absoluteOffset=from._absoluteOffset;
     }
 
-    bool UniformBufferDescriptorLayout::compatibleRecursive(UniformBufferDescriptorLayout& a,UniformBufferDescriptorLayout& b)
+    bool UniformBufferDescriptorLayout::compatibleRecursive(const UniformBufferDescriptorLayout& a,const UniformBufferDescriptorLayout& b)
     {
         if (a.type() == b.type())
         {
