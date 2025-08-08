@@ -47,10 +47,10 @@ protected:
         std::vector<glm::vec3> tnormals = {{0,0,1},{0,0,1},{0,0,1}};
         std::vector<uint16_t> tindexes = {0,1,2};
 
-        TriangleVerts = std::unique_ptr<Buffer>(Buffer::newBuffer(tverts.data(),tverts.size(),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
-        TriangleUVs = std::unique_ptr<Buffer>(Buffer::newBuffer(tuvs.data(),tuvs.size(),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
-        TriangleNormals = std::unique_ptr<Buffer>(Buffer::newBuffer(tnormals.data(),tnormals.size(),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
-        TriangleIndices = std::unique_ptr<Buffer>(Buffer::newBuffer(tindexes.data(),tindexes.size(),Buffer::Accessibility::GPU,Buffer::UsageFlags::INDEX_BUFFER));
+        TriangleVerts = std::unique_ptr<Buffer>(Buffer::newBuffer(tverts.data(),tverts.size()*sizeof(glm::vec3),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
+        TriangleUVs = std::unique_ptr<Buffer>(Buffer::newBuffer(tuvs.data(),tuvs.size()*sizeof(glm::vec2),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
+        TriangleNormals = std::unique_ptr<Buffer>(Buffer::newBuffer(tnormals.data(),tnormals.size()*sizeof(glm::vec3),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
+        TriangleIndices = std::unique_ptr<Buffer>(Buffer::newBuffer(tindexes.data(),tindexes.size()*sizeof(uint16_t),Buffer::Accessibility::GPU,Buffer::UsageFlags::INDEX_BUFFER));
 
         std::vector<glm::vec3> cverts =
         {
@@ -162,10 +162,10 @@ protected:
             22, 23, 20
         };
 
-        CubeVerts = std::unique_ptr<Buffer>(Buffer::newBuffer(cverts.data(),cverts.size(),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
-        CubeUVs = std::unique_ptr<Buffer>(Buffer::newBuffer(cuvs.data(),cuvs.size(),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
-        CubeNormals = std::unique_ptr<Buffer>(Buffer::newBuffer(cnormals.data(),cnormals.size(),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
-        CubeIndices = std::unique_ptr<Buffer>(Buffer::newBuffer(cindexes.data(),cindexes.size(),Buffer::Accessibility::GPU,Buffer::UsageFlags::INDEX_BUFFER));
+        CubeVerts = std::unique_ptr<Buffer>(Buffer::newBuffer(cverts.data(),cverts.size()*sizeof(glm::vec3),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
+        CubeUVs = std::unique_ptr<Buffer>(Buffer::newBuffer(cuvs.data(),cuvs.size()*sizeof(glm::vec2),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
+        CubeNormals = std::unique_ptr<Buffer>(Buffer::newBuffer(cnormals.data(),cnormals.size()*sizeof(glm::vec3),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
+        CubeIndices = std::unique_ptr<Buffer>(Buffer::newBuffer(cindexes.data(),cindexes.size()*sizeof(uint16_t),Buffer::Accessibility::GPU,Buffer::UsageFlags::INDEX_BUFFER));
 
         VertexPosDescription.add(GraphicsType::VECTOR3,0,0);
         VertexPosUVDescription.add(GraphicsType::VECTOR3,0,0).add(GraphicsType::VECTOR2,0,1);
@@ -756,7 +756,7 @@ TEST_F(CommandBufferTest, Resolve)
             .texture = multiSampled.get(),
             .accessBefore = BarrierAccessFlags::SHADER_WRITE,
             .accessAfter = BarrierAccessFlags::BLIT_READ,
-            .syncBefore = PipelineStageFlags::FRAGMENT_SHADER,
+            .syncBefore = PipelineStageFlags::ALL_GRAPHICS,
             .syncAfter = PipelineStageFlags::BLIT,
         });
     commandBuffer->resolve(multiSampled.get(),0,0,Offset{0,0},output.get(),0,0,Offset{75,75}, Extent{75,75});
@@ -833,7 +833,7 @@ TEST_F(CommandBufferTest, SetBlendConstants)
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group)*2,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
 
-    std::unique_ptr<Texture> objectTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,100,100,1,1));
+    std::unique_ptr<Texture> objectTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,100,100,1,1));
 
 
     commandBuffer->begin();
@@ -878,7 +878,7 @@ TEST_F(CommandBufferTest, SetBlendConstants)
     objectPtr++;
     objectPtr->position = glm::translate(glm::mat4(1.0f),glm::vec3(20,20,0));
     group1A.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    group1A.setTextureAndSampler(0,0,objectTexture.get(),DefaultSampler.get());
+    group1A.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(1,group1A);
     commandBuffer->drawIndexed(3,1,0,0,0);
     commandBuffer->setBlendConstants(1,.5,0,1);
@@ -1111,7 +1111,7 @@ TEST_F(CommandBufferTest, Draw)
 
 
 
-    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::FRAGMENT_SHADER, .syncAfter = PipelineStageFlags::TRANSFER});
+    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
     TextureToBufferCopyData copyData
     {
         .bufferOffset = 0,
@@ -1189,7 +1189,7 @@ TEST_F(CommandBufferTest, DrawIndexed)
 
     commandBuffer->endRendering();
 
-    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::FRAGMENT_SHADER, .syncAfter = PipelineStageFlags::TRANSFER});
+    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
     TextureToBufferCopyData copyData
     {
         .bufferOffset = 0,
@@ -1276,7 +1276,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
 
     commandBuffer->endRendering();
 
-    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::FRAGMENT_SHADER, .syncAfter = PipelineStageFlags::TRANSFER});
+    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
     TextureToBufferCopyData copyData
     {
         .bufferOffset = 0,
@@ -1364,7 +1364,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
 
     commandBuffer->endRendering();
 
-    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::FRAGMENT_SHADER, .syncAfter = PipelineStageFlags::TRANSFER});
+    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
     TextureToBufferCopyData copyData
     {
         .bufferOffset = 0,
@@ -1448,7 +1448,7 @@ TEST_F(CommandBufferTest, DrawIndirect)
 
     commandBuffer->end();
 
-    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::FRAGMENT_SHADER, .syncAfter = PipelineStageFlags::TRANSFER});
+    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
     TextureToBufferCopyData copyData
     {
         .bufferOffset = 0,
@@ -1534,7 +1534,7 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
 
     commandBuffer->endRendering();
 
-    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::FRAGMENT_SHADER, .syncAfter = PipelineStageFlags::TRANSFER});
+    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
     TextureToBufferCopyData copyData
     {
         .bufferOffset = 0,
