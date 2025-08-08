@@ -52,6 +52,121 @@ protected:
         TriangleNormals = std::unique_ptr<Buffer>(Buffer::newBuffer(tnormals.data(),tnormals.size(),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
         TriangleIndices = std::unique_ptr<Buffer>(Buffer::newBuffer(tindexes.data(),tindexes.size(),Buffer::Accessibility::GPU,Buffer::UsageFlags::INDEX_BUFFER));
 
+        std::vector<glm::vec3> cverts =
+        {
+            {-0.5f, -0.5f, -0.5f},  // A 0
+            {0.5f, -0.5f, -0.5f},  // B 1
+            {0.5f,  0.5f, -0.5f},  // C 2
+            {-0.5f,  0.5f, -0.5f},  // D 3
+            {-0.5f, -0.5f,  0.5f},  // E 4
+            {0.5f, -0.5f,  0.5f},  // F 5
+            {0.5f,  0.5f,  0.5f},  // G 6
+            {-0.5f,  0.5f,  0.5f}, // H 7
+
+            {-0.5f,  0.5f, -0.5f}, // D 8
+            {-0.5f, -0.5f, -0.5f}, // A 9
+            {-0.5f, -0.5f,  0.5f}, // E 10
+            {-0.5f,  0.5f,  0.5f}, // H 11
+            {0.5f, -0.5f, -0.5f},  // B 12
+            {0.5f,  0.5f, -0.5f},  // C 13
+            {0.5f,  0.5f,  0.5f},  // G 14
+            {0.5f, -0.5f,  0.5f},  // F 15
+
+            {-0.5f, -0.5f, -0.5f}, // A 16
+            {0.5f, -0.5f, -0.5f},  // B 17
+            {0.5f, -0.5f,  0.5f},  // F 18
+            {-0.5f, -0.5f,  0.5f}, // E 19
+            {0.5f,  0.5f, -0.5f},  // C 20
+            {-0.5f,  0.5f, -0.5f}, // D 21
+            {-0.5f,  0.5f,  0.5f}, // H 22
+            {0.5f,  0.5f,  0.5f},  // G 23
+        };
+        std::vector<glm::vec2> cuvs =
+        {
+            {0.0f, 0.0f},  // A 0
+            {1.0f, 0.0f},  // B 1
+            {1.0f, 1.0f},  // C 2
+            {0.0f, 1.0f},  // D 3
+            {0.0f, 0.0f},  // E 4
+            {1.0f, 0.0f},   // F 5
+            {1.0f, 1.0f},   // G 6
+            {0.0f, 1.0f},   // H 7
+
+            {0.0f, 0.0f},  // D 8
+            {1.0f, 0.0f},  // A 9
+            {1.0f, 1.0f},  // E 10
+            {0.0f, 1.0f},  // H 11
+            {0.0f, 0.0f},   // B 12
+            {1.0f, 0.0f},   // C 13
+            {1.0f, 1.0f},   // G 14
+            {0.0f, 1.0f},   // F 15
+
+            {0.0f, 0.0f},  // A 16
+            {1.0f, 0.0f},   // B 17
+            {1.0f, 1.0f},   // F 18
+            {0.0f, 1.0f},  // E 19
+            {0.0f, 0.0f},  // C 20
+            {1.0f, 0.0f},  // D 21
+            {1.0f, 1.0f},  // H 22
+            {0.0f, 1.0f}  // G 23
+        };
+        std::vector<glm::vec3> cnormals =
+        {
+            // FRONT
+            {0.0, 0.0, 1.0}, //  [00]
+            {0.0, 0.0, 1.0}, //  [01]
+            {0.0, 0.0, 1.0}, //  [02]
+            {0.0, 0.0, 1.0}, //  [03]
+            // BACK
+            {0.0, 0.0, -1.0}, //  [04]
+            {0.0, 0.0, -1.0}, //  [05]
+            {0.0, 0.0, -1.0}, //  [06]
+            {0.0, 0.0, -1.0}, //  [07]
+            // LEFT
+            {-1.0, 0.0, 0.0}, //  [08]
+            {-1.0, 0.0, 0.0}, //  [09]
+            {-1.0, 0.0, 0.0}, //  [10]
+            {-1.0, 0.0, 0.0}, //  [11]
+            // RIGHT
+            {1.0, 0.0, 0.0}, //  [12]
+            {1.0, 0.0, 0.0}, //  [13]
+            {1.0, 0.0, 0.0}, //  [14]
+            {1.0, 0.0, 0.0}, //  [15]
+            // TOP
+            {0.0, 1.0, 0.0}, //  [16]
+            {0.0, 1.0, 0.0}, //  [17]
+            {0.0, 1.0, 0.0}, //  [18]
+            {0.0, 1.0, 0.0}, //  [19]
+            // BOTTOM
+            {0.0, -1.0, 0.0}, //  [20]
+            {0.0, -1.0, 0.0}, //  [21]
+            {0.0, -1.0, 0.0}, //  [22]
+            {0.0, -1.0, 0.0}, //  [23]
+        };
+        std::vector<uint16_t> cindexes =
+        {
+            // front and back
+            0, 3, 2,
+            2, 1, 0,
+            4, 5, 6,
+            6, 7 ,4,
+            // left and right
+            11, 8, 9,
+            9, 10, 11,
+            12, 13, 14,
+            14, 15, 12,
+            // bottom and top
+            16, 17, 18,
+            18, 19, 16,
+            20, 21, 22,
+            22, 23, 20
+        };
+
+        CubeVerts = std::unique_ptr<Buffer>(Buffer::newBuffer(cverts.data(),cverts.size(),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
+        CubeUVs = std::unique_ptr<Buffer>(Buffer::newBuffer(cuvs.data(),cuvs.size(),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
+        CubeNormals = std::unique_ptr<Buffer>(Buffer::newBuffer(cnormals.data(),cnormals.size(),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
+        CubeIndices = std::unique_ptr<Buffer>(Buffer::newBuffer(cindexes.data(),cindexes.size(),Buffer::Accessibility::GPU,Buffer::UsageFlags::INDEX_BUFFER));
+
         VertexPosDescription.add(GraphicsType::VECTOR3,0,0);
         VertexPosUVDescription.add(GraphicsType::VECTOR3,0,0).add(GraphicsType::VECTOR2,0,1);
         VertexPosUVNormalDescription.add(GraphicsType::VECTOR3,0,0).add(GraphicsType::VECTOR2,0,1).add(GraphicsType::VECTOR3,0,2);
@@ -723,7 +838,7 @@ TEST_F(CommandBufferTest, SetBlendConstants)
     commandBuffer->begin();
     commandBuffer->clearTexture(objectTexture.get(),ClearColor{.floats = {1,1,1,1}});
     commandBuffer->insertBarrier(TextureBarrier{.texture = objectTexture.get(),.accessBefore = BarrierAccessFlags::CLEAR,.accessAfter = BarrierAccessFlags::SHADER_READ,.syncBefore = PipelineStageFlags::CLEAR_COLOR,.syncAfter = PipelineStageFlags::VERTEX_SHADER});
-    descriptorPool.reset();
+    descriptorPool->reset();
     commandBuffer->bindDescriptorPool(descriptorPool.get());
     commandBuffer->setViewPort(0,0,target->width(),target->height(),0,1);
     commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
@@ -1241,7 +1356,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
     drawParamPtr->firstInstance = 0;
 
     uint32_t drawCount = 1;
-    std::unique_ptr<Buffer> drawCountParams = std::unique_ptr<Buffer>(Buffer::newBuffer(&drawCount,sizeof(uint32_t),Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<Buffer> drawCountParams = std::unique_ptr<Buffer>(Buffer::newBuffer(&drawCount,sizeof(uint32_t),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::INDIRECT_BUFFER));
     commandBuffer->setViewPort(0,0,target->width(),target->height(),1,0);
     commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
     commandBuffer->drawIndexedIndirectCount(drawParams.get(),0,drawCountParams.get(),0,1,sizeof(IndirectDrawIndexedCommand));

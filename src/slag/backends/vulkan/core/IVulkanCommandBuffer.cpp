@@ -447,7 +447,7 @@ namespace slag
             SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
 #endif
             SLAG_ASSERT(buffer != nullptr && "Buffer cannot be null");
-            SLAG_ASSERT(offset + drawCount*stride < buffer->size() && "drawIndexedIndirect will exceed length of buffer");
+            SLAG_ASSERT(offset + drawCount*stride <= buffer->size() && "drawIndexedIndirect will exceed length of buffer");
             SLAG_ASSERT((bool)(buffer->usage() & Buffer::UsageFlags::INDIRECT_BUFFER) && "buffer must have been created with usage flag INDIRECT_BUFFER");
             auto buf = static_cast<VulkanBuffer*>(buffer);
             vkCmdDrawIndexedIndirect(_commandBuffer,buf->vulkanHandle(),offset,drawCount,stride);
@@ -462,7 +462,7 @@ namespace slag
 #endif
             SLAG_ASSERT(buffer != nullptr && "Buffer cannot be null");
             SLAG_ASSERT(countBuffer != nullptr && "CountBuffer cannot be null");
-            SLAG_ASSERT(offset + maxDrawCount*stride < buffer->size() && "drawIndexedIndirect can exceed length of buffer");
+            SLAG_ASSERT(offset + maxDrawCount*stride <= buffer->size() && "drawIndexedIndirect can exceed length of buffer");
             SLAG_ASSERT((bool)(buffer->usage() & Buffer::UsageFlags::INDIRECT_BUFFER) && "buffer must have been created with usage flag INDIRECT_BUFFER");
             SLAG_ASSERT((bool)(countBuffer->usage() & Buffer::UsageFlags::INDIRECT_BUFFER) && "countBuffer must have been created with usage flag INDIRECT_BUFFER");
             auto buf = static_cast<VulkanBuffer*>(buffer);
