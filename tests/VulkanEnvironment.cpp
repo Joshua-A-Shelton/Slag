@@ -56,6 +56,12 @@ namespace slag
 
     std::unique_ptr<slag::ShaderPipeline> VulkanEnvironment::newShaderPipeline(ShaderCode* computeCode)
     {
-        throw std::runtime_error("Not implemented");
+        return std::unique_ptr<slag::ShaderPipeline>(slag::ShaderPipeline::newShaderPipeline(*computeCode));
     }
+
+    SDL_WindowFlags VulkanEnvironment::windowFlags()
+    {
+        return static_cast<SDL_WindowFlags>(SDL_WINDOW_RESIZABLE | SDL_WINDOW_VULKAN);
+    }
+
 } // slag

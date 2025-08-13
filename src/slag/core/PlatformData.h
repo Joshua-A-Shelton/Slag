@@ -62,17 +62,17 @@ namespace slag
         WaylandPlatformData wayland;
         CustomPlatformData custom;
     };
+    enum class Platform
+    {
+        WIN_32,
+        X11,
+        WAYLAND,
+        CUSTOM
+    };
     ///Platform specific data required for creating a swapchain
     struct PlatformData
     {
-        enum Platform
-        {
-            WIN_32,
-            X11,
-            WAYLAND,
-            CUSTOM
-          };
-        Platform platform = WIN_32;
+        Platform platform = Platform::WIN_32;
         PlatformDetails details{};
     };
 

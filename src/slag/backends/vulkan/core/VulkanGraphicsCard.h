@@ -35,6 +35,7 @@ namespace slag
             ///Gets the transfer queue, or a queue that processes it's commands
             virtual GPUQueue* transferQueue()override;
 
+
             ///Defragment video memory, blocks until finished
             virtual void defragmentMemory(SemaphoreValue* waitFor, size_t waitForCount, SemaphoreValue* signal, size_t signalCount)override;
 
@@ -45,6 +46,7 @@ namespace slag
             uint32_t graphicsQueueFamily()const;
             uint32_t computeQueueFamily()const;
             uint32_t transferQueueFamily()const;
+            VkQueue presentQueue()const;
         private:
             void move(VulkanGraphicsCard& from);
             VkPhysicalDevice _physicalDevice=nullptr;
@@ -57,8 +59,10 @@ namespace slag
             VulkanQueue* _graphicsQueue=nullptr;
             VulkanQueue* _computeQueue=nullptr;
             VulkanQueue* _transferQueue=nullptr;
-            bool _seperateCompute=false;
-            bool _seperateTransfer=false;
+            VkQueue _presentQueue=nullptr;
+            bool _seperateCompute=true;
+            bool _seperateTransfer=true;
+            bool _seperatePresent=true;
 
 
         };

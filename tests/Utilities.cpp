@@ -3,6 +3,10 @@
 #include <iostream>
 #include <stb_image.h>
 #include <functional>
+#include <slag/backends/Backend.h>
+
+#include "GraphicsAPIEnvironment.h"
+#include "SDL_syswm.h"
 template<typename T>
 using unique_ptr_custom = std::unique_ptr<T,std::function<void(T*)>>;
 namespace slag
@@ -23,5 +27,32 @@ namespace slag
         std::vector<unsigned char> result(width*height*4);
         memcpy(result.data(),data.get(),width*height*4);
         return result;
+    }
+
+    std::unique_ptr<SDL_Window, utilities::SDL_WindowCustomDeleter> utilities::createWindow(const std::string& name,int width, int height)
+    {
+        return std::unique_ptr<SDL_Window,SDL_WindowCustomDeleter>(SDL_CreateWindow(name.c_str(),SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,width,height,GraphicsAPIEnvironment::graphicsAPIEnvironment()->windowFlags()));
+    }
+
+    std::unique_ptr<SwapChain> utilities::createSwapChain(SDL_Window* window, uint8_t backBuffers,SwapChain::PresentMode presentMode, Pixels::Format format,FrameResources*(* createResourceFunction)(uint8_t frameIndex, SwapChain* inChain))
+    {
+        slag::PlatformData pd{};
+
+        SDL_SysWMinfo wmInfo;
+        SDL_VERSION(&wmInfo.version);
+        SDL_GetWindowWMInfo(window, &wmInfo);
+#ifdef _WIN32
+        pd.platform = Platform::WIN_32;
+        pd.details.win32.hwnd = wmInfo.info.win.window;
+        pd.details.win32.hinstance = wmInfo.info.win.hinstance;
+#elif __linux
+        pd.platform = PlatformData::X11;
+        pd.details.x11.window = wmInfo.info.x11.window;
+        pd.details.x11.display = wmInfo.info.x11.display;
+#endif
+
+        int w,h;
+        SDL_GetWindowSize(window,&w,&h);
+        return std::unique_ptr<SwapChain>(SwapChain::newSwapChain(pd, w, h, presentMode, backBuffers, format,SwapChain::AlphaCompositing::IGNORE_ALPHA,createResourceFunction));
     }
 } // slag

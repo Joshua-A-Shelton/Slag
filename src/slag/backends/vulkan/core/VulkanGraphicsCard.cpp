@@ -86,6 +86,25 @@ namespace slag
                 }
             }
 
+            auto pqueue = device.get_dedicated_queue(vkb::QueueType::present);
+            if(pqueue.has_value())
+            {
+                _presentQueue = pqueue.value();
+            }
+            else
+            {
+                pqueue = device.get_queue(vkb::QueueType::present);
+                if (pqueue.has_value())
+                {
+                    _presentQueue = pqueue.value();
+                }
+                else
+                {
+                    _presentQueue = _graphicsQueue->vulkanHandle();
+                    _seperatePresent = false;
+                }
+            }
+
             _properties = device.physical_device.properties;
 
             VmaAllocatorCreateInfo allocatorInfo = {};
@@ -191,6 +210,11 @@ namespace slag
             return _transferQueueFamily;
         }
 
+        VkQueue VulkanGraphicsCard::presentQueue() const
+        {
+            return _presentQueue;
+        }
+
         void VulkanGraphicsCard::move(VulkanGraphicsCard& from)
         {
             std::swap(_physicalDevice,from._physicalDevice);
@@ -200,6 +224,9 @@ namespace slag
             _graphicsQueueFamily=from._graphicsQueueFamily;
             _computeQueueFamily=from._computeQueueFamily;
             _transferQueueFamily=from._transferQueueFamily;
+            _seperatePresent = from._seperatePresent;
+            _seperateCompute=from._seperateCompute;
+            _seperateTransfer=from._seperateTransfer;
         }
     } // vulkan
 } // slag

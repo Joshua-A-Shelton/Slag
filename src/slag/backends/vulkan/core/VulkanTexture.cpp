@@ -154,6 +154,17 @@ namespace slag
             }
         }
 
+        VulkanTexture::VulkanTexture(VulkanTexture&& from)
+        {
+            move(from);
+        }
+
+        VulkanTexture& VulkanTexture::operator=(VulkanTexture&& from)
+        {
+            move(from);
+            return *this;
+        }
+
         Texture::Type VulkanTexture::type()
         {
             return _type;

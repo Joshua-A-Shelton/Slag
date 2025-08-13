@@ -8,10 +8,6 @@ namespace slag
     {
     public:
         virtual ~FrameResources()=default;
-        ///Stall the CPU until the resources are finished being used for the frame
-        virtual bool waitForResourcesToFinish()=0;
-        ///Are the resources for the frame still in use or not
-        virtual bool isFinished()=0;
     };
 }
 #endif //SLAG_FRAMERESOURCES_H

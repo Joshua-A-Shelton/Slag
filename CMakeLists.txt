@@ -77,7 +77,11 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/backends/vulkan/core/VulkanDescriptorGroupCache.cpp
             src/slag/backends/vulkan/core/VulkanDescriptorGroupCache.h
             src/slag/backends/vulkan/core/VulkanSampler.cpp
-            src/slag/backends/vulkan/core/VulkanSampler.h)
+            src/slag/backends/vulkan/core/VulkanSampler.h
+            src/slag/backends/vulkan/core/VulkanSwapChain.cpp
+            src/slag/backends/vulkan/core/VulkanSwapChain.h
+            src/slag/backends/vulkan/core/VulkanFrame.cpp
+            src/slag/backends/vulkan/core/VulkanFrame.h)
 endif()
 if(SLAG_DX12_BACKEND)
     add_definitions(-DSLAG_DX12_BACKEND=1)
@@ -240,6 +244,7 @@ if(PROJECT_IS_TOP_LEVEL)
             tests/tests/UniformBufferDescriptorLayout.cpp
             tests/third-party/LodePNG/lodepng.cpp
             tests/third-party/LodePNG/lodepng.h
+            tests/tests/SwapChain.cpp
     )
 
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)

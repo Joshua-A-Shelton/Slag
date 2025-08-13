@@ -8,7 +8,9 @@
 #include "core/VulkanSampler.h"
 #include "core/VulkanSemaphore.h"
 #include "core/VulkanShaderPipeline.h"
+#include "core/VulkanSwapChain.h"
 #include "core/VulkanTexture.h"
+#include "slag/core/SwapChain.h"
 #include "slag/utilities/SLAG_ASSERT.h"
 
 namespace slag
@@ -117,6 +119,7 @@ namespace slag
 
         VkImageAspectFlags VulkanBackend::vulkanizedAspectFlags(Pixels::AspectFlags aspectFlags)
         {
+            auto index = static_cast<uint8_t>(aspectFlags);
             return VULKAN_IMAGE_ASPECTS[static_cast<uint8_t>(aspectFlags)];
         }
 
@@ -398,6 +401,28 @@ namespace slag
             return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
         }
 
+        VkPresentModeKHR VulkanBackend::vulkanizedPresentMode(SwapChain::PresentMode presentMode)
+        {
+            switch (presentMode)
+            {
+#define DEFINITION(SlagValue, VulkanValue, DX12Value, AllowTearing, FrameLatency) case SwapChain::PresentMode::SlagValue: return VulkanValue;
+                SLAG_PRESENT_MODE_DEFINTITIONS(DEFINITION)
+    #undef DEFINITION
+            }
+            return VK_PRESENT_MODE_MAILBOX_KHR;
+        }
+
+        VkCompositeAlphaFlagBitsKHR VulkanBackend::vulkanizedCompositeAlphaFlags(SwapChain::AlphaCompositing composite)
+        {
+            switch (composite)
+            {
+#define DEFINITION(SlagValue, VulkanValue, DX12Value) case SwapChain::AlphaCompositing::SlagValue: return VulkanValue;
+                SLAG_SWAPCHAIN_ALPHA_MODE(DEFINITION)
+    #undef DEFINITION
+            }
+            return VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        }
+
         VkDescriptorType VulkanBackend::vulkanizedDescriptorType(Descriptor::Type descriptorType)
         {
             switch (descriptorType)
@@ -581,9 +606,9 @@ namespace slag
             return new VulkanBuffer(data, dataSize, accessibility, usage);
         }
 
-        SwapChain* VulkanBackend::newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, SwapChain::PresentMode presentMode, uint8_t desiredBackbufferCount, Pixels::Format format,FrameResources*(* createResourceFunction)(uint8_t frameIndex, SwapChain* inChain))
+        SwapChain* VulkanBackend::newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, SwapChain::PresentMode presentMode, uint8_t frameCount, Pixels::Format format, SwapChain::AlphaCompositing compositing,FrameResources*(* createResourceFunction)(uint8_t frameIndex, SwapChain* inChain))
         {
-            throw std::runtime_error("Not implemented");
+            return new VulkanSwapChain(platformData, width, height, presentMode, frameCount, format, compositing, createResourceFunction);
         }
 
         Sampler* VulkanBackend::newSampler(SamplerParameters parameters)
@@ -798,6 +823,11 @@ namespace slag
             write.pBufferInfo = &bufferInfo;
 
             vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
+        }
+
+        vkb::Instance VulkanBackend::vulkanInstance()
+        {
+            return _instance;
         }
     } // vulkan
 } // slag

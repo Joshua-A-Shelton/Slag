@@ -51,6 +51,8 @@ namespace slag
             static VkFilter vulkanizedFilter(Sampler::Filter filter);
             static VkSamplerMipmapMode vulkanizedMipMapMode(Sampler::Filter mipmapFilter);
             static VkSamplerAddressMode vulkanizedAddressMode(Sampler::AddressMode addressMode);
+            static VkPresentModeKHR vulkanizedPresentMode(SwapChain::PresentMode presentMode);
+            static VkCompositeAlphaFlagBitsKHR vulkanizedCompositeAlphaFlags(SwapChain::AlphaCompositing composite);
 
             VulkanBackend(const SlagInitInfo& initInfo);
             ~VulkanBackend()override;
@@ -76,7 +78,7 @@ namespace slag
             virtual Buffer* newBuffer(size_t dataSize, Buffer::Accessibility accessibility,Buffer::UsageFlags usage)override;
             virtual Buffer* newBuffer(void* data, size_t dataSize, Buffer::Accessibility accessibility,Buffer::UsageFlags usage)override;
             //swapchains
-            virtual SwapChain* newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, SwapChain::PresentMode presentMode, uint8_t desiredBackbufferCount, Pixels::Format format, FrameResources*(* createResourceFunction)(uint8_t frameIndex, SwapChain* inChain))override;
+            virtual SwapChain* newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, SwapChain::PresentMode presentMode, uint8_t frameCount, Pixels::Format format, SwapChain::AlphaCompositing compositing, FrameResources*(* createResourceFunction)(uint8_t frameIndex, SwapChain* inChain))override;
             //samplers
             virtual Sampler* newSampler(SamplerParameters parameters)override;
             //shaders
@@ -106,6 +108,9 @@ namespace slag
             virtual void setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)override;
             virtual void setDescriptorBundleUniformBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)override;
             virtual void setDescriptorBundleStorageBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)override;
+
+
+            vkb::Instance vulkanInstance();
         private:
             vkb::Instance _instance{};
             bool _isValid = false;

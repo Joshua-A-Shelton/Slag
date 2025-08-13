@@ -11,6 +11,7 @@ namespace slag
         void TearDown() override;
         virtual std::unique_ptr<slag::ShaderPipeline> loadPipelineFromFiles(ShaderFile* stages, size_t stageCount,ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription)override;
         virtual std::unique_ptr<slag::ShaderPipeline> newShaderPipeline(ShaderCode* computeCode)override;
+        virtual SDL_WindowFlags windowFlags()override;
     };
 } // slag
 

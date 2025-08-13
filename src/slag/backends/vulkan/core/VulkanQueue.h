@@ -22,6 +22,7 @@ namespace slag
 
             virtual void submit(Frame* frame,CommandBuffer** commandBuffers, size_t commandBufferCount, SemaphoreValue* waitSemaphores, size_t waitSemaphoreCount, SemaphoreValue* signalSemaphores, size_t signalSemaphoreCount)override;
 
+            VkQueue vulkanHandle();
         private:
             void move(VulkanQueue& from);
             VkQueue _queue=nullptr;
