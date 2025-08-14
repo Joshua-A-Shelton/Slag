@@ -15,6 +15,8 @@
 
 #ifdef SLAG_X11_BACKEND
 #include <X11/Xlib.h>
+#undef None
+#undef Bool
 #define SLAG_X11_WINDOW Window
 #define SLAG_X11_DISPLAY Display*
 #else

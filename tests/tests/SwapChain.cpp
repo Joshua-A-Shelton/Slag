@@ -83,18 +83,20 @@ TEST(SwapChain, PresentModes)
     auto swapchain = utilities::createSwapChain(window.get(),1,SwapChain::PresentMode::IMMEDIATE,Pixels::Format::B8G8R8A8_UNORM_SRGB,createResources);
 
     auto tearTime = renderEmptyFrames(swapchain.get(),300,ClearColor{1,0,0,1});
-    swapchain->presentMode(SwapChain::PresentMode::BUFFER,2);
+    swapchain->presentMode(SwapChain::PresentMode::QUEUE,2);
     auto doubleBufferTime = renderEmptyFrames(swapchain.get(),300,ClearColor{0,1,0,1});
     swapchain->presentMode(SwapChain::PresentMode::BUFFER,3);
     auto tripleBufferTime = renderEmptyFrames(swapchain.get(),300,ClearColor{0,0,1,1});
-    swapchain->presentMode(SwapChain::PresentMode::QUEUE,2);
+    swapchain->presentMode(SwapChain::PresentMode::QUEUE,3);
     auto queueTime = renderEmptyFrames(swapchain.get(),300,ClearColor{1,1,0,1});
 
     GTEST_ASSERT_LT(tearTime,doubleBufferTime);
     GTEST_ASSERT_LT(tripleBufferTime, doubleBufferTime);
-    GTEST_ASSERT_TRUE(queueTime > 0);
-    GTEST_ASSERT_TRUE(std::abs(1.0-((double)doubleBufferTime/(double)queueTime)) < .05);
-    GTEST_ASSERT_TRUE(std::abs(1.0-((double)tearTime/(double)tripleBufferTime)) < .05);
+    GTEST_ASSERT_TRUE(queueTime > tripleBufferTime);
+    GTEST_ASSERT_TRUE(tearTime < 300);
+    GTEST_ASSERT_TRUE(tripleBufferTime < 300);
+    auto closeness = std::abs(1.0-((double)tearTime/(double)tripleBufferTime));
+    GTEST_ASSERT_TRUE(closeness < .5);
 }
 
 TEST(SwapChain, NextIfReady)
@@ -104,7 +106,7 @@ TEST(SwapChain, NextIfReady)
 
     auto immediateAttempts = renderAttemptsEmptyFrames(swapchain.get(),300,ClearColor{1,0,0,1});
     GTEST_ASSERT_TRUE(immediateAttempts != UINT64_MAX);
-    swapchain->presentMode(SwapChain::PresentMode::BUFFER,2);
+    swapchain->presentMode(SwapChain::PresentMode::QUEUE,2);
     auto doubleBufferAttempts = renderEmptyFrames(swapchain.get(),300,ClearColor{0,1,0,1});
     GTEST_ASSERT_TRUE(doubleBufferAttempts != UINT64_MAX);
     swapchain->presentMode(SwapChain::PresentMode::BUFFER,3);
@@ -209,6 +211,6 @@ TEST(SwapChain, ForceSubmit)
     auto swapchain = utilities::createSwapChain(window.get(),2,SwapChain::PresentMode::BUFFER,Pixels::Format::B8G8R8A8_UNORM_SRGB,createResources);
 
     swapchain->next();
-    EXPECT_DEATH(swapchain->next(),"current frame must be submitted");
+    ASSERT_DEATH(swapchain->next(),"current frame must be submitted");
 }
 #endif

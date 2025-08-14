@@ -46,7 +46,7 @@ namespace slag
         pd.details.win32.hwnd = wmInfo.info.win.window;
         pd.details.win32.hinstance = wmInfo.info.win.hinstance;
 #elif __linux
-        pd.platform = PlatformData::X11;
+        pd.platform = Platform::X11;
         pd.details.x11.window = wmInfo.info.x11.window;
         pd.details.x11.display = wmInfo.info.x11.display;
 #endif
