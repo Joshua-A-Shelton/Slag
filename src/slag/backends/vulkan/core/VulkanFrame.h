@@ -28,6 +28,13 @@ namespace slag
             VkSemaphore commandsCompleteSemaphore() const;
             VkFence commandsCompleteFence() const;
 
+#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
+            VkSemaphore submittedCompleteSemaphore() const;
+            VkSemaphore backBufferToGeneralSemaphore() const;
+            VulkanCommandBuffer* backBufferToGeneral();
+            VulkanCommandBuffer* backBufferToPresent();
+#endif
+
         protected:
             void move(VulkanFrame& from);
             VulkanSwapChain* _parent = nullptr;
@@ -38,6 +45,12 @@ namespace slag
 
             VkSemaphore _commandsCompleteSemaphore = nullptr;
             VkFence _commandsCompleteFence = nullptr;
+#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
+            VkSemaphore _submittedCompleteSemaphore = nullptr;
+            VulkanCommandBuffer* _backBufferToGeneral = nullptr;
+            VkSemaphore _backBufferToGeneralSemaphore = nullptr;
+            VulkanCommandBuffer* _backBufferToPresent = nullptr;
+#endif
 
 
         };

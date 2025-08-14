@@ -24,7 +24,7 @@ namespace slag
             virtual Accessibility accessibility()override;
             virtual uint64_t size()override;
             virtual UsageFlags usage()override;
-            virtual void update(uint64_t offset, void* data, uint64_t dataLength,SemaphoreValue* wait, size_t waitCount,SemaphoreValue* signal, size_t signalCount)override;
+            virtual void update(uint64_t offset, void* data, uint64_t dataLength,SemaphoreValue* wait, uint32_t waitCount,SemaphoreValue* signal, uint32_t signalCount)override;
             virtual void* cpuHandle()override;
 
             VkBuffer vulkanHandle() const;
@@ -39,8 +39,8 @@ namespace slag
             void* _memoryLocation=nullptr;
             VulkanGPUMemoryReference _selfReference{.memoryType = VulkanGPUMemoryReference::MemoryType::BUFFER, .reference = {.buffer = this}};
 
-            void cpuUpdate(uint64_t offset, void* data, uint64_t dataLength,SemaphoreValue* wait, size_t waitCount,SemaphoreValue* signal, size_t signalCount);
-            void gpuUpdate(uint64_t offset, void* data, uint64_t dataLength,SemaphoreValue* wait, size_t waitCount,SemaphoreValue* signal, size_t signalCount);
+            void cpuUpdate(uint64_t offset, void* data, uint64_t dataLength,SemaphoreValue* wait, uint32_t waitCount,SemaphoreValue* signal, uint32_t signalCount);
+            void gpuUpdate(uint64_t offset, void* data, uint64_t dataLength,SemaphoreValue* wait, uint32_t waitCount,SemaphoreValue* signal, uint32_t signalCount);
 
         };
     } // vulkan

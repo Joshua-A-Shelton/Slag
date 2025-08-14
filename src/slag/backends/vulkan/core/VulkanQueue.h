@@ -18,15 +18,19 @@ namespace slag
 
             virtual QueueType type()override;
 
-            virtual void submit(CommandBuffer** commandBuffers, size_t commandBufferCount, SemaphoreValue* waitSemaphores, size_t waitSemaphoreCount, SemaphoreValue* signalSemaphores, size_t signalSemaphoreCount)override;
+            virtual void submit(QueueSubmissionBatch* submissionData, uint32_t submissionDataCount)override;
 
-            virtual void submit(Frame* frame,CommandBuffer** commandBuffers, size_t commandBufferCount, SemaphoreValue* waitSemaphores, size_t waitSemaphoreCount, SemaphoreValue* signalSemaphores, size_t signalSemaphoreCount)override;
+            virtual void submit(QueueSubmissionBatch* submissionData, uint32_t submissionDataCount,Frame* frame)override;
 
             VkQueue vulkanHandle();
         private:
             void move(VulkanQueue& from);
             VkQueue _queue=nullptr;
             GPUQueue::QueueType _type=GPUQueue::QueueType::GRAPHICS;
+
+            inline void submitGeneral(QueueSubmissionBatch* submissionData, uint32_t submissionDataCount,Frame* frame);
+            inline void submitDiscreet(QueueSubmissionBatch* submissionData, uint32_t submissionDataCount,Frame* frame);
+
         };
     } // vulkan
 } // slag

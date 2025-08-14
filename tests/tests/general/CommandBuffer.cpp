@@ -325,7 +325,16 @@ TEST_F(CommandBufferTest, ClearColor)
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    slag::slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slag::slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
     auto rtPtr = rtBuffer->as<unsigned char>();
@@ -421,7 +430,16 @@ TEST_F(CommandBufferTest, ClearDepth)
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    slag::slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slag::slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
     auto depthPtr = depthBuffer->as<float>();
@@ -501,7 +519,16 @@ TEST_F(CommandBufferTest, UpdateMip)
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
     byteColor* dataPtr = textureBuffer->as<byteColor>();
@@ -572,7 +599,16 @@ TEST_F(CommandBufferTest, CopyBufferToBuffer )
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
     unsigned char* dataPtr = buffer3->as<unsigned char>();
@@ -632,7 +668,16 @@ TEST_F(CommandBufferTest, CopyTextureToBuffer)
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
     uint8_t* colorPtr = textureBuffer->as<uint8_t>();
@@ -718,7 +763,16 @@ TEST_F(CommandBufferTest, Blit)
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
     unsigned char* colorPtr = textureBuffer->as<unsigned char>();
@@ -785,7 +839,16 @@ TEST_F(CommandBufferTest, Resolve)
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
     //TODO: check end result
 
@@ -807,7 +870,16 @@ TEST_F(CommandBufferTest, FillBuffer)
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
     uint32_t* uintPtr = buffer->as<uint32_t>();
@@ -906,7 +978,16 @@ TEST_F(CommandBufferTest, SetBlendConstants)
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
     //TODO: check targetBuffer to see if it matches expected output
@@ -1050,7 +1131,16 @@ TEST_F(CommandBufferTest, SetStencilReference)
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
     //TODO: compare output values of output1Buffer and output2Buffer
@@ -1129,7 +1219,16 @@ TEST_F(CommandBufferTest, Draw)
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
     //TODO compare value of outputbuffer to expected
 
@@ -1207,7 +1306,16 @@ TEST_F(CommandBufferTest, DrawIndexed)
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
     //TODO compare value of outputbuffer to expected
 
@@ -1293,7 +1401,16 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
     //TODO compare value of outputbuffer to expected
 
@@ -1382,7 +1499,16 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
     //TODO compare value of outputbuffer to expected
 
@@ -1465,7 +1591,16 @@ TEST_F(CommandBufferTest, DrawIndirect)
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
     //TODO compare value of outputbuffer to expected
 
@@ -1552,7 +1687,16 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    slagGraphicsCard()->graphicsQueue()->submit(submitBuffers,1,nullptr,0,&signal,1);
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
     //TODO compare value of outputbuffer to expected
 

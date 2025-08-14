@@ -59,7 +59,7 @@ namespace slag
          * @param signal semaphores to signal when update is finished
          * @param signalCount number of semaphores in signal array
          */
-        virtual void update(uint64_t offset, void* data, uint64_t dataLength,SemaphoreValue* wait, size_t waitCount,SemaphoreValue* signal, size_t signalCount)=0;
+        virtual void update(uint64_t offset, void* data, uint64_t dataLength,SemaphoreValue* wait, uint32_t waitCount,SemaphoreValue* signal, uint32_t signalCount)=0;
         ///The location of the buffer in host memory (if cpu accessible)
         virtual void* cpuHandle()=0;
         ///CPU handle as a pointer to an object

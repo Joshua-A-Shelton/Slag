@@ -29,6 +29,7 @@ FrameResources* createResources(uint8_t frameIndex, SwapChain* inSwapchain)
 int64_t renderEmptyFrames(SwapChain* swapchain, uint64_t frameCount, ClearColor clearColor)
 {
     auto submitQueue = slagGraphicsCard()->graphicsQueue();
+    QueueSubmissionBatch submissionData{};
 
     auto startTime = SDL_GetTicks64();
     for (int i=0; i< frameCount; i++)
@@ -42,7 +43,10 @@ int64_t renderEmptyFrames(SwapChain* swapchain, uint64_t frameCount, ClearColor 
             commandBuffer->clearTexture(renderTexture,clearColor);
             commandBuffer->end();
 
-            submitQueue->submit(frame,&commandBuffer,1,nullptr,0,nullptr,0);
+            submissionData.commandBuffers = &commandBuffer;
+            submissionData.commandBufferCount = 1;
+
+            submitQueue->submit(&submissionData,1,frame);
         }
     }
     auto endTime = SDL_GetTicks64();
@@ -52,6 +56,7 @@ int64_t renderEmptyFrames(SwapChain* swapchain, uint64_t frameCount, ClearColor 
 uint64_t renderAttemptsEmptyFrames(SwapChain* swapchain, uint64_t successfulFrames, ClearColor clearColor)
 {
     auto submitQueue = slagGraphicsCard()->graphicsQueue();
+    QueueSubmissionBatch submissionData{};
     uint64_t loops = 0;
     auto successes = 0;
     while (successes < successfulFrames)
@@ -65,7 +70,10 @@ uint64_t renderAttemptsEmptyFrames(SwapChain* swapchain, uint64_t successfulFram
             commandBuffer->clearTexture(renderTexture,clearColor);
             commandBuffer->end();
 
-            submitQueue->submit(frame,&commandBuffer,1,nullptr,0,nullptr,0);
+            submissionData.commandBuffers = &commandBuffer;
+            submissionData.commandBufferCount = 1;
+
+            submitQueue->submit(&submissionData,1,frame);
             successes++;
         }
         loops++;
@@ -124,6 +132,7 @@ TEST(SwapChain, Resize)
     auto window = utilities::createWindow("Resize",windowSize,windowSize);
     auto swapchain = utilities::createSwapChain(window.get(),2,SwapChain::PresentMode::BUFFER,Pixels::Format::B8G8R8A8_UNORM_SRGB,createResources);
     auto submitQueue = slagGraphicsCard()->graphicsQueue();
+    QueueSubmissionBatch submissionData{};
 
     SDL_Event event;
     for (auto i = 0; i<99; i++)
@@ -149,7 +158,10 @@ TEST(SwapChain, Resize)
             commandBuffer->clearTexture(renderTexture,ClearColor{1,0,1,1});
             commandBuffer->end();
 
-            submitQueue->submit(frame,&commandBuffer,1,nullptr,0,nullptr,0);
+            submissionData.commandBuffers = &commandBuffer;
+            submissionData.commandBufferCount = 1;
+
+            submitQueue->submit(&submissionData,1,frame);
         }
         if (i == 33)
         {

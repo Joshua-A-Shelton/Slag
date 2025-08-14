@@ -6,6 +6,24 @@ namespace slag
 {
     class CommandBuffer;
     class Frame;
+
+    ///Data to be sent to GPU for submission
+    struct QueueSubmissionBatch
+    {
+        ///Semaphores to wait on before executing this batch of command buffers
+        SemaphoreValue* waitSemaphores = nullptr;
+        ///Number of semaphore values in waitSemaphores
+        uint32_t waitSemaphoreCount = 0;
+        ///Command buffers to execute
+        CommandBuffer** commandBuffers = nullptr;
+        ///Number of command buffers
+        uint32_t commandBufferCount = 0;
+        ///Semaphores to signal after executing this batch of command buffers
+        SemaphoreValue* signalSemaphores = nullptr;
+        ///Number of semaphore values in signalSemaphores
+        uint32_t signalSemaphoreCount =0;
+    };
+
     ///Graphics card queue that accepts command buffers and executes the commands in them
     class GPUQueue
     {
@@ -25,26 +43,17 @@ namespace slag
 
         /**
          * Submit command buffers for execution
-         * @param commandBuffers Command buffers to execute
-         * @param commandBufferCount Number of command buffers
-         * @param waitSemaphores Semaphores to wait on before executing submitted command buffers
-         * @param waitSemaphoreCount Number of semaphores to wait on
-         * @param signalSemaphores Semaphores to signal after execution
-         * @param signalSemaphoreCount Number of semaphores to signal
+         * @param submissionData Information to submit to the queue
+         * @param submissionDataCount Number of Submission Data
          */
-        virtual void submit(CommandBuffer** commandBuffers, size_t commandBufferCount, SemaphoreValue* waitSemaphores, size_t waitSemaphoreCount, SemaphoreValue* signalSemaphores, size_t signalSemaphoreCount)=0;
-
+        virtual void submit(QueueSubmissionBatch* submissionData, uint32_t submissionDataCount)=0;
         /**
-         * Submit a frame for execution and display
-         * @param frame Frame to submit for execution
-         * @param commandBuffers Command buffers to execute
-         * @param commandBufferCount Number of command buffers
-         * @param waitSemaphores Semaphores to wait on before executing submitted command buffers
-         * @param waitSemaphoreCount Number of semaphores to wait on
-         * @param signalSemaphores Semaphores to signal after execution
-         * @param signalSemaphoreCount Number of semaphores to signal
+         * Submit command buffers for execution and frame for presentation
+         * @param submissionData Information to submit to the queue
+         * @param submissionDataCount Number of Submission Data
+         * @param frame The frame to present after the buffers execute
          */
-        virtual void submit(Frame* frame,CommandBuffer** commandBuffers, size_t commandBufferCount, SemaphoreValue* waitSemaphores, size_t waitSemaphoreCount, SemaphoreValue* signalSemaphores, size_t signalSemaphoreCount)=0;
+        virtual void submit(QueueSubmissionBatch* submissionData, uint32_t submissionDataCount,Frame* frame)=0;
 
     };
 } // slag

@@ -23,7 +23,16 @@ namespace slag
             commandBuffer.end();
             CommandBuffer* cbptr = &commandBuffer;
             SemaphoreValue sv{.semaphore = &finished,.value = 1};
-            VulkanGraphicsCard::selected()->transferQueue()->submit(&cbptr,1,nullptr,0,&sv,1);
+            QueueSubmissionBatch submissionData
+            {
+                .waitSemaphores = nullptr,
+                .waitSemaphoreCount = 0,
+                .commandBuffers = &cbptr,
+                .commandBufferCount = 1,
+                .signalSemaphores = &sv,
+                .signalSemaphoreCount = 1,
+            };
+            VulkanGraphicsCard::selected()->transferQueue()->submit(&submissionData,1);
             finished.waitForValue(1);
         }
 
@@ -65,7 +74,18 @@ namespace slag
 
             CommandBuffer* cbptr= &commandBuffer;
             SemaphoreValue sv{.semaphore = &finished,.value = 1};
-            VulkanGraphicsCard::selected()->transferQueue()->submit(&cbptr,1,nullptr,0,&sv,1);
+
+            QueueSubmissionBatch submissionData
+            {
+                .waitSemaphores = nullptr,
+                .waitSemaphoreCount = 0,
+                .commandBuffers = &cbptr,
+                .commandBufferCount = 1,
+                .signalSemaphores = &sv,
+                .signalSemaphoreCount = 1,
+            };
+            VulkanGraphicsCard::selected()->transferQueue()->submit(&submissionData,1);
+
             finished.waitForValue(1);
         }
 #else

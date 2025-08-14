@@ -87,7 +87,7 @@ namespace slag
             return _usageFlags;
         }
 
-        void VulkanBuffer::update(uint64_t offset, void* data, uint64_t dataLength, SemaphoreValue* wait,size_t waitCount, SemaphoreValue* signal, size_t signalCount)
+        void VulkanBuffer::update(uint64_t offset, void* data, uint64_t dataLength, SemaphoreValue* wait,uint32_t waitCount, SemaphoreValue* signal, uint32_t signalCount)
         {
             if (_accessibility == Accessibility::CPU_AND_GPU)
             {
@@ -124,7 +124,7 @@ namespace slag
             }
         }
 
-        void VulkanBuffer::cpuUpdate(uint64_t offset, void* data, uint64_t dataLength, SemaphoreValue* wait,size_t waitCount, SemaphoreValue* signal, size_t signalCount)
+        void VulkanBuffer::cpuUpdate(uint64_t offset, void* data, uint64_t dataLength, SemaphoreValue* wait,uint32_t waitCount, SemaphoreValue* signal, uint32_t signalCount)
         {
             SLAG_ASSERT(offset + dataLength <= _size && "Update exceeds size of buffer");
             if (waitCount)
@@ -145,7 +145,7 @@ namespace slag
 
         }
 
-        void VulkanBuffer::gpuUpdate(uint64_t offset, void* data, uint64_t dataLength, SemaphoreValue* wait, size_t waitCount, SemaphoreValue* signal, size_t signalCount)
+        void VulkanBuffer::gpuUpdate(uint64_t offset, void* data, uint64_t dataLength, SemaphoreValue* wait, uint32_t waitCount, SemaphoreValue* signal, uint32_t signalCount)
         {
             SLAG_ASSERT(offset + dataLength <= _size && "Update exceeds size of buffer");
             VulkanCommandBuffer commandBuffer(GPUQueue::QueueType::TRANSFER);
@@ -165,7 +165,16 @@ namespace slag
                 signals[i] = signal[i];
             }
             signals[signalCount] = {.semaphore = &finished,.value = 1};
-            VulkanGraphicsCard::selected()->transferQueue()->submit(&ptr,1,wait,waitCount,signals.data(),signals.size());
+            QueueSubmissionBatch submissionData
+            {
+                .waitSemaphores = wait,
+                .waitSemaphoreCount = waitCount,
+                .commandBuffers = &ptr,
+                .commandBufferCount = 1,
+                .signalSemaphores = signals.data(),
+                .signalSemaphoreCount = signalCount+1,
+            };
+            VulkanGraphicsCard::selected()->transferQueue()->submit(&submissionData,1);
             finished.waitForValue(1);
 
         }
