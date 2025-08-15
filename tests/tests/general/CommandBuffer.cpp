@@ -954,12 +954,13 @@ TEST_F(CommandBufferTest, SetBlendConstants)
     commandBuffer->bindGraphicsDescriptorBundle(1,group1A);
     commandBuffer->drawIndexed(3,1,0,0,0);
     commandBuffer->setBlendConstants(1,.5,0,1);
-    group1B.setUniformBuffer(0,0,globalsBuffer.get(),sizeof(GlobalSet0Group),sizeof(GlobalSet0Group));
+    group1B.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
+    group1B.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(1,group1B);
     commandBuffer->drawIndexed(3,1,0,0,0);
 
     commandBuffer->endRendering();
-    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(),.accessBefore = BarrierAccessFlags::SHADER_WRITE, .accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::COLOR_ATTACHMENT,.syncAfter = PipelineStageFlags::TRANSFER});
+    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(),.accessBefore = BarrierAccessFlags::SHADER_WRITE, .accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS,.syncAfter = PipelineStageFlags::TRANSFER});
 
     TextureToBufferCopyData copyData
     {

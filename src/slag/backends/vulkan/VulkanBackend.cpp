@@ -606,9 +606,9 @@ namespace slag
             return new VulkanBuffer(data, dataSize, accessibility, usage);
         }
 
-        SwapChain* VulkanBackend::newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, SwapChain::PresentMode presentMode, uint8_t frameCount, Pixels::Format format, SwapChain::AlphaCompositing compositing,FrameResources*(* createResourceFunction)(uint8_t frameIndex, SwapChain* inChain))
+        SwapChain* VulkanBackend::newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, SwapChain::PresentMode presentMode, uint8_t frameCount, Pixels::Format format, SwapChain::AlphaCompositing compositing,FrameResources*(* createResourceFunction)(uint8_t frameIndex, SwapChain* inChain),void (*swapchainRebuiltFunction)(SwapChain* swapChain))
         {
-            return new VulkanSwapChain(platformData, width, height, presentMode, frameCount, format, compositing, createResourceFunction);
+            return new VulkanSwapChain(platformData, width, height, presentMode, frameCount, format, compositing, createResourceFunction,swapchainRebuiltFunction);
         }
 
         Sampler* VulkanBackend::newSampler(SamplerParameters parameters)

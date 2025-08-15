@@ -109,7 +109,7 @@ namespace slag
          * @param createResourceFunction Optional function to provide extra data to each frame
          * @return 
          */
-        static SwapChain* newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, PresentMode presentMode, uint8_t frameCount,Pixels::Format format,AlphaCompositing compositing, FrameResources* (*createResourceFunction)(uint8_t frameIndex, SwapChain* inChain)=nullptr);
+        static SwapChain* newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, PresentMode presentMode, uint8_t frameCount,Pixels::Format format,AlphaCompositing compositing, FrameResources* (*createResourceFunction)(uint8_t frameIndex, SwapChain* inChain)=nullptr, void (*swapchainRebuiltFunction)(SwapChain* swapChain)=nullptr);
 
     };
 } // slag

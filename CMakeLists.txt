@@ -289,6 +289,15 @@ if(PROJECT_IS_TOP_LEVEL)
 
     add_dependencies(SlagTests slagTestShaders)
 
+
+    add_executable(SlagCube
+            examples/cube/Main.cpp
+    )
+    target_link_libraries(SlagCube SDL2::SDL2 glm::glm Slag)
+    target_include_directories(SlagCube PRIVATE src ${SDL2_LIBRARIES} ${stb_image_SOURCE_DIR})
+
+    add_dependencies(SlagCube slagTestShaders)
+
 else()
     message("Skipping tests")
 endif()

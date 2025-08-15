@@ -18,7 +18,7 @@ namespace slag
 {
     namespace vulkan
     {
-        VulkanSwapChain::VulkanSwapChain(PlatformData platformData, uint32_t width, uint32_t height,PresentMode presentMode, uint8_t frameCount, Pixels::Format format, AlphaCompositing compositing, FrameResources*(* createResourceFunction)(uint8_t frameIndex, SwapChain* inChain))
+        VulkanSwapChain::VulkanSwapChain(PlatformData platformData, uint32_t width, uint32_t height,PresentMode presentMode, uint8_t frameCount, Pixels::Format format, AlphaCompositing compositing, FrameResources*(* createResourceFunction)(uint8_t frameIndex, SwapChain* inChain), void (*swapchainRebuiltFunction)(SwapChain* swapChain))
         {
             _surface = createNativeSurface(platformData);
             _width = width;
@@ -28,6 +28,7 @@ namespace slag
             _frameCount = frameCount;
             _compositing = compositing;
             _createResource = createResourceFunction;
+            _swapchainRebuiltFunction = swapchainRebuiltFunction;
 
             rebuild();
         }
@@ -236,6 +237,10 @@ namespace slag
         {
             _currentFrameIndex = (_currentFrameIndex + 1) % _frameCount;
             _frameSubmitted = true;
+            if (_needsUpdate)
+            {
+                rebuild();
+            }
         }
 
         VkSurfaceKHR VulkanSwapChain::createNativeSurface(PlatformData platformData)
@@ -336,6 +341,11 @@ namespace slag
             }
 
             _needsUpdate = false;
+
+            if (_swapchainRebuiltFunction!=nullptr)
+            {
+                _swapchainRebuiltFunction(this);
+            }
         }
 
         VkSurfaceKHR VulkanSwapChain::createVulkanWindowsSurface(Win32PlatformData data)
