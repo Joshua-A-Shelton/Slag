@@ -70,6 +70,7 @@ namespace slag
                 for (auto j = 0; j < submissionDatum.commandBufferCount; j++)
                 {
                     auto commandBuffer = static_cast<VulkanCommandBuffer*>(submissionDatum.commandBuffers[j]);
+                    SLAG_ASSERT(GPUQueue::canProcessCommands(_type,commandBuffer->commandType()) && "Queue cannot process command buffer outside it's capabilities");
                     (*buffers)[j] = VkCommandBufferSubmitInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO, .commandBuffer = commandBuffer->vulkanCommandBufferHandle()};
                 }
 
@@ -86,6 +87,8 @@ namespace slag
 
         void VulkanQueue::submit(QueueSubmissionBatch* submissionData, uint32_t submissionDataCount, Frame* frame)
         {
+            SLAG_ASSERT(_type == QueueType::GRAPHICS && "frame submissions can only be done on a graphics queue");
+
 #ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
             submitGeneral(submissionData, submissionDataCount, frame);
 
@@ -172,6 +175,7 @@ namespace slag
                 for (auto j = 0; j < submissionDatum.commandBufferCount; j++)
                 {
                     auto commandBuffer = static_cast<VulkanCommandBuffer*>(submissionDatum.commandBuffers[j]);
+                    SLAG_ASSERT(GPUQueue::canProcessCommands(_type,commandBuffer->commandType()) && "Queue cannot process command buffer outside it's capabilities");
                     (*buffers)[j] = VkCommandBufferSubmitInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO, .commandBuffer = commandBuffer->vulkanCommandBufferHandle()};
                 }
 

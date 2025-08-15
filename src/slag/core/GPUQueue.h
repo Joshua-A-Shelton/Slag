@@ -55,6 +55,34 @@ namespace slag
          */
         virtual void submit(QueueSubmissionBatch* submissionData, uint32_t submissionDataCount,Frame* frame)=0;
 
+        /**
+         * If a queue can process commands of a given type
+         * @param queue
+         * @param commandBuffer
+         * @return
+         */
+        static bool canProcessCommands(QueueType queue, QueueType commandBuffer)
+        {
+            switch (queue)
+            {
+                case QueueType::GRAPHICS:
+                    return true;
+                case QueueType::COMPUTE:
+                    if (commandBuffer != QueueType::GRAPHICS)
+                    {
+                        return true;
+                    }
+                    return false;
+                case QueueType::TRANSFER:
+                    if (commandBuffer == QueueType::TRANSFER)
+                    {
+                        return true;
+                    }
+                return false;
+            }
+            return false;
+        }
+
     };
 } // slag
 
