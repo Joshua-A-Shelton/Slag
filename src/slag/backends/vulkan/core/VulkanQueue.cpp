@@ -148,7 +148,7 @@ namespace slag
                 }
 
                 //if it's the last of the original command buffers, add an additional signal slot
-                if (i==submissionDataCount+1)
+                if (i==submissionDataCount)
                 {
                     signal = std::make_unique<std::vector<VkSemaphoreSubmitInfo>>(submissionDatum.signalSemaphoreCount+1);
                 }
@@ -163,9 +163,9 @@ namespace slag
                     (*signal)[j] = VkSemaphoreSubmitInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,.semaphore = semaphore->vulkanSemaphore(),.value = signalSemaphore.value,.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT};
                 }
                 //if it's the last of the original command buffers, add additional signal
-                if (i==submissionDataCount+1)
+                if (i==submissionDataCount)
                 {
-                    (*wait)[submissionDatum.signalSemaphoreCount] = VkSemaphoreSubmitInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,.semaphore = vulkanFrame->submittedCompleteSemaphore(),.value = 1,.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT};
+                    (*signal)[submissionDatum.signalSemaphoreCount] = VkSemaphoreSubmitInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,.semaphore = vulkanFrame->submittedCompleteSemaphore(),.value = 1,.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT};
                 }
 
                 buffers = std::make_unique<std::vector<VkCommandBufferSubmitInfo>>(submissionDatum.commandBufferCount);
@@ -176,11 +176,11 @@ namespace slag
                 }
 
 
-                submitInfo.waitSemaphoreInfoCount = submissionDatum.waitSemaphoreCount;
+                submitInfo.waitSemaphoreInfoCount = wait->size();
                 submitInfo.pWaitSemaphoreInfos = wait->data();
                 submitInfo.commandBufferInfoCount = submissionDatum.commandBufferCount;
                 submitInfo.pCommandBufferInfos = buffers->data();
-                submitInfo.signalSemaphoreInfoCount = submissionDatum.signalSemaphoreCount;
+                submitInfo.signalSemaphoreInfoCount = signal->size();
                 submitInfo.pSignalSemaphoreInfos = signal->data();
             }
 
@@ -210,7 +210,7 @@ namespace slag
             auto& transitionIntoPresent= submit[submit.size()-1];
             VkSemaphoreSubmitInfo waitPresent{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,.semaphore = vulkanFrame->submittedCompleteSemaphore(),.value = 1};
             VkSemaphoreSubmitInfo signalPresent{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,.semaphore = vulkanFrame->commandsCompleteSemaphore(),.value = 1};
-            auto commandBufferPresent = vulkanFrame->backBufferToGeneral();
+            auto commandBufferPresent = vulkanFrame->backBufferToPresent();
             VkCommandBufferSubmitInfo buffersPresent {.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,.commandBuffer = commandBufferPresent->vulkanCommandBufferHandle()};
 
 
@@ -226,10 +226,10 @@ namespace slag
             transitionIntoPresent.pSignalSemaphoreInfos = &signalPresent;
             transitionIntoPresent.signalSemaphoreInfoCount = 1;
 
-            vkQueueSubmit2(_queue,submissionDataCount,submit.data(),vulkanFrame->commandsCompleteFence());
+            vkQueueSubmit2(_queue,submit.size(),submit.data(),vulkanFrame->commandsCompleteFence());
 
             //Present image
-            VkSemaphore waitPresentSemaphores[2]{vulkanFrame->commandsCompleteSemaphore(),vulkanFrame->imageAcquiredSemaphore()};
+            VkSemaphore waitPresentSemaphores[]{vulkanFrame->commandsCompleteSemaphore(),vulkanFrame->imageAcquiredSemaphore()};
             auto currentImageIndex = vulkanFrame->parentSwapChain()->currentImageIndex();
             auto swapChain = vulkanFrame->parentSwapChain()->vulkanHandle();
             VkResult presentSuccess = VK_SUCCESS;
