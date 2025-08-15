@@ -113,6 +113,7 @@ namespace slag
             vkb::Instance vulkanInstance();
         private:
             vkb::Instance _instance{};
+            VkDebugUtilsMessengerEXT _debugMessenger = nullptr;
             bool _isValid = false;
         };
     } // vulkan

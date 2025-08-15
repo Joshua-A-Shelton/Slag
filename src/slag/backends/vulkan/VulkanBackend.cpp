@@ -494,12 +494,17 @@ namespace slag
             {
                 return;
             }
+            _debugMessenger = inst->debug_messenger;
             _instance = inst.value();
             _isValid = true;
         }
 
         VulkanBackend::~VulkanBackend()
         {
+            if (_debugMessenger != nullptr)
+            {
+                vkb::destroy_debug_utils_messenger(_instance,_debugMessenger);
+            }
             vkDestroyInstance(_instance, nullptr);
             SLAG_VULKAN_DEBUG_HANDLER = nullptr;
         }
