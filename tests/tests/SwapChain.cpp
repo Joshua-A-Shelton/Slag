@@ -115,10 +115,10 @@ TEST(SwapChain, NextIfReady)
     auto immediateAttempts = renderAttemptsEmptyFrames(swapchain.get(),300,ClearColor{1,0,0,1});
     GTEST_ASSERT_TRUE(immediateAttempts != UINT64_MAX);
     swapchain->presentMode(SwapChain::PresentMode::QUEUE,2);
-    auto doubleBufferAttempts = renderEmptyFrames(swapchain.get(),300,ClearColor{0,1,0,1});
+    auto doubleBufferAttempts = renderAttemptsEmptyFrames(swapchain.get(),300,ClearColor{0,1,0,1});
     GTEST_ASSERT_TRUE(doubleBufferAttempts != UINT64_MAX);
     swapchain->presentMode(SwapChain::PresentMode::BUFFER,3);
-    auto tripleBufferAttempts = renderEmptyFrames(swapchain.get(),300,ClearColor{0,0,1,1});
+    auto tripleBufferAttempts = renderAttemptsEmptyFrames(swapchain.get(),300,ClearColor{0,0,1,1});
     GTEST_ASSERT_TRUE(tripleBufferAttempts != UINT64_MAX);
 
     GTEST_ASSERT_EQ(immediateAttempts, 300);
@@ -139,11 +139,14 @@ TEST(SwapChain, Resize)
     {
         while (SDL_PollEvent(&event) != 0)
         {
-            if (event.type == SDL_WINDOWEVENT_RESIZED)
+            if (event.type == SDL_WINDOWEVENT)
             {
-                int w,h;
-                SDL_GetWindowSize(window.get(),&w,&h);
-                swapchain->backBufferSize(w,h);
+                if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+                {
+                    int w,h;
+                    SDL_GetWindowSize(window.get(),&w,&h);
+                    swapchain->backBufferSize(w,h);
+                }
             }
         }
         if (auto frame = swapchain->next())
@@ -167,14 +170,16 @@ TEST(SwapChain, Resize)
         {
             windowSize = 300;
             SDL_SetWindowSize(window.get(),windowSize,windowSize);
+            swapchain->backBufferSize(windowSize,windowSize);
         }
         else if (i == 66)
         {
             windowSize = 75;
             SDL_SetWindowSize(window.get(),windowSize,windowSize);
+            swapchain->backBufferSize(windowSize,windowSize);
         }
-        GTEST_ASSERT_TRUE(swapchain->backBufferWidth() == windowSize);
-        GTEST_ASSERT_TRUE(swapchain->backBufferHeight() == windowSize);
+        GTEST_ASSERT_EQ(swapchain->backBufferWidth(), windowSize);
+        GTEST_ASSERT_EQ(swapchain->backBufferHeight(), windowSize);
     }
 
     swapchain->backBufferSize(1920,1080);
