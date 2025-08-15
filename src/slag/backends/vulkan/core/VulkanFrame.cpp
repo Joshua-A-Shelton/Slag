@@ -114,7 +114,7 @@ namespace slag
 
         VkFence VulkanFrame::imageAquiredFence() const
         {
-            return _commandsCompleteFence;
+            return _imageAcquiredFence;
         }
 
         VkSemaphore VulkanFrame::commandsCompleteSemaphore() const
