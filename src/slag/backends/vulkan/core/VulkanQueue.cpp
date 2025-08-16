@@ -246,15 +246,6 @@ namespace slag
             presentInfo.pImageIndices = &currentImageIndex;
             presentInfo.pResults = &presentSuccess;
 
-
-            auto ImageAcquiredFence = vulkanFrame->imageAquiredFence();
-            VkSwapchainPresentFenceInfoEXT fenceInfo{};
-            fenceInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT;
-            fenceInfo.swapchainCount = 1;
-            fenceInfo.pFences = &ImageAcquiredFence;
-
-            presentInfo.pNext = &fenceInfo;
-
             vkQueuePresentKHR(_queue,&presentInfo);
             vulkanFrame->parentSwapChain()->advance();
 

@@ -37,6 +37,9 @@ namespace slag
         {
             if (_swapChain)
             {
+                //I hate this, but waiting on fences is behaving differently on different platforms
+                vkDeviceWaitIdle(VulkanGraphicsCard::selected()->device());
+
                 _frames.clear();
                 vkDestroySwapchainKHR(VulkanGraphicsCard::selected()->device(), _swapChain, nullptr);
 
@@ -60,11 +63,11 @@ namespace slag
             auto& frame = _frames[_currentFrameIndex];
 
             auto commandsFinished = frame.commandsCompleteFence();
-            auto imagePresented = frame.imageAquiredFence();
+            //auto imagePresented = frame.imageAquiredFence();
 
-            vkWaitForFences(device,1,&imagePresented,VK_TRUE,UINT64_MAX);
+            vkWaitForFences(device,1,&commandsFinished,VK_TRUE,UINT64_MAX);
             vkResetFences(device,1,&commandsFinished);
-            vkResetFences(device,1,&imagePresented);
+            //vkResetFences(device,1,&imagePresented);
 
             auto result = vkAcquireNextImageKHR(device,_swapChain,UINT64_MAX,frame.imageAcquiredSemaphore(),nullptr,&_currentImageIndex);
 
@@ -76,11 +79,11 @@ namespace slag
                 auto& rebuiltFrame = _frames[_currentFrameIndex];
 
                 commandsFinished = rebuiltFrame.commandsCompleteFence();
-                imagePresented = rebuiltFrame.imageAquiredFence();
+                //imagePresented = rebuiltFrame.imageAquiredFence();
 
-                vkWaitForFences(device,1,&imagePresented,VK_TRUE,UINT64_MAX);
+                vkWaitForFences(device,1,&commandsFinished,VK_TRUE,UINT64_MAX);
                 vkResetFences(device,1,&commandsFinished);
-                vkResetFences(device,1,&imagePresented);
+                //vkResetFences(device,1,&imagePresented);
 
                 result = vkAcquireNextImageKHR(device,_swapChain,UINT64_MAX,rebuiltFrame.imageAcquiredSemaphore(),nullptr,&_currentImageIndex);
                 if (result!=VK_SUCCESS)
@@ -283,9 +286,15 @@ namespace slag
         void VulkanSwapChain::rebuild()
         {
             SLAG_ASSERT(_frameSubmitted && "Cannot rebuild swapchain between next and submit");
+            //I hate this, but waiting on fences is behaving differently on different platforms
+            vkDeviceWaitIdle(VulkanGraphicsCard::selected()->device());
 
             _frames.clear();
             _images.clear();
+            for (auto i = 0; i < _imageViews.size(); ++i)
+            {
+                vkDestroyImageView(VulkanGraphicsCard::selected()->device(), _imageViews[i], nullptr);
+            }
             _imageViews.clear();
 
             _currentFrameIndex = 0;

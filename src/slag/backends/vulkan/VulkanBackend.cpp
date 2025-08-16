@@ -486,7 +486,7 @@ namespace slag
                               //.use_default_debug_messenger()
                               .set_debug_callback(VULKAN_DEBUG_MESSENGER_CALLBACK)
                               .require_api_version(1,3,0)
-                               .enable_extension("VK_EXT_surface_maintenance1")
+                               //.enable_extension("VK_EXT_surface_maintenance1")
                                .enable_extension("VK_KHR_get_surface_capabilities2")
                               .build();
 
@@ -531,7 +531,7 @@ namespace slag
             auto physicalDevices = selector.set_minimum_version(1,3)
                                             .set_required_features_13(features1_3)
                                             .set_required_features_12(features1_2)
-                                            .add_required_extension("VK_EXT_swapchain_maintenance1")
+                                            //.add_required_extension("VK_EXT_swapchain_maintenance1")
                                             .add_required_extension("VK_EXT_custom_border_color")
                                             .defer_surface_initialization()
                                             .select_devices();

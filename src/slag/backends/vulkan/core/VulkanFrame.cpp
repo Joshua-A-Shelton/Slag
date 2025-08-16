@@ -31,7 +31,7 @@ namespace slag
             fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
             vkCreateFence(VulkanGraphicsCard::selected()->device(),&fenceInfo,nullptr,&_commandsCompleteFence);
-            vkCreateFence(VulkanGraphicsCard::selected()->device(),&fenceInfo,nullptr,&_imageAcquiredFence);
+            //vkCreateFence(VulkanGraphicsCard::selected()->device(),&fenceInfo,nullptr,&_imageAcquiredFence);
 
 #ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
             vkCreateSemaphore(VulkanGraphicsCard::selected()->device(),&semaphoreInfo,nullptr,&_submittedCompleteSemaphore);
@@ -46,12 +46,15 @@ namespace slag
         {
             if (_commandsCompleteFence)
             {
-                vkWaitForFences(VulkanGraphicsCard::selected()->device(),1,&_commandsCompleteFence,VK_TRUE,UINT64_MAX);
-                vkWaitForFences(VulkanGraphicsCard::selected()->device(),1,&_imageAcquiredFence,VK_TRUE,UINT64_MAX);
                 vkDestroySemaphore(VulkanGraphicsCard::selected()->device(), _imageAcquiredSemaphore, nullptr);
                 vkDestroySemaphore(VulkanGraphicsCard::selected()->device(), _commandsCompleteSemaphore, nullptr);
-                vkDestroyFence(VulkanGraphicsCard::selected()->device(), _imageAcquiredFence, nullptr);
                 vkDestroyFence(VulkanGraphicsCard::selected()->device(), _commandsCompleteFence, nullptr);
+#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
+                vkDestroySemaphore(VulkanGraphicsCard::selected()->device(), _submittedCompleteSemaphore, nullptr);
+                delete _backBufferToGeneral;
+                vkDestroySemaphore(VulkanGraphicsCard::selected()->device(), _backBufferToGeneralSemaphore, nullptr);
+                delete _backBufferToPresent;
+#endif
             }
         }
 
@@ -112,11 +115,6 @@ namespace slag
             return _backBufferToPresent;
         }
 
-        VkFence VulkanFrame::imageAquiredFence() const
-        {
-            return _imageAcquiredFence;
-        }
-
         VkSemaphore VulkanFrame::commandsCompleteSemaphore() const
         {
             return _commandsCompleteSemaphore;
@@ -128,7 +126,7 @@ namespace slag
             std::swap(_parent, from._parent);
             _frameIndex = from._frameIndex;
             std::swap(_imageAcquiredSemaphore, from._imageAcquiredSemaphore);
-            std::swap(_imageAcquiredFence, from._imageAcquiredFence);
+            //std::swap(_imageAcquiredFence, from._imageAcquiredFence);
             std::swap(_commandsCompleteSemaphore, from._commandsCompleteSemaphore);
             std::swap(_commandsCompleteFence, from._commandsCompleteFence);
 

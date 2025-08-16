@@ -24,7 +24,6 @@ namespace slag
             virtual uint8_t frameIndex() override;
             VulkanSwapChain* parentSwapChain() const;
             VkSemaphore imageAcquiredSemaphore() const;
-            VkFence imageAquiredFence() const;
             VkSemaphore commandsCompleteSemaphore() const;
             VkFence commandsCompleteFence() const;
 
@@ -41,7 +40,6 @@ namespace slag
             uint32_t _frameIndex = 0;
 
             VkSemaphore _imageAcquiredSemaphore = nullptr;
-            VkFence _imageAcquiredFence = nullptr;
 
             VkSemaphore _commandsCompleteSemaphore = nullptr;
             VkFence _commandsCompleteFence = nullptr;
