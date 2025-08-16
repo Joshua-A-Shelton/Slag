@@ -5,12 +5,12 @@ namespace slag
     bool IN_VULKAN_ENV_CONSTRUCTOR = false;
     void vulkanDebugHandler(const std::string& message, SlagDebugLevel debugLevel, int32_t messageID)
     {
-        //validation layer complaining about queue submit including a pnext with fence signal info. not supported in the validation layers yet, but is correct
-        if (messageID == 748584181)
+
+        std::cout << message << std::endl;
+        if (messageID == 7060244)
         {
             return;
         }
-        std::cout << message << std::endl;
         if (debugLevel != SlagDebugLevel::SLAG_INFO && !IN_VULKAN_ENV_CONSTRUCTOR)
         {
             GTEST_FAIL();

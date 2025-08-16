@@ -1572,9 +1572,7 @@ TEST_F(CommandBufferTest, DrawIndirect)
     commandBuffer->setViewPort(0,0,target->width(),target->height(),1,0);
     commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
     commandBuffer->drawIndirect(drawCommands.get(),0,1,sizeof(IndirectDrawCommand));
-
-    commandBuffer->end();
-
+    commandBuffer->endRendering();
     commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
     TextureToBufferCopyData copyData
     {
@@ -1588,7 +1586,9 @@ TEST_F(CommandBufferTest, DrawIndirect)
         }
     };
     commandBuffer->copyTextureToBuffer(target.get(),&copyData,1,outputBuffer.get());
-    commandBuffer->endRendering();
+
+
+    commandBuffer->end();
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};

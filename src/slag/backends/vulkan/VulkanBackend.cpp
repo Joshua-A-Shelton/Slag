@@ -483,10 +483,8 @@ namespace slag
             vkb::InstanceBuilder builder;
             auto inst = builder.set_app_name("Slag Application")
                               .request_validation_layers(initInfo.slagDebugHandler)
-                              //.use_default_debug_messenger()
                               .set_debug_callback(VULKAN_DEBUG_MESSENGER_CALLBACK)
                               .require_api_version(1,3,0)
-                               //.enable_extension("VK_EXT_surface_maintenance1")
                                .enable_extension("VK_KHR_get_surface_capabilities2")
                               .build();
 
