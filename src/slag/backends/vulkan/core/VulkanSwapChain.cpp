@@ -63,11 +63,10 @@ namespace slag
             auto& frame = _frames[_currentFrameIndex];
 
             auto commandsFinished = frame.commandsCompleteFence();
-            //auto imagePresented = frame.imageAquiredFence();
+
 
             vkWaitForFences(device,1,&commandsFinished,VK_TRUE,UINT64_MAX);
             vkResetFences(device,1,&commandsFinished);
-            //vkResetFences(device,1,&imagePresented);
 
             auto result = vkAcquireNextImageKHR(device,_swapChain,UINT64_MAX,frame.imageAcquiredSemaphore(),nullptr,&_currentImageIndex);
 
@@ -79,11 +78,9 @@ namespace slag
                 auto& rebuiltFrame = _frames[_currentFrameIndex];
 
                 commandsFinished = rebuiltFrame.commandsCompleteFence();
-                //imagePresented = rebuiltFrame.imageAquiredFence();
 
                 vkWaitForFences(device,1,&commandsFinished,VK_TRUE,UINT64_MAX);
                 vkResetFences(device,1,&commandsFinished);
-                //vkResetFences(device,1,&imagePresented);
 
                 result = vkAcquireNextImageKHR(device,_swapChain,UINT64_MAX,rebuiltFrame.imageAcquiredSemaphore(),nullptr,&_currentImageIndex);
                 if (result!=VK_SUCCESS)
