@@ -63,10 +63,11 @@ namespace slag
             auto& frame = _frames[_currentFrameIndex];
 
             auto commandsFinished = frame.commandsCompleteFence();
+            auto imageAcquired = frame.imageAcquiredFence();
 
-
-            vkWaitForFences(device,1,&commandsFinished,VK_TRUE,UINT64_MAX);
+            vkWaitForFences(device,1,&imageAcquired,VK_TRUE,UINT64_MAX);
             vkResetFences(device,1,&commandsFinished);
+            vkResetFences(device,1,&imageAcquired);
 
             auto result = vkAcquireNextImageKHR(device,_swapChain,UINT64_MAX,frame.imageAcquiredSemaphore(),nullptr,&_currentImageIndex);
 
@@ -78,9 +79,11 @@ namespace slag
                 auto& rebuiltFrame = _frames[_currentFrameIndex];
 
                 commandsFinished = rebuiltFrame.commandsCompleteFence();
+                imageAcquired = frame.imageAcquiredFence();
 
-                vkWaitForFences(device,1,&commandsFinished,VK_TRUE,UINT64_MAX);
+                vkWaitForFences(device,1,&imageAcquired,VK_TRUE,UINT64_MAX);
                 vkResetFences(device,1,&commandsFinished);
+                vkResetFences(device,1,&imageAcquired);
 
                 result = vkAcquireNextImageKHR(device,_swapChain,UINT64_MAX,rebuiltFrame.imageAcquiredSemaphore(),nullptr,&_currentImageIndex);
                 if (result!=VK_SUCCESS)
@@ -103,7 +106,7 @@ namespace slag
                 return nullptr;
             }
             auto& frame = _frames[_currentFrameIndex];
-            if (vkGetFenceStatus(VulkanGraphicsCard::selected()->device(),frame.commandsCompleteFence()) == VK_SUCCESS)
+            if (vkGetFenceStatus(VulkanGraphicsCard::selected()->device(),frame.imageAcquiredFence()) == VK_SUCCESS)
             {
                 return next();
             }

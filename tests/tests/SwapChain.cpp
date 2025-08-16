@@ -110,11 +110,11 @@ TEST(SwapChain, PresentModes)
 TEST(SwapChain, NextIfReady)
 {
     auto window = utilities::createWindow("Next If Ready",150,150);
-    auto swapchain = utilities::createSwapChain(window.get(),1,SwapChain::PresentMode::IMMEDIATE,Pixels::Format::B8G8R8A8_UNORM_SRGB,createResources);
+    auto swapchain = utilities::createSwapChain(window.get(),2,SwapChain::PresentMode::IMMEDIATE,Pixels::Format::B8G8R8A8_UNORM_SRGB,createResources);
 
     auto immediateAttempts = renderAttemptsEmptyFrames(swapchain.get(),300,ClearColor{1,0,0,1});
     GTEST_ASSERT_TRUE(immediateAttempts != UINT64_MAX);
-    swapchain->presentMode(SwapChain::PresentMode::QUEUE,2);
+    swapchain->presentMode(SwapChain::PresentMode::QUEUE,1);
     auto doubleBufferAttempts = renderAttemptsEmptyFrames(swapchain.get(),300,ClearColor{0,1,0,1});
     GTEST_ASSERT_TRUE(doubleBufferAttempts != UINT64_MAX);
     swapchain->presentMode(SwapChain::PresentMode::BUFFER,3);

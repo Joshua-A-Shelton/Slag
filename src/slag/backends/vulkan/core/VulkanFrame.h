@@ -26,6 +26,7 @@ namespace slag
             VkSemaphore imageAcquiredSemaphore() const;
             VkSemaphore commandsCompleteSemaphore() const;
             VkFence commandsCompleteFence() const;
+            VkFence imageAcquiredFence() const;
 
 #ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
             VkSemaphore submittedCompleteSemaphore() const;
@@ -40,6 +41,7 @@ namespace slag
             uint32_t _frameIndex = 0;
 
             VkSemaphore _imageAcquiredSemaphore = nullptr;
+            VkFence _imageAcquiredFence = nullptr;
 
             VkSemaphore _commandsCompleteSemaphore = nullptr;
             VkFence _commandsCompleteFence = nullptr;
