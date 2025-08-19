@@ -524,6 +524,7 @@ namespace slag
             features1_2.bufferDeviceAddress = true;
             features1_2.descriptorIndexing = true;
             features1_2.timelineSemaphore = true;
+            features1_2.drawIndirectCount = true;
 
             vkb::PhysicalDeviceSelector selector{_instance};
             auto physicalDevices = selector.set_minimum_version(1,3)

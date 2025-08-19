@@ -269,6 +269,7 @@ int main()
 
 
             commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,vertexStrides,2);
+            commandBuffer->setBlendConstants(1,.5,0,1);
             commandBuffer->drawIndexed(cindexes.size(),1,0,0,0);
             commandBuffer->endRendering();
             commandBuffer->end();
