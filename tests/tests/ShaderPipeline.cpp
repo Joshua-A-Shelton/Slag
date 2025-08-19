@@ -105,3 +105,84 @@ TEST(ShaderPipeline, DescriptorGroupReflection)
     GTEST_ASSERT_EQ(layout2_0->size(),64);
     GTEST_ASSERT_TRUE(is4x4MatrixType(&layout2_0->child(0)));
 }
+
+TEST(ShaderPipeline, DescriptorGroupReflectionCompute)
+{
+    GTEST_FAIL();
+}
+
+TEST(ShaderPipeline, MultiStageFlagFail)
+{
+    GTEST_FAIL();
+}
+
+TEST(ShaderPipeline, DepthClamp)
+{
+    GTEST_FAIL();
+}
+TEST(ShaderPipeline,RasterizationDiscard)
+{
+    GTEST_FAIL();
+}
+TEST(ShaderPipeline,DrawFace)
+{
+    GTEST_FAIL();
+}
+TEST(ShaderPipeline,DrawEdges)
+{
+    GTEST_FAIL();
+}
+TEST(ShaderPipeline,DrawVerticies)
+{
+    GTEST_FAIL();
+}
+TEST(ShaderPipeline,DrawThicknessEdges)
+{
+    GTEST_FAIL();
+}
+TEST(ShaderPipeline,DrawThicknessVerticies)
+{
+    GTEST_FAIL();
+}
+TEST(ShaderPipeline,CullNone)
+{
+    GTEST_FAIL();
+}
+TEST(ShaderPipeline,CullFront)
+{
+    GTEST_FAIL();
+}
+TEST(ShaderPipeline,CullBack)
+{
+    GTEST_FAIL();
+}
+TEST(ShaderPipeline,FrontFaceClockWise)
+{
+    GTEST_FAIL();
+}
+TEST(ShaderPipeline,FrontFaceCounterClockWise)
+{
+    GTEST_FAIL();
+}
+TEST(ShaderPipeline,DepthBias)
+{
+    GTEST_FAIL();
+}
+TEST(ShaderPipeline,MultiSample)
+{
+    GTEST_FAIL();
+}
+TEST(ShaderPipeline,MultiSampleAlpha)
+{
+    GTEST_FAIL();
+}
+
+TEST(ShaderPipeline,BlendState)
+{
+    GTEST_FAIL();
+}
+
+TEST(ShaderPipeline,StencilState)
+{
+    GTEST_FAIL();
+}

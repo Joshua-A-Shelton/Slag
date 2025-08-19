@@ -128,10 +128,13 @@ namespace slag
         bool rasterizerDicardEnable = false;
         ///How to fill drawn geometry
         DrawMode drawMode = DrawMode::FACE;
+        ///How thick to draw rasterized lines (DrawModes other than FACE)
+        float drawThickness = 1.0f;
         ///Which faces of a mesh to not draw
         CullOptions culling = CullOptions::BACK_FACING;
         ///What winding order determines a face as front facing
         FrontFacing frontFacing = FrontFacing::CLOCKWISE;
+
         ///Enable depth biasing for drawn fragments
         bool depthBiasEnable = false;
         ///Extra nudge to bias fragments in the depth buffer if depthBiasEnable is true
@@ -140,8 +143,7 @@ namespace slag
         float depthBiasClamp = 0.0f;
         ///Scalar applied to a fragments slope in depth bias calculations
         float depthBiasSlopeFactor = 0.0f;
-        ///How thick to draw rasterized lines (DrawModes other than FILL)
-        float lineWidth = 1.0f;
+
     };
     ///Details about multisampling
     struct MultiSampleState

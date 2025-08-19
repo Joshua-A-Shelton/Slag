@@ -91,7 +91,7 @@ namespace slag
             rasterizationInfo.depthBiasConstantFactor = static_cast<float>(properties.rasterizationState.depthBiasConstantFactor);
             rasterizationInfo.depthBiasClamp = properties.rasterizationState.depthBiasClamp;
             rasterizationInfo.depthBiasSlopeFactor = properties.rasterizationState.depthBiasSlopeFactor;
-            rasterizationInfo.lineWidth = properties.rasterizationState.lineWidth;
+            rasterizationInfo.lineWidth = properties.rasterizationState.drawThickness;
 
 
             VkPipelineMultisampleStateCreateInfo multisampleInfo = {};
