@@ -122,6 +122,9 @@ TEST(SwapChain, NextIfReady)
     GTEST_ASSERT_TRUE(immediateAttempts >= 300);
     GTEST_ASSERT_TRUE(doubleBufferAttempts > 300);
     GTEST_ASSERT_TRUE(tripleBufferAttempts >= 300);
+
+    GTEST_ASSERT_GT(doubleBufferAttempts, tripleBufferAttempts);
+    GTEST_ASSERT_GT(doubleBufferAttempts, immediateAttempts);
 }
 
 TEST(SwapChain, Resize)
