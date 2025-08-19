@@ -486,6 +486,7 @@ namespace slag
                               .set_debug_callback(VULKAN_DEBUG_MESSENGER_CALLBACK)
                               .require_api_version(1,3,0)
                                .enable_extension("VK_KHR_get_surface_capabilities2")
+                                .enable_extension("VK_EXT_surface_maintenance1")
                               .build();
 
             if(!inst.has_value())
@@ -525,6 +526,14 @@ namespace slag
             features1_2.descriptorIndexing = true;
             features1_2.timelineSemaphore = true;
             features1_2.drawIndirectCount = true;
+
+
+            VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT};
+            VkPhysicalDeviceFeatures2 features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+            features.pNext = &swapchainFeatures;
+
+            features1_2.pNext = &swapchainFeatures;
+
 
             vkb::PhysicalDeviceSelector selector{_instance};
             auto physicalDevices = selector.set_minimum_version(1,3)
