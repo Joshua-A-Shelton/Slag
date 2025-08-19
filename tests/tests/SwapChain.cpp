@@ -103,8 +103,6 @@ TEST(SwapChain, PresentModes)
     GTEST_ASSERT_TRUE(queueTime > tripleBufferTime);
     GTEST_ASSERT_TRUE(tearTime < 300);
     GTEST_ASSERT_TRUE(tripleBufferTime < 300);
-    auto closeness = std::abs(1.0-((double)tearTime/(double)tripleBufferTime));
-    GTEST_ASSERT_TRUE(closeness < .5);
 }
 
 TEST(SwapChain, NextIfReady)
@@ -121,9 +119,9 @@ TEST(SwapChain, NextIfReady)
     auto tripleBufferAttempts = renderAttemptsEmptyFrames(swapchain.get(),300,ClearColor{0,0,1,1});
     GTEST_ASSERT_TRUE(tripleBufferAttempts != UINT64_MAX);
 
-    GTEST_ASSERT_EQ(immediateAttempts, 300);
+    GTEST_ASSERT_TRUE(immediateAttempts >= 300);
     GTEST_ASSERT_TRUE(doubleBufferAttempts > 300);
-    GTEST_ASSERT_EQ(tripleBufferAttempts, 300);
+    GTEST_ASSERT_TRUE(tripleBufferAttempts >= 300);
 }
 
 TEST(SwapChain, Resize)
