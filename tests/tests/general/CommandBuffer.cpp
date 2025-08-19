@@ -929,7 +929,7 @@ TEST_F(CommandBufferTest, FillBuffer)
 TEST_F(CommandBufferTest, SetBlendConstants)
 {
     //I don't know what's supposed to be different here... makes it hard to test
-    GTEST_SKIP();
+    GTEST_FAIL();
     std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM, Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,100,100,1,1));
@@ -1030,15 +1030,13 @@ TEST_F(CommandBufferTest, SetBlendConstants)
 
     //TODO: check targetBuffer to see if it matches expected output
 
-    lodepng::encode("C:/Users/jshelton/Desktop/output/blend-constants-test-result.png",targetBuffer->as<unsigned char>(),target->width(),target->height());
-
     GTEST_FAIL();
 }
 
 TEST_F(CommandBufferTest, SetStencilReference)
 {
     //I don't know what's supposed to be different here... makes it hard to test
-    GTEST_SKIP();
+    GTEST_FAIL();
     std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
@@ -1231,15 +1229,15 @@ TEST_F(CommandBufferTest, Draw)
 
     Buffer* vertexBuffers[]
     {
-        CubeVertsRaw.get(),
-        CubeUVsRaw.get()
+        TriangleVerts.get(),
+        TriangleUVs.get()
     };
     uint64_t vertexOffsets[]{0,0};
     uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
     commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
     commandBuffer->setViewPort(0,0,target->width(),target->height(),1,0);
     commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
-    commandBuffer->draw(CubeVertsRaw->countAsArray<glm::vec3>(),1,0,0);
+    commandBuffer->draw(3,1,0,0);
 
     commandBuffer->endRendering();
 
@@ -1277,7 +1275,7 @@ TEST_F(CommandBufferTest, Draw)
 
     unsigned char* colorPtr = outputBuffer->as<unsigned char>();
 
-    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/draw-test-result.png");
+    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/draw-triangle-test-result.png");
     GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
 
     for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
@@ -1682,7 +1680,7 @@ TEST_F(CommandBufferTest, DrawIndirect)
     finished->waitForValue(1);
 
     unsigned char* colorPtr = outputBuffer->as<unsigned char>();
-    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/draw-test-result.png");
+    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/draw-triangle-test-result.png");
     GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
 
     for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
@@ -1786,7 +1784,7 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
     finished->waitForValue(1);
 
     unsigned char* colorPtr = outputBuffer->as<unsigned char>();
-    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/draw-test-result.png");
+    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/draw-triangle-test-result.png");
     GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
 
     for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
