@@ -194,7 +194,7 @@ if(PROJECT_IS_TOP_LEVEL)
     fetchcontent_declare(
             SDL2
             GIT_REPOSITORY https://github.com/libsdl-org/SDL
-            GIT_TAG release-2.32.2
+            GIT_TAG release-2.32.8
             GIT_SHALLOW TRUE
             OVERRIDE_FIND_PACKAGE
     )

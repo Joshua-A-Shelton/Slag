@@ -1,5 +1,7 @@
 #include "VulkanDescriptorGroup.h"
 
+#include <algorithm>
+
 #include "VulkanDescriptorGroupCache.h"
 
 namespace slag
