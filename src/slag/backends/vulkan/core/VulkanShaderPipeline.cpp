@@ -303,6 +303,58 @@ namespace slag
 
         }
 
+        VulkanShaderPipeline::VulkanShaderPipeline(const ShaderCode& computeCode)
+        {
+            auto computeCodePtr = &const_cast<ShaderCode&>(computeCode);
+            auto reflectionData = spirv::getReflectionData(&computeCodePtr, 1);
+            _uniformBufferLayouts = std::move(reflectionData.bufferLayouts);
+            _descriptorGroups.resize(reflectionData.groups.size());
+            for (auto i = 0; i < reflectionData.groups.size(); i++)
+            {
+                auto descriptors = reflectionData.groups[i].descriptors;
+                _descriptorGroups[i] = VulkanDescriptorGroup(descriptors.data(),descriptors.size());
+            }
+
+            VulkanShaderModule shaderModule(computeCodePtr);
+
+            VkPipelineShaderStageCreateInfo computeStageCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_COMPUTE_BIT,.module = shaderModule.shaderModule,.pName = "main"};
+
+            std::vector<VkDescriptorSetLayout> layouts(_descriptorGroups.size());
+
+            for(size_t i=0; i < _descriptorGroups.size(); i++)
+            {
+                layouts[i] = _descriptorGroups[i].layout();
+            }
+
+            VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+            pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            pipelineLayoutInfo.pNext = nullptr;
+            pipelineLayoutInfo.pSetLayouts = layouts.data();
+            pipelineLayoutInfo.setLayoutCount = layouts.size();
+
+            if(vkCreatePipelineLayout(static_cast<VkDevice>(VulkanGraphicsCard::selected()->device()),&pipelineLayoutInfo, nullptr,&_pipelineLayout) != VK_SUCCESS)
+            {
+                throw std::runtime_error("Unable to create shader pipeline layout");
+            }
+
+            VkComputePipelineCreateInfo computePipelineCreateInfo{};
+            computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+            computePipelineCreateInfo.pNext = nullptr;
+            computePipelineCreateInfo.layout = _pipelineLayout;
+            computePipelineCreateInfo.stage = computeStageCreateInfo;
+            computePipelineCreateInfo.flags = VK_PIPELINE_CREATE_DISPATCH_BASE;
+
+            auto result = vkCreateComputePipelines(VulkanGraphicsCard::selected()->device(),VK_NULL_HANDLE,1,&computePipelineCreateInfo, nullptr, &_pipeline);
+
+            if (result != VK_SUCCESS)
+            {
+                auto device = VulkanGraphicsCard::selected()->device();
+                vkDestroyPipeline(device,_pipeline,nullptr);
+                vkDestroyPipelineLayout(device,_pipelineLayout,nullptr);
+                throw std::runtime_error("Unable to create pipeline");
+            }
+        }
+
         VulkanShaderPipeline::~VulkanShaderPipeline()
         {
             auto device = VulkanGraphicsCard::selected()->device();

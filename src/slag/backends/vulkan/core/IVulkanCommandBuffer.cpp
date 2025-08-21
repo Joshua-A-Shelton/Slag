@@ -550,10 +550,10 @@ namespace slag
 #ifdef SLAG_DEBUG
             SLAG_ASSERT(bundle.cpuHandle() == _boundDescriptorPool && "Cannot bind descriptor from descriptor pool which is not currently bound");
 #endif
-            SLAG_ASSERT(_boundVulkanGraphicsShaderPipelineLayout != nullptr && "No graphics shader is bound, unable to bind descriptor bundle");
+            SLAG_ASSERT(_boundVulkanComputePipelineLayout != nullptr && "No graphics shader is bound, unable to bind descriptor bundle");
             auto h = bundle.gpuHandle();
             auto handle = std::bit_cast<VkDescriptorSet>(h);
-            vkCmdBindDescriptorSets(_commandBuffer,VK_PIPELINE_BIND_POINT_COMPUTE,_boundVulkanGraphicsShaderPipelineLayout,index,1,&handle,0, nullptr);
+            vkCmdBindDescriptorSets(_commandBuffer,VK_PIPELINE_BIND_POINT_COMPUTE,_boundVulkanComputePipelineLayout,index,1,&handle,0, nullptr);
 
         }
 

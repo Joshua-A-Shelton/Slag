@@ -62,10 +62,12 @@ namespace slag
 
     }
 
-    std::unique_ptr<slag::ShaderPipeline> VulkanEnvironment::newShaderPipeline(ShaderCode* computeCode)
+    std::unique_ptr<slag::ShaderPipeline> VulkanEnvironment::loadPipelineFromFiles(ShaderFile& computeCode)
     {
-        return std::unique_ptr<slag::ShaderPipeline>(slag::ShaderPipeline::newShaderPipeline(*computeCode));
+        ShaderCode shaderCode(computeCode.stage,ShaderCode::CodeLanguage::SPIRV,computeCode.pathIndicator+".spv");
+        return std::unique_ptr<slag::ShaderPipeline>(slag::ShaderPipeline::newShaderPipeline(shaderCode));
     }
+
 
     SDL_WindowFlags VulkanEnvironment::windowFlags()
     {

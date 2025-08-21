@@ -1795,16 +1795,175 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
 
 TEST_F(CommandBufferTest, Dispatch)
 {
-    GTEST_FAIL();
+    ShaderFile file{.pathIndicator = "resources/shaders/ParallelAdd", .stage = ShaderStageFlags::COMPUTE};
+    auto compute = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(file);
+    std::unique_ptr<DescriptorPool> pool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+    std::vector<float>inputs(128);
+    for (int i=0; i<128; i++)
+    {
+        inputs[i] = i;
+    }
+    std::unique_ptr<Buffer> inputsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(inputs.data(),128*sizeof(float),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_BUFFER));
+    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(64*sizeof(float),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_BUFFER));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::COMPUTE));
+    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
+
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorPool(pool.get());
+    auto parameters = pool->makeBundle(compute->descriptorGroup(0));
+    parameters.setStorageBuffer(0,0,inputsBuffer.get(),0,64*sizeof(float));
+    parameters.setStorageBuffer(1,0,inputsBuffer.get(),64*sizeof(float),64*sizeof(float));
+    parameters.setStorageBuffer(2,0,outputBuffer.get(),0,64*sizeof(float));
+    commandBuffer->bindComputeShaderPipeline(compute.get());
+    commandBuffer->bindComputeDescriptorBundle(0,parameters);
+
+    commandBuffer->dispatch(64,1,1);
+
+    commandBuffer->end();
+
+    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
+    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+
+    slagGraphicsCard()->computeQueue()->submit(&submissionData,1);
+
+    finished->waitForValue(1);
+
+    auto results = outputBuffer->as<float>();
+
+    auto inputsData = inputsBuffer->as<float>();
+
+    for (int i=0; i<64; i++)
+    {
+        GTEST_ASSERT_EQ(inputsData[i]+inputsData[i+64]+i,results[i]);
+    }
 }
 
 TEST_F(CommandBufferTest, DispatchBase)
 {
-    GTEST_FAIL();
+    ShaderFile file{.pathIndicator = "resources/shaders/ParallelAdd", .stage = ShaderStageFlags::COMPUTE};
+    auto compute = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(file);
+    std::unique_ptr<DescriptorPool> pool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+    std::vector<float>inputs(128);
+    for (int i=0; i<128; i++)
+    {
+        inputs[i] = i;
+    }
+    std::vector<float>outputs(64,0.0f);
+    std::unique_ptr<Buffer> inputsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(inputs.data(),128*sizeof(float),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_BUFFER));
+    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(outputs.data(),64*sizeof(float),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_BUFFER));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::COMPUTE));
+    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
+
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorPool(pool.get());
+    auto parameters = pool->makeBundle(compute->descriptorGroup(0));
+    parameters.setStorageBuffer(0,0,inputsBuffer.get(),0,64*sizeof(float));
+    parameters.setStorageBuffer(1,0,inputsBuffer.get(),64*sizeof(float),64*sizeof(float));
+    parameters.setStorageBuffer(2,0,outputBuffer.get(),0,64*sizeof(float));
+    commandBuffer->bindComputeShaderPipeline(compute.get());
+    commandBuffer->bindComputeDescriptorBundle(0,parameters);
+
+    commandBuffer->dispatchBase(32,0,0,64,1,1);
+
+    commandBuffer->end();
+
+    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
+    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+
+    slagGraphicsCard()->computeQueue()->submit(&submissionData,1);
+
+    finished->waitForValue(1);
+
+    auto results = outputBuffer->as<float>();
+    std::vector<float> floats(64);
+    memcpy(floats.data(),results,floats.size()*sizeof(float));
+
+    auto inputsData = inputsBuffer->as<float>();
+    std::vector<float> floats2(128);
+    memcpy(floats2.data(),inputsData,128*sizeof(float));
+
+
+    for (int i=0; i<32; i++)
+    {
+        GTEST_ASSERT_EQ(0.0f,results[i]);
+    }
+    for (int i=32; i<64; i++)
+    {
+        GTEST_ASSERT_EQ(inputsData[i]+inputsData[i+64]+i,results[i]);
+    }
 }
 
 TEST_F(CommandBufferTest, DispatchIndirect)
 {
-    GTEST_FAIL();
+    ShaderFile file{.pathIndicator = "resources/shaders/ParallelAdd", .stage = ShaderStageFlags::COMPUTE};
+    auto compute = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(file);
+    std::unique_ptr<DescriptorPool> pool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+    std::vector<float>inputs(128);
+    for (int i=0; i<128; i++)
+    {
+        inputs[i] = i;
+    }
+    std::unique_ptr<Buffer> inputsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(inputs.data(),128*sizeof(float),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_BUFFER));
+    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(64*sizeof(float),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_BUFFER));
+    IndirectDispatchCommand indirectDispatchCommand = {.groupCountX = 64,.groupCountY = 1,.groupCountZ = 1};
+    std::unique_ptr<Buffer> indirectParameters = std::unique_ptr<Buffer>(Buffer::newBuffer(&indirectDispatchCommand,sizeof(IndirectDispatchCommand),Buffer::Accessibility::GPU,Buffer::UsageFlags::INDIRECT_BUFFER));
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::COMPUTE));
+    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
+
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorPool(pool.get());
+    auto parameters = pool->makeBundle(compute->descriptorGroup(0));
+    parameters.setStorageBuffer(0,0,inputsBuffer.get(),0,64*sizeof(float));
+    parameters.setStorageBuffer(1,0,inputsBuffer.get(),64*sizeof(float),64*sizeof(float));
+    parameters.setStorageBuffer(2,0,outputBuffer.get(),0,64*sizeof(float));
+    commandBuffer->bindComputeShaderPipeline(compute.get());
+    commandBuffer->bindComputeDescriptorBundle(0,parameters);
+
+    commandBuffer->dispatchIndirect(indirectParameters.get(),0);
+
+    commandBuffer->end();
+
+    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
+    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+
+    slagGraphicsCard()->computeQueue()->submit(&submissionData,1);
+
+    finished->waitForValue(1);
+
+    auto results = outputBuffer->as<float>();
+
+    auto inputsData = inputsBuffer->as<float>();
+
+    for (int i=0; i<64; i++)
+    {
+        GTEST_ASSERT_EQ(inputsData[i]+inputsData[i+64]+i,results[i]);
+    }
 }
 #endif

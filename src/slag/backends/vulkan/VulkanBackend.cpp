@@ -644,7 +644,7 @@ namespace slag
 
         ShaderPipeline* VulkanBackend::newShaderPipeline(const ShaderCode& computeShader)
         {
-            throw std::runtime_error("Not implemented");
+            return new VulkanShaderPipeline(computeShader);
         }
 
         DescriptorPool* VulkanBackend::newDescriptorPool()

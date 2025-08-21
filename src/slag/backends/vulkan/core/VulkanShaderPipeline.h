@@ -14,6 +14,7 @@ namespace slag
         {
         public:
             VulkanShaderPipeline(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription);
+            VulkanShaderPipeline(const ShaderCode& computeCode);
             VulkanShaderPipeline(const VulkanShaderPipeline&)=delete;
             VulkanShaderPipeline& operator=(const VulkanShaderPipeline&)=delete;
             VulkanShaderPipeline(VulkanShaderPipeline&& from);

@@ -108,7 +108,16 @@ TEST(ShaderPipeline, DescriptorGroupReflection)
 
 TEST(ShaderPipeline, DescriptorGroupReflectionCompute)
 {
-    GTEST_FAIL();
+    ShaderFile file{.pathIndicator = "resources/shaders/ParallelAdd", .stage = ShaderStageFlags::COMPUTE};
+    auto compute = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(file);
+    GTEST_ASSERT_EQ(compute->descriptorGroupCount(),1);
+    auto group0 = compute->descriptorGroup(0);
+    GTEST_ASSERT_EQ(group0->descriptorCount(),3);
+    for (auto i=0; i<group0->descriptorCount(); i++)
+    {
+        auto& desc = group0->descriptor(i);
+        GTEST_ASSERT_TRUE(desc.shape().type == Descriptor::Type::STORAGE_BUFFER);
+    }
 }
 
 TEST(ShaderPipeline, MultiStageFlagFail)

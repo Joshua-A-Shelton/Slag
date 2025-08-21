@@ -17,28 +17,39 @@ namespace slag
     struct IndirectDrawCommand
     {
         ///Number of vertices per instance
-        uint32_t vertexCount;
+        uint32_t vertexCount = 0;
         ///Number of instances
-        uint32_t instanceCount;
+        uint32_t instanceCount = 1;
         ///Offset into bound vertex buffer to start drawing from
-        uint32_t firstVertex;
+        uint32_t firstVertex = 0;
         ///First instance ID (used in shaders)
-        uint32_t firstInstance;
+        uint32_t firstInstance = 0;
     };
 
     ///Structure that contains the data for indirect indexed draw calls
     struct IndirectDrawIndexedCommand
     {
         ///indexCount Number of indexes per instance
-        uint32_t indexCount;
+        uint32_t indexCount = 0;
         ///Number of instances
-        uint32_t instanceCount;
+        uint32_t instanceCount = 1;
         ///Offset into bound buffer to start drawing from
-        uint32_t firstIndex;
+        uint32_t firstIndex = 0;
         ///Offset into bound vertex buffer to start drawing from
-        int32_t vertexOffset;
+        int32_t vertexOffset = 0;
         ///First instance ID (used in shaders)
-        uint32_t firstInstance;
+        uint32_t firstInstance = 0;
+    };
+
+    ///Structure that contains the data for indirect dispatch calls
+    struct IndirectDispatchCommand
+    {
+        ///Local workgroups to dispatch in the X dimension
+        uint32_t groupCountX = 1;
+        ///Local workgroups to dispatch in the Y dimension
+        uint32_t groupCountY = 1;
+        ///Local workgroups to dispatch in the Z dimension
+        uint32_t groupCountZ = 1;
     };
     ///Provides the set of universal command buffer commands
     class ICommandBuffer

@@ -17,7 +17,7 @@ namespace slag
     {
     public:
         virtual std::unique_ptr<slag::ShaderPipeline> loadPipelineFromFiles(ShaderFile* stages, size_t stageCount,ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription)=0;
-        virtual std::unique_ptr<slag::ShaderPipeline> newShaderPipeline(ShaderCode* computeCode)=0;
+        virtual std::unique_ptr<slag::ShaderPipeline> loadPipelineFromFiles(ShaderFile& computeCode)=0;
         virtual SDL_WindowFlags windowFlags()=0;
         static GraphicsAPIEnvironment* graphicsAPIEnvironment();
     private:
