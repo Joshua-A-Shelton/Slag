@@ -534,11 +534,18 @@ namespace slag
 
             features1_2.pNext = &swapchainFeatures;
 
+            VkPhysicalDeviceFeatures basicFeatures{};
+            basicFeatures.fillModeNonSolid = true;
+            basicFeatures.wideLines = true;
+            basicFeatures.largePoints = true;
+            basicFeatures.depthClamp = true;
+
 
             vkb::PhysicalDeviceSelector selector{_instance};
             auto physicalDevices = selector.set_minimum_version(1,3)
                                             .set_required_features_13(features1_3)
                                             .set_required_features_12(features1_2)
+                                            .set_required_features(basicFeatures)
                                             .add_required_extension("VK_EXT_swapchain_maintenance1")
                                             .add_required_extension("VK_EXT_custom_border_color")
                                             .defer_surface_initialization()

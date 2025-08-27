@@ -926,6 +926,16 @@ TEST_F(CommandBufferTest, FillBuffer)
     }
 }
 
+TEST_F(CommandBufferTest, SetViewport)
+{
+    GTEST_FAIL();
+}
+
+TEST_F(CommandBufferTest, SetScissor)
+{
+    GTEST_FAIL();
+}
+
 TEST_F(CommandBufferTest, SetBlendConstants)
 {
     //I don't know what's supposed to be different here... makes it hard to test

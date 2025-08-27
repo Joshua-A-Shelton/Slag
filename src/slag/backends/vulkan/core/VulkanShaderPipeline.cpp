@@ -88,10 +88,10 @@ namespace slag
             rasterizationInfo.cullMode = VulkanBackend::vulkanizedCullMode(properties.rasterizationState.culling);
             rasterizationInfo.frontFace = VulkanBackend::vulkanizedFrontFace(properties.rasterizationState.frontFacing);
             rasterizationInfo.depthBiasEnable = properties.rasterizationState.depthBiasEnable;
-            rasterizationInfo.depthBiasConstantFactor = static_cast<float>(properties.rasterizationState.depthBiasConstantFactor);
+            rasterizationInfo.depthBiasConstantFactor = properties.rasterizationState.depthBiasConstantFactor;
             rasterizationInfo.depthBiasClamp = properties.rasterizationState.depthBiasClamp;
             rasterizationInfo.depthBiasSlopeFactor = properties.rasterizationState.depthBiasSlopeFactor;
-            rasterizationInfo.lineWidth = properties.rasterizationState.drawThickness;
+            rasterizationInfo.lineWidth = properties.rasterizationState.lineThickness;
 
 
             VkPipelineMultisampleStateCreateInfo multisampleInfo = {};
