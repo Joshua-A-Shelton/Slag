@@ -539,6 +539,9 @@ namespace slag
             basicFeatures.wideLines = true;
             basicFeatures.largePoints = true;
             basicFeatures.depthClamp = true;
+            basicFeatures.sampleRateShading = true;
+            basicFeatures.alphaToOne = true;
+            basicFeatures.logicOp = true;
 
 
             vkb::PhysicalDeviceSelector selector{_instance};

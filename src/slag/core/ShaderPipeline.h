@@ -138,7 +138,7 @@ namespace slag
         ///Enable depth biasing for drawn fragments
         bool depthBiasEnable = false;
         ///Extra nudge to bias fragments in the depth buffer if depthBiasEnable is true
-        float depthBiasConstantFactor = 0;
+        int depthBiasConstantFactor = 0;
         ///Maximum (or minimum) depth bias of a fragment
         float depthBiasClamp = 0.0f;
         ///Scalar applied to a fragments slope in depth bias calculations

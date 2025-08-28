@@ -88,7 +88,7 @@ namespace slag
             rasterizationInfo.cullMode = VulkanBackend::vulkanizedCullMode(properties.rasterizationState.culling);
             rasterizationInfo.frontFace = VulkanBackend::vulkanizedFrontFace(properties.rasterizationState.frontFacing);
             rasterizationInfo.depthBiasEnable = properties.rasterizationState.depthBiasEnable;
-            rasterizationInfo.depthBiasConstantFactor = properties.rasterizationState.depthBiasConstantFactor;
+            rasterizationInfo.depthBiasConstantFactor = static_cast<float>(properties.rasterizationState.depthBiasConstantFactor);
             rasterizationInfo.depthBiasClamp = properties.rasterizationState.depthBiasClamp;
             rasterizationInfo.depthBiasSlopeFactor = properties.rasterizationState.depthBiasSlopeFactor;
             rasterizationInfo.lineWidth = properties.rasterizationState.lineThickness;
@@ -100,7 +100,7 @@ namespace slag
             multisampleInfo.flags = 0;
             multisampleInfo.rasterizationSamples = static_cast<VkSampleCountFlagBits>(properties.multiSampleState.rasterizationSamples);
             multisampleInfo.sampleShadingEnable = properties.multiSampleState.sampleShadingEnable;
-            multisampleInfo.minSampleShading = properties.multiSampleState.minSampleShading == 0? 0: static_cast<float>(properties.multiSampleState.rasterizationSamples) / static_cast<float>(properties.multiSampleState.minSampleShading);
+            multisampleInfo.minSampleShading = properties.multiSampleState.minSampleShading == 0? 0: static_cast<float>(properties.multiSampleState.minSampleShading) / static_cast<float>(properties.multiSampleState.rasterizationSamples);
             //multisampleInfo.pSampleMask = 0;
             multisampleInfo.alphaToCoverageEnable = false;
             multisampleInfo.alphaToOneEnable = properties.multiSampleState.alphaToOneEnable;
