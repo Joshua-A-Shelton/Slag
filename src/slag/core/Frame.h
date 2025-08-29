@@ -16,7 +16,7 @@ namespace slag
         Frame& operator=(const Frame&) = delete;
         Frame(Frame&& from);
         Frame& operator=(Frame&& from);
-        ///Get the texture for this frame, there is no guarantee a frame will have the same texture between submissions to GPUQueue::submit()
+        ///Get the texture for this frame, there is no guarantee a frame will have the same texture between submissions to GPUQueue::submit(..., Frame*), and no guarantee the texture acquired will be in a usable state outside of GPUQueue::submit(..., Frame*)
         virtual Texture* backBuffer()=0;
         ///Get the index for this frame
         virtual uint8_t frameIndex()=0;
