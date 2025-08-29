@@ -88,6 +88,7 @@ int main()
 
         finished->waitForValue(1);//make sure the command buffer is done before deleting it
         //cleanup
+        delete finished;
         delete commandBuffer;
         delete shader;
         delete vertices;
