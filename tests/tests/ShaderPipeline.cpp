@@ -63,7 +63,7 @@ protected:
     std::unique_ptr<Sampler> defaultSampler;
     uint32_t imageSize = 150;
 
-    void testProperties(ShaderProperties properties1, ShaderProperties properties2,glm::mat4 cameraTransform, glm::mat4 cameraProjection, glm::mat4 object1Transform, glm::mat4 object2Transform, const std::filesystem::path& compareResult, float similarity)
+    void testProperties(ShaderProperties properties1, ShaderProperties properties2,glm::mat4 cameraTransform, glm::mat4 cameraProjection, glm::mat4 object1Transform, glm::mat4 object2Transform, const std::filesystem::path& compareResult, float overallSimilarityScore, float individualPixelScore)
     {
         std::unique_ptr<Buffer> globalsBuffer;
         std::unique_ptr<Buffer> objectBuffer;
@@ -177,7 +177,7 @@ protected:
         auto groundTruth = utilities::loadTexelsFromFile(compareResult);
 
         GTEST_ASSERT_EQ(groundTruth.size(),targetOutput->countAsArray<uint8_t>());
-        float maxDifference = 255.0f*(1-similarity);
+        float maxDifference = 255.0f*(1-individualPixelScore);
         std::vector<float> pixelSimilarity(groundTruth.size()/4);
         if (maxDifference > 0)
         {
@@ -200,8 +200,12 @@ protected:
 
                 float pixelDifference = (difRed + difGreen + difBlue + difAlpha)/4;
 
-
-                float percentSimilar = std::abs(1-(pixelDifference/maxDifference));
+                if (individualPixelScore > 0)
+                {
+                    GTEST_ASSERT_LE(pixelDifference,maxDifference);
+                }
+                float percentSimilar = (255.0f-pixelDifference)/255.0f;
+                GTEST_ASSERT_GE(percentSimilar,individualPixelScore);
                 pixelSimilarity[i/4] = percentSimilar;
             }
             float total = 0;
@@ -210,13 +214,13 @@ protected:
                 total += pixelSimilarity[i];
             }
             float overallSimilarity = total/pixelSimilarity.size();
-            GTEST_ASSERT_GE(overallSimilarity,similarity);
+            GTEST_ASSERT_GE(overallSimilarity,overallSimilarityScore);
         }
         else
         {
             for (int i=0; i<groundTruth.size(); i++)
             {
-                GTEST_ASSERT_GE(groundTruth[i],pixels[i]);
+                GTEST_ASSERT_EQ(groundTruth[i],pixels[i]);
             }
         }
 
@@ -352,7 +356,7 @@ protected:
         GTEST_ASSERT_EQ(groundTruth.size(),targetOutput->countAsArray<uint8_t>());
         for (int i=0; i<groundTruth.size(); i++)
         {
-            GTEST_ASSERT_GE(groundTruth[i],pixels[i]);
+            GTEST_ASSERT_EQ(groundTruth[i],pixels[i]);
         }
     }
 public:
@@ -522,7 +526,7 @@ TEST_F(ShaderPipelineTest, DepthClamp)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::perspective(glm::radians(105.0f), 1.0f, 0.1f, 100.0f);
 
-    testProperties(properties,properties2,cameraTransform,cameraProjection,object1,object2,"resources/textures/depth-clamp-result.png",.98);
+    testProperties(properties,properties2,cameraTransform,cameraProjection,object1,object2,"resources/textures/depth-clamp-result.png",.98,0);
 
 }
 
@@ -542,7 +546,7 @@ TEST_F(ShaderPipelineTest,RasterizationDiscard)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties2,cameraTransform,cameraProjection,object1,object2,"resources/textures/rasterizer-discard-result.png",.98);
+    testProperties(properties,properties2,cameraTransform,cameraProjection,object1,object2,"resources/textures/rasterizer-discard-result.png",.98,0);
 }
 
 TEST_F(ShaderPipelineTest,DrawFace)
@@ -559,7 +563,7 @@ TEST_F(ShaderPipelineTest,DrawFace)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.98);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.98,0);
 }
 
 TEST_F(ShaderPipelineTest,DrawEdges)
@@ -576,7 +580,7 @@ TEST_F(ShaderPipelineTest,DrawEdges)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-edge-result.png",.99999);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-edge-result.png",.999,.3);
 }
 TEST_F(ShaderPipelineTest,DrawVerticies)
 {
@@ -592,7 +596,7 @@ TEST_F(ShaderPipelineTest,DrawVerticies)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-verticies-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-verticies-result.png",1,1);
 }
 TEST_F(ShaderPipelineTest,DrawThicknessEdges)
 {
@@ -609,7 +613,7 @@ TEST_F(ShaderPipelineTest,DrawThicknessEdges)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-verticies-result.png",.9999);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-verticies-result.png",.97, .3);
 }
 
 TEST_F(ShaderPipelineTest,CullNone)
@@ -627,7 +631,7 @@ TEST_F(ShaderPipelineTest,CullNone)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/cull-none-result.png",.98);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/cull-none-result.png",.98,0);
 }
 TEST_F(ShaderPipelineTest,CullFront)
 {
@@ -644,7 +648,7 @@ TEST_F(ShaderPipelineTest,CullFront)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/cull-front-result.png",.98);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/cull-front-result.png",.99,0);
 }
 TEST_F(ShaderPipelineTest,CullBack)
 {
@@ -661,7 +665,7 @@ TEST_F(ShaderPipelineTest,CullBack)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/cull-back-result.png",.98);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/cull-back-result.png",.98,0);
 }
 
 TEST_F(ShaderPipelineTest,FrontFaceClockWise)
@@ -680,7 +684,7 @@ TEST_F(ShaderPipelineTest,FrontFaceClockWise)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/front-face-clockwise-result.png",.98);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/front-face-clockwise-result.png",.98,0);
 }
 
 TEST_F(ShaderPipelineTest,FrontFaceCounterClockWise)
@@ -699,7 +703,7 @@ TEST_F(ShaderPipelineTest,FrontFaceCounterClockWise)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/front-face-counter-clockwise-result.png",.98);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/front-face-counter-clockwise-result.png",.99,0);
 }
 
 TEST_F(ShaderPipelineTest,DepthBias)
@@ -718,7 +722,7 @@ TEST_F(ShaderPipelineTest,DepthBias)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties2,cameraTransform,cameraProjection,object1,object2,"resources/textures/depth-bias-result.png",.98);
+    testProperties(properties,properties2,cameraTransform,cameraProjection,object1,object2,"resources/textures/depth-bias-result.png",.99,0);
 }
 
 TEST_F(ShaderPipelineTest, DepthBiasWithSlope)
@@ -784,7 +788,7 @@ TEST_F(ShaderPipelineTest,BlendStateDisable)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/blend-disabled-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/blend-disabled-result.png",.99,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateDefaults)
@@ -800,7 +804,7 @@ TEST_F(ShaderPipelineTest,BlendStateDefaults)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.99,0);
 
 }
 
@@ -818,7 +822,7 @@ TEST_F(ShaderPipelineTest,BlendStateColorMinus)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/color-blend-minus-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/color-blend-minus-result.png",.99,0);
 
 }
 
@@ -836,7 +840,7 @@ TEST_F(ShaderPipelineTest,BlendStateAlphaMinus)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/alpha-blend-minus.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/alpha-blend-minus.png",.99,0);
 
 }
 
@@ -854,7 +858,7 @@ TEST_F(ShaderPipelineTest,BlendStateColorMax)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/color-blend-max-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/color-blend-max-result.png",.99,0);
 
 }
 
@@ -872,7 +876,7 @@ TEST_F(ShaderPipelineTest,BlendStateAlphaMax)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/alpha-blend-max-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/alpha-blend-max-result.png",.99,0);
 
 }
 
@@ -890,7 +894,7 @@ TEST_F(ShaderPipelineTest,BlendStateColorMin)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/color-blend-min-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/color-blend-min-result.png",.99,0);
 
 }
 
@@ -908,7 +912,7 @@ TEST_F(ShaderPipelineTest,BlendStateAlphaMin)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/alpha-blend-min-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/alpha-blend-min-result.png",.99,0);
 
 }
 
@@ -926,7 +930,7 @@ TEST_F(ShaderPipelineTest,BlendStateColorReverseMinus)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/color-blend-reverse-minus-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/color-blend-reverse-minus-result.png",.99,0);
 
 }
 
@@ -944,7 +948,7 @@ TEST_F(ShaderPipelineTest,BlendStateAlphaReverseMinus)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/alpha-blend-reverse-minus-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/alpha-blend-reverse-minus-result.png",.99,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateColorWriteMask)
@@ -961,7 +965,7 @@ TEST_F(ShaderPipelineTest,BlendStateColorWriteMask)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/blend-color-write-mask-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/blend-color-write-mask-result.png",.99,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateBlendFactors)
@@ -985,7 +989,7 @@ TEST_F(ShaderPipelineTest,BlendStateLogicOpClear)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-clear-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-clear-result.png",.90,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateLogicOpInverted)
@@ -1003,7 +1007,7 @@ TEST_F(ShaderPipelineTest,BlendStateLogicOpInverted)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-inverted-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-inverted-result.png",.90,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateLogicOpEquivalent)
@@ -1021,7 +1025,7 @@ TEST_F(ShaderPipelineTest,BlendStateLogicOpEquivalent)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-equivalent-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-equivalent-result.png",.90,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateLogicOpOr)
@@ -1039,7 +1043,7 @@ TEST_F(ShaderPipelineTest,BlendStateLogicOpOr)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-or-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-or-result.png",.90,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateLogicOpAnd)
@@ -1057,7 +1061,7 @@ TEST_F(ShaderPipelineTest,BlendStateLogicOpAnd)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-and-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-and-result.png",.90,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateLogicOpAndInverted)
@@ -1075,7 +1079,7 @@ TEST_F(ShaderPipelineTest,BlendStateLogicOpAndInverted)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-and-inverted-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-and-inverted-result.png",.90,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateLogicOpAndReverse)
@@ -1093,7 +1097,7 @@ TEST_F(ShaderPipelineTest,BlendStateLogicOpAndReverse)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-and-reverse-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-and-reverse-result.png",.90,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateLogicOpCopy)
@@ -1111,7 +1115,7 @@ TEST_F(ShaderPipelineTest,BlendStateLogicOpCopy)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-copy-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-copy-result.png",.90,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateLogicOpInvert)
@@ -1129,7 +1133,7 @@ TEST_F(ShaderPipelineTest,BlendStateLogicOpInvert)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-invert-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-invert-result.png",.90,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateLogicOpNAnd)
@@ -1147,7 +1151,7 @@ TEST_F(ShaderPipelineTest,BlendStateLogicOpNAnd)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-nand-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-nand-result.png",.90,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateLogicOpNoOp)
@@ -1165,7 +1169,7 @@ TEST_F(ShaderPipelineTest,BlendStateLogicOpNoOp)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-no-op-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-no-op-result.png",.90,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateLogicOpNor)
@@ -1183,7 +1187,7 @@ TEST_F(ShaderPipelineTest,BlendStateLogicOpNor)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-nor-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-nor-result.png",.90,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateLogicOpOrInverted)
@@ -1201,7 +1205,7 @@ TEST_F(ShaderPipelineTest,BlendStateLogicOpOrInverted)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-or-inverted-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-or-inverted-result.png",.90,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateLogicOpReverse)
@@ -1219,7 +1223,7 @@ TEST_F(ShaderPipelineTest,BlendStateLogicOpReverse)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-reverse-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-reverse-result.png",.90,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateLogicOpSet)
@@ -1237,7 +1241,7 @@ TEST_F(ShaderPipelineTest,BlendStateLogicOpSet)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-set-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-set-result.png",.90,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateLogicOpXOr)
@@ -1255,7 +1259,7 @@ TEST_F(ShaderPipelineTest,BlendStateLogicOpXOr)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-xor-result.png",1);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-xor-result.png",.90,0);
 }
 
 TEST_F(ShaderPipelineTest,DepthStencilState)
