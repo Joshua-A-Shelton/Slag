@@ -378,7 +378,7 @@ namespace slag
         {
             VkViewport viewport{};
             viewport.x = x;
-            viewport.y = height-y;
+            viewport.y = height+y;
             viewport.width = width;
             viewport.height = -height;
             viewport.minDepth = minDepth;

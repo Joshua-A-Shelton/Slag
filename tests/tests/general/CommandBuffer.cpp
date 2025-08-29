@@ -928,12 +928,197 @@ TEST_F(CommandBufferTest, FillBuffer)
 
 TEST_F(CommandBufferTest, SetViewport)
 {
-    GTEST_FAIL();
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
+    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
+    std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
+    std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
+    std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
+    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+
+    commandBuffer->begin();
+    descriptorPool->reset();
+    commandBuffer->bindDescriptorPool(descriptorPool.get());
+    auto globalBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(0));
+    auto objectBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(1));
+    auto globals = globalsBuffer->as<GlobalSet0Group>();
+    auto proj = glm::perspective(95.0f,(float)target->width()/(float)target->height(),.01f,100.0f);
+    glm::mat4 view = glm::mat4(1.0f);
+    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
+    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
+    view = glm::inverse(view);//does nothing in this case, but is good practice if we ever do have a camera not at the default location
+    glm::mat4 projectionView = proj*view;
+    globals->projection = proj;
+    globals->view = view;
+    globals->projectionView = projectionView;
+    auto object = objectBuffer->as<TexturedDepthSet1Group>();
+    object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
+    globalBundle.setUniformBuffer(0,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
+    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
+    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
+    objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
+    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
+    commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
+    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
+    Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
+    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
+
+    Buffer* vertexBuffers[]
+    {
+        TriangleVerts.get(),
+        TriangleUVs.get()
+    };
+    uint64_t vertexOffsets[]{0,0};
+    uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
+    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
+    commandBuffer->setViewPort(target->width()/5,target->width()/5,target->width()/2,target->height()/2,0,1);
+    commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
+    commandBuffer->draw(3,1,0,0);
+
+    commandBuffer->endRendering();
+
+
+
+    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
+    TextureToBufferCopyData copyData
+    {
+        .bufferOffset = 0,
+        .subresource =
+        {
+            .aspectFlags = Pixels::AspectFlags::COLOR,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        }
+    };
+    commandBuffer->copyTextureToBuffer(target.get(),&copyData,1,outputBuffer.get());
+
+    commandBuffer->end();
+
+    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
+    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
+    finished->waitForValue(1);
+
+    unsigned char* colorPtr = outputBuffer->as<unsigned char>();
+
+    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/set-viewport-test-result.png");
+    GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
+
+    for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
+    {
+        GTEST_ASSERT_EQ(colorPtr[i],groundTruth[i]);
+    }
+
 }
 
 TEST_F(CommandBufferTest, SetScissor)
 {
-    GTEST_FAIL();
+    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
+    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
+    std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
+    std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
+    std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
+    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+
+    commandBuffer->begin();
+    descriptorPool->reset();
+    commandBuffer->bindDescriptorPool(descriptorPool.get());
+    auto globalBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(0));
+    auto objectBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(1));
+    auto globals = globalsBuffer->as<GlobalSet0Group>();
+    auto proj = glm::perspective(95.0f,(float)target->width()/(float)target->height(),.01f,100.0f);
+    glm::mat4 view = glm::mat4(1.0f);
+    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
+    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
+    view = glm::inverse(view);//does nothing in this case, but is good practice if we ever do have a camera not at the default location
+    glm::mat4 projectionView = proj*view;
+    globals->projection = proj;
+    globals->view = view;
+    globals->projectionView = projectionView;
+    auto object = objectBuffer->as<TexturedDepthSet1Group>();
+    object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
+    globalBundle.setUniformBuffer(0,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
+    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
+    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
+    objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
+    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
+    commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
+    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
+    Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
+    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
+
+    Buffer* vertexBuffers[]
+    {
+        TriangleVerts.get(),
+        TriangleUVs.get()
+    };
+    uint64_t vertexOffsets[]{0,0};
+    uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
+    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
+    commandBuffer->setViewPort(0,0,target->width(),target->height(),0,1);
+    commandBuffer->setScissors(slag::Rectangle{.offset = {60,60},.extent = {target->width()/4,target->height()/4}});
+    commandBuffer->draw(3,1,0,0);
+
+    commandBuffer->endRendering();
+
+
+
+    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
+    TextureToBufferCopyData copyData
+    {
+        .bufferOffset = 0,
+        .subresource =
+        {
+            .aspectFlags = Pixels::AspectFlags::COLOR,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        }
+    };
+    commandBuffer->copyTextureToBuffer(target.get(),&copyData,1,outputBuffer.get());
+
+    commandBuffer->end();
+
+    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
+    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = submitBuffers,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
+    finished->waitForValue(1);
+
+    unsigned char* colorPtr = outputBuffer->as<unsigned char>();
+
+    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/set-scissor-test-result.png");
+    GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
+
+    for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
+    {
+        GTEST_ASSERT_EQ(colorPtr[i],groundTruth[i]);
+    }
 }
 
 TEST_F(CommandBufferTest, SetBlendConstants)

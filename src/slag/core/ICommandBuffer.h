@@ -305,7 +305,7 @@ namespace slag
             /**
             * Sets the drawing area relative to the window, final image will be drawn scaled to the drawing area
             * @param x Pixels away from the left of window to draw
-            * @param y Pixels away from the bottom of the window to draw
+            * @param y Pixels away from the top of the window to draw
             * @param width width in pixels of drawing area
             * @param height height in pixels of drawing area
             * @param minDepth minimum depth of drawn pixels
