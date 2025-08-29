@@ -48,7 +48,7 @@ namespace slag
 
         VulkanShaderPipeline::VulkanShaderPipeline(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription)
         {
-            _pipelineType = ShaderPipelineType::GRAPHICS;
+            _pipelineType = PipelineType::GRAPHICS;
             _xthreads = 0;
             _ythreads = 0;
             _zthreads = 0;
@@ -309,7 +309,7 @@ namespace slag
 
         VulkanShaderPipeline::VulkanShaderPipeline(const ShaderCode& computeCode)
         {
-            _pipelineType = ShaderPipelineType::COMPUTE;
+            _pipelineType = PipelineType::COMPUTE;
             auto computeCodePtr = &const_cast<ShaderCode&>(computeCode);
             auto reflectionData = spirv::getReflectionData(&computeCodePtr, 1);
             _xthreads = reflectionData.entryPointXDim;
@@ -381,7 +381,7 @@ namespace slag
             vkDestroyPipelineLayout(device,_pipelineLayout,nullptr);
         }
 
-        ShaderPipelineType VulkanShaderPipeline::pipelineType()
+        ShaderPipeline::PipelineType VulkanShaderPipeline::pipelineType()
         {
             return _pipelineType;
         }

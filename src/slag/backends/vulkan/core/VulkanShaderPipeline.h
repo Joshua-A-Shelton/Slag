@@ -20,7 +20,7 @@ namespace slag
             VulkanShaderPipeline(VulkanShaderPipeline&& from);
             VulkanShaderPipeline& operator=(VulkanShaderPipeline&& from);
             virtual ~VulkanShaderPipeline()override;
-            virtual ShaderPipelineType pipelineType()override;
+            virtual PipelineType pipelineType()override;
             virtual uint32_t descriptorGroupCount()override;
             virtual DescriptorGroup* descriptorGroup(size_t index)override;
             virtual DescriptorGroup* operator[](size_t index)override;
@@ -33,7 +33,7 @@ namespace slag
             VkPipelineLayout vulkanLayout()const;
         private:
             void move(VulkanShaderPipeline& from);
-            ShaderPipelineType _pipelineType = ShaderPipelineType::GRAPHICS;
+            PipelineType _pipelineType = PipelineType::GRAPHICS;
             VkPipeline _pipeline = nullptr;
             VkPipelineLayout _pipelineLayout = nullptr;
             std::vector<VulkanDescriptorGroup> _descriptorGroups;

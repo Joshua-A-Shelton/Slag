@@ -245,19 +245,18 @@ namespace slag
         Pixels::Format depthTarget{Pixels::Format::UNDEFINED};
     };
 
-    enum class ShaderPipelineType
-    {
-        GRAPHICS,
-        COMPUTE
-    };
-
     ///Collection of shaders that get executed in order to perform operations on the graphics card
     class ShaderPipeline
     {
     public:
+        enum class PipelineType
+        {
+            GRAPHICS,
+            COMPUTE
+        };
         virtual ~ShaderPipeline()=default;
         ///What kind of shader pipeline this is
-        virtual ShaderPipelineType pipelineType()=0;
+        virtual PipelineType pipelineType()=0;
         ///Number of descriptor groups this shader has
         virtual uint32_t descriptorGroupCount()=0;
         ///Retrieve descriptor group at index
