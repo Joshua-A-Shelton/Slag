@@ -1,0 +1,37 @@
+#include "Core/Mesh.slang"
+
+struct FragmentParameters
+{
+    float2 uv;
+}
+struct VertexStageOutput
+{
+    FragmentParameters fragmentParameters;
+    float4 sv_position: SV_Position;
+}
+
+public struct FlatTextureMaterial
+{
+    float4 color;
+    Sampler2D sampledTexture;
+}
+
+public ParameterBlock<FlatTextureMaterial> FlatMaterialInstance;
+public ParameterBlock<ObjectInstanceData> ObjectInstance;
+
+[shader("vertex")]
+VertexStageOutput vertexMain(Vertex3D vertex3d, UVCoordinates uvCoordinates)
+{
+    float3 worldPosition = mul(ObjectInstance.transform,float4(vertex3d.position,1)).xyz;
+
+    VertexStageOutput output;
+    output.fragmentParameters.uv = uvCoordinates.position;
+    output.sv_position = mul(Camera.projectionView, float4(worldPosition,1));
+    return output;
+}
+
+[shader("fragment")]
+float4 fragmentMain(FragmentParameters fragmentParameters : FragmentParameters) : SV_Target
+{
+    return FlatMaterialInstance.sampledTexture.Sample(fragmentParameters.uv) * FlatMaterialInstance.color;
+}
