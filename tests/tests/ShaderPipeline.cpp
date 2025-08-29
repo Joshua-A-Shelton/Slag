@@ -401,6 +401,7 @@ protected:
             }
         }
     }
+
 public:
     ShaderPipelineTest()
     {
@@ -803,7 +804,7 @@ TEST_F(ShaderPipelineTest,DepthBias)
     ShaderProperties properties{};
     ShaderProperties properties2{};
     properties2.rasterizationState.depthBiasEnable = true;
-    properties2.rasterizationState.depthBiasConstantFactor = -1;
+    properties2.rasterizationState.depthBiasConstantFactor = 1;
 
     glm::mat4 object1 = glm::mat4(1.0f);
     object1 = glm::translate(object1, glm::vec3(-.25f, 0.0f, -.5f));
@@ -823,8 +824,17 @@ TEST_F(ShaderPipelineTest, DepthBiasWithSlope)
     ShaderProperties properties2{};
     properties2.rasterizationState.depthBiasEnable = true;
     properties2.rasterizationState.depthBiasConstantFactor = -1;
-    properties2.rasterizationState.depthBiasSlopeFactor = 1;
-    GTEST_FAIL();
+    properties2.rasterizationState.depthBiasSlopeFactor = -1;
+
+    glm::mat4 object1 = glm::mat4(1.0f);
+    object1 = glm::translate(object1, glm::vec3(-.25f, 0.0f, -.5f));
+    object1 = glm::rotate(object1,glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+    glm::mat4 object2 = glm::rotate(object1,glm::radians(.05f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+    glm::mat4 cameraTransform(1.0f);
+    glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
+    testProperties(properties,properties2,cameraTransform,cameraProjection,object1,object2,"resources/textures/depth-bias-result.png",.9,0);
 }
 
 TEST_F(ShaderPipelineTest,MultiSample)
@@ -1063,7 +1073,7 @@ TEST_F(ShaderPipelineTest,BlendStateColorWriteMask)
 TEST_F(ShaderPipelineTest,BlendStateBlendFactors)
 {
     //TODO: There's too many combinations to test, the combinatrics easily explode to unimaginable numbers, I think maybe I should just test a few? There are 96 tests to do even if I do them one at a time, and I don't think even that is practical. (even small images take up some space)
-    GTEST_SKIP();
+    GTEST_SKIP("Not feasible to test");
 }
 
 TEST_F(ShaderPipelineTest,BlendStateLogicOpClear)
@@ -1354,7 +1364,126 @@ TEST_F(ShaderPipelineTest,BlendStateLogicOpXOr)
     testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-xor-result.png",.90,0);
 }
 
-TEST_F(ShaderPipelineTest,DepthStencilState)
+TEST_F(ShaderPipelineTest,DepthStencilStateDepthDisable)
 {
-    GTEST_FAIL();
+    ShaderProperties properties{};
+    properties.depthStencilState.depthTestEnable = false;
+
+    glm::mat4 object1 = glm::mat4(1.0f);
+    object1 = glm::translate(object1, glm::vec3(-.25f, 0.0f, -.5f));
+
+    glm::mat4 object2(1.0f);
+    object2 = glm::translate(object2, glm::vec3(.25f, 0.0f, -.6f));
+
+    glm::mat4 cameraTransform(1.0f);
+    glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
+
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.99,.8);
+}
+
+TEST_F(ShaderPipelineTest,DepthStencilStateComparisonFunctionAlways)
+{
+    ShaderProperties properties{};
+    properties.depthStencilState.depthCompareOperation = Operations::ComparisonFunction::COMPARISION_ALWAYS;
+
+    glm::mat4 object1 = glm::mat4(1.0f);
+    object1 = glm::translate(object1, glm::vec3(-.25f, 0.0f, -.5f));
+
+    glm::mat4 object2(1.0f);
+    object2 = glm::translate(object2, glm::vec3(.25f, 0.0f, -.6f));
+
+    glm::mat4 cameraTransform(1.0f);
+    glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
+
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.99,.8);
+}
+TEST_F(ShaderPipelineTest,DepthStencilStateComparisonGreater)
+{
+    ShaderProperties properties{};
+    properties.depthStencilState.depthCompareOperation = Operations::ComparisonFunction::COMPARISION_GREATER;
+
+    glm::mat4 object1 = glm::mat4(1.0f);
+    object1 = glm::translate(object1, glm::vec3(-.25f, 0.0f, -.5f));
+
+    glm::mat4 object2(1.0f);
+    object2 = glm::translate(object2, glm::vec3(.25f, 0.0f, -.6f));
+
+    glm::mat4 cameraTransform(1.0f);
+    glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
+
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-no-op-result.png",.99,.8);
+}
+
+TEST_F(ShaderPipelineTest,DepthStencilStateComparisonEqual)
+{
+    ShaderProperties properties{};
+    properties.depthStencilState.depthCompareOperation = Operations::ComparisonFunction::COMPARISION_EQUAL;
+
+    glm::mat4 object1 = glm::mat4(1.0f);
+    object1 = glm::translate(object1, glm::vec3(-.25f, 0.0f, -1.0f));
+
+    glm::mat4 object2(1.0f);
+    object2 = glm::translate(object2, glm::vec3(.25f, 0.0f, 0.0f));
+
+    glm::mat4 cameraTransform(1.0f);
+    glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
+
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/cull-back-result.png",.99,.8);
+}
+
+TEST_F(ShaderPipelineTest,DepthStencilStateComparisonNever)
+{
+    ShaderProperties properties{};
+    properties.depthStencilState.depthCompareOperation = Operations::ComparisonFunction::COMPARISION_NEVER;
+
+    glm::mat4 object1 = glm::mat4(1.0f);
+    object1 = glm::translate(object1, glm::vec3(-.25f, 0.0f, -.5f));
+
+    glm::mat4 object2(1.0f);
+    object2 = glm::translate(object2, glm::vec3(.25f, 0.0f, -.6f));
+
+    glm::mat4 cameraTransform(1.0f);
+    glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
+
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-no-op-result.png",.99,.8);
+}
+
+TEST_F(ShaderPipelineTest,DepthStencilStateComparisonNotEqual)
+{
+    ShaderProperties properties{};
+    properties.depthStencilState.depthCompareOperation = Operations::ComparisonFunction::COMPARISION_NOT_EQUAL;
+
+    glm::mat4 object1 = glm::mat4(1.0f);
+    object1 = glm::translate(object1, glm::vec3(-.25f, 0.0f, -.5f));
+
+    glm::mat4 object2(1.0f);
+    object2 = glm::translate(object2, glm::vec3(.25f, 0.0f, -.6f));
+
+    glm::mat4 cameraTransform(1.0f);
+    glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
+
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.99,.8);
+}
+
+TEST_F(ShaderPipelineTest,DepthStencilStateDepthWriteEnableFalse)
+{
+    ShaderProperties properties{};
+    properties.depthStencilState.depthWriteEnable = false;
+
+    glm::mat4 object1 = glm::mat4(1.0f);
+    object1 = glm::translate(object1, glm::vec3(-.25f, 0.0f, -.5f));
+
+    glm::mat4 object2(1.0f);
+    object2 = glm::translate(object2, glm::vec3(.25f, 0.0f, -.6f));
+
+    glm::mat4 cameraTransform(1.0f);
+    glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
+
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.99,.8);
+}
+
+TEST_F(ShaderPipelineTest,DepthStencilStateStencilDetails)
+{
+    //TODO: There's too many combinations to test
+    GTEST_SKIP("Not feasible to test");
 }
