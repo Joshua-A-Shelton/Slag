@@ -48,6 +48,10 @@ namespace slag
 
         VulkanShaderPipeline::VulkanShaderPipeline(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription)
         {
+            _pipelineType = ShaderPipelineType::GRAPHICS;
+            _xthreads = 0;
+            _ythreads = 0;
+            _zthreads = 0;
 // get the reflection data *********************************************************************************************
 
             auto reflectionData = spirv::getReflectionData(shaders, shaderCount);
@@ -305,8 +309,12 @@ namespace slag
 
         VulkanShaderPipeline::VulkanShaderPipeline(const ShaderCode& computeCode)
         {
+            _pipelineType = ShaderPipelineType::COMPUTE;
             auto computeCodePtr = &const_cast<ShaderCode&>(computeCode);
             auto reflectionData = spirv::getReflectionData(&computeCodePtr, 1);
+            _xthreads = reflectionData.entryPointXDim;
+            _ythreads = reflectionData.entryPointYDim;
+            _zthreads = reflectionData.entryPointZDim;
             _uniformBufferLayouts = std::move(reflectionData.bufferLayouts);
             _descriptorGroups.resize(reflectionData.groups.size());
             for (auto i = 0; i < reflectionData.groups.size(); i++)
@@ -355,11 +363,27 @@ namespace slag
             }
         }
 
+        VulkanShaderPipeline::VulkanShaderPipeline(VulkanShaderPipeline&& from)
+        {
+            move(from);
+        }
+
+        VulkanShaderPipeline& VulkanShaderPipeline::operator=(VulkanShaderPipeline&& from)
+        {
+            move(from);
+            return *this;
+        }
+
         VulkanShaderPipeline::~VulkanShaderPipeline()
         {
             auto device = VulkanGraphicsCard::selected()->device();
             vkDestroyPipeline(device,_pipeline,nullptr);
             vkDestroyPipelineLayout(device,_pipelineLayout,nullptr);
+        }
+
+        ShaderPipelineType VulkanShaderPipeline::pipelineType()
+        {
+            return _pipelineType;
         }
 
         uint32_t VulkanShaderPipeline::descriptorGroupCount()
@@ -392,6 +416,21 @@ namespace slag
             return &description->second;
         }
 
+        uint32_t VulkanShaderPipeline::xComputeThreads()
+        {
+            return _xthreads;
+        }
+
+        uint32_t VulkanShaderPipeline::yComputeThreads()
+        {
+            return  _ythreads;
+        }
+
+        uint32_t VulkanShaderPipeline::zComputeThreads()
+        {
+            return _zthreads;
+        }
+
         VkPipeline VulkanShaderPipeline::vulkanHandle() const
         {
             return _pipeline;
@@ -400,6 +439,18 @@ namespace slag
         VkPipelineLayout VulkanShaderPipeline::vulkanLayout() const
         {
             return _pipelineLayout;
+        }
+
+        void VulkanShaderPipeline::move(VulkanShaderPipeline& from)
+        {
+            _pipelineType = from._pipelineType;
+            std::swap(_pipeline,from._pipeline);
+            std::swap(_pipelineLayout,from._pipelineLayout);
+            _descriptorGroups.swap(from._descriptorGroups);
+            _uniformBufferLayouts.swap(from._uniformBufferLayouts);
+            _xthreads = from._xthreads;
+            _ythreads = from._ythreads;
+            _zthreads = from._zthreads;
         }
     } // vulkan
 } // slag

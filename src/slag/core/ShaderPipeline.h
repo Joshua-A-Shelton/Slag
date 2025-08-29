@@ -245,11 +245,19 @@ namespace slag
         Pixels::Format depthTarget{Pixels::Format::UNDEFINED};
     };
 
+    enum class ShaderPipelineType
+    {
+        GRAPHICS,
+        COMPUTE
+    };
+
     ///Collection of shaders that get executed in order to perform operations on the graphics card
     class ShaderPipeline
     {
     public:
         virtual ~ShaderPipeline()=default;
+        ///What kind of shader pipeline this is
+        virtual ShaderPipelineType pipelineType()=0;
         ///Number of descriptor groups this shader has
         virtual uint32_t descriptorGroupCount()=0;
         ///Retrieve descriptor group at index
@@ -263,6 +271,14 @@ namespace slag
          * @return Layout of a uniform buffer descriptor, or null if the index isn't a uniform buffer
          */
         virtual UniformBufferDescriptorLayout* uniformBufferLayout(uint32_t descriptorGroup,uint32_t descriptorBinding)=0;
+
+        ///Number of compute threads in the x dimension (0 for graphics pipelines)
+        virtual uint32_t xComputeThreads()=0;
+        ///Number of compute threads in the y dimension (0 for graphics pipelines)
+        virtual uint32_t yComputeThreads()=0;
+        ///Number of compute threads in the z dimension (0 for graphics pipelines)
+        virtual uint32_t zComputeThreads()=0;
+
         ///Shader languages the current backend can accept to create a shader pipeline
         static std::vector<ShaderCode::CodeLanguage> acceptedLanguages();
 

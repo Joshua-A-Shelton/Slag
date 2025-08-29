@@ -16,6 +16,9 @@ namespace slag
         {
             std::vector<SPVDescriptorGroupReflectionData> groups;
             std::unordered_map<uint32_t, std::unordered_map<uint32_t,UniformBufferDescriptorLayout>> bufferLayouts;
+            uint32_t entryPointXDim=0;
+            uint32_t entryPointYDim=0;
+            uint32_t entryPointZDim=0;
         };
 
         SPVReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount);

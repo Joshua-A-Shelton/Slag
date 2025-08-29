@@ -506,18 +506,68 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflection)
     GTEST_ASSERT_TRUE(is4x4MatrixType(&layout2_0->child(0)));
 }
 
+TEST_F(ShaderPipelineTest, GraphicsPipelineThreadGroups)
+{
+    ShaderFile stages[] =
+    {
+        {
+            .pathIndicator = "resources/shaders/UnlitTextured.vertex",
+            .stage = ShaderStageFlags::VERTEX,
+        },
+    {
+        .pathIndicator = "resources/shaders/UnlitTextured.fragment",
+        .stage = ShaderStageFlags::FRAGMENT,
+    }
+    };
+    ShaderProperties properties{};
+    VertexDescription vertexDescription(2);
+    vertexDescription.add(GraphicsType::VECTOR3,0,0);
+    vertexDescription.add(GraphicsType::VECTOR2,0,1);
+    FrameBufferDescription frameBufferDescription;
+    frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
+    frameBufferDescription.depthTarget = Pixels::Format::D32_FLOAT;
+
+
+    auto pipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(stages,2,properties,vertexDescription,frameBufferDescription);
+    GTEST_ASSERT_EQ(pipeline->xComputeThreads(),0);
+    GTEST_ASSERT_EQ(pipeline->yComputeThreads(),0);
+    GTEST_ASSERT_EQ(pipeline->zComputeThreads(),0);
+}
+
 TEST_F(ShaderPipelineTest, DescriptorGroupReflectionCompute)
 {
-    ShaderFile file{.pathIndicator = "resources/shaders/ParallelAdd", .stage = ShaderStageFlags::COMPUTE};
-    auto compute = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(file);
-    GTEST_ASSERT_EQ(compute->descriptorGroupCount(),1);
-    auto group0 = compute->descriptorGroup(0);
+    ShaderFile parallelAddFile{.pathIndicator = "resources/shaders/ParallelAdd", .stage = ShaderStageFlags::COMPUTE};
+    auto computeAddParallel = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(parallelAddFile);
+    GTEST_ASSERT_EQ(computeAddParallel->descriptorGroupCount(),1);
+    auto group0 = computeAddParallel->descriptorGroup(0);
     GTEST_ASSERT_EQ(group0->descriptorCount(),3);
     for (auto i=0; i<group0->descriptorCount(); i++)
     {
         auto& desc = group0->descriptor(i);
         GTEST_ASSERT_TRUE(desc.shape().type == Descriptor::Type::STORAGE_BUFFER);
     }
+
+    ShaderFile computeDrawFile{.pathIndicator = "resources/shaders/ComputeDraw", .stage = ShaderStageFlags::COMPUTE};
+    auto computeDraw = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(computeDrawFile);
+    GTEST_ASSERT_EQ(computeDraw->descriptorGroupCount(),1);
+    group0 = computeDraw->descriptorGroup(0);
+    GTEST_ASSERT_EQ(group0->descriptorCount(),1);
+    auto& desc = group0->descriptor(0);
+    GTEST_ASSERT_TRUE(desc.shape().type == Descriptor::Type::STORAGE_TEXTURE);
+}
+
+TEST_F(ShaderPipelineTest, ComputePipelineThreadGroups)
+{
+    ShaderFile parallelAddFile{.pathIndicator = "resources/shaders/ParallelAdd", .stage = ShaderStageFlags::COMPUTE};
+    auto parallelAdd = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(parallelAddFile);
+    GTEST_ASSERT_EQ(parallelAdd->xComputeThreads(),1);
+    GTEST_ASSERT_EQ(parallelAdd->yComputeThreads(),1);
+    GTEST_ASSERT_EQ(parallelAdd->zComputeThreads(),1);
+    ShaderFile computeDrawFile{.pathIndicator = "resources/shaders/ComputeDraw", .stage = ShaderStageFlags::COMPUTE};
+    auto computeDraw = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(computeDrawFile);
+    GTEST_ASSERT_EQ(computeDraw->xComputeThreads(),16);
+    GTEST_ASSERT_EQ(computeDraw->yComputeThreads(),16);
+    GTEST_ASSERT_EQ(computeDraw->zComputeThreads(),1);
 }
 
 TEST_F(ShaderPipelineTest, MultiStageFlagFail)

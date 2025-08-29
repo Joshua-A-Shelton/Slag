@@ -20,19 +20,27 @@ namespace slag
             VulkanShaderPipeline(VulkanShaderPipeline&& from);
             VulkanShaderPipeline& operator=(VulkanShaderPipeline&& from);
             virtual ~VulkanShaderPipeline()override;
+            virtual ShaderPipelineType pipelineType()override;
             virtual uint32_t descriptorGroupCount()override;
             virtual DescriptorGroup* descriptorGroup(size_t index)override;
             virtual DescriptorGroup* operator[](size_t index)override;
             virtual UniformBufferDescriptorLayout* uniformBufferLayout(uint32_t descriptorGroup,uint32_t descriptorBinding)override;
+            virtual uint32_t xComputeThreads()override;
+            virtual uint32_t yComputeThreads()override;
+            virtual uint32_t zComputeThreads()override;
 
             VkPipeline vulkanHandle()const;
             VkPipelineLayout vulkanLayout()const;
         private:
             void move(VulkanShaderPipeline& from);
+            ShaderPipelineType _pipelineType = ShaderPipelineType::GRAPHICS;
             VkPipeline _pipeline = nullptr;
             VkPipelineLayout _pipelineLayout = nullptr;
             std::vector<VulkanDescriptorGroup> _descriptorGroups;
             std::unordered_map<uint32_t,std::unordered_map<uint32_t,UniformBufferDescriptorLayout>> _uniformBufferLayouts;
+            uint32_t _xthreads = 0;
+            uint32_t _ythreads = 0;
+            uint32_t _zthreads = 0;
         };
     } // vulkan
 } // slag

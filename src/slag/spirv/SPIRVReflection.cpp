@@ -161,6 +161,11 @@ namespace slag
             uint32_t totalSets = 0;
             std::unordered_map<uint32_t, DescriptorGroupReflectionStub> groups;
             std::unordered_map<uint32_t,std::unordered_map<uint32_t,UniformBufferDescriptorLayout>> uniformBufferLayouts;
+
+            uint32_t dimX = 0;
+            uint32_t dimY = 0;
+            uint32_t dimZ = 0;
+
             for (size_t i = 0; i < shaderCount; i++)
             {
                 ShaderCode* shader = shaders[i];
@@ -168,6 +173,14 @@ namespace slag
                 SpvReflectShaderModule module;
                 if (spvReflectCreateShaderModule(shader->dataSize(),shader->data(),&module)== SPV_REFLECT_RESULT_SUCCESS)
                 {
+                    if (shader->stage() == ShaderStageFlags::COMPUTE)
+                    {
+                        SLAG_ASSERT(dimX == 0 && dimY == 0 && dimZ == 0 && "Multiple Compute Stages are defined");
+                        auto localSize = module.entry_points->local_size;
+                        dimX = localSize.x;
+                        dimY = localSize.y;
+                        dimZ = localSize.z;
+                    }
                     for (auto i=0; i< module.descriptor_set_count; i++)
                     {
                         auto& set = module.descriptor_sets[i];
@@ -251,7 +264,10 @@ namespace slag
             SPVReflectionData reflectionData
             {
                 .groups = std::vector<SPVDescriptorGroupReflectionData>(totalSets+1),
-                .bufferLayouts = std::move(uniformBufferLayouts)
+                .bufferLayouts = std::move(uniformBufferLayouts),
+                .entryPointXDim=dimX,
+                .entryPointYDim=dimY,
+                .entryPointZDim=dimZ
             };
             for (auto& group : groups)
             {
