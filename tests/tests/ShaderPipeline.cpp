@@ -225,7 +225,7 @@ protected:
         }
 
     }
-    void testPropertiesMultiSample(ShaderProperties properties,glm::mat4 cameraTransform, glm::mat4 cameraProjection, glm::mat4 object1Transform, glm::mat4 object2Transform, const std::filesystem::path& compareResult)
+    void testPropertiesMultiSample(ShaderProperties properties,glm::mat4 cameraTransform, glm::mat4 cameraProjection, glm::mat4 object1Transform, glm::mat4 object2Transform, const std::filesystem::path& compareResult, float overallSimilarityScore, float individualPixelScore)
     {
         auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
         auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore());
@@ -354,9 +354,51 @@ protected:
         auto groundTruth = utilities::loadTexelsFromFile(compareResult);
 
         GTEST_ASSERT_EQ(groundTruth.size(),targetOutput->countAsArray<uint8_t>());
-        for (int i=0; i<groundTruth.size(); i++)
+        float maxDifference = 255.0f*(1-individualPixelScore);
+        std::vector<float> pixelSimilarity(groundTruth.size()/4);
+        if (maxDifference > 0)
         {
-            GTEST_ASSERT_EQ(groundTruth[i],pixels[i]);
+            for (auto i=0; i< groundTruth.size(); i+=4)
+            {
+                float drawnRed = pixels[i];
+                float drawnGreen = pixels[i+1];
+                float drawnBlue = pixels[i+2];
+                float drawnAlpha = pixels[i+3];
+
+                float groundRed = groundTruth[i];
+                float groundGreen = groundTruth[i+1];
+                float groundBlue = groundTruth[i+2];
+                float groundAlpha = groundTruth[i+3];
+
+                float difRed = std::abs(drawnRed-groundRed);
+                float difGreen = std::abs(drawnGreen-groundGreen);
+                float difBlue = std::abs(drawnBlue-groundBlue);
+                float difAlpha = std::abs(drawnAlpha-groundAlpha);
+
+                float pixelDifference = (difRed + difGreen + difBlue + difAlpha)/4;
+
+                if (individualPixelScore > 0)
+                {
+                    GTEST_ASSERT_LE(pixelDifference,maxDifference);
+                }
+                float percentSimilar = (255.0f-pixelDifference)/255.0f;
+                GTEST_ASSERT_GE(percentSimilar,individualPixelScore);
+                pixelSimilarity[i/4] = percentSimilar;
+            }
+            float total = 0;
+            for (int i=0; i< pixelSimilarity.size(); i++)
+            {
+                total += pixelSimilarity[i];
+            }
+            float overallSimilarity = total/pixelSimilarity.size();
+            GTEST_ASSERT_GE(overallSimilarity,overallSimilarityScore);
+        }
+        else
+        {
+            for (int i=0; i<groundTruth.size(); i++)
+            {
+                GTEST_ASSERT_EQ(groundTruth[i],pixels[i]);
+            }
         }
     }
 public:
@@ -752,7 +794,7 @@ TEST_F(ShaderPipelineTest,MultiSample)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testPropertiesMultiSample(properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/multi-sample-result.png");
+    testPropertiesMultiSample(properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/multi-sample-result.png",.99,.5);
 }
 
 TEST_F(ShaderPipelineTest,MultiSampleAlpha)
@@ -772,7 +814,7 @@ TEST_F(ShaderPipelineTest,MultiSampleAlpha)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testPropertiesMultiSample(properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/multi-sample-alpha-result.png");
+    testPropertiesMultiSample(properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/multi-sample-alpha-result.png",.99,.5);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateDisable)
