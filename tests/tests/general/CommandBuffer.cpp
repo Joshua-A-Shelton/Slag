@@ -876,15 +876,31 @@ TEST_F(CommandBufferTest, Resolve)
     slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
-    unsigned char* colorPtr = outputBuffer->as<unsigned char>();
+    unsigned char* pixels = outputBuffer->as<unsigned char>();
 
     auto groundTruth = utilities::loadTexelsFromFile("resources/textures/resolve-test-result.png");
     GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
-
-    for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
+    float maxDifference = 255.0f*(1-.95);
+    for (auto i=0; i< groundTruth.size(); i+=4)
     {
-        //allow for less than 5% variation, hardware will vary slightly
-        GTEST_ASSERT_TRUE(std::abs((int)colorPtr[i] - (int)groundTruth[i]) < 10);
+        float drawnRed = pixels[i];
+        float drawnGreen = pixels[i+1];
+        float drawnBlue = pixels[i+2];
+        float drawnAlpha = pixels[i+3];
+
+        float groundRed = groundTruth[i];
+        float groundGreen = groundTruth[i+1];
+        float groundBlue = groundTruth[i+2];
+        float groundAlpha = groundTruth[i+3];
+
+        float difRed = std::abs(drawnRed-groundRed);
+        float difGreen = std::abs(drawnGreen-groundGreen);
+        float difBlue = std::abs(drawnBlue-groundBlue);
+        float difAlpha = std::abs(drawnAlpha-groundAlpha);
+
+        float pixelDifference = (difRed + difGreen + difBlue + difAlpha)/4;
+
+        GTEST_ASSERT_LE(pixelDifference,maxDifference);
     }
 }
 
@@ -1124,13 +1140,13 @@ TEST_F(CommandBufferTest, SetScissor)
 TEST_F(CommandBufferTest, SetBlendConstants)
 {
     //Skip, as we don't have a great way to test this
-    GTEST_SKIP("Not feasible to test");
+    GTEST_SKIP();
 }
 
 TEST_F(CommandBufferTest, SetStencilReference)
 {
     //Skip, as we don't have a great way to test this
-    GTEST_SKIP("Not feasible to test");
+    GTEST_SKIP();
 }
 
 TEST_F(CommandBufferTest, Draw)

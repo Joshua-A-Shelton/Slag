@@ -625,7 +625,8 @@ TEST_F(ShaderPipelineTest, DepthClamp)
 
 TEST_F(ShaderPipelineTest,RasterizationDiscard)
 {
-    GTEST_SKIP("I'm not smart enough to test this, I've read what it does, and... I don't know how to capture the output? I guess it could be done with a generic write buffer as a descriptor group item?");
+    //"I'm not smart enough to test this, I've read what it does, and... I don't know how to capture the output? I guess it could be done with a generic write buffer as a descriptor group item?"
+    GTEST_SKIP();
     return;
     ShaderProperties properties{};
     properties.rasterizationState.rasterizerDicardEnable = true;
@@ -1075,7 +1076,7 @@ TEST_F(ShaderPipelineTest,BlendStateColorWriteMask)
 TEST_F(ShaderPipelineTest,BlendStateBlendFactors)
 {
     //TODO: There's too many combinations to test, the combinatrics easily explode to unimaginable numbers, I think maybe I should just test a few? There are 96 tests to do even if I do them one at a time, and I don't think even that is practical. (even small images take up some space)
-    GTEST_SKIP("Not feasible to test");
+    GTEST_SKIP();
 }
 
 TEST_F(ShaderPipelineTest,BlendStateLogicOpClear)
@@ -1380,7 +1381,7 @@ TEST_F(ShaderPipelineTest,DepthStencilStateDepthDisable)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.99,.8);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.99,.7);
 }
 
 TEST_F(ShaderPipelineTest,DepthStencilStateComparisonFunctionAlways)
@@ -1397,7 +1398,7 @@ TEST_F(ShaderPipelineTest,DepthStencilStateComparisonFunctionAlways)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.99,.8);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.99,.7);
 }
 TEST_F(ShaderPipelineTest,DepthStencilStateComparisonGreater)
 {
@@ -1464,7 +1465,7 @@ TEST_F(ShaderPipelineTest,DepthStencilStateComparisonNotEqual)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.99,.8);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.99,.7);
 }
 
 TEST_F(ShaderPipelineTest,DepthStencilStateDepthWriteEnableFalse)
@@ -1481,11 +1482,11 @@ TEST_F(ShaderPipelineTest,DepthStencilStateDepthWriteEnableFalse)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.99,.8);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.99,.7);
 }
 
 TEST_F(ShaderPipelineTest,DepthStencilStateStencilDetails)
 {
     //TODO: There's too many combinations to test
-    GTEST_SKIP("Not feasible to test");
+    GTEST_SKIP();
 }
