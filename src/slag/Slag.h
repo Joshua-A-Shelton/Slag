@@ -31,6 +31,7 @@ namespace slag
     {
         DEFAULT_GRAPHICS_BACKEND = 0,
         VULKAN_GRAPHICS_BACKEND,
+        DX12_GRAPHICS_BACKEND,
         CUSTOM_GRAPHICS_BACKEND
     };
     enum class SlagDebugLevel
