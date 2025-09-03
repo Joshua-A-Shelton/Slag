@@ -101,7 +101,7 @@ namespace slag
 
         void* VulkanBuffer::cpuHandle()
         {
-            SLAG_ASSERT(_accessibility == Accessibility::CPU_AND_GPU && "Buffer must be CPU accesible");
+            SLAG_ASSERT(_accessibility == Accessibility::CPU_AND_GPU && "Buffer must be CPU accessible");
             return _memoryLocation;
         }
 
@@ -132,7 +132,7 @@ namespace slag
                 SLAG_ASSERT(wait != nullptr);
                 Semaphore::waitFor(wait,waitCount);
             }
-            memcpy(_memoryLocation,data,dataLength);
+            memcpy(static_cast<unsigned char*>(_memoryLocation)+offset,data,dataLength);
             if (signalCount)
             {
                 SLAG_ASSERT(signal != nullptr);

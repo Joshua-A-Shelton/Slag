@@ -245,6 +245,7 @@ if(PROJECT_IS_TOP_LEVEL)
             tests/third-party/LodePNG/lodepng.cpp
             tests/third-party/LodePNG/lodepng.h
             tests/tests/SwapChain.cpp
+            tests/tests/Buffer.cpp
     )
 
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)
