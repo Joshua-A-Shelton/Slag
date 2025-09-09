@@ -94,7 +94,7 @@ TEST_F(DescriptorBundleTest, SetStorageTexelBufferAllTypesPipeline)
     auto texelBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(256,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_TEXEL_BUFFER));
     auto bufferView = std::unique_ptr<BufferView>(BufferView::newBufferView(texelBuffer.get(),pipeline->texelBufferDescription(1,1)->format(),0,texelBuffer->size()));
 
-    bundle2.setUniformTexelBuffer(1,0,bufferView.get());
+    bundle2.setStorageTexelBuffer(1,0,bufferView.get());
 
     auto texelBuffer2 = std::unique_ptr<Buffer>(Buffer::newBuffer(256,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_TEXEL_BUFFER));
     bundle2.setStorageTexelBuffer(1,1,bufferView.get());
