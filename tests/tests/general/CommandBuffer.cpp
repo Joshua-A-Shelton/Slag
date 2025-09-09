@@ -808,7 +808,8 @@ TEST_F(CommandBufferTest, Resolve)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthMultiSamplePipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    objectBundle.setSampledTexture(1,0,objectTexture.get());
+    objectBundle.setSampler(2,0,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = multiSampled.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -975,7 +976,8 @@ TEST_F(CommandBufferTest, SetViewport)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    objectBundle.setSampledTexture(1,0,objectTexture.get());
+    objectBundle.setSampler(2,0,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1073,7 +1075,8 @@ TEST_F(CommandBufferTest, SetScissor)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    objectBundle.setSampledTexture(1,0,objectTexture.get());
+    objectBundle.setSampler(2,0,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1182,7 +1185,8 @@ TEST_F(CommandBufferTest, Draw)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    objectBundle.setSampledTexture(1,0,objectTexture.get());
+    objectBundle.setSampler(2,0,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1280,7 +1284,8 @@ TEST_F(CommandBufferTest, DrawIndexed)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    objectBundle.setSampledTexture(1,0,objectTexture.get());
+    objectBundle.setSampler(2,0,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1375,7 +1380,8 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    objectBundle.setSampledTexture(1,0,objectTexture.get());
+    objectBundle.setSampler(2,0,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1478,7 +1484,8 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    objectBundle.setSampledTexture(1,0,objectTexture.get());
+    objectBundle.setSampler(2,0,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1584,7 +1591,8 @@ TEST_F(CommandBufferTest, DrawIndirect)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    objectBundle.setSampledTexture(1,0,objectTexture.get());
+    objectBundle.setSampler(2,0,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1684,7 +1692,8 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    objectBundle.setSampledTexture(1,0,objectTexture.get());
+    objectBundle.setSampler(2,0,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};

@@ -24,20 +24,12 @@ namespace slag
         Backend::current()->setDescriptorBundleSampledTexture(*this,binding,arrayElement,texture);
     }
 
-    void DescriptorBundle::setTextureAndSampler(uint32_t binding, uint32_t arrayElement, Texture* texture, Sampler* sampler)
-    {
-        Backend::current()->setDescriptorBundleTextureAndSampler(*this,binding,arrayElement,texture,sampler);
-    }
-
     void DescriptorBundle::setStorageTexture(uint32_t binding, uint32_t arrayElement, Texture* texture)
     {
         Backend::current()->setDescriptorBundleStorageTexture(*this,binding,arrayElement,texture);
     }
 
-    void DescriptorBundle::setInputAttachment(uint32_t binding, uint32_t arrayElement, Texture* texture)
-    {
-        Backend::current()->setDescriptorBundleInputAttachment(*this,binding,arrayElement,texture);
-    }
+
 
 #else
 
@@ -51,19 +43,9 @@ namespace slag
         Backend::current()->setDescriptorBundleSampledTexture(*this,binding,arrayElement,texture,layout);
     }
 
-    void setSamplerAndTexture(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout, Sampler* sampler)
-    {
-        Backend::current()->setDescriptorBundleTextureAndSampler(*this,binding,arrayElement,texture,layout,sampler);
-    }
-
     void setStorageTexture(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout)
     {
         Backend::current()->setDescriptorBundleStorageTexture(*this,binding,arrayElement,texture,layout);
-    }
-
-    void setInputAttachment(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout)
-    {
-        Backend::current()->setDescriptorBundleInputAttachment(*this,binding,arrayElement,texture,layout);
     }
 #endif
 

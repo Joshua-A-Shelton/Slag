@@ -62,8 +62,8 @@ namespace slag
 
     }
 
-    UniformBufferDescriptorLayout::UniformBufferDescriptorLayout(const std::string& name, GraphicsType type,
-        uint32_t arrayDepth, std::vector<UniformBufferDescriptorLayout>&& children, size_t size, size_t offset,
+    BufferLayout::BufferLayout(const std::string& name, GraphicsType type,
+        uint32_t arrayDepth, std::vector<BufferLayout>&& children, size_t size, size_t offset,
         size_t absoluteOffset)
     {
         _name = name;
@@ -75,77 +75,77 @@ namespace slag
         _absoluteOffset = absoluteOffset;
     }
 
-    UniformBufferDescriptorLayout::UniformBufferDescriptorLayout(const UniformBufferDescriptorLayout& from)
+    BufferLayout::BufferLayout(const BufferLayout& from)
     {
         copy(from);
     }
 
-    UniformBufferDescriptorLayout& UniformBufferDescriptorLayout::operator=(const UniformBufferDescriptorLayout& from)
+    BufferLayout& BufferLayout::operator=(const BufferLayout& from)
     {
         copy(from);
         return *this;
     }
 
-    UniformBufferDescriptorLayout::UniformBufferDescriptorLayout(UniformBufferDescriptorLayout&& from)
+    BufferLayout::BufferLayout(BufferLayout&& from)
     {
         move(from);
     }
 
-    UniformBufferDescriptorLayout& UniformBufferDescriptorLayout::operator=(UniformBufferDescriptorLayout&& from)
+    BufferLayout& BufferLayout::operator=(BufferLayout&& from)
     {
         move(from);
         return *this;
     }
 
-    const std::string& UniformBufferDescriptorLayout::name() const
+    const std::string& BufferLayout::name() const
     {
         return _name;
     }
 
-    GraphicsType UniformBufferDescriptorLayout::type() const
+    GraphicsType BufferLayout::type() const
     {
         return _type;
     }
 
-    size_t UniformBufferDescriptorLayout::childrenCount() const
+    size_t BufferLayout::childrenCount() const
     {
         return _children.size();
     }
 
-    size_t UniformBufferDescriptorLayout::size() const
+    size_t BufferLayout::size() const
     {
         return _size;
     }
 
-    size_t UniformBufferDescriptorLayout::offset() const
+    size_t BufferLayout::offset() const
     {
         return _offset;
     }
 
-    size_t UniformBufferDescriptorLayout::absoluteOffset() const
+    size_t BufferLayout::absoluteOffset() const
     {
         return _absoluteOffset;
     }
 
-    uint32_t UniformBufferDescriptorLayout::arrayDepth() const
+    uint32_t BufferLayout::arrayDepth() const
     {
         return  _arrayDepth;
     }
 
-    const UniformBufferDescriptorLayout& UniformBufferDescriptorLayout::child(size_t index)
+    const BufferLayout& BufferLayout::child(size_t index)
     {
         return _children[index];
     }
 
-    const UniformBufferDescriptorLayout& UniformBufferDescriptorLayout::operator[](size_t index) const
+    const BufferLayout& BufferLayout::operator[](size_t index) const
     {
         return _children[index];
     }
 
-    int UniformBufferDescriptorLayout::compatible(const UniformBufferDescriptorLayout& a, const UniformBufferDescriptorLayout& b)
+    int BufferLayout::compatible(const BufferLayout& a, const BufferLayout& b)
     {
-        const UniformBufferDescriptorLayout* superset = nullptr;
-        const UniformBufferDescriptorLayout* subset = nullptr;
+        const BufferLayout* superset = nullptr;
+        const BufferLayout* subset = nullptr;
         if (a.size() >= b.size())
         {
             superset = &a;
@@ -170,16 +170,16 @@ namespace slag
         return 1;
     }
 
-    UniformBufferDescriptorLayout UniformBufferDescriptorLayout::merge(const UniformBufferDescriptorLayout& superset, const UniformBufferDescriptorLayout& subset)
+    BufferLayout BufferLayout::merge(const BufferLayout& superset, const BufferLayout& subset)
     {
         if (superset.arrayDepth() > 1 || subset.arrayDepth() > 1 ||
             superset.offset()!= superset.absoluteOffset() || subset.offset()!= subset.absoluteOffset() ||
             superset.offset()!=0 || subset.offset()!=0 ||
             superset.type() != GraphicsType::STRUCT || subset.type() != GraphicsType::STRUCT)
         {
-            throw std::runtime_error("UniformBufferDescriptorLayouts can only be merged if both are top level struct types");
+            throw std::runtime_error("BufferDescriptorLayouts can only be merged if both are top level struct types");
         }
-        std::vector<UniformBufferDescriptorLayout> newSets;
+        std::vector<BufferLayout> newSets;
         size_t supersetIndex = 0;
         size_t subsetIndex = 0;
 
@@ -259,12 +259,12 @@ namespace slag
 
         }
 
-        return UniformBufferDescriptorLayout(superset.name(),GraphicsType::STRUCT,1,std::move(newSets),maxSize,0,0);
+        return BufferLayout(superset.name(),GraphicsType::STRUCT,1,std::move(newSets),maxSize,0,0);
 
 
     }
 
-    void UniformBufferDescriptorLayout::move(UniformBufferDescriptorLayout& from)
+    void BufferLayout::move(BufferLayout& from)
     {
         _name.swap(from._name);
         _type= from._type;
@@ -275,7 +275,7 @@ namespace slag
         _absoluteOffset=from._absoluteOffset;
     }
 
-    void UniformBufferDescriptorLayout::copy(const UniformBufferDescriptorLayout& from)
+    void BufferLayout::copy(const BufferLayout& from)
     {
         _name = from._name;
         _type= from._type;
@@ -286,7 +286,7 @@ namespace slag
         _absoluteOffset=from._absoluteOffset;
     }
 
-    bool UniformBufferDescriptorLayout::compatibleRecursive(const UniformBufferDescriptorLayout& a,const UniformBufferDescriptorLayout& b)
+    bool BufferLayout::compatibleRecursive(const BufferLayout& a,const BufferLayout& b)
     {
         if (a.type() == b.type())
         {
@@ -313,7 +313,7 @@ namespace slag
         return false;
     }
 
-    bool UniformBufferDescriptorLayout::proceeds(const UniformBufferDescriptorLayout& a, const UniformBufferDescriptorLayout& b)
+    bool BufferLayout::proceeds(const BufferLayout& a, const BufferLayout& b)
     {
         if (a.offset()+a.size()<=b.offset())
         {
@@ -322,12 +322,28 @@ namespace slag
         return false;
     }
 
-    bool UniformBufferDescriptorLayout::encompasses(const UniformBufferDescriptorLayout& a, const UniformBufferDescriptorLayout& b)
+    bool BufferLayout::encompasses(const BufferLayout& a, const BufferLayout& b)
     {
         if (a.offset() <= b.offset() && a.offset()+a.size() >= b.offset()+b.size())
         {
             return true;
         }
         return false;
+    }
+
+    TexelBufferDescription::TexelBufferDescription(Texture::Type type, Pixels::Format format)
+    {
+        _textureType = type;
+        _format = format;
+    }
+
+    Texture::Type TexelBufferDescription::type() const
+    {
+        return _textureType;
+    }
+
+    Pixels::Format TexelBufferDescription::format() const
+    {
+        return _format;
     }
 } // slag

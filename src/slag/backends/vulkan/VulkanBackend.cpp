@@ -431,8 +431,6 @@ namespace slag
                 return  VK_DESCRIPTOR_TYPE_SAMPLER;
             case slag::Descriptor::Type::SAMPLED_TEXTURE:
                 return  VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-            case slag::Descriptor::Type::SAMPLER_AND_TEXTURE:
-                return  VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             case slag::Descriptor::Type::STORAGE_TEXTURE:
                 return  VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
             case slag::Descriptor::Type::UNIFORM_TEXEL_BUFFER:
@@ -443,8 +441,6 @@ namespace slag
                 return  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             case slag::Descriptor::Type::STORAGE_BUFFER:
                 return  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            case slag::Descriptor::Type::INPUT_ATTACHMENT:
-                return  VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
             case slag::Descriptor::Type::ACCELERATION_STRUCTURE:
                 return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
             }
@@ -542,6 +538,7 @@ namespace slag
             basicFeatures.sampleRateShading = true;
             basicFeatures.alphaToOne = true;
             basicFeatures.logicOp = true;
+            basicFeatures.fragmentStoresAndAtomics = true;
 
 
             vkb::PhysicalDeviceSelector selector{_instance};
@@ -713,28 +710,7 @@ namespace slag
 
             vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
         }
-        void VulkanBackend::setDescriptorBundleTextureAndSampler(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Texture* texture, Sampler* sampler)
-        {
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
-            auto tex = static_cast<VulkanTexture*>(texture);
-            auto s = static_cast<VulkanSampler*>(sampler);
 
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.sampler = s->vulkanHandle();
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-            imageInfo.imageView = tex->vulkanViewHandle();
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet = descriptorSet;
-            write.dstBinding = binding;
-            write.dstArrayElement = arrayElement;
-            write.descriptorCount = 1;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            write.pImageInfo = &imageInfo;
-
-            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
-        }
         void VulkanBackend::setDescriptorBundleStorageTexture(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Texture* texture)
         {
             VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
@@ -755,26 +731,6 @@ namespace slag
 
             vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
         }
-        void VulkanBackend::setDescriptorBundleInputAttachment(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Texture* texture)
-        {
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
-            auto tex = static_cast<VulkanTexture*>(texture);
-
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-            imageInfo.imageView = tex->vulkanViewHandle();
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet = descriptorSet;
-            write.dstBinding = binding;
-            write.dstArrayElement = arrayElement;
-            write.descriptorCount = 1;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-            write.pImageInfo = &imageInfo;
-
-            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
-        }
 #else
         void VulkanBackend::setDescriptorBundleSampler(uint32_t binding,uint32_t arrayElement, Sampler* sampler, TextureLayouts::Layout layout)
         {
@@ -784,22 +740,14 @@ namespace slag
         {
             throw std::runtime_error("Not implemented");
         }
-        void VulkanBackend::setSamplerAndTexture(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout, Sampler* sampler)
-        {
-            throw std::runtime_error("Not implemented");
-        }
         void VulkanBackend::setStorageTexture(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout)
-        {
-            throw std::runtime_error("Not implemented");
-        }
-        void VulkanBackend::setInputAttachment(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout)
         {
             throw std::runtime_error("Not implemented");
         }
 #endif
         void VulkanBackend::setDescriptorBundleUniformTexelBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
         {
-            throw std::runtime_error("Not implemented");
+            throw std::runtime_error("Not Implemented");
         }
         void VulkanBackend::setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
         {

@@ -31,14 +31,6 @@ namespace slag
          */
         void setSampledTexture(uint32_t binding, uint32_t arrayElement, Texture* texture);
         /**
-         * Assign a texture and corresponding sampler together to the descriptor bundle
-         * @param binding The binding index of the descriptor
-         * @param arrayElement The index of the array to assign
-         * @param texture The texture to assign
-         * @param sampler The sampler to assign
-         */
-        void setTextureAndSampler(uint32_t binding, uint32_t arrayElement, Texture* texture, Sampler* sampler);
-        /**
          * Assign a texture that can have both read/write operations performed on it (usually compute shaders) to the descriptor bundle
          * @param binding The binding index of the descriptor
          * @param arrayElement The index of the array to assign
@@ -71,15 +63,6 @@ namespace slag
          * @param layout The layout the texture will be in during shader execution
          */
         void setSampledTexture(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout);
-        /**
-         * Assign a texture and corresponding sampler together to the descriptor bundle
-         * @param binding The binding index of the descriptor
-         * @param arrayElement The index of the array to assign
-         * @param texture The texture to assign
-         * @param layout The layout the texture will be in during shader execution
-         * @param sampler The sampler to assign
-         */
-        void setSamplerAndTexture(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout, Sampler* sampler);
         /**
          * Assign a texture that can have both read/write operations performed on it (usually compute shaders) to the descriptor bundle
          * @param binding The binding index of the descriptor

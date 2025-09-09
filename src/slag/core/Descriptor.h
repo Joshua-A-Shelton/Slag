@@ -6,6 +6,7 @@
 
 #include "GraphicsTypes.h"
 #include "ShaderPipeline.h"
+#include "Texture.h"
 
 namespace slag
 {
@@ -16,12 +17,12 @@ namespace slag
         ///The type this descriptor describes
         enum class Type: uint16_t
         {
+            ///Unknown descriptor, generally means unused
+            UNKNOWN = 0,
             ///Object that selects what texels to select from texture (layer, mip, etc)
             SAMPLER,
             ///Texure that requires a corresponding sampler to read
             SAMPLED_TEXTURE,
-            ///Object that encapsulates both the texture and it's corresponding sampler
-            SAMPLER_AND_TEXTURE,
             ///Texture that can have both be read on write operations can be perfomed on in the same shader (Generally GPU shaders)
             STORAGE_TEXTURE,
             ///Tightly packed 1D array of texels that image sampling operations can be performed on
@@ -32,8 +33,6 @@ namespace slag
             UNIFORM_BUFFER,
             ///Represents a section of a buffer that contains arbitrary data that both read and write operations can be performed on in the same shader (Generally GPU shaders or unsized arrays in pixel shaders)
             STORAGE_BUFFER,
-            ///Texture that can be used for framebuffer local operations
-            INPUT_ATTACHMENT,
             ///Object that is used in ray tracing and intersection testing
             ACCELERATION_STRUCTURE
         };
@@ -41,7 +40,7 @@ namespace slag
         struct Shape
         {
             ///The type of descriptor being described
-            Type type=Type::UNIFORM_BUFFER;
+            Type type=Type::UNKNOWN;
             ///How many objects are being described in an array
             uint32_t arrayDepth=1;
             ///The corresponding index to be bound to in the shader
@@ -80,12 +79,12 @@ namespace slag
 
     };
 
-     ///Describes the structure for data in a uniform buffer
-    class UniformBufferDescriptorLayout
+     ///Describes the structure for data in a buffer
+    class BufferLayout
     {
     public:
         /**
-         * Create a UniformBufferDescriptorLayout, will assume all parameters are correct without checking. This will allow manual building, but requires the user to keep track of the details when creating the children's offset and sizes
+         * Create a BufferDescriptorLayout, will assume all parameters are correct without checking. This will allow manual building, but requires the user to keep track of the details when creating the children's offset and sizes
          * @param name
          * @param type
          * @param arrayDepth
@@ -93,13 +92,13 @@ namespace slag
          * @param size
          * @param offset
          */
-        UniformBufferDescriptorLayout(const std::string& name, GraphicsType type, uint32_t arrayDepth, std::vector<UniformBufferDescriptorLayout>&& children, size_t size, size_t offset, size_t absoluteOffset);
+        BufferLayout(const std::string& name, GraphicsType type, uint32_t arrayDepth, std::vector<BufferLayout>&& children, size_t size, size_t offset, size_t absoluteOffset);
         ///Create an invalid uniform buffer descriptor layout
-        UniformBufferDescriptorLayout()=default;
-        UniformBufferDescriptorLayout(const UniformBufferDescriptorLayout& from);
-        UniformBufferDescriptorLayout& operator=(const UniformBufferDescriptorLayout& from);
-        UniformBufferDescriptorLayout(UniformBufferDescriptorLayout&& from);
-        UniformBufferDescriptorLayout& operator=(UniformBufferDescriptorLayout&& from);
+        BufferLayout()=default;
+        BufferLayout(const BufferLayout& from);
+        BufferLayout& operator=(const BufferLayout& from);
+        BufferLayout(BufferLayout&& from);
+        BufferLayout& operator=(BufferLayout&& from);
         ///The descriptive name of the object in the buffer, may be empty string
         const std::string& name()const;
         ///The type this layout represents
@@ -114,36 +113,48 @@ namespace slag
         size_t absoluteOffset()const;
         ///Number of elements in array
         uint32_t arrayDepth()const;
-        const UniformBufferDescriptorLayout& child(size_t index);
-        const UniformBufferDescriptorLayout& operator[](size_t index)const;
+        const BufferLayout& child(size_t index);
+        const BufferLayout& operator[](size_t index)const;
         /**
          * Determines if two buffer layouts are compatible
          * @param a first layout
          * @param b second layout
          * @return -1 if 'a' is a super-set of 'b', 1 if 'b' is a super-set of 'a', or zero if they're incompatible
          */
-        static int compatible(const UniformBufferDescriptorLayout& a, const UniformBufferDescriptorLayout& b);
+        static int compatible(const BufferLayout& a, const BufferLayout& b);
         /**
-         * Merge two uniform Buffer Descriptor Layouts, where subset will fill in any un-named or untyped space in the superset
+         * Merge two Buffer Descriptor Layouts, where subset will fill in any un-named or untyped space in the superset
          * @param superset Bigger of the two layouts
          * @param subset Smaller of the two subsets
          * @return
          */
-        static UniformBufferDescriptorLayout merge(const UniformBufferDescriptorLayout& superset, const UniformBufferDescriptorLayout& subset);
+        static BufferLayout merge(const BufferLayout& superset, const BufferLayout& subset);
     private:
-        void move(UniformBufferDescriptorLayout& from);
-        void copy(const UniformBufferDescriptorLayout& from);
-        static bool compatibleRecursive(const UniformBufferDescriptorLayout& a, const UniformBufferDescriptorLayout& b);
-        static bool proceeds(const UniformBufferDescriptorLayout& a, const UniformBufferDescriptorLayout& b);
-        static bool encompasses(const UniformBufferDescriptorLayout& a, const UniformBufferDescriptorLayout& b);
+        void move(BufferLayout& from);
+        void copy(const BufferLayout& from);
+        static bool compatibleRecursive(const BufferLayout& a, const BufferLayout& b);
+        static bool proceeds(const BufferLayout& a, const BufferLayout& b);
+        static bool encompasses(const BufferLayout& a, const BufferLayout& b);
         std::string _name;
         GraphicsType _type= GraphicsType::UNKNOWN;
         uint32_t _arrayDepth = 1;
-        std::vector<UniformBufferDescriptorLayout> _children;
+        std::vector<BufferLayout> _children;
         size_t _size = 0;
         size_t _offset=0;
         size_t _absoluteOffset=0;
 
+    };
+
+    ///Describes the data in a texel buffer
+    class TexelBufferDescription
+    {
+    public:
+        TexelBufferDescription(Texture::Type type, Pixels::Format format);
+        Texture::Type type()const;
+        Pixels::Format format()const;
+    private:
+        Texture::Type _textureType;
+        Pixels::Format _format;
     };
 
 } // slag
