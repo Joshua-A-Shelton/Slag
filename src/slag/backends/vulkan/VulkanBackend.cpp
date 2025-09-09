@@ -2,6 +2,7 @@
 #include "VulkanBackend.h"
 #include "VkBootstrap.h"
 #include "core/VulkanBuffer.h"
+#include "core/VulkanBufferView.h"
 #include "core/VulkanCommandBuffer.h"
 #include "core/VulkanDescriptorPool.h"
 #include "core/VulkanGraphicsCard.h"
@@ -626,6 +627,11 @@ namespace slag
             return new VulkanBuffer(data, dataSize, accessibility, usage);
         }
 
+        BufferView* VulkanBackend::newBufferView(Buffer* buffer, Pixels::Format format, uint64_t offset, uint64_t size)
+        {
+            return new VulkanBufferView(buffer, format, offset, size);
+        }
+
         SwapChain* VulkanBackend::newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, SwapChain::PresentMode presentMode, uint8_t frameCount, Pixels::Format format, SwapChain::AlphaCompositing compositing,FrameResources*(* createResourceFunction)(uint8_t frameIndex, SwapChain* inChain),void (*swapchainRebuiltFunction)(SwapChain* swapChain))
         {
             return new VulkanSwapChain(platformData, width, height, presentMode, frameCount, format, compositing, createResourceFunction,swapchainRebuiltFunction);
@@ -745,13 +751,42 @@ namespace slag
             throw std::runtime_error("Not implemented");
         }
 #endif
-        void VulkanBackend::setDescriptorBundleUniformTexelBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
+        void VulkanBackend::setDescriptorBundleUniformTexelBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, BufferView* bufferView)
         {
-            throw std::runtime_error("Not Implemented");
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
+            auto buf = static_cast<VulkanBufferView*>(bufferView);
+
+            auto handle = buf->vulkanHandle();
+
+            VkWriteDescriptorSet write{};
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = descriptorSet;
+            write.dstBinding = binding;
+            write.dstArrayElement = arrayElement;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+            write.pTexelBufferView = &handle;
+
+            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
+
         }
-        void VulkanBackend::setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
+        void VulkanBackend::setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, BufferView* bufferView)
         {
-            throw std::runtime_error("Not implemented");
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
+            auto buf = static_cast<VulkanBufferView*>(bufferView);
+
+            auto handle = buf->vulkanHandle();
+
+            VkWriteDescriptorSet write{};
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = descriptorSet;
+            write.dstBinding = binding;
+            write.dstArrayElement = arrayElement;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+            write.pTexelBufferView = &handle;
+
+            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
         }
         void VulkanBackend::setDescriptorBundleUniformBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
         {

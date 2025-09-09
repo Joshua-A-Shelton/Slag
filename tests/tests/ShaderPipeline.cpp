@@ -585,10 +585,8 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflectionAllTypes)
     GTEST_ASSERT_EQ(uniformBufferLayout->childrenCount(),1);
     GTEST_ASSERT_EQ(uniformBufferLayout->child(0).type(),GraphicsType::VECTOR4);
 
-    GTEST_ASSERT_EQ(uniformTexelBufferLayout->type(),Texture::Type::TEXTURE_2D);
     GTEST_ASSERT_EQ(uniformTexelBufferLayout->format(),Pixels::Format::R32G32B32A32_FLOAT);
 
-    GTEST_ASSERT_EQ(storageTexelBufferLayout->type(),Texture::Type::TEXTURE_2D);
     GTEST_ASSERT_EQ(storageTexelBufferLayout->format(),Pixels::Format::R32G32B32A32_UINT);
 
     GTEST_ASSERT_EQ(storageBufferLayout->childrenCount(),1);

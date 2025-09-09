@@ -2,6 +2,7 @@
 #define SLAG_DESCRIPTORBUNDLE_H
 #include <cstdint>
 
+#include "BufferView.h"
 #include "Sampler.h"
 #include "Texture.h"
 #include "GPUBarriers.h"
@@ -37,13 +38,6 @@ namespace slag
          * @param texture The texture to assign
          */
         void setStorageTexture(uint32_t binding, uint32_t arrayElement, Texture* texture);
-        /**
-         * Assign a texture that can be used for framebuffer local operations to the descriptor bundle
-         * @param binding The binding index of the descriptor
-         * @param arrayElement The index of the array to assign
-         * @param texture The texture to assign
-         */
-        void setInputAttachment(uint32_t binding, uint32_t arrayElement, Texture* texture);
 
 #else
 
@@ -89,7 +83,7 @@ namespace slag
          * @param offset How far into the buffer to bind as the texel data
          * @param length The length from the offset of the buffer to use as texel data
          */
-        void setUniformTexelBuffer(uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length);
+        void setUniformTexelBuffer(uint32_t binding, uint32_t arrayElement, BufferView* bufferView);
         /**
          * Assign a tightly packed 1D array of texels that both read/write operations can be performed on (usually compute shaders) to the descriptor bundle
          * @param binding The binding index of the descriptor
@@ -98,7 +92,7 @@ namespace slag
          * @param offset How far into the buffer to bind as the texel data
          * @param length The length from the offset of the buffer to use as texel data
          */
-        void setStorageTexelBuffer(uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length);
+        void setStorageTexelBuffer(uint32_t binding, uint32_t arrayElement, BufferView* bufferView);
         /**
          * Assign arbitrary data to the descriptor bundle
          * @param binding The binding index of the descriptor

@@ -49,14 +49,14 @@ namespace slag
     }
 #endif
 
-    void DescriptorBundle::setUniformTexelBuffer(uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
+    void DescriptorBundle::setUniformTexelBuffer(uint32_t binding, uint32_t arrayElement, BufferView* bufferView)
     {
-        Backend::current()->setDescriptorBundleUniformTexelBuffer(*this,binding,arrayElement,buffer,offset,length);
+        Backend::current()->setDescriptorBundleUniformTexelBuffer(*this,binding,arrayElement,bufferView);
     }
 
-    void DescriptorBundle::setStorageTexelBuffer(uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
+    void DescriptorBundle::setStorageTexelBuffer(uint32_t binding, uint32_t arrayElement, BufferView* bufferView)
     {
-        Backend::current()->setDescriptorBundleStorageTexelBuffer(*this,binding,arrayElement,buffer,offset,length);
+        Backend::current()->setDescriptorBundleStorageTexelBuffer(*this,binding,arrayElement,bufferView);
     }
 
     void DescriptorBundle::setUniformBuffer(uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)

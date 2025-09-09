@@ -81,7 +81,9 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/backends/vulkan/core/VulkanSwapChain.cpp
             src/slag/backends/vulkan/core/VulkanSwapChain.h
             src/slag/backends/vulkan/core/VulkanFrame.cpp
-            src/slag/backends/vulkan/core/VulkanFrame.h)
+            src/slag/backends/vulkan/core/VulkanFrame.h
+            src/slag/backends/vulkan/core/VulkanBufferView.cpp
+            src/slag/backends/vulkan/core/VulkanBufferView.h)
 endif()
 if(SLAG_DX12_BACKEND)
     add_definitions(-DSLAG_DX12_BACKEND=1)
@@ -144,6 +146,8 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/DescriptorPool.h
         src/slag/core/VertexDescription.cpp
         src/slag/core/VertexDescription.h
+        src/slag/core/BufferView.cpp
+        src/slag/core/BufferView.h
 
 )
 #link spirv if we need to

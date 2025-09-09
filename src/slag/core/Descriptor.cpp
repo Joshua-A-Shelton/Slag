@@ -331,15 +331,9 @@ namespace slag
         return false;
     }
 
-    TexelBufferDescription::TexelBufferDescription(Texture::Type type, Pixels::Format format)
+    TexelBufferDescription::TexelBufferDescription(Pixels::Format format)
     {
-        _textureType = type;
         _format = format;
-    }
-
-    Texture::Type TexelBufferDescription::type() const
-    {
-        return _textureType;
     }
 
     Pixels::Format TexelBufferDescription::format() const

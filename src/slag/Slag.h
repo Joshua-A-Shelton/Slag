@@ -2,6 +2,7 @@
 #define SLAG_SLAG_H
 
 #include "core/Buffer.h"
+#include "core/BufferView.h"
 #include "core/Clear.h"
 #include "core/CommandBuffer.h"
 #include "core/Descriptor.h"

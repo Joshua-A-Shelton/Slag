@@ -58,7 +58,7 @@ float4 fragmentMain(FragmentParameters fragmentParameters : FragmentParameters) 
 {
     var color = First.colorUniformBuffer * First.sampledTexture.Sample(First.sampler,fragmentParameters.uv);
     var count = Second.storageBuffer.getCount();
-    var read = Second.uniformTexelBuffer.Sample(First.sampler,12.0f);
+    var read = Second.uniformTexelBuffer.Sample(First.sampler,.9f);
     if(count < 1)
     {
         First.storageTexture.Store(uint2(0,0),color);

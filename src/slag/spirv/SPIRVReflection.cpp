@@ -286,21 +286,8 @@ namespace slag
 
         TexelBufferDescription texelBufferDescriptorLayoutFromSPV(SpvReflectDescriptorBinding* binding)
         {
-            Texture::Type texType = Texture::Type::TEXTURE_2D;
-            switch(binding->image.depth)
-            {
-                case 1:
-                    texType = Texture::Type::TEXTURE_1D;
-                    break;
-                case 2:
-                    texType = Texture::Type::TEXTURE_2D;
-                    break;
-                case 3:
-                    texType = Texture::Type::TEXTURE_3D;
-                    break;
-            }
 
-            return TexelBufferDescription(texType,pixelFormatFromSPV(binding->image.image_format));
+            return TexelBufferDescription(pixelFormatFromSPV(binding->image.image_format));
         }
 
         struct DescriptorGroupReflectionStub

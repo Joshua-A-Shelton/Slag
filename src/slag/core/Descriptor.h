@@ -149,11 +149,9 @@ namespace slag
     class TexelBufferDescription
     {
     public:
-        TexelBufferDescription(Texture::Type type, Pixels::Format format);
-        Texture::Type type()const;
+        TexelBufferDescription(Pixels::Format format);
         Pixels::Format format()const;
     private:
-        Texture::Type _textureType;
         Pixels::Format _format;
     };
 

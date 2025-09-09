@@ -83,7 +83,8 @@ TEST_F(DescriptorBundleTest, SetUniformTexelBufferAllTypesPipeline)
     descriptorPool->reset();
     auto bundle2 = descriptorPool->makeBundle(pipeline->descriptorGroup(1));
     auto texelBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(256,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_TEXEL_BUFFER));
-    bundle2.setUniformTexelBuffer(0,0,texelBuffer.get(),0,texelBuffer->size());
+    auto bufferView = std::unique_ptr<BufferView>(BufferView::newBufferView(texelBuffer.get(),pipeline->texelBufferDescription(1,0)->format(),0,texelBuffer->size()));
+    bundle2.setUniformTexelBuffer(0,0,bufferView.get());
 }
 
 TEST_F(DescriptorBundleTest, SetStorageTexelBufferAllTypesPipeline)
@@ -91,10 +92,12 @@ TEST_F(DescriptorBundleTest, SetStorageTexelBufferAllTypesPipeline)
     descriptorPool->reset();
     auto bundle2 = descriptorPool->makeBundle(pipeline->descriptorGroup(1));
     auto texelBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(256,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_TEXEL_BUFFER));
-    bundle2.setUniformTexelBuffer(1,0,texelBuffer.get(),0,texelBuffer->size());
+    auto bufferView = std::unique_ptr<BufferView>(BufferView::newBufferView(texelBuffer.get(),pipeline->texelBufferDescription(1,1)->format(),0,texelBuffer->size()));
+
+    bundle2.setUniformTexelBuffer(1,0,bufferView.get());
 
     auto texelBuffer2 = std::unique_ptr<Buffer>(Buffer::newBuffer(256,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_TEXEL_BUFFER));
-    bundle2.setStorageTexelBuffer(1,1,texelBuffer2.get(),0,texelBuffer2->size());
+    bundle2.setStorageTexelBuffer(1,1,bufferView.get());
 }
 
 TEST_F(DescriptorBundleTest, SetUniformBufferAllTypesPipeline)
