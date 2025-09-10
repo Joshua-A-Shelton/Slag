@@ -523,9 +523,17 @@ namespace slag
             features1_2.descriptorIndexing = true;
             features1_2.timelineSemaphore = true;
             features1_2.drawIndirectCount = true;
+            features1_2.shaderInt8 = true;
+            features1_2.shaderFloat16 = true;
+
+            VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR shaderDerivativesFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_KHR};
+            shaderDerivativesFeatures.computeDerivativeGroupLinear = true;
+            shaderDerivativesFeatures.computeDerivativeGroupQuads = true;
 
 
             VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT};
+            swapchainFeatures.pNext = &shaderDerivativesFeatures;
+
             VkPhysicalDeviceFeatures2 features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
             features.pNext = &swapchainFeatures;
 
@@ -542,6 +550,7 @@ namespace slag
             basicFeatures.fragmentStoresAndAtomics = true;
 
 
+
             vkb::PhysicalDeviceSelector selector{_instance};
             auto physicalDevices = selector.set_minimum_version(1,3)
                                             .set_required_features_13(features1_3)
@@ -549,6 +558,7 @@ namespace slag
                                             .set_required_features(basicFeatures)
                                             .add_required_extension("VK_EXT_swapchain_maintenance1")
                                             .add_required_extension("VK_EXT_custom_border_color")
+                                            .add_required_extension("VK_KHR_compute_shader_derivatives")
                                             .defer_surface_initialization()
                                             .select_devices();
 

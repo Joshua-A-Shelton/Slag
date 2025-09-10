@@ -115,3 +115,115 @@ TEST_F(DescriptorBundleTest, SetStorageBufferAllTypesPipeline)
     auto storageBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(float)+sizeof(int32_t),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_BUFFER));
     bundle2.setStorageBuffer(2,0,storageBuffer.get(),0,storageBuffer->size());
 }
+
+TEST_F(DescriptorBundleTest, TexelBufferComputeResults)
+{
+    descriptorPool->reset();
+    ShaderFile stage =
+    {
+        .pathIndicator = "resources/shaders/SampledAddition",
+        .stage = ShaderStageFlags::COMPUTE,
+    };
+    auto texelCompute = std::unique_ptr<ShaderPipeline>(GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(stage));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::COMPUTE));
+    auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
+    struct ShaderParams
+    {
+        uint32_t arrayIndex = 1;
+        uint32_t arrayLength = 10;
+    };
+    ShaderParams shaderParams{};
+    auto parameterBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(&shaderParams,sizeof(ShaderParams),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
+    auto sampler = std::unique_ptr<Sampler>(Sampler::newSampler(SamplerParameters{}));
+    std::vector<float> data(40);
+    for (auto i=0; i < 40; i++)
+    {
+        data[i] = 1.0f/(1.0f-((float)i/40.0f));
+    }
+    auto operands1_1 = std::unique_ptr<Buffer>(Buffer::newBuffer(data.data(),Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*10,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_TEXEL_BUFFER));
+    for (auto i=0; i < 40; i++)
+    {
+        data[i] = (1.0f/(1.0f-((float)i/80.0f)));
+    }
+    auto operands1_2 = std::unique_ptr<Buffer>(Buffer::newBuffer(data.data(),Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*10,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_TEXEL_BUFFER));
+    std::vector<uint8_t> data2(40);
+    for (auto i=0; i < 40; i++)
+    {
+        data2[i] = i;
+    }
+    auto operands2_1 = std::unique_ptr<Buffer>(Buffer::newBuffer(data2.data(),Pixels::size(Pixels::Format::R8G8B8A8_UINT)*10,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_TEXEL_BUFFER));
+    for (auto i=0; i < 40; i++)
+    {
+        data2[i] = i*2;
+    }
+    auto operands2_2 = std::unique_ptr<Buffer>(Buffer::newBuffer(data2.data(),Pixels::size(Pixels::Format::R8G8B8A8_UINT)*10,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_TEXEL_BUFFER));
+
+    auto results1_1 = std::unique_ptr<Buffer>(Buffer::newBuffer(Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*10,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_TEXEL_BUFFER));
+    auto results1_2 = std::unique_ptr<Buffer>(Buffer::newBuffer(Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*10,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_TEXEL_BUFFER));
+    auto indexes1_1 =std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(float)*10,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_BUFFER));
+    auto indexes1_2 =std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(float)*10,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_BUFFER));
+
+    auto operandView1_1 = std::unique_ptr<BufferView>(BufferView::newBufferView(operands1_1.get(),Pixels::Format::R32G32B32A32_FLOAT,0,operands1_1->size()));
+    auto operandView1_2 = std::unique_ptr<BufferView>(BufferView::newBufferView(operands1_2.get(),Pixels::Format::R32G32B32A32_FLOAT,0,operands1_2->size()));
+
+    auto operandView2_1 = std::unique_ptr<BufferView>(BufferView::newBufferView(operands2_1.get(),Pixels::Format::R8G8B8A8_UINT,0,operands2_1->size()));
+    auto operandView2_2 = std::unique_ptr<BufferView>(BufferView::newBufferView(operands2_2.get(),Pixels::Format::R8G8B8A8_UINT,0,operands2_2->size()));
+
+    auto resultsView1_1 = std::unique_ptr<BufferView>(BufferView::newBufferView(results1_1.get(),Pixels::Format::R32G32B32A32_FLOAT,0,results1_1->size()));
+    auto resultsView1_2 = std::unique_ptr<BufferView>(BufferView::newBufferView(results1_2.get(),Pixels::Format::R32G32B32A32_FLOAT,0,results1_2->size()));
+
+    commandBuffer->begin();
+
+    commandBuffer->bindDescriptorPool(descriptorPool.get());
+    commandBuffer->bindComputeShaderPipeline(texelCompute.get());
+    auto bundle = descriptorPool->makeBundle(texelCompute->descriptorGroup(0));
+    bundle.setUniformBuffer(0,0,parameterBuffer.get(),0,parameterBuffer->size());
+    bundle.setSampler(1,0,sampler.get());
+    bundle.setUniformTexelBuffer(2,0,operandView1_1.get());
+    bundle.setUniformTexelBuffer(2,1,operandView1_2.get());
+    bundle.setUniformTexelBuffer(3,0,operandView2_1.get());
+    bundle.setUniformTexelBuffer(3,1,operandView2_2.get());
+    bundle.setStorageTexelBuffer(4,0,resultsView1_1.get());
+    bundle.setStorageTexelBuffer(4,1,resultsView1_2.get());
+    bundle.setStorageBuffer(5,0,indexes1_1.get(),0,indexes1_1->size());
+    bundle.setStorageBuffer(5,1,indexes1_2.get(),0,indexes1_2->size());
+    commandBuffer->bindComputeDescriptorBundle(0,bundle);
+    commandBuffer->dispatch(10,1,1);
+
+    commandBuffer->end();
+
+    auto cbptr = commandBuffer.get();
+    SemaphoreValue signal
+    {
+        .semaphore = finished.get(),
+        .value = 1
+    };
+
+    QueueSubmissionBatch submitInfo
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &cbptr,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->computeQueue()->submit(&submitInfo,1);
+    finished->waitForValue(1);
+
+    auto results = results1_2->as<float>();
+    auto indexes = indexes1_2->as<float>();
+
+    for (int i=0; i< 10; i++)
+    {
+        float number1 = (1.0f/(1.0f-((float)i/80.0f)));
+        float number2 = (float)(i*2)/255.0f;
+
+        float expected = results[i];
+        float index = indexes[i];
+        GTEST_ASSERT_EQ(index,i);
+        GTEST_ASSERT_EQ(expected,number1+number2);
+
+    }
+
+}
