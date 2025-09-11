@@ -20,16 +20,14 @@ namespace slag
 
         enum class UsageFlags: uint8_t
         {
-            ///Texture can be sampled from (filtered) in rasterization shaders
+            ///Texture can be sampled from
             SAMPLED_IMAGE=0b00000001,
-            ///Texture can be directly read from in rasterization shaders
-            INPUT_ATTACHMENT=0b00000010,
-            ///Texture supports compute shader read and writes
-            STORAGE=0b00000100,
+            ///Texture can have read and writes in the same shader
+            STORAGE=0b00000010,
             ///Texture can be written to as a color texture in rasterization shaders
-            RENDER_TARGET_ATTACHMENT=0b00001000,
+            RENDER_TARGET_ATTACHMENT=0b00000100,
             ///Texture can be written to as a depth texture in rasterization shaders
-            DEPTH_STENCIL_ATTACHMENT=0b00010000,
+            DEPTH_STENCIL_ATTACHMENT=0b00001000,
         };
 
         enum class SampleCount
@@ -131,6 +129,7 @@ namespace slag
         a = a ^ b;
         return a;
     }
+
 } // slag
 
 #endif //SLAG_TEXTURE_H

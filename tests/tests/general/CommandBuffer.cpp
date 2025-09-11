@@ -176,19 +176,16 @@ TEST_F(CommandBufferTest, ClearColor)
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore());
     std::unique_ptr<Texture> renderTarget = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1));
     std::unique_ptr<Texture> sampled = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,4));
-    std::unique_ptr<Texture> input = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::INPUT_ATTACHMENT,32,32,3,1));
     std::unique_ptr<Buffer> rtBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(renderTarget->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<Buffer> sampledBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sampled->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<Buffer> inputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(input->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
 
     commandBuffer->begin();
 
     commandBuffer->clearTexture(renderTarget.get(),ClearColor{.floats = {1.0f,0.0f,0.0f,1.0f}});
     commandBuffer->clearTexture(sampled.get(),ClearColor{.floats = {0.0f,1.0f,0.0f,1.0f}});
-    commandBuffer->clearTexture(input.get(),ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}});
 
 
-    TextureBarrier barriers[3]
+    TextureBarrier barriers[2]
     {
         {
                 .texture = renderTarget.get(),
@@ -204,15 +201,9 @@ TEST_F(CommandBufferTest, ClearColor)
                 .syncBefore = PipelineStageFlags::ALL_COMMANDS,
                 .syncAfter = PipelineStageFlags::TRANSFER,
         },
-     {
-            .texture = input.get(),
-            .accessBefore = BarrierAccessFlags::CLEAR,
-            .accessAfter = BarrierAccessFlags::TRANSFER_READ,
-            .syncBefore = PipelineStageFlags::ALL_COMMANDS,
-            .syncAfter = PipelineStageFlags::TRANSFER,
-        }
+
     };
-    commandBuffer->insertBarriers(barriers,3,nullptr,0,nullptr,0);
+    commandBuffer->insertBarriers(barriers,2,nullptr,0,nullptr,0);
     TextureToBufferCopyData rtCopyData
    {
        .bufferOffset = 0,
@@ -303,7 +294,6 @@ TEST_F(CommandBufferTest, ClearColor)
             }
         }
     };
-    commandBuffer->copyTextureToBuffer(input.get(),inputCopyData,3,inputBuffer.get());
 
     commandBuffer->end();
 
@@ -343,18 +333,6 @@ TEST_F(CommandBufferTest, ClearColor)
         GTEST_ASSERT_EQ(red,0);
         GTEST_ASSERT_EQ(green,255);
         GTEST_ASSERT_EQ(blue,0);
-        GTEST_ASSERT_EQ(alpha,255);
-    }
-    auto inputPtr = inputBuffer->as<unsigned char>();
-    for (auto i=0; i< inputBuffer->size(); i+=4)
-    {
-        unsigned char red = inputPtr[i];
-        unsigned char green = inputPtr[i+1];
-        unsigned char blue = inputPtr[i+2];
-        unsigned char alpha = inputPtr[i+3];
-        GTEST_ASSERT_EQ(red,0);
-        GTEST_ASSERT_EQ(green,0);
-        GTEST_ASSERT_EQ(blue,255);
         GTEST_ASSERT_EQ(alpha,255);
     }
 }

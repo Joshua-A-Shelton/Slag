@@ -17,6 +17,8 @@
 #include "core/GraphicsCard.h"
 #include "core/GraphicsTypes.h"
 #include "core/ICommandBuffer.h"
+#include "core/Operations.h"
+#include "core/PixelFormatProperties.h"
 #include "core/Pixels.h"
 #include "core/PlatformData.h"
 #include "core/Sampler.h"

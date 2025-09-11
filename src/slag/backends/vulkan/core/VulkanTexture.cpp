@@ -235,6 +235,52 @@ namespace slag
             return _view;
         }
 
+        void VulkanTexture::initializeChromaConverters()
+        {
+            auto nv12Properties = Pixels::formatProperties(Pixels::Format::NV12);
+            if (nv12Properties.tiling != PixelFormatProperties::Tiling::UNSUPPORTED)
+            {
+                auto vulkanFormat = VulkanBackend::vulkanizedFormat(Pixels::Format::NV12);
+                VkSamplerYcbcrConversionCreateInfo createInfo{.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO};
+                createInfo.format = vulkanFormat.format;
+                createInfo.ycbcrModel = VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709;
+                //I believe the difference between narrow and full is HDR... not sure though
+                createInfo.ycbcrRange = VK_SAMPLER_YCBCR_RANGE_ITU_NARROW;
+                createInfo.components = vulkanFormat.mapping;
+                createInfo.xChromaOffset = VK_CHROMA_LOCATION_COSITED_EVEN;
+                createInfo.yChromaOffset = VK_CHROMA_LOCATION_COSITED_EVEN;
+                createInfo.chromaFilter = VK_FILTER_LINEAR;
+                vkCreateSamplerYcbcrConversion(VulkanGraphicsCard::selected()->device(),&createInfo,nullptr,&NV12_CONVERTER);
+            }
+            auto opaque420Properties = Pixels::formatProperties(Pixels::Format::OPAQUE_420);
+            if (opaque420Properties.tiling != PixelFormatProperties::Tiling::UNSUPPORTED)
+            {
+                auto vulkanFormat = VulkanBackend::vulkanizedFormat(Pixels::Format::OPAQUE_420);
+                VkSamplerYcbcrConversionCreateInfo createInfo{.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO};
+                createInfo.format = vulkanFormat.format;
+                createInfo.ycbcrModel = VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709;
+                //I believe the difference between narrow and full is HDR... not sure though
+                createInfo.ycbcrRange = VK_SAMPLER_YCBCR_RANGE_ITU_NARROW;
+                createInfo.components = vulkanFormat.mapping;
+                createInfo.xChromaOffset = VK_CHROMA_LOCATION_COSITED_EVEN;
+                createInfo.yChromaOffset = VK_CHROMA_LOCATION_COSITED_EVEN;
+                createInfo.chromaFilter = VK_FILTER_LINEAR;
+                vkCreateSamplerYcbcrConversion(VulkanGraphicsCard::selected()->device(),&createInfo,nullptr,&OPAQUE_420_CONVERTER);
+            }
+        }
+
+        void VulkanTexture::cleanupChromaConverters()
+        {
+            if (NV12_CONVERTER)
+            {
+                vkDestroySamplerYcbcrConversion(VulkanGraphicsCard::selected()->device(),NV12_CONVERTER,nullptr);
+            }
+            if (OPAQUE_420_CONVERTER)
+            {
+                vkDestroySamplerYcbcrConversion(VulkanGraphicsCard::selected()->device(),OPAQUE_420_CONVERTER,nullptr);
+            }
+        }
+
         void VulkanTexture::move(VulkanTexture& from)
         {
             _format = from._format;
@@ -267,6 +313,11 @@ namespace slag
             _sampleCount = sampleCount;
 
             auto vulkanizedFormat = VulkanBackend::vulkanizedFormat(_format);
+            auto pixelProperties = Pixels::formatProperties(texelFormat);
+            if (pixelProperties.tiling == PixelFormatProperties::Tiling::UNSUPPORTED)
+            {
+                throw std::runtime_error("Texel Format unsuitable for creating textures");
+            }
 
             VkImageCreateInfo imageCreateInfo{};
             imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -288,7 +339,14 @@ namespace slag
             imageCreateInfo.mipLevels = _mipLevels;
             imageCreateInfo.arrayLayers = _layers;
             imageCreateInfo.samples = static_cast<VkSampleCountFlagBits>(_sampleCount);
-            imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+            if (pixelProperties.tiling == PixelFormatProperties::Tiling::OPTIMIZED)
+            {
+                imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+            }
+            else
+            {
+                imageCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
+            }
             imageCreateInfo.initialLayout = initialLayout;
 
             VmaAllocationCreateInfo allocationCreateInfo = {};
@@ -325,6 +383,18 @@ namespace slag
             viewCreateInfo.subresourceRange.levelCount = _mipLevels;
             viewCreateInfo.subresourceRange.baseArrayLayer = 0;
             viewCreateInfo.subresourceRange.aspectMask = vulkanAspectFlags;
+
+            VkSamplerYcbcrConversionInfo conversion_info{.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO};
+            if (texelFormat == Pixels::Format::NV12)
+            {
+                conversion_info.conversion = NV12_CONVERTER;
+                viewCreateInfo.pNext = &conversion_info;
+            }
+            else if (texelFormat == Pixels::Format::OPAQUE_420)
+            {
+                conversion_info.conversion = OPAQUE_420_CONVERTER;
+                viewCreateInfo.pNext = &conversion_info;
+            }
             vkCreateImageView(VulkanGraphicsCard::selected()->device(),&viewCreateInfo,nullptr,&_view);
         }
 

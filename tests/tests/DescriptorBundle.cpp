@@ -130,11 +130,10 @@ TEST_F(DescriptorBundleTest, TexelBufferComputeResults)
     struct ShaderParams
     {
         uint32_t arrayIndex = 1;
-        uint32_t arrayLength = 10;
     };
     ShaderParams shaderParams{};
     auto parameterBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(&shaderParams,sizeof(ShaderParams),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    auto sampler = std::unique_ptr<Sampler>(Sampler::newSampler(SamplerParameters{}));
+
     std::vector<float> data(40);
     for (auto i=0; i < 40; i++)
     {
@@ -178,15 +177,14 @@ TEST_F(DescriptorBundleTest, TexelBufferComputeResults)
     commandBuffer->bindComputeShaderPipeline(texelCompute.get());
     auto bundle = descriptorPool->makeBundle(texelCompute->descriptorGroup(0));
     bundle.setUniformBuffer(0,0,parameterBuffer.get(),0,parameterBuffer->size());
-    bundle.setSampler(1,0,sampler.get());
-    bundle.setUniformTexelBuffer(2,0,operandView1_1.get());
-    bundle.setUniformTexelBuffer(2,1,operandView1_2.get());
-    bundle.setUniformTexelBuffer(3,0,operandView2_1.get());
-    bundle.setUniformTexelBuffer(3,1,operandView2_2.get());
-    bundle.setStorageTexelBuffer(4,0,resultsView1_1.get());
-    bundle.setStorageTexelBuffer(4,1,resultsView1_2.get());
-    bundle.setStorageBuffer(5,0,indexes1_1.get(),0,indexes1_1->size());
-    bundle.setStorageBuffer(5,1,indexes1_2.get(),0,indexes1_2->size());
+    bundle.setUniformTexelBuffer(1,0,operandView1_1.get());
+    bundle.setUniformTexelBuffer(1,1,operandView1_2.get());
+    bundle.setUniformTexelBuffer(2,0,operandView2_1.get());
+    bundle.setUniformTexelBuffer(2,1,operandView2_2.get());
+    bundle.setStorageTexelBuffer(3,0,resultsView1_1.get());
+    bundle.setStorageTexelBuffer(3,1,resultsView1_2.get());
+    bundle.setStorageBuffer(4,0,indexes1_1.get(),0,indexes1_1->size());
+    bundle.setStorageBuffer(4,1,indexes1_2.get(),0,indexes1_2->size());
     commandBuffer->bindComputeDescriptorBundle(0,bundle);
     commandBuffer->dispatch(10,1,1);
 
@@ -212,18 +210,19 @@ TEST_F(DescriptorBundleTest, TexelBufferComputeResults)
     finished->waitForValue(1);
 
     auto results = results1_2->as<float>();
-    auto indexes = indexes1_2->as<float>();
+    auto blankResults = results1_1->as<float>();
 
-    for (int i=0; i< 10; i++)
+    for (int i=0; i< 40; i++)
     {
         float number1 = (1.0f/(1.0f-((float)i/80.0f)));
         float number2 = (float)(i*2)/255.0f;
 
         float expected = results[i];
-        float index = indexes[i];
-        GTEST_ASSERT_EQ(index,i);
         GTEST_ASSERT_EQ(expected,number1+number2);
-
+    }
+    for (int i=0; i< 40; i++)
+    {
+        GTEST_ASSERT_EQ(blankResults[i],0.0f);
     }
 
 }

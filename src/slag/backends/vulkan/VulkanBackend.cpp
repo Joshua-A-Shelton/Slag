@@ -11,6 +11,7 @@
 #include "core/VulkanShaderPipeline.h"
 #include "core/VulkanSwapChain.h"
 #include "core/VulkanTexture.h"
+#include "slag/core/PixelFormatProperties.h"
 #include "slag/core/SwapChain.h"
 #include "slag/utilities/SLAG_ASSERT.h"
 
@@ -49,10 +50,6 @@ namespace slag
             if (static_cast<bool>(flags & Texture::UsageFlags::SAMPLED_IMAGE))
             {
                 result |= VK_IMAGE_USAGE_SAMPLED_BIT;
-            }
-            if (static_cast<bool>(flags & Texture::UsageFlags::INPUT_ATTACHMENT))
-            {
-                result |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
             }
             if (static_cast<bool>(flags & Texture::UsageFlags::STORAGE))
             {
@@ -505,6 +502,16 @@ namespace slag
             SLAG_VULKAN_DEBUG_HANDLER = nullptr;
         }
 
+        void VulkanBackend::postGraphicsCardChosenSetup()
+        {
+            VulkanTexture::initializeChromaConverters();
+        }
+
+        void VulkanBackend::preGraphicsCardDestroyCleanup()
+        {
+            VulkanTexture::cleanupChromaConverters();
+        }
+
         bool VulkanBackend::valid()
         {
             return _isValid;
@@ -526,7 +533,12 @@ namespace slag
             features1_2.shaderInt8 = true;
             features1_2.shaderFloat16 = true;
 
+            VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcrFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES};
+            ycbcrFeatures.samplerYcbcrConversion = true;
+
+
             VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR shaderDerivativesFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_KHR};
+            shaderDerivativesFeatures.pNext = &ycbcrFeatures;
             shaderDerivativesFeatures.computeDerivativeGroupLinear = true;
             shaderDerivativesFeatures.computeDerivativeGroupQuads = true;
 
@@ -839,6 +851,74 @@ namespace slag
             write.pBufferInfo = &bufferInfo;
 
             vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
+        }
+
+        PixelFormatProperties VulkanBackend::pixelFormatProperties(Pixels::Format format)
+        {
+            auto nativeFormat = VulkanBackend::vulkanizedFormat(format);
+            VkFormatProperties2 formatProperties{.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2};
+            vkGetPhysicalDeviceFormatProperties2(VulkanGraphicsCard::selected()->physicalDevice(),nativeFormat.format,&formatProperties);
+            PixelFormatProperties properties{};
+            VkFormatFeatureFlags2 features = 0;
+            Texture::UsageFlags usage =static_cast<Texture::UsageFlags>(0);
+
+            if (formatProperties.formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT && formatProperties.formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT)
+            {
+                properties.tiling = PixelFormatProperties::Tiling::OPTIMIZED;
+                features = formatProperties.formatProperties.optimalTilingFeatures;
+            }
+            else if (formatProperties.formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT && formatProperties.formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT)
+            {
+                properties.tiling = PixelFormatProperties::Tiling::LINEAR;
+                features = formatProperties.formatProperties.optimalTilingFeatures;
+            }
+            else
+            {
+                properties.tiling = PixelFormatProperties::Tiling::UNSUPPORTED;
+                return properties;
+            }
+            bool hasUsage = false;
+            if (features & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT)
+            {
+                usage |= Texture::UsageFlags::SAMPLED_IMAGE;
+                hasUsage = true;
+            }
+            if (features & VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT )
+            {
+                usage |= Texture::UsageFlags::STORAGE;
+                hasUsage = true;
+            }
+            if (features & VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT)
+            {
+                usage |= Texture::UsageFlags::RENDER_TARGET_ATTACHMENT;
+                hasUsage = true;
+            }
+            if (features & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+            {
+                usage |= Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT;
+                hasUsage = true;
+            }
+            properties.validUsageFlags = usage;
+            if (!hasUsage)
+            {
+                properties.tiling = PixelFormatProperties::Tiling::UNSUPPORTED;
+                return properties;
+            }
+            if (features & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT)
+            {
+                properties.linearFilteringCapable = true;
+            }
+            if (features & VK_FORMAT_FEATURE_2_BLIT_SRC_BIT )
+            {
+                properties.blitSource = true;
+            }
+            if (features & VK_FORMAT_FEATURE_2_BLIT_DST_BIT )
+            {
+                properties.blitDestination = true;
+            }
+
+
+            return properties;
         }
 
         vkb::Instance VulkanBackend::vulkanInstance()

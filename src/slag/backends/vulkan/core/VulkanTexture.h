@@ -56,6 +56,9 @@ namespace slag
             VkImage vulkanHandle();
             VkImageView vulkanViewHandle();
 
+            static void initializeChromaConverters();
+            static void cleanupChromaConverters();
+
         private:
             Pixels::Format _format;
             Type _type = Type::TEXTURE_2D;
@@ -71,6 +74,9 @@ namespace slag
             VulkanGPUMemoryReference _selfReference{.memoryType = VulkanGPUMemoryReference::MemoryType::TEXTURE, .reference = {this}};
             void move(VulkanTexture& texture);
             void initialize(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount, VkImageLayout initialLayout);
+
+            static inline VkSamplerYcbcrConversion NV12_CONVERTER=nullptr;
+            static inline VkSamplerYcbcrConversion OPAQUE_420_CONVERTER=nullptr;
 
         };
     } // vulkan

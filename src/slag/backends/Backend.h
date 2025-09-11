@@ -17,6 +17,8 @@ namespace slag
         friend void slag::cleanup();
 
         virtual ~Backend()=default;
+        virtual void postGraphicsCardChosenSetup()=0;
+        virtual void preGraphicsCardDestroyCleanup()=0;
 
         static Backend* current(){return _current;}
 
@@ -71,6 +73,8 @@ namespace slag
         virtual void setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, BufferView* bufferView)=0;
         virtual void setDescriptorBundleUniformBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)=0;
         virtual void setDescriptorBundleStorageBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)=0;
+        //Pixel Properties
+        virtual PixelFormatProperties pixelFormatProperties(Pixels::Format format)=0;
 
     };
 }

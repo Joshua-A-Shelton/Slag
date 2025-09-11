@@ -302,7 +302,7 @@ namespace slag
 
             auto presentMode = VulkanBackend::vulkanizedPresentMode(_presentMode);
             auto format = VulkanBackend::vulkanizedFormat(_format);
-            auto imageUsageFlags = VulkanBackend::vulkanizedUsage(Texture::UsageFlags::INPUT_ATTACHMENT);
+            auto imageUsageFlags = VulkanBackend::vulkanizedUsage(Texture::UsageFlags::RENDER_TARGET_ATTACHMENT);
             auto usageFlags = VulkanBackend::vulkanizedAspectFlags(Pixels::AspectFlags::COLOR);
             vkb::SwapchainBuilder swapchainBuilder(VulkanGraphicsCard::selected()->physicalDevice(),VulkanGraphicsCard::selected()->device(),_surface);
             auto chain = swapchainBuilder.set_desired_format(VkSurfaceFormatKHR{format.format,VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})

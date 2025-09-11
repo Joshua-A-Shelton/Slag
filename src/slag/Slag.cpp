@@ -79,11 +79,13 @@ namespace slag
             }
             SLAG_CHOSEN_GRAPHICS_CARD = std::move(cards.front());
         }
+        Backend::_current->postGraphicsCardChosenSetup();
         return SLAG_INITIALIZATION_SUCCESS;
     }
 
     void cleanup()
     {
+        Backend::_current->preGraphicsCardDestroyCleanup();
         SLAG_CHOSEN_GRAPHICS_CARD = nullptr;
         delete Backend::_current;
         Backend::_current = nullptr;

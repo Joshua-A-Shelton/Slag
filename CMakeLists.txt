@@ -148,6 +148,7 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/VertexDescription.h
         src/slag/core/BufferView.cpp
         src/slag/core/BufferView.h
+        src/slag/core/PixelFormatProperties.h
 
 )
 #link spirv if we need to

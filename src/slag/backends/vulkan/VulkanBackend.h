@@ -56,6 +56,8 @@ namespace slag
 
             VulkanBackend(const SlagInitInfo& initInfo);
             ~VulkanBackend()override;
+            virtual void postGraphicsCardChosenSetup()override;
+            virtual void preGraphicsCardDestroyCleanup()override;
             virtual bool valid()override;
             virtual std::vector<std::unique_ptr<GraphicsCard>> getGraphicsCards()override;
             virtual GraphicsBackend backendAPI()override;
@@ -106,6 +108,9 @@ namespace slag
             virtual void setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, BufferView* bufferView)override;
             virtual void setDescriptorBundleUniformBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)override;
             virtual void setDescriptorBundleStorageBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)override;
+
+            //Pixel Properties
+            virtual PixelFormatProperties pixelFormatProperties(Pixels::Format format)override;
 
 
             vkb::Instance vulkanInstance();
