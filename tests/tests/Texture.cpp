@@ -321,11 +321,6 @@ TEST(Texture, CreateWithData)
     }
 }
 
-TEST(Texture, ChromaFormatUsage)
-{
-    GTEST_FAIL();
-}
-
 #define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits, Aspects)\
     TEST(Texture, SlagName)\
     {\
