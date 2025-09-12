@@ -2,6 +2,7 @@
 #include "VulkanBackend.h"
 #include "VkBootstrap.h"
 #include "core/VulkanBuffer.h"
+#include "core/VulkanBufferView.h"
 #include "core/VulkanCommandBuffer.h"
 #include "core/VulkanDescriptorPool.h"
 #include "core/VulkanGraphicsCard.h"
@@ -10,6 +11,7 @@
 #include "core/VulkanShaderPipeline.h"
 #include "core/VulkanSwapChain.h"
 #include "core/VulkanTexture.h"
+#include "slag/core/PixelFormatProperties.h"
 #include "slag/core/SwapChain.h"
 #include "slag/utilities/SLAG_ASSERT.h"
 
@@ -48,10 +50,6 @@ namespace slag
             if (static_cast<bool>(flags & Texture::UsageFlags::SAMPLED_IMAGE))
             {
                 result |= VK_IMAGE_USAGE_SAMPLED_BIT;
-            }
-            if (static_cast<bool>(flags & Texture::UsageFlags::INPUT_ATTACHMENT))
-            {
-                result |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
             }
             if (static_cast<bool>(flags & Texture::UsageFlags::STORAGE))
             {
@@ -431,8 +429,6 @@ namespace slag
                 return  VK_DESCRIPTOR_TYPE_SAMPLER;
             case slag::Descriptor::Type::SAMPLED_TEXTURE:
                 return  VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-            case slag::Descriptor::Type::SAMPLER_AND_TEXTURE:
-                return  VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             case slag::Descriptor::Type::STORAGE_TEXTURE:
                 return  VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
             case slag::Descriptor::Type::UNIFORM_TEXEL_BUFFER:
@@ -443,8 +439,6 @@ namespace slag
                 return  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             case slag::Descriptor::Type::STORAGE_BUFFER:
                 return  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            case slag::Descriptor::Type::INPUT_ATTACHMENT:
-                return  VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
             case slag::Descriptor::Type::ACCELERATION_STRUCTURE:
                 return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
             }
@@ -508,6 +502,16 @@ namespace slag
             SLAG_VULKAN_DEBUG_HANDLER = nullptr;
         }
 
+        void VulkanBackend::postGraphicsCardChosenSetup()
+        {
+            VulkanTexture::initializeChromaConverters();
+        }
+
+        void VulkanBackend::preGraphicsCardDestroyCleanup()
+        {
+            VulkanTexture::cleanupChromaConverters();
+        }
+
         bool VulkanBackend::valid()
         {
             return _isValid;
@@ -526,9 +530,22 @@ namespace slag
             features1_2.descriptorIndexing = true;
             features1_2.timelineSemaphore = true;
             features1_2.drawIndirectCount = true;
+            features1_2.shaderInt8 = true;
+            features1_2.shaderFloat16 = true;
+
+            VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcrFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES};
+            ycbcrFeatures.samplerYcbcrConversion = true;
+
+
+            VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR shaderDerivativesFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_KHR};
+            shaderDerivativesFeatures.pNext = &ycbcrFeatures;
+            shaderDerivativesFeatures.computeDerivativeGroupLinear = true;
+            shaderDerivativesFeatures.computeDerivativeGroupQuads = true;
 
 
             VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT};
+            swapchainFeatures.pNext = &shaderDerivativesFeatures;
+
             VkPhysicalDeviceFeatures2 features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
             features.pNext = &swapchainFeatures;
 
@@ -542,6 +559,8 @@ namespace slag
             basicFeatures.sampleRateShading = true;
             basicFeatures.alphaToOne = true;
             basicFeatures.logicOp = true;
+            basicFeatures.fragmentStoresAndAtomics = true;
+
 
 
             vkb::PhysicalDeviceSelector selector{_instance};
@@ -551,6 +570,7 @@ namespace slag
                                             .set_required_features(basicFeatures)
                                             .add_required_extension("VK_EXT_swapchain_maintenance1")
                                             .add_required_extension("VK_EXT_custom_border_color")
+                                            .add_required_extension("VK_KHR_compute_shader_derivatives")
                                             .defer_surface_initialization()
                                             .select_devices();
 
@@ -596,24 +616,24 @@ namespace slag
         }
 
 #ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
-        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount)
+        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount)
         {
-            return new VulkanTexture(texelFormat, type, usageFlags, width, height, layers, mipLevels, sampleCount);
+            return new VulkanTexture(texelFormat, type, usageFlags, width, height, depth,mipLevels, layers, sampleCount);
         }
 
 
-        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers)
+        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData, uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount)
         {
-            return new VulkanTexture(texelFormat, type,usageFlags,width,height,layers,mipLevels,sampleCount,texelData,providedDataMips,providedDataLayers);
+            return new VulkanTexture(texelFormat, type,usageFlags,width,height, depth,mipLevels,layers,sampleCount,texelData, texelDataLength,mappings,mappingCount);
         }
 #else
-        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels,Texture::SampleCount sampleCount)
+        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers,Texture::SampleCount sampleCount)
         {
-            return new VulkanTexture(texelFormat, type, usageFlags, width, height, layers, mipLevels, sampleCount);
+            return new VulkanTexture(texelFormat, type, usageFlags, width, height, depth, mipLevels, layers, sampleCount);
         }
-        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers)
+        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData,uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount)
         {
-            return new VulkanTexture(texelFormat, type, layout,usageFlags,width,height,layers,mipLevels,sampleCount,texelData,providedDataMips,providedDataLayers);
+            return new VulkanTexture(texelFormat, type, layout,usageFlags,width,height,depth,mipLevels,layers,sampleCount,texelData,texelDataLength,mappings, mappingCount);
         }
 
 
@@ -627,6 +647,11 @@ namespace slag
         Buffer* VulkanBackend::newBuffer(void* data, size_t dataSize, Buffer::Accessibility accessibility, Buffer::UsageFlags usage)
         {
             return new VulkanBuffer(data, dataSize, accessibility, usage);
+        }
+
+        BufferView* VulkanBackend::newBufferView(Buffer* buffer, Pixels::Format format, uint64_t offset, uint64_t size)
+        {
+            return new VulkanBufferView(buffer, format, offset, size);
         }
 
         SwapChain* VulkanBackend::newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, SwapChain::PresentMode presentMode, uint8_t frameCount, Pixels::Format format, SwapChain::AlphaCompositing compositing,FrameResources*(* createResourceFunction)(uint8_t frameIndex, SwapChain* inChain),void (*swapchainRebuiltFunction)(SwapChain* swapChain))
@@ -713,28 +738,7 @@ namespace slag
 
             vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
         }
-        void VulkanBackend::setDescriptorBundleTextureAndSampler(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Texture* texture, Sampler* sampler)
-        {
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
-            auto tex = static_cast<VulkanTexture*>(texture);
-            auto s = static_cast<VulkanSampler*>(sampler);
 
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.sampler = s->vulkanHandle();
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-            imageInfo.imageView = tex->vulkanViewHandle();
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet = descriptorSet;
-            write.dstBinding = binding;
-            write.dstArrayElement = arrayElement;
-            write.descriptorCount = 1;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            write.pImageInfo = &imageInfo;
-
-            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
-        }
         void VulkanBackend::setDescriptorBundleStorageTexture(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Texture* texture)
         {
             VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
@@ -755,26 +759,6 @@ namespace slag
 
             vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
         }
-        void VulkanBackend::setDescriptorBundleInputAttachment(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Texture* texture)
-        {
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
-            auto tex = static_cast<VulkanTexture*>(texture);
-
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-            imageInfo.imageView = tex->vulkanViewHandle();
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet = descriptorSet;
-            write.dstBinding = binding;
-            write.dstArrayElement = arrayElement;
-            write.descriptorCount = 1;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-            write.pImageInfo = &imageInfo;
-
-            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
-        }
 #else
         void VulkanBackend::setDescriptorBundleSampler(uint32_t binding,uint32_t arrayElement, Sampler* sampler, TextureLayouts::Layout layout)
         {
@@ -784,26 +768,47 @@ namespace slag
         {
             throw std::runtime_error("Not implemented");
         }
-        void VulkanBackend::setSamplerAndTexture(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout, Sampler* sampler)
-        {
-            throw std::runtime_error("Not implemented");
-        }
         void VulkanBackend::setStorageTexture(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout)
         {
             throw std::runtime_error("Not implemented");
         }
-        void VulkanBackend::setInputAttachment(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout)
-        {
-            throw std::runtime_error("Not implemented");
-        }
 #endif
-        void VulkanBackend::setDescriptorBundleUniformTexelBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
+        void VulkanBackend::setDescriptorBundleUniformTexelBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, BufferView* bufferView)
         {
-            throw std::runtime_error("Not implemented");
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
+            auto buf = static_cast<VulkanBufferView*>(bufferView);
+
+            auto handle = buf->vulkanHandle();
+
+            VkWriteDescriptorSet write{};
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = descriptorSet;
+            write.dstBinding = binding;
+            write.dstArrayElement = arrayElement;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+            write.pTexelBufferView = &handle;
+
+            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
+
         }
-        void VulkanBackend::setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
+        void VulkanBackend::setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, BufferView* bufferView)
         {
-            throw std::runtime_error("Not implemented");
+            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
+            auto buf = static_cast<VulkanBufferView*>(bufferView);
+
+            auto handle = buf->vulkanHandle();
+
+            VkWriteDescriptorSet write{};
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = descriptorSet;
+            write.dstBinding = binding;
+            write.dstArrayElement = arrayElement;
+            write.descriptorCount = 1;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+            write.pTexelBufferView = &handle;
+
+            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
         }
         void VulkanBackend::setDescriptorBundleUniformBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
         {
@@ -846,6 +851,74 @@ namespace slag
             write.pBufferInfo = &bufferInfo;
 
             vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
+        }
+
+        PixelFormatProperties VulkanBackend::pixelFormatProperties(Pixels::Format format)
+        {
+            auto nativeFormat = VulkanBackend::vulkanizedFormat(format);
+            VkFormatProperties2 formatProperties{.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2};
+            vkGetPhysicalDeviceFormatProperties2(VulkanGraphicsCard::selected()->physicalDevice(),nativeFormat.format,&formatProperties);
+            PixelFormatProperties properties{};
+            VkFormatFeatureFlags2 features = 0;
+            Texture::UsageFlags usage =static_cast<Texture::UsageFlags>(0);
+
+            if (formatProperties.formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT && formatProperties.formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT)
+            {
+                properties.tiling = PixelFormatProperties::Tiling::OPTIMIZED;
+                features = formatProperties.formatProperties.optimalTilingFeatures;
+            }
+            else if (formatProperties.formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT && formatProperties.formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT)
+            {
+                properties.tiling = PixelFormatProperties::Tiling::LINEAR;
+                features = formatProperties.formatProperties.optimalTilingFeatures;
+            }
+            else
+            {
+                properties.tiling = PixelFormatProperties::Tiling::UNSUPPORTED;
+                return properties;
+            }
+            bool hasUsage = false;
+            if (features & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT)
+            {
+                usage |= Texture::UsageFlags::SAMPLED_IMAGE;
+                hasUsage = true;
+            }
+            if (features & VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT )
+            {
+                usage |= Texture::UsageFlags::STORAGE;
+                hasUsage = true;
+            }
+            if (features & VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT)
+            {
+                usage |= Texture::UsageFlags::RENDER_TARGET_ATTACHMENT;
+                hasUsage = true;
+            }
+            if (features & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+            {
+                usage |= Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT;
+                hasUsage = true;
+            }
+            properties.validUsageFlags = usage;
+            if (!hasUsage)
+            {
+                properties.tiling = PixelFormatProperties::Tiling::UNSUPPORTED;
+                return properties;
+            }
+            if (features & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT)
+            {
+                properties.linearFilteringCapable = true;
+            }
+            if (features & VK_FORMAT_FEATURE_2_BLIT_SRC_BIT )
+            {
+                properties.blitSource = true;
+            }
+            if (features & VK_FORMAT_FEATURE_2_BLIT_DST_BIT )
+            {
+                properties.blitDestination = true;
+            }
+
+
+            return properties;
         }
 
         vkb::Instance VulkanBackend::vulkanInstance()

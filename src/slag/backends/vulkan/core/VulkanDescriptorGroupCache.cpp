@@ -24,18 +24,24 @@ namespace slag
                 cached.instanceCount = 1;
 
                 std::vector<VkDescriptorSetLayoutBinding> bindings(group.descriptorCount());
+                uint32_t actualBindings = 0;
                 for(size_t i=0; i< group.descriptorCount(); i++)
                 {
                     auto& descriptor = group[i];
-                    VkDescriptorSetLayoutBinding& binding = bindings[i];
+                    if (descriptor.shape().type == Descriptor::Type::UNKNOWN)
+                    {
+                        continue;
+                    }
+                    VkDescriptorSetLayoutBinding& binding = bindings[actualBindings];
                     binding.descriptorType = VulkanBackend::vulkanizedDescriptorType(descriptor.shape().type);
                     binding.descriptorCount = descriptor.shape().arrayDepth;
                     binding.binding = descriptor.shape().binding;
                     binding.stageFlags = VulkanBackend::vulkanizedShaderFlags(descriptor.shape().visibleStages);
+                    actualBindings++;
                 }
                 VkDescriptorSetLayoutCreateInfo layoutInfo{};
                 layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-                layoutInfo.bindingCount = bindings.size();
+                layoutInfo.bindingCount = actualBindings;
                 layoutInfo.pBindings = bindings.data();
 
                 auto result = vkCreateDescriptorSetLayout(VulkanGraphicsCard::selected()->device(), &layoutInfo, nullptr, &cached.layout);

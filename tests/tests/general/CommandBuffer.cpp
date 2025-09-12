@@ -174,21 +174,18 @@ TEST_F(CommandBufferTest, ClearColor)
 {
     std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore());
-    std::unique_ptr<Texture> renderTarget = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1));
-    std::unique_ptr<Texture> sampled = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,4));
-    std::unique_ptr<Texture> input = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::INPUT_ATTACHMENT,32,32,3,1));
+    std::unique_ptr<Texture> renderTarget = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1,1));
+    std::unique_ptr<Texture> sampled = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,4,1));
     std::unique_ptr<Buffer> rtBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(renderTarget->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<Buffer> sampledBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sampled->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<Buffer> inputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(input->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
 
     commandBuffer->begin();
 
     commandBuffer->clearTexture(renderTarget.get(),ClearColor{.floats = {1.0f,0.0f,0.0f,1.0f}});
     commandBuffer->clearTexture(sampled.get(),ClearColor{.floats = {0.0f,1.0f,0.0f,1.0f}});
-    commandBuffer->clearTexture(input.get(),ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}});
 
 
-    TextureBarrier barriers[3]
+    TextureBarrier barriers[2]
     {
         {
                 .texture = renderTarget.get(),
@@ -204,106 +201,76 @@ TEST_F(CommandBufferTest, ClearColor)
                 .syncBefore = PipelineStageFlags::ALL_COMMANDS,
                 .syncAfter = PipelineStageFlags::TRANSFER,
         },
-     {
-            .texture = input.get(),
-            .accessBefore = BarrierAccessFlags::CLEAR,
-            .accessAfter = BarrierAccessFlags::TRANSFER_READ,
-            .syncBefore = PipelineStageFlags::ALL_COMMANDS,
-            .syncAfter = PipelineStageFlags::TRANSFER,
-        }
+
     };
-    commandBuffer->insertBarriers(barriers,3,nullptr,0,nullptr,0);
-    TextureToBufferCopyData rtCopyData
+    commandBuffer->insertBarriers(barriers,2,nullptr,0,nullptr,0);
+    TextureBufferMapping rtCopyData
    {
        .bufferOffset = 0,
-       .subresource =
+       .textureSubresource =
         {
             .aspectFlags = Pixels::AspectFlags::COLOR,
             .mipLevel = 0,
             .baseArrayLayer = 0,
             .layerCount = 1
-        }
+        },
+       .textureOffset = {0,0,0},
+       .textureExtent = {renderTarget->width(),renderTarget->height(),renderTarget->depth()}
    };
-    commandBuffer->copyTextureToBuffer(renderTarget.get(),&rtCopyData,1,rtBuffer.get());
+    commandBuffer->copyTextureToBuffer(renderTarget.get(),rtBuffer.get(),&rtCopyData,1);
 
-    TextureToBufferCopyData sampledCopyData[4]
+    TextureBufferMapping sampledCopyData[4]
     {
         {
             .bufferOffset = 0,
-            .subresource =
+            .textureSubresource =
             {
                 .aspectFlags = Pixels::AspectFlags::COLOR,
                 .mipLevel = 0,
                 .baseArrayLayer = 0,
                 .layerCount = 1
-            }
+            },
+            .textureOffset = {0,0,0},
+            .textureExtent = {sampled->width(),sampled->height(),1}
         },
         {
             .bufferOffset = sampled->byteSize(0),
-            .subresource =
+            .textureSubresource =
             {
                 .aspectFlags = Pixels::AspectFlags::COLOR,
                 .mipLevel = 1,
                 .baseArrayLayer = 0,
                 .layerCount = 1
-            }
+            },
+            .textureOffset = {0,0,0},
+            .textureExtent = {sampled->width(1),sampled->height(1),1}
         },
         {
             .bufferOffset = sampled->byteSize(0)+sampled->byteSize(1),
-            .subresource =
-        {
+            .textureSubresource =
+         {
                 .aspectFlags = Pixels::AspectFlags::COLOR,
                 .mipLevel = 2,
                 .baseArrayLayer = 0,
                 .layerCount = 1
-            }
+            },
+            .textureOffset = {0,0,0},
+            .textureExtent = {sampled->width(2),sampled->height(2),1}
         },
         {
             .bufferOffset = sampled->byteSize(0)+sampled->byteSize(1)+sampled->byteSize(2),
-            .subresource =
+            .textureSubresource =
         {
                 .aspectFlags = Pixels::AspectFlags::COLOR,
                 .mipLevel = 3,
                 .baseArrayLayer = 0,
                 .layerCount = 1
-            }
+            },
+            .textureOffset = {0,0,0},
+            .textureExtent = {sampled->width(3),sampled->height(3),1}
         }
     };
-    commandBuffer->copyTextureToBuffer(sampled.get(),sampledCopyData,4,sampledBuffer.get());
-    TextureToBufferCopyData inputCopyData[3]
-    {
-        {
-            .bufferOffset = 0,
-            .subresource =
-            {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 0,
-                .baseArrayLayer = 0,
-                .layerCount = 1
-            }
-        },
-        {
-            .bufferOffset = sampled->byteSize(0),
-            .subresource =
-            {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 0,
-                .baseArrayLayer = 1,
-                .layerCount = 1
-            }
-        },
-        {
-            .bufferOffset = sampled->byteSize(0)*2,
-            .subresource =
-        {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 0,
-                .baseArrayLayer = 2,
-                .layerCount = 1
-            }
-        }
-    };
-    commandBuffer->copyTextureToBuffer(input.get(),inputCopyData,3,inputBuffer.get());
+    commandBuffer->copyTextureToBuffer(sampled.get(),sampledBuffer.get(),sampledCopyData,4);
 
     commandBuffer->end();
 
@@ -345,18 +312,6 @@ TEST_F(CommandBufferTest, ClearColor)
         GTEST_ASSERT_EQ(blue,0);
         GTEST_ASSERT_EQ(alpha,255);
     }
-    auto inputPtr = inputBuffer->as<unsigned char>();
-    for (auto i=0; i< inputBuffer->size(); i+=4)
-    {
-        unsigned char red = inputPtr[i];
-        unsigned char green = inputPtr[i+1];
-        unsigned char blue = inputPtr[i+2];
-        unsigned char alpha = inputPtr[i+3];
-        GTEST_ASSERT_EQ(red,0);
-        GTEST_ASSERT_EQ(green,0);
-        GTEST_ASSERT_EQ(blue,255);
-        GTEST_ASSERT_EQ(alpha,255);
-    }
 }
 #ifdef SLAG_DEBUG
 TEST_F(CommandBufferTest, ClearColorFailInRenderPass)
@@ -364,8 +319,8 @@ TEST_F(CommandBufferTest, ClearColorFailInRenderPass)
     GTEST_FLAG_SET(death_test_style, "threadsafe");
     std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    std::unique_ptr<Texture> texture1 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1));
-    std::unique_ptr<Texture> texture2 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1));
+    std::unique_ptr<Texture> texture1 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1,1));
+    std::unique_ptr<Texture> texture2 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1,1));
     commandBuffer->begin();
 
     Attachment colorAttachment
@@ -383,7 +338,7 @@ TEST_F(CommandBufferTest, ClearDepth)
 {
     std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    std::unique_ptr<Texture> depthTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1));
+    std::unique_ptr<Texture> depthTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1,1));
     std::unique_ptr<Buffer> depthBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(depthTexture->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
 
 
@@ -398,18 +353,20 @@ TEST_F(CommandBufferTest, ClearDepth)
             .syncBefore = PipelineStageFlags::ALL_COMMANDS,
             .syncAfter = PipelineStageFlags::TRANSFER
         });
-    TextureToBufferCopyData copyData
+    TextureBufferMapping copyData
     {
         .bufferOffset = 0,
-        .subresource =
+        .textureSubresource =
      {
             .aspectFlags = Pixels::AspectFlags::DEPTH,
             .mipLevel = 0,
             .baseArrayLayer = 0,
             .layerCount = 1,
-        }
+        },
+         .textureOffset = {0,0,0},
+         .textureExtent = {depthTexture->width(),depthTexture->height(),1}
     };
-    commandBuffer->copyTextureToBuffer(depthTexture.get(),&copyData,1,depthBuffer.get());
+    commandBuffer->copyTextureToBuffer(depthTexture.get(),depthBuffer.get(),&copyData,1);
     commandBuffer->end();
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
@@ -439,9 +396,9 @@ TEST_F(CommandBufferTest, ClearDepthFailInRenderPass)
     GTEST_FLAG_SET(death_test_style, "threadsafe");
     std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    std::unique_ptr<Texture> color = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1));
-    std::unique_ptr<Texture> texture1 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1));
-    std::unique_ptr<Texture> texture2 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1));
+    std::unique_ptr<Texture> color = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1,1));
+    std::unique_ptr<Texture> texture1 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1,1));
+    std::unique_ptr<Texture> texture2 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1,1));
     commandBuffer->begin();
 
     Attachment colorAttachment
@@ -472,7 +429,35 @@ TEST_F(CommandBufferTest, UpdateMip)
         unsigned char a;
     };
     std::vector<byteColor> texels(32*32,byteColor{255,127,50,25});
-    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,2,Texture::SampleCount::ONE,texels.data(),1,1));
+    TextureBufferMapping mappings[]
+    {
+    {
+            .bufferOffset = 0,
+            .textureSubresource =
+         {
+                .aspectFlags = Pixels::AspectFlags::COLOR,
+                .mipLevel = 0,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+            .textureOffset = {0,0,0},
+            .textureExtent = {32,32,1}
+        },
+    {
+            .bufferOffset = 32*32,
+            .textureSubresource =
+        {
+                .aspectFlags = Pixels::AspectFlags::COLOR,
+                .mipLevel = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+            .textureOffset = {0,0,0},
+            .textureExtent = {16,16,1}
+        }
+    };
+
+    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,2,1,Texture::SampleCount::ONE,texels.data(),texels.size()*Pixels::size(Pixels::Format::R8G8B8A8_UNORM),mappings,2));
     std::unique_ptr<Buffer> textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(texture->byteSize(1),Buffer::Accessibility::CPU_AND_GPU));
     commandBuffer->begin();
 
@@ -486,18 +471,20 @@ TEST_F(CommandBufferTest, UpdateMip)
             .syncBefore = PipelineStageFlags::BLIT,
             .syncAfter = PipelineStageFlags::TRANSFER
         });
-    TextureToBufferCopyData copyData
+    TextureBufferMapping copyData
     {
         .bufferOffset = 0,
-        .subresource =
+        .textureSubresource =
         {
             .aspectFlags = Pixels::AspectFlags::COLOR,
             .mipLevel = 1,
             .baseArrayLayer = 0,
             .layerCount = 1,
-        }
+        },
+         .textureOffset = {0,0,0},
+         .textureExtent = {texture->width(1),texture->height(1),1}
     };
-    commandBuffer->copyTextureToBuffer(texture.get(),&copyData,1,textureBuffer.get());
+    commandBuffer->copyTextureToBuffer(texture.get(),textureBuffer.get(),&copyData,1);
 
     commandBuffer->end();
 
@@ -540,8 +527,35 @@ TEST_F(CommandBufferTest, UpdateMipFailInRenderPass)
         unsigned char a;
     };
     std::vector<byteColor> texels(32*32,byteColor{255,127,50,25});
-    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,2,Texture::SampleCount::ONE,texels.data(),1,1));
-    std::unique_ptr<Texture> frameBuffer = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1));
+    TextureBufferMapping mappings[]
+    {
+        {
+            .bufferOffset = 0,
+            .textureSubresource =
+         {
+                .aspectFlags = Pixels::AspectFlags::COLOR,
+                .mipLevel = 0,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+            .textureOffset = {0,0,0},
+            .textureExtent = {32,32,1}
+        },
+    {
+        .bufferOffset = 32*32,
+        .textureSubresource =
+    {
+            .aspectFlags = Pixels::AspectFlags::COLOR,
+            .mipLevel = 1,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+        .textureOffset = {0,0,0},
+        .textureExtent = {16,16,1}
+    }
+    };
+    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,2,1,Texture::SampleCount::ONE,texels.data(),texels.size()*sizeof(byteColor),mappings,2));
+    std::unique_ptr<Texture> frameBuffer = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1,1));
 
     commandBuffer->begin();
 
@@ -618,35 +632,90 @@ TEST_F(CommandBufferTest, CopyTextureToBuffer)
     {
         texels[i] = byteColor{122,36,15,100};
     }
-    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,2,2,Texture::SampleCount::ONE,texels.data(),2,2));
+    TextureBufferMapping mappings[]
+    {
+    {
+            .bufferOffset = 0,
+            .textureSubresource =
+         {
+                .aspectFlags = Pixels::AspectFlags::COLOR,
+                .mipLevel = 0,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+            .textureOffset = {0,0,0},
+            .textureExtent = {32,32,1}
+        },
+    {
+            .bufferOffset = 32*32*sizeof(byteColor),
+            .textureSubresource =
+        {
+                .aspectFlags = Pixels::AspectFlags::COLOR,
+                .mipLevel = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+            .textureOffset = {0,0,0},
+            .textureExtent = {16,16,1}
+        },
+    {
+            .bufferOffset = (32*32+16*16)*sizeof(byteColor),
+            .textureSubresource =
+         {
+                .aspectFlags = Pixels::AspectFlags::COLOR,
+                .mipLevel = 0,
+                .baseArrayLayer = 1,
+                .layerCount = 1,
+            },
+            .textureOffset = {0,0,0},
+            .textureExtent = {32,32,1}
+        },
+        {
+            .bufferOffset = ((32*32)*2+16*16)*sizeof(byteColor),
+            .textureSubresource =
+        {
+                .aspectFlags = Pixels::AspectFlags::COLOR,
+                .mipLevel = 1,
+                .baseArrayLayer = 1,
+                .layerCount = 1,
+            },
+            .textureOffset = {0,0,0},
+            .textureExtent = {16,16,1}
+        }
+    };
+    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,2,2,Texture::SampleCount::ONE,texels.data(),texels.size()*sizeof(byteColor),mappings,4));
     std::unique_ptr<Buffer> textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(texture->byteSize(0)+texture->byteSize(1)+32,Buffer::Accessibility::CPU_AND_GPU));
 
     commandBuffer->begin();
 
-    TextureToBufferCopyData copyData[]
+    TextureBufferMapping copyData[]
     {
         {
             .bufferOffset = 16,
-            .subresource =
+            .textureSubresource =
         {
                 .aspectFlags = Pixels::AspectFlags::COLOR,
                 .mipLevel = 0,
                 .baseArrayLayer = 0,
                 .layerCount = 1,
-            }
+            },
+             .textureOffset = {0,0,0},
+             .textureExtent = {texture->width(),texture->height(),1}
         },
         {
             .bufferOffset = texture->byteSize(0)+16,
-            .subresource =
+            .textureSubresource =
             {
                 .aspectFlags = Pixels::AspectFlags::COLOR,
                 .mipLevel = 1,
                 .baseArrayLayer = 1,
                 .layerCount = 1,
-            }
+            },
+            .textureOffset = {0,0,0},
+            .textureExtent = {texture->width(1),texture->height(1),1}
         }
     };
-    commandBuffer->copyTextureToBuffer(texture.get(),copyData,2,textureBuffer.get());
+    commandBuffer->copyTextureToBuffer(texture.get(),textureBuffer.get(),copyData,2);
 
     commandBuffer->end();
 
@@ -673,6 +742,7 @@ TEST_F(CommandBufferTest, CopyTextureToBuffer)
         GTEST_ASSERT_EQ(color.b,255);
         GTEST_ASSERT_EQ(color.a,255);
     }
+
     for (auto i=16+texture->byteSize(0); i < 16+texture->byteSize(0)+texture->byteSize(1); i+=4)
     {
         auto color = *reinterpret_cast<byteColor*>(&colorPtr[i]);
@@ -715,8 +785,21 @@ TEST_F(CommandBufferTest, Blit)
     }
     std::vector<byteColor> byteTexels(32*32,{0,255,0,255});
 
-    std::unique_ptr<Texture> floatTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,1,Texture::SampleCount::ONE,floatTexels.data(),1,1));
-    std::unique_ptr<Texture> byteTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,1,Texture::SampleCount::ONE, byteTexels.data(),1,1));
+    TextureBufferMapping mapping
+    {
+        .bufferOffset = 0,
+        .textureSubresource =
+     {
+            .aspectFlags = Pixels::AspectFlags::COLOR,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+        .textureOffset = {0,0,0},
+        .textureExtent = {32,32,1}
+    };
+    std::unique_ptr<Texture> floatTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,1,1,Texture::SampleCount::ONE,floatTexels.data(),floatTexels.size()*sizeof(floatColor),&mapping,1));
+    std::unique_ptr<Texture> byteTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,1,1,Texture::SampleCount::ONE, byteTexels.data(),byteTexels.size()*sizeof(byteColor),&mapping,1));
     std::unique_ptr<Buffer> textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(byteTexture->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
 
     commandBuffer->begin();
@@ -730,18 +813,20 @@ TEST_F(CommandBufferTest, Blit)
             .syncBefore = PipelineStageFlags::BLIT,
             .syncAfter = PipelineStageFlags::TRANSFER,
         });
-    TextureToBufferCopyData copyData
+    TextureBufferMapping copyData
     {
         .bufferOffset = 0,
-        .subresource =
+        .textureSubresource =
      {
             .aspectFlags = Pixels::AspectFlags::COLOR,
             .mipLevel = 0,
             .baseArrayLayer = 0,
             .layerCount = 1,
-        }
+     },
+         .textureOffset = {0,0,0},
+         .textureExtent = {byteTexture->width(0),byteTexture->height(0),1}
     };
-    commandBuffer->copyTextureToBuffer(byteTexture.get(),&copyData,1,textureBuffer.get());
+    commandBuffer->copyTextureToBuffer(byteTexture.get(),textureBuffer.get(),&copyData,1);
 
     commandBuffer->end();
 
@@ -774,13 +859,13 @@ TEST_F(CommandBufferTest, Resolve)
 {
     std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    std::unique_ptr<Texture> multiSampled = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,Texture::SampleCount::FOUR));
-    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Texture> multiSampled = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1,Texture::SampleCount::FOUR));
+    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> output = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Texture> output = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(output->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
 
 
@@ -808,7 +893,8 @@ TEST_F(CommandBufferTest, Resolve)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthMultiSamplePipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    objectBundle.setSampledTexture(1,0,objectTexture.get());
+    objectBundle.setSampler(2,0,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = multiSampled.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -848,18 +934,20 @@ TEST_F(CommandBufferTest, Resolve)
             .syncBefore = PipelineStageFlags::BLIT,
             .syncAfter = PipelineStageFlags::TRANSFER,
         });
-    TextureToBufferCopyData copyData
+    TextureBufferMapping copyData
     {
         .bufferOffset = 0,
-        .subresource =
+        .textureSubresource =
         {
             .aspectFlags = Pixels::AspectFlags::COLOR,
             .mipLevel = 0,
             .baseArrayLayer = 0,
             .layerCount = 1,
-        }
+        },
+         .textureOffset = {0,0,0},
+         .textureExtent = {output->width(0),output->height(0),1}
     };
-    commandBuffer->copyTextureToBuffer(output.get(),&copyData,1,outputBuffer.get());
+    commandBuffer->copyTextureToBuffer(output.get(),outputBuffer.get(),&copyData,1);
     commandBuffer->end();
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
@@ -949,8 +1037,8 @@ TEST_F(CommandBufferTest, SetViewport)
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
-    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
+    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
 
@@ -975,7 +1063,8 @@ TEST_F(CommandBufferTest, SetViewport)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    objectBundle.setSampledTexture(1,0,objectTexture.get());
+    objectBundle.setSampler(2,0,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -999,18 +1088,20 @@ TEST_F(CommandBufferTest, SetViewport)
 
 
     commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
-    TextureToBufferCopyData copyData
+    TextureBufferMapping copyData
     {
         .bufferOffset = 0,
-        .subresource =
+        .textureSubresource =
         {
             .aspectFlags = Pixels::AspectFlags::COLOR,
             .mipLevel = 0,
             .baseArrayLayer = 0,
             .layerCount = 1,
-        }
+        },
+         .textureOffset = {0,0,0},
+         .textureExtent = {target->width(0),target->height(0),1}
     };
-    commandBuffer->copyTextureToBuffer(target.get(),&copyData,1,outputBuffer.get());
+    commandBuffer->copyTextureToBuffer(target.get(),outputBuffer.get(),&copyData,1);
 
     commandBuffer->end();
 
@@ -1047,8 +1138,8 @@ TEST_F(CommandBufferTest, SetScissor)
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
-    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
+    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
 
@@ -1073,7 +1164,8 @@ TEST_F(CommandBufferTest, SetScissor)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    objectBundle.setSampledTexture(1,0,objectTexture.get());
+    objectBundle.setSampler(2,0,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1097,18 +1189,20 @@ TEST_F(CommandBufferTest, SetScissor)
 
 
     commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
-    TextureToBufferCopyData copyData
+    TextureBufferMapping copyData
     {
         .bufferOffset = 0,
-        .subresource =
+        .textureSubresource =
         {
             .aspectFlags = Pixels::AspectFlags::COLOR,
             .mipLevel = 0,
             .baseArrayLayer = 0,
             .layerCount = 1,
-        }
+        },
+         .textureOffset = {0,0,0},
+         .textureExtent = {target->width(0),target->height(0),1}
     };
-    commandBuffer->copyTextureToBuffer(target.get(),&copyData,1,outputBuffer.get());
+    commandBuffer->copyTextureToBuffer(target.get(),outputBuffer.get(),&copyData,1);
 
     commandBuffer->end();
 
@@ -1156,8 +1250,8 @@ TEST_F(CommandBufferTest, Draw)
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
-    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
+    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
 
@@ -1182,7 +1276,8 @@ TEST_F(CommandBufferTest, Draw)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    objectBundle.setSampledTexture(1,0,objectTexture.get());
+    objectBundle.setSampler(2,0,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1206,18 +1301,20 @@ TEST_F(CommandBufferTest, Draw)
 
 
     commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
-    TextureToBufferCopyData copyData
+    TextureBufferMapping copyData
     {
         .bufferOffset = 0,
-        .subresource =
+        .textureSubresource =
         {
             .aspectFlags = Pixels::AspectFlags::COLOR,
             .mipLevel = 0,
             .baseArrayLayer = 0,
             .layerCount = 1,
-        }
+        },
+         .textureOffset = {0,0,0},
+         .textureExtent = {target->width(0),target->height(0),1}
     };
-    commandBuffer->copyTextureToBuffer(target.get(),&copyData,1,outputBuffer.get());
+    commandBuffer->copyTextureToBuffer(target.get(),outputBuffer.get(),&copyData,1);
 
     commandBuffer->end();
 
@@ -1254,8 +1351,8 @@ TEST_F(CommandBufferTest, DrawIndexed)
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
-    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
+    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
 
@@ -1280,7 +1377,8 @@ TEST_F(CommandBufferTest, DrawIndexed)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    objectBundle.setSampledTexture(1,0,objectTexture.get());
+    objectBundle.setSampler(2,0,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1303,18 +1401,20 @@ TEST_F(CommandBufferTest, DrawIndexed)
     commandBuffer->endRendering();
 
     commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
-    TextureToBufferCopyData copyData
+    TextureBufferMapping copyData
     {
         .bufferOffset = 0,
-        .subresource =
+        .textureSubresource =
         {
             .aspectFlags = Pixels::AspectFlags::COLOR,
             .mipLevel = 0,
             .baseArrayLayer = 0,
             .layerCount = 1,
-        }
+        },
+         .textureOffset = {0,0,0},
+         .textureExtent = {target->width(0),target->height(0),1}
     };
-    commandBuffer->copyTextureToBuffer(target.get(),&copyData,1,outputBuffer.get());
+    commandBuffer->copyTextureToBuffer(target.get(),outputBuffer.get(),&copyData,1);
 
     commandBuffer->end();
 
@@ -1349,8 +1449,8 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
-    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
+    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
 
@@ -1375,7 +1475,8 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    objectBundle.setSampledTexture(1,0,objectTexture.get());
+    objectBundle.setSampler(2,0,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1407,18 +1508,20 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
     commandBuffer->endRendering();
 
     commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
-    TextureToBufferCopyData copyData
+    TextureBufferMapping copyData
     {
         .bufferOffset = 0,
-        .subresource =
+        .textureSubresource =
         {
             .aspectFlags = Pixels::AspectFlags::COLOR,
             .mipLevel = 0,
             .baseArrayLayer = 0,
             .layerCount = 1,
-        }
+        },
+         .textureOffset = {0,0,0},
+         .textureExtent = {target->width(0),target->height(0),1}
     };
-    commandBuffer->copyTextureToBuffer(target.get(),&copyData,1,outputBuffer.get());
+    commandBuffer->copyTextureToBuffer(target.get(),outputBuffer.get(),&copyData,1);
     commandBuffer->end();
 
     CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
@@ -1452,8 +1555,8 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
-    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
+    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
 
@@ -1478,7 +1581,8 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    objectBundle.setSampledTexture(1,0,objectTexture.get());
+    objectBundle.setSampler(2,0,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1512,18 +1616,20 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
     commandBuffer->endRendering();
 
     commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
-    TextureToBufferCopyData copyData
+    TextureBufferMapping copyData
     {
         .bufferOffset = 0,
-        .subresource =
+        .textureSubresource =
         {
             .aspectFlags = Pixels::AspectFlags::COLOR,
             .mipLevel = 0,
             .baseArrayLayer = 0,
             .layerCount = 1,
-        }
+        },
+         .textureOffset = {0,0,0},
+         .textureExtent = {target->width(0),target->height(0),1}
     };
-    commandBuffer->copyTextureToBuffer(target.get(),&copyData,1,outputBuffer.get());
+    commandBuffer->copyTextureToBuffer(target.get(),outputBuffer.get(),&copyData,1);
 
     commandBuffer->end();
 
@@ -1558,8 +1664,8 @@ TEST_F(CommandBufferTest, DrawIndirect)
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
-    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
+    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
 
@@ -1584,7 +1690,8 @@ TEST_F(CommandBufferTest, DrawIndirect)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    objectBundle.setSampledTexture(1,0,objectTexture.get());
+    objectBundle.setSampler(2,0,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1611,18 +1718,20 @@ TEST_F(CommandBufferTest, DrawIndirect)
     commandBuffer->drawIndirect(drawCommands.get(),0,1,sizeof(IndirectDrawCommand));
     commandBuffer->endRendering();
     commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
-    TextureToBufferCopyData copyData
+    TextureBufferMapping copyData
     {
         .bufferOffset = 0,
-        .subresource =
+        .textureSubresource =
         {
             .aspectFlags = Pixels::AspectFlags::COLOR,
             .mipLevel = 0,
             .baseArrayLayer = 0,
             .layerCount = 1,
-        }
+        },
+         .textureOffset = {0,0,0},
+         .textureExtent = {target->width(0),target->height(0),1}
     };
-    commandBuffer->copyTextureToBuffer(target.get(),&copyData,1,outputBuffer.get());
+    commandBuffer->copyTextureToBuffer(target.get(),outputBuffer.get(),&copyData,1);
 
 
     commandBuffer->end();
@@ -1658,8 +1767,8 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
     std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
-    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1));
+    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
+    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
 
@@ -1684,7 +1793,8 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     objectBundle.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setTextureAndSampler(1,0,objectTexture.get(),DefaultSampler.get());
+    objectBundle.setSampledTexture(1,0,objectTexture.get());
+    objectBundle.setSampler(2,0,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
     commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1716,18 +1826,20 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
     commandBuffer->endRendering();
 
     commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
-    TextureToBufferCopyData copyData
+    TextureBufferMapping copyData
     {
         .bufferOffset = 0,
-        .subresource =
+        .textureSubresource =
         {
             .aspectFlags = Pixels::AspectFlags::COLOR,
             .mipLevel = 0,
             .baseArrayLayer = 0,
             .layerCount = 1,
-        }
+        },
+         .textureOffset = {0,0,0},
+         .textureExtent = {target->width(0),target->height(0),1}
     };
-    commandBuffer->copyTextureToBuffer(target.get(),&copyData,1,outputBuffer.get());
+    commandBuffer->copyTextureToBuffer(target.get(),outputBuffer.get(),&copyData,1);
 
     commandBuffer->end();
 

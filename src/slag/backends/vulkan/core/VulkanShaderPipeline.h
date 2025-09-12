@@ -24,7 +24,8 @@ namespace slag
             virtual uint32_t descriptorGroupCount()override;
             virtual DescriptorGroup* descriptorGroup(size_t index)override;
             virtual DescriptorGroup* operator[](size_t index)override;
-            virtual UniformBufferDescriptorLayout* uniformBufferLayout(uint32_t descriptorGroup,uint32_t descriptorBinding)override;
+            virtual BufferLayout* bufferLayout(uint32_t descriptorGroup,uint32_t descriptorBinding)override;
+            virtual TexelBufferDescription* texelBufferDescription(uint32_t descriptorGroup, uint32_t descriptorBinding)override;
             virtual uint32_t xComputeThreads()override;
             virtual uint32_t yComputeThreads()override;
             virtual uint32_t zComputeThreads()override;
@@ -37,7 +38,8 @@ namespace slag
             VkPipeline _pipeline = nullptr;
             VkPipelineLayout _pipelineLayout = nullptr;
             std::vector<VulkanDescriptorGroup> _descriptorGroups;
-            std::unordered_map<uint32_t,std::unordered_map<uint32_t,UniformBufferDescriptorLayout>> _uniformBufferLayouts;
+            std::unordered_map<uint32_t,std::unordered_map<uint32_t,BufferLayout>> _bufferLayouts;
+            std::unordered_map<uint32_t,std::unordered_map<uint32_t,TexelBufferDescription>> _texelBufferDescriptions;
             uint32_t _xthreads = 0;
             uint32_t _ythreads = 0;
             uint32_t _zthreads = 0;

@@ -162,11 +162,11 @@ namespace slag
         /**
          * Copy texel data of a texture to a buffer
          * @param source Texture to copy from
+         * @param destination Buffer to copy to
          * @param copyData Parts of the texture to copy
          * @param subresourceCount Number of items in subresources array
-         * @param destination Buffer to copy to
          */
-        virtual void copyTextureToBuffer(Texture* source, TextureToBufferCopyData* copyData, uint32_t subresourceCount, Buffer* destination)=0;
+        virtual void copyTextureToBuffer(Texture* source, Buffer* destination, TextureBufferMapping* copyData, uint32_t subresourceCount)=0;
 #else
          /**
          * Copy texel data of a texture to a buffer
@@ -181,23 +181,23 @@ namespace slag
 
 #ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
         /**
-         * Copy data from a buffer into a texture subresource
+         * Copy data from a buffer to a texture
          * @param source Buffer containing data to be copied
-         * @param offset Offset into the buffer in bytes to start copying from
          * @param destination Texture to copy the data into
-         * @param subresource Subresource of the texture to copy into
+         * @param mappings How to map the data from the buffer to the texture
+         * @param mappingCount How many mappings have been supplied
          */
-        virtual void copyBufferToTexture(Buffer* source, uint64_t offset, Texture* destination,TextureSubresource subresource)=0;
+        virtual void copyBufferToTexture(Buffer* source, Texture* destination,TextureBufferMapping* mappings, uint32_t mappingCount)=0;
 #else
             /**
-         * Copy data from a buffer into a texture subresource
+            * Copy data from a buffer to a texture
          * @param source Buffer containing data to be copied
-         * @param offset Offset into the buffer in bytes to start copying from
          * @param destination Texture to copy the data into
-         * @param subresource Subresource of the texture to copy into
+         * @param mappings How to map the data from the buffer to the texture
+         * @param mappingCount How many mappings have been supplied
          * @param destinationLayout layout the texture is in
          */
-        virtual void copyBufferToTexture(Buffer* source, uint64_t offset, Texture* destination,TextureSubresource subresource,TextureLayouts::Layout destinationLayout)=0;
+        virtual void copyBufferToTexture(Buffer* source, Texture* destination,TextureBufferMapping* mappings, uint32_t mappingCount,TextureLayouts::Layout destinationLayout)=0;
 #endif
 
 

@@ -302,7 +302,7 @@ namespace slag
 
             auto presentMode = VulkanBackend::vulkanizedPresentMode(_presentMode);
             auto format = VulkanBackend::vulkanizedFormat(_format);
-            auto imageUsageFlags = VulkanBackend::vulkanizedUsage(Texture::UsageFlags::INPUT_ATTACHMENT);
+            auto imageUsageFlags = VulkanBackend::vulkanizedUsage(Texture::UsageFlags::RENDER_TARGET_ATTACHMENT);
             auto usageFlags = VulkanBackend::vulkanizedAspectFlags(Pixels::AspectFlags::COLOR);
             vkb::SwapchainBuilder swapchainBuilder(VulkanGraphicsCard::selected()->physicalDevice(),VulkanGraphicsCard::selected()->device(),_surface);
             auto chain = swapchainBuilder.set_desired_format(VkSurfaceFormatKHR{format.format,VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
@@ -340,7 +340,7 @@ namespace slag
                 viewCreateInfo.subresourceRange.baseArrayLayer = 0;
                 viewCreateInfo.subresourceRange.aspectMask = usageFlags;
                 vkCreateImageView(VulkanGraphicsCard::selected()->device(),&viewCreateInfo,nullptr,&view);
-                _images.push_back(VulkanTexture(images[i],view,_format,Texture::Type::TEXTURE_2D,_width,_height,1,1,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,Texture::SampleCount::ONE));
+                _images.push_back(VulkanTexture(images[i],view,_format,Texture::Type::TEXTURE_2D,_width,_height,1,1,1,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,Texture::SampleCount::ONE));
                 _imageViews.push_back(view);
             }
 

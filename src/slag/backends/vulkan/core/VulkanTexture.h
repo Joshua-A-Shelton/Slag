@@ -4,6 +4,8 @@
 #include <vulkan/vulkan.h>
 #include "VulkanGPUMemoryReference.h"
 #include "vk_mem_alloc.h"
+#include "slag/core/Pixels.h"
+
 namespace slag
 {
     namespace vulkan
@@ -12,11 +14,11 @@ namespace slag
         {
         public:
 #ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
-            VulkanTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount);
-            VulkanTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers);
+            VulkanTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t depth, uint32_t height,uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount);
+            VulkanTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t depth, uint32_t height,uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData, uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount);
 #else
-            VulkanTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount);
-            VulkanTexture(Pixels::Format texelFormat, Type type, TextureLayouts::Layout initialLayout, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers);
+            VulkanTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uintew_t depth,uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount);
+            VulkanTexture(Pixels::Format texelFormat, Type type, TextureLayouts::Layout initialLayout, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData, uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount);
 #endif
             /**
              * Create a texture from existing elements, memory is not owned, and must be managed by caller
@@ -30,7 +32,7 @@ namespace slag
              * @param usageFlags
              * @param sampleCount
              */
-            VulkanTexture(VkImage image, VkImageView view, Pixels::Format format, Type type, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, UsageFlags usageFlags, Texture::SampleCount sampleCount);
+            VulkanTexture(VkImage image, VkImageView view, Pixels::Format format, Type type, uint32_t width, uint32_t height, uint32_t depth,uint32_t mipLevels, uint32_t layers, UsageFlags usageFlags, Texture::SampleCount sampleCount);
             ~VulkanTexture()override;
             VulkanTexture(const VulkanTexture&) = delete;
             VulkanTexture& operator=(const VulkanTexture&) = delete;
@@ -46,6 +48,8 @@ namespace slag
             virtual uint32_t width()override;
             ///Height in pixels
             virtual uint32_t height()override;
+            ///Number of depth slices in 3D textures, 1 in everything else
+            virtual uint32_t depth()override;
             ///Number of elements in the array (1D or 2D textures), or number of depth slices (3D texture), (or 6 in cubemaps, one for each face of the cube)
             virtual uint32_t layers()override;
             ///Number of mip levels (lower LOD images used in shader sampling)
@@ -56,13 +60,17 @@ namespace slag
             VkImage vulkanHandle();
             VkImageView vulkanViewHandle();
 
+            static void initializeChromaConverters();
+            static void cleanupChromaConverters();
+
         private:
-            Pixels::Format _format;
+            Pixels::Format _format = Pixels::Format::UNDEFINED;
             Type _type = Type::TEXTURE_2D;
             UsageFlags _usageFlags = UsageFlags::SAMPLED_IMAGE;
             SampleCount _sampleCount = SampleCount::ONE;
             uint32_t _width=0;
             uint32_t _height=0;
+            uint32_t _depth=0;
             uint32_t _layers=1;
             uint32_t _mipLevels=1;
             VkImage _image=VK_NULL_HANDLE;
@@ -70,7 +78,10 @@ namespace slag
             VmaAllocation _allocation=VK_NULL_HANDLE;
             VulkanGPUMemoryReference _selfReference{.memoryType = VulkanGPUMemoryReference::MemoryType::TEXTURE, .reference = {this}};
             void move(VulkanTexture& texture);
-            void initialize(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount, VkImageLayout initialLayout);
+            void initialize(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, VkImageLayout initialLayout);
+
+            static inline VkSamplerYcbcrConversion NV12_CONVERTER=nullptr;
+            static inline VkSamplerYcbcrConversion OPAQUE_420_CONVERTER=nullptr;
 
         };
     } // vulkan

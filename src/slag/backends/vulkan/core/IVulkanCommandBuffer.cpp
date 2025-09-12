@@ -146,38 +146,38 @@ namespace slag
             blit(texture,layer,sourceMip,Rectangle{.offset = {0,0},.extent = {texture->width(sourceMip),texture->height(sourceMip)}},texture,layer,destinationMip,Rectangle{.offset = {0,0},.extent = {texture->width(destinationMip),texture->height(destinationMip)}});
         }
 
-        void IVulkanCommandBuffer::copyTextureToBuffer(Texture* source, TextureToBufferCopyData* copyData, uint32_t subresourceCount, Buffer* destination)
+        void IVulkanCommandBuffer::copyTextureToBuffer(Texture* source, Buffer* destination, TextureBufferMapping* mappings, uint32_t mappingCount)
         {
-            SLAG_ASSERT(source!=nullptr && "texture cannot be null");
-            SLAG_ASSERT(destination!=nullptr && "buffer cannot be null");
-            SLAG_ASSERT(copyData!=nullptr && "copyData cannot be null");
-            SLAG_ASSERT(subresourceCount>0 && "subresource count cannot be 0");
+            SLAG_ASSERT(source!=nullptr && "source cannot be null");
+            SLAG_ASSERT(destination!=nullptr && "destination cannot be null");
+            SLAG_ASSERT(mappings!=nullptr && "mappings cannot be null");
+            SLAG_ASSERT(mappingCount>0 && "mappingCount count cannot be 0");
 
             auto vulkanTexture = static_cast<VulkanTexture*>(source);
             auto vulkanBuffer = static_cast<VulkanBuffer*>(destination);
 
-            std::vector<VkBufferImageCopy> regions(subresourceCount);
-            auto aspectMask = VulkanBackend::vulkanizedAspectFlags(Pixels::aspectFlags(source->format()));
-            for (uint32_t i = 0; i < subresourceCount; ++i)
+            std::vector<VkBufferImageCopy> regions(mappingCount);
+            for (uint32_t i = 0; i < mappingCount; ++i)
             {
                 auto& region = regions[i];
-                auto& subResource = copyData[i];
+                auto& subResource = mappings[i];
+                auto aspectMask = VulkanBackend::vulkanizedAspectFlags(subResource.textureSubresource.aspectFlags);
                 SLAG_ASSERT(subResource.bufferOffset % Pixels::size(source->format())==0 && "Offset into buffer must be multiple of pixel size");
                 region.bufferOffset = subResource.bufferOffset;
                 region.bufferRowLength = 0;
                 region.bufferImageHeight = 0;
                 region.imageSubresource.aspectMask = aspectMask;
-                region.imageSubresource.mipLevel = subResource.subresource.mipLevel;
-                region.imageSubresource.baseArrayLayer = subResource.subresource.baseArrayLayer;
-                region.imageSubresource.layerCount = subResource.subresource.layerCount;
-                region.imageOffset = {0,0,0};
-                region.imageExtent = {source->width(subResource.subresource.mipLevel),source->height(subResource.subresource.mipLevel),1};
+                region.imageSubresource.mipLevel = subResource.textureSubresource.mipLevel;
+                region.imageSubresource.baseArrayLayer = subResource.textureSubresource.baseArrayLayer;
+                region.imageSubresource.layerCount = subResource.textureSubresource.layerCount;
+                region.imageOffset = {.x = subResource.textureOffset.x,.y = subResource.textureOffset.y,.z = subResource.textureOffset.z};
+                region.imageExtent = {.width = subResource.textureExtent.width,.height = subResource.textureExtent.height,.depth = subResource.textureExtent.depth};
             }
 
-            vkCmdCopyImageToBuffer(_commandBuffer,vulkanTexture->vulkanHandle(),VK_IMAGE_LAYOUT_GENERAL,vulkanBuffer->vulkanHandle(),subresourceCount,regions.data());
+            vkCmdCopyImageToBuffer(_commandBuffer,vulkanTexture->vulkanHandle(),VK_IMAGE_LAYOUT_GENERAL,vulkanBuffer->vulkanHandle(),mappingCount,regions.data());
         }
 
-        void IVulkanCommandBuffer::copyBufferToTexture(Buffer* source, uint64_t offset, Texture* destination,TextureSubresource subresource)
+        void IVulkanCommandBuffer::copyBufferToTexture(Buffer* source, Texture* destination,TextureBufferMapping* mappings, uint32_t mappingCount)
         {
             SLAG_ASSERT(source!=nullptr && "buffer cannot be null");
             SLAG_ASSERT(destination!=nullptr && "texture cannot be null");
@@ -186,19 +186,26 @@ namespace slag
             auto image = static_cast<VulkanTexture*>(destination);
             auto buffer = static_cast<VulkanBuffer*>(source);
 
-            VkBufferImageCopy copy{};
-            copy.imageExtent = {.width=destination->width(subresource.mipLevel),.height=destination->height(subresource.mipLevel),.depth=1};
-            copy.bufferOffset = offset;
+            std::vector<VkBufferImageCopy> regions(mappingCount);
 
-            copy.imageSubresource =
+            for (uint32_t i = 0; i < mappingCount; ++i)
             {
-                .aspectMask = VulkanBackend::vulkanizedAspectFlags(subresource.aspectFlags),
-                .mipLevel = subresource.mipLevel,
-                .baseArrayLayer = subresource.baseArrayLayer,
-                .layerCount = subresource.layerCount
-            };
+                auto& region = regions[i];
+                auto& subResource = mappings[i];
+                auto aspectMask = VulkanBackend::vulkanizedAspectFlags(subResource.textureSubresource.aspectFlags);
+                SLAG_ASSERT(subResource.bufferOffset % Pixels::size(destination->format())==0 && "Offset into buffer must be multiple of pixel size");
+                region.bufferOffset = subResource.bufferOffset;
+                region.bufferRowLength = 0;
+                region.bufferImageHeight = 0;
+                region.imageSubresource.aspectMask = aspectMask;
+                region.imageSubresource.mipLevel = subResource.textureSubresource.mipLevel;
+                region.imageSubresource.baseArrayLayer = subResource.textureSubresource.baseArrayLayer;
+                region.imageSubresource.layerCount = subResource.textureSubresource.layerCount;
+                region.imageOffset = {.x = subResource.textureOffset.x,.y = subResource.textureOffset.y,.z = subResource.textureOffset.z};
+                region.imageExtent = {.width = subResource.textureExtent.width,.height = subResource.textureExtent.height,.depth = subResource.textureExtent.depth};
+            }
 
-            vkCmdCopyBufferToImage(_commandBuffer,buffer->vulkanHandle(),image->vulkanHandle(),VK_IMAGE_LAYOUT_GENERAL,1,&copy);
+            vkCmdCopyBufferToImage(_commandBuffer,buffer->vulkanHandle(),image->vulkanHandle(),VK_IMAGE_LAYOUT_GENERAL,mappingCount,regions.data());
         }
 
         void IVulkanCommandBuffer::blit(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceArea,Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Rectangle destinationArea)

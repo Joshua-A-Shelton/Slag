@@ -3,6 +3,8 @@
 #include "VulkanCommandBuffer.h"
 #include "VulkanTexture.h"
 #include "../../Backend.h"
+#include "slag/backends/vulkan/VulkanBackend.h"
+
 namespace slag
 {
     namespace vulkan
@@ -170,6 +172,20 @@ namespace slag
         GPUQueue* VulkanGraphicsCard::transferQueue()
         {
             return _transferQueue;
+        }
+
+        uint64_t VulkanGraphicsCard::uniformBufferOffsetAlignment()
+        {
+            VkPhysicalDeviceProperties2 properties{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+            vkGetPhysicalDeviceProperties2(_physicalDevice,&properties);
+            return properties.properties.limits.minUniformBufferOffsetAlignment;
+        }
+
+        uint64_t VulkanGraphicsCard::storageBufferOffsetAlignment()
+        {
+            VkPhysicalDeviceProperties2 properties{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+            vkGetPhysicalDeviceProperties2(_physicalDevice,&properties);
+            return properties.properties.limits.minStorageBufferOffsetAlignment;
         }
 
         void VulkanGraphicsCard::defragmentMemory(SemaphoreValue* waitFor, size_t waitForCount, SemaphoreValue* signal,size_t signalCount)

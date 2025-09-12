@@ -261,7 +261,8 @@ int main()
             globals.setUniformBuffer(0,0,globalsBuffer,0,globalsBuffer->size());
             auto instance = descriptorPool->makeBundle(texturedDepthPipeline->descriptorGroup(1));
             instance.setUniformBuffer(0,0,instanceBuffer,0,instanceBuffer->size());
-            instance.setTextureAndSampler(1,0,texture,defaultSampler);
+            instance.setSampledTexture(1,0,texture);
+            instance.setSampler(2,0,defaultSampler);
 
             commandBuffer->bindGraphicsDescriptorBundle(0,globals);
             commandBuffer->bindGraphicsDescriptorBundle(1,instance);

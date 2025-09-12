@@ -55,7 +55,8 @@ namespace slag
 // get the reflection data *********************************************************************************************
 
             auto reflectionData = spirv::getReflectionData(shaders, shaderCount);
-            _uniformBufferLayouts = std::move(reflectionData.bufferLayouts);
+            _bufferLayouts = std::move(reflectionData.bufferLayouts);
+            _texelBufferDescriptions = std::move(reflectionData.texelBufferDescriptions);
             _descriptorGroups.resize(reflectionData.groups.size());
             for (auto i = 0; i < reflectionData.groups.size(); i++)
             {
@@ -315,7 +316,7 @@ namespace slag
             _xthreads = reflectionData.entryPointXDim;
             _ythreads = reflectionData.entryPointYDim;
             _zthreads = reflectionData.entryPointZDim;
-            _uniformBufferLayouts = std::move(reflectionData.bufferLayouts);
+            _bufferLayouts = std::move(reflectionData.bufferLayouts);
             _descriptorGroups.resize(reflectionData.groups.size());
             for (auto i = 0; i < reflectionData.groups.size(); i++)
             {
@@ -401,10 +402,25 @@ namespace slag
             return &_descriptorGroups[index];
         }
 
-        UniformBufferDescriptorLayout* VulkanShaderPipeline::uniformBufferLayout(uint32_t descriptorGroup,uint32_t descriptorBinding)
+        BufferLayout* VulkanShaderPipeline::bufferLayout(uint32_t descriptorGroup,uint32_t descriptorBinding)
         {
-            auto group = _uniformBufferLayouts.find(descriptorGroup);
-            if(group == _uniformBufferLayouts.end())
+            auto group = _bufferLayouts.find(descriptorGroup);
+            if(group == _bufferLayouts.end())
+            {
+                return nullptr;
+            }
+            auto description = group->second.find(descriptorBinding);
+            if(description == group->second.end())
+            {
+                return nullptr;
+            }
+            return &description->second;
+        }
+
+        TexelBufferDescription* VulkanShaderPipeline::texelBufferDescription(uint32_t descriptorGroup,uint32_t descriptorBinding)
+        {
+            auto group = _texelBufferDescriptions.find(descriptorGroup);
+            if(group == _texelBufferDescriptions.end())
             {
                 return nullptr;
             }
@@ -447,7 +463,7 @@ namespace slag
             std::swap(_pipeline,from._pipeline);
             std::swap(_pipelineLayout,from._pipelineLayout);
             _descriptorGroups.swap(from._descriptorGroups);
-            _uniformBufferLayouts.swap(from._uniformBufferLayouts);
+            _bufferLayouts.swap(from._bufferLayouts);
             _xthreads = from._xthreads;
             _ythreads = from._ythreads;
             _zthreads = from._zthreads;
