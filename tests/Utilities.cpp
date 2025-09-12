@@ -18,7 +18,20 @@ namespace slag
         }
         int width, height, channels;
         unique_ptr_custom<stbi_uc> data(stbi_load(path.string().c_str(), &width, &height,&channels,4),[](stbi_uc* uc){stbi_image_free(uc);});
-        return std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,width,height,1,1,Texture::SampleCount::ONE,data.get(),1,1));
+        TextureBufferMapping mapping
+        {
+            .bufferOffset = 0,
+            .textureSubresource =
+         {
+                .aspectFlags = Pixels::AspectFlags::COLOR,
+                .mipLevel = 0,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+            .textureOffset = {0,0,0},
+            .textureExtent = {(uint32_t)width,(uint32_t)height,1}
+        };
+        return std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,width,height,1,1,1,Texture::SampleCount::ONE,data.get(),width*height*Pixels::size(Pixels::Format::R8G8B8A8_UNORM),&mapping,1));
     }
 
     std::vector<unsigned char> utilities::loadTexelsFromFile(const std::filesystem::path& path)

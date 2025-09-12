@@ -48,7 +48,7 @@ TEST_F(DescriptorBundleTest, setSampledTextureAllTypesPipeline)
 {
     descriptorPool->reset();
     auto bundle1 = descriptorPool->makeBundle(pipeline->descriptorGroup(0));
-    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,1));
+    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,1,1));
     bundle1.setSampledTexture(2,0,texture.get());
 }
 
@@ -56,7 +56,7 @@ TEST_F(DescriptorBundleTest, setStorageTextureAllTypesPipeline)
 {
     descriptorPool->reset();
     auto bundle1 = descriptorPool->makeBundle(pipeline->descriptorGroup(0));
-    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::STORAGE,32,32,1,1));
+    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::STORAGE,32,32,1,1,1));
     bundle1.setStorageTexture(3,0,texture.get());
 }
 

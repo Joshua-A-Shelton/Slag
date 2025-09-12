@@ -25,8 +25,8 @@ namespace slag
             virtual void clearTexture(Texture* texture, ClearColor color) override;
             virtual void clearTexture(Texture* texture, ClearDepthStencilValue depthStencil) override;
             virtual void updateMip(Texture* texture, uint32_t layer, uint32_t sourceMip, uint32_t destinationMip) override;
-            virtual void copyTextureToBuffer(Texture* source, TextureToBufferCopyData* copyData,uint32_t subresourceCount, Buffer* destination) override;
-            virtual void copyBufferToTexture(Buffer* source, uint64_t offset, Texture* destination,TextureSubresource subresource)override;
+            virtual void copyTextureToBuffer(Texture* source, Buffer* destination, TextureBufferMapping* mappings, uint32_t mappingCount) override;
+            virtual void copyBufferToTexture(Buffer* source, Texture* destination,TextureBufferMapping* mappings, uint32_t mappingCount)override;
             virtual void blit(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceArea,Texture* destination, uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea) override;
             virtual void blit(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceArea,Texture* destination, uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea, Pixels::AspectFlags aspects) override;
             virtual void resolve(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Offset sourceOffset, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Offset destinationOffset, Extent resolveExtent) override;

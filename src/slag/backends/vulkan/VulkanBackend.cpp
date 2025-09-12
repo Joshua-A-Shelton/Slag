@@ -616,24 +616,24 @@ namespace slag
         }
 
 #ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
-        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount)
+        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount)
         {
-            return new VulkanTexture(texelFormat, type, usageFlags, width, height, layers, mipLevels, sampleCount);
+            return new VulkanTexture(texelFormat, type, usageFlags, width, height, depth,mipLevels, layers, sampleCount);
         }
 
 
-        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers)
+        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData, uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount)
         {
-            return new VulkanTexture(texelFormat, type,usageFlags,width,height,layers,mipLevels,sampleCount,texelData,providedDataMips,providedDataLayers);
+            return new VulkanTexture(texelFormat, type,usageFlags,width,height, depth,mipLevels,layers,sampleCount,texelData, texelDataLength,mappings,mappingCount);
         }
 #else
-        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels,Texture::SampleCount sampleCount)
+        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers,Texture::SampleCount sampleCount)
         {
-            return new VulkanTexture(texelFormat, type, usageFlags, width, height, layers, mipLevels, sampleCount);
+            return new VulkanTexture(texelFormat, type, usageFlags, width, height, depth, mipLevels, layers, sampleCount);
         }
-        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers)
+        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData,uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount)
         {
-            return new VulkanTexture(texelFormat, type, layout,usageFlags,width,height,layers,mipLevels,sampleCount,texelData,providedDataMips,providedDataLayers);
+            return new VulkanTexture(texelFormat, type, layout,usageFlags,width,height,depth,mipLevels,layers,sampleCount,texelData,texelDataLength,mappings, mappingCount);
         }
 
 

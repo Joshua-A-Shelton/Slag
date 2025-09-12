@@ -340,7 +340,7 @@ namespace slag
                 viewCreateInfo.subresourceRange.baseArrayLayer = 0;
                 viewCreateInfo.subresourceRange.aspectMask = usageFlags;
                 vkCreateImageView(VulkanGraphicsCard::selected()->device(),&viewCreateInfo,nullptr,&view);
-                _images.push_back(VulkanTexture(images[i],view,_format,Texture::Type::TEXTURE_2D,_width,_height,1,1,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,Texture::SampleCount::ONE));
+                _images.push_back(VulkanTexture(images[i],view,_format,Texture::Type::TEXTURE_2D,_width,_height,1,1,1,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,Texture::SampleCount::ONE));
                 _imageViews.push_back(view);
             }
 

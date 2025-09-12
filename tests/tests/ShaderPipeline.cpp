@@ -95,8 +95,8 @@ protected:
         auto shader1 = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(files,2,properties1,vertexPosUVDescription,framebufferDescription);
         auto shader2 = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(files,2,properties2,vertexPosUVDescription,framebufferDescription);
         auto descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
-        auto target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,imageSize,imageSize,1,1));
-        auto depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,imageSize,imageSize,1,1));
+        auto target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,imageSize,imageSize,1,1,1));
+        auto depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,imageSize,imageSize,1,1,1));
         auto targetOutput = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
 
         auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
@@ -152,8 +152,8 @@ protected:
 
         commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(),.baseLayer = 0,.layerCount = 1,.baseMipLevel = 0,.mipCount = 1,.accessBefore = BarrierAccessFlags::SHADER_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS,.syncAfter = PipelineStageFlags::TRANSFER});
 
-        TextureToBufferCopyData copyData{.bufferOffset = 0, .subresource = TextureSubresource{Pixels::AspectFlags::COLOR,0,0,1}};
-        commandBuffer->copyTextureToBuffer(target.get(),&copyData,1,targetOutput.get());
+        TextureBufferMapping copyData{.bufferOffset = 0, .textureSubresource = TextureSubresource{Pixels::AspectFlags::COLOR,0,0,1},.textureOffset = {0,0,0},.textureExtent = {target->width(),target->height(),1}};
+        commandBuffer->copyTextureToBuffer(target.get(),targetOutput.get(),&copyData,1);
 
         commandBuffer->end();
 
@@ -231,9 +231,9 @@ protected:
     {
         auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
         auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore());
-        auto target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,Texture::SampleCount::EIGHT));
-        auto depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,Texture::SampleCount::EIGHT));
-        auto final = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
+        auto target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1,Texture::SampleCount::EIGHT));
+        auto depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1,Texture::SampleCount::EIGHT));
+        auto final = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150, 1,1,1));
 
         ShaderFile files[]=
           {
@@ -327,8 +327,8 @@ protected:
 
 
 
-        TextureToBufferCopyData copyData{.bufferOffset = 0, .subresource = TextureSubresource{Pixels::AspectFlags::COLOR,0,0,1}};
-        commandBuffer->copyTextureToBuffer(final.get(),&copyData,1,targetOutput.get());
+        TextureBufferMapping copyData{.bufferOffset = 0, .textureSubresource = TextureSubresource{Pixels::AspectFlags::COLOR,0,0,1}, .textureOffset = {0,0,0}, .textureExtent = {final->width(),final->height(),1}};
+        commandBuffer->copyTextureToBuffer(final.get(),targetOutput.get(),&copyData,1);
 
         commandBuffer->end();
 
