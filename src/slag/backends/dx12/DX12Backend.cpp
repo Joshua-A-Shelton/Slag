@@ -43,12 +43,12 @@ namespace slag
             throw std::runtime_error("DX12Backend::waitFor() not implemented");
         }
 
-        Texture* DX12Backend::newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags,uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount)
+        Texture* DX12Backend::newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags,uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers,Texture::SampleCount sampleCount)
         {
             throw std::runtime_error("DX12Backend::newTexture() not implemented");
         }
 
-        Texture* DX12Backend::newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags,uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount,void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers)
+        Texture* DX12Backend::newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags,uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers,Texture::SampleCount sampleCount, void* texelData, uint64_t texelDataLength, TextureBufferMapping* mappings,uint32_t mappingCount)
         {
             throw std::runtime_error("DX12Backend::newTexture() not implemented");
         }
@@ -115,38 +115,25 @@ namespace slag
             throw std::runtime_error("DX12Backend::setDescriptorBundleSampledTexture() not implemented");
         }
 
-        void DX12Backend::setDescriptorBundleTextureAndSampler(DescriptorBundle& descriptor, uint32_t binding,
-            uint32_t arrayElement, Texture* texture, Sampler* sampler)
-        {
-            throw std::runtime_error("DX12Backend::setDescriptorBundleTextureAndSampler() not implemented");
-        }
-
         void DX12Backend::setDescriptorBundleStorageTexture(DescriptorBundle& descriptor, uint32_t binding,
             uint32_t arrayElement, Texture* texture)
         {
             throw std::runtime_error("DX12Backend::setDescriptorBundleStorageTexture() not implemented");
         }
 
-        void DX12Backend::setDescriptorBundleInputAttachment(DescriptorBundle& descriptor, uint32_t binding,
-            uint32_t arrayElement, Texture* texture)
-        {
-            throw std::runtime_error("DX12Backend::setDescriptorBundleInputAttachment() not implemented");
-        }
-
-        void DX12Backend::setDescriptorBundleUniformTexelBuffer(DescriptorBundle& descriptor, uint32_t binding,
-            uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
+        void DX12Backend::setDescriptorBundleUniformTexelBuffer(DescriptorBundle& descriptor, uint32_t binding,uint32_t arrayElement, BufferView* bufferView)
         {
             throw std::runtime_error("DX12Backend::setDescriptorBundleUniformTexelBuffer() not implemented");
         }
 
-        void DX12Backend::setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, uint32_t binding,
-            uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
+
+        void DX12Backend::setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, uint32_t binding,uint32_t arrayElement, BufferView* bufferView)
         {
             throw std::runtime_error("DX12Backend::setDescriptorBundleStorageTexelBuffer() not implemented");
         }
 
         void DX12Backend::setDescriptorBundleUniformBuffer(DescriptorBundle& descriptor, uint32_t binding,
-            uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
+                                                           uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)
         {
             throw std::runtime_error("DX12Backend::setDescriptorBundleUniformBuffer() not implemented");
         }
