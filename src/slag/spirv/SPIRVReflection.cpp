@@ -1,4 +1,6 @@
 #include "SPIRVReflection.h"
+
+#include <functional>
 #include <spirv_reflect.h>
 #include <unordered_map>
 
@@ -108,9 +110,9 @@ namespace slag
             case SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
                 return Descriptor::Type::ACCELERATION_STRUCTURE;
             case SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-                return Descriptor::Type::SAMPLER_AND_TEXTURE;
+                throw std::runtime_error("Combined Texture/Sampler descriptors are not supported");
             case SPV_REFLECT_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
-                return Descriptor::Type::INPUT_ATTACHMENT;
+                throw std::runtime_error("Input Attachment descriptors are not supported");
             case SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
                 return Descriptor::Type::SAMPLED_TEXTURE;
             case SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER:
@@ -132,15 +134,146 @@ namespace slag
             }
             throw std::runtime_error("unable to convert spvRefvlectDescriptorType to slag::Descriptor::DescriptorType");
         }
-
-        UniformBufferDescriptorLayout uniformBufferDescriptorLayoutFromSPV(SpvReflectBlockVariable* block)
+        Pixels::Format pixelFormatFromSPV(SpvImageFormat format)
         {
-            std::string name = block->name;
+            switch (format)
+            {
+            case SpvImageFormat::SpvImageFormatR8:
+                return Pixels::Format::R8_UNORM;
+                break;
+            case SpvImageFormat::SpvImageFormatR8Snorm:
+                return Pixels::Format::R8_SNORM;
+                break;
+            case SpvImageFormat::SpvImageFormatR11fG11fB10f:
+                return Pixels::Format::R11G11B10_FLOAT;
+                break;
+            case SpvImageFormat::SpvImageFormatR8ui:
+                return Pixels::Format::R8_UINT;
+                break;
+            case SpvImageFormat::SpvImageFormatR8i:
+                return Pixels::Format::R8_SINT;
+                break;
+            case SpvImageFormat::SpvImageFormatR16:
+                return Pixels::Format::R16_UNORM;
+                break;
+            case SpvImageFormat::SpvImageFormatR16f:
+                return Pixels::Format::R16_FLOAT;
+                break;
+            case SpvImageFormat::SpvImageFormatR16i:
+                return Pixels::Format::R16_SINT;
+                break;
+            case SpvImageFormat::SpvImageFormatR16Snorm:
+                return Pixels::Format::R16_SNORM;
+                break;
+            case SpvImageFormat::SpvImageFormatR16ui:
+                return Pixels::Format::R16_UINT;
+                break;
+            case SpvImageFormat::SpvImageFormatR32f:
+                return Pixels::Format::R32_FLOAT;
+                break;
+            case SpvImageFormat::SpvImageFormatR32i:
+                return Pixels::Format::R32_SINT;
+                break;
+            case SpvImageFormat::SpvImageFormatR32ui:
+                return Pixels::Format::R32_UINT;
+                break;
+            case SpvImageFormat::SpvImageFormatR64i:
+                return Pixels::Format::UNDEFINED;
+                break;
+            case SpvImageFormat::SpvImageFormatR64ui:
+                return Pixels::Format::UNDEFINED;
+                break;
+            case SpvImageFormat::SpvImageFormatRg8:
+                return Pixels::Format::R8G8_UNORM;
+                break;
+            case SpvImageFormat::SpvImageFormatRg8i:
+                return Pixels::Format::R8G8_SINT;
+                break;
+            case SpvImageFormat::SpvImageFormatRg8Snorm:
+                return Pixels::Format::R8G8_SNORM;
+                break;
+            case SpvImageFormat::SpvImageFormatRg8ui:
+                return Pixels::Format::R8G8_UINT;
+                break;
+            case SpvImageFormat::SpvImageFormatRg16:
+                return Pixels::Format::R16G16_UNORM;
+                break;
+            case SpvImageFormat::SpvImageFormatRg16f:
+                return Pixels::Format::R16G16_FLOAT;
+                break;
+            case SpvImageFormat::SpvImageFormatRg16i:
+                return Pixels::Format::R16G16_SINT;
+                break;
+            case SpvImageFormat::SpvImageFormatRg16Snorm:
+                return Pixels::Format::R16G16_SNORM;
+                break;
+            case SpvImageFormat::SpvImageFormatRg16ui:
+                return Pixels::Format::R16G16_UINT;
+                break;
+            case SpvImageFormat::SpvImageFormatRg32f:
+                return Pixels::Format::R32G32_FLOAT;
+                break;
+            case SpvImageFormat::SpvImageFormatRg32i:
+                return Pixels::Format::R32G32_SINT;
+                break;
+            case SpvImageFormat::SpvImageFormatRg32ui:
+                return Pixels::Format::R32G32_UINT;
+                break;
+            case SpvImageFormat::SpvImageFormatRgb10A2:
+                return Pixels::Format::R10G10B10A2_UNORM;
+                break;
+            case SpvImageFormat::SpvImageFormatRgb10a2ui:
+                return Pixels::Format::R10G10B10A2_UINT;
+                break;
+            case SpvImageFormat::SpvImageFormatRgba8:
+                return Pixels::Format::R8G8B8A8_UNORM;
+                break;
+            case SpvImageFormat::SpvImageFormatRgba8i:
+                return Pixels::Format::R8G8B8A8_SINT;
+                break;
+            case SpvImageFormat::SpvImageFormatRgba8Snorm:
+                return Pixels::Format::R8G8B8A8_SNORM;
+                break;
+            case SpvImageFormat::SpvImageFormatRgba8ui:
+                return Pixels::Format::R8G8B8A8_UINT;
+                break;
+            case SpvImageFormat::SpvImageFormatRgba16:
+                return Pixels::Format::R16G16B16A16_UNORM;
+                break;
+            case SpvImageFormat::SpvImageFormatRgba16f:
+                return Pixels::Format::R16G16B16A16_FLOAT;
+                break;
+            case SpvImageFormat::SpvImageFormatRgba16i:
+                return Pixels::Format::R16G16B16A16_SINT;
+                break;
+            case SpvImageFormat::SpvImageFormatRgba16Snorm:
+                return Pixels::Format::R16G16B16A16_SNORM;
+                break;
+            case SpvImageFormat::SpvImageFormatRgba16ui:
+                return Pixels::Format::R16G16B16A16_UINT;
+                break;
+            case SpvImageFormat::SpvImageFormatRgba32f:
+                return Pixels::Format::R32G32B32A32_FLOAT;
+                break;
+            case SpvImageFormat::SpvImageFormatRgba32i:
+                return Pixels::Format::R32G32B32A32_SINT;
+                break;
+            case SpvImageFormat::SpvImageFormatRgba32ui:
+                return Pixels::Format::R32G32B32A32_UINT;
+                break;
+            }
+            return Pixels::Format::UNDEFINED;
+        }
+
+        BufferLayout bufferDescriptorLayoutFromSPV(SpvReflectBlockVariable* block)
+        {
+            std::string name;
+            if (block->name!=nullptr){name = block->name;}
             auto type = graphicsTypeFromSPV(block->type_description);
-            std::vector<UniformBufferDescriptorLayout> children;
+            std::vector<BufferLayout> children;
             for (auto i=0; i< block->member_count; i++)
             {
-                children.push_back(uniformBufferDescriptorLayoutFromSPV(block->members+i));
+                children.push_back(bufferDescriptorLayoutFromSPV(block->members+i));
             }
             if (block->array.dims_count > 1)
             {
@@ -148,7 +281,13 @@ namespace slag
             }
             auto dims = block->array.dims[0];
             auto arrayDepth = dims == 0? 1 : dims;
-            return UniformBufferDescriptorLayout(name,type,arrayDepth,std::move(children),block->size,block->offset,block->absolute_offset);
+            return BufferLayout(name,type,arrayDepth,std::move(children),block->size,block->offset,block->absolute_offset);
+        }
+
+        TexelBufferDescription texelBufferDescriptorLayoutFromSPV(SpvReflectDescriptorBinding* binding)
+        {
+
+            return TexelBufferDescription(pixelFormatFromSPV(binding->image.image_format));
         }
 
         struct DescriptorGroupReflectionStub
@@ -160,7 +299,8 @@ namespace slag
         {
             uint32_t totalSets = 0;
             std::unordered_map<uint32_t, DescriptorGroupReflectionStub> groups;
-            std::unordered_map<uint32_t,std::unordered_map<uint32_t,UniformBufferDescriptorLayout>> uniformBufferLayouts;
+            std::unordered_map<uint32_t,std::unordered_map<uint32_t,BufferLayout>> bufferLayouts;
+            std::unordered_map<uint32_t,std::unordered_map<uint32_t,TexelBufferDescription>> texelBufferDescriptions;
 
             uint32_t dimX = 0;
             uint32_t dimY = 0;
@@ -214,41 +354,56 @@ namespace slag
                                 }
                                 shape.visibleStages |= shader->stage();
                             }
-
-                            if (descriptor->second.shape().type == Descriptor::Type::UNIFORM_BUFFER)
+                            auto descriptorType = descriptor->second.shape().type;
+                            if (descriptorType == Descriptor::Type::UNIFORM_BUFFER || descriptorType == Descriptor::Type::STORAGE_BUFFER)
                             {
-                                auto bufferDescription = uniformBufferLayouts.find(set.set);
-                                if ( bufferDescription == uniformBufferLayouts.end())
+                                auto bufferDescription = bufferLayouts.find(set.set);
+                                if ( bufferDescription == bufferLayouts.end())
                                 {
-                                    bufferDescription = uniformBufferLayouts.insert(std::pair<uint32_t,std::unordered_map<uint32_t,UniformBufferDescriptorLayout>>(set.set,std::unordered_map<uint32_t,UniformBufferDescriptorLayout>{})).first;
-                                    bufferDescription->second.insert(std::pair<uint32_t,UniformBufferDescriptorLayout>(binding->binding,uniformBufferDescriptorLayoutFromSPV(&binding->block)));
+                                    bufferDescription = bufferLayouts.insert(std::pair<uint32_t,std::unordered_map<uint32_t,BufferLayout>>(set.set,std::unordered_map<uint32_t,BufferLayout>{})).first;
+                                    bufferDescription->second.insert(std::pair<uint32_t,BufferLayout>(binding->binding,bufferDescriptorLayoutFromSPV(&binding->block)));
                                 }
                                 else
                                 {
                                     auto description = bufferDescription->second.find(binding->binding);
                                     if (description == bufferDescription->second.end())
                                     {
-                                        bufferDescription->second.insert(std::pair<uint32_t,UniformBufferDescriptorLayout>(binding->binding,uniformBufferDescriptorLayoutFromSPV(&binding->block)));
+                                        bufferDescription->second.insert(std::pair<uint32_t,BufferLayout>(binding->binding,bufferDescriptorLayoutFromSPV(&binding->block)));
                                     }
                                     else
                                     {
-                                        auto block = uniformBufferDescriptorLayoutFromSPV(&binding->block);
-                                        auto match = UniformBufferDescriptorLayout::compatible(block,description->second);
+                                        auto block = bufferDescriptorLayoutFromSPV(&binding->block);
+                                        auto match = BufferLayout::compatible(block,description->second);
                                         if (match == 0)
                                         {
                                             throw std::runtime_error(std::string("Uniform buffer layout is incompatible across stages Set: ")+std::to_string(set.set)+" Binding: "+std::to_string(binding->binding));
                                         }
                                         else if (match == -1)
                                         {
-                                            bufferDescription->second[binding->binding] = UniformBufferDescriptorLayout::merge(block,description->second);// std::move(block);
+                                            bufferDescription->second[binding->binding] = BufferLayout::merge(block,description->second);// std::move(block);
                                         }
                                         else
                                         {
-                                            bufferDescription->second[binding->binding] = UniformBufferDescriptorLayout::merge(description->second,block);
+                                            bufferDescription->second[binding->binding] = BufferLayout::merge(description->second,block);
 
                                         }
                                     }
                                 }
+                            }
+                            else if (descriptorType == Descriptor::Type::UNIFORM_TEXEL_BUFFER || descriptorType == Descriptor::Type::STORAGE_TEXEL_BUFFER)
+                            {
+                                auto bufferDescription = texelBufferDescriptions.find(set.set);
+                                //only add a new one if it doesn't already exist
+                                if ( bufferDescription == texelBufferDescriptions.end())
+                                {
+                                    bufferDescription = texelBufferDescriptions.insert(std::pair<uint32_t,std::unordered_map<uint32_t,TexelBufferDescription>>(set.set,std::unordered_map<uint32_t,TexelBufferDescription>{})).first;
+                                    bufferDescription->second.insert(std::pair<uint32_t,TexelBufferDescription>(binding->binding,texelBufferDescriptorLayoutFromSPV(binding)));
+                                }
+                                else
+                                {
+                                    bufferDescription->second.insert(std::pair<uint32_t,TexelBufferDescription>(binding->binding,texelBufferDescriptorLayoutFromSPV(binding)));
+                                }
+
                             }
 
                         }
@@ -264,16 +419,22 @@ namespace slag
             SPVReflectionData reflectionData
             {
                 .groups = std::vector<SPVDescriptorGroupReflectionData>(totalSets+1),
-                .bufferLayouts = std::move(uniformBufferLayouts),
+                .bufferLayouts = std::move(bufferLayouts),
+                .texelBufferDescriptions = std::move(texelBufferDescriptions),
                 .entryPointXDim=dimX,
                 .entryPointYDim=dimY,
                 .entryPointZDim=dimZ
             };
             for (auto& group : groups)
             {
+
                 std::vector<Descriptor> descriptors(group.second.descriptors.size());
                 for (auto& kvpair : group.second.descriptors)
                 {
+                    if (kvpair.first >= descriptors.size())
+                    {
+                        descriptors.resize(kvpair.first+1);
+                    }
                     descriptors[kvpair.first] = kvpair.second;
                 }
                 reflectionData.groups[group.first] = {.groupIndex = group.first,.descriptors = std::move(descriptors)};

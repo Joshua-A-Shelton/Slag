@@ -19,7 +19,7 @@ struct TexturedDepthSet1Group
 };
 using namespace slag;
 //Some compilers (like slangc) may treat matrices as structs of 4 vector4s, we'll allow it
-bool is4x4MatrixType(const UniformBufferDescriptorLayout* layout)
+bool is4x4MatrixType(const BufferLayout* layout)
 {
     if (layout->type()==GraphicsType::DOUBLE_MATRIX_4X4)
     {
@@ -95,8 +95,8 @@ protected:
         auto shader1 = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(files,2,properties1,vertexPosUVDescription,framebufferDescription);
         auto shader2 = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(files,2,properties2,vertexPosUVDescription,framebufferDescription);
         auto descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
-        auto target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,imageSize,imageSize,1,1));
-        auto depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,imageSize,imageSize,1,1));
+        auto target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,imageSize,imageSize,1,1,1));
+        auto depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,imageSize,imageSize,1,1,1));
         auto targetOutput = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
 
         auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
@@ -108,9 +108,11 @@ protected:
 
         globalsData.setUniformBuffer(0,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
         object1Data.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-        object1Data.setTextureAndSampler(1,0,object1Texture.get(),defaultSampler.get());
+        object1Data.setSampledTexture(1,0,object1Texture.get());
+        object1Data.setSampler(2,0,defaultSampler.get());
         object2Data.setUniformBuffer(0,0,objectBuffer.get(),sizeof(TexturedDepthSet1Group),sizeof(TexturedDepthSet1Group));
-        object2Data.setTextureAndSampler(1,0,object2Texture.get(),defaultSampler.get());
+        object2Data.setSampledTexture(1,0,object2Texture.get());
+        object2Data.setSampler(2,0,defaultSampler.get());
 
 
         commandBuffer->begin();
@@ -150,8 +152,8 @@ protected:
 
         commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(),.baseLayer = 0,.layerCount = 1,.baseMipLevel = 0,.mipCount = 1,.accessBefore = BarrierAccessFlags::SHADER_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS,.syncAfter = PipelineStageFlags::TRANSFER});
 
-        TextureToBufferCopyData copyData{.bufferOffset = 0, .subresource = TextureSubresource{Pixels::AspectFlags::COLOR,0,0,1}};
-        commandBuffer->copyTextureToBuffer(target.get(),&copyData,1,targetOutput.get());
+        TextureBufferMapping copyData{.bufferOffset = 0, .textureSubresource = TextureSubresource{Pixels::AspectFlags::COLOR,0,0,1},.textureOffset = {0,0,0},.textureExtent = {target->width(),target->height(),1}};
+        commandBuffer->copyTextureToBuffer(target.get(),targetOutput.get(),&copyData,1);
 
         commandBuffer->end();
 
@@ -229,9 +231,9 @@ protected:
     {
         auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
         auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore());
-        auto target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,Texture::SampleCount::EIGHT));
-        auto depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,Texture::SampleCount::EIGHT));
-        auto final = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1));
+        auto target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1,Texture::SampleCount::EIGHT));
+        auto depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1,Texture::SampleCount::EIGHT));
+        auto final = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150, 1,1,1));
 
         ShaderFile files[]=
           {
@@ -275,9 +277,11 @@ protected:
 
         globalsData.setUniformBuffer(0,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
         object1Data.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-        object1Data.setTextureAndSampler(1,0,object1Texture.get(),defaultSampler.get());
+        object1Data.setSampledTexture(1,0,object1Texture.get());
+        object1Data.setSampler(2,0,defaultSampler.get());
         object2Data.setUniformBuffer(0,0,objectBuffer.get(),sizeof(TexturedDepthSet1Group),sizeof(TexturedDepthSet1Group));
-        object2Data.setTextureAndSampler(1,0,object2Texture.get(),defaultSampler.get());
+        object2Data.setSampledTexture(1,0,object2Texture.get());
+        object2Data.setSampler(2,0,defaultSampler.get());
 
 
 
@@ -323,8 +327,8 @@ protected:
 
 
 
-        TextureToBufferCopyData copyData{.bufferOffset = 0, .subresource = TextureSubresource{Pixels::AspectFlags::COLOR,0,0,1}};
-        commandBuffer->copyTextureToBuffer(final.get(),&copyData,1,targetOutput.get());
+        TextureBufferMapping copyData{.bufferOffset = 0, .textureSubresource = TextureSubresource{Pixels::AspectFlags::COLOR,0,0,1}, .textureOffset = {0,0,0}, .textureExtent = {final->width(),final->height(),1}};
+        commandBuffer->copyTextureToBuffer(final.get(),targetOutput.get(),&copyData,1);
 
         commandBuffer->end();
 
@@ -464,7 +468,7 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflection)
     auto group1 = pipeline->descriptorGroup(1);
     auto group2 = pipeline->descriptorGroup(2);
     GTEST_ASSERT_EQ(group0->descriptorCount(),1);
-    GTEST_ASSERT_EQ(group1->descriptorCount(),2);
+    GTEST_ASSERT_EQ(group1->descriptorCount(),3);
     GTEST_ASSERT_EQ(group2->descriptorCount(),1);
 
     GTEST_ASSERT_TRUE(group0->descriptor(0).shape().type == Descriptor::Type::UNIFORM_BUFFER);
@@ -475,18 +479,22 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflection)
     GTEST_ASSERT_EQ(group1->descriptor(0).shape().arrayDepth,1);
     GTEST_ASSERT_EQ(group1->descriptor(0).shape().binding,0);
 
-    GTEST_ASSERT_TRUE(group1->descriptor(1).shape().type == Descriptor::Type::SAMPLER_AND_TEXTURE);
+    GTEST_ASSERT_TRUE(group1->descriptor(1).shape().type == Descriptor::Type::SAMPLED_TEXTURE);
     GTEST_ASSERT_EQ(group1->descriptor(1).shape().arrayDepth,1);
     GTEST_ASSERT_EQ(group1->descriptor(1).shape().binding,1);
+
+    GTEST_ASSERT_EQ(group1->descriptor(2).shape().type, Descriptor::Type::SAMPLER);
+    GTEST_ASSERT_EQ(group1->descriptor(2).shape().arrayDepth,1);
+    GTEST_ASSERT_EQ(group1->descriptor(2).shape().binding,2);
 
     GTEST_ASSERT_TRUE(group2->descriptor(0).shape().type == Descriptor::Type::UNIFORM_BUFFER);
     GTEST_ASSERT_EQ(group2->descriptor(0).shape().arrayDepth,1);
     GTEST_ASSERT_EQ(group2->descriptor(0).shape().binding,0);
 
-    auto layout0_0 = pipeline->uniformBufferLayout(0,0);
-    auto layout1_0 = pipeline->uniformBufferLayout(1,0);
-    auto layout1_1 = pipeline->uniformBufferLayout(1,1);
-    auto layout2_0 = pipeline->uniformBufferLayout(2,0);
+    auto layout0_0 = pipeline->bufferLayout(0,0);
+    auto layout1_0 = pipeline->bufferLayout(1,0);
+    auto layout1_1 = pipeline->bufferLayout(1,1);
+    auto layout2_0 = pipeline->bufferLayout(2,0);
 
     GTEST_ASSERT_EQ(layout0_0->childrenCount(),3);
     GTEST_ASSERT_EQ(layout0_0->size(),64*3);
@@ -505,6 +513,88 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflection)
 
     GTEST_ASSERT_EQ(layout2_0->size(),64);
     GTEST_ASSERT_TRUE(is4x4MatrixType(&layout2_0->child(0)));
+
+
+}
+TEST_F(ShaderPipelineTest, DescriptorGroupReflectionAllTypes)
+{
+    ShaderFile stages[] =
+        {
+        {
+            .pathIndicator = "resources/shaders/AllParameterTypes.vertex",
+            .stage = ShaderStageFlags::VERTEX,
+        },
+     {
+         .pathIndicator = "resources/shaders/AllParameterTypes.fragment",
+         .stage = ShaderStageFlags::FRAGMENT,
+     }
+        };
+    ShaderProperties properties{};
+    VertexDescription vertexDescription(2);
+    vertexDescription.add(GraphicsType::VECTOR3, 0, 0);
+    vertexDescription.add(GraphicsType::VECTOR2, 0, 1);
+    FrameBufferDescription frameBufferDescription;
+    frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
+    frameBufferDescription.depthTarget = Pixels::Format::D32_FLOAT;
+
+
+    auto pipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(stages, 2, properties, vertexDescription, frameBufferDescription);
+    GTEST_ASSERT_EQ(pipeline->descriptorGroupCount(),2);
+    auto group0 = pipeline->descriptorGroup(0);
+    auto group1 = pipeline->descriptorGroup(1);
+    GTEST_ASSERT_EQ(group0->descriptorCount(),4);
+    GTEST_ASSERT_EQ(group1->descriptorCount(),3);
+
+    GTEST_ASSERT_TRUE(group0->descriptor(0).shape().type == Descriptor::Type::UNIFORM_BUFFER);
+    GTEST_ASSERT_EQ(group0->descriptor(0).shape().arrayDepth,1);
+    GTEST_ASSERT_EQ(group0->descriptor(0).shape().binding,0);
+
+    GTEST_ASSERT_TRUE(group0->descriptor(1).shape().type == Descriptor::Type::SAMPLER);
+    GTEST_ASSERT_EQ(group0->descriptor(1).shape().arrayDepth,1);
+    GTEST_ASSERT_EQ(group0->descriptor(1).shape().binding,1);
+
+    GTEST_ASSERT_TRUE(group0->descriptor(2).shape().type == Descriptor::Type::SAMPLED_TEXTURE);
+    GTEST_ASSERT_EQ(group0->descriptor(2).shape().arrayDepth,1);
+    GTEST_ASSERT_EQ(group0->descriptor(2).shape().binding,2);
+
+    GTEST_ASSERT_TRUE(group0->descriptor(3).shape().type == Descriptor::Type::STORAGE_TEXTURE);
+    GTEST_ASSERT_EQ(group0->descriptor(3).shape().arrayDepth,1);
+    GTEST_ASSERT_EQ(group0->descriptor(3).shape().binding,3);
+
+    GTEST_ASSERT_TRUE(group1->descriptor(0).shape().type == Descriptor::Type::UNIFORM_TEXEL_BUFFER);
+    GTEST_ASSERT_EQ(group1->descriptor(0).shape().arrayDepth,1);
+    GTEST_ASSERT_EQ(group1->descriptor(0).shape().binding,0);
+
+    GTEST_ASSERT_TRUE(group1->descriptor(1).shape().type == Descriptor::Type::STORAGE_TEXEL_BUFFER);
+    GTEST_ASSERT_EQ(group1->descriptor(1).shape().arrayDepth,2);
+    GTEST_ASSERT_EQ(group1->descriptor(1).shape().binding,1);
+
+    GTEST_ASSERT_TRUE(group1->descriptor(2).shape().type == Descriptor::Type::STORAGE_BUFFER);
+    GTEST_ASSERT_EQ(group1->descriptor(2).shape().arrayDepth,1);
+    GTEST_ASSERT_EQ(group1->descriptor(2).shape().binding,2);
+    auto uniformBufferLayout = pipeline->bufferLayout(0,0);
+    auto uniformTexelBufferLayout = pipeline->texelBufferDescription(1,0);
+    auto storageTexelBufferLayout = pipeline->texelBufferDescription(1,1);
+    auto storageBufferLayout = pipeline->bufferLayout(1,2);
+
+    GTEST_ASSERT_NE(uniformBufferLayout,nullptr);
+    GTEST_ASSERT_NE(uniformTexelBufferLayout,nullptr);
+    GTEST_ASSERT_NE(storageTexelBufferLayout,nullptr);
+    GTEST_ASSERT_NE(storageBufferLayout,nullptr);
+
+    GTEST_ASSERT_EQ(uniformBufferLayout->childrenCount(),1);
+    GTEST_ASSERT_EQ(uniformBufferLayout->child(0).type(),GraphicsType::VECTOR4);
+
+    GTEST_ASSERT_EQ(uniformTexelBufferLayout->format(),Pixels::Format::R32G32B32A32_FLOAT);
+
+    GTEST_ASSERT_EQ(storageTexelBufferLayout->format(),Pixels::Format::R32G32B32A32_UINT);
+
+    GTEST_ASSERT_EQ(storageBufferLayout->childrenCount(),1);
+    GTEST_ASSERT_EQ(storageBufferLayout->child(0).type(),GraphicsType::STRUCT);
+    GTEST_ASSERT_EQ(storageBufferLayout->child(0).childrenCount(),2);
+    GTEST_ASSERT_EQ(storageBufferLayout->child(0)[0].type(),GraphicsType::FLOAT);
+    GTEST_ASSERT_EQ(storageBufferLayout->child(0)[1].type(),GraphicsType::INTEGER);
+
 }
 
 TEST_F(ShaderPipelineTest, GraphicsPipelineThreadGroups)

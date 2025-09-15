@@ -28,7 +28,8 @@ DEFINITION(TASK,0b0000100000000000,VK_SHADER_STAGE_TASK_BIT_EXT,D3D12_SHVER_AMPL
 
 namespace slag
 {
-    class UniformBufferDescriptorLayout;
+    class BufferLayout;
+    class TexelBufferDescription;
     class DescriptorGroup;
 
     enum class ShaderStageFlags: uint16_t
@@ -264,12 +265,20 @@ namespace slag
         ///Retrieve descriptor group at index
         virtual DescriptorGroup* operator[](size_t index)=0;
         /**
-         * Retrieve the layout of a uniform buffer descriptor
+         * Retrieve the layout of a buffer type descriptor
          * @param descriptorGroup the descriptor group index
-         * @param descriptorBinding the binding of the uniform buffer
-         * @return Layout of a uniform buffer descriptor, or null if the index isn't a uniform buffer
+         * @param descriptorBinding the binding of the buffer
+         * @return Layout of a buffer descriptor (Uniform or Storage), or null if the index isn't a buffer type descriptor
          */
-        virtual UniformBufferDescriptorLayout* uniformBufferLayout(uint32_t descriptorGroup,uint32_t descriptorBinding)=0;
+        virtual BufferLayout* bufferLayout(uint32_t descriptorGroup,uint32_t descriptorBinding)=0;
+
+        /**
+         * Retrieve the description of a texel buffer type descriptor
+         * @param descriptorGroup the descriptor group index
+         * @param descriptorBinding the binding of the buffer
+         * @return Layout of a texel buffer (Uniform or Storage), or null if the index isn't a texel buffer type descriptor
+         */
+        virtual TexelBufferDescription* texelBufferDescription(uint32_t descriptorGroup, uint32_t descriptorBinding)=0;
 
         ///Number of compute threads in the x dimension (0 for graphics pipelines)
         virtual uint32_t xComputeThreads()=0;

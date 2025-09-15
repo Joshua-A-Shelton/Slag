@@ -43,10 +43,12 @@ namespace slag
         uint32_t layerCount;
     };
 
-    struct TextureToBufferCopyData
+    struct TextureBufferMapping
     {
         uint64_t bufferOffset;
-        TextureSubresource subresource;
+        TextureSubresource textureSubresource;
+        Offset3D textureOffset;
+        Extent3D textureExtent;
     };
 
 }

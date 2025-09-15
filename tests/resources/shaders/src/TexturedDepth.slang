@@ -56,7 +56,8 @@ public struct GlobalsData
 public struct InstanceData
 {
     public matrix<float,4,4> transform;
-    public Sampler2D sampledTexture;
+    public Texture2D sampledTexture;
+    public SamplerState sampler;
 }
 
 struct VertexStageOutput
@@ -88,5 +89,5 @@ VertexStageOutput vertexMain(Vertex3D vertex3d, UVCoordinates uvCoordinates)
 [shader("fragment")]
 float4 fragmentMain(FragmentParameters fragmentParameters : FragmentParameters) : SV_Target
 {
-    return Instance.sampledTexture.Sample(fragmentParameters.uv);
+    return Instance.sampledTexture.Sample(Instance.sampler,fragmentParameters.uv);
 }

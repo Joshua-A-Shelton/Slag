@@ -2,6 +2,7 @@
 #include "Pixels.h"
 #include <array>
 
+#include "slag/backends/Backend.h"
 #include "slag/utilities/SLAG_ASSERT.h"
 
 
@@ -52,5 +53,10 @@ namespace slag
             return false;
         }
         return true;
+    }
+
+    PixelFormatProperties Pixels::formatProperties(Format format)
+    {
+        return Backend::current()->pixelFormatProperties(format);
     }
 }

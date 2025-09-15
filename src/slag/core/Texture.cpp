@@ -7,12 +7,17 @@ namespace slag
 {
     uint32_t Texture::width(uint32_t mipLevel)
     {
-        return width() >> mipLevel;
+        return std::max(width() >> mipLevel,static_cast<uint32_t>(1));
     }
 
     uint32_t Texture::height(uint32_t mipLevel)
     {
-        return height() >> mipLevel;
+        return std::max(height() >> mipLevel,static_cast<uint32_t>(1));
+    }
+
+    uint32_t Texture::depth(uint32_t mipLevel)
+    {
+        return std::max(depth() >> mipLevel,static_cast<uint32_t>(1));
     }
 
     uint64_t Texture::byteSize()
@@ -32,19 +37,19 @@ namespace slag
     {
         auto format = this->format();
         auto formatSize = Pixels::size(format);
-        return formatSize * width(mipLevel) * height(mipLevel);
+        return formatSize * width(mipLevel) * height(mipLevel) * depth(mipLevel);
     }
 
-    Texture* Texture::newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels,Texture::SampleCount sampleCount)
+    Texture* Texture::newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount)
     {
         SLAG_ASSERT(Backend::current()!=nullptr);
-        return Backend::current()->newTexture(texelFormat,type,usageFlags,width,height,layers,mipLevels,sampleCount);
+        return Backend::current()->newTexture(texelFormat,type,usageFlags,width,height,depth,mipLevels,layers,sampleCount);
     }
 
-    Texture* Texture::newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels,Texture::SampleCount sampleCount, void* texelData, uint32_t providedDataMips, uint32_t providedDataLayers)
+    Texture* Texture::newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData, uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount)
     {
         SLAG_ASSERT(Backend::current()!=nullptr);
-        return Backend::current()->newTexture(texelFormat,type,usageFlags,width,height,layers,mipLevels,sampleCount,texelData,providedDataMips,providedDataLayers);
+        return Backend::current()->newTexture(texelFormat,type,usageFlags,width,height,depth,mipLevels,layers,sampleCount,texelData,texelDataLength,mappings,mappingCount);
     }
 
 

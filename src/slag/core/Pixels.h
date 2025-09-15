@@ -84,6 +84,7 @@ DEFINITION(B4G4R4A4_UNORM, DXGI_FORMAT_B4G4R4A4_UNORM, VK_FORMAT_A4R4G4B4_UNORM_
 
 namespace slag
 {
+    struct PixelFormatProperties;
     struct Pixels
     {
         enum class Format:uint32_t
@@ -104,9 +105,26 @@ namespace slag
             DEPTH_STENCIL = DEPTH | STENCIL
         };
 
+        /**
+         * Gets the size of each texel in bytes
+         * @param format
+         * @return
+         */
         static uint32_t size(Format format);
+        /**
+         * Gets the kind of apsects this format supports
+         * @param format
+         * @return
+         */
         static AspectFlags aspectFlags(Format format);
+        /**
+         * If the combination of aspect flags is valid
+         * @param aspectFlags
+         * @return
+         */
         static bool isValidAspectFlags(AspectFlags aspectFlags);
+
+        static PixelFormatProperties formatProperties(Format format);
     };
 
     inline Pixels::AspectFlags operator|(Pixels::AspectFlags lhs, Pixels::AspectFlags rhs)

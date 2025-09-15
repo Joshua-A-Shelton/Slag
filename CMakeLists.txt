@@ -82,7 +82,9 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/backends/vulkan/core/VulkanSwapChain.cpp
             src/slag/backends/vulkan/core/VulkanSwapChain.h
             src/slag/backends/vulkan/core/VulkanFrame.cpp
-            src/slag/backends/vulkan/core/VulkanFrame.h)
+            src/slag/backends/vulkan/core/VulkanFrame.h
+            src/slag/backends/vulkan/core/VulkanBufferView.cpp
+            src/slag/backends/vulkan/core/VulkanBufferView.h)
 endif()
 if(SLAG_DX12_BACKEND)
     add_definitions(-DSLAG_DX12_BACKEND=1)
@@ -147,6 +149,9 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/DescriptorPool.h
         src/slag/core/VertexDescription.cpp
         src/slag/core/VertexDescription.h
+        src/slag/core/BufferView.cpp
+        src/slag/core/BufferView.h
+        src/slag/core/PixelFormatProperties.h
 
 )
 #link spirv if we need to
@@ -268,6 +273,10 @@ if(PROJECT_IS_TOP_LEVEL)
             tests/third-party/LodePNG/lodepng.cpp
             tests/third-party/LodePNG/lodepng.h
             tests/tests/SwapChain.cpp
+            tests/tests/Buffer.cpp
+            tests/tests/Texture.cpp
+            tests/tests/DescriptorPool.cpp
+            tests/tests/DescriptorBundle.cpp
     )
 
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)
