@@ -10,6 +10,7 @@ endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions(-DSLAG_DEBUG=1)
+    set(SLAG_DEBUG_BUILD ON)
 endif()
 
 OPTION(SLAG_VULKAN_BACKEND "Include Vulkan Renderer backend" ON)
@@ -88,7 +89,9 @@ endif()
 if(SLAG_DX12_BACKEND)
     add_definitions(-DSLAG_DX12_BACKEND=1)
     message("adding direct x 12 backend")
-    SET(SLAG_DX12_SOURCES)
+    SET(SLAG_DX12_SOURCES
+            src/slag/backends/dx12/DX12Backend.cpp
+            src/slag/backends/dx12/DX12Backend.h)
 endif()
 
 if(USE_SPIRV_REFLECTION)
@@ -191,6 +194,26 @@ if(SLAG_VULKAN_BACKEND)
 
     target_include_directories(Slag PRIVATE ${Vulkan_INCLUDE_DIR} ${vma_SOURCE_DIR})
     target_link_libraries(Slag PRIVATE ${Vulkan_LIBRARIES} GPUOpen::VulkanMemoryAllocator vk-bootstrap)
+endif()
+
+if(SLAG_DX12_BACKEND)
+    FetchContent_Declare(
+            DirectX-Headers
+            GIT_REPOSITORY https://github.com/microsoft/DirectX-Headers
+            GIT_TAG v1.616.0
+            GIT_SHALLOW TRUE
+            OVERRIDE_FIND_PACKAGE
+    )
+    FetchContent_Declare(DirectX-Headers)
+    target_link_libraries(Slag PRIVATE ${DirectX-Headers})
+
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/D3D12/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}/D3D12Core.dll ${CMAKE_CURRENT_BINARY_DIR}/D3D12/ COPYONLY)
+    if(SLAG_DEBUG_BUILD)
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/D3D12/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}/D3D12Core.pdb ${CMAKE_CURRENT_BINARY_DIR}/D3D12/ COPYONLY)
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/D3D12/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}/d3d12SDKLayers.dll ${CMAKE_CURRENT_BINARY_DIR}/D3D12/ COPYONLY)
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/D3D12/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}/d3d12SDKLayers.pdb ${CMAKE_CURRENT_BINARY_DIR}/D3D12/ COPYONLY)
+    endif()
+
 endif()
 
 target_include_directories(Slag PUBLIC src)
