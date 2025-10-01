@@ -46,7 +46,7 @@ namespace slag
             }
         };
 
-        VulkanShaderPipeline::VulkanShaderPipeline(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription)
+        VulkanShaderPipeline::VulkanShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const std::string&,uint32_t,Descriptor::Type, uint32_t,void*), void* renameData)
         {
             _pipelineType = PipelineType::GRAPHICS;
             _xthreads = 0;
@@ -54,7 +54,7 @@ namespace slag
             _zthreads = 0;
 // get the reflection data *********************************************************************************************
 
-            auto reflectionData = spirv::getReflectionData(shaders, shaderCount);
+            auto reflectionData = spirv::getReflectionData(shaders, shaderCount,rename,renameData);
             _bufferLayouts = std::move(reflectionData.bufferLayouts);
             _texelBufferDescriptions = std::move(reflectionData.texelBufferDescriptions);
             _descriptorGroups.resize(reflectionData.groups.size());
@@ -308,11 +308,11 @@ namespace slag
 
         }
 
-        VulkanShaderPipeline::VulkanShaderPipeline(const ShaderCode& computeCode)
+        VulkanShaderPipeline::VulkanShaderPipeline(const ShaderCode& computeCode, std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type, uint32_t platformBindingIndex,void*), void* renameData)
         {
             _pipelineType = PipelineType::COMPUTE;
             auto computeCodePtr = &const_cast<ShaderCode&>(computeCode);
-            auto reflectionData = spirv::getReflectionData(&computeCodePtr, 1);
+            auto reflectionData = spirv::getReflectionData(&computeCodePtr, 1,rename,renameData);
             _xthreads = reflectionData.entryPointXDim;
             _ythreads = reflectionData.entryPointYDim;
             _zthreads = reflectionData.entryPointZDim;
@@ -392,12 +392,12 @@ namespace slag
             return _descriptorGroups.size();
         }
 
-        DescriptorGroup* VulkanShaderPipeline::descriptorGroup(size_t index)
+        DescriptorGroup* VulkanShaderPipeline::descriptorGroup(uint32_t index)
         {
             return &_descriptorGroups.at(index);
         }
 
-        DescriptorGroup* VulkanShaderPipeline::operator[](size_t index)
+        DescriptorGroup* VulkanShaderPipeline::operator[](uint32_t index)
         {
             return &_descriptorGroups[index];
         }

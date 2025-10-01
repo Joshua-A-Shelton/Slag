@@ -106,13 +106,21 @@ protected:
         auto object1Data = descriptorPool->makeBundle(shader1->descriptorGroup(1));
         auto object2Data = descriptorPool->makeBundle(shader2->descriptorGroup(1));
 
-        globalsData.setUniformBuffer(0,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
-        object1Data.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-        object1Data.setSampledTexture(1,0,object1Texture.get());
-        object1Data.setSampler(2,0,defaultSampler.get());
-        object2Data.setUniformBuffer(0,0,objectBuffer.get(),sizeof(TexturedDepthSet1Group),sizeof(TexturedDepthSet1Group));
-        object2Data.setSampledTexture(1,0,object2Texture.get());
-        object2Data.setSampler(2,0,defaultSampler.get());
+        auto globalsIndex = shader1->descriptorGroup(0)->indexOf("Globals");
+        auto instance1Uniform = shader1->descriptorGroup(1)->indexOf("Instance");
+        auto instance1Texture = shader1->descriptorGroup(1)->indexOf("Instance.sampledTexture");
+        auto instance1Sampler = shader1->descriptorGroup(1)->indexOf("Instance.sampler");
+        auto instance2Uniform = shader2->descriptorGroup(1)->indexOf("Instance");
+        auto instance2Texture = shader2->descriptorGroup(1)->indexOf("Instance.sampledTexture");
+        auto instance2Sampler = shader2->descriptorGroup(1)->indexOf("Instance.sampler");
+
+        globalsData.setUniformBuffer(globalsIndex,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
+        object1Data.setUniformBuffer(instance1Uniform,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
+        object1Data.setSampledTexture(instance1Texture,0,object1Texture.get());
+        object1Data.setSampler(instance1Sampler,0,defaultSampler.get());
+        object2Data.setUniformBuffer(instance2Uniform,0,objectBuffer.get(),sizeof(TexturedDepthSet1Group),sizeof(TexturedDepthSet1Group));
+        object2Data.setSampledTexture(instance2Texture,0,object2Texture.get());
+        object2Data.setSampler(instance2Sampler,0,defaultSampler.get());
 
 
         commandBuffer->begin();
@@ -275,13 +283,19 @@ protected:
         auto object1Data = descriptorPool->makeBundle(shader->descriptorGroup(1));
         auto object2Data = descriptorPool->makeBundle(shader->descriptorGroup(1));
 
-        globalsData.setUniformBuffer(0,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
-        object1Data.setUniformBuffer(0,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-        object1Data.setSampledTexture(1,0,object1Texture.get());
-        object1Data.setSampler(2,0,defaultSampler.get());
-        object2Data.setUniformBuffer(0,0,objectBuffer.get(),sizeof(TexturedDepthSet1Group),sizeof(TexturedDepthSet1Group));
-        object2Data.setSampledTexture(1,0,object2Texture.get());
-        object2Data.setSampler(2,0,defaultSampler.get());
+        auto globalsIndex = shader->descriptorGroup(0)->indexOf("Globals");
+        auto instanceUniform = shader->descriptorGroup(1)->indexOf("Instance");
+        auto instanceTexture = shader->descriptorGroup(1)->indexOf("Instance.sampledTexture");
+        auto instance1Sampler = shader->descriptorGroup(1)->indexOf("Instance.sampler");
+
+
+        globalsData.setUniformBuffer(globalsIndex,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
+        object1Data.setUniformBuffer(instanceUniform,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
+        object1Data.setSampledTexture(instanceTexture,0,object1Texture.get());
+        object1Data.setSampler(instance1Sampler,0,defaultSampler.get());
+        object2Data.setUniformBuffer(instanceUniform,0,objectBuffer.get(),sizeof(TexturedDepthSet1Group),sizeof(TexturedDepthSet1Group));
+        object2Data.setSampledTexture(instanceTexture,0,object2Texture.get());
+        object2Data.setSampler(instance1Sampler,0,defaultSampler.get());
 
 
 
@@ -471,25 +485,20 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflection)
     GTEST_ASSERT_EQ(group1->descriptorCount(),3);
     GTEST_ASSERT_EQ(group2->descriptorCount(),1);
 
-    GTEST_ASSERT_TRUE(group0->descriptor(0).shape().type == Descriptor::Type::UNIFORM_BUFFER);
-    GTEST_ASSERT_EQ(group0->descriptor(0).shape().arrayDepth,1);
-    GTEST_ASSERT_EQ(group0->descriptor(0).shape().binding,0);
+    GTEST_ASSERT_TRUE(group0->descriptor("Camera")->shape().type == Descriptor::Type::UNIFORM_BUFFER);
+    GTEST_ASSERT_EQ(group0->descriptor("Camera")->shape().arrayDepth,1);
 
-    GTEST_ASSERT_TRUE(group1->descriptor(0).shape().type == Descriptor::Type::UNIFORM_BUFFER);
-    GTEST_ASSERT_EQ(group1->descriptor(0).shape().arrayDepth,1);
-    GTEST_ASSERT_EQ(group1->descriptor(0).shape().binding,0);
+    GTEST_ASSERT_TRUE(group1->descriptor("FlatMaterialInstance")->shape().type == Descriptor::Type::UNIFORM_BUFFER);
+    GTEST_ASSERT_EQ(group1->descriptor("FlatMaterialInstance")->shape().arrayDepth,1);
 
-    GTEST_ASSERT_TRUE(group1->descriptor(1).shape().type == Descriptor::Type::SAMPLED_TEXTURE);
-    GTEST_ASSERT_EQ(group1->descriptor(1).shape().arrayDepth,1);
-    GTEST_ASSERT_EQ(group1->descriptor(1).shape().binding,1);
+    GTEST_ASSERT_TRUE(group1->descriptor("FlatMaterialInstance.sampledTexture")->shape().type == Descriptor::Type::SAMPLED_TEXTURE);
+    GTEST_ASSERT_EQ(group1->descriptor("FlatMaterialInstance.sampledTexture")->shape().arrayDepth,1);
 
-    GTEST_ASSERT_EQ(group1->descriptor(2).shape().type, Descriptor::Type::SAMPLER);
-    GTEST_ASSERT_EQ(group1->descriptor(2).shape().arrayDepth,1);
-    GTEST_ASSERT_EQ(group1->descriptor(2).shape().binding,2);
+    GTEST_ASSERT_EQ(group1->descriptor("FlatMaterialInstance.sampler")->shape().type, Descriptor::Type::SAMPLER);
+    GTEST_ASSERT_EQ(group1->descriptor("FlatMaterialInstance.sampler")->shape().arrayDepth,1);
 
-    GTEST_ASSERT_TRUE(group2->descriptor(0).shape().type == Descriptor::Type::UNIFORM_BUFFER);
-    GTEST_ASSERT_EQ(group2->descriptor(0).shape().arrayDepth,1);
-    GTEST_ASSERT_EQ(group2->descriptor(0).shape().binding,0);
+    GTEST_ASSERT_TRUE(group2->descriptor("ObjectInstance")->shape().type == Descriptor::Type::UNIFORM_BUFFER);
+    GTEST_ASSERT_EQ(group2->descriptor("ObjectInstance")->shape().arrayDepth,1);
 
     auto layout0_0 = pipeline->bufferLayout(0,0);
     auto layout1_0 = pipeline->bufferLayout(1,0);
@@ -545,33 +554,27 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflectionAllTypes)
     GTEST_ASSERT_EQ(group0->descriptorCount(),4);
     GTEST_ASSERT_EQ(group1->descriptorCount(),3);
 
-    GTEST_ASSERT_TRUE(group0->descriptor(0).shape().type == Descriptor::Type::UNIFORM_BUFFER);
-    GTEST_ASSERT_EQ(group0->descriptor(0).shape().arrayDepth,1);
-    GTEST_ASSERT_EQ(group0->descriptor(0).shape().binding,0);
+    GTEST_ASSERT_TRUE(group0->descriptor("First")->shape().type == Descriptor::Type::UNIFORM_BUFFER);
+    GTEST_ASSERT_EQ(group0->descriptor("First")->shape().arrayDepth,1);
 
-    GTEST_ASSERT_TRUE(group0->descriptor(1).shape().type == Descriptor::Type::SAMPLER);
-    GTEST_ASSERT_EQ(group0->descriptor(1).shape().arrayDepth,1);
-    GTEST_ASSERT_EQ(group0->descriptor(1).shape().binding,1);
+    GTEST_ASSERT_TRUE(group0->descriptor("First.sampler")->shape().type == Descriptor::Type::SAMPLER);
+    GTEST_ASSERT_EQ(group0->descriptor("First.sampler")->shape().arrayDepth,1);
 
-    GTEST_ASSERT_TRUE(group0->descriptor(2).shape().type == Descriptor::Type::SAMPLED_TEXTURE);
-    GTEST_ASSERT_EQ(group0->descriptor(2).shape().arrayDepth,1);
-    GTEST_ASSERT_EQ(group0->descriptor(2).shape().binding,2);
+    GTEST_ASSERT_TRUE(group0->descriptor("First.sampledTexture")->shape().type == Descriptor::Type::SAMPLED_TEXTURE);
+    GTEST_ASSERT_EQ(group0->descriptor("First.sampledTexture")->shape().arrayDepth,1);
 
-    GTEST_ASSERT_TRUE(group0->descriptor(3).shape().type == Descriptor::Type::STORAGE_TEXTURE);
-    GTEST_ASSERT_EQ(group0->descriptor(3).shape().arrayDepth,1);
-    GTEST_ASSERT_EQ(group0->descriptor(3).shape().binding,3);
+    GTEST_ASSERT_TRUE(group0->descriptor("First.storageTexture")->shape().type == Descriptor::Type::STORAGE_TEXTURE);
+    GTEST_ASSERT_EQ(group0->descriptor("First.storageTexture")->shape().arrayDepth,1);
 
-    GTEST_ASSERT_TRUE(group1->descriptor(0).shape().type == Descriptor::Type::UNIFORM_TEXEL_BUFFER);
-    GTEST_ASSERT_EQ(group1->descriptor(0).shape().arrayDepth,1);
-    GTEST_ASSERT_EQ(group1->descriptor(0).shape().binding,0);
+    GTEST_ASSERT_TRUE(group1->descriptor("Second.uniformTexelBuffer")->shape().type == Descriptor::Type::UNIFORM_TEXEL_BUFFER);
+    GTEST_ASSERT_EQ(group1->descriptor("Second.uniformTexelBuffer")->shape().arrayDepth,1);
 
-    GTEST_ASSERT_TRUE(group1->descriptor(1).shape().type == Descriptor::Type::STORAGE_TEXEL_BUFFER);
-    GTEST_ASSERT_EQ(group1->descriptor(1).shape().arrayDepth,2);
-    GTEST_ASSERT_EQ(group1->descriptor(1).shape().binding,1);
+    GTEST_ASSERT_TRUE(group1->descriptor("Second.storageTexelBuffer")->shape().type == Descriptor::Type::STORAGE_TEXEL_BUFFER);
+    GTEST_ASSERT_EQ(group1->descriptor("Second.storageTexelBuffer")->shape().arrayDepth,2);
 
-    GTEST_ASSERT_TRUE(group1->descriptor(2).shape().type == Descriptor::Type::STORAGE_BUFFER);
-    GTEST_ASSERT_EQ(group1->descriptor(2).shape().arrayDepth,1);
-    GTEST_ASSERT_EQ(group1->descriptor(2).shape().binding,2);
+    GTEST_ASSERT_TRUE(group1->descriptor("Second.storageBuffer")->shape().type == Descriptor::Type::STORAGE_BUFFER);
+    GTEST_ASSERT_EQ(group1->descriptor("Second.storageBuffer")->shape().arrayDepth,1);
+
     auto uniformBufferLayout = pipeline->bufferLayout(0,0);
     auto uniformTexelBufferLayout = pipeline->texelBufferDescription(1,0);
     auto storageTexelBufferLayout = pipeline->texelBufferDescription(1,1);
@@ -634,8 +637,8 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflectionCompute)
     GTEST_ASSERT_EQ(group0->descriptorCount(),3);
     for (auto i=0; i<group0->descriptorCount(); i++)
     {
-        auto& desc = group0->descriptor(i);
-        GTEST_ASSERT_TRUE(desc.shape().type == Descriptor::Type::STORAGE_BUFFER);
+        auto desc = group0->descriptor(group0->descriptorName(i));
+        GTEST_ASSERT_TRUE(desc->shape().type == Descriptor::Type::STORAGE_BUFFER);
     }
 
     ShaderFile computeDrawFile{.pathIndicator = "resources/shaders/ComputeDraw", .stage = ShaderStageFlags::COMPUTE};
@@ -643,8 +646,8 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflectionCompute)
     GTEST_ASSERT_EQ(computeDraw->descriptorGroupCount(),1);
     group0 = computeDraw->descriptorGroup(0);
     GTEST_ASSERT_EQ(group0->descriptorCount(),1);
-    auto& desc = group0->descriptor(0);
-    GTEST_ASSERT_TRUE(desc.shape().type == Descriptor::Type::STORAGE_TEXTURE);
+    auto desc = group0->descriptor(group0->descriptorName(0));
+    GTEST_ASSERT_TRUE(desc->shape().type == Descriptor::Type::STORAGE_TEXTURE);
 }
 
 TEST_F(ShaderPipelineTest, ComputePipelineThreadGroups)

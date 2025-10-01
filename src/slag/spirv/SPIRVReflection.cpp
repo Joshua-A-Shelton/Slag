@@ -295,7 +295,7 @@ namespace slag
             uint32_t index=0;
             std::unordered_map<uint32_t, Descriptor> descriptors;
         };
-        SPVReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount)
+        SPVReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount,std::string(*rename)(const std::string&,uint32_t,Descriptor::Type, uint32_t,void*), void* renameData)
         {
             uint32_t totalSets = 0;
             std::unordered_map<uint32_t, DescriptorGroupReflectionStub> groups;
@@ -341,14 +341,21 @@ namespace slag
                             auto descriptor = descriptorReflection.descriptors.find(binding->binding);
                             if (descriptor == descriptorReflection.descriptors.end())
                             {
-                                descriptor = descriptorReflection.descriptors.insert(std::pair<uint32_t,Descriptor>(binding->binding,Descriptor(binding->name,descriptorTypeFromSPV(binding->descriptor_type),binding->count,binding->binding,shader->stage()))).first;
+                                std::string name = binding->name;
+                                auto type = descriptorTypeFromSPV(binding->descriptor_type);
+                                if (rename!=nullptr)
+                                {
+                                    //TODO: probably should provide some level of data instead of nullptr to help with identification
+                                    name = rename(name,set.set,type,binding->binding,renameData);
+                                }
+                                descriptor = descriptorReflection.descriptors.insert(std::pair<uint32_t,Descriptor>(binding->binding,Descriptor(name,type,binding->count,shader->stage()))).first;
                             }
                             else
                             {
                                 auto& reflectedDescriptor = descriptor->second;
                                 //scary const casts, but necessary to edit data we're generally not supposed to
                                 auto& shape = const_cast<Descriptor::Shape&>(reflectedDescriptor.shape());
-                                if (shape.binding!= binding->binding || shape.type != descriptorTypeFromSPV(binding->descriptor_type) || shape.arrayDepth != binding->count)
+                                if (shape.type != descriptorTypeFromSPV(binding->descriptor_type) || shape.arrayDepth != binding->count)
                                 {
                                     throw std::runtime_error(std::string("Shader stages contain incompatible descriptor groups: Group "+std::to_string(set.set))+" Binding "+std::to_string(binding->binding));
                                 }
@@ -427,7 +434,6 @@ namespace slag
             };
             for (auto& group : groups)
             {
-
                 std::vector<Descriptor> descriptors(group.second.descriptors.size());
                 for (auto& kvpair : group.second.descriptors)
                 {

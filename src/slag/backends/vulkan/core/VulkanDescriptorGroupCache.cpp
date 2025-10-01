@@ -16,7 +16,7 @@ namespace slag
             }
             std::lock_guard<std::mutex> lock(_cacheMutex);
 
-            auto id = group.shape();
+            auto id = group.groupShape();
             auto layout = _cachedLayouts.find(id);
             if(layout == _cachedLayouts.end())
             {
@@ -27,7 +27,7 @@ namespace slag
                 uint32_t actualBindings = 0;
                 for(size_t i=0; i< group.descriptorCount(); i++)
                 {
-                    auto& descriptor = group[i];
+                    auto& descriptor = group.descriptorAtBinding(i);
                     if (descriptor.shape().type == Descriptor::Type::UNKNOWN)
                     {
                         continue;
@@ -35,7 +35,7 @@ namespace slag
                     VkDescriptorSetLayoutBinding& binding = bindings[actualBindings];
                     binding.descriptorType = VulkanBackend::vulkanizedDescriptorType(descriptor.shape().type);
                     binding.descriptorCount = descriptor.shape().arrayDepth;
-                    binding.binding = descriptor.shape().binding;
+                    binding.binding = i;//this is an assumption that *should* be true, it's possible we didn't set ourselves up correctly though and for this to be wrong
                     binding.stageFlags = VulkanBackend::vulkanizedShaderFlags(descriptor.shape().visibleStages);
                     actualBindings++;
                 }
@@ -68,7 +68,7 @@ namespace slag
 
             std::lock_guard<std::mutex> lock(_cacheMutex);
 
-            auto hash = group.shape();
+            auto hash = group.groupShape();
             auto layout = _cachedLayouts.find(hash);
             if(layout != _cachedLayouts.end())
             {

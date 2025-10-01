@@ -7,6 +7,7 @@
 
 #include "Color.h"
 #include "Color.h"
+#include "Descriptor.h"
 #include "Operations.h"
 #include "Pixels.h"
 #include "VertexDescription.h"
@@ -31,6 +32,7 @@ namespace slag
     class BufferLayout;
     class TexelBufferDescription;
     class DescriptorGroup;
+    class Descriptor;
 
     enum class ShaderStageFlags: uint16_t
     {
@@ -72,6 +74,7 @@ namespace slag
         enum class CodeLanguage
         {
             SPIRV,
+            DXIL,
             CUSTOM
         };
         ShaderCode(ShaderStageFlags stage, CodeLanguage language, void* data, size_t dataLength);
@@ -261,9 +264,9 @@ namespace slag
         ///Number of descriptor groups this shader has
         virtual uint32_t descriptorGroupCount()=0;
         ///Retrieve descriptor group at index
-        virtual DescriptorGroup* descriptorGroup(size_t index)=0;
+        virtual DescriptorGroup* descriptorGroup(uint32_t index)=0;
         ///Retrieve descriptor group at index
-        virtual DescriptorGroup* operator[](size_t index)=0;
+        virtual DescriptorGroup* operator[](uint32_t index)=0;
         /**
          * Retrieve the layout of a buffer type descriptor
          * @param descriptorGroup the descriptor group index
@@ -290,8 +293,8 @@ namespace slag
         ///Shader languages the current backend can accept to create a shader pipeline
         static std::vector<ShaderCode::CodeLanguage> acceptedLanguages();
 
-        static ShaderPipeline* newShaderPipeline(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription);
-        static ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader);
+        static ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type, uint32_t platformBindingIndex,void*) = nullptr, void* renameData = nullptr);
+        static ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader,std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type, uint32_t platformBindingIndex,void*) = nullptr, void* renameData = nullptr);
 
     };
 } // slag

@@ -87,27 +87,25 @@ namespace slag
             virtual Sampler* newSampler(SamplerParameters parameters)override;
             //shaders
             virtual std::vector<ShaderCode::CodeLanguage> acceptedLanuages()override;
-            virtual ShaderPipeline* newShaderPipeline(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription)override;
-            virtual ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader)override;
+            virtual ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type, uint32_t platformBindingIndex,void*), void* renameData)override;
+            virtual ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader, std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type, uint32_t platformBindingIndex,void*), void* renameData)override;
             //descriptor pools
             virtual DescriptorPool* newDescriptorPool()override;
             virtual DescriptorPool* newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)override;
-            //descriptor groups
-            virtual DescriptorGroup* newDescriptorGroup(Descriptor* descriptors, size_t descriptorCount)override;
             //descriptor bundles
 #ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
-            virtual void setDescriptorBundleSampler(DescriptorBundle& descriptor, uint32_t binding,uint32_t arrayElement, Sampler* sampler)override;
-            virtual void setDescriptorBundleSampledTexture(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Texture* texture)override;
-            virtual void setDescriptorBundleStorageTexture(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Texture* texture)override;
+            virtual void setDescriptorBundleSampler(DescriptorBundle& descriptor, DescriptorIndex* index,uint32_t arrayElement, Sampler* sampler)override;
+            virtual void setDescriptorBundleSampledTexture(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Texture* texture)override;
+            virtual void setDescriptorBundleStorageTexture(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Texture* texture)override;
 #else
             virtual void setDescriptorBundleSampler(uint32_t binding,uint32_t arrayElement, Sampler* sampler, TextureLayouts::Layout layout)override;
             virtual void setDescriptorBundleSampledTexture(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout)override;
             virtual void setStorageTexture(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout)override;
 #endif
-            virtual void setDescriptorBundleUniformTexelBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, BufferView* bufferView)override;
-            virtual void setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, BufferView* bufferView)override;
-            virtual void setDescriptorBundleUniformBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)override;
-            virtual void setDescriptorBundleStorageBuffer(DescriptorBundle& descriptor, uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t offset, size_t length)override;
+            virtual void setDescriptorBundleUniformTexelBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, BufferView* bufferView)override;
+            virtual void setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, BufferView* bufferView)override;
+            virtual void setDescriptorBundleUniformBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Buffer* buffer, uint64_t offset, uint64_t length)override;
+            virtual void setDescriptorBundleStorageBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Buffer* buffer, uint64_t offset, uint64_t length)override;
 
             //Pixel Properties
             virtual PixelFormatProperties pixelFormatProperties(Pixels::Format format)override;

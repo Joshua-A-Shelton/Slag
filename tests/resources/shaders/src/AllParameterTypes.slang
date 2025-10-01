@@ -32,7 +32,7 @@ public struct UVCoordinates
 
 struct VertexStageOutput
 {
-    FragmentParameters fragmentParameters;
+    FragmentParameters fragmentParameters: FRAGMENT_PARAMETERS;
     float4 sv_position: SV_Position;
 }
 
@@ -45,7 +45,7 @@ public ParameterBlock<GroupOne> First;
 public ParameterBlock<GroupTwo> Second;
 
 [shader("vertex")]
-VertexStageOutput vertexMain(Vertex3D vertex3d, UVCoordinates uvCoordinates)
+VertexStageOutput vertexMain(Vertex3D vertex3d: POSITION, UVCoordinates uvCoordinates: UV_COORDINATES)
 {
     VertexStageOutput output;
     output.fragmentParameters.uv = uvCoordinates.position;
@@ -58,7 +58,7 @@ float4 fragmentMain(FragmentParameters fragmentParameters : FragmentParameters) 
 {
     var color = First.colorUniformBuffer * First.sampledTexture.Sample(First.sampler,fragmentParameters.uv);
     var count = Second.storageBuffer.getCount();
-    var read = Second.uniformTexelBuffer.Sample(First.sampler,.9f);
+    var read = Second.uniformTexelBuffer.Load(0);
     if(count < 1)
     {
         First.storageTexture.Store(uint2(0,0),color);

@@ -86,7 +86,7 @@ namespace slag
          * @param memoryBarriers Barriers that ensure operations in the queue finishes before additional operations can continue
          * @param memoryBarrierCount Number of memory barriers
          */
-        virtual void insertBarriers(TextureBarrier* textureBarriers, size_t textureBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GlobalBarrier* memoryBarriers, size_t memoryBarrierCount)=0;
+        virtual void insertBarriers(TextureBarrier* textureBarriers, uint32_t textureBarrierCount, BufferBarrier* bufferBarriers, uint32_t bufferBarrierCount, GlobalBarrier* memoryBarriers, uint32_t memoryBarrierCount)=0;
         ///Insert GPU execution barrier that ensures an operation on a texture finishes before the next operation on it can continue
         virtual void insertBarrier(const TextureBarrier& barrier)=0;
 #endif
@@ -300,7 +300,7 @@ namespace slag
              * @param length The length to fill (must be multiple of 4)
              * @param data Value to fill the buffer with (repeating)
              */
-            virtual void fillBuffer(Buffer* buffer, size_t offset, size_t length, uint32_t data)=0;
+            virtual void fillBuffer(Buffer* buffer, uint64_t offset, uint64_t length, uint32_t data)=0;
 
             /**
             * Sets the drawing area relative to the window, final image will be drawn scaled to the drawing area
@@ -339,7 +339,7 @@ namespace slag
          * @param depthAttachment Depth attachment that shaders will use as depth target in render pass (or nullptr if no depth attachment is needed)
          * @param bounds Area that is affected in render pass
          */
-        virtual void beginRendering(Attachment* colorAttachments, size_t colorAttachmentCount,Attachment* depthAttachment,Rectangle bounds)=0;
+        virtual void beginRendering(Attachment* colorAttachments, uint32_t colorAttachmentCount, Attachment* depthAttachment, Rectangle bounds)=0;
 #else
             /**
              * Start a renderpass by providing render targets
@@ -438,7 +438,7 @@ namespace slag
          * @param buffer Buffer containing dispatch parameters
          * @param offset Byte offset into buffer where parameters begin
          */
-        virtual void dispatchIndirect(Buffer* buffer, size_t offset)=0;
+        virtual void dispatchIndirect(Buffer* buffer, uint64_t offset)=0;
 
         /**
          * Bind a graphics shader pipeline
@@ -481,7 +481,7 @@ namespace slag
          * @param strides Strides of vertex attributes in each vertex buffer
          * @param bufferCount Count of buffers passed in buffers array
          */
-        virtual void bindVertexBuffers(uint32_t firstBindingIndex, Buffer** buffers, uint64_t* bufferOffsets, uint64_t* strides, size_t bufferCount)=0;
+        virtual void bindVertexBuffers(uint32_t firstBindingIndex, Buffer** buffers, uint64_t* bufferOffsets, uint64_t* strides, uint32_t bufferCount)=0;
 
 
 

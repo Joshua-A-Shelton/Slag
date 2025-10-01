@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <slag/backends/Backend.h>
+
+#include "backends/dx12/DX12Backend.h"
 #include "utilities/SLAG_ASSERT.h"
 
 #ifdef SLAG_VULKAN_BACKEND
@@ -34,6 +36,12 @@ namespace slag
             Backend::_current = new vulkan::VulkanBackend(initInfo);
             break;
 #endif
+#ifdef SLAG_DX12_BACKEND
+        case GraphicsBackend::DX12_GRAPHICS_BACKEND:
+            //Backend::_current = new dx12::DX12Backend(initInfo);
+            break;
+#endif
+
         default:
             return SLAG_BACKEND_NOT_AVAILABLE;
         }

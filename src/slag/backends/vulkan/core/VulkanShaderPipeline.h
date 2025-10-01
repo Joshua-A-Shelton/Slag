@@ -13,8 +13,8 @@ namespace slag
         class VulkanShaderPipeline: public ShaderPipeline
         {
         public:
-            VulkanShaderPipeline(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription);
-            VulkanShaderPipeline(const ShaderCode& computeCode);
+            VulkanShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type, uint32_t platformBindingIndex,void*), void* renameData);
+            VulkanShaderPipeline(const ShaderCode& computeCode, std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type, uint32_t platformBindingIndex,void*), void* renameData);
             VulkanShaderPipeline(const VulkanShaderPipeline&)=delete;
             VulkanShaderPipeline& operator=(const VulkanShaderPipeline&)=delete;
             VulkanShaderPipeline(VulkanShaderPipeline&& from);
@@ -22,8 +22,8 @@ namespace slag
             virtual ~VulkanShaderPipeline()override;
             virtual PipelineType pipelineType()override;
             virtual uint32_t descriptorGroupCount()override;
-            virtual DescriptorGroup* descriptorGroup(size_t index)override;
-            virtual DescriptorGroup* operator[](size_t index)override;
+            virtual DescriptorGroup* descriptorGroup(uint32_t index)override;
+            virtual DescriptorGroup* operator[](uint32_t index)override;
             virtual BufferLayout* bufferLayout(uint32_t descriptorGroup,uint32_t descriptorBinding)override;
             virtual TexelBufferDescription* texelBufferDescription(uint32_t descriptorGroup, uint32_t descriptorBinding)override;
             virtual uint32_t xComputeThreads()override;

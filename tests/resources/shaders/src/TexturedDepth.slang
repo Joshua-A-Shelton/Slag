@@ -62,7 +62,7 @@ public struct InstanceData
 
 struct VertexStageOutput
 {
-    FragmentParameters fragmentParameters;
+    FragmentParameters fragmentParameters: FRAMENT_PARAMETERS;
     float4 sv_position: SV_Position;
 }
 
@@ -76,7 +76,7 @@ public ParameterBlock<InstanceData> Instance;
 
 
 [shader("vertex")]
-VertexStageOutput vertexMain(Vertex3D vertex3d, UVCoordinates uvCoordinates)
+VertexStageOutput vertexMain(Vertex3D vertex3d: POSITION, UVCoordinates uvCoordinates: UV_COORDINATES)
 {
     float3 worldPosition = mul(Instance.transform,float4(vertex3d.position,1)).xyz;
 
