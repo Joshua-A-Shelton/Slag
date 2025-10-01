@@ -29,7 +29,11 @@ namespace slag
         {
             slag::cleanup();
         }
-        slag::initialize(SlagInitInfo{.graphicsBackend = GraphicsBackend::VULKAN_GRAPHICS_BACKEND, .slagDebugHandler=vulkanDebugHandler});
+        auto result = slag::initialize(SlagInitInfo{.graphicsBackend = GraphicsBackend::VULKAN_GRAPHICS_BACKEND, .slagDebugHandler=vulkanDebugHandler});
+        if (result != SlagInitializationResult::SLAG_INITIALIZATION_SUCCESS)
+        {
+            GTEST_FAIL();
+        }
         SetAsCurrentEnv();
         IN_VULKAN_ENV_CONSTRUCTOR = false;
     }

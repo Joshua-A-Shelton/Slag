@@ -5,6 +5,9 @@
 #include <unordered_map>
 #include <slag/Slag.h>
 #include <vulkan/vulkan.h>
+
+#include "VulkanDescriptorGroup.h"
+
 namespace slag
 {
     namespace vulkan
@@ -25,7 +28,7 @@ namespace slag
             static void removeInstance(VulkanDescriptorGroup& group);
         private:
             static inline std::mutex _cacheMutex;
-            static inline std::unordered_map<DescriptorGroup::Shape, CachedLayout,DescriptorGroup::Shape::DescriptorGroupShapeHash> _cachedLayouts;
+            static inline std::unordered_map<VulkanDescriptorGroup::Shape, CachedLayout,VulkanDescriptorGroup::Shape::DescriptorGroupShapeHash> _cachedLayouts;
         };
     } // vulkan
 } // slag

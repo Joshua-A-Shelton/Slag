@@ -39,7 +39,8 @@ namespace slag
 
         }
 #ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
-        void IVulkanCommandBuffer::insertBarriers(TextureBarrier* textureBarriers, size_t textureBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GlobalBarrier* memoryBarriers, size_t memoryBarrierCount)
+        void IVulkanCommandBuffer::insertBarriers(TextureBarrier* textureBarriers, uint32_t textureBarrierCount, BufferBarrier* bufferBarriers, uint32_t
+                                                  bufferBarrierCount, GlobalBarrier* memoryBarriers, uint32_t memoryBarrierCount)
         {
             std::vector<VkImageMemoryBarrier2> imageMemoryBarriers(textureBarrierCount,VkImageMemoryBarrier2{});
             for(size_t i=0; i< textureBarrierCount; i++)
@@ -163,6 +164,7 @@ namespace slag
                 auto& subResource = mappings[i];
                 auto aspectMask = VulkanBackend::vulkanizedAspectFlags(subResource.textureSubresource.aspectFlags);
                 SLAG_ASSERT(subResource.bufferOffset % Pixels::size(source->format())==0 && "Offset into buffer must be multiple of pixel size");
+                SLAG_ASSERT(std::popcount((uint8_t)subResource.textureSubresource.aspectFlags) == 1 && "Only a single aspect may be specified per subresource");
                 region.bufferOffset = subResource.bufferOffset;
                 region.bufferRowLength = 0;
                 region.bufferImageHeight = 0;
@@ -194,6 +196,7 @@ namespace slag
                 auto& subResource = mappings[i];
                 auto aspectMask = VulkanBackend::vulkanizedAspectFlags(subResource.textureSubresource.aspectFlags);
                 SLAG_ASSERT(subResource.bufferOffset % Pixels::size(destination->format())==0 && "Offset into buffer must be multiple of pixel size");
+                SLAG_ASSERT(std::popcount((uint8_t)subResource.textureSubresource.aspectFlags) == 1 && "Only a single aspect may be specified per subresource");
                 region.bufferOffset = subResource.bufferOffset;
                 region.bufferRowLength = 0;
                 region.bufferImageHeight = 0;
@@ -271,7 +274,7 @@ namespace slag
             vkCmdResolveImage(_commandBuffer,src->vulkanHandle(),VK_IMAGE_LAYOUT_GENERAL,dst->vulkanHandle(),VK_IMAGE_LAYOUT_GENERAL,1,&resolve);
         }
 
-        void IVulkanCommandBuffer::beginRendering(Attachment* colorAttachments, size_t colorAttachmentCount,Attachment* depthAttachment, Rectangle bounds)
+        void IVulkanCommandBuffer::beginRendering(Attachment* colorAttachments, uint32_t colorAttachmentCount, Attachment* depthAttachment, Rectangle bounds)
         {
             SLAG_ASSERT(colorAttachments != nullptr && "colorAttachment cannot be null");
             SLAG_ASSERT(colorAttachmentCount > 0 && "color attachment count must be positive");
@@ -373,7 +376,7 @@ namespace slag
             vkCmdCopyBuffer(_commandBuffer, src->vulkanHandle(), dst->vulkanHandle(), 1, &copyRegion);
         }
 
-        void IVulkanCommandBuffer::fillBuffer(Buffer* buffer, size_t offset, size_t length, uint32_t data)
+        void IVulkanCommandBuffer::fillBuffer(Buffer* buffer, uint64_t offset, uint64_t length, uint32_t data)
         {
             SLAG_ASSERT(buffer != nullptr && "Buffer cannot be null");
             SLAG_ASSERT(offset + length <= buffer->size() && "Fill would exceed length of buffer");
@@ -518,7 +521,7 @@ namespace slag
             vkCmdDispatchBase(_commandBuffer,baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY, groupCountZ);
         }
 
-        void IVulkanCommandBuffer::dispatchIndirect(Buffer* buffer, size_t offset)
+        void IVulkanCommandBuffer::dispatchIndirect(Buffer* buffer, uint64_t offset)
         {
             SLAG_ASSERT(buffer != nullptr && "Buffer cannot be null");
             SLAG_ASSERT((bool)(buffer->usage() & Buffer::UsageFlags::INDIRECT_BUFFER) && "buffer must have been created with usage flag INDIRECT_BUFFER");
@@ -573,7 +576,7 @@ namespace slag
             vkCmdBindIndexBuffer(_commandBuffer,buf->vulkanHandle(),offset,VulkanBackend::vulkanizedIndexType(indexSize));
         }
 
-        void IVulkanCommandBuffer::bindVertexBuffers(uint32_t firstBindingIndex, Buffer** buffers,uint64_t* bufferOffsets,uint64_t* strides, size_t bufferCount)
+        void IVulkanCommandBuffer::bindVertexBuffers(uint32_t firstBindingIndex, Buffer** buffers, uint64_t* bufferOffsets, uint64_t* strides, uint32_t bufferCount)
         {
             SLAG_ASSERT(buffers != nullptr && "Buffers cannot be null");
             SLAG_ASSERT(bufferCount > 0 && "Buffer Count must be greater than 0");

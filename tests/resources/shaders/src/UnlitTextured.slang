@@ -6,7 +6,7 @@ struct FragmentParameters
 }
 struct VertexStageOutput
 {
-    FragmentParameters fragmentParameters;
+    FragmentParameters fragmentParameters: FRAGMENT_PARAMETERS;
     float4 sv_position: SV_Position;
 }
 
@@ -21,7 +21,7 @@ public ParameterBlock<FlatTextureMaterial> FlatMaterialInstance;
 public ParameterBlock<ObjectInstanceData> ObjectInstance;
 
 [shader("vertex")]
-VertexStageOutput vertexMain(Vertex3D vertex3d, UVCoordinates uvCoordinates)
+VertexStageOutput vertexMain(Vertex3D vertex3d: POSITION, UVCoordinates uvCoordinates: UV_COORDINATES)
 {
     float3 worldPosition = mul(ObjectInstance.transform,float4(vertex3d.position,1)).xyz;
 

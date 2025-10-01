@@ -321,7 +321,7 @@ TEST(Texture, CreateWithData)
     }
 }
 
-#define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits, Aspects)\
+#define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits,colorBits,depthBits,stencilBits, Aspects)\
     TEST(Texture, SlagName)\
     {\
         auto properties = Pixels::formatProperties(Pixels::Format::SlagName);\
@@ -333,3 +333,145 @@ TEST(Texture, CreateWithData)
     }
 SLAG_TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
 #undef DEFINITION
+
+#ifdef SLAG_DEBUG
+TEST(Texture, CopyMultiAspect)
+{
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
+    auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
+    auto depthTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1,1));
+    auto result = std::unique_ptr<Buffer>(Buffer::newBuffer(depthTexture->byteSize(),Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
+
+
+    commandBuffer->begin();
+    commandBuffer->clearTexture(depthTexture.get(),ClearDepthStencilValue{.depth = .5f,.stencil = 1});
+    commandBuffer->insertBarrier(
+        TextureBarrier
+        {
+            depthTexture.get(),
+            0,
+            1,
+            0,
+            1,
+            BarrierAccessFlags::CLEAR,
+            BarrierAccessFlags::TRANSFER_READ,
+            PipelineStageFlags::CLEAR_DEPTH,
+            PipelineStageFlags::TRANSFER
+        });
+    TextureBufferMapping copyData
+    {
+        .bufferOffset = 0,
+        .textureSubresource =
+     {
+            .aspectFlags = Pixels::AspectFlags::DEPTH_STENCIL,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1
+        },
+        .textureOffset = {0,0,0},
+        .textureExtent = {.width = depthTexture->width(),.height = depthTexture->height(),.depth = 1},
+    };
+    EXPECT_DEATH(commandBuffer->copyTextureToBuffer(depthTexture.get(),result.get(),&copyData,1),"Only a single aspect may be specified per subresource");
+}
+#endif
+
+TEST(Texture, CopyPartialAspects)
+{
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
+    auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
+    auto depthTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1,1));
+    auto result = std::unique_ptr<Buffer>(Buffer::newBuffer(depthTexture->byteSize(),Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
+
+
+    commandBuffer->begin();
+    commandBuffer->clearTexture(depthTexture.get(),ClearDepthStencilValue{.depth = 0.0f,.stencil = 1});
+    commandBuffer->insertBarrier(
+        TextureBarrier
+        {
+            depthTexture.get(),
+            0,
+            1,
+            0,
+            1,
+            BarrierAccessFlags::CLEAR,
+            BarrierAccessFlags::TRANSFER_READ,
+            PipelineStageFlags::CLEAR_DEPTH,
+            PipelineStageFlags::TRANSFER
+        });
+    TextureBufferMapping copyData[]
+    {
+    {
+            .bufferOffset = 0,
+            .textureSubresource =
+         {
+                .aspectFlags = Pixels::AspectFlags::DEPTH,
+                .mipLevel = 0,
+                .baseArrayLayer = 0,
+                .layerCount = 1
+            },
+            .textureOffset = {0,0,0},
+            .textureExtent = {.width = depthTexture->width(),.height = depthTexture->height(),.depth = 1},
+        },
+        {
+            .bufferOffset = Pixels::size(depthTexture->format(),Pixels::AspectFlags::DEPTH)*depthTexture->width()*depthTexture->height(),
+            .textureSubresource =
+         {
+                .aspectFlags = Pixels::AspectFlags::STENCIL,
+                .mipLevel = 0,
+                .baseArrayLayer = 0,
+                .layerCount = 1
+            },
+            .textureOffset = {0,0,0},
+            .textureExtent = {.width = depthTexture->width(),.height = depthTexture->height(),.depth = 1},
+        }
+    };
+    commandBuffer->copyTextureToBuffer(depthTexture.get(),result.get(),copyData,2);
+
+    commandBuffer->end();
+
+    auto bufferPtr = commandBuffer.get();
+
+    SemaphoreValue signal
+    {
+        .semaphore = finished.get(),
+        .value = 1
+    };
+    QueueSubmissionBatch batch
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &bufferPtr,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->graphicsQueue()->submit(&batch,1);
+    finished->waitForValue(1);
+
+    auto byteData = result->as<unsigned char>();
+    auto i=0;
+    for (; i<Pixels::size(depthTexture->format(),Pixels::AspectFlags::DEPTH)*depthTexture->width()*depthTexture->height(); i+=4)
+    {
+        int x = byteData[i+2];
+        x = (x << 8) | byteData[i+1];
+        x = (x << 8) | byteData[i];
+
+        if (x & 0x800000)
+        {
+            x |= ~0xffffff;
+        }
+
+        const float Q = 1.0 / (0x7fffff);
+        float floatRep = x*Q;
+        if (floatRep != 0.0f)
+        {
+            std::cout << i << std::endl;
+        }
+        GTEST_ASSERT_EQ(floatRep, 0.0f);
+    }
+    for (;i<result->countAsArray<uint8_t>();i++)
+    {
+        GTEST_ASSERT_EQ(byteData[i], 1);
+    }
+}

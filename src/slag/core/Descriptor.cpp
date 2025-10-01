@@ -4,7 +4,7 @@ namespace slag
 {
     bool Descriptor::Shape::operator==(const Shape& to) const
     {
-        return binding == to.binding && type == to.type && arrayDepth == to.arrayDepth && visibleStages == to.visibleStages;
+        return type == to.type && arrayDepth == to.arrayDepth && visibleStages == to.visibleStages;
     }
 
     bool Descriptor::Shape::operator!=(const Shape& to) const
@@ -12,7 +12,7 @@ namespace slag
         return !(*this == to);
     }
 
-    Descriptor::Descriptor(const std::string& name, Type type, uint32_t arrayDepth, uint32_t binding, ShaderStageFlags visibleStages):_shape(type,arrayDepth,binding,visibleStages)
+    Descriptor::Descriptor(const std::string& name, Type type, uint32_t arrayDepth, ShaderStageFlags visibleStages):_shape(type,arrayDepth,visibleStages)
     {
         _name = name;
     }

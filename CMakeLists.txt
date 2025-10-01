@@ -84,14 +84,39 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/backends/vulkan/core/VulkanFrame.cpp
             src/slag/backends/vulkan/core/VulkanFrame.h
             src/slag/backends/vulkan/core/VulkanBufferView.cpp
-            src/slag/backends/vulkan/core/VulkanBufferView.h)
+            src/slag/backends/vulkan/core/VulkanBufferView.h
+            src/slag/backends/vulkan/core/VulkanDescriptorIndex.h)
 endif()
 if(SLAG_DX12_BACKEND)
     add_definitions(-DSLAG_DX12_BACKEND=1)
+    SET(USE_DXIL_12_REFLECTION ON)
     message("adding direct x 12 backend")
     SET(SLAG_DX12_SOURCES
             src/slag/backends/dx12/DX12Backend.cpp
-            src/slag/backends/dx12/DX12Backend.h)
+            src/slag/backends/dx12/DX12Backend.h
+            src/slag/backends/dx12/core/DX12GraphicsCard.cpp
+            src/slag/backends/dx12/core/DX12GraphicsCard.h
+            src/slag/backends/dx12/core/DX12Queue.cpp
+            src/slag/backends/dx12/core/DX12Queue.h
+            src/slag/backends/dx12/core/IDX12CommandBuffer.cpp
+            src/slag/backends/dx12/core/IDX12CommandBuffer.h
+            src/slag/backends/dx12/core/DX12Buffer.cpp
+            src/slag/backends/dx12/core/DX12Buffer.h
+            src/slag/backends/dx12/core/DX12CommandBuffer.cpp
+            src/slag/backends/dx12/core/DX12CommandBuffer.h
+            src/slag/backends/dx12/core/DX12Semaphore.cpp
+            src/slag/backends/dx12/core/DX12Semaphore.h
+            src/slag/backends/dx12/core/DX12DescriptorPool.cpp
+            src/slag/backends/dx12/core/DX12DescriptorPool.h
+            src/slag/backends/dx12/core/DX12Texture.cpp
+            src/slag/backends/dx12/core/DX12Texture.h
+            src/slag/backends/dx12/core/DX12ShaderPipeline.cpp
+            src/slag/backends/dx12/core/DX12ShaderPipeline.h
+            src/slag/backends/dx12/core/DX12DescriptorGroup.cpp
+            src/slag/backends/dx12/core/DX12DescriptorGroup.h
+            src/slag/backends/dx12/core/DX12Sampler.cpp
+            src/slag/backends/dx12/core/DX12Sampler.h
+    )
 endif()
 
 if(USE_SPIRV_REFLECTION)
@@ -102,7 +127,15 @@ if(USE_SPIRV_REFLECTION)
             )
 endif()
 
-add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLECT_SOURCES}
+if(USE_DXIL_12_REFLECTION)
+    add_definitions(-DUSE_SLAG_DXIL_12_REFLECTION)
+    SET(SLAG_DXIL_12_REFLECT_SOURCES
+            src/slag/dxil_12/DXIL12Reflection.cpp
+            src/slag/dxil_12/DXIL12Reflection.h
+    )
+endif()
+
+add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLECT_SOURCES} ${SLAG_DXIL_12_REFLECT_SOURCES}
         src/slag/Slag.cpp
         src/slag/Slag.h
         src/slag/core/GraphicsCard.h
@@ -140,7 +173,6 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/DescriptorBundle.h
         src/slag/core/ShaderPipeline.cpp
         src/slag/core/ShaderPipeline.h
-        src/slag/core/DescriptorGroup.cpp
         src/slag/core/DescriptorGroup.h
         src/slag/core/Descriptor.cpp
         src/slag/core/Descriptor.h
@@ -169,6 +201,17 @@ if(USE_SPIRV_REFLECTION)
     )
     FetchContent_MakeAvailable(SPIRV_REFLECT)
     target_link_libraries(Slag PRIVATE spirv-reflect-static)
+endif ()
+
+if(USE_DXIL_12_REFLECTION)
+    target_include_directories(Slag PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/DXC/inc)
+
+    find_library(DXCompiler_LIB NAMES dxcompiler PATHS ${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/DXC/lib/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID})
+    find_library(DXIL_LIB NAMES dxil PATHS ${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/DXC/lib/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID})
+
+    target_link_libraries(Slag PRIVATE ${DXCompiler_LIB} ${DXIL_LIB})
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/DXC/bin/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}/dxcompiler.dll ${CMAKE_BINARY_DIR}/dxcompiler.dll COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/DXC/bin/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}/dxil.dll ${CMAKE_BINARY_DIR}/dxil.dll COPYONLY)
 endif ()
 
 if(SLAG_VULKAN_BACKEND)
@@ -204,14 +247,28 @@ if(SLAG_DX12_BACKEND)
             GIT_SHALLOW TRUE
             OVERRIDE_FIND_PACKAGE
     )
-    FetchContent_Declare(DirectX-Headers)
-    target_link_libraries(Slag PRIVATE ${DirectX-Headers})
+    FetchContent_MakeAvailable(DirectX-Headers)
+    find_package(DirectX-Headers REQUIRED)
 
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/D3D12/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}/D3D12Core.dll ${CMAKE_CURRENT_BINARY_DIR}/D3D12/ COPYONLY)
+    FetchContent_Declare(
+            D3D12MemoryAllocator
+            GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator
+            GIT_TAG v3.0.1
+            GIT_SHALLOW TRUE
+            OVERRIDE_FIND_PACKAGE
+    )
+    FetchContent_MakeAvailable(D3D12MemoryAllocator)
+    find_package(D3D12MemoryAllocator)
+
+    #target_include_directories(Slag PUBLIC ${DirectX-Headers_SOURCE_DIR}/include/)
+    target_link_libraries(Slag PRIVATE DirectX-Headers D3D12MemoryAllocator)
+
+
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/D3D12/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}/D3D12Core.dll ${CMAKE_BINARY_DIR}/D3D12/D3D12Core.dll COPYONLY)
     if(SLAG_DEBUG_BUILD)
-        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/D3D12/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}/D3D12Core.pdb ${CMAKE_CURRENT_BINARY_DIR}/D3D12/ COPYONLY)
-        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/D3D12/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}/d3d12SDKLayers.dll ${CMAKE_CURRENT_BINARY_DIR}/D3D12/ COPYONLY)
-        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/D3D12/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}/d3d12SDKLayers.pdb ${CMAKE_CURRENT_BINARY_DIR}/D3D12/ COPYONLY)
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/D3D12/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}/D3D12Core.pdb ${CMAKE_BINARY_DIR}/D3D12/D3D12Core.pdb COPYONLY)
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/D3D12/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}/d3d12SDKLayers.dll ${CMAKE_BINARY_DIR}/D3D12/d3d12SDKLayers.dll COPYONLY)
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/D3D12/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}/d3d12SDKLayers.pdb ${CMAKE_BINARY_DIR}/D3D12/d3d12SDKLayers.pdb COPYONLY)
     endif()
 
 endif()
@@ -277,6 +334,8 @@ if(PROJECT_IS_TOP_LEVEL)
             tests/tests/Texture.cpp
             tests/tests/DescriptorPool.cpp
             tests/tests/DescriptorBundle.cpp
+            tests/DX12Environment.cpp
+            tests/DX12Environment.h
     )
 
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)

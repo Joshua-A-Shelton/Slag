@@ -85,13 +85,13 @@ namespace slag
         return Backend::current()->acceptedLanuages();
     }
 
-    ShaderPipeline* ShaderPipeline::newShaderPipeline(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription,FrameBufferDescription& framebufferDescription)
+    ShaderPipeline* ShaderPipeline::newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type  type, uint32_t platformBindingIndex,void*), void* renameData)
     {
-        return Backend::current()->newShaderPipeline(shaders, shaderCount, properties, vertexDescription, framebufferDescription);
+        return Backend::current()->newShaderPipeline(shaders, shaderCount, properties, vertexDescription, framebufferDescription,rename,renameData);
     }
 
-    ShaderPipeline* ShaderPipeline::newShaderPipeline(const ShaderCode& computeShader)
+    ShaderPipeline* ShaderPipeline::newShaderPipeline(const ShaderCode& computeShader,std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type  type, uint32_t platformBindingIndex,void*), void* renameData)
     {
-        return Backend::current()->newShaderPipeline(computeShader);
+        return Backend::current()->newShaderPipeline(computeShader,rename,renameData);
     }
 }

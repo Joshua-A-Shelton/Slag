@@ -3,13 +3,16 @@
 
 #include <bit>
 #include <string>
+#include <vector>
 
 #include "GraphicsTypes.h"
-#include "ShaderPipeline.h"
+
 #include "Texture.h"
 
 namespace slag
 {
+    enum class ShaderStageFlags : uint16_t;
+
     ///Describes data shaders expect (shader parameters essentially) in order to execute
     class Descriptor
     {
@@ -43,8 +46,6 @@ namespace slag
             Type type=Type::UNKNOWN;
             ///How many objects are being described in an array
             uint32_t arrayDepth=1;
-            ///The corresponding index to be bound to in the shader
-            uint32_t binding=0;
             ///What stages of the shader this descriptor is visible to
             ShaderStageFlags visibleStages = std::bit_cast<ShaderStageFlags>(uint16_t(0));
 
@@ -57,10 +58,9 @@ namespace slag
          * @param name Name of the descriptor, only used semantically, may differ between identical descriptor groups
          * @param type Descriptor Type
          * @param arrayDepth How many elements does this descriptor describe
-         * @param binding Corresponding index to be bound to in the shader
          * @param visibleStages Stages of the shader is descriptor is visible to
          */
-        Descriptor(const std::string& name, Type type, uint32_t arrayDepth, uint32_t binding, ShaderStageFlags visibleStages);
+        Descriptor(const std::string& name, Type type, uint32_t arrayDepth, ShaderStageFlags visibleStages);
         ~Descriptor()=default;
         Descriptor(const Descriptor& from);
         Descriptor& operator=(const Descriptor& from);

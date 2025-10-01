@@ -22,7 +22,7 @@ namespace slag
             uint32_t entryPointZDim=0;
         };
 
-        SPVReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount);
+        SPVReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount, std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type, uint32_t platformBindingIndex,void*), void* renameData);
     } // spirv
 } // slag
 
