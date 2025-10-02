@@ -32,13 +32,10 @@ namespace slag
 
             vkCreateFence(VulkanGraphicsCard::selected()->device(),&fenceInfo,nullptr,&_commandsCompleteFence);
             vkCreateFence(VulkanGraphicsCard::selected()->device(),&fenceInfo,nullptr,&_imageAcquiredFence);
-
-#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
             vkCreateSemaphore(VulkanGraphicsCard::selected()->device(),&semaphoreInfo,nullptr,&_submittedCompleteSemaphore);
             _backBufferToGeneral = new VulkanCommandBuffer(GPUQueue::QueueType::GRAPHICS);
             vkCreateSemaphore(VulkanGraphicsCard::selected()->device(),&semaphoreInfo,nullptr,&_backBufferToGeneralSemaphore);
             _backBufferToPresent = new VulkanCommandBuffer(GPUQueue::QueueType::GRAPHICS);
-#endif
 
         }
 
@@ -50,12 +47,10 @@ namespace slag
                 vkDestroySemaphore(VulkanGraphicsCard::selected()->device(), _commandsCompleteSemaphore, nullptr);
                 vkDestroyFence(VulkanGraphicsCard::selected()->device(), _commandsCompleteFence, nullptr);
                 vkDestroyFence(VulkanGraphicsCard::selected()->device(), _imageAcquiredFence, nullptr);
-#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
                 vkDestroySemaphore(VulkanGraphicsCard::selected()->device(), _submittedCompleteSemaphore, nullptr);
                 delete _backBufferToGeneral;
                 vkDestroySemaphore(VulkanGraphicsCard::selected()->device(), _backBufferToGeneralSemaphore, nullptr);
                 delete _backBufferToPresent;
-#endif
             }
         }
 
@@ -135,13 +130,10 @@ namespace slag
             std::swap(_imageAcquiredFence, from._imageAcquiredFence);
             std::swap(_commandsCompleteSemaphore, from._commandsCompleteSemaphore);
             std::swap(_commandsCompleteFence, from._commandsCompleteFence);
-
-#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
             std::swap(_submittedCompleteSemaphore, from._submittedCompleteSemaphore);
             std::swap(_backBufferToGeneral,from._backBufferToGeneral);
             std::swap(_backBufferToGeneralSemaphore,from._backBufferToGeneralSemaphore);
             std::swap(_backBufferToPresent,from._backBufferToPresent);
-#endif
         }
     } // vulkan
 } // slag

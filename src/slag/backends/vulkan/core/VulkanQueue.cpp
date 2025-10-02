@@ -88,14 +88,7 @@ namespace slag
         void VulkanQueue::submit(QueueSubmissionBatch* submissionData, uint32_t submissionDataCount, Frame* frame)
         {
             SLAG_ASSERT(_type == QueueType::GRAPHICS && "frame submissions can only be done on a graphics queue");
-
-#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
             submitGeneral(submissionData, submissionDataCount, frame);
-
-#else
-            submitDiscreet(submissionData, submissionDataCount, frame);
-#endif
-
         }
 
         VkQueue VulkanQueue::vulkanHandle()

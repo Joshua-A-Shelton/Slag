@@ -614,7 +614,6 @@ namespace slag
             VulkanSemaphore::waitFor(values, count);
         }
 
-#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
         Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount)
         {
             return new VulkanTexture(texelFormat, type, usageFlags, width, height, depth,mipLevels, layers, sampleCount);
@@ -625,18 +624,6 @@ namespace slag
         {
             return new VulkanTexture(texelFormat, type,usageFlags,width,height, depth,mipLevels,layers,sampleCount,texelData, texelDataLength,mappings,mappingCount);
         }
-#else
-        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers,Texture::SampleCount sampleCount)
-        {
-            return new VulkanTexture(texelFormat, type, usageFlags, width, height, depth, mipLevels, layers, sampleCount);
-        }
-        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData,uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount)
-        {
-            return new VulkanTexture(texelFormat, type, layout,usageFlags,width,height,depth,mipLevels,layers,sampleCount,texelData,texelDataLength,mappings, mappingCount);
-        }
-
-
-#endif
 
         Buffer* VulkanBackend::newBuffer(size_t dataSize, Buffer::Accessibility accessibility, Buffer::UsageFlags usage)
         {
@@ -691,7 +678,6 @@ namespace slag
             return new VulkanDescriptorPool(pageInfo);
         }
 
-#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
         void VulkanBackend::setDescriptorBundleSampler(DescriptorBundle& descriptor, DescriptorIndex* index,uint32_t arrayElement, Sampler* sampler)
         {
             VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
@@ -756,20 +742,6 @@ namespace slag
 
             vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
         }
-#else
-        void VulkanBackend::setDescriptorBundleSampler(uint32_t binding,uint32_t arrayElement, Sampler* sampler, TextureLayouts::Layout layout)
-        {
-            throw std::runtime_error("Not implemented");
-        }
-        void VulkanBackend::setDescriptorBundleSampledTexture(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout)
-        {
-            throw std::runtime_error("Not implemented");
-        }
-        void VulkanBackend::setStorageTexture(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout)
-        {
-            throw std::runtime_error("Not implemented");
-        }
-#endif
         void VulkanBackend::setDescriptorBundleUniformTexelBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, BufferView* bufferView)
         {
             VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());

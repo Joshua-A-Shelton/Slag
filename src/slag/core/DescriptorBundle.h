@@ -18,7 +18,6 @@ namespace slag
         DescriptorBundle& operator=(const DescriptorBundle&)=delete;
         DescriptorBundle(DescriptorBundle&& from);
         DescriptorBundle& operator=(DescriptorBundle&& from);
-#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
         /**
          * Assign a sampler to the descriptor bundle
          * @param index The binding index of the descriptor
@@ -40,42 +39,6 @@ namespace slag
          * @param texture The texture to assign
          */
         void setStorageTexture(DescriptorIndex* index, uint32_t arrayElement, Texture* texture);
-
-#else
-
-        /**
-         * Assign a sampler to the descriptor bundle
-         * @param binding The binding index of the descriptor
-         * @param arrayElement The index of the array to assign
-         * @param sampler The sampler to assign
-         * @param layout The layout the texture(s) being sampled will be in during shader execution
-         */
-        void setSampler(DescriptorIndex* binding,uint32_t arrayElement, Sampler* sampler, TextureLayouts::Layout layout);
-        /**
-         * Assign a texture (that will be sampled) to the descriptor bundle
-         * @param binding The binding index of the descriptor
-         * @param arrayElement The index of the array to assign
-         * @param texture The texture to assign
-         * @param layout The layout the texture will be in during shader execution
-         */
-        void setSampledTexture(DescriptorIndex* binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout);
-        /**
-         * Assign a texture that can have both read/write operations performed on it (usually compute shaders) to the descriptor bundle
-         * @param binding The binding index of the descriptor
-         * @param arrayElement The index of the array to assign
-         * @param texture The texture to assign
-         * @param layout The layout the texture will be in during shader execution (UNORDERED or GENERAL)
-         */
-        void setStorageTexture(DescriptorIndex* binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout);
-        /**
-         * Assign a texture that can be used for framebuffer local operations to the descriptor bundle
-         * @param binding The binding index of the descriptor
-         * @param arrayElement The index of the array to assign
-         * @param texture The texture to assign
-         * @param layout The layout the texture will be in during shader execution
-         */
-        void setInputAttachment(DescriptorIndex* binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout);
-#endif
 
         /**
          * Assign a tightly packed 1D array of texels that image sampling operations can be performed on to the descriptor bundle

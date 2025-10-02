@@ -20,13 +20,8 @@ namespace slag
         class VulkanTexture: public Texture
         {
         public:
-#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
             VulkanTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t depth, uint32_t height,uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount);
             VulkanTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t depth, uint32_t height,uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData, uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount);
-#else
-            VulkanTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uintew_t depth,uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount);
-            VulkanTexture(Pixels::Format texelFormat, Type type, TextureLayouts::Layout initialLayout, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData, uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount);
-#endif
             /**
              * Create a texture from existing elements, memory is not owned, and must be managed by caller
              * @param image

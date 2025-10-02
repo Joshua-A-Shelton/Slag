@@ -34,13 +34,8 @@ namespace slag
         virtual Semaphore* newSemaphore(uint64_t initialValue)=0;
         virtual void waitFor(SemaphoreValue* values, size_t count)=0;
         //textures
-#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
         virtual Texture* newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount)=0;
         virtual Texture* newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData, uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount)=0;
-#else
-        virtual Texture* newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, uint32_t mipLevels,Texture::SampleCount sampleCount)=0;
-        virtual Texture* newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount, void* texelData,uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount)=0;
-#endif
         //Buffers
         virtual Buffer* newBuffer(size_t size, Buffer::Accessibility accessibility,Buffer::UsageFlags usage)=0;
         virtual Buffer* newBuffer(void* data, size_t dataSize, Buffer::Accessibility accessibility,Buffer::UsageFlags usage)=0;
@@ -58,15 +53,9 @@ namespace slag
         virtual DescriptorPool* newDescriptorPool()=0;
         virtual DescriptorPool* newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)=0;
         //descriptor bundles
-#ifdef SLAG_DISCREET_TEXTURE_LAYOUTS
-        virtual void setDescriptorBundleSampler(uint32_t binding,uint32_t arrayElement, Sampler* sampler, TextureLayouts::Layout layout);
-        virtual void setDescriptorBundleSampledTexture(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout);
-        virtual void setDescriptorBundleStorageTexture(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout);
-#else
         virtual void setDescriptorBundleSampler(DescriptorBundle& descriptor, DescriptorIndex* index,uint32_t arrayElement, Sampler* sampler)=0;
         virtual void setDescriptorBundleSampledTexture(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Texture* texture)=0;
         virtual void setDescriptorBundleStorageTexture(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Texture* texture)=0;
-#endif
         virtual void setDescriptorBundleUniformTexelBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, BufferView* bufferView)=0;
         virtual void setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, BufferView* bufferView)=0;
         virtual void setDescriptorBundleUniformBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Buffer* buffer, uint64_t offset, uint64_t length)=0;

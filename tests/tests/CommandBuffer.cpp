@@ -1,5 +1,4 @@
-#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
-#include "../../GraphicsAPIEnvironment.h"
+#include "../GraphicsAPIEnvironment.h"
 #include "slag/core/DescriptorBundle.h"
 #include "slag/core/DescriptorPool.h"
 #include <gtest/gtest.h>
@@ -7,8 +6,8 @@
 #include <memory>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "../../Utilities.h"
-#include "../../third-party/LodePNG/lodepng.h"
+#include "../Utilities.h"
+#include "../third-party/LodePNG/lodepng.h"
 using namespace slag;
 
 struct GlobalSet0Group
@@ -2106,4 +2105,3 @@ TEST_F(CommandBufferTest, DispatchIndirect)
         GTEST_ASSERT_EQ(inputsData[i]+inputsData[i+64]+i,results[i]);
     }
 }
-#endif

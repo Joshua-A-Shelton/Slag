@@ -95,14 +95,8 @@ namespace slag
          */
         uint64_t byteSize(uint32_t mipLevel);
 
-#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
         static Texture* newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount = SampleCount::ONE);
         static Texture* newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData, uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount);
-#else
-        static Texture* newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels,Texture::SampleCount sampleCount);
-        static Texture* newTexture(Pixels::Format texelFormat, TextureLayouts::Layout, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t layers, uint32_t mipLevels, Texture::SampleCount sampleCount, void* texelData, uint64_t texelDataLength, uint32_t providedDataMips, uint32_t providedDataLayers);
-#endif
-
     };
 
     inline Texture::UsageFlags operator|(const Texture::UsageFlags& a, const Texture::UsageFlags& b)

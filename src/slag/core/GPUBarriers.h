@@ -135,40 +135,6 @@ namespace slag
         return a;
     }
 
-#ifdef SLAG_DISCREET_TEXTURE_LAYOUTS
-    class TextureLayouts
-    {
-    public:
-        ///Layouts for textures that are optimized for specific operations
-        enum class Layout
-        {
-#define DEFINITION(slagName, vulkanName, directXName) slagName,
-            SLAG_TEXTURE_LAYOUT_DEFINITIONS(DEFINITION)
-#undef DEFINITION
-        };
-    };
-
-    struct TextureBarrierDiscreet
-    {
-        Texture* texture = nullptr;
-        uint32_t baseLayer = 0;
-        /// layerCount = 0 means all remaining layers
-        uint32_t layerCount = 0;
-        uint32_t baseMipLevel = 0;
-        /// mipCount = 0 means all remaining mips
-        uint32_t mipCount = 0;
-        TextureLayouts::Layout oldLayout = TextureLayouts::UNDEFINED;
-        TextureLayouts::Layout newLayout = TextureLayouts::UNDEFINED;
-        ///Synchronize (flush from cache [cache->Memory]) this kind of memory before barrier executes
-        BarrierAccessFlags accessBefore = BarrierAccessFlags::NONE;
-        ///Synchronize (invalidate cache [cache<-Memory]) this kind of memory after barrier executes
-        BarrierAccessFlags accessAfter = BarrierAccessFlags::NONE;
-        ///Finish all work of this kind before barrier executes
-        PipelineStageFlags syncBefore = PipelineStageFlags::NONE;
-        ///Make all work of this kind wait until after barrier executes
-        PipelineStageFlags syncAfter = PipelineStageFlags::NONE;
-    };
-#else
     struct TextureBarrier
     {
         Texture* texture = nullptr;
@@ -187,7 +153,6 @@ namespace slag
         ///Make all work of this kind wait until after barrier executes
         PipelineStageFlags syncAfter = PipelineStageFlags::NONE;
     };
-#endif
 
     struct BufferBarrier
     {
