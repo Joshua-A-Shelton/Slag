@@ -1,10 +1,12 @@
 #include "Descriptor.h"
 
+#include "slag/utilities/SLAG_ASSERT.h"
+
 namespace slag
 {
     bool Descriptor::Shape::operator==(const Shape& to) const
     {
-        return type == to.type && arrayDepth == to.arrayDepth && visibleStages == to.visibleStages;
+        return type == to.type && dimension == to.dimension && arrayDepth == to.arrayDepth && visibleStages == to.visibleStages;
     }
 
     bool Descriptor::Shape::operator!=(const Shape& to) const
@@ -12,8 +14,12 @@ namespace slag
         return !(*this == to);
     }
 
-    Descriptor::Descriptor(const std::string& name, Type type, uint32_t arrayDepth, ShaderStageFlags visibleStages):_shape(type,arrayDepth,visibleStages)
+    Descriptor::Descriptor(const std::string& name, Type type, Dimension dimension, uint32_t arrayDepth, ShaderStageFlags visibleStages):_shape(type,dimension,arrayDepth,visibleStages)
     {
+        SLAG_ASSERT(arrayDepth > 0 && "Array depth must be greater than zero");
+        SLAG_ASSERT((type == Type::UNKNOWN && dimension == Dimension::UNKNOWN) || (type != Type::UNKNOWN && dimension != Dimension::UNKNOWN) && "If type or dimension is unknown, both must be");
+        SLAG_ASSERT(((type == Type::STORAGE_BUFFER || type == Type::STORAGE_TEXEL_BUFFER || type == Type::UNIFORM_BUFFER || type == Type::UNIFORM_TEXEL_BUFFER || type == Type::ACCELERATION_STRUCTURE || type == Type::SAMPLER) && dimension == Dimension::ONE_DIMENSIONAL) ||
+            (type == Type::SAMPLED_TEXTURE || type == Type::STORAGE_TEXTURE) && "Only textures may be non-one dimensional");
         _name = name;
     }
 

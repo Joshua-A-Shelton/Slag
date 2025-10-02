@@ -556,24 +556,31 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflectionAllTypes)
 
     GTEST_ASSERT_TRUE(group0->descriptor("First")->shape().type == Descriptor::Type::UNIFORM_BUFFER);
     GTEST_ASSERT_EQ(group0->descriptor("First")->shape().arrayDepth,1);
+    GTEST_ASSERT_EQ(group0->descriptor("First")->shape().dimension,Descriptor::Dimension::ONE_DIMENSIONAL);
 
     GTEST_ASSERT_TRUE(group0->descriptor("First.sampler")->shape().type == Descriptor::Type::SAMPLER);
     GTEST_ASSERT_EQ(group0->descriptor("First.sampler")->shape().arrayDepth,1);
+    GTEST_ASSERT_EQ(group0->descriptor("First.sampler")->shape().dimension,Descriptor::Dimension::ONE_DIMENSIONAL);
 
     GTEST_ASSERT_TRUE(group0->descriptor("First.sampledTexture")->shape().type == Descriptor::Type::SAMPLED_TEXTURE);
     GTEST_ASSERT_EQ(group0->descriptor("First.sampledTexture")->shape().arrayDepth,1);
+    GTEST_ASSERT_EQ(group0->descriptor("First.sampledTexture")->shape().dimension,Descriptor::Dimension::TWO_DIMENSIONAL);
 
     GTEST_ASSERT_TRUE(group0->descriptor("First.storageTexture")->shape().type == Descriptor::Type::STORAGE_TEXTURE);
     GTEST_ASSERT_EQ(group0->descriptor("First.storageTexture")->shape().arrayDepth,1);
+    GTEST_ASSERT_EQ(group0->descriptor("First.storageTexture")->shape().dimension,Descriptor::Dimension::TWO_DIMENSIONAL);
 
     GTEST_ASSERT_TRUE(group1->descriptor("Second.uniformTexelBuffer")->shape().type == Descriptor::Type::UNIFORM_TEXEL_BUFFER);
     GTEST_ASSERT_EQ(group1->descriptor("Second.uniformTexelBuffer")->shape().arrayDepth,1);
+    GTEST_ASSERT_EQ(group1->descriptor("Second.uniformTexelBuffer")->shape().dimension,Descriptor::Dimension::ONE_DIMENSIONAL);
 
     GTEST_ASSERT_TRUE(group1->descriptor("Second.storageTexelBuffer")->shape().type == Descriptor::Type::STORAGE_TEXEL_BUFFER);
     GTEST_ASSERT_EQ(group1->descriptor("Second.storageTexelBuffer")->shape().arrayDepth,2);
+    GTEST_ASSERT_EQ(group1->descriptor("Second.storageTexelBuffer")->shape().dimension,Descriptor::Dimension::ONE_DIMENSIONAL);
 
     GTEST_ASSERT_TRUE(group1->descriptor("Second.storageBuffer")->shape().type == Descriptor::Type::STORAGE_BUFFER);
     GTEST_ASSERT_EQ(group1->descriptor("Second.storageBuffer")->shape().arrayDepth,1);
+    GTEST_ASSERT_EQ(group1->descriptor("Second.storageBuffer")->shape().dimension,Descriptor::Dimension::ONE_DIMENSIONAL);
 
     auto uniformBufferLayout = pipeline->bufferLayout(0,0);
     auto uniformTexelBufferLayout = pipeline->texelBufferDescription(1,0);
@@ -597,6 +604,70 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflectionAllTypes)
     GTEST_ASSERT_EQ(storageBufferLayout->child(0).childrenCount(),2);
     GTEST_ASSERT_EQ(storageBufferLayout->child(0)[0].type(),GraphicsType::FLOAT);
     GTEST_ASSERT_EQ(storageBufferLayout->child(0)[1].type(),GraphicsType::INTEGER);
+
+}
+
+TEST_F(ShaderPipelineTest, TextureTypes)
+{
+    ShaderFile stages[] =
+    {
+        {
+            .pathIndicator = "resources/shaders/TextureTypes.vertex",
+            .stage = ShaderStageFlags::VERTEX,
+        },
+    {
+        .pathIndicator = "resources/shaders/TextureTypes.fragment",
+        .stage = ShaderStageFlags::FRAGMENT,
+        }
+    };
+
+    ShaderProperties properties{};
+    VertexDescription vertexDescription(2);
+    vertexDescription.add(GraphicsType::VECTOR3,0,0);
+    vertexDescription.add(GraphicsType::VECTOR2,0,1);
+    FrameBufferDescription frameBufferDescription;
+    frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
+    frameBufferDescription.depthTarget = Pixels::Format::D32_FLOAT;
+
+
+    auto pipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(stages,2,properties,vertexDescription,frameBufferDescription);
+    auto group = pipeline->descriptorGroup(0);
+    //these names are a tad confusing. XXXArray means the array is coming from the texture itself, but isn't arrayed in the code
+    auto texture1D = group->descriptor("First.texture1D");
+    auto texture1DArray = group->descriptor("First.texture1DArray");
+    auto texture2D = group->descriptor("First.texture2D");
+    auto texture2DArray = group->descriptor("First.texture2DArray");
+    auto texture3D = group->descriptor("First.texture3D");
+    auto textureCube = group->descriptor("First.textureCube");
+    auto textureCubeArray = group->descriptor("First.textureCubeArray");
+
+    GTEST_ASSERT_EQ(texture1D->shape().type, Descriptor::Type::SAMPLED_TEXTURE);
+    GTEST_ASSERT_EQ(texture1D->shape().dimension,Descriptor::Dimension::ONE_DIMENSIONAL);
+    GTEST_ASSERT_EQ(texture1D->shape().arrayDepth,3);
+
+    GTEST_ASSERT_EQ(texture1DArray->shape().type, Descriptor::Type::SAMPLED_TEXTURE);
+    GTEST_ASSERT_EQ(texture1DArray->shape().dimension,Descriptor::Dimension::ONE_DIMENSIONAL);
+    GTEST_ASSERT_EQ(texture1DArray->shape().arrayDepth,1);
+
+    GTEST_ASSERT_EQ(texture2D->shape().type, Descriptor::Type::SAMPLED_TEXTURE);
+    GTEST_ASSERT_EQ(texture2D->shape().dimension,Descriptor::Dimension::TWO_DIMENSIONAL);
+    GTEST_ASSERT_EQ(texture2D->shape().arrayDepth,3);
+
+    GTEST_ASSERT_EQ(texture2DArray->shape().type, Descriptor::Type::SAMPLED_TEXTURE);
+    GTEST_ASSERT_EQ(texture2DArray->shape().dimension,Descriptor::Dimension::TWO_DIMENSIONAL);
+    GTEST_ASSERT_EQ(texture2DArray->shape().arrayDepth,1);
+
+    GTEST_ASSERT_EQ(texture3D->shape().type, Descriptor::Type::SAMPLED_TEXTURE);
+    GTEST_ASSERT_EQ(texture3D->shape().dimension,Descriptor::Dimension::THREE_DIMENSIONAL);
+    GTEST_ASSERT_EQ(texture3D->shape().arrayDepth,3);
+
+    GTEST_ASSERT_EQ(textureCube->shape().type, Descriptor::Type::SAMPLED_TEXTURE);
+    GTEST_ASSERT_EQ(textureCube->shape().dimension,Descriptor::Dimension::CUBE);
+    GTEST_ASSERT_EQ(textureCube->shape().arrayDepth,3);
+
+    GTEST_ASSERT_EQ(textureCubeArray->shape().type, Descriptor::Type::SAMPLED_TEXTURE);
+    GTEST_ASSERT_EQ(textureCubeArray->shape().dimension,Descriptor::Dimension::CUBE);
+    GTEST_ASSERT_EQ(textureCubeArray->shape().arrayDepth,1);
 
 }
 

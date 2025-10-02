@@ -321,45 +321,7 @@ namespace slag
             return D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
         }
 
-        Descriptor::Type DX12Backend::dx12DescriptorType(D3D_SHADER_INPUT_TYPE type, D3D_SRV_DIMENSION dimension)
-        {
-            switch (type)
-            {
-            case D3D_SIT_CBUFFER:
-                return Descriptor::Type::UNIFORM_BUFFER;
-            case D3D_SIT_TBUFFER:
-                return Descriptor::Type::UNIFORM_TEXEL_BUFFER;
-            case D3D_SIT_TEXTURE:
-                if (dimension == D3D_SRV_DIMENSION_BUFFER )
-                {
-                    return Descriptor::Type::UNIFORM_TEXEL_BUFFER;
-                }
-                return Descriptor::Type::SAMPLED_TEXTURE;
-            case D3D_SIT_SAMPLER:
-                return Descriptor::Type::SAMPLER;
-            case D3D_SIT_UAV_RWTYPED:
-                if (dimension == D3D_SRV_DIMENSION_BUFFER )
-                {
-                    return Descriptor::Type::STORAGE_TEXEL_BUFFER;
-                }
-                return Descriptor::Type::STORAGE_TEXTURE;
-            case D3D_SIT_STRUCTURED:
-                return Descriptor::Type::STORAGE_BUFFER;
-            case D3D_SIT_UAV_RWSTRUCTURED:
-                break;
-            case D3D_SIT_BYTEADDRESS:
-                break;
-            case D3D_SIT_UAV_RWBYTEADDRESS:
-                break;
-            case D3D_SIT_UAV_APPEND_STRUCTURED:
-                break;
-            case D3D_SIT_UAV_CONSUME_STRUCTURED:
-                break;
-            case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
-                break;
-            }
-            return Descriptor::Type::UNKNOWN;
-        }
+
 
         DX12Backend::DX12Backend(SlagInitInfo initInfo)
         {
@@ -509,12 +471,12 @@ namespace slag
             return result;
         }
 
-        ShaderPipeline* DX12Backend::newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,std::string(*rename)(const std::string&,uint32_t,Descriptor::Type, uint32_t,void*), void* renameData)
+        ShaderPipeline* DX12Backend::newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,std::string(*rename)(const std::string&,uint32_t,Descriptor::Type,Descriptor::Dimension,uint32_t, uint32_t,void*), void* renameData)
         {
             return new DX12ShaderPipeline(shaders, shaderCount, properties, vertexDescription, framebufferDescription,rename,renameData);
         }
 
-        ShaderPipeline* DX12Backend::newShaderPipeline(const ShaderCode& computeShader,std::string(*rename)(const std::string&,uint32_t,Descriptor::Type, uint32_t,void*), void* renameData)
+        ShaderPipeline* DX12Backend::newShaderPipeline(const ShaderCode& computeShader,std::string(*rename)(const std::string&,uint32_t,Descriptor::Type,Descriptor::Dimension,uint32_t, uint32_t,void*), void* renameData)
         {
             throw std::runtime_error("DX12Backend::newShaderPipeline() not implemented");
         }

@@ -39,11 +39,26 @@ namespace slag
             ///Object that is used in ray tracing and intersection testing
             ACCELERATION_STRUCTURE
         };
+        enum class Dimension
+        {
+            ///No dimensional data is known
+            UNKNOWN = 0,
+            ///Descriptor refers to a one dimensional texture or any non-texture
+            ONE_DIMENSIONAL,
+            ///Descriptor refers to a two dimensional texture
+            TWO_DIMENSIONAL,
+            ///Descriptor refers to a three dimensional texture
+            THREE_DIMENSIONAL,
+            ///Descriptor refers to a cubemap
+            CUBE
+        };
         ///Describes the metadata of a descriptor
         struct Shape
         {
             ///The type of descriptor being described
             Type type=Type::UNKNOWN;
+            ///The Dimension of descriptor being described
+            Dimension dimension=Dimension::UNKNOWN;
             ///How many objects are being described in an array
             uint32_t arrayDepth=1;
             ///What stages of the shader this descriptor is visible to
@@ -57,10 +72,11 @@ namespace slag
          *
          * @param name Name of the descriptor, only used semantically, may differ between identical descriptor groups
          * @param type Descriptor Type
+         * @param dimension Dimension of this descriptor
          * @param arrayDepth How many elements does this descriptor describe
          * @param visibleStages Stages of the shader is descriptor is visible to
          */
-        Descriptor(const std::string& name, Type type, uint32_t arrayDepth, ShaderStageFlags visibleStages);
+        Descriptor(const std::string& name, Type type, Dimension dimension, uint32_t arrayDepth, ShaderStageFlags visibleStages);
         ~Descriptor()=default;
         Descriptor(const Descriptor& from);
         Descriptor& operator=(const Descriptor& from);

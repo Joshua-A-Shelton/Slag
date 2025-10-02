@@ -48,7 +48,7 @@ slag::Texture* depthTexture = nullptr;
 void swapChainRebuilt(slag::SwapChain* swapChain)
 {
     delete depthTexture;
-    depthTexture = slag::Texture::newTexture(slag::Pixels::Format::D32_FLOAT,slag::Texture::Type::TEXTURE_2D,slag::Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,swapChain->backBufferWidth(),swapChain->backBufferHeight(),1,1);
+    depthTexture = slag::Texture::newTexture(slag::Pixels::Format::D32_FLOAT,slag::Texture::Type::TEXTURE_2D,slag::Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,swapChain->backBufferWidth(),swapChain->backBufferHeight(),1,1,1);
 }
 
 void backEndMessage(const std::string& message, slag::SlagDebugLevel level, int32_t messageID)
@@ -152,9 +152,26 @@ int main()
     frameBufferDescription.depthTarget = slag::Pixels::Format::D32_FLOAT;
 
     slag::ShaderPipeline* texturedDepthPipeline = slag::ShaderPipeline::newShaderPipeline(code,2,properties,vertexPosUVDescription,frameBufferDescription);
+    auto GlobalsIndex = texturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
+    auto InstanceIndex = texturedDepthPipeline->descriptorGroup(1)->indexOf("Instance");
+    auto InstanceTextureIndex = texturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampledTexture");
+    auto InstanceSamplerIndex = texturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampler");
     int width, height, channels;
     auto pixels = stbi_load("resources/textures/gradient.jpg", &width, &height,&channels,4);
-    auto texture = slag::Texture::newTexture(slag::Pixels::Format::R8G8B8A8_UNORM,slag::Texture::Type::TEXTURE_2D,slag::Texture::UsageFlags::SAMPLED_IMAGE,width,height,1,1, slag::Texture::SampleCount::ONE,pixels,1,1);
+    slag::TextureBufferMapping mapping
+    {
+        .bufferOffset = 0,
+        .textureSubresource =
+     {
+            .aspectFlags = slag::Pixels::AspectFlags::COLOR,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+        .textureOffset = {0,0,0},
+        .textureExtent = {static_cast<uint32_t>(width),static_cast<uint32_t>(height),1}
+    };
+    auto texture = slag::Texture::newTexture(slag::Pixels::Format::R8G8B8A8_UNORM,slag::Texture::Type::TEXTURE_2D,slag::Texture::UsageFlags::SAMPLED_IMAGE,width,height,1,1,1, slag::Texture::SampleCount::ONE,pixels,width*height*4,&mapping,1);
     stbi_image_free(pixels);
     slag::Sampler* defaultSampler = slag::Sampler::newSampler(slag::SamplerParameters{});
 
@@ -258,11 +275,11 @@ int main()
             instanceMatrix = glm::rotate(instanceMatrix,glm::radians(45.0f * delta),glm::vec3(0.0f,1.0f,0.0f));
 
             auto globals = descriptorPool->makeBundle(texturedDepthPipeline->descriptorGroup(0));
-            globals.setUniformBuffer(0,0,globalsBuffer,0,globalsBuffer->size());
+            globals.setUniformBuffer(GlobalsIndex,0,globalsBuffer,0,globalsBuffer->size());
             auto instance = descriptorPool->makeBundle(texturedDepthPipeline->descriptorGroup(1));
-            instance.setUniformBuffer(0,0,instanceBuffer,0,instanceBuffer->size());
-            instance.setSampledTexture(1,0,texture);
-            instance.setSampler(2,0,defaultSampler);
+            instance.setUniformBuffer(InstanceIndex,0,instanceBuffer,0,instanceBuffer->size());
+            instance.setSampledTexture(InstanceTextureIndex,0,texture);
+            instance.setSampler(InstanceSamplerIndex,0,defaultSampler);
 
             commandBuffer->bindGraphicsDescriptorBundle(0,globals);
             commandBuffer->bindGraphicsDescriptorBundle(1,instance);

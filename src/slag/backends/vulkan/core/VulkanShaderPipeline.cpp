@@ -46,7 +46,7 @@ namespace slag
             }
         };
 
-        VulkanShaderPipeline::VulkanShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const std::string&,uint32_t,Descriptor::Type, uint32_t,void*), void* renameData)
+        VulkanShaderPipeline::VulkanShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const std::string&,uint32_t,Descriptor::Type,Descriptor::Dimension,uint32_t, uint32_t,void*), void* renameData)
         {
             _pipelineType = PipelineType::GRAPHICS;
             _xthreads = 0;
@@ -308,7 +308,7 @@ namespace slag
 
         }
 
-        VulkanShaderPipeline::VulkanShaderPipeline(const ShaderCode& computeCode, std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type, uint32_t platformBindingIndex,void*), void* renameData)
+        VulkanShaderPipeline::VulkanShaderPipeline(const ShaderCode& computeCode, std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type,Descriptor::Dimension dimension, uint32_t arrayDepth, uint32_t platformBindingIndex,void*), void* renameData)
         {
             _pipelineType = PipelineType::COMPUTE;
             auto computeCodePtr = &const_cast<ShaderCode&>(computeCode);

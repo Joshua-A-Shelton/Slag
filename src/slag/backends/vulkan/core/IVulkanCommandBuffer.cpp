@@ -38,7 +38,7 @@ namespace slag
 #endif
 
         }
-#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
+
         void IVulkanCommandBuffer::insertBarriers(TextureBarrier* textureBarriers, uint32_t textureBarrierCount, BufferBarrier* bufferBarriers, uint32_t
                                                   bufferBarrierCount, GlobalBarrier* memoryBarriers, uint32_t memoryBarrierCount)
         {
@@ -344,8 +344,7 @@ namespace slag
             vkCmdBeginRendering(_commandBuffer,&render_info);
         }
 
-#else
-#endif
+
 
         void IVulkanCommandBuffer::insertBarrier(const BufferBarrier& barrier)
         {

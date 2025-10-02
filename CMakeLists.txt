@@ -3,11 +3,6 @@ project(Slag)
 set(CMAKE_CXX_STANDARD 20)
 include(FetchContent)
 
-OPTION(SLAG_DISCREET_TEXTURE_LAYOUTS "Switch the API of the library to toggle manual texture layout transitions" OFF)
-if(SLAG_DISCREET_TEXTURE_LAYOUTS)
-    add_definitions(-DSLAG_DISCREET_TEXTURE_LAYOUTS=1)
-endif()
-
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions(-DSLAG_DEBUG=1)
     set(SLAG_DEBUG_BUILD ON)
@@ -322,7 +317,7 @@ if(PROJECT_IS_TOP_LEVEL)
             tests/GraphicsAPIEnvironment.h
             tests/VulkanEnvironment.cpp
             tests/VulkanEnvironment.h
-            tests/tests/general/CommandBuffer.cpp
+            tests/tests/CommandBuffer.cpp
             tests/Utilities.cpp
             tests/Utilities.h
             tests/tests/ShaderPipeline.cpp

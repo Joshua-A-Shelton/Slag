@@ -34,7 +34,6 @@ public:
         descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
     }
 };
-#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
 
 TEST_F(DescriptorBundleTest, SetSamplerAllTypesPipeline)
 {
@@ -59,24 +58,6 @@ TEST_F(DescriptorBundleTest, setStorageTextureAllTypesPipeline)
     auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::STORAGE,32,32,1,1,1));
     bundle1.setStorageTexture(pipeline->descriptorGroup(0)->indexOf("First.storageTexture"),0,texture.get());
 }
-
-#else
-TEST_F(DescriptorBundleTest, SetSamplerAllTypesPipeline)
-{
-    GTEST_FAIL();
-}
-
-TEST_F(DescriptorBundleTest, setSampledTextureAllTypesPipeline)
-{
-    GTEST_FAIL();
-}
-
-TEST_F(DescriptorBundleTest, setStorageTextureAllTypesPipeline)
-{
-    GTEST_FAIL();
-}
-
-#endif
 
 TEST_F(DescriptorBundleTest, SetUniformTexelBufferAllTypesPipeline)
 {

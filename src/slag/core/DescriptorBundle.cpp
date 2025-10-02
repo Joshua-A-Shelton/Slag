@@ -13,7 +13,6 @@ namespace slag
         return *this;
     }
 
-#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
     void DescriptorBundle::setSampler(DescriptorIndex* index, uint32_t arrayElement, Sampler* sampler)
     {
         Backend::current()->setDescriptorBundleSampler(*this,index,arrayElement,sampler);
@@ -28,26 +27,6 @@ namespace slag
     {
         Backend::current()->setDescriptorBundleStorageTexture(*this,index,arrayElement,texture);
     }
-
-
-
-#else
-
-    void setSampler(uint32_t binding,uint32_t arrayElement, Sampler* sampler, TextureLayouts::Layout layout)
-    {
-        Backend::current()->setDescriptorBundleSampler(*this,binding,arrayElement,sampler,layout);
-    }
-
-    void setSampledTexture(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout)
-    {
-        Backend::current()->setDescriptorBundleSampledTexture(*this,binding,arrayElement,texture,layout);
-    }
-
-    void setStorageTexture(uint32_t binding, uint32_t arrayElement, Texture* texture, TextureLayouts::Layout layout)
-    {
-        Backend::current()->setDescriptorBundleStorageTexture(*this,binding,arrayElement,texture,layout);
-    }
-#endif
 
     void DescriptorBundle::setUniformTexelBuffer(DescriptorIndex* index, uint32_t arrayElement, BufferView* bufferView)
     {

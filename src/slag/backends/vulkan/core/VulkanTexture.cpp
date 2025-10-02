@@ -12,7 +12,6 @@ namespace slag
 {
     namespace vulkan
     {
-#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
         VulkanTexture::VulkanTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth,uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount)
         {
             initialize(texelFormat,type,usageFlags,width,height,depth,mipLevels,layers,sampleCount,VK_IMAGE_LAYOUT_UNDEFINED);
@@ -65,17 +64,6 @@ namespace slag
 
             finished.waitForValue(1);
         }
-#else
-        VulkanTexture::VulkanTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth,uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount)
-        {
-            initialize(texelFormat,type,usageFlags,width,height,layers,depth,mipLevels,sampleCount,VK_IMAGE_LAYOUT_UNDEFINED);
-        }
-
-        VulkanTexture::VulkanTexture(Pixels::Format texelFormat, Type type, TextureLayouts::Layout initialLayout, UsageFlags usageFlags, uint32_t width,uint32_t height,uint32_t depth,uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData, uint64_t texelDataLength,uint32_t providedDataMips, uint32_t providedDataLayers)
-        {
-            throw std::runtime_error("Not Implemented");
-        }
-#endif
 
 
         VulkanTexture::VulkanTexture(VkImage image, VkImageView view, Pixels::Format format, Type type, uint32_t width, uint32_t height, uint32_t depth,uint32_t mipLevels, uint32_t layers, UsageFlags usageFlags, Texture::SampleCount sampleCount)

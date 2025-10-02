@@ -293,8 +293,8 @@ namespace slag
         ///Shader languages the current backend can accept to create a shader pipeline
         static std::vector<ShaderCode::CodeLanguage> acceptedLanguages();
 
-        static ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type, uint32_t platformBindingIndex,void*) = nullptr, void* renameData = nullptr);
-        static ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader,std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type, uint32_t platformBindingIndex,void*) = nullptr, void* renameData = nullptr);
+        static ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type,Descriptor::Dimension dimension, uint32_t arrayDepth, uint32_t platformBindingIndex,void*) = nullptr, void* renameData = nullptr);
+        static ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader,std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type, Descriptor::Dimension dimension, uint32_t arrayDepth, uint32_t platformBindingIndex,void*) = nullptr, void* renameData = nullptr);
 
     };
 } // slag

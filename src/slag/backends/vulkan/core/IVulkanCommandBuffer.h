@@ -19,7 +19,6 @@ namespace slag
             virtual void begin() override;
             virtual void end() override;
 
-#ifndef SLAG_DISCREET_TEXTURE_LAYOUTS
             virtual void insertBarriers(TextureBarrier* textureBarriers, uint32_t textureBarrierCount, BufferBarrier* bufferBarriers, uint32_t
                                         bufferBarrierCount, GlobalBarrier* memoryBarriers, uint32_t memoryBarrierCount) override;
             virtual void insertBarrier(const TextureBarrier& barrier) override;
@@ -32,20 +31,6 @@ namespace slag
             virtual void blit(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceArea,Texture* destination, uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea, Pixels::AspectFlags aspects) override;
             virtual void resolve(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Offset sourceOffset, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Offset destinationOffset, Extent resolveExtent) override;
             virtual void beginRendering(Attachment* colorAttachments, uint32_t colorAttachmentCount, Attachment* depthAttachment, Rectangle bounds) override;
-
-#else
-            virtual void insertBarriers(TextureBarrierDiscreet* textureBarriers, size_t textureBarrierCount, BufferBarrier* bufferBarriers, size_t bufferBarrierCount, GPUMemoryBarrier* memoryBarriers, size_t memoryBarrierCount)override;
-            virtual void insertBarrier(const TextureBarrierDiscreet& barrier)override;
-            virtual void clearTexture(Texture* texture,TextureLayouts::Layout textureLayout, ClearColor color)override;
-            virtual void clearTexture(Texture* texture,TextureLayouts::Layout textureLayout ClearDepthStencilValue depthStencil)override;
-            virtual void updateMip(Texture* texture, uint32_t layer, uint32_t sourceMip,TextureLayouts::Layout sourceLayout, uint32_t destinationMip, TextureLayouts::Layout destinationLayout)override;
-            virtual void copyTextureToBuffer(Texture* source, TextureLayouts::Layout textureLayout, TextureSubresource* subresources, size_t subresourceCount, Buffer* destination)override;
-            virtual void copyBufferToTexture(Buffer* source, uint64_t offset, Texture* destination,TextureSubresource subresource,TextureLayouts::Layout destinationLayout)override;
-            virtual void blit(Texture* source,TextureLayouts::Layout sourceLayout,uint32_t sourceLayer, uint32_t sourceMip,Rectangle sourceArea, Texture* destination, TextureLayouts::Layout destinationLayout,uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea)override;
-            virtual void blit(Texture* source,TextureLayouts::Layout sourceLayout,uint32_t sourceLayer, uint32_t sourceMip,Rectangle sourceArea, Texture* destination, TextureLayouts::Layout destinationLayout,uint32_t destinationLayer, uint32_t destinationMip,Rectangle destinationArea,Pixels::AspectFlags aspects)override;
-            virtual void resolve(Texture* source, TextureLayouts::Layout sourceLayout, uint32_t sourceLayer, uint32_t sourceMip, Offset sourceOffset, Texture* destination, TextureLayouts::Layout destinationLayout, uint32_t destinationLayer, uint32_t destinationMip, Offset destinationOffset, Extent resolveExtent)override;
-            virtual void beginRendering(AttachmentDiscreet* colorAttachments, size_t colorAttachmentCount,AttachmentDiscreet* depthAttachment,Rectangle bounds)override;
-#endif
             virtual void insertBarrier(const BufferBarrier& barrier) override;
             virtual void insertBarrier(const GlobalBarrier& barrier) override;
 
