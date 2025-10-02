@@ -572,15 +572,15 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflectionAllTypes)
 
     GTEST_ASSERT_TRUE(group1->descriptor("Second.uniformTexelBuffer")->shape().type == Descriptor::Type::UNIFORM_TEXEL_BUFFER);
     GTEST_ASSERT_EQ(group1->descriptor("Second.uniformTexelBuffer")->shape().arrayDepth,1);
-    GTEST_ASSERT_EQ(group0->descriptor("Second.uniformTexelBuffer")->shape().dimension,Descriptor::Dimension::ONE_DIMENSIONAL);
+    GTEST_ASSERT_EQ(group1->descriptor("Second.uniformTexelBuffer")->shape().dimension,Descriptor::Dimension::ONE_DIMENSIONAL);
 
     GTEST_ASSERT_TRUE(group1->descriptor("Second.storageTexelBuffer")->shape().type == Descriptor::Type::STORAGE_TEXEL_BUFFER);
     GTEST_ASSERT_EQ(group1->descriptor("Second.storageTexelBuffer")->shape().arrayDepth,2);
-    GTEST_ASSERT_EQ(group0->descriptor("Second.storageTexelBuffer")->shape().dimension,Descriptor::Dimension::ONE_DIMENSIONAL);
+    GTEST_ASSERT_EQ(group1->descriptor("Second.storageTexelBuffer")->shape().dimension,Descriptor::Dimension::ONE_DIMENSIONAL);
 
     GTEST_ASSERT_TRUE(group1->descriptor("Second.storageBuffer")->shape().type == Descriptor::Type::STORAGE_BUFFER);
     GTEST_ASSERT_EQ(group1->descriptor("Second.storageBuffer")->shape().arrayDepth,1);
-    GTEST_ASSERT_EQ(group0->descriptor("Second.storageBuffer")->shape().dimension,Descriptor::Dimension::ONE_DIMENSIONAL);
+    GTEST_ASSERT_EQ(group1->descriptor("Second.storageBuffer")->shape().dimension,Descriptor::Dimension::ONE_DIMENSIONAL);
 
     auto uniformBufferLayout = pipeline->bufferLayout(0,0);
     auto uniformTexelBufferLayout = pipeline->texelBufferDescription(1,0);
