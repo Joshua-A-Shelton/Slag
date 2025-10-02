@@ -134,6 +134,19 @@ namespace slag
             }
             throw std::runtime_error("unable to convert spvRefvlectDescriptorType to slag::Descriptor::DescriptorType");
         }
+        Descriptor::Dimension dimensionFromSPV(SpvDim dim)
+        {
+            switch (dim)
+            {
+            case SpvDim2D:
+                return Descriptor::Dimension::TWO_DIMENSIONAL;
+            case SpvDim3D:
+                return Descriptor::Dimension::THREE_DIMENSIONAL;
+            case SpvDimCube:
+                return Descriptor::Dimension::CUBE;
+            }
+            return Descriptor::Dimension::ONE_DIMENSIONAL;
+        }
         Pixels::Format pixelFormatFromSPV(SpvImageFormat format)
         {
             switch (format)
@@ -343,12 +356,13 @@ namespace slag
                             {
                                 std::string name = binding->name;
                                 auto type = descriptorTypeFromSPV(binding->descriptor_type);
+                                auto dimension = dimensionFromSPV(binding->image.dim);
                                 if (rename!=nullptr)
                                 {
                                     //TODO: probably should provide some level of data instead of nullptr to help with identification
                                     name = rename(name,set.set,type,binding->binding,renameData);
                                 }
-                                descriptor = descriptorReflection.descriptors.insert(std::pair<uint32_t,Descriptor>(binding->binding,Descriptor(name,type,binding->count,shader->stage()))).first;
+                                descriptor = descriptorReflection.descriptors.insert(std::pair<uint32_t,Descriptor>(binding->binding,Descriptor(name,type,dimension,binding->count,shader->stage()))).first;
                             }
                             else
                             {
