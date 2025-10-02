@@ -168,6 +168,186 @@ namespace slag
             return _view;
         }
 
+        VulkanImageMoveData VulkanTexture::moveMemory(VmaAllocation tempAllocation,CommandBuffer* transitionToGeneralBuffer, CommandBuffer* copyDataBuffer)
+        {
+
+            auto vulkanizedFormat = VulkanBackend::vulkanizedFormat(_format);
+            auto pixelProperties = Pixels::formatProperties(_format);
+
+            VkImageCreateInfo imageCreateInfo{};
+            imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+            imageCreateInfo.format = vulkanizedFormat.format;
+            imageCreateInfo.usage = VulkanBackend::vulkanizedUsage(_usageFlags);
+
+            VkExtent3D imageExtent;
+            imageExtent.width = static_cast<uint32_t>(_width);
+            imageExtent.height = static_cast<uint32_t>(_height);
+            imageExtent.depth = static_cast<uint32_t>(_depth);
+
+            auto imageType = VulkanBackend::vulkanizedImageType(_type);
+            imageCreateInfo.extent = imageExtent;
+            imageCreateInfo.imageType = imageType;
+            if(_type == Texture::Type::TEXTURE_CUBE)
+            {
+                imageCreateInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+            }
+            imageCreateInfo.mipLevels = _mipLevels;
+            imageCreateInfo.arrayLayers = _layers;
+            imageCreateInfo.samples = static_cast<VkSampleCountFlagBits>(_sampleCount);
+            if (pixelProperties.tiling == PixelFormatProperties::Tiling::OPTIMIZED)
+            {
+                imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+            }
+            else
+            {
+                imageCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
+            }
+            imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+            VkImage newImage;
+
+            auto result = vkCreateImage(VulkanGraphicsCard::selected()->device(),&imageCreateInfo,nullptr,&newImage);
+            if(result != VK_SUCCESS)
+            {
+                return VulkanImageMoveData{false,nullptr,nullptr};
+            }
+
+            auto aspectFlags = Pixels::aspectFlags(_format);
+            VkImageAspectFlags vulkanAspectFlags =0;
+
+            if (static_cast<bool>(aspectFlags & Pixels::AspectFlags::COLOR))
+            {
+                vulkanAspectFlags |= VK_IMAGE_ASPECT_COLOR_BIT;
+            }
+            else if (static_cast<bool>(aspectFlags & Pixels::AspectFlags::DEPTH))
+            {
+                vulkanAspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT;
+                if (static_cast<bool>(aspectFlags & Pixels::AspectFlags::STENCIL))
+                {
+                    vulkanAspectFlags |= VK_IMAGE_ASPECT_STENCIL_BIT;
+                }
+            }
+
+            VkImageViewCreateInfo viewCreateInfo = {};
+            viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            viewCreateInfo.flags = 0;
+            viewCreateInfo.image = _image;
+            viewCreateInfo.format = vulkanizedFormat.format;
+            viewCreateInfo.components = vulkanizedFormat.mapping;
+            viewCreateInfo.viewType = VulkanBackend::vulkanizedImageViewType(_type,_layers);
+            viewCreateInfo.subresourceRange.layerCount = _layers;
+            viewCreateInfo.subresourceRange.baseMipLevel = 0;
+            viewCreateInfo.subresourceRange.levelCount = _mipLevels;
+            viewCreateInfo.subresourceRange.baseArrayLayer = 0;
+            viewCreateInfo.subresourceRange.aspectMask = vulkanAspectFlags;
+
+            VkSamplerYcbcrConversionInfo conversion_info{.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO};
+            if (_format == Pixels::Format::NV12)
+            {
+                conversion_info.conversion = NV12_CONVERTER;
+                viewCreateInfo.pNext = &conversion_info;
+            }
+            else if (_format == Pixels::Format::OPAQUE_420)
+            {
+                conversion_info.conversion = OPAQUE_420_CONVERTER;
+                viewCreateInfo.pNext = &conversion_info;
+            }
+            VkImageView newImageView;
+            result = vkCreateImageView(VulkanGraphicsCard::selected()->device(),&viewCreateInfo,nullptr,&newImageView);
+            if (result != VK_SUCCESS)
+            {
+                vkDestroyImage(VulkanGraphicsCard::selected()->device(),newImage, nullptr);
+                return VulkanImageMoveData{false,nullptr,nullptr};
+            }
+            result = vmaBindImageMemory(VulkanGraphicsCard::selected()->allocator(),tempAllocation,newImage);
+            if (result != VK_SUCCESS)
+            {
+                vkDestroyImage(VulkanGraphicsCard::selected()->device(),newImage, nullptr);
+                vkDestroyImageView(VulkanGraphicsCard::selected()->device(),newImageView, nullptr);
+                return VulkanImageMoveData{false,nullptr,nullptr};
+            }
+
+            //transition to general
+
+            auto tcb = static_cast<VulkanCommandBuffer*>(transitionToGeneralBuffer)->vulkanCommandBufferHandle();
+            VkImageMemoryBarrier2 barrier{};
+
+            barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            barrier.pNext = nullptr,
+            barrier.srcStageMask = VK_PIPELINE_STAGE_2_NONE,
+            barrier.srcAccessMask = VK_ACCESS_2_NONE,
+            barrier.dstStageMask = VK_PIPELINE_STAGE_2_NONE,
+            barrier.dstAccessMask = VK_ACCESS_2_NONE,
+            barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL,
+            barrier.image = newImage,
+            barrier.subresourceRange = VkImageSubresourceRange
+            {
+                .aspectMask = VulkanBackend::vulkanizedAspectFlags(Pixels::aspectFlags(_format)),
+                .baseMipLevel = 0,
+                .levelCount = _mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount = _layers,
+            };
+
+
+            VkDependencyInfo dependencyInfo{};
+            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+            dependencyInfo.memoryBarrierCount = 0;
+            dependencyInfo.pMemoryBarriers = nullptr;
+            dependencyInfo.bufferMemoryBarrierCount = 0;
+            dependencyInfo.pBufferMemoryBarriers = nullptr;
+            dependencyInfo.imageMemoryBarrierCount = 1;
+            dependencyInfo.pImageMemoryBarriers = &barrier;
+            vkCmdPipelineBarrier2(tcb,&dependencyInfo);
+
+            //copy data
+            auto cdb = static_cast<VulkanCommandBuffer*>(copyDataBuffer)->vulkanCommandBufferHandle();
+            std::vector<VkImageBlit2> regions(_mipLevels,
+                {.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
+                .srcSubresource = {},
+                .srcOffsets = {{0,0,0},{0,0,0}},
+                .dstSubresource = {},
+                .dstOffsets = {{0,0,0},{0,0,0}}
+                });
+            for (auto i = 0u; i < _mipLevels; i++)
+            {
+                auto& region = regions[i];
+
+                region.srcSubresource.baseArrayLayer = 0;
+                region.srcSubresource.layerCount = _layers;
+                region.srcSubresource.mipLevel = i;
+                region.srcSubresource.aspectMask = vulkanAspectFlags;
+
+                region.dstSubresource = region.srcSubresource;
+
+                region.srcOffsets[1].x = Texture::width(i);
+                region.srcOffsets[1].y = Texture::height(i);
+                region.srcOffsets[1].z = Texture::depth(i);
+
+                region.dstOffsets[1] = region.srcOffsets[1];
+            }
+            VkBlitImageInfo2 blitImageInfo
+            {
+                .sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
+                .srcImage = _image,
+                .srcImageLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .dstImage = newImage,
+                .dstImageLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .regionCount = static_cast<uint32_t>(regions.size()),
+                .pRegions = regions.data(),
+                .filter = VK_FILTER_NEAREST,
+
+            };
+            vkCmdBlitImage2(cdb,&blitImageInfo);
+
+
+            VulkanImageMoveData imageMoveData = {true,_image,_view};
+            _image = newImage;
+            _view = newImageView;
+            return imageMoveData;
+        }
+
         void VulkanTexture::initializeChromaConverters()
         {
             auto nv12Properties = Pixels::formatProperties(Pixels::Format::NV12);

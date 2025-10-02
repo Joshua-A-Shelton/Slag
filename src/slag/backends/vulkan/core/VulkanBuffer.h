@@ -10,6 +10,12 @@ namespace slag
 {
     namespace vulkan
     {
+        struct VulkanBufferMoveData
+        {
+            bool movedSucceded = false;
+            VkBuffer buffer = nullptr;
+        };
+
         class VulkanBuffer: public Buffer
         {
         public:
@@ -28,6 +34,7 @@ namespace slag
             virtual void* cpuHandle()override;
 
             VkBuffer vulkanHandle() const;
+            VulkanBufferMoveData moveMemory(VmaAllocation tempAllocation, CommandBuffer* copyDataBuffer);
         protected:
             void move(VulkanBuffer& from);
         private:
