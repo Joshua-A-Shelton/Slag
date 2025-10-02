@@ -10,6 +10,13 @@ namespace slag
 {
     namespace vulkan
     {
+        struct VulkanImageMoveData
+        {
+            bool movedSucceded = false;
+            VkImage image=nullptr;
+            VkImageView view=nullptr;
+        };
+
         class VulkanTexture: public Texture
         {
         public:
@@ -60,8 +67,11 @@ namespace slag
             VkImage vulkanHandle();
             VkImageView vulkanViewHandle();
 
+            VulkanImageMoveData moveMemory(VmaAllocation tempAllocation,CommandBuffer* transitionToGeneralBuffer, CommandBuffer* copyDataBuffer);
+
             static void initializeChromaConverters();
             static void cleanupChromaConverters();
+
 
         private:
             Pixels::Format _format = Pixels::Format::UNDEFINED;

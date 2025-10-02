@@ -110,6 +110,38 @@ namespace slag
             return _buffer;
         }
 
+        VulkanBufferMoveData VulkanBuffer::moveMemory(VmaAllocation tempAllocation, CommandBuffer* copyDataBuffer)
+        {
+            VkBuffer buffer;
+            VkBufferCreateInfo bufferInfo = {};
+            bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+            bufferInfo.size = _size;
+            //every buffer should support transfer
+            bufferInfo.usage = VulkanBackend::vulkanizedBufferUsage(_usageFlags);
+            auto result = vkCreateBuffer(VulkanGraphicsCard::selected()->device(),&bufferInfo,nullptr,&buffer);
+            if (result != VK_SUCCESS)
+            {
+                vkDestroyBuffer(VulkanGraphicsCard::selected()->device(),buffer,nullptr);
+                return VulkanBufferMoveData{false,nullptr};
+            }
+            result = vmaBindBufferMemory(VulkanGraphicsCard::selected()->allocator(),tempAllocation,buffer);
+            if (result != VK_SUCCESS)
+            {
+                vkDestroyBuffer(VulkanGraphicsCard::selected()->device(),buffer,nullptr);
+                return VulkanBufferMoveData{false,nullptr};
+            }
+            auto b = static_cast<VulkanCommandBuffer*>(copyDataBuffer)->vulkanCommandBufferHandle();
+            VkBufferCopy copyRegion = {};
+            copyRegion.srcOffset = 0;
+            copyRegion.dstOffset = 0;
+            copyRegion.size = _size;
+            vkCmdCopyBuffer(b,_buffer,buffer,1,&copyRegion);
+
+            VulkanBufferMoveData moveData = {true,_buffer};
+            _buffer = buffer;
+            return moveData;
+        }
+
         void VulkanBuffer::move(VulkanBuffer& from)
         {
             std::swap(_buffer, from._buffer);

@@ -336,6 +336,7 @@ if(PROJECT_IS_TOP_LEVEL)
             tests/tests/DescriptorBundle.cpp
             tests/DX12Environment.cpp
             tests/DX12Environment.h
+            tests/tests/GraphicsCard.cpp
     )
 
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)
