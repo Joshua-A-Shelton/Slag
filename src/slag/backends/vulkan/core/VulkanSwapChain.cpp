@@ -118,11 +118,6 @@ namespace slag
             return &_frames[_currentFrameIndex];
         }
 
-        uint8_t VulkanSwapChain::framesCount()
-        {
-            return _frameCount;
-        }
-
         uint8_t VulkanSwapChain::currentFrameIndex()
         {
             return _currentFrameIndex;

@@ -24,7 +24,6 @@ namespace slag
             virtual Frame* next()override;
             virtual Frame* nextIfReady()override;
             virtual Frame* currentFrame()override;
-            virtual uint8_t framesCount()override;
             virtual uint8_t currentFrameIndex()override;
             virtual Pixels::Format backBufferFormat()override;
             virtual void backBufferFormat(Pixels::Format newFormat)override;

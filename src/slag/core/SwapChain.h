@@ -43,8 +43,6 @@ namespace slag
         [[nodiscard]]virtual Frame* nextIfReady()=0;
         ///The current frame
         virtual Frame* currentFrame()=0;
-        ///The number of frames that can be rendered to
-        virtual uint8_t framesCount()=0;
         ///The index of the current frame
         virtual uint8_t currentFrameIndex()=0;
 
