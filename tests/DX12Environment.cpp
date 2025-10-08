@@ -39,9 +39,9 @@ namespace slag
 
     }
 
-    std::string dx12ShaderReflectionRename(const std::string& name,uint32_t bundleIndex,slag::Descriptor::Type type,Descriptor::Dimension dimension,uint32_t arrayDepth, uint32_t platformId,void* userData)
+    std::string dx12ShaderReflectionRename(const DescriptorRenameParameters& renameParams,void* userData)
     {
-        std::string returnString = name.substr(0, name.find_last_of('_'));
+        std::string returnString = renameParams.originalName.substr(0, renameParams.originalName.find_last_of('_'));
         returnString = std::regex_replace(returnString, std::regex("\\_"), ".");
         return returnString;
     }

@@ -249,6 +249,19 @@ namespace slag
         Pixels::Format depthTarget{Pixels::Format::UNDEFINED};
     };
 
+    struct DescriptorRenameParameters
+    {
+    public:
+        ShaderCode::CodeLanguage language = ShaderCode::CodeLanguage::CUSTOM;
+        std::string originalName{};
+        uint32_t descriptorGroupIndex=0;
+        Descriptor::Type type = Descriptor::Type::UNKNOWN;
+        Descriptor::Dimension dimension = Descriptor::Dimension::UNKNOWN;
+        uint32_t arrayDepth = 1;
+        uint32_t platformSpecificBindingIndex = 0;
+        void* platformData = nullptr;
+    };
+
     ///Collection of shaders that get executed in order to perform operations on the graphics card
     class ShaderPipeline
     {
@@ -293,8 +306,8 @@ namespace slag
         ///Shader languages the current backend can accept to create a shader pipeline
         static std::vector<ShaderCode::CodeLanguage> acceptedLanguages();
 
-        static ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type,Descriptor::Dimension dimension, uint32_t arrayDepth, uint32_t platformBindingIndex,void*) = nullptr, void* renameData = nullptr);
-        static ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader,std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type, Descriptor::Dimension dimension, uint32_t arrayDepth, uint32_t platformBindingIndex,void*) = nullptr, void* renameData = nullptr);
+        static ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const DescriptorRenameParameters&,void*) = nullptr, void* renameData = nullptr);
+        static ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader,std::string(*rename)(const DescriptorRenameParameters&,void*) = nullptr, void* renameData = nullptr);
 
     };
 } // slag

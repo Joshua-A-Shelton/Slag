@@ -30,7 +30,7 @@ namespace slag
             uint32_t entryPointZDim=0;
         };
 
-        DXILReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount, std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type,Descriptor::Dimension dimension,uint32_t arrayDepth, uint32_t platformBindingIndex,void*), void* renameData);
+        DXILReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount, std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData);
     }
 } // slag
 

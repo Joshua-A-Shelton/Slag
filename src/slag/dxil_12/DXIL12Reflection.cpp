@@ -74,7 +74,7 @@ namespace slag
         }
 
 
-        DXILReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount,std::string(*rename)(const std::string&,uint32_t,Descriptor::Type,Descriptor::Dimension,uint32_t, uint32_t,void*), void* renameData)
+        DXILReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount,std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
         {
             throw std::runtime_error("DXILReflectionData::getReflectionData not supported yet");
             //TODO: move this out of here, I shouldn't create and destroy this every time
@@ -110,7 +110,15 @@ namespace slag
                     }
                     if (rename!=nullptr)
                     {
-                        name = rename(name,bindDesc.Space,type,dimension,bindDesc.BindCount,bindDesc.BindPoint,renameData);
+                        DescriptorRenameParameters renameParameters{};
+                        renameParameters.language = ShaderCode::CodeLanguage::DXIL;
+                        renameParameters.originalName = name;
+                        renameParameters.descriptorGroupIndex = bindDesc.Space;
+                        renameParameters.type = type;
+                        renameParameters.dimension = dimension;
+                        renameParameters.arrayDepth = bindDesc.BindCount;
+                        renameParameters.platformSpecificBindingIndex = bindDesc.BindPoint;
+                        name = rename(renameParameters,renameData);
                     }
                     //TODO: do something with data....
                 }

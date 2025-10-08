@@ -82,8 +82,8 @@ namespace slag
             virtual Sampler* newSampler(SamplerParameters parameters)override;
             //shaders
             virtual std::vector<ShaderCode::CodeLanguage> acceptedLanuages()override;
-            virtual ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type,Descriptor::Dimension dimension, uint32_t arrayDepth, uint32_t platformBindingIndex,void*), void* renameData)override;
-            virtual ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader, std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type,Descriptor::Dimension dimension, uint32_t arrayDepth, uint32_t platformBindingIndex,void*), void* renameData)override;
+            virtual ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)override;
+            virtual ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader, std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)override;
             //descriptor pools
             virtual DescriptorPool* newDescriptorPool()override;
             virtual DescriptorPool* newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)override;

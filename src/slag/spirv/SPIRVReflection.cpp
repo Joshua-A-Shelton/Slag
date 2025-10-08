@@ -308,7 +308,7 @@ namespace slag
             uint32_t index=0;
             std::unordered_map<uint32_t, Descriptor> descriptors;
         };
-        SPVReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount,std::string(*rename)(const std::string&,uint32_t,Descriptor::Type,Descriptor::Dimension,uint32_t, uint32_t,void*), void* renameData)
+        SPVReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount,std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
         {
             uint32_t totalSets = 0;
             std::unordered_map<uint32_t, DescriptorGroupReflectionStub> groups;
@@ -360,7 +360,16 @@ namespace slag
                                 if (rename!=nullptr)
                                 {
                                     //TODO: probably should provide some level of data instead of nullptr to help with identification
-                                    name = rename(name,set.set,type,dimension,binding->count,binding->binding,renameData);
+                                    DescriptorRenameParameters renameParameters{};
+                                    renameParameters.language = ShaderCode::CodeLanguage::SPIRV;
+                                    renameParameters.originalName = name;
+                                    renameParameters.descriptorGroupIndex = set.set;
+                                    renameParameters.type = type;
+                                    renameParameters.dimension = dimension;
+                                    renameParameters.arrayDepth = binding->count;
+                                    renameParameters.platformSpecificBindingIndex = binding->binding;
+                                    renameParameters.platformData = binding;
+                                    name = rename(renameParameters,renameData);
                                 }
                                 descriptor = descriptorReflection.descriptors.insert(std::pair<uint32_t,Descriptor>(binding->binding,Descriptor(name,type,dimension,binding->count,shader->stage()))).first;
                             }

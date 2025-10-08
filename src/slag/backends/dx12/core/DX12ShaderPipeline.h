@@ -14,8 +14,8 @@ namespace slag
         class DX12ShaderPipeline: public ShaderPipeline
         {
         public:
-            DX12ShaderPipeline(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,std::string(*rename)(const std::string&,uint32_t,Descriptor::Type,Descriptor::Dimension,uint32_t, uint32_t,void*), void* renameData);
-            DX12ShaderPipeline(const ShaderCode& computeShader,std::string(*rename)(const std::string&,uint32_t,Descriptor::Type,Descriptor::Dimension,uint32_t, uint32_t,void*), void* renameData);
+            DX12ShaderPipeline(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData);
+            DX12ShaderPipeline(const ShaderCode& computeShader,std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData);
             virtual ~DX12ShaderPipeline()override;
             DX12ShaderPipeline(const DX12ShaderPipeline&)=delete;
             DX12ShaderPipeline& operator=(const DX12ShaderPipeline&)=delete;
@@ -54,8 +54,8 @@ namespace slag
             virtual uint32_t zComputeThreads()override;
         private:
             void move(DX12ShaderPipeline& from);
-            void spirvConstruct(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const std::string&,uint32_t,Descriptor::Type,Descriptor::Dimension,uint32_t, uint32_t,void*), void* renameData);
-            void dxilConstruct(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const std::string&,uint32_t,Descriptor::Type,Descriptor::Dimension,uint32_t, uint32_t,void*), void* renameData);
+            void spirvConstruct(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData);
+            void dxilConstruct(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData);
             ID3D12PipelineState* _pipelineState = nullptr;
             PipelineType _pipelineType = PipelineType::GRAPHICS;
             std::vector<DX12DescriptorGroup> _descriptorGroups;

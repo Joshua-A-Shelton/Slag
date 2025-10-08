@@ -47,8 +47,8 @@ namespace slag
         virtual Sampler* newSampler(SamplerParameters parameters)=0;
         //shaders
         virtual std::vector<ShaderCode::CodeLanguage> acceptedLanuages()=0;
-        virtual ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type,Descriptor::Dimension dimension, uint32_t arrayDepth, uint32_t platformBindingIndex,void*), void* renameData)=0;
-        virtual ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader,std::string(*rename)(const std::string&,uint32_t descriptorGroupIndex,Descriptor::Type type,Descriptor::Dimension dimension, uint32_t arrayDepth, uint32_t platformBindingIndex,void*), void*)=0;
+        virtual ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)=0;
+        virtual ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader,std::string(*rename)(const DescriptorRenameParameters&,void*), void*)=0;
         //descriptor pools
         virtual DescriptorPool* newDescriptorPool()=0;
         virtual DescriptorPool* newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)=0;

@@ -9,7 +9,7 @@ namespace slag
 {
     namespace dx12
     {
-        DX12ShaderPipeline::DX12ShaderPipeline(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties,VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const std::string&,uint32_t,Descriptor::Type,Descriptor::Dimension,uint32_t, uint32_t,void*), void* renameData)
+        DX12ShaderPipeline::DX12ShaderPipeline(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties,VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
         {
             SLAG_ASSERT(shaderCount > 0 && "Must have at least one shader provided for the pipeline");
             ShaderCode::CodeLanguage language = ShaderCode::CodeLanguage::CUSTOM;
@@ -38,7 +38,7 @@ namespace slag
             }
         }
 
-        DX12ShaderPipeline::DX12ShaderPipeline(const ShaderCode& computeShader,std::string(* rename)(const std::string&,uint32_t,Descriptor::Type,Descriptor::Dimension,uint32_t, uint32_t,void*), void* renameData)
+        DX12ShaderPipeline::DX12ShaderPipeline(const ShaderCode& computeShader,std::string(* rename)(const DescriptorRenameParameters&,void*), void* renameData)
         {
             throw std::runtime_error("DX12ShaderPipeline::DX12ShaderPipeline() not implemented");
         }
@@ -139,12 +139,12 @@ namespace slag
             _zthreads = from._zthreads;
         }
 
-        void DX12ShaderPipeline::spirvConstruct(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties,VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,std::string(*rename)(const std::string&,uint32_t,Descriptor::Type,Descriptor::Dimension,uint32_t, uint32_t,void*), void* renameData)
+        void DX12ShaderPipeline::spirvConstruct(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
         {
             throw std::runtime_error("SPIRV isn't supported yet for Direct X 12 Backend");
         }
 
-        void DX12ShaderPipeline::dxilConstruct(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties,VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,std::string(*rename)(const std::string&,uint32_t,Descriptor::Type,Descriptor::Dimension,uint32_t, uint32_t,void*), void* renameData)
+        void DX12ShaderPipeline::dxilConstruct(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties,VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
         {
             D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineDesc = {};
             for (auto i=0; i<shaderCount; i++)
