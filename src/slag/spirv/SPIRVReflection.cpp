@@ -278,7 +278,7 @@ namespace slag
             return Pixels::Format::UNDEFINED;
         }
 
-        BufferLayout bufferDescriptorLayoutFromSPV(SpvReflectBlockVariable* block)
+        BufferLayout bufferDescriptorLayoutFromSPV(const SpvReflectBlockVariable* block)
         {
             std::string name;
             if (block->name!=nullptr){name = block->name;}
@@ -314,7 +314,8 @@ namespace slag
             std::unordered_map<uint32_t, DescriptorGroupReflectionStub> groups;
             std::unordered_map<uint32_t,std::unordered_map<uint32_t,BufferLayout>> bufferLayouts;
             std::unordered_map<uint32_t,std::unordered_map<uint32_t,TexelBufferDescription>> texelBufferDescriptions;
-
+            std::unique_ptr<BufferLayout> pushConstants;
+            ShaderStageFlags pushConstantFlags = std::bit_cast<ShaderStageFlags>(uint16_t(0));
             uint32_t dimX = 0;
             uint32_t dimY = 0;
             uint32_t dimZ = 0;
@@ -359,7 +360,6 @@ namespace slag
                                 auto dimension = dimensionFromSPV(binding->image.dim);
                                 if (rename!=nullptr)
                                 {
-                                    //TODO: probably should provide some level of data instead of nullptr to help with identification
                                     DescriptorRenameParameters renameParameters{};
                                     renameParameters.language = ShaderCode::CodeLanguage::SPIRV;
                                     renameParameters.originalName = name;
@@ -439,6 +439,26 @@ namespace slag
                         }
 
                     }
+
+                    uint32_t blockCount = 0;
+                    auto result = spvReflectEnumeratePushConstantBlocks(&module,&blockCount,nullptr);
+                    if (blockCount > 0)
+                    {
+                        pushConstantFlags|= shader->stage();
+                    }
+                    for (uint32_t blockIndex = 0; blockIndex < blockCount; ++blockIndex)
+                    {
+                        auto range = spvReflectGetPushConstantBlock(&module,blockIndex,&result);
+                        if (pushConstants.get()==nullptr)
+                        {
+                            pushConstants = std::make_unique<BufferLayout>(bufferDescriptorLayoutFromSPV(range));
+                        }
+                        else
+                        {
+                            *pushConstants = BufferLayout::merge(*pushConstants.get(),bufferDescriptorLayoutFromSPV(range));
+                        }
+                    }
+
                     spvReflectDestroyShaderModule(&module);
                 }
                 else
@@ -450,6 +470,8 @@ namespace slag
             {
                 .groups = std::vector<SPVDescriptorGroupReflectionData>(totalSets+1),
                 .bufferLayouts = std::move(bufferLayouts),
+                .pushConstants = std::move(pushConstants),
+                .pushConstantFlags = pushConstantFlags,
                 .texelBufferDescriptions = std::move(texelBufferDescriptions),
                 .entryPointXDim=dimX,
                 .entryPointYDim=dimY,

@@ -73,4 +73,79 @@ namespace slag
         SDL_GetWindowSize(window,&w,&h);
         return std::unique_ptr<SwapChain>(SwapChain::newSwapChain(pd, w, h, presentMode, backBuffers, format,SwapChain::AlphaCompositing::IGNORE_ALPHA,createResourceFunction));
     }
+
+    bool utilities::matchesSimilarity(Buffer* compare, const std::filesystem::path& against,float overallSimilarityScore, float individualPixelScore)
+    {
+        auto pixels = compare->as<uint8_t>();
+        if (!std::filesystem::exists(against))
+        {
+            return false;
+        }
+
+        auto groundTruth = utilities::loadTexelsFromFile(against);
+
+        if(groundTruth.size()!=compare->countAsArray<uint8_t>())
+        {
+            return false;
+        }
+        float maxDifference = 255.0f*(1-individualPixelScore);
+        std::vector<float> pixelSimilarity(groundTruth.size()/4);
+        if (maxDifference > 0)
+        {
+            for (auto i=0; i< groundTruth.size(); i+=4)
+            {
+                float drawnRed = pixels[i];
+                float drawnGreen = pixels[i+1];
+                float drawnBlue = pixels[i+2];
+                float drawnAlpha = pixels[i+3];
+
+                float groundRed = groundTruth[i];
+                float groundGreen = groundTruth[i+1];
+                float groundBlue = groundTruth[i+2];
+                float groundAlpha = groundTruth[i+3];
+
+                float difRed = std::abs(drawnRed-groundRed);
+                float difGreen = std::abs(drawnGreen-groundGreen);
+                float difBlue = std::abs(drawnBlue-groundBlue);
+                float difAlpha = std::abs(drawnAlpha-groundAlpha);
+
+                float pixelDifference = (difRed + difGreen + difBlue + difAlpha)/4;
+
+                if (individualPixelScore > 0)
+                {
+                    if (pixelDifference> maxDifference)
+                    {
+                        return false;
+                    }
+                }
+                float percentSimilar = (255.0f-pixelDifference)/255.0f;
+                if (percentSimilar < individualPixelScore)
+                {
+                    return false;
+                }
+                pixelSimilarity[i/4] = percentSimilar;
+            }
+            float total = 0;
+            for (int i=0; i< pixelSimilarity.size(); i++)
+            {
+                total += pixelSimilarity[i];
+            }
+            float overallSimilarity = total/pixelSimilarity.size();
+            if (overallSimilarity < overallSimilarityScore)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            for (int i=0; i<groundTruth.size(); i++)
+            {
+                if(groundTruth[i]!=pixels[i])
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 } // slag

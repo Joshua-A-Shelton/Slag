@@ -331,6 +331,22 @@ namespace slag
         virtual void bindComputeDescriptorBundle(uint32_t index, DescriptorBundle& bundle)=0;
 
         /**
+         * Assign a small amount of arbitrary memory for a graphics shader pipeline (assume max of 128 bytes)
+         * @param offset offset into memory to begin the update for the data
+         * @param size size of the updated data
+         * @param data new information for the shader to use
+         */
+        virtual void pushGraphicsConstants(uint32_t offset, uint32_t size, void* data)=0;
+
+        /**
+         * Assign a small amount of arbitrary memory for a compute shader pipeline (assume max of 128 bytes)
+         * @param offset offset into memory to begin the update for the data
+         * @param size size of the updated data
+         * @param data new information for the shader to use
+         */
+        virtual void pushComputeConstants(uint32_t offset, uint32_t size, void* data)=0;
+
+        /**
          * Bind a buffer that contains drawing indexes
          * @param buffer Buffer with the index data
          * @param indexSize Size of index (index stride in buffer)

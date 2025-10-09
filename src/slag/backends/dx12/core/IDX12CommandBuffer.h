@@ -304,6 +304,9 @@ namespace slag
              */
             virtual void bindComputeDescriptorBundle(uint32_t index, DescriptorBundle& bundle) override;
 
+            virtual void pushGraphicsConstants(uint32_t offset, uint32_t size, void* data)override;
+            virtual void pushComputeConstants(uint32_t offset, uint32_t size, void* data)override;
+
             /**
              * Bind a buffer that contains drawing indexes
              * @param buffer Buffer with the index data

@@ -82,6 +82,11 @@ namespace slag
             return &_descriptorGroups[index];
         }
 
+        BufferLayout* DX12ShaderPipeline::pushConstants()
+        {
+            return _pushConstants.get();
+        }
+
         BufferLayout* DX12ShaderPipeline::bufferLayout(uint32_t descriptorGroup, uint32_t descriptorBinding)
         {
             auto group = _bufferLayouts.find(descriptorGroup);
@@ -132,6 +137,7 @@ namespace slag
             std::swap(_pipelineState,from._pipelineState);
             PipelineType _pipelineType = from._pipelineType;
             _descriptorGroups.swap(from._descriptorGroups);
+            _pushConstants.swap(from._pushConstants);
             _bufferLayouts.swap(from._bufferLayouts);
             _texelBufferDescriptions.swap(from._texelBufferDescriptions);
             _xthreads = from._xthreads;

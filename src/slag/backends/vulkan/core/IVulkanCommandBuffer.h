@@ -55,6 +55,8 @@ namespace slag
             virtual void bindComputeShaderPipeline(ShaderPipeline* pipeline) override;
             virtual void bindGraphicsDescriptorBundle(uint32_t index, DescriptorBundle& bundle) override;
             virtual void bindComputeDescriptorBundle(uint32_t index, DescriptorBundle& bundle) override;
+            virtual void pushGraphicsConstants(uint32_t offset, uint32_t size, void* data)override;
+            virtual void pushComputeConstants(uint32_t offset, uint32_t size, void* data)override;
             virtual void bindIndexBuffer(Buffer* buffer, Buffer::IndexSize indexSize, uint64_t offset) override;
             virtual void bindVertexBuffers(uint32_t firstBindingIndex, Buffer** buffers, uint64_t* bufferOffsets, uint64_t* strides, uint32_t bufferCount) override;
 

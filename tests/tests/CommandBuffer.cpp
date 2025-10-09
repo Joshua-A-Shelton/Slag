@@ -1260,6 +1260,208 @@ TEST_F(CommandBufferTest, SetStencilReference)
     GTEST_SKIP();
 }
 
+TEST_F(CommandBufferTest, PushGraphicsConstants)
+{
+    ShaderFile stages[] =
+    {
+        {
+            .pathIndicator = "resources/shaders/PushConstants.vertex",
+            .stage = ShaderStageFlags::VERTEX,
+        },
+     {
+         .pathIndicator = "resources/shaders/PushConstants.fragment",
+         .stage = ShaderStageFlags::FRAGMENT,
+         }
+    };
+    ShaderProperties properties{};
+    VertexDescription vertexDescription(1);
+    vertexDescription.add(GraphicsType::VECTOR3,0,0);
+    FrameBufferDescription frameBufferDescription;
+    frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
+
+    auto pipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(stages,2,properties,vertexDescription,frameBufferDescription);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
+    auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
+    auto renderTarget = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,50,50,1,1,1));
+    auto descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+    auto uniformBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(glm::mat4),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
+    auto uniformPtr = uniformBuffer->as<glm::mat4>();
+    auto uniformIndex = pipeline->descriptorGroup(0)->indexOf("globals");
+    auto targetBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(renderTarget->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorPool(descriptorPool.get());
+
+    commandBuffer->bindGraphicsShaderPipeline(pipeline.get());
+    Attachment colorAttachment{.texture = renderTarget.get(),.autoClear = true,.clearValue = {.color = {.floats = {.2,.2,.2,1.0}}}};
+    commandBuffer->beginRendering(&colorAttachment,1,nullptr,{.offset = {0,0},.extent = {renderTarget->width(),renderTarget->height()}});
+    auto bundle = descriptorPool->makeBundle(pipeline->descriptorGroup(0));
+    glm::mat4 matrix(1);// = glm::perspective(95.0f,(float)renderTarget->width()/(float)renderTarget->height(),.01f,100.0f);
+    *uniformPtr = matrix;
+    bundle.setUniformBuffer(uniformIndex,0,uniformBuffer.get(),0,uniformBuffer->size());
+    commandBuffer->bindGraphicsDescriptorBundle(0,bundle);
+    struct pushConstants
+    {
+        glm::vec2 position = {0,0};
+        glm::vec2 scale = {1,1};
+        glm::vec4 color{1.0f,1.0f,1.0f,1.0f};
+    };
+
+
+    Buffer* vertexBuffers[]
+    {
+        TriangleVerts.get(),
+    };
+    uint64_t vertexOffsets=0;
+    uint64_t bufferStrides=sizeof(glm::vec3);
+
+    commandBuffer->bindVertexBuffers(0,vertexBuffers,&vertexOffsets,&bufferStrides,1);
+    commandBuffer->setViewPort(0,0,renderTarget->width(),renderTarget->height(),1,0);
+    commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {renderTarget->width(),renderTarget->height()}});
+
+    pushConstants constants;
+    commandBuffer->pushGraphicsConstants(0,sizeof(pushConstants),&constants);
+    commandBuffer->draw(3,1,0,0);
+    constants.position.x+=.3;
+    constants.color.y = 0;
+    commandBuffer->pushGraphicsConstants(0,sizeof(pushConstants),&constants);
+    commandBuffer->draw(3,1,0,0);
+    constants.position.x = -.3;
+    constants.position.y+=.3;
+    constants.color.z = 0;
+    commandBuffer->pushGraphicsConstants(0,sizeof(pushConstants),&constants);
+    commandBuffer->draw(3,1,0,0);
+
+    commandBuffer->endRendering();
+    commandBuffer->insertBarrier
+    (
+        TextureBarrier
+        {
+            .texture = renderTarget.get(),
+            .accessBefore = BarrierAccessFlags::SHADER_WRITE,
+            .accessAfter = BarrierAccessFlags::TRANSFER_READ,
+            .syncBefore = PipelineStageFlags::ALL_GRAPHICS,
+            .syncAfter = PipelineStageFlags::TRANSFER,
+        }
+    );
+    TextureBufferMapping mapping
+    {
+        .bufferOffset = 0,
+        .textureSubresource =
+     {
+            .aspectFlags = Pixels::AspectFlags::COLOR,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1
+        },
+        .textureOffset = {0,0,0},
+        .textureExtent = {renderTarget->width(),renderTarget->height(),1},
+    };
+    commandBuffer->copyTextureToBuffer(renderTarget.get(),targetBuffer.get(),&mapping,1);
+
+    commandBuffer->end();
+
+    auto cmdPtr = commandBuffer.get();
+    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &cmdPtr,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
+    finished->waitForValue(1);
+
+    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(targetBuffer.get(),"resources/textures/push-graphics-constants.png",.9f,.1f));
+
+}
+
+TEST_F(CommandBufferTest, PushGraphicsContantsUnboundFail)
+{
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
+
+    commandBuffer->begin();
+    struct pushConstants
+    {
+        glm::vec2 position = {0,0};
+        glm::vec2 scale = {1,1};
+        glm::vec4 color{1.0f,1.0f,1.0f,1.0f};
+    };
+    pushConstants constants;
+    ASSERT_DEATH(commandBuffer->pushGraphicsConstants(0,sizeof(pushConstants),&constants),"No graphics shader is bound, unable to push constants");
+}
+
+TEST_F(CommandBufferTest, PushComputeConstants)
+{
+
+    ShaderFile computeFile{
+        .pathIndicator = "resources/shaders/ComputeDrawPush",
+        .stage = ShaderStageFlags::COMPUTE,
+    };
+    auto pipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(computeFile);
+    auto textureIndex = pipeline->descriptorGroup(0)->indexOf("target");
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::COMPUTE));
+    auto descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::STORAGE,256,256,1,1,1));
+    auto buffer = std::unique_ptr<Buffer>(Buffer::newBuffer(texture->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+    auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorPool(descriptorPool.get());
+    commandBuffer->bindComputeShaderPipeline(pipeline.get());
+    auto bundle = descriptorPool->makeBundle(pipeline->descriptorGroup(0));
+    bundle.setStorageTexture(textureIndex,0,texture.get());
+    commandBuffer->bindComputeDescriptorBundle(0,bundle);
+    glm::vec4 color{1.0f,.1f,.1f,1.0f};
+    commandBuffer->pushComputeConstants(0,sizeof(color),&color);
+    commandBuffer->dispatch(texture->width()/pipeline->xComputeThreads(),texture->height()/pipeline->yComputeThreads(),1);
+    commandBuffer->insertBarrier(TextureBarrier{.texture = texture.get(),.accessBefore = BarrierAccessFlags::SHADER_READ | BarrierAccessFlags::SHADER_WRITE, .accessAfter = BarrierAccessFlags::TRANSFER_READ, .syncBefore = PipelineStageFlags::COMPUTE_SHADER, .syncAfter = PipelineStageFlags::TRANSFER});
+    TextureBufferMapping mapping
+    {
+        .bufferOffset = 0,
+        .textureSubresource = {.aspectFlags = Pixels::AspectFlags::COLOR,.mipLevel = 0,.baseArrayLayer = 0,.layerCount = 1},
+        .textureOffset = {0,0,0},
+        .textureExtent = {texture->width(),texture->height(),1}
+    };
+    commandBuffer->copyTextureToBuffer(texture.get(),buffer.get(),&mapping,1);
+
+    commandBuffer->end();
+    SemaphoreValue signal{.semaphore = finished.get(),.value = 1};
+    auto cmdPtr = commandBuffer.get();
+    QueueSubmissionBatch submissionData
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &cmdPtr,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1
+    };
+    slagGraphicsCard()->computeQueue()->submit(&submissionData,1);
+    finished->waitForValue(1);
+    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(buffer.get(),"resources/textures/compute-draw-push.png",.9f,.1f));
+
+}
+
+TEST_F(CommandBufferTest, PushComputeContantsUnboundFail)
+{
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
+
+    commandBuffer->begin();
+    struct pushConstants
+    {
+        glm::vec2 position = {0,0};
+        glm::vec2 scale = {1,1};
+        glm::vec4 color{1.0f,1.0f,1.0f,1.0f};
+    };
+    pushConstants constants;
+    ASSERT_DEATH(commandBuffer->pushComputeConstants(0,sizeof(pushConstants),&constants),"No compute shader is bound, unable to push constants");
+}
+
 TEST_F(CommandBufferTest, Draw)
 {
     std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));

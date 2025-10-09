@@ -205,17 +205,17 @@ TEST(SwapChain, SetProperties)
 {
     auto window = utilities::createWindow("Set Properties",150,250);
     auto swapchain = utilities::createSwapChain(window.get(),1,SwapChain::PresentMode::IMMEDIATE,Pixels::Format::B8G8R8A8_UNORM_SRGB,createResources);
-    auto backBufferCount = swapchain->framesCount();
+    auto backBufferCount = swapchain->frameCount();
     GTEST_ASSERT_EQ(swapchain->backBufferWidth(),150);
     GTEST_ASSERT_EQ(swapchain->backBufferHeight(),250);
-    GTEST_ASSERT_EQ(swapchain->framesCount(), 1);
+    GTEST_ASSERT_EQ(swapchain->frameCount(), 1);
     GTEST_ASSERT_EQ(swapchain->presentMode(),SwapChain::PresentMode::IMMEDIATE);
     GTEST_ASSERT_EQ(swapchain->backBufferFormat(),Pixels::Format::B8G8R8A8_UNORM_SRGB);
     GTEST_ASSERT_EQ(swapchain->currentFrame()->backBuffer()->format(),Pixels::Format::B8G8R8A8_UNORM_SRGB);
     swapchain->setProperties(100,200,3,SwapChain::PresentMode::BUFFER,Pixels::Format::B8G8R8A8_UNORM,SwapChain::AlphaCompositing::IGNORE_ALPHA);
     GTEST_ASSERT_EQ(swapchain->backBufferWidth(),100);
     GTEST_ASSERT_EQ(swapchain->backBufferHeight(),200);
-    GTEST_ASSERT_EQ(swapchain->framesCount(), 3);
+    GTEST_ASSERT_EQ(swapchain->frameCount(), 3);
     GTEST_ASSERT_EQ(swapchain->presentMode(),SwapChain::PresentMode::BUFFER);
     GTEST_ASSERT_EQ(swapchain->backBufferFormat(),Pixels::Format::B8G8R8A8_UNORM);
     GTEST_ASSERT_EQ(swapchain->currentFrame()->backBuffer()->format(),Pixels::Format::B8G8R8A8_UNORM);

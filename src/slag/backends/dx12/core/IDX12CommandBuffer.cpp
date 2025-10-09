@@ -315,6 +315,16 @@ namespace slag
             throw std::runtime_error("IDX12CommandBuffer::bindComputeDescriptorBundle(): not implemented");
         }
 
+        void IDX12CommandBuffer::pushGraphicsConstants(uint32_t offset, uint32_t size, void* data)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::pushGraphicsConstants(): not implemented");
+        }
+
+        void IDX12CommandBuffer::pushComputeConstants(uint32_t offset, uint32_t size, void* data)
+        {
+            throw std::runtime_error("IDX12CommandBuffer::pushComputeConstants(): not implemented");
+        }
+
         void IDX12CommandBuffer::bindIndexBuffer(Buffer* buffer, Buffer::IndexSize indexSize, uint64_t offset)
         {
             throw std::runtime_error("IDX12CommandBuffer::bindIndexBuffer(): not implemented");
