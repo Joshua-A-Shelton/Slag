@@ -175,64 +175,7 @@ protected:
         slagGraphicsCard()->graphicsQueue()->submit(&submissionBatch,1);
         finished->waitForValue(1);
 
-
-        auto pixels = targetOutput->as<uint8_t>();
-
-        if (!std::filesystem::exists(compareResult))
-        {
-            GTEST_FAIL();
-            return;
-        }
-
-        auto groundTruth = utilities::loadTexelsFromFile(compareResult);
-
-        GTEST_ASSERT_EQ(groundTruth.size(),targetOutput->countAsArray<uint8_t>());
-        float maxDifference = 255.0f*(1-individualPixelScore);
-        std::vector<float> pixelSimilarity(groundTruth.size()/4);
-        if (maxDifference > 0)
-        {
-            for (auto i=0; i< groundTruth.size(); i+=4)
-            {
-                float drawnRed = pixels[i];
-                float drawnGreen = pixels[i+1];
-                float drawnBlue = pixels[i+2];
-                float drawnAlpha = pixels[i+3];
-
-                float groundRed = groundTruth[i];
-                float groundGreen = groundTruth[i+1];
-                float groundBlue = groundTruth[i+2];
-                float groundAlpha = groundTruth[i+3];
-
-                float difRed = std::abs(drawnRed-groundRed);
-                float difGreen = std::abs(drawnGreen-groundGreen);
-                float difBlue = std::abs(drawnBlue-groundBlue);
-                float difAlpha = std::abs(drawnAlpha-groundAlpha);
-
-                float pixelDifference = (difRed + difGreen + difBlue + difAlpha)/4;
-
-                if (individualPixelScore > 0)
-                {
-                    GTEST_ASSERT_LE(pixelDifference,maxDifference);
-                }
-                float percentSimilar = (255.0f-pixelDifference)/255.0f;
-                GTEST_ASSERT_GE(percentSimilar,individualPixelScore);
-                pixelSimilarity[i/4] = percentSimilar;
-            }
-            float total = 0;
-            for (int i=0; i< pixelSimilarity.size(); i++)
-            {
-                total += pixelSimilarity[i];
-            }
-            float overallSimilarity = total/pixelSimilarity.size();
-            GTEST_ASSERT_GE(overallSimilarity,overallSimilarityScore);
-        }
-        else
-        {
-            for (int i=0; i<groundTruth.size(); i++)
-            {
-                GTEST_ASSERT_EQ(groundTruth[i],pixels[i]);
-            }
-        }
+        GTEST_ASSERT_TRUE(utilities::matchesSimilarity(targetOutput.get(),compareResult,overallSimilarityScore,individualPixelScore));
 
     }
     void testPropertiesMultiSample(ShaderProperties properties,glm::mat4 cameraTransform, glm::mat4 cameraProjection, glm::mat4 object1Transform, glm::mat4 object2Transform, const std::filesystem::path& compareResult, float overallSimilarityScore, float individualPixelScore)
@@ -607,15 +550,83 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflectionAllTypes)
 
 }
 
-TEST_F(ShaderPipelineTest, TextureTypes)
+TEST_F(ShaderPipelineTest, NoPushConstants)
+{
+    ShaderFile stages[] =
+    {
+     {
+            .pathIndicator = "resources/shaders/UnlitTextured.vertex",
+            .stage = ShaderStageFlags::VERTEX,
+        },
+     {
+        .pathIndicator = "resources/shaders/UnlitTextured.fragment",
+        .stage = ShaderStageFlags::FRAGMENT,
+        }
+    };
+    ShaderProperties properties{};
+    VertexDescription vertexDescription(2);
+    vertexDescription.add(GraphicsType::VECTOR3,0,0);
+    vertexDescription.add(GraphicsType::VECTOR2,0,1);
+    FrameBufferDescription frameBufferDescription;
+    frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
+    frameBufferDescription.depthTarget = Pixels::Format::D32_FLOAT;
+
+
+    auto pipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(stages,2,properties,vertexDescription,frameBufferDescription);
+    GTEST_ASSERT_EQ(pipeline->pushConstants(),nullptr);
+}
+
+TEST_F(ShaderPipelineTest, PushConstants)
 {
     ShaderFile stages[] =
     {
         {
+            .pathIndicator = "resources/shaders/PushConstants.vertex",
+            .stage = ShaderStageFlags::VERTEX,
+        },
+     {
+         .pathIndicator = "resources/shaders/PushConstants.fragment",
+         .stage = ShaderStageFlags::FRAGMENT,
+         }
+    };
+    ShaderProperties properties{};
+    VertexDescription vertexDescription(1);
+    vertexDescription.add(GraphicsType::VECTOR3,0,0);
+    FrameBufferDescription frameBufferDescription;
+    frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
+
+    auto pipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(stages,2,properties,vertexDescription,frameBufferDescription);
+    auto pushConstants = pipeline->pushConstants();
+    GTEST_ASSERT_NE(pushConstants,nullptr);
+    GTEST_ASSERT_EQ(pushConstants->childrenCount(),3);
+    GTEST_ASSERT_EQ(pushConstants->offset(),0);
+    GTEST_ASSERT_EQ(pushConstants->size(),32);
+
+    GTEST_ASSERT_EQ(pushConstants->child(0).type(),GraphicsType::VECTOR2);
+    GTEST_ASSERT_EQ(pushConstants->child(0).offset(),0);
+    GTEST_ASSERT_EQ(pushConstants->child(0).absoluteOffset(),0);
+    GTEST_ASSERT_EQ(pushConstants->child(0).size(),8);
+
+    GTEST_ASSERT_EQ(pushConstants->child(1).type(),GraphicsType::VECTOR2);
+    GTEST_ASSERT_EQ(pushConstants->child(1).offset(),8);
+    GTEST_ASSERT_EQ(pushConstants->child(1).absoluteOffset(),8);
+    GTEST_ASSERT_EQ(pushConstants->child(1).size(),8);
+
+    GTEST_ASSERT_EQ(pushConstants->child(2).type(),GraphicsType::VECTOR4);
+    GTEST_ASSERT_EQ(pushConstants->child(2).offset(),16);
+    GTEST_ASSERT_EQ(pushConstants->child(2).absoluteOffset(),16);
+    GTEST_ASSERT_EQ(pushConstants->child(2).size(),16);
+}
+
+TEST_F(ShaderPipelineTest, TextureTypes)
+{
+    ShaderFile stages[] =
+    {
+     {
             .pathIndicator = "resources/shaders/TextureTypes.vertex",
             .stage = ShaderStageFlags::VERTEX,
         },
-    {
+     {
         .pathIndicator = "resources/shaders/TextureTypes.fragment",
         .stage = ShaderStageFlags::FRAGMENT,
         }

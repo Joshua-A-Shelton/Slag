@@ -566,6 +566,21 @@ namespace slag
 
         }
 
+        void IVulkanCommandBuffer::pushGraphicsConstants(uint32_t offset, uint32_t size, void* data)
+        {
+            SLAG_ASSERT(data != nullptr && "data cannot be null");
+            SLAG_ASSERT(_boundVulkanGraphicsShaderPipelineLayout != nullptr && "No graphics shader is bound, unable to push constants");
+            vkCmdPushConstants(_commandBuffer,_boundVulkanGraphicsShaderPipelineLayout, VK_SHADER_STAGE_ALL_GRAPHICS,offset,size,data);
+        }
+
+        void IVulkanCommandBuffer::pushComputeConstants(uint32_t offset, uint32_t size, void* data)
+        {
+            SLAG_ASSERT(data != nullptr && "data cannot be null");
+            SLAG_ASSERT(_boundVulkanComputePipelineLayout != nullptr && "No compute shader is bound, unable to push constants");
+            vkCmdPushConstants(_commandBuffer,_boundVulkanComputePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT,offset,size,data);
+        }
+
+
         void IVulkanCommandBuffer::bindIndexBuffer(Buffer* buffer, Buffer::IndexSize indexSize, uint64_t offset)
         {
             SLAG_ASSERT(buffer != nullptr && "Buffer cannot be null");

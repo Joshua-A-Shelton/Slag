@@ -63,6 +63,7 @@ namespace slag
                 auto descriptors = reflectionData.groups[i].descriptors;
                 _descriptorGroups[i] = VulkanDescriptorGroup(descriptors.data(),descriptors.size());
             }
+            _pushConstants = std::move(reflectionData.pushConstants);
 
 // assemble shader stages **********************************************************************************************
 
@@ -239,14 +240,22 @@ namespace slag
                 layouts[i] = _descriptorGroups[i].layout();
             }
 
+            VkPushConstantRange pushConstantRange = {};
+            if (_pushConstants != nullptr)
+            {
+                pushConstantRange.offset = _pushConstants->offset();
+                pushConstantRange.size = _pushConstants->size();
+                pushConstantRange.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+            }
+
             VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
             pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             pipelineLayoutInfo.pNext = nullptr;
             pipelineLayoutInfo.flags = 0;
             pipelineLayoutInfo.setLayoutCount = layouts.size();
             pipelineLayoutInfo.pSetLayouts = layouts.data();
-            pipelineLayoutInfo.pushConstantRangeCount = 0;
-            pipelineLayoutInfo.pPushConstantRanges = nullptr;
+            pipelineLayoutInfo.pushConstantRangeCount = _pushConstants==nullptr? 0:1;
+            pipelineLayoutInfo.pPushConstantRanges = _pushConstants==nullptr? nullptr:&pushConstantRange;
 
             if(vkCreatePipelineLayout(static_cast<VkDevice>(VulkanGraphicsCard::selected()->device()),&pipelineLayoutInfo, nullptr,&_pipelineLayout) != VK_SUCCESS)
             {
@@ -323,6 +332,7 @@ namespace slag
                 auto descriptors = reflectionData.groups[i].descriptors;
                 _descriptorGroups[i] = VulkanDescriptorGroup(descriptors.data(),descriptors.size());
             }
+            _pushConstants = std::move(reflectionData.pushConstants);
 
             VulkanShaderModule shaderModule(computeCodePtr);
 
@@ -335,11 +345,21 @@ namespace slag
                 layouts[i] = _descriptorGroups[i].layout();
             }
 
+            VkPushConstantRange pushConstantRange = {};
+            if (_pushConstants != nullptr)
+            {
+                pushConstantRange.offset = _pushConstants->offset();
+                pushConstantRange.size = _pushConstants->size();
+                pushConstantRange.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+            }
+
             VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
             pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             pipelineLayoutInfo.pNext = nullptr;
             pipelineLayoutInfo.pSetLayouts = layouts.data();
             pipelineLayoutInfo.setLayoutCount = layouts.size();
+            pipelineLayoutInfo.pushConstantRangeCount = _pushConstants==nullptr? 0:1;
+            pipelineLayoutInfo.pPushConstantRanges = _pushConstants==nullptr? nullptr:&pushConstantRange;
 
             if(vkCreatePipelineLayout(static_cast<VkDevice>(VulkanGraphicsCard::selected()->device()),&pipelineLayoutInfo, nullptr,&_pipelineLayout) != VK_SUCCESS)
             {
@@ -390,6 +410,11 @@ namespace slag
         uint32_t VulkanShaderPipeline::descriptorGroupCount()
         {
             return _descriptorGroups.size();
+        }
+
+        BufferLayout* VulkanShaderPipeline::pushConstants()
+        {
+            return _pushConstants.get();
         }
 
         DescriptorGroup* VulkanShaderPipeline::descriptorGroup(uint32_t index)
@@ -463,6 +488,7 @@ namespace slag
             std::swap(_pipeline,from._pipeline);
             std::swap(_pipelineLayout,from._pipelineLayout);
             _descriptorGroups.swap(from._descriptorGroups);
+            _pushConstants.swap(from._pushConstants);
             _bufferLayouts.swap(from._bufferLayouts);
             _xthreads = from._xthreads;
             _ythreads = from._ythreads;

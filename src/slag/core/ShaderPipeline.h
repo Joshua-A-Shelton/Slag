@@ -280,6 +280,8 @@ namespace slag
         virtual DescriptorGroup* descriptorGroup(uint32_t index)=0;
         ///Retrieve descriptor group at index
         virtual DescriptorGroup* operator[](uint32_t index)=0;
+        ///Get the layout of push constants, or null if there are none
+        virtual BufferLayout* pushConstants()=0;
         /**
          * Retrieve the layout of a buffer type descriptor
          * @param descriptorGroup the descriptor group index

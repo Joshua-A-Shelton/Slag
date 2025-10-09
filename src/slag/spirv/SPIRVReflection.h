@@ -16,6 +16,8 @@ namespace slag
         {
             std::vector<SPVDescriptorGroupReflectionData> groups;
             std::unordered_map<uint32_t, std::unordered_map<uint32_t,BufferLayout>> bufferLayouts;
+            std::unique_ptr<BufferLayout> pushConstants=nullptr;
+            ShaderStageFlags pushConstantFlags;
             std::unordered_map<uint32_t,std::unordered_map<uint32_t,TexelBufferDescription>> texelBufferDescriptions;
             uint32_t entryPointXDim=0;
             uint32_t entryPointYDim=0;

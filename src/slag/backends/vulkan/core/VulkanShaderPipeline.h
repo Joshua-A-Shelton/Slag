@@ -22,6 +22,7 @@ namespace slag
             virtual ~VulkanShaderPipeline()override;
             virtual PipelineType pipelineType()override;
             virtual uint32_t descriptorGroupCount()override;
+            BufferLayout* pushConstants() override;
             virtual DescriptorGroup* descriptorGroup(uint32_t index)override;
             virtual DescriptorGroup* operator[](uint32_t index)override;
             virtual BufferLayout* bufferLayout(uint32_t descriptorGroup,uint32_t descriptorBinding)override;
@@ -38,6 +39,7 @@ namespace slag
             VkPipeline _pipeline = nullptr;
             VkPipelineLayout _pipelineLayout = nullptr;
             std::vector<VulkanDescriptorGroup> _descriptorGroups;
+            std::unique_ptr<BufferLayout> _pushConstants;
             std::unordered_map<uint32_t,std::unordered_map<uint32_t,BufferLayout>> _bufferLayouts;
             std::unordered_map<uint32_t,std::unordered_map<uint32_t,TexelBufferDescription>> _texelBufferDescriptions;
             uint32_t _xthreads = 0;

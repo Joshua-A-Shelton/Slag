@@ -30,6 +30,7 @@ namespace slag
             virtual DescriptorGroup* descriptorGroup(uint32_t index)override;
             ///Retrieve descriptor group at index
             virtual DescriptorGroup* operator[](uint32_t index)override;
+            virtual BufferLayout* pushConstants()override;
             /**
              * Retrieve the layout of a buffer type descriptor
              * @param descriptorGroup the descriptor group index
@@ -59,6 +60,7 @@ namespace slag
             ID3D12PipelineState* _pipelineState = nullptr;
             PipelineType _pipelineType = PipelineType::GRAPHICS;
             std::vector<DX12DescriptorGroup> _descriptorGroups;
+            std::unique_ptr<BufferLayout> _pushConstants;
             std::unordered_map<uint32_t,std::unordered_map<uint32_t,BufferLayout>> _bufferLayouts;
             std::unordered_map<uint32_t,std::unordered_map<uint32_t,TexelBufferDescription>> _texelBufferDescriptions;
             uint32_t _xthreads = 0;
