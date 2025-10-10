@@ -340,7 +340,7 @@ TEST(Texture, CopyMultiAspect)
     GTEST_FLAG_SET(death_test_style, "threadsafe");
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    auto depthTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1,1));
+    auto depthTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1,1));
     auto result = std::unique_ptr<Buffer>(Buffer::newBuffer(depthTexture->byteSize(),Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
 
 
@@ -380,12 +380,13 @@ TEST(Texture, CopyPartialAspects)
 {
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    auto depthTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1,1));
-    auto result = std::unique_ptr<Buffer>(Buffer::newBuffer(depthTexture->byteSize(),Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
+    auto depthTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1,1));
+    auto depthResult = std::unique_ptr<Buffer>(Buffer::newBuffer(depthTexture->byteSize()*32*32,Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
+    auto stencilResult = std::unique_ptr<Buffer>(Buffer::newBuffer(Pixels::size(depthTexture->format(),Pixels::AspectFlags::STENCIL)*32*32,Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
 
 
     commandBuffer->begin();
-    commandBuffer->clearTexture(depthTexture.get(),ClearDepthStencilValue{.depth = 0.0f,.stencil = 1});
+    commandBuffer->clearTexture(depthTexture.get(),ClearDepthStencilValue{.depth = 0.2f,.stencil = 1});
     commandBuffer->insertBarrier(
         TextureBarrier
         {
@@ -399,34 +400,35 @@ TEST(Texture, CopyPartialAspects)
             PipelineStageFlags::CLEAR_DEPTH,
             PipelineStageFlags::TRANSFER
         });
-    TextureBufferMapping copyData[]
+
+    TextureBufferMapping copyDepth
     {
-    {
-            .bufferOffset = 0,
-            .textureSubresource =
-         {
-                .aspectFlags = Pixels::AspectFlags::DEPTH,
-                .mipLevel = 0,
-                .baseArrayLayer = 0,
-                .layerCount = 1
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {.width = depthTexture->width(),.height = depthTexture->height(),.depth = 1},
-        },
+        .bufferOffset = 0,
+        .textureSubresource =
         {
-            .bufferOffset = Pixels::size(depthTexture->format(),Pixels::AspectFlags::DEPTH)*depthTexture->width()*depthTexture->height(),
-            .textureSubresource =
-         {
-                .aspectFlags = Pixels::AspectFlags::STENCIL,
-                .mipLevel = 0,
-                .baseArrayLayer = 0,
-                .layerCount = 1
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {.width = depthTexture->width(),.height = depthTexture->height(),.depth = 1},
-        }
+            .aspectFlags = Pixels::AspectFlags::DEPTH,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1
+        },
+        .textureOffset = {0,0,0},
+        .textureExtent = {.width = depthTexture->width(),.height = depthTexture->height(),.depth = 1},
     };
-    commandBuffer->copyTextureToBuffer(depthTexture.get(),result.get(),copyData,2);
+
+    TextureBufferMapping copyStencil{
+        .bufferOffset = 0,
+        .textureSubresource =
+        {
+            .aspectFlags = Pixels::AspectFlags::STENCIL,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1
+        },
+        .textureOffset = {0,0,0},
+        .textureExtent = {.width = depthTexture->width(),.height = depthTexture->height(),.depth = 1},
+    };
+    commandBuffer->copyTextureToBuffer(depthTexture.get(),depthResult.get(),&copyDepth,1);
+    commandBuffer->copyTextureToBuffer(depthTexture.get(),stencilResult.get(),&copyStencil,1);
 
     commandBuffer->end();
 
@@ -449,29 +451,14 @@ TEST(Texture, CopyPartialAspects)
     slagGraphicsCard()->graphicsQueue()->submit(&batch,1);
     finished->waitForValue(1);
 
-    auto byteData = result->as<unsigned char>();
-    auto i=0;
-    for (; i<Pixels::size(depthTexture->format(),Pixels::AspectFlags::DEPTH)*depthTexture->width()*depthTexture->height(); i+=4)
-    {
-        int x = byteData[i+2];
-        x = (x << 8) | byteData[i+1];
-        x = (x << 8) | byteData[i];
+    auto depthData = depthResult->as<float>();
+    auto stencilData = stencilResult->as<unsigned char>();
 
-        if (x & 0x800000)
-        {
-            x |= ~0xffffff;
-        }
-
-        const float Q = 1.0 / (0x7fffff);
-        float floatRep = x*Q;
-        if (floatRep != 0.0f)
-        {
-            std::cout << i << std::endl;
-        }
-        GTEST_ASSERT_EQ(floatRep, 0.0f);
-    }
-    for (;i<result->countAsArray<uint8_t>();i++)
+    for (auto i=0; i<32*32;i++)
     {
-        GTEST_ASSERT_EQ(byteData[i], 1);
+        auto depthVal = depthData[i];
+        auto stencilVal = stencilData[i];
+        GTEST_ASSERT_EQ(depthVal, 0.2f);
+        GTEST_ASSERT_EQ(stencilVal, 1);
     }
 }
