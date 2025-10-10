@@ -3,11 +3,14 @@
 #include <algorithm>
 #include <slag/backends/Backend.h>
 
-#include "backends/dx12/DX12Backend.h"
+
 #include "utilities/SLAG_ASSERT.h"
 
 #ifdef SLAG_VULKAN_BACKEND
 #include <slag/backends/vulkan/VulkanBackend.h>
+#endif
+#ifdef SLAG_DX12_BACKEND
+#include "backends/dx12/DX12Backend.h"
 #endif
 
 namespace slag
