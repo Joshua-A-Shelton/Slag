@@ -22,7 +22,7 @@ TEST(DescriptorPool, MakeBundle)
     };
     FrameBufferDescription framebufferDescription;
     framebufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
-    framebufferDescription.depthTarget = Pixels::Format::D24_UNORM_S8_UINT;
+    framebufferDescription.depthTarget = Pixels::Format::D32_FLOAT_S8X24_UINT;
     ShaderProperties properties{};
     VertexDescription vertexDescription(2);
     vertexDescription.add(GraphicsType::VECTOR3,0,0).add(GraphicsType::VECTOR2,0,1);
