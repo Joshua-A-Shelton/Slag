@@ -91,12 +91,12 @@ protected:
         };
         FrameBufferDescription framebufferDescription;
         framebufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
-        framebufferDescription.depthTarget = Pixels::Format::D24_UNORM_S8_UINT;
+        framebufferDescription.depthTarget = Pixels::Format::D32_FLOAT_S8X24_UINT;
         auto shader1 = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(files,2,properties1,vertexPosUVDescription,framebufferDescription);
         auto shader2 = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(files,2,properties2,vertexPosUVDescription,framebufferDescription);
         auto descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
         auto target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,imageSize,imageSize,1,1,1));
-        auto depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D24_UNORM_S8_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,imageSize,imageSize,1,1,1));
+        auto depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,imageSize,imageSize,1,1,1));
         auto targetOutput = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
 
         auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
