@@ -86,6 +86,10 @@ namespace slag
 
             if (needReallocate)
             {
+                if (!_pageInfo.allowGrow)
+                {
+                    throw std::runtime_error("Unable to allocate bundle. Pool growth for this pool is not enabled, and maximum descriptors have been allocated for this pool");
+                }
                 if(_currentPage == _pages.size()-1)
                 {
                     page = allocatePage();
@@ -118,10 +122,6 @@ namespace slag
             if(_pageInfo.sampledTextures)
             {
                 sizes.push_back({VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,_pageInfo.sampledTextures});
-            }
-            if(_pageInfo.combinedSamplerTextures)
-            {
-                sizes.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,_pageInfo.combinedSamplerTextures});
             }
             if(_pageInfo.storageTextures)
             {

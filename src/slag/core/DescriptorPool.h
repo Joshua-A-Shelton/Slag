@@ -31,6 +31,8 @@ namespace slag
         uint32_t accelerationStructures=0;
         ///Number of descriptor bundle descriptors that can be created from the pool, may be ignored by underlying API
         uint32_t descriptorBundles=1000;
+        ///Allow the pool to grow if needed as descriptors are created, or if the limits given are hard limits
+        bool allowGrow = true;
 
     };
     ///Pool for which descriptors can be assigned via DescriptorBundles
