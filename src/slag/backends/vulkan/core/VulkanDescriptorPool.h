@@ -23,6 +23,7 @@ namespace slag
             std::vector<VkDescriptorPool> _pages;
             size_t _currentPage = 0;
             DescriptorPoolPageInfo _pageInfo;
+            bool allowGrow = true;
         };
     } // vulkan
 } // slag

@@ -492,7 +492,6 @@ namespace slag
 
             poolSize += pageInfo.samplers;
             poolSize += pageInfo. sampledTextures;
-            poolSize += pageInfo. combinedSamplerTextures;
             poolSize += pageInfo. storageTextures;
             poolSize += pageInfo. uniformTexelBuffers;
             poolSize += pageInfo. storageTexelBuffers;
