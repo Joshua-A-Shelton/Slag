@@ -231,7 +231,7 @@ if(SLAG_VULKAN_BACKEND)
     )
     FetchContent_MakeAvailable(VKBOOTSTRAP)
 
-    target_include_directories(Slag PUBLIC ${Vulkan_INCLUDE_DIR} ${vma_SOURCE_DIR})
+    target_include_directories(Slag PRIVATE ${Vulkan_INCLUDE_DIR} ${vma_SOURCE_DIR})
     target_link_libraries(Slag PRIVATE ${Vulkan_LIBRARIES} GPUOpen::VulkanMemoryAllocator vk-bootstrap)
 endif()
 
