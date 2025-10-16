@@ -3,7 +3,7 @@
 #include <slag/Slag.h>
 #include <vulkan/vulkan.h>
 #include "VulkanGPUMemoryReference.h"
-#include "vk_mem_alloc.h"
+#include <vk_mem_alloc.h>
 #include "slag/core/Pixels.h"
 
 namespace slag
