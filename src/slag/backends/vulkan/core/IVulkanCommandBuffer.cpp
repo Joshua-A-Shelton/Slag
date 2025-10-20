@@ -394,14 +394,19 @@ namespace slag
             viewport.maxDepth = maxDepth;
 
             vkCmdSetViewport(_commandBuffer,0,1,&viewport);
+#if SLAG_DEBUG
             _setViewport = true;
+#endif
+
         }
 
         void IVulkanCommandBuffer::setScissors(Rectangle rectangle)
         {
             VkRect2D rect{.offset{rectangle.offset.x,rectangle.offset.y},.extent{rectangle.extent.width,rectangle.extent.height}};
             vkCmdSetScissor(_commandBuffer,0,1,&rect);
+#if SLAG_DEBUG
             _setScissor = true;
+#endif
         }
 
         void IVulkanCommandBuffer::setBlendConstants(float r, float g, float b, float a)
