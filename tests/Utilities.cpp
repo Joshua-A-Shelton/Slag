@@ -52,7 +52,7 @@ namespace slag
         return std::unique_ptr<SDL_Window,SDL_WindowCustomDeleter>(SDL_CreateWindow(name.c_str(),SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,width,height,GraphicsAPIEnvironment::graphicsAPIEnvironment()->windowFlags()));
     }
 
-    std::unique_ptr<SwapChain> utilities::createSwapChain(SDL_Window* window, uint8_t backBuffers,SwapChain::PresentMode presentMode, Pixels::Format format,FrameResources*(* createResourceFunction)(uint8_t frameIndex, SwapChain* inChain))
+    std::unique_ptr<SwapChain> utilities::createSwapChain(SDL_Window* window,const slag::SwapChainDetails& details)
     {
         slag::PlatformData pd{};
 
@@ -71,7 +71,7 @@ namespace slag
 
         int w,h;
         SDL_GetWindowSize(window,&w,&h);
-        return std::unique_ptr<SwapChain>(SwapChain::newSwapChain(pd, w, h, presentMode, backBuffers, format,SwapChain::AlphaCompositing::IGNORE_ALPHA,createResourceFunction));
+        return std::unique_ptr<SwapChain>(SwapChain::newSwapChain(pd, w, h,details));
     }
 
     bool utilities::matchesSimilarity(Buffer* compare, const std::filesystem::path& against,float overallSimilarityScore, float individualPixelScore)

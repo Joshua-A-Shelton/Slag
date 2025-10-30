@@ -88,7 +88,12 @@ uint64_t renderAttemptsEmptyFrames(SwapChain* swapchain, uint64_t successfulFram
 TEST(SwapChain, PresentModes)
 {
     auto window = utilities::createWindow("Present Modes",150,150);
-    auto swapchain = utilities::createSwapChain(window.get(),1,SwapChain::PresentMode::IMMEDIATE,Pixels::Format::B8G8R8A8_UNORM_SRGB,createResources);
+    SwapChainDetails details{};
+    details.frameCount = 1;
+    details.presentMode = SwapChain::PresentMode::IMMEDIATE;
+    details.backBufferFormat = Pixels::Format::B8G8R8A8_UNORM_SRGB;
+    details.createResourceFunction = createResources;
+    auto swapchain = utilities::createSwapChain(window.get(),details);
 
     auto tearTime = renderEmptyFrames(swapchain.get(),300,ClearColor{1,0,0,1});
     swapchain->presentMode(SwapChain::PresentMode::QUEUE,2);
@@ -108,7 +113,12 @@ TEST(SwapChain, PresentModes)
 TEST(SwapChain, NextIfReady)
 {
     auto window = utilities::createWindow("Next If Ready",150,150);
-    auto swapchain = utilities::createSwapChain(window.get(),2,SwapChain::PresentMode::IMMEDIATE,Pixels::Format::B8G8R8A8_UNORM_SRGB,createResources);
+    SwapChainDetails details{};
+    details.frameCount = 2;
+    details.presentMode = SwapChain::PresentMode::IMMEDIATE;
+    details.backBufferFormat = Pixels::Format::B8G8R8A8_UNORM_SRGB;
+    details.createResourceFunction = createResources;
+    auto swapchain = utilities::createSwapChain(window.get(),details);
 
     auto immediateAttempts = renderAttemptsEmptyFrames(swapchain.get(),300,ClearColor{1,0,0,1});
     GTEST_ASSERT_TRUE(immediateAttempts != UINT64_MAX);
@@ -131,7 +141,12 @@ TEST(SwapChain, Resize)
 {
     uint32_t windowSize = 150;
     auto window = utilities::createWindow("Resize",windowSize,windowSize);
-    auto swapchain = utilities::createSwapChain(window.get(),2,SwapChain::PresentMode::BUFFER,Pixels::Format::B8G8R8A8_UNORM_SRGB,createResources);
+    SwapChainDetails details{};
+    details.frameCount = 2;
+    details.presentMode = SwapChain::PresentMode::BUFFER;
+    details.backBufferFormat = Pixels::Format::B8G8R8A8_UNORM_SRGB;
+    details.createResourceFunction = createResources;
+    auto swapchain = utilities::createSwapChain(window.get(),details);
     auto submitQueue = slagGraphicsCard()->graphicsQueue();
     QueueSubmissionBatch submissionData{};
 
@@ -194,7 +209,12 @@ TEST(SwapChain, Resize)
 TEST(SwapChain, Format)
 {
     auto window = utilities::createWindow("Format",150,150);
-    auto swapchain = utilities::createSwapChain(window.get(),1,SwapChain::PresentMode::IMMEDIATE,Pixels::Format::B8G8R8A8_UNORM_SRGB,createResources);
+    SwapChainDetails details{};
+    details.frameCount = 1;
+    details.presentMode = SwapChain::PresentMode::IMMEDIATE;
+    details.backBufferFormat = Pixels::Format::B8G8R8A8_UNORM_SRGB;
+    details.createResourceFunction = createResources;
+    auto swapchain = utilities::createSwapChain(window.get(),details);
     GTEST_ASSERT_EQ(swapchain->backBufferFormat(),Pixels::Format::B8G8R8A8_UNORM_SRGB);
     GTEST_ASSERT_EQ(swapchain->currentFrame()->backBuffer()->format(),Pixels::Format::B8G8R8A8_UNORM_SRGB);
     swapchain->backBufferFormat(Pixels::Format::B8G8R8A8_UNORM);
@@ -203,8 +223,13 @@ TEST(SwapChain, Format)
 }
 TEST(SwapChain, SetProperties)
 {
+    SwapChainDetails details{};
+    details.frameCount = 1;
+    details.presentMode = SwapChain::PresentMode::IMMEDIATE;
+    details.backBufferFormat = Pixels::Format::B8G8R8A8_UNORM_SRGB;
+    details.createResourceFunction = createResources;
     auto window = utilities::createWindow("Set Properties",150,250);
-    auto swapchain = utilities::createSwapChain(window.get(),1,SwapChain::PresentMode::IMMEDIATE,Pixels::Format::B8G8R8A8_UNORM_SRGB,createResources);
+    auto swapchain = utilities::createSwapChain(window.get(),details);
     auto backBufferCount = swapchain->frameCount();
     GTEST_ASSERT_EQ(swapchain->backBufferWidth(),150);
     GTEST_ASSERT_EQ(swapchain->backBufferHeight(),250);
@@ -226,7 +251,12 @@ TEST(SwapChain, ForceSubmit)
     GTEST_FLAG_SET(death_test_style, "threadsafe");
 
     auto window = utilities::createWindow("Force Submit",150,150);
-    auto swapchain = utilities::createSwapChain(window.get(),2,SwapChain::PresentMode::BUFFER,Pixels::Format::B8G8R8A8_UNORM_SRGB,createResources);
+    SwapChainDetails details{};
+    details.frameCount = 2;
+    details.presentMode = SwapChain::PresentMode::BUFFER;
+    details.backBufferFormat = Pixels::Format::B8G8R8A8_UNORM_SRGB;
+    details.createResourceFunction = createResources;
+    auto swapchain = utilities::createSwapChain(window.get(),details);
 
     swapchain->next();
     ASSERT_DEATH(swapchain->next(),"current frame must be submitted");

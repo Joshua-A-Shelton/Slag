@@ -21,7 +21,7 @@ namespace slag
         };
 
         std::unique_ptr<SDL_Window, SDL_WindowCustomDeleter> createWindow(const std::string& name, int width, int height);
-        std::unique_ptr<SwapChain> createSwapChain(SDL_Window* window, uint8_t backBuffers, SwapChain::PresentMode presentMode, Pixels::Format format,FrameResources* (*createResourceFunction)(uint8_t frameIndex, SwapChain* inChain));
+        std::unique_ptr<SwapChain> createSwapChain(SDL_Window* window, const slag::SwapChainDetails& details);
 
         bool matchesSimilarity(Buffer* compare,const std::filesystem::path& against, float overallSimilarityScore, float individualPixelScore);
     }

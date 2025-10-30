@@ -1352,7 +1352,7 @@ TEST_F(CommandBufferTest, PushGraphicsConstants)
     GTEST_ASSERT_TRUE(utilities::matchesSimilarity(targetBuffer.get(),"resources/textures/push-graphics-constants.png",.9f,.1f));
 
 }
-
+#ifdef SLAG_DEBUG
 TEST_F(CommandBufferTest, PushGraphicsContantsUnboundFail)
 {
     GTEST_FLAG_SET(death_test_style, "threadsafe");
@@ -1368,6 +1368,7 @@ TEST_F(CommandBufferTest, PushGraphicsContantsUnboundFail)
     pushConstants constants;
     ASSERT_DEATH(commandBuffer->pushGraphicsConstants(0,sizeof(pushConstants),&constants),"No graphics shader is bound, unable to push constants");
 }
+#endif
 
 TEST_F(CommandBufferTest, PushComputeConstants)
 {
@@ -1419,7 +1420,7 @@ TEST_F(CommandBufferTest, PushComputeConstants)
     GTEST_ASSERT_TRUE(utilities::matchesSimilarity(buffer.get(),"resources/textures/compute-draw-push.png",.9f,.1f));
 
 }
-
+#ifdef SLAG_DEBUG
 TEST_F(CommandBufferTest, PushComputeContantsUnboundFail)
 {
     GTEST_FLAG_SET(death_test_style, "threadsafe");
@@ -1435,6 +1436,7 @@ TEST_F(CommandBufferTest, PushComputeContantsUnboundFail)
     pushConstants constants;
     ASSERT_DEATH(commandBuffer->pushComputeConstants(0,sizeof(pushConstants),&constants),"No compute shader is bound, unable to push constants");
 }
+#endif
 
 TEST_F(CommandBufferTest, Draw)
 {

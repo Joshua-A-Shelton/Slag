@@ -14,7 +14,7 @@ namespace slag
         {
         public:
 
-            VulkanSwapChain(PlatformData platformData, uint32_t width, uint32_t height, PresentMode presentMode, uint8_t frameCount,Pixels::Format format, AlphaCompositing compositing, FrameResources* (*createResourceFunction)(uint8_t frameIndex, SwapChain* inChain), void (*swapchainRebuiltFunction)(SwapChain* swapChain));
+            VulkanSwapChain(PlatformData platformData, uint32_t width, uint32_t height, const SwapChainDetails& details);
             ~VulkanSwapChain()override;
             VulkanSwapChain(VulkanSwapChain const&) = delete;
             VulkanSwapChain& operator=(VulkanSwapChain const&) = delete;

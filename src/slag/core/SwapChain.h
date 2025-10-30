@@ -20,6 +20,7 @@ namespace slag
 {
     class Frame;
     class FrameResources;
+    struct SwapChainDetails;
     ///Links platform window to rendering, and how to swap between back buffers if they're present
     class SwapChain
     {
@@ -107,8 +108,25 @@ namespace slag
          * @param createResourceFunction Optional function to provide extra data to each frame
          * @return 
          */
-        static SwapChain* newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, PresentMode presentMode, uint8_t frameCount,Pixels::Format format,AlphaCompositing compositing, FrameResources* (*createResourceFunction)(uint8_t frameIndex, SwapChain* inChain)=nullptr, void (*swapchainRebuiltFunction)(SwapChain* swapChain)=nullptr);
+        static SwapChain* newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, const SwapChainDetails& details);
 
+    };
+
+    struct SwapChainDetails
+    {
+    public:
+        ///How to handle a finished frame
+        SwapChain::PresentMode presentMode = SwapChain::PresentMode::BUFFER;
+        ///How many frames are in a swapchain
+        uint8_t frameCount = 2;
+        ///Format of the backbuffers in the swapchain
+        Pixels::Format backBufferFormat = Pixels::Format::B8G8R8A8_UNORM;
+        ///How the images of the swapchain are blended into the native environment
+        SwapChain::AlphaCompositing alphaCompositing = SwapChain::AlphaCompositing::IGNORE_ALPHA;
+        ///Optional function to provide arbitrary resources associated with each frame;
+        FrameResources* (*createResourceFunction)(uint8_t frameIndex, SwapChain* inChain)=nullptr;
+        ///Optional function that is called whenever the swapchain is rebuilt due to changes in it's parameters
+        void (*swapchainRebuiltFunction)(SwapChain* swapChain)=nullptr;
     };
 } // slag
 

@@ -746,6 +746,7 @@ TEST_F(ShaderPipelineTest, ComputePipelineThreadGroups)
     GTEST_ASSERT_EQ(computeDraw->zComputeThreads(),1);
 }
 
+#ifdef SLAG_DEBUG
 TEST_F(ShaderPipelineTest, MultiStageFlagFail)
 {
     GTEST_FLAG_SET(death_test_style, "threadsafe");
@@ -772,6 +773,7 @@ TEST_F(ShaderPipelineTest, MultiStageFlagFail)
 
     EXPECT_DEATH(GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(stages,2,properties,vertexDescription,frameBufferDescription),"Only one stage can be set per Shader Code instance");
 }
+#endif
 
 TEST_F(ShaderPipelineTest, DepthClamp)
 {

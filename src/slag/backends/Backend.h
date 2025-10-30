@@ -42,7 +42,7 @@ namespace slag
         //BufferViews
         virtual BufferView* newBufferView(Buffer* buffer, Pixels::Format format, uint64_t offset, uint64_t size)=0;
         //swapchains
-        virtual SwapChain* newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, SwapChain::PresentMode presentMode, uint8_t desiredBackbufferCount, Pixels::Format format, SwapChain::AlphaCompositing compositing, FrameResources*(* createResourceFunction)(uint8_t frameIndex, SwapChain* inChain), void (*swapchainRebuiltFunction)(SwapChain* swapChain))=0;
+        virtual SwapChain* newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, const SwapChainDetails& details)=0;
         //samplers
         virtual Sampler* newSampler(SamplerParameters parameters)=0;
         //shaders
