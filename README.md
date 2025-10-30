@@ -18,8 +18,9 @@ int main()
         platformData.platform = slag::Platform::WIN_32;
         platformData.details.win32.hwnd = window.hwnd;//provide window handle
         platformData.details.win32.hinstance = window.hinstance;//provide application hinstance
-
-        auto swapChain = slag::SwapChain::newSwapChain(platformData,window.width(),window.height(),slag::SwapChain::PresentMode::IMMEDIATE,1,slag::Pixels::Format::B8G8R8A8_UNORM,slag::SwapChain::AlphaCompositing::IGNORE_ALPHA);
+        
+        slag::SwapChainDetails details{slag::SwapChain::PresentMode::IMMEDIATE,1};
+        auto swapChain = slag::SwapChain::newSwapChain(platformData,window.width(),window.height(),details);
         auto queue = slag::slagGraphicsCard()->graphicsQueue();
         auto commandBuffer = slag::CommandBuffer::newCommandBuffer(slag::GPUQueue::QueueType::GRAPHICS);
         auto finished = slag::Semaphore::newSemaphore(1);
