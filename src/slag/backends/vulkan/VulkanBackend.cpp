@@ -559,6 +559,7 @@ namespace slag
             basicFeatures.alphaToOne = true;
             basicFeatures.logicOp = true;
             basicFeatures.fragmentStoresAndAtomics = true;
+            basicFeatures.shaderStorageImageMultisample = true;
 
 
 
