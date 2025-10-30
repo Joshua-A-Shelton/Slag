@@ -455,7 +455,7 @@ namespace slag
             throw std::runtime_error("DX12Backend::newBufferView() not implemented");
         }
 
-        SwapChain* DX12Backend::newSwapChain(PlatformData platformData, uint32_t width, uint32_t height,SwapChain::PresentMode presentMode, uint8_t desiredBackbufferCount, Pixels::Format format,SwapChain::AlphaCompositing compositing,FrameResources*(* createResourceFunction)(uint8_t frameIndex, SwapChain* inChain),void(* swapchainRebuiltFunction)(SwapChain* swapChain))
+        SwapChain* DX12Backend::newSwapChain(PlatformData platformData, uint32_t width, uint32_t height,const SwapChainDetails& details)
         {
             throw std::runtime_error("DX12Backend::newSwapChain() not implemented");
         }

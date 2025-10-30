@@ -18,17 +18,17 @@ namespace slag
 {
     namespace vulkan
     {
-        VulkanSwapChain::VulkanSwapChain(PlatformData platformData, uint32_t width, uint32_t height,PresentMode presentMode, uint8_t frameCount, Pixels::Format format, AlphaCompositing compositing, FrameResources*(* createResourceFunction)(uint8_t frameIndex, SwapChain* inChain), void (*swapchainRebuiltFunction)(SwapChain* swapChain))
+        VulkanSwapChain::VulkanSwapChain(PlatformData platformData, uint32_t width, uint32_t height,const SwapChainDetails& details)
         {
             _surface = createNativeSurface(platformData);
             _width = width;
             _height = height;
-            _format = format;
-            _presentMode = presentMode;
-            _frameCount = frameCount;
-            _compositing = compositing;
-            _createResource = createResourceFunction;
-            _swapchainRebuiltFunction = swapchainRebuiltFunction;
+            _format = details.backBufferFormat;
+            _presentMode = details.presentMode;
+            _frameCount = details.frameCount;
+            _compositing = details.alphaCompositing;
+            _createResource = details.createResourceFunction;
+            _swapchainRebuiltFunction = details.swapchainRebuiltFunction;
 
             rebuild();
         }

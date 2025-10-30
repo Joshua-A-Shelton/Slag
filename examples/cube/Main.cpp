@@ -195,7 +195,10 @@ int main()
     pd.details.x11.display = wmInfo.info.x11.display;
 #endif
 
-    auto swapChain = slag::SwapChain::newSwapChain(pd,WINDOW_WIDTH,WINDOW_HEIGHT,slag::SwapChain::PresentMode::QUEUE,2,slag::Pixels::Format::B8G8R8A8_UNORM,slag::SwapChain::AlphaCompositing::IGNORE_ALPHA,createResource,swapChainRebuilt);
+    slag::SwapChainDetails swapchainDetails{};
+    swapchainDetails.createResourceFunction = createResource;
+    swapchainDetails.swapchainRebuiltFunction = swapChainRebuilt;
+    auto swapChain = slag::SwapChain::newSwapChain(pd,WINDOW_WIDTH,WINDOW_HEIGHT,swapchainDetails);
     auto queue = slag::slagGraphicsCard()->graphicsQueue();
 
     slag::Buffer* vertexBuffers[]={cubeVerts,cubeUVs};
