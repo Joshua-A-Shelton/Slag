@@ -32,7 +32,7 @@ namespace slag
         enum class Accessibility
         {
             GPU=0b00000001,
-            CPU_AND_GPU = 0b000000110
+            CPU_AND_GPU = 0b000000010
         };
         ///Type of numeric inside an index array
         enum class IndexSize
