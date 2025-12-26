@@ -16,10 +16,10 @@ TEST(Texture, TextureSize2D)
     uint64_t mip0Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*128*64;
     uint64_t mip1Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*(128>>1)*(64>>1);
     uint64_t mip2Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*(128>>2)*(64>>2);
-    GTEST_ASSERT_EQ(texture->byteSize(),(mip0Size+mip1Size+mip2Size)*2);
-    GTEST_ASSERT_EQ(texture->byteSize(0),mip0Size);
-    GTEST_ASSERT_EQ(texture->byteSize(1),mip1Size);
-    GTEST_ASSERT_EQ(texture->byteSize(2),mip2Size);
+    GTEST_ASSERT_EQ(texture->byteSize(Pixels::AspectFlags::COLOR),(mip0Size+mip1Size+mip2Size)*2);
+    GTEST_ASSERT_EQ(texture->byteSize(Pixels::AspectFlags::COLOR,0),mip0Size);
+    GTEST_ASSERT_EQ(texture->byteSize(Pixels::AspectFlags::COLOR,1),mip1Size);
+    GTEST_ASSERT_EQ(texture->byteSize(Pixels::AspectFlags::COLOR,2),mip2Size);
 }
 
 TEST(Texture, TextureSize1D)
@@ -28,10 +28,10 @@ TEST(Texture, TextureSize1D)
     uint64_t mip0Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*128;
     uint64_t mip1Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*(128>>1);
     uint64_t mip2Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*(128>>2);
-    GTEST_ASSERT_EQ(texture->byteSize(),(mip0Size+mip1Size+mip2Size)*2);
-    GTEST_ASSERT_EQ(texture->byteSize(0),mip0Size);
-    GTEST_ASSERT_EQ(texture->byteSize(1),mip1Size);
-    GTEST_ASSERT_EQ(texture->byteSize(2),mip2Size);
+    GTEST_ASSERT_EQ(texture->byteSize(Pixels::AspectFlags::COLOR),(mip0Size+mip1Size+mip2Size)*2);
+    GTEST_ASSERT_EQ(texture->byteSize(Pixels::AspectFlags::COLOR,0),mip0Size);
+    GTEST_ASSERT_EQ(texture->byteSize(Pixels::AspectFlags::COLOR,1),mip1Size);
+    GTEST_ASSERT_EQ(texture->byteSize(Pixels::AspectFlags::COLOR,2),mip2Size);
 }
 
 TEST(Texture, TextureSize3D)
@@ -40,10 +40,10 @@ TEST(Texture, TextureSize3D)
     uint64_t mip0Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*128*64*4;
     uint64_t mip1Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*(128>>1)*(64>>1)*(4>>1);
     uint64_t mip2Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*(128>>2)*(64>>2)*(4>>2);
-    GTEST_ASSERT_EQ(texture->byteSize(),(mip0Size+mip1Size+mip2Size));
-    GTEST_ASSERT_EQ(texture->byteSize(0),mip0Size);
-    GTEST_ASSERT_EQ(texture->byteSize(1),mip1Size);
-    GTEST_ASSERT_EQ(texture->byteSize(2),mip2Size);
+    GTEST_ASSERT_EQ(texture->byteSize(Pixels::AspectFlags::COLOR),(mip0Size+mip1Size+mip2Size));
+    GTEST_ASSERT_EQ(texture->byteSize(Pixels::AspectFlags::COLOR,0),mip0Size);
+    GTEST_ASSERT_EQ(texture->byteSize(Pixels::AspectFlags::COLOR,1),mip1Size);
+    GTEST_ASSERT_EQ(texture->byteSize(Pixels::AspectFlags::COLOR,2),mip2Size);
 }
 
 TEST(Texture, TextureSizeCubeMap)
@@ -52,10 +52,10 @@ TEST(Texture, TextureSizeCubeMap)
     uint64_t mip0Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*128*128;
     uint64_t mip1Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*(128>>1)*(128>>1);
     uint64_t mip2Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*(128>>2)*(128>>2);
-    GTEST_ASSERT_EQ(texture->byteSize(),(mip0Size+mip1Size+mip2Size)*6);
-    GTEST_ASSERT_EQ(texture->byteSize(0),mip0Size);
-    GTEST_ASSERT_EQ(texture->byteSize(1),mip1Size);
-    GTEST_ASSERT_EQ(texture->byteSize(2),mip2Size);
+    GTEST_ASSERT_EQ(texture->byteSize(Pixels::AspectFlags::COLOR),(mip0Size+mip1Size+mip2Size)*6);
+    GTEST_ASSERT_EQ(texture->byteSize(Pixels::AspectFlags::COLOR,0),mip0Size);
+    GTEST_ASSERT_EQ(texture->byteSize(Pixels::AspectFlags::COLOR,1),mip1Size);
+    GTEST_ASSERT_EQ(texture->byteSize(Pixels::AspectFlags::COLOR,2),mip2Size);
 }
 #ifdef SLAG_DEBUG
 TEST(Texture, ErrorWithDepth1D)
@@ -271,9 +271,9 @@ TEST(Texture, CreateWithData)
     auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
 
     auto uintDownload = std::unique_ptr<Buffer>(
-        Buffer::newBuffer(uintTex->byteSize(), Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
+        Buffer::newBuffer(uintTex->byteSize(Pixels::AspectFlags::COLOR), Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
     auto floatDownload = std::unique_ptr<Buffer>(
-        Buffer::newBuffer(floatTex->byteSize(), Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
+        Buffer::newBuffer(floatTex->byteSize(Pixels::AspectFlags::COLOR), Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
 
 
     commandBuffer->begin();
@@ -341,7 +341,7 @@ TEST(Texture, CopyMultiAspect)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     auto depthTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1,1));
-    auto result = std::unique_ptr<Buffer>(Buffer::newBuffer(depthTexture->byteSize(),Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
+    auto result = std::unique_ptr<Buffer>(Buffer::newBuffer(depthTexture->byteSize(Pixels::AspectFlags::DEPTH)+depthTexture->byteSize(Pixels::AspectFlags::STENCIL),Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
 
 
     commandBuffer->begin();
@@ -381,7 +381,7 @@ TEST(Texture, CopyPartialAspects)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     auto depthTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1,1));
-    auto depthResult = std::unique_ptr<Buffer>(Buffer::newBuffer(depthTexture->byteSize()*32*32,Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
+    auto depthResult = std::unique_ptr<Buffer>(Buffer::newBuffer(depthTexture->byteSize(Pixels::AspectFlags::DEPTH)*32*32,Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
     auto stencilResult = std::unique_ptr<Buffer>(Buffer::newBuffer(Pixels::size(depthTexture->format(),Pixels::AspectFlags::STENCIL)*32*32,Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
 
 

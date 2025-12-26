@@ -97,7 +97,7 @@ protected:
         auto descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
         auto target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,imageSize,imageSize,1,1,1));
         auto depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,imageSize,imageSize,1,1,1));
-        auto targetOutput = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+        auto targetOutput = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
 
         auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
 
@@ -218,7 +218,7 @@ protected:
 
 
         auto descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
-        auto targetOutput = std::unique_ptr<Buffer>(Buffer::newBuffer(final->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+        auto targetOutput = std::unique_ptr<Buffer>(Buffer::newBuffer(final->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
 
 
         descriptorPool->reset();

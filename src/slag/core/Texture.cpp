@@ -20,23 +20,24 @@ namespace slag
         return std::max(depth() >> mipLevel,static_cast<uint32_t>(1));
     }
 
-    uint64_t Texture::byteSize()
+    uint64_t Texture::byteSize(Pixels::AspectFlags aspect)
     {
 
         auto mipLevels = this->mipLevels();
         uint64_t bytes = 0;
         for (uint32_t i = 0; i < mipLevels; i++)
         {
-            bytes += byteSize(i);
+            bytes += byteSize(aspect,i);
         }
         bytes*=layers();
         return bytes;
     }
 
-    uint64_t Texture::byteSize(uint32_t mipLevel)
+    uint64_t Texture::byteSize(Pixels::AspectFlags aspect, uint32_t mipLevel)
     {
+        assert(std::popcount((uint8_t)aspect) == 1 && "Only a single aspect may be retrieved at a time");
         auto format = this->format();
-        auto formatSize = Pixels::size(format);
+        auto formatSize = Pixels::size(format,aspect);
         return formatSize * width(mipLevel) * height(mipLevel) * depth(mipLevel);
     }
 

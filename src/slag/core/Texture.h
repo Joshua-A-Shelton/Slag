@@ -85,15 +85,20 @@ namespace slag
         virtual uint32_t mipLevels()=0;
         ///The type of texel format backing the image
         virtual Pixels::Format format()=0;
-        ///Get the size of the entire texture (assuming tightly packed, may be actually stored differently on hardware) in bytes
-        uint64_t byteSize();
+
+        /**
+         * Get the size of the entire texture for a given aspect (assuming tightly packed, may be actually stored differently on hardware) in bytes
+         * @param aspect the aspect of the texture to get the size for
+         */
+        uint64_t byteSize(Pixels::AspectFlags aspect);
 
         /**
          * Get the size of a mip level in bytes (assuming tightly packed, may be actually stored differently on hardware) in bytes
          * @param mipLevel
+         * @param aspect the aspect of the texture to get the size for
          * @return
          */
-        uint64_t byteSize(uint32_t mipLevel);
+        uint64_t byteSize(Pixels::AspectFlags aspect, uint32_t mipLevel);
 
         static Texture* newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount = SampleCount::ONE);
         static Texture* newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData, uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount);

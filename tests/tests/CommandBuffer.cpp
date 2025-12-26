@@ -175,8 +175,8 @@ TEST_F(CommandBufferTest, ClearColor)
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore());
     std::unique_ptr<Texture> renderTarget = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1,1));
     std::unique_ptr<Texture> sampled = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,4,1));
-    std::unique_ptr<Buffer> rtBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(renderTarget->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<Buffer> sampledBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sampled->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<Buffer> rtBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(renderTarget->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<Buffer> sampledBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sampled->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
 
     commandBuffer->begin();
 
@@ -233,7 +233,7 @@ TEST_F(CommandBufferTest, ClearColor)
             .textureExtent = {sampled->width(),sampled->height(),1}
         },
         {
-            .bufferOffset = sampled->byteSize(0),
+            .bufferOffset = sampled->byteSize(Pixels::AspectFlags::COLOR,0),
             .textureSubresource =
             {
                 .aspectFlags = Pixels::AspectFlags::COLOR,
@@ -245,7 +245,7 @@ TEST_F(CommandBufferTest, ClearColor)
             .textureExtent = {sampled->width(1),sampled->height(1),1}
         },
         {
-            .bufferOffset = sampled->byteSize(0)+sampled->byteSize(1),
+            .bufferOffset = sampled->byteSize(Pixels::AspectFlags::COLOR,0)+sampled->byteSize(Pixels::AspectFlags::COLOR,1),
             .textureSubresource =
          {
                 .aspectFlags = Pixels::AspectFlags::COLOR,
@@ -257,7 +257,7 @@ TEST_F(CommandBufferTest, ClearColor)
             .textureExtent = {sampled->width(2),sampled->height(2),1}
         },
         {
-            .bufferOffset = sampled->byteSize(0)+sampled->byteSize(1)+sampled->byteSize(2),
+            .bufferOffset = sampled->byteSize(Pixels::AspectFlags::COLOR,0)+sampled->byteSize(Pixels::AspectFlags::COLOR,1)+sampled->byteSize(Pixels::AspectFlags::COLOR,2),
             .textureSubresource =
         {
                 .aspectFlags = Pixels::AspectFlags::COLOR,
@@ -338,7 +338,7 @@ TEST_F(CommandBufferTest, ClearDepth)
     std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     std::unique_ptr<Texture> depthTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1,1));
-    std::unique_ptr<Buffer> depthBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(depthTexture->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<Buffer> depthBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(depthTexture->byteSize(Pixels::AspectFlags::DEPTH),Buffer::Accessibility::CPU_AND_GPU));
 
 
     commandBuffer->begin();
@@ -457,7 +457,7 @@ TEST_F(CommandBufferTest, UpdateMip)
     };
 
     std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,2,1,Texture::SampleCount::ONE,texels.data(),texels.size()*Pixels::size(Pixels::Format::R8G8B8A8_UNORM),mappings,2));
-    std::unique_ptr<Buffer> textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(texture->byteSize(1),Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<Buffer> textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(texture->byteSize(Pixels::AspectFlags::COLOR,1),Buffer::Accessibility::CPU_AND_GPU));
     commandBuffer->begin();
 
     commandBuffer->updateMip(texture.get(),0,0,1);
@@ -683,7 +683,7 @@ TEST_F(CommandBufferTest, CopyTextureToBuffer)
         }
     };
     std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,2,2,Texture::SampleCount::ONE,texels.data(),texels.size()*sizeof(byteColor),mappings,4));
-    std::unique_ptr<Buffer> textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(texture->byteSize(0)+texture->byteSize(1)+32,Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<Buffer> textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(texture->byteSize(Pixels::AspectFlags::COLOR,0)+texture->byteSize(Pixels::AspectFlags::COLOR,1)+32,Buffer::Accessibility::CPU_AND_GPU));
 
     commandBuffer->begin();
 
@@ -702,7 +702,7 @@ TEST_F(CommandBufferTest, CopyTextureToBuffer)
              .textureExtent = {texture->width(),texture->height(),1}
         },
         {
-            .bufferOffset = texture->byteSize(0)+16,
+            .bufferOffset = texture->byteSize(Pixels::AspectFlags::COLOR,0)+16,
             .textureSubresource =
             {
                 .aspectFlags = Pixels::AspectFlags::COLOR,
@@ -733,7 +733,7 @@ TEST_F(CommandBufferTest, CopyTextureToBuffer)
     finished->waitForValue(1);
 
     uint8_t* colorPtr = textureBuffer->as<uint8_t>();
-    for (auto i=16; i < texture->byteSize(0)+16; i+=4)
+    for (auto i=16; i < texture->byteSize(Pixels::AspectFlags::COLOR,0)+16; i+=4)
     {
         auto color = *reinterpret_cast<byteColor*>(&colorPtr[i]);
         GTEST_ASSERT_EQ(color.r,255);
@@ -742,7 +742,7 @@ TEST_F(CommandBufferTest, CopyTextureToBuffer)
         GTEST_ASSERT_EQ(color.a,255);
     }
 
-    for (auto i=16+texture->byteSize(0); i < 16+texture->byteSize(0)+texture->byteSize(1); i+=4)
+    for (auto i=16+texture->byteSize(Pixels::AspectFlags::COLOR,0); i < 16+texture->byteSize(Pixels::AspectFlags::COLOR,0)+texture->byteSize(Pixels::AspectFlags::COLOR,1); i+=4)
     {
         auto color = *reinterpret_cast<byteColor*>(&colorPtr[i]);
         GTEST_ASSERT_EQ(color.r,122);
@@ -799,7 +799,7 @@ TEST_F(CommandBufferTest, Blit)
     };
     std::unique_ptr<Texture> floatTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,1,1,Texture::SampleCount::ONE,floatTexels.data(),floatTexels.size()*sizeof(floatColor),&mapping,1));
     std::unique_ptr<Texture> byteTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,1,1,Texture::SampleCount::ONE, byteTexels.data(),byteTexels.size()*sizeof(byteColor),&mapping,1));
-    std::unique_ptr<Buffer> textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(byteTexture->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<Buffer> textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(byteTexture->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
 
     commandBuffer->begin();
 
@@ -865,7 +865,7 @@ TEST_F(CommandBufferTest, Resolve)
     std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
     std::unique_ptr<Texture> output = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(output->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(output->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
 
 
 
@@ -1018,7 +1018,7 @@ TEST_F(CommandBufferTest, SetViewport)
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
     std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
 
     auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
@@ -1125,7 +1125,7 @@ TEST_F(CommandBufferTest, SetScissor)
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
     std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
 
     auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
@@ -1261,7 +1261,7 @@ TEST_F(CommandBufferTest, PushGraphicsConstants)
     auto uniformBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(glm::mat4),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     auto uniformPtr = uniformBuffer->as<glm::mat4>();
     auto uniformIndex = pipeline->descriptorGroup(0)->indexOf("globals");
-    auto targetBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(renderTarget->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+    auto targetBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(renderTarget->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
 
     commandBuffer->begin();
     commandBuffer->bindDescriptorPool(descriptorPool.get());
@@ -1382,7 +1382,7 @@ TEST_F(CommandBufferTest, PushComputeConstants)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::COMPUTE));
     auto descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
     auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::STORAGE,256,256,1,1,1));
-    auto buffer = std::unique_ptr<Buffer>(Buffer::newBuffer(texture->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+    auto buffer = std::unique_ptr<Buffer>(Buffer::newBuffer(texture->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
     auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     commandBuffer->begin();
     commandBuffer->bindDescriptorPool(descriptorPool.get());
@@ -1447,7 +1447,7 @@ TEST_F(CommandBufferTest, Draw)
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
     std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
 
     auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
@@ -1554,7 +1554,7 @@ TEST_F(CommandBufferTest, DrawIndexed)
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
     std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
 
     auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
@@ -1658,7 +1658,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
     std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
 
     auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
@@ -1770,7 +1770,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
     std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
 
     auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
@@ -1885,7 +1885,7 @@ TEST_F(CommandBufferTest, DrawIndirect)
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
     std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
 
     auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
@@ -1994,7 +1994,7 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
     std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
     std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
     std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
 
     auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");

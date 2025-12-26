@@ -40,7 +40,7 @@ TEST(GraphicsCard, DefragmentMemory)
     public:
         uint8_t r,g,b,a;
     };
-    std::vector<uint8Pixel> pixels(tex1->byteSize()/sizeof(uint8Pixel));
+    std::vector<uint8Pixel> pixels(tex1->byteSize(Pixels::AspectFlags::COLOR)/sizeof(uint8Pixel));
     uint8_t red = 0;
     uint8_t green = 0;
     uint8_t blue = 0;
@@ -93,7 +93,7 @@ TEST(GraphicsCard, DefragmentMemory)
             mapping.textureSubresource.baseArrayLayer = arrayLevel;
             mapping.textureSubresource.layerCount = 1;
 
-            offset+= tex1->byteSize(mipLevel);
+            offset+= tex1->byteSize(Pixels::AspectFlags::COLOR,mipLevel);
         }
     }
 
@@ -111,7 +111,7 @@ TEST(GraphicsCard, DefragmentMemory)
     slagGraphicsCard()->defragmentMemory(nullptr,0,nullptr,0);
 
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::TRANSFER));
-    auto textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(tex2->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+    auto textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(tex2->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
     commandBuffer->begin();
     commandBuffer->copyTextureToBuffer(tex2.get(),textureBuffer.get(),mappings,15);
     commandBuffer->end();
