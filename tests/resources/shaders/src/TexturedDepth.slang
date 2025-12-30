@@ -52,12 +52,14 @@ public struct GlobalsData
     public matrix<float,4,4> view;
     public matrix<float,4,4> projectionView;
 }
-
+public struct InstanceSampler
+{
+    public SamplerState sampler;
+}
 public struct InstanceData
 {
     public matrix<float,4,4> transform;
     public Texture2D sampledTexture;
-    public SamplerState sampler;
 }
 
 struct VertexStageOutput
@@ -72,6 +74,7 @@ struct FragmentParameters
 }
 
 public ParameterBlock<GlobalsData> Globals;
+public ParameterBlock<InstanceSampler> Sampler;
 public ParameterBlock<InstanceData> Instance;
 
 
@@ -89,5 +92,5 @@ VertexStageOutput vertexMain(Vertex3D vertex3d: POSITION, UVCoordinates uvCoordi
 [shader("fragment")]
 float4 fragmentMain(FragmentParameters fragmentParameters : FragmentParameters) : SV_Target
 {
-    return Instance.sampledTexture.Sample(Instance.sampler,fragmentParameters.uv);
+    return Instance.sampledTexture.Sample(Sampler.sampler,fragmentParameters.uv);
 }

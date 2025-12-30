@@ -17,7 +17,7 @@ namespace slag
             VulkanCommandBuffer(VulkanCommandBuffer&& from);
             VulkanCommandBuffer& operator=(VulkanCommandBuffer&& from);
 
-            virtual void bindDescriptorPool(DescriptorPool* pool) override;
+            virtual void bindDescriptorMemory(ResourceDescriptorMemory* resourceDescriptorMemory,SamplerDescriptorMemory* samplerDescriptorMemory)override;
         };
     } // vulkan
 } // slag

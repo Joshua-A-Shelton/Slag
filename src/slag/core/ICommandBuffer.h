@@ -4,12 +4,12 @@
 #include "GPUQueue.h"
 #include "GPUBarriers.h"
 #include "Clear.h"
-#include "DescriptorBundle.h"
 #include "Dimensions.h"
 #include "Sampler.h"
 #include "ShaderPipeline.h"
 #include "Texture.h"
 #include "Buffer.h"
+#include "DescriptorGroup.h"
 
 namespace slag
 {
@@ -320,15 +320,17 @@ namespace slag
         /**
          * Bind a bundle of descriptors to a slot in a graphics shader pipeline
          * @param index Descriptor Group Index to bind to
-         * @param bundle Descriptors to bind to bound shader
+         * @param memory Which Descriptor Memory to contains the data
+         * @param offset The offset into the memory the descriptor group data begins
          */
-        virtual void bindGraphicsDescriptorBundle(uint32_t index, DescriptorBundle& bundle)=0;
+        virtual void bindGraphicsDescriptorSet(uint32_t index, DescriptorGroup::DescriptorMemory memory, uint64_t offset)=0;
         /**
          * Bind a bundle of descriptors to a slot in a compute shader pipeline
          * @param index Descriptor Group Index to bind to
-         * @param bundle Descriptors to bind to bound shader
+         * @param memory Which Descriptor Memory to contains the data
+         * @param offset The offset into the memory the descriptor group data begins
          */
-        virtual void bindComputeDescriptorBundle(uint32_t index, DescriptorBundle& bundle)=0;
+        virtual void bindComputeDescriptorSet(uint32_t index, DescriptorGroup::DescriptorMemory memory, uint64_t offset)=0;
 
         /**
          * Assign a small amount of arbitrary memory for a graphics shader pipeline (assume max of 128 bytes)

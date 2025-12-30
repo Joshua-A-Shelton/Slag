@@ -24,7 +24,7 @@ namespace slag
             UNKNOWN = 0,
             ///Object that selects what texels to select from texture (layer, mip, etc)
             SAMPLER,
-            ///Texure that requires a corresponding sampler to read
+            ///Texure that only has read operations performed on it
             SAMPLED_TEXTURE,
             ///Texture that can have both be read on write operations can be perfomed on in the same shader (Generally GPU shaders)
             STORAGE_TEXTURE,
@@ -32,7 +32,7 @@ namespace slag
             UNIFORM_TEXEL_BUFFER,
             ///Tighly packed 1D array of texels that image both read and write operations can be performed on in the same shader (Generally GPU shaders)
             STORAGE_TEXEL_BUFFER,
-            ///Represents a section of a buffer that contains arbitrary data
+            ///Represents a section of a buffer that contains arbitrary data (read only)
             UNIFORM_BUFFER,
             ///Represents a section of a buffer that contains arbitrary data that both read and write operations can be performed on in the same shader (Generally GPU shaders or unsized arrays in pixel shaders)
             STORAGE_BUFFER,

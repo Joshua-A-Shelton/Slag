@@ -17,9 +17,14 @@ namespace slag
             //return _bindings.size();
         }
 
-        std::string DX12DescriptorGroup::descriptorName(uint32_t index)
+        const Descriptor& DX12DescriptorGroup::descriptor(uint32_t index)
         {
-            return _descriptorNames[index];
+            throw std::runtime_error("DX12DescriptorGroup::descriptor() is not implemented");
+        }
+
+        uint64_t DX12DescriptorGroup::descriptorByteOffset(uint32_t index)
+        {
+            throw std::runtime_error("DX12DescriptorGroup::descriptorByteOffset() is not implemented");
         }
 
         void DX12DescriptorGroup::copy(const DX12DescriptorGroup& from)

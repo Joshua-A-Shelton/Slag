@@ -1,6 +1,5 @@
 #include "DX12CommandBuffer.h"
 
-#include "DX12DescriptorPool.h"
 #include "DX12GraphicsCard.h"
 
 namespace slag
@@ -49,13 +48,10 @@ namespace slag
             return *this;
         }
 
-        void DX12CommandBuffer::bindDescriptorPool(DescriptorPool* pool)
+        void DX12CommandBuffer::bindDescriptorMemory(ResourceDescriptorMemory* resourceDescriptorMemory,
+            SamplerDescriptorMemory* samplerDescriptorMemory)
         {
-            ID3D12DescriptorHeap* heaps[2];
-            auto descriptorPool = static_cast<DX12DescriptorPool*>(pool);
-            heaps[0] = descriptorPool->dx12Handle();
-            heaps[1] = DX12GraphicsCard::selected()->samplerHeap();
-            _buffer->SetDescriptorHeaps(2,heaps);
+            throw std::runtime_error("DX12CommandBuffer::bindDescriptorMemory: not implemented");
         }
 
         void DX12CommandBuffer::move(DX12CommandBuffer& from)

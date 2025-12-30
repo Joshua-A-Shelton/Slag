@@ -65,7 +65,6 @@ namespace slag
     {
         _name.swap(from._name);
         _shape = from._shape;
-
     }
 
     BufferLayout::BufferLayout(const std::string& name, GraphicsType type,

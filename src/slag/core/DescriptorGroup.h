@@ -11,28 +11,24 @@ namespace slag
     class DescriptorGroup
     {
     public:
-
+        enum class DescriptorMemory
+        {
+            RESOURCE = 0,
+            SAMPLER = 1
+        };
         virtual ~DescriptorGroup()=default;
-        ///How many descriptors are in this group
+        ///How many (non-sampler) descriptors are in this group
         virtual uint32_t descriptorCount()=0;
-        /**
-         * Get the name of a descriptor
-         * @param index number between 0 and descriptorCount
-         * @return
-         */
-        virtual std::string descriptorName(uint32_t index)=0;
-        /**
-         * Get the index of a descriptor with a name
-         * @param descriptorName Name of the descriptor to get the index for
-         * @return
-         */
-        virtual DescriptorIndex* indexOf(const std::string& descriptorName)=0;
-        ///Get descriptor at the given index
-        virtual Descriptor* descriptor(DescriptorIndex* index)=0;
-        ///Get descriptor with the given name
-        virtual Descriptor* descriptor(const std::string& descriptorName)=0;
+        ///Retrieve a descriptor with a given index
+        virtual const Descriptor& descriptor(uint32_t index)=0;
+        ///Get the byte offset from the beginning of a descriptor set for the descriptor at the given index
+        virtual uint64_t descriptorByteOffset(uint32_t index)=0;
+        ///The size in a descriptor buffer this group will require (Note, the descriptors must still be aligned via GraphicsCard::descriptorBufferOffsetAlignment())
+        virtual uint64_t descriptorBufferSize()=0;
         ///If this group is swap compatible with another group
         virtual bool compatible(DescriptorGroup* with)=0;
+
+
 
 
     };

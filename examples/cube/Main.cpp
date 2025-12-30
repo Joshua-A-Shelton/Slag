@@ -17,7 +17,6 @@ class DefaultResources: public slag::FrameResources
 public:
     slag::CommandBuffer* commandBuffer=nullptr;
     slag::Semaphore* commandsFinished=nullptr;
-    slag::DescriptorPool* descriptorPool=nullptr;
     slag::Buffer* globalsBuffer = nullptr;
     slag::Buffer* instanceBuffer = nullptr;
 
@@ -25,7 +24,6 @@ public:
     {
         commandBuffer = slag::CommandBuffer::newCommandBuffer(slag::GPUQueue::QueueType::GRAPHICS);
         commandsFinished = slag::Semaphore::newSemaphore();
-        descriptorPool = slag::DescriptorPool::newDescriptorPool();
         globalsBuffer = slag::Buffer::newBuffer(sizeof(glm::mat4)*3,slag::Buffer::Accessibility::CPU_AND_GPU,slag::Buffer::UsageFlags::UNIFORM_BUFFER);
         instanceBuffer = slag::Buffer::newBuffer(sizeof(glm::mat4),slag::Buffer::Accessibility::CPU_AND_GPU,slag::Buffer::UsageFlags::UNIFORM_BUFFER);
     }
@@ -33,7 +31,6 @@ public:
     {
         delete commandBuffer;
         delete commandsFinished;
-        delete descriptorPool;
         delete globalsBuffer;
         delete instanceBuffer;
     }
@@ -152,10 +149,6 @@ int main()
     frameBufferDescription.depthTarget = slag::Pixels::Format::D32_FLOAT;
 
     slag::ShaderPipeline* texturedDepthPipeline = slag::ShaderPipeline::newShaderPipeline(code,2,properties,vertexPosUVDescription,frameBufferDescription);
-    auto GlobalsIndex = texturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
-    auto InstanceIndex = texturedDepthPipeline->descriptorGroup(1)->indexOf("Instance");
-    auto InstanceTextureIndex = texturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampledTexture");
-    auto InstanceSamplerIndex = texturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampler");
     int width, height, channels;
     auto pixels = stbi_load("resources/textures/gradient.jpg", &width, &height,&channels,4);
     slag::TextureBufferMapping mapping
@@ -200,6 +193,10 @@ int main()
     swapchainDetails.swapchainRebuiltFunction = swapChainRebuilt;
     auto swapChain = slag::SwapChain::newSwapChain(pd,WINDOW_WIDTH,WINDOW_HEIGHT,swapchainDetails);
     auto queue = slag::slagGraphicsCard()->graphicsQueue();
+    auto resourceDescriptorMemory = slag::ResourceDescriptorMemory::newResourceDescriptorMemory(100000);
+    auto samplerDescriptorMemory = slag::SamplerDescriptorMemory::newSamplerDescriptorMemory(100);
+    uint64_t resourceDescriptorMemoryOffset = 0;
+    uint64_t samplerDescriptorMemoryOffset = 0;
 
     slag::Buffer* vertexBuffers[]={cubeVerts,cubeUVs};
     uint64_t vertexOffsets[]={0,0};
@@ -243,15 +240,12 @@ int main()
         {
             auto resources = frame->frameResources<DefaultResources>();
             auto commandBuffer = resources->commandBuffer;
-            auto descriptorPool = resources->descriptorPool;
             auto globalsBuffer = resources->globalsBuffer;
             auto instanceBuffer = resources->instanceBuffer;
             auto backBuffer = frame->backBuffer();
 
-            descriptorPool->reset();
-
             commandBuffer->begin();
-            commandBuffer->bindDescriptorPool(descriptorPool);
+            commandBuffer->bindDescriptorMemory(resourceDescriptorMemory,samplerDescriptorMemory);
             commandBuffer->setViewPort(0,0,backBuffer->width(),backBuffer->height(),0,1);
             commandBuffer->setScissors(slag::Rectangle{{0,0},{backBuffer->width(),backBuffer->height()}});
 
@@ -277,15 +271,41 @@ int main()
             instanceHandle[0] = instanceMatrix;
             instanceMatrix = glm::rotate(instanceMatrix,glm::radians(45.0f * delta),glm::vec3(0.0f,1.0f,0.0f));
 
-            auto globals = descriptorPool->makeBundle(texturedDepthPipeline->descriptorGroup(0));
-            globals.setUniformBuffer(GlobalsIndex,0,globalsBuffer,0,globalsBuffer->size());
-            auto instance = descriptorPool->makeBundle(texturedDepthPipeline->descriptorGroup(1));
-            instance.setUniformBuffer(InstanceIndex,0,instanceBuffer,0,instanceBuffer->size());
-            instance.setSampledTexture(InstanceTextureIndex,0,texture);
-            instance.setSampler(InstanceSamplerIndex,0,defaultSampler);
+            resourceDescriptorMemoryOffset = resourceDescriptorMemory->descriptorSetOffset(resourceDescriptorMemoryOffset);
+            auto globalsGroup = texturedDepthPipeline->descriptorGroup(0);
+            if (resourceDescriptorMemoryOffset + globalsGroup->descriptorBufferSize() >= resourceDescriptorMemory->size())
+            {
+                resourceDescriptorMemoryOffset = 0;
+            }
+            auto globalsDescriptorSet = resourceDescriptorMemoryOffset;
+            resourceDescriptorMemory->setUniformBuffer(resourceDescriptorMemoryOffset + globalsGroup->descriptorByteOffset(0),globalsBuffer,0,globalsBuffer->size());
+            resourceDescriptorMemoryOffset += globalsGroup->descriptorBufferSize();
 
-            commandBuffer->bindGraphicsDescriptorBundle(0,globals);
-            commandBuffer->bindGraphicsDescriptorBundle(1,instance);
+            samplerDescriptorMemoryOffset = samplerDescriptorMemory->descriptorSetOffset(samplerDescriptorMemoryOffset);
+            auto samplerGroup = texturedDepthPipeline->descriptorGroup(1);
+            if (resourceDescriptorMemoryOffset + samplerGroup->descriptorBufferSize() >= samplerDescriptorMemory->size())
+            {
+                samplerDescriptorMemoryOffset = 0;
+            }
+            auto samplersDescriptorSet = samplerDescriptorMemoryOffset;
+            samplerDescriptorMemory->setSampler(samplerDescriptorMemoryOffset + samplerGroup->descriptorByteOffset(0),defaultSampler);
+            samplerDescriptorMemoryOffset += samplerGroup->descriptorBufferSize();
+
+            resourceDescriptorMemoryOffset = resourceDescriptorMemory->descriptorSetOffset(resourceDescriptorMemoryOffset);
+            auto instanceGroup = texturedDepthPipeline->descriptorGroup(2);
+            if (resourceDescriptorMemoryOffset + instanceGroup->descriptorBufferSize() >= resourceDescriptorMemory->size())
+            {
+                resourceDescriptorMemoryOffset = 0;
+            }
+            auto instanceDescriptorSet = resourceDescriptorMemoryOffset;
+            resourceDescriptorMemory->setUniformBuffer(resourceDescriptorMemoryOffset + instanceGroup->descriptorByteOffset(0),instanceBuffer,0,instanceBuffer->size());
+            resourceDescriptorMemory->setSampledTexture(resourceDescriptorMemoryOffset + instanceGroup->descriptorByteOffset(1),texture);
+            resourceDescriptorMemoryOffset += instanceGroup->descriptorBufferSize();
+
+            commandBuffer->bindGraphicsDescriptorSet(0,slag::DescriptorGroup::DescriptorMemory::RESOURCE,globalsDescriptorSet);
+            commandBuffer->bindGraphicsDescriptorSet(1,slag::DescriptorGroup::DescriptorMemory::SAMPLER,samplersDescriptorSet);
+            commandBuffer->bindGraphicsDescriptorSet(2,slag::DescriptorGroup::DescriptorMemory::RESOURCE,instanceDescriptorSet);
+
             commandBuffer->bindIndexBuffer(cubeIndices,slag::Buffer::IndexSize::UINT16,0);
 
 
@@ -301,6 +321,8 @@ int main()
             queue->submit(&submissionBatch,1,frame);
         }
     }
+    delete resourceDescriptorMemory;
+    delete samplerDescriptorMemory;
     delete swapChain;
     delete texture;
     delete defaultSampler;

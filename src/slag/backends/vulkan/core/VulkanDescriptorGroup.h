@@ -4,8 +4,6 @@
 #include <slag/Slag.h>
 #include <vulkan/vulkan.h>
 
-#include "VulkanDescriptorIndex.h"
-
 namespace slag
 {
     namespace vulkan
@@ -36,37 +34,26 @@ namespace slag
             VulkanDescriptorGroup(VulkanDescriptorGroup&& from);
             VulkanDescriptorGroup& operator=(VulkanDescriptorGroup&& from);
 
-            ///How many descriptors are in this group
+            ////How many (non-sampler) descriptors are in this group
             virtual uint32_t descriptorCount()override;
-            /**
-             * Get the name of a descriptor
-             * @param index number between 0 and descriptorCount
-             * @return
-             */
-            virtual std::string descriptorName(uint32_t index)override;
-            /**
-             * Get the index of a descriptor with a name
-             * @param descriptorName Name of the descriptor to get the index for
-             * @return
-             */
-            virtual DescriptorIndex* indexOf(const std::string& descriptorName)override;
-            ///Get descriptor at the given index
-            virtual Descriptor* descriptor(DescriptorIndex* index)override;
-            ///Get descriptor with the given name
-            virtual Descriptor* descriptor(const std::string& descriptorName)override;
+            ///Retrieve a descriptor with a given index
+            virtual const Descriptor& descriptor(uint32_t index)override;
+            ///Get the byte offset from the beginning of a descriptor set for the descriptor at the given index
+            virtual uint64_t descriptorByteOffset(uint32_t index)override;
+            ///The size in a descriptor buffer this group will require (Note, the descriptors must still be aligned via GraphicsCard::descriptorBufferOffsetAlignment())
+            virtual uint64_t descriptorBufferSize()override;
             ///If this group is swap compatible with another group
             virtual bool compatible(DescriptorGroup* with)override;
             virtual VkDescriptorSetLayout layout()const;
             Shape& groupShape();
-            Descriptor& descriptorAtBinding(uint32_t binding);
         private:
             void copy(const VulkanDescriptorGroup& from);
             void move(VulkanDescriptorGroup& from);
             VkDescriptorSetLayout _layout = nullptr;
-            std::vector<Descriptor> _bindings;
-            std::vector<std::string> _descriptorNames;
-            std::unordered_map<std::string, VulkanDescriptorIndex> _descriptorIndexMap;
+            std::vector<Descriptor> _descriptors;
+            std::vector<uint64_t> _descriptorByteOffsets;
             Shape _groupShape;
+            VkDeviceSize _descriptorBufferSize = 0;
 
         };
     } // vulkan

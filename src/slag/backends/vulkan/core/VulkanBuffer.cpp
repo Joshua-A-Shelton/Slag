@@ -105,6 +105,15 @@ namespace slag
             return _memoryLocation;
         }
 
+        VkDeviceAddress VulkanBuffer::deviceAddress() const
+        {
+            VkBufferDeviceAddressInfo deviceAdressInfo{};
+            deviceAdressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+            deviceAdressInfo.buffer = _buffer;
+            uint64_t address = vkGetBufferDeviceAddress(VulkanGraphicsCard::selected()->device(), &deviceAdressInfo);
+            return address;
+        }
+
         VkBuffer VulkanBuffer::vulkanHandle() const
         {
             return _buffer;

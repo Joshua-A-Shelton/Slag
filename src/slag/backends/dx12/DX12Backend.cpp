@@ -6,7 +6,6 @@
 
 #include "core/DX12Buffer.h"
 #include "core/DX12CommandBuffer.h"
-#include "core/DX12DescriptorPool.h"
 #include "core/DX12GraphicsCard.h"
 #include "core/DX12Sampler.h"
 #include "core/DX12Semaphore.h"
@@ -481,69 +480,6 @@ namespace slag
             throw std::runtime_error("DX12Backend::newShaderPipeline() not implemented");
         }
 
-        DescriptorPool* DX12Backend::newDescriptorPool()
-        {
-            return new DX12DescriptorPool(1000000);
-        }
-
-        DescriptorPool* DX12Backend::newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)
-        {
-            uint64_t poolSize = 0;
-
-            poolSize += pageInfo.samplers;
-            poolSize += pageInfo. sampledTextures;
-            poolSize += pageInfo. storageTextures;
-            poolSize += pageInfo. uniformTexelBuffers;
-            poolSize += pageInfo. storageTexelBuffers;
-            poolSize += pageInfo. uniformBuffers;
-            poolSize += pageInfo. storageBuffers;
-            poolSize += pageInfo. inputAttachments;
-            poolSize += pageInfo. accelerationStructures;
-            poolSize += pageInfo. descriptorBundles;
-            return new DX12DescriptorPool(poolSize);
-        }
-
-        void DX12Backend::setDescriptorBundleSampler(DescriptorBundle& descriptor, DescriptorIndex* index,
-            uint32_t arrayElement, Sampler* sampler)
-        {
-            throw std::runtime_error("DX12Backend::setDescriptorBundleSampler() not implemented");
-        }
-
-        void DX12Backend::setDescriptorBundleSampledTexture(DescriptorBundle& descriptor, DescriptorIndex* index,
-            uint32_t arrayElement, Texture* texture)
-        {
-            throw std::runtime_error("DX12Backend::setDescriptorBundleSampledTexture() not implemented");
-        }
-
-        void DX12Backend::setDescriptorBundleStorageTexture(DescriptorBundle& descriptor, DescriptorIndex* index,
-            uint32_t arrayElement, Texture* texture)
-        {
-            throw std::runtime_error("DX12Backend::setDescriptorBundleStorageTexture() not implemented");
-        }
-
-        void DX12Backend::setDescriptorBundleUniformTexelBuffer(DescriptorBundle& descriptor, DescriptorIndex* index,uint32_t arrayElement, BufferView* bufferView)
-        {
-            throw std::runtime_error("DX12Backend::setDescriptorBundleUniformTexelBuffer() not implemented");
-        }
-
-
-        void DX12Backend::setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, DescriptorIndex* index,uint32_t arrayElement, BufferView* bufferView)
-        {
-            throw std::runtime_error("DX12Backend::setDescriptorBundleStorageTexelBuffer() not implemented");
-        }
-
-        void DX12Backend::setDescriptorBundleUniformBuffer(DescriptorBundle& descriptor, DescriptorIndex* index,
-                                                           uint32_t arrayElement, Buffer* buffer, uint64_t offset, uint64_t length)
-        {
-            throw std::runtime_error("DX12Backend::setDescriptorBundleUniformBuffer() not implemented");
-        }
-
-        void DX12Backend::setDescriptorBundleStorageBuffer(DescriptorBundle& descriptor, DescriptorIndex* index,
-                                                           uint32_t arrayElement, Buffer* buffer, uint64_t offset, uint64_t length)
-        {
-            throw std::runtime_error("DX12Backend::setDescriptorBundleStorageBuffer() not implemented");
-        }
-
         PixelFormatProperties DX12Backend::pixelFormatProperties(Pixels::Format format)
         {
             PixelFormatProperties properties{};
@@ -612,6 +548,14 @@ namespace slag
             return properties;
         }
 
+        ResourceDescriptorMemory* DX12Backend::newResourceDescriptorMemory(uint64_t descriptorCount)
+        {
+            throw std::runtime_error("DX12Backend::newResourceDescriptorMemory() not implemented");
+        }
 
+        SamplerDescriptorMemory* DX12Backend::newSamplerDescriptorMemory(uint64_t descriptorCount)
+        {
+            throw std::runtime_error("DX12Backend::newSamplerDescriptorMemory() not implemented");
+        }
     } // dx12
 } // slag

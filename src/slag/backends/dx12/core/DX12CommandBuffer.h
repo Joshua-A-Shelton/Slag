@@ -15,8 +15,7 @@ namespace slag
             DX12CommandBuffer& operator=(DX12CommandBuffer&)=delete;
             DX12CommandBuffer(DX12CommandBuffer&& from);
             DX12CommandBuffer& operator=(DX12CommandBuffer&& from);
-
-            virtual void bindDescriptorPool(DescriptorPool* pool)override;
+            virtual void bindDescriptorMemory(ResourceDescriptorMemory* resourceDescriptorMemory,SamplerDescriptorMemory* samplerDescriptorMemory)override;
         private:
             void move(DX12CommandBuffer& from);
         };

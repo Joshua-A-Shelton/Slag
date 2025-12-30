@@ -33,6 +33,8 @@ namespace slag
             virtual void update(uint64_t offset, void* data, uint64_t dataLength,SemaphoreValue* wait, uint32_t waitCount,SemaphoreValue* signal, uint32_t signalCount)override;
             virtual void* cpuHandle()override;
 
+            VkDeviceAddress deviceAddress() const;
+
             VkBuffer vulkanHandle() const;
             VulkanBufferMoveData moveMemory(VmaAllocation tempAllocation, CommandBuffer* copyDataBuffer);
         protected:

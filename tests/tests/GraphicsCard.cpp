@@ -32,6 +32,11 @@ TEST(GraphicsCard, StorageBufferOffsetAlignment)
     GTEST_ASSERT_GE(slagGraphicsCard()->storageBufferOffsetAlignment(),0);
 }
 
+TEST(GraphicsCard, DescriptorBufferOffsetAlignment)
+{
+    GTEST_ASSERT_GE(slagGraphicsCard()->descriptorBufferOffsetAlignment(),0);
+}
+
 TEST(GraphicsCard, DefragmentMemory)
 {
     auto tex1 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,50,50,1,3,5));

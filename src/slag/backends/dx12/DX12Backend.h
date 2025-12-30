@@ -62,19 +62,11 @@ namespace slag
             virtual std::vector<ShaderCode::CodeLanguage> acceptedLanuages()override;
             virtual ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)override;
             virtual ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader, std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)override;
-            //descriptor pools
-            virtual DescriptorPool* newDescriptorPool()override;
-            virtual DescriptorPool* newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)override;
-            //descriptor bundles
-            virtual void setDescriptorBundleSampler(DescriptorBundle& descriptor, DescriptorIndex* index,uint32_t arrayElement, Sampler* sampler)override;
-            virtual void setDescriptorBundleSampledTexture(DescriptorBundle& descriptor, DescriptorIndex* index,uint32_t arrayElement, Texture* texture)override;
-            virtual void setDescriptorBundleStorageTexture(DescriptorBundle& descriptor, DescriptorIndex* index,uint32_t arrayElement, Texture* texture)override;
-            virtual void setDescriptorBundleUniformTexelBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, BufferView* bufferView)override;
-            virtual void setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, BufferView* bufferView)override;
-            virtual void setDescriptorBundleUniformBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Buffer* buffer, uint64_t offset, uint64_t length)override;
-            virtual void setDescriptorBundleStorageBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Buffer* buffer, uint64_t offset, uint64_t length)override;
             //Pixel Properties
             virtual PixelFormatProperties pixelFormatProperties(Pixels::Format format)override;
+            //Descriptor Memory
+            virtual ResourceDescriptorMemory* newResourceDescriptorMemory(uint64_t descriptorCount)override;
+            virtual SamplerDescriptorMemory* newSamplerDescriptorMemory(uint64_t descriptorCount)override;
 
             void(* _dx12DebugHandler)(const std::string& message, SlagDebugLevel debugLevel, int32_t messageID)=nullptr;
 

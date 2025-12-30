@@ -65,8 +65,6 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/backends/vulkan/core/VulkanQueue.h
             src/slag/backends/vulkan/core/VulkanSemaphore.cpp
             src/slag/backends/vulkan/core/VulkanSemaphore.h
-            src/slag/backends/vulkan/core/VulkanDescriptorPool.cpp
-            src/slag/backends/vulkan/core/VulkanDescriptorPool.h
             src/slag/backends/vulkan/core/VulkanShaderPipeline.cpp
             src/slag/backends/vulkan/core/VulkanShaderPipeline.h
             src/slag/backends/vulkan/core/VulkanDescriptorGroup.cpp
@@ -81,7 +79,13 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/backends/vulkan/core/VulkanFrame.h
             src/slag/backends/vulkan/core/VulkanBufferView.cpp
             src/slag/backends/vulkan/core/VulkanBufferView.h
-            src/slag/backends/vulkan/core/VulkanDescriptorIndex.h)
+            src/slag/backends/vulkan/core/VulkanResourceDescriptorMemory.cpp
+            src/slag/backends/vulkan/core/VulkanResourceDescriptorMemory.h
+            src/slag/backends/vulkan/core/VulkanSamplerDescriptorMemory.cpp
+            src/slag/backends/vulkan/core/VulkanSamplerDescriptorMemory.h
+            src/slag/backends/vulkan/VulkanExtensions.cpp
+            src/slag/backends/vulkan/VulkanExtensions.h
+    )
 endif()
 if(SLAG_DX12_BACKEND)
     add_definitions(-DSLAG_DX12_BACKEND=1)
@@ -102,8 +106,6 @@ if(SLAG_DX12_BACKEND)
             src/slag/backends/dx12/core/DX12CommandBuffer.h
             src/slag/backends/dx12/core/DX12Semaphore.cpp
             src/slag/backends/dx12/core/DX12Semaphore.h
-            src/slag/backends/dx12/core/DX12DescriptorPool.cpp
-            src/slag/backends/dx12/core/DX12DescriptorPool.h
             src/slag/backends/dx12/core/DX12Texture.cpp
             src/slag/backends/dx12/core/DX12Texture.h
             src/slag/backends/dx12/core/DX12ShaderPipeline.cpp
@@ -165,21 +167,21 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/Color.h
         src/slag/core/Operations.h
         src/slag/core/Attachment.h
-        src/slag/core/DescriptorBundle.cpp
-        src/slag/core/DescriptorBundle.h
         src/slag/core/ShaderPipeline.cpp
         src/slag/core/ShaderPipeline.h
         src/slag/core/DescriptorGroup.h
         src/slag/core/Descriptor.cpp
         src/slag/core/Descriptor.h
         src/slag/core/GraphicsTypes.h
-        src/slag/core/DescriptorPool.cpp
-        src/slag/core/DescriptorPool.h
         src/slag/core/VertexDescription.cpp
         src/slag/core/VertexDescription.h
         src/slag/core/BufferView.cpp
         src/slag/core/BufferView.h
         src/slag/core/PixelFormatProperties.h
+        src/slag/core/ResourceDescriptorMemory.cpp
+        src/slag/core/ResourceDescriptorMemory.h
+        src/slag/core/SamplerDescriptorMemory.cpp
+        src/slag/core/SamplerDescriptorMemory.h
 
 )
 #link spirv if we need to

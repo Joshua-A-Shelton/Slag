@@ -1,6 +1,10 @@
 #include "VulkanCommandBuffer.h"
 
 #include "VulkanGraphicsCard.h"
+#include "VulkanResourceDescriptorMemory.h"
+#include "VulkanSamplerDescriptorMemory.h"
+#include "slag/backends/vulkan/VulkanBackend.h"
+#include "slag/backends/vulkan/VulkanExtensions.h"
 #include "slag/utilities/SLAG_ASSERT.h"
 
 namespace slag
@@ -57,11 +61,24 @@ namespace slag
             }
         }
 
-        void VulkanCommandBuffer::bindDescriptorPool(DescriptorPool* pool)
+        void VulkanCommandBuffer::bindDescriptorMemory(ResourceDescriptorMemory* resourceDescriptorMemory,SamplerDescriptorMemory* samplerDescriptorMemory)
         {
-#ifdef SLAG_DEBUG
-            _boundDescriptorPool = pool;
-#endif
+            assert(resourceDescriptorMemory != nullptr);
+            assert(samplerDescriptorMemory != nullptr);
+            VulkanResourceDescriptorMemory* vulkanResourceMemory = static_cast<VulkanResourceDescriptorMemory*>(resourceDescriptorMemory);
+            VulkanSamplerDescriptorMemory* vulkanSamplerMemory = static_cast<VulkanSamplerDescriptorMemory*>(samplerDescriptorMemory);
+
+            VkDescriptorBufferBindingInfoEXT bindingInfos[2];
+            bindingInfos[0].sType = VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT;
+            bindingInfos[0].pNext = nullptr;
+            bindingInfos[0].address = vulkanResourceMemory->deviceAddress();
+            bindingInfos[0].usage = VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT;
+            bindingInfos[1].sType = VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT;
+            bindingInfos[1].pNext = nullptr;
+            bindingInfos[1].address = vulkanSamplerMemory->deviceAddress();
+            bindingInfos[1].usage = VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT;
+
+            slag_vkCmdBindDescriptorBuffersEXT(_commandBuffer,2,bindingInfos);
         }
     } // vulkan
 } // slag

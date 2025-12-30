@@ -39,6 +39,18 @@ namespace slag
             virtual uint64_t uniformBufferOffsetAlignment()override;
             ///Alignment requirement when binding storage buffer memory, (eg DescriptorBundle::setStorageBuffer(uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t *offset*, size_t length) and similar calls with an offset must be a multiple of this number)
             virtual uint64_t storageBufferOffsetAlignment()override;
+            ///Alignment requirement when binding descriptor buffer memory
+            virtual uint64_t descriptorBufferOffsetAlignment()override;
+
+            uint64_t maxResourceDescriptorSize()const;
+            uint64_t samplerDescriptorSize()const;
+            uint64_t sampledTextureDescriptorSize()const;
+            uint64_t storageTextureDescriptorSize()const;
+            uint64_t uniformTexelBufferDescriptorSize()const;
+            uint64_t storageTexelBufferDescriptorSize()const;
+            uint64_t uniformBufferDescriptorSize()const;
+            uint64_t storageBufferDescriptorSize()const;
+            uint64_t accelerationStructureDescriptorSize()const;
 
 
             ///Defragment video memory, blocks until finished
@@ -58,6 +70,9 @@ namespace slag
             VkDevice _device=nullptr;
             VmaAllocator _allocator = nullptr;
             VkPhysicalDeviceProperties _properties;
+            VkPhysicalDeviceProperties2 _deviceProperties2;
+            VkPhysicalDeviceDescriptorBufferPropertiesEXT _descriptorBufferProperties;
+            uint64_t _resourceDescriptorMaxSize=0;
             uint32_t _graphicsQueueFamily=0;
             uint32_t _computeQueueFamily=0;
             uint32_t _transferQueueFamily=0;
@@ -68,6 +83,7 @@ namespace slag
             bool _seperateCompute=true;
             bool _seperateTransfer=true;
             bool _seperatePresent=true;
+
 
 
         };

@@ -4,9 +4,11 @@
 #include "core/VulkanBuffer.h"
 #include "core/VulkanBufferView.h"
 #include "core/VulkanCommandBuffer.h"
-#include "core/VulkanDescriptorPool.h"
+#include "VulkanExtensions.h"
 #include "core/VulkanGraphicsCard.h"
+#include "core/VulkanResourceDescriptorMemory.h"
 #include "core/VulkanSampler.h"
+#include "core/VulkanSamplerDescriptorMemory.h"
 #include "core/VulkanSemaphore.h"
 #include "core/VulkanShaderPipeline.h"
 #include "core/VulkanSwapChain.h"
@@ -124,7 +126,7 @@ namespace slag
         VkBufferUsageFlags VulkanBackend::vulkanizedBufferUsage(Buffer::UsageFlags usageFlags)
         {
             //all buffers should support copy operations
-            VkBufferUsageFlags flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            VkBufferUsageFlags flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT;
             if ((bool)(usageFlags & Buffer::UsageFlags::VERTEX_BUFFER))
             {
                 flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
@@ -488,6 +490,7 @@ namespace slag
             }
             _debugMessenger = inst->debug_messenger;
             _instance = inst.value();
+            VulkanExtensions::init(_instance);
             _isValid = true;
         }
 
@@ -532,8 +535,15 @@ namespace slag
             features1_2.shaderInt8 = true;
             features1_2.shaderFloat16 = true;
 
+            VkPhysicalDeviceDescriptorBufferFeaturesEXT descriptorBufferProperties{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT};
+            descriptorBufferProperties.descriptorBuffer = true;
+            descriptorBufferProperties.descriptorBufferCaptureReplay = true;
+            descriptorBufferProperties.descriptorBufferImageLayoutIgnored = true;
+            descriptorBufferProperties.descriptorBufferPushDescriptors = true;
+
             VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcrFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES};
             ycbcrFeatures.samplerYcbcrConversion = true;
+            ycbcrFeatures.pNext = &descriptorBufferProperties;
 
 
             VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR shaderDerivativesFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_KHR};
@@ -571,6 +581,7 @@ namespace slag
                                             .add_required_extension("VK_EXT_swapchain_maintenance1")
                                             .add_required_extension("VK_EXT_custom_border_color")
                                             .add_required_extension("VK_KHR_compute_shader_derivatives")
+                                            .add_required_extension("VK_EXT_descriptor_buffer")
                                             .defer_surface_initialization()
                                             .select_devices();
 
@@ -669,162 +680,14 @@ namespace slag
             return new VulkanShaderPipeline(computeShader, rename, renameData);
         }
 
-        DescriptorPool* VulkanBackend::newDescriptorPool()
+        ResourceDescriptorMemory* VulkanBackend::newResourceDescriptorMemory(uint64_t descriptorCount)
         {
-            return new VulkanDescriptorPool(DescriptorPoolPageInfo{});
+            return new VulkanResourceDescriptorMemory(descriptorCount);
         }
 
-        DescriptorPool* VulkanBackend::newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)
+        SamplerDescriptorMemory* VulkanBackend::newSamplerDescriptorMemory(uint64_t descriptorCount)
         {
-            return new VulkanDescriptorPool(pageInfo);
-        }
-
-        void VulkanBackend::setDescriptorBundleSampler(DescriptorBundle& descriptor, DescriptorIndex* index,uint32_t arrayElement, Sampler* sampler)
-        {
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
-            auto vIndex = static_cast<VulkanDescriptorIndex*>(index);
-            auto s = static_cast<VulkanSampler*>(sampler);
-
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.sampler = s->vulkanHandle();
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet = descriptorSet;
-            write.dstBinding = vIndex->binding;
-            write.dstArrayElement = arrayElement;
-            write.descriptorCount = 1;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-            write.pImageInfo = &imageInfo;
-
-            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
-        }
-        void VulkanBackend::setDescriptorBundleSampledTexture(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Texture* texture)
-        {
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
-            auto vIndex = static_cast<VulkanDescriptorIndex*>(index);
-            auto tex = static_cast<VulkanTexture*>(texture);
-
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-            imageInfo.imageView = tex->vulkanViewHandle();
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet = descriptorSet;
-            write.dstBinding = vIndex->binding;
-            write.dstArrayElement = arrayElement;
-            write.descriptorCount = 1;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-            write.pImageInfo = &imageInfo;
-
-            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
-        }
-
-        void VulkanBackend::setDescriptorBundleStorageTexture(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Texture* texture)
-        {
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
-            auto vIndex = static_cast<VulkanDescriptorIndex*>(index);
-            auto tex = static_cast<VulkanTexture*>(texture);
-
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-            imageInfo.imageView = tex->vulkanViewHandle();
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet = descriptorSet;
-            write.dstBinding = vIndex->binding;
-            write.dstArrayElement = arrayElement;
-            write.descriptorCount = 1;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-            write.pImageInfo = &imageInfo;
-
-            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
-        }
-        void VulkanBackend::setDescriptorBundleUniformTexelBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, BufferView* bufferView)
-        {
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
-            auto vIndex = static_cast<VulkanDescriptorIndex*>(index);
-            auto buf = static_cast<VulkanBufferView*>(bufferView);
-
-            auto handle = buf->vulkanHandle();
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet = descriptorSet;
-            write.dstBinding = vIndex->binding;
-            write.dstArrayElement = arrayElement;
-            write.descriptorCount = 1;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-            write.pTexelBufferView = &handle;
-
-            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
-
-        }
-        void VulkanBackend::setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, BufferView* bufferView)
-        {
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
-            auto vIndex = static_cast<VulkanDescriptorIndex*>(index);
-            auto buf = static_cast<VulkanBufferView*>(bufferView);
-
-            auto handle = buf->vulkanHandle();
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet = descriptorSet;
-            write.dstBinding = vIndex->binding;
-            write.dstArrayElement = arrayElement;
-            write.descriptorCount = 1;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
-            write.pTexelBufferView = &handle;
-
-            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
-        }
-        void VulkanBackend::setDescriptorBundleUniformBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Buffer* buffer, uint64_t offset, uint64_t length)
-        {
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
-            auto vIndex = static_cast<VulkanDescriptorIndex*>(index);
-            auto buf = static_cast<VulkanBuffer*>(buffer);
-
-            VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = buf->vulkanHandle();
-            bufferInfo.offset = offset;
-            bufferInfo.range = length;
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet = descriptorSet;
-            write.dstBinding = vIndex->binding;
-            write.dstArrayElement = arrayElement;
-            write.descriptorCount = 1;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            write.pBufferInfo = &bufferInfo;
-
-            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
-        }
-        void VulkanBackend::setDescriptorBundleStorageBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Buffer* buffer, uint64_t offset, uint64_t length)
-        {
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
-            auto vIndex = static_cast<VulkanDescriptorIndex*>(index);
-            auto buf = static_cast<VulkanBuffer*>(buffer);
-
-            VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = buf->vulkanHandle();
-            bufferInfo.offset = offset;
-            bufferInfo.range = length;
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet = descriptorSet;
-            write.dstBinding = vIndex->binding;
-            write.dstArrayElement = arrayElement;
-            write.descriptorCount = 1;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            write.pBufferInfo = &bufferInfo;
-
-            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
+            return new VulkanSamplerDescriptorMemory(descriptorCount);
         }
 
         PixelFormatProperties VulkanBackend::pixelFormatProperties(Pixels::Format format)

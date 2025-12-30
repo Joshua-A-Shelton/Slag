@@ -27,7 +27,7 @@ namespace slag
                 uint32_t actualBindings = 0;
                 for(size_t i=0; i< group.descriptorCount(); i++)
                 {
-                    auto& descriptor = group.descriptorAtBinding(i);
+                    auto& descriptor = group.descriptor(i);
                     if (descriptor.shape().type == Descriptor::Type::UNKNOWN)
                     {
                         continue;
@@ -43,6 +43,7 @@ namespace slag
                 layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
                 layoutInfo.bindingCount = actualBindings;
                 layoutInfo.pBindings = bindings.data();
+                layoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT;
 
                 auto result = vkCreateDescriptorSetLayout(VulkanGraphicsCard::selected()->device(), &layoutInfo, nullptr, &cached.layout);
                 if(result != VK_SUCCESS)

@@ -33,6 +33,8 @@ namespace slag
             virtual uint64_t uniformBufferOffsetAlignment()override;
             ///Alignment requirement when binding storage buffer memory, (eg DescriptorBundle::setStorageBuffer(uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t *offset*, size_t length) and similar calls with an offset must be a multiple of this number)
             virtual uint64_t storageBufferOffsetAlignment()override;
+            ///Alignment requirement when binding descriptor buffer memory
+            virtual uint64_t descriptorBufferOffsetAlignment()override;
 
             ///Defragment video memory, blocks until finished
             virtual void defragmentMemory(SemaphoreValue* waitFor, size_t waitForCount, SemaphoreValue* signal, size_t signalCount)override;
@@ -41,12 +43,8 @@ namespace slag
 
             static DX12GraphicsCard* selected();
             Microsoft::WRL::ComPtr<ID3D12Device2> device()const;
-            ID3D12DescriptorHeap* samplerHeap()const;
             D3D12MA::Allocator* allocator()const;
             D3D12MA::Pool* sharedMemoryPool()const;
-
-            D3D12_CPU_DESCRIPTOR_HANDLE getSamplerHandle();
-            void freeSamplerHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle);
 
         private:
             Microsoft::WRL::ComPtr<ID3D12Device2> _device = nullptr;
@@ -56,7 +54,6 @@ namespace slag
             DX12Queue* _transfer = nullptr;
             D3D12MA::Allocator* _allocator = nullptr;
             D3D12MA::Pool* _sharedMemoryPool = nullptr;
-            ID3D12DescriptorHeap* _samplerHeap = nullptr;
             int _samplerIndex = 0;
             std::queue<D3D12_CPU_DESCRIPTOR_HANDLE> _freedSamplerHandles;
             bool _validGraphicsCard = false;

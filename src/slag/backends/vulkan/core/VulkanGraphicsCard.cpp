@@ -4,6 +4,8 @@
 #include "VulkanCommandBuffer.h"
 #include "VulkanSemaphore.h"
 #include "VulkanTexture.h"
+#include "VulkanResourceDescriptorMemory.h"
+#include "VulkanSamplerDescriptorMemory.h"
 #include "../../Backend.h"
 #include "slag/backends/vulkan/VulkanBackend.h"
 
@@ -111,10 +113,46 @@ namespace slag
 
             _properties = device.physical_device.properties;
 
+            _deviceProperties2 = {.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+            _descriptorBufferProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT;
+            _descriptorBufferProperties.pNext = nullptr;
+            _deviceProperties2.pNext = &_descriptorBufferProperties;
+            vkGetPhysicalDeviceProperties2(_physicalDevice,&_deviceProperties2);
+
+            if (_descriptorBufferProperties.sampledImageDescriptorSize > _resourceDescriptorMaxSize)
+            {
+                _resourceDescriptorMaxSize = _descriptorBufferProperties.sampledImageDescriptorSize;
+            }
+            if (_descriptorBufferProperties.storageImageDescriptorSize > _resourceDescriptorMaxSize)
+            {
+                _resourceDescriptorMaxSize = _descriptorBufferProperties.storageImageDescriptorSize;
+            }
+            if (_descriptorBufferProperties.uniformTexelBufferDescriptorSize > _resourceDescriptorMaxSize)
+            {
+                _resourceDescriptorMaxSize = _descriptorBufferProperties.uniformTexelBufferDescriptorSize;
+            }
+            if (_descriptorBufferProperties.storageTexelBufferDescriptorSize > _resourceDescriptorMaxSize)
+            {
+                _resourceDescriptorMaxSize = _descriptorBufferProperties.storageTexelBufferDescriptorSize;
+            }
+            if (_descriptorBufferProperties.uniformBufferDescriptorSize > _resourceDescriptorMaxSize)
+            {
+                _resourceDescriptorMaxSize = _descriptorBufferProperties.uniformBufferDescriptorSize;
+            }
+            if (_descriptorBufferProperties.storageBufferDescriptorSize > _resourceDescriptorMaxSize)
+            {
+                _resourceDescriptorMaxSize = _descriptorBufferProperties.storageBufferDescriptorSize;
+            }
+            if (_descriptorBufferProperties.accelerationStructureDescriptorSize > _resourceDescriptorMaxSize)
+            {
+                _resourceDescriptorMaxSize = _descriptorBufferProperties.accelerationStructureDescriptorSize;
+            }
+
             VmaAllocatorCreateInfo allocatorInfo = {};
             allocatorInfo.physicalDevice = _physicalDevice;
             allocatorInfo.device = _device;
             allocatorInfo.instance = instance;
+            allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
             vmaCreateAllocator(&allocatorInfo, &_allocator);
 
         }
@@ -178,17 +216,64 @@ namespace slag
 
         uint64_t VulkanGraphicsCard::uniformBufferOffsetAlignment()
         {
-            VkPhysicalDeviceProperties2 properties{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
-            vkGetPhysicalDeviceProperties2(_physicalDevice,&properties);
-            return properties.properties.limits.minUniformBufferOffsetAlignment;
+            return _deviceProperties2.properties.limits.minUniformBufferOffsetAlignment;
         }
 
         uint64_t VulkanGraphicsCard::storageBufferOffsetAlignment()
         {
-            VkPhysicalDeviceProperties2 properties{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
-            vkGetPhysicalDeviceProperties2(_physicalDevice,&properties);
-            return properties.properties.limits.minStorageBufferOffsetAlignment;
+            return _deviceProperties2.properties.limits.minStorageBufferOffsetAlignment;
         }
+
+        uint64_t VulkanGraphicsCard::descriptorBufferOffsetAlignment()
+        {
+            return _descriptorBufferProperties.descriptorBufferOffsetAlignment;
+        }
+
+        uint64_t VulkanGraphicsCard::maxResourceDescriptorSize() const
+        {
+            return _resourceDescriptorMaxSize;
+        }
+
+        uint64_t VulkanGraphicsCard::samplerDescriptorSize() const
+        {
+            return _descriptorBufferProperties.samplerDescriptorSize;
+        }
+
+        uint64_t VulkanGraphicsCard::sampledTextureDescriptorSize() const
+        {
+            return _descriptorBufferProperties.sampledImageDescriptorSize;
+        }
+
+        uint64_t VulkanGraphicsCard::storageTextureDescriptorSize() const
+        {
+            return _descriptorBufferProperties.storageImageDescriptorSize;
+        }
+
+        uint64_t VulkanGraphicsCard::uniformTexelBufferDescriptorSize() const
+        {
+            return _descriptorBufferProperties.uniformTexelBufferDescriptorSize;
+        }
+
+        uint64_t VulkanGraphicsCard::storageTexelBufferDescriptorSize() const
+        {
+            return _descriptorBufferProperties.storageTexelBufferDescriptorSize;
+        }
+
+        uint64_t VulkanGraphicsCard::uniformBufferDescriptorSize() const
+        {
+            return _descriptorBufferProperties.uniformBufferDescriptorSize;
+        }
+
+        uint64_t VulkanGraphicsCard::storageBufferDescriptorSize() const
+        {
+            return _descriptorBufferProperties.storageBufferDescriptorSize;
+        }
+
+        uint64_t VulkanGraphicsCard::accelerationStructureDescriptorSize() const
+        {
+            return _descriptorBufferProperties.accelerationStructureDescriptorSize;
+        }
+
 
         void VulkanGraphicsCard::defragmentMemory(SemaphoreValue* waitFor, size_t waitForCount, SemaphoreValue* signal,size_t signalCount)
         {
@@ -242,10 +327,36 @@ namespace slag
                                 pass.pMoves[i].operation = VMA_DEFRAGMENTATION_MOVE_OPERATION_IGNORE;
                             }
                         }
-                        else
+                        else if (userData->memoryType == VulkanGPUMemoryReference::MemoryType::BUFFER)
                         {
                             auto buffer = userData->reference.buffer;
                             auto movedBuffer = buffer->moveMemory(pass.pMoves[i].dstTmpAllocation,&moveCB);
+                            if (movedBuffer.movedSucceded)
+                            {
+                                movedBuffers.push_back(movedBuffer);
+                            }
+                            else
+                            {
+                                pass.pMoves[i].operation = VMA_DEFRAGMENTATION_MOVE_OPERATION_IGNORE;
+                            }
+                        }
+                        else if (userData->memoryType == VulkanGPUMemoryReference::MemoryType::RESOURCE_DESCRIPTOR_MEMORY)
+                        {
+                            auto descMem = userData->reference.resourceDescriptorMemory;
+                            auto movedBuffer = descMem->moveMemory(pass.pMoves[i].dstTmpAllocation,&moveCB);
+                            if (movedBuffer.movedSucceded)
+                            {
+                                movedBuffers.push_back(movedBuffer);
+                            }
+                            else
+                            {
+                                pass.pMoves[i].operation = VMA_DEFRAGMENTATION_MOVE_OPERATION_IGNORE;
+                            }
+                        }
+                        else if (userData->memoryType == VulkanGPUMemoryReference::MemoryType::SAMPLER_DESCRIPTOR_MEMORY)
+                        {
+                            auto descMem = userData->reference.samplerDescriptorMemory;
+                            auto movedBuffer = descMem->moveMemory(pass.pMoves[i].dstTmpAllocation,&moveCB);
                             if (movedBuffer.movedSucceded)
                             {
                                 movedBuffers.push_back(movedBuffer);

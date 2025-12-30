@@ -1,6 +1,5 @@
 #include "../GraphicsAPIEnvironment.h"
 #include "slag/core/DescriptorBundle.h"
-#include "slag/core/DescriptorPool.h"
 #include <gtest/gtest.h>
 #include <slag/Slag.h>
 #include <memory>

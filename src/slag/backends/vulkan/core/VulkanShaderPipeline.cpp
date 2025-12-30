@@ -287,6 +287,7 @@ namespace slag
             pipelineInfo.subpass = 0;
             pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
             pipelineInfo.pDynamicState = &dynamicInfo;
+            pipelineInfo.flags = VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT;
 
             auto colorAttachments =std::vector<VkFormat>(colorTargetCount);
             for(int i=0; i< colorTargetCount; i++)
@@ -371,7 +372,7 @@ namespace slag
             computePipelineCreateInfo.pNext = nullptr;
             computePipelineCreateInfo.layout = _pipelineLayout;
             computePipelineCreateInfo.stage = computeStageCreateInfo;
-            computePipelineCreateInfo.flags = VK_PIPELINE_CREATE_DISPATCH_BASE;
+            computePipelineCreateInfo.flags = VK_PIPELINE_CREATE_DISPATCH_BASE | VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT;
 
             auto result = vkCreateComputePipelines(VulkanGraphicsCard::selected()->device(),VK_NULL_HANDLE,1,&computePipelineCreateInfo, nullptr, &_pipeline);
 

@@ -7,10 +7,14 @@ namespace slag
     {
         class VulkanTexture;
         class VulkanBuffer;
+        class VulkanResourceDescriptorMemory;
+        class VulkanSamplerDescriptorMemory;
         union GPUMemoryReference
         {
             VulkanTexture* texture;
             VulkanBuffer* buffer;
+            VulkanResourceDescriptorMemory* resourceDescriptorMemory;
+            VulkanSamplerDescriptorMemory* samplerDescriptorMemory;
         };
 
         struct VulkanGPUMemoryReference
@@ -18,7 +22,9 @@ namespace slag
             enum class MemoryType
             {
                 TEXTURE,
-                BUFFER
+                BUFFER,
+                RESOURCE_DESCRIPTOR_MEMORY,
+                SAMPLER_DESCRIPTOR_MEMORY,
             };
             MemoryType memoryType;
             GPUMemoryReference reference;

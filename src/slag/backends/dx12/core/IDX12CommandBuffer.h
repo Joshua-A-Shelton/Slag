@@ -292,17 +292,26 @@ namespace slag
             virtual void bindComputeShaderPipeline(ShaderPipeline* pipeline) override;
 
             /**
-             * Bind a bundle of descriptors to a slot in a graphics shader pipeline
-             * @param index Descriptor Group Index to bind to
-             * @param bundle Descriptors to bind to bound shader
-             */
-            virtual void bindGraphicsDescriptorBundle(uint32_t index, DescriptorBundle& bundle) override;
+         * Bind a bundle of descriptors to a slot in a graphics shader pipeline
+         * @param index Descriptor Group Index to bind to
+         * @param memory Which Descriptor Memory to contains the data
+         * @param offset The offset into the memory the descriptor group data begins
+         */
+            virtual void bindGraphicsDescriptorSet(uint32_t index, DescriptorGroup::DescriptorMemory memory, uint64_t offset)override;
             /**
              * Bind a bundle of descriptors to a slot in a compute shader pipeline
              * @param index Descriptor Group Index to bind to
-             * @param bundle Descriptors to bind to bound shader
+             * @param memory Which Descriptor Memory to contains the data
+             * @param offset The offset into the memory the descriptor group data begins
              */
-            virtual void bindComputeDescriptorBundle(uint32_t index, DescriptorBundle& bundle) override;
+            virtual void bindComputeDescriptorSet(uint32_t index, DescriptorGroup::DescriptorMemory memory, uint64_t offset)override;
+
+            /**
+             * Assign a small amount of arbitrary memory for a graphics shader pipeline (assume max of 128 bytes)
+             * @param offset offset into memory to begin the update for the data
+             * @param size size of the updated data
+             * @param data new information for the shader to use
+             */
 
             virtual void pushGraphicsConstants(uint32_t offset, uint32_t size, void* data)override;
             virtual void pushComputeConstants(uint32_t offset, uint32_t size, void* data)override;

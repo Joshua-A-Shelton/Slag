@@ -305,15 +305,17 @@ namespace slag
             throw std::runtime_error("IDX12CommandBuffer::bindComputeShaderPipeline(): not implemented");
         }
 
-        void IDX12CommandBuffer::bindGraphicsDescriptorBundle(uint32_t index, DescriptorBundle& bundle)
+        void IDX12CommandBuffer::bindGraphicsDescriptorSet(uint32_t index, DescriptorGroup::DescriptorMemory memory,uint64_t offset)
         {
-            throw std::runtime_error("IDX12CommandBuffer::bindGraphicsDescriptorBundle(): not implemented");
+            throw std::runtime_error("IDX12CommandBuffer::bindGraphicsDescriptorSet(): not implemented");
         }
 
-        void IDX12CommandBuffer::bindComputeDescriptorBundle(uint32_t index, DescriptorBundle& bundle)
+        void IDX12CommandBuffer::bindComputeDescriptorSet(uint32_t index, DescriptorGroup::DescriptorMemory memory,
+            uint64_t offset)
         {
-            throw std::runtime_error("IDX12CommandBuffer::bindComputeDescriptorBundle(): not implemented");
+            throw std::runtime_error("IDX12CommandBuffer::bindComputeDescriptorSet(): not implemented");
         }
+
 
         void IDX12CommandBuffer::pushGraphicsConstants(uint32_t offset, uint32_t size, void* data)
         {

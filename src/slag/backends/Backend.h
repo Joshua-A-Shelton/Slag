@@ -4,8 +4,6 @@
 #include <vector>
 #include <slag/Slag.h>
 
-#include "slag/core/DescriptorPool.h"
-
 namespace slag
 {
     class Backend
@@ -49,19 +47,11 @@ namespace slag
         virtual std::vector<ShaderCode::CodeLanguage> acceptedLanuages()=0;
         virtual ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)=0;
         virtual ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader,std::string(*rename)(const DescriptorRenameParameters&,void*), void*)=0;
-        //descriptor pools
-        virtual DescriptorPool* newDescriptorPool()=0;
-        virtual DescriptorPool* newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)=0;
-        //descriptor bundles
-        virtual void setDescriptorBundleSampler(DescriptorBundle& descriptor, DescriptorIndex* index,uint32_t arrayElement, Sampler* sampler)=0;
-        virtual void setDescriptorBundleSampledTexture(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Texture* texture)=0;
-        virtual void setDescriptorBundleStorageTexture(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Texture* texture)=0;
-        virtual void setDescriptorBundleUniformTexelBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, BufferView* bufferView)=0;
-        virtual void setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, BufferView* bufferView)=0;
-        virtual void setDescriptorBundleUniformBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Buffer* buffer, uint64_t offset, uint64_t length)=0;
-        virtual void setDescriptorBundleStorageBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Buffer* buffer, uint64_t offset, uint64_t length)=0;
         //Pixel Properties
         virtual PixelFormatProperties pixelFormatProperties(Pixels::Format format)=0;
+        //Descriptor Memory
+        virtual ResourceDescriptorMemory* newResourceDescriptorMemory(uint64_t descriptorCount)=0;
+        virtual SamplerDescriptorMemory* newSamplerDescriptorMemory(uint64_t descriptorCount)=0;
 
     };
 }
