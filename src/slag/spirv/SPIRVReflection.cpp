@@ -480,8 +480,14 @@ namespace slag
             for (auto& group : groups)
             {
                 std::vector<Descriptor> descriptors(group.second.descriptors.size());
+                auto type = group.second.descriptors[0].shape().type;
                 for (auto& kvpair : group.second.descriptors)
                 {
+                    auto againstType = kvpair.second.shape().type;
+                    if ((type == Descriptor::Type::SAMPLER && againstType != Descriptor::Type::SAMPLER) || (againstType == Descriptor::Type::SAMPLER && type != Descriptor::Type::SAMPLER))
+                    {
+                        throw std::runtime_error(std::string("Descriptor group [")+std::to_string(kvpair.first)+"] mixes sampler and non-sampler descriptors, which is not supported");
+                    }
                     if (kvpair.first >= descriptors.size())
                     {
                         descriptors.resize(kvpair.first+1);
