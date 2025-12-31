@@ -318,6 +318,9 @@ namespace slag
                 vkDestroySwapchainKHR(VulkanGraphicsCard::selected()->device(),_swapChain,nullptr);
             }
             _swapChain = chain.value();
+            //set actual width and height to what is actually is. There's some subtle resizing bug errors if we don't, because hey! Why actually resize to the new size when you can just not!
+            _width = chain->extent.width;
+            _height = chain->extent.height;
             auto images = chain->get_images().value();
             for (auto i=0; i<images.size(); i++)
             {
