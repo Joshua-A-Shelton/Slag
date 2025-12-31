@@ -86,7 +86,7 @@ namespace slag
                 vkResetFences(device,1,&imageAcquired);
 
                 result = vkAcquireNextImageKHR(device,_swapChain,UINT64_MAX,rebuiltFrame.imageAcquiredSemaphore(),nullptr,&_currentImageIndex);
-                if (result!=VK_SUCCESS)
+                if (result!=VK_SUCCESS && result!=VK_SUBOPTIMAL_KHR)
                 {
                     throw std::runtime_error("failed to acquire swap chain image");
                 }
