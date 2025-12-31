@@ -101,11 +101,6 @@ namespace slag
          * @param platformData Platform dependent windowing information
          * @param width Width in pixels of backbuffers in chain
          * @param height Height in pixels of backbuffers in chain
-         * @param presentMode Swap Operation of chain
-         * @param compositing How the images of this swapchain are blended into the native environment
-         * @param frameCount Number of backbuffers in chain
-         * @param format Texture format for backbuffers in chain
-         * @param createResourceFunction Optional function to provide extra data to each frame
          * @return 
          */
         static SwapChain* newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, const SwapChainDetails& details);
