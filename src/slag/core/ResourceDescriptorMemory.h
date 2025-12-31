@@ -15,11 +15,11 @@ namespace slag
         virtual uint64_t size()=0;
 
         /**
-         * Get the location for the next descriptor set closest to the given memory address. Some API's require descriptor sets to be aligned to a boundary, so this call is required
-         * @param memoryLocation Location in memory to check for the next aligned descriptor set location for
+         * Get the location for the next descriptor group closest to the given memory address. Some API's require descriptor sets to be aligned to a boundary, so this call is required
+         * @param memoryLocation Location in memory to check for the next aligned descriptor group location for
          * @return
          */
-        virtual uint64_t descriptorSetOffset(uint64_t memoryLocation)=0;
+        virtual uint64_t descriptorGroupOffset(uint64_t memoryLocation)=0;
         /**
          * Create a descriptor that points to given sampled texture
          * @param memoryLocation Location in the memory the new descriptor will be placed

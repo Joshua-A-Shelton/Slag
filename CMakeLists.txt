@@ -330,11 +330,10 @@ if(PROJECT_IS_TOP_LEVEL)
             tests/tests/SwapChain.cpp
             tests/tests/Buffer.cpp
             tests/tests/Texture.cpp
-            tests/tests/DescriptorPool.cpp
-            tests/tests/DescriptorBundle.cpp
             tests/DX12Environment.cpp
             tests/DX12Environment.h
             tests/tests/GraphicsCard.cpp
+            tests/tests/DescriptorMemory.cpp
     )
 
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)

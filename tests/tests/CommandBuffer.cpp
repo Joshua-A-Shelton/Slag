@@ -887,18 +887,18 @@ TEST_F(CommandBufferTest, Resolve)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthMultiSamplePipeline.get());
 
     auto globalsGroup = TexturedDepthMultiSamplePipeline->descriptorGroup(0);
-    auto globalsIndex = resourceMemory->descriptorSetOffset(0);
+    auto globalsIndex = resourceMemory->descriptorGroupOffset(0);
     resourceMemory->setUniformBuffer(globalsIndex + globalsGroup->descriptorByteOffset(0),globalsBuffer.get(),0,globalsBuffer->size());
-    commandBuffer->bindGraphicsDescriptorSet(0,DescriptorGroup::DescriptorMemory::RESOURCE,globalsIndex);
+    commandBuffer->bindGraphicsDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,globalsIndex);
     auto samplerGroup = TexturedDepthMultiSamplePipeline->descriptorGroup(1);
-    auto samplerIndex = resourceMemory->descriptorSetOffset(0);
+    auto samplerIndex = resourceMemory->descriptorGroupOffset(0);
     samplerMemory->setSampler(samplerIndex + samplerGroup->descriptorByteOffset(0),DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorSet(1,DescriptorGroup::DescriptorMemory::SAMPLER,samplerIndex);
+    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::SAMPLER,samplerIndex);
     auto objectGroup = TexturedDepthMultiSamplePipeline->descriptorGroup(2);
-    auto objectIndex = resourceMemory->descriptorSetOffset(globalsIndex+globalsGroup->descriptorBufferSize());
+    auto objectIndex = resourceMemory->descriptorGroupOffset(globalsIndex+globalsGroup->descriptorBufferSize());
     resourceMemory->setUniformBuffer(objectIndex + objectGroup->descriptorByteOffset(0),objectBuffer.get(),0,objectBuffer->size());
     resourceMemory->setSampledTexture(objectIndex + objectGroup->descriptorByteOffset(1),objectTexture.get());
-    commandBuffer->bindGraphicsDescriptorSet(2,DescriptorGroup::DescriptorMemory::RESOURCE,objectIndex);
+    commandBuffer->bindGraphicsDescriptorGroup(2,DescriptorGroup::DescriptorMemory::RESOURCE,objectIndex);
     Attachment colorAttachment{.texture = multiSampled.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&attachment,1,nullptr,slag::Rectangle{.offset = {0,0},.extent = {multiSampled->width(),multiSampled->height()}});
@@ -1019,11 +1019,11 @@ TEST_F(CommandBufferTest, SetViewport)
     std::unique_ptr<ResourceDescriptorMemory> resourceMemory = std::unique_ptr<ResourceDescriptorMemory>(ResourceDescriptorMemory::newResourceDescriptorMemory(100));
     std::unique_ptr<SamplerDescriptorMemory> samplerMemory = std::unique_ptr<SamplerDescriptorMemory>(SamplerDescriptorMemory::newSamplerDescriptorMemory(100));
 
-    auto globalsIndex = resourceMemory->descriptorSetOffset(0);
+    auto globalsIndex = resourceMemory->descriptorGroupOffset(0);
     auto globalsSet = TexturedDepthPipeline->descriptorGroup(0);
-    auto samplersIndex = samplerMemory->descriptorSetOffset(0);
+    auto samplersIndex = samplerMemory->descriptorGroupOffset(0);
     auto samplersSet = TexturedDepthPipeline->descriptorGroup(1);
-    auto instanceIndex = resourceMemory->descriptorSetOffset(globalsIndex+TexturedDepthPipeline->descriptorGroup(0)->descriptorBufferSize());
+    auto instanceIndex = resourceMemory->descriptorGroupOffset(globalsIndex+TexturedDepthPipeline->descriptorGroup(0)->descriptorBufferSize());
     auto instanceSet = TexturedDepthPipeline->descriptorGroup(2);
 
     commandBuffer->begin();
@@ -1043,12 +1043,12 @@ TEST_F(CommandBufferTest, SetViewport)
     object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     resourceMemory->setUniformBuffer(globalsIndex+globalsSet->descriptorByteOffset(0),globalsBuffer.get(),0,globalsBuffer->size());
-    commandBuffer->bindComputeDescriptorSet(0,DescriptorGroup::DescriptorMemory::RESOURCE,globalsIndex);
+    commandBuffer->bindGraphicsDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,globalsIndex);
     samplerMemory->setSampler(samplersIndex+samplersSet->descriptorByteOffset(0),DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorSet(1,DescriptorGroup::DescriptorMemory::SAMPLER,samplersIndex);
+    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::SAMPLER,samplersIndex);
     resourceMemory->setUniformBuffer(instanceIndex+instanceSet->descriptorByteOffset(0),objectBuffer.get(),0,objectBuffer->size());
     resourceMemory->setSampledTexture(instanceIndex+instanceSet->descriptorByteOffset(1),objectTexture.get());
-    commandBuffer->bindGraphicsDescriptorSet(2,DescriptorGroup::DescriptorMemory::RESOURCE,instanceIndex);
+    commandBuffer->bindGraphicsDescriptorGroup(2,DescriptorGroup::DescriptorMemory::RESOURCE,instanceIndex);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
@@ -1123,19 +1123,18 @@ TEST_F(CommandBufferTest, SetScissor)
     std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+    std::unique_ptr<ResourceDescriptorMemory> resourceMemory = std::unique_ptr<ResourceDescriptorMemory>(ResourceDescriptorMemory::newResourceDescriptorMemory(100));
+    std::unique_ptr<SamplerDescriptorMemory> samplerMemory = std::unique_ptr<SamplerDescriptorMemory>(SamplerDescriptorMemory::newSamplerDescriptorMemory(100));
 
-    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
-
-    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance");
-    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampledTexture");
-    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampler");
+    auto globalsIndex = resourceMemory->descriptorGroupOffset(0);
+    auto globalsSet = TexturedDepthPipeline->descriptorGroup(0);
+    auto samplersIndex = samplerMemory->descriptorGroupOffset(0);
+    auto samplersSet = TexturedDepthPipeline->descriptorGroup(1);
+    auto instanceIndex = resourceMemory->descriptorGroupOffset(globalsIndex+TexturedDepthPipeline->descriptorGroup(0)->descriptorBufferSize());
+    auto instanceSet = TexturedDepthPipeline->descriptorGroup(2);
 
     commandBuffer->begin();
-    descriptorPool->reset();
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
-    auto globalBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(0));
-    auto objectBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(1));
+    commandBuffer->bindDescriptorMemory(resourceMemory.get(),samplerMemory.get());
     auto globals = globalsBuffer->as<GlobalSet0Group>();
     auto proj = glm::perspective(95.0f,(float)target->width()/(float)target->height(),.01f,100.0f);
     glm::mat4 view = glm::mat4(1.0f);
@@ -1148,14 +1147,14 @@ TEST_F(CommandBufferTest, SetScissor)
     globals->projectionView = projectionView;
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    globalBundle.setUniformBuffer(globalsIndex,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    objectBundle.setUniformBuffer(instanceTransformIndex,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setSampledTexture(instanceTextureIndex,0,objectTexture.get());
-    objectBundle.setSampler(instanceSamplerIndex,0,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
+    resourceMemory->setUniformBuffer(globalsIndex+globalsSet->descriptorByteOffset(0),globalsBuffer.get(),0,globalsBuffer->size());
+    commandBuffer->bindGraphicsDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,globalsIndex);
+    samplerMemory->setSampler(samplersIndex+samplersSet->descriptorByteOffset(0),DefaultSampler.get());
+    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::SAMPLER,samplersIndex);
+    resourceMemory->setUniformBuffer(instanceIndex+instanceSet->descriptorByteOffset(0),objectBuffer.get(),0,objectBuffer->size());
+    resourceMemory->setSampledTexture(instanceIndex+instanceSet->descriptorByteOffset(1),objectTexture.get());
+    commandBuffer->bindGraphicsDescriptorGroup(2,DescriptorGroup::DescriptorMemory::RESOURCE,instanceIndex);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
@@ -1168,7 +1167,7 @@ TEST_F(CommandBufferTest, SetScissor)
     uint64_t vertexOffsets[]{0,0};
     uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
     commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
-    commandBuffer->setViewPort(0,0,target->width(),target->height(),0,1);
+    commandBuffer->setViewPort(target->width()/5,target->width()/5,target->width()/2,target->height()/2,0,1);
     commandBuffer->setScissors(slag::Rectangle{.offset = {60,60},.extent = {target->width()/4,target->height()/4}});
     commandBuffer->draw(3,1,0,0);
 
@@ -1254,23 +1253,24 @@ TEST_F(CommandBufferTest, PushGraphicsConstants)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
     auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     auto renderTarget = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,50,50,1,1,1));
-    auto descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+    std::unique_ptr<ResourceDescriptorMemory> resourceMemory = std::unique_ptr<ResourceDescriptorMemory>(ResourceDescriptorMemory::newResourceDescriptorMemory(100));
+    std::unique_ptr<SamplerDescriptorMemory> samplerMemory = std::unique_ptr<SamplerDescriptorMemory>(SamplerDescriptorMemory::newSamplerDescriptorMemory(100));
     auto uniformBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(glm::mat4),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
     auto uniformPtr = uniformBuffer->as<glm::mat4>();
-    auto uniformIndex = pipeline->descriptorGroup(0)->indexOf("globals");
+    auto uniformIndex = pipeline->descriptorGroup(0)->descriptorByteOffset(0);
     auto targetBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(renderTarget->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
 
     commandBuffer->begin();
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
+    commandBuffer->bindDescriptorMemory(resourceMemory.get(),samplerMemory.get());
 
     commandBuffer->bindGraphicsShaderPipeline(pipeline.get());
     Attachment colorAttachment{.texture = renderTarget.get(),.autoClear = true,.clearValue = {.color = {.floats = {.2,.2,.2,1.0}}}};
     commandBuffer->beginRendering(&colorAttachment,1,nullptr,{.offset = {0,0},.extent = {renderTarget->width(),renderTarget->height()}});
-    auto bundle = descriptorPool->makeBundle(pipeline->descriptorGroup(0));
+
     glm::mat4 matrix(1);// = glm::perspective(95.0f,(float)renderTarget->width()/(float)renderTarget->height(),.01f,100.0f);
     *uniformPtr = matrix;
-    bundle.setUniformBuffer(uniformIndex,0,uniformBuffer.get(),0,uniformBuffer->size());
-    commandBuffer->bindGraphicsDescriptorBundle(0,bundle);
+    resourceMemory->setUniformBuffer(uniformIndex, uniformBuffer.get(),0,uniformBuffer->size());
+    commandBuffer->bindGraphicsDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,0);
     struct pushConstants
     {
         glm::vec2 position = {0,0};
@@ -1375,18 +1375,18 @@ TEST_F(CommandBufferTest, PushComputeConstants)
         .stage = ShaderStageFlags::COMPUTE,
     };
     auto pipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(computeFile);
-    auto textureIndex = pipeline->descriptorGroup(0)->indexOf("target");
+    auto textureIndex = pipeline->descriptorGroup(0)->descriptorByteOffset(0);
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::COMPUTE));
-    auto descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+    std::unique_ptr<ResourceDescriptorMemory> resourceMemory = std::unique_ptr<ResourceDescriptorMemory>(ResourceDescriptorMemory::newResourceDescriptorMemory(100));
+    std::unique_ptr<SamplerDescriptorMemory> samplerMemory = std::unique_ptr<SamplerDescriptorMemory>(SamplerDescriptorMemory::newSamplerDescriptorMemory(100));
     auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::STORAGE,256,256,1,1,1));
     auto buffer = std::unique_ptr<Buffer>(Buffer::newBuffer(texture->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
     auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     commandBuffer->begin();
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
+    commandBuffer->bindDescriptorMemory(resourceMemory.get(),samplerMemory.get());
     commandBuffer->bindComputeShaderPipeline(pipeline.get());
-    auto bundle = descriptorPool->makeBundle(pipeline->descriptorGroup(0));
-    bundle.setStorageTexture(textureIndex,0,texture.get());
-    commandBuffer->bindComputeDescriptorBundle(0,bundle);
+    resourceMemory->setStorageTexture(textureIndex,texture.get());
+    commandBuffer->bindComputeDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,0);
     glm::vec4 color{1.0f,.1f,.1f,1.0f};
     commandBuffer->pushComputeConstants(0,sizeof(color),&color);
     commandBuffer->dispatch(texture->width()/pipeline->xComputeThreads(),texture->height()/pipeline->yComputeThreads(),1);
@@ -1445,19 +1445,20 @@ TEST_F(CommandBufferTest, Draw)
     std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+    std::unique_ptr<ResourceDescriptorMemory> resourceMemory = std::unique_ptr<ResourceDescriptorMemory>(ResourceDescriptorMemory::newResourceDescriptorMemory(100));
+    std::unique_ptr<SamplerDescriptorMemory> samplerMemory = std::unique_ptr<SamplerDescriptorMemory>(SamplerDescriptorMemory::newSamplerDescriptorMemory(100));
 
-    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
+    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->descriptorByteOffset(0);
 
-    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance");
-    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampledTexture");
-    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampler");
+    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->descriptorByteOffset(0);
+
+    auto instanceIndex = resourceMemory->descriptorGroupOffset(TexturedDepthPipeline->descriptorGroup(0)->descriptorBufferSize());
+    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(2)->descriptorByteOffset(0)+instanceIndex;
+    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(2)->descriptorByteOffset(1)+instanceIndex;
+
 
     commandBuffer->begin();
-    descriptorPool->reset();
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
-    auto globalBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(0));
-    auto objectBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(1));
+    commandBuffer->bindDescriptorMemory(resourceMemory.get(),samplerMemory.get());
     auto globals = globalsBuffer->as<GlobalSet0Group>();
     auto proj = glm::perspective(95.0f,(float)target->width()/(float)target->height(),.01f,100.0f);
     glm::mat4 view = glm::mat4(1.0f);
@@ -1470,14 +1471,14 @@ TEST_F(CommandBufferTest, Draw)
     globals->projectionView = projectionView;
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    globalBundle.setUniformBuffer(globalsIndex,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
+    resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),0,globalsBuffer->size());
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    objectBundle.setUniformBuffer(instanceTransformIndex,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setSampledTexture(instanceTextureIndex,0,objectTexture.get());
-    objectBundle.setSampler(instanceSamplerIndex,0,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
+    commandBuffer->bindGraphicsDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,0);
+    samplerMemory->setSampler(instanceSamplerIndex,DefaultSampler.get());
+    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::RESOURCE,0);
+    resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),0,objectBuffer->size());
+    resourceMemory->setSampledTexture(instanceTextureIndex,objectTexture.get());
+    commandBuffer->bindGraphicsDescriptorGroup(2,DescriptorGroup::DescriptorMemory::RESOURCE,instanceIndex);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
@@ -1552,19 +1553,20 @@ TEST_F(CommandBufferTest, DrawIndexed)
     std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+    std::unique_ptr<ResourceDescriptorMemory> resourceMemory = std::unique_ptr<ResourceDescriptorMemory>(ResourceDescriptorMemory::newResourceDescriptorMemory(100));
+    std::unique_ptr<SamplerDescriptorMemory> samplerMemory = std::unique_ptr<SamplerDescriptorMemory>(SamplerDescriptorMemory::newSamplerDescriptorMemory(100));
 
-    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
+    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->descriptorByteOffset(0);
 
-    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance");
-    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampledTexture");
-    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampler");
+    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->descriptorByteOffset(0);
+
+    auto instanceIndex = resourceMemory->descriptorGroupOffset(TexturedDepthPipeline->descriptorGroup(0)->descriptorBufferSize());
+    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(2)->descriptorByteOffset(0)+instanceIndex;
+    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(2)->descriptorByteOffset(1)+instanceIndex;
+
 
     commandBuffer->begin();
-    descriptorPool->reset();
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
-    auto globalBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(0));
-    auto objectBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(1));
+    commandBuffer->bindDescriptorMemory(resourceMemory.get(),samplerMemory.get());
     auto globals = globalsBuffer->as<GlobalSet0Group>();
     auto proj = glm::perspective(95.0f,(float)target->width()/(float)target->height(),.01f,100.0f);
     glm::mat4 view = glm::mat4(1.0f);
@@ -1577,14 +1579,14 @@ TEST_F(CommandBufferTest, DrawIndexed)
     globals->projectionView = projectionView;
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    globalBundle.setUniformBuffer(globalsIndex,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
+    resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),0,globalsBuffer->size());
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    objectBundle.setUniformBuffer(instanceTransformIndex,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setSampledTexture(instanceTextureIndex,0,objectTexture.get());
-    objectBundle.setSampler(instanceSamplerIndex,0,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
+    commandBuffer->bindGraphicsDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,0);
+    samplerMemory->setSampler(instanceSamplerIndex,DefaultSampler.get());
+    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::RESOURCE,0);
+    resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),0,objectBuffer->size());
+    resourceMemory->setSampledTexture(instanceTextureIndex,objectTexture.get());
+    commandBuffer->bindGraphicsDescriptorGroup(2,DescriptorGroup::DescriptorMemory::RESOURCE,instanceIndex);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
@@ -1656,19 +1658,20 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
     std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+    std::unique_ptr<ResourceDescriptorMemory> resourceMemory = std::unique_ptr<ResourceDescriptorMemory>(ResourceDescriptorMemory::newResourceDescriptorMemory(100));
+    std::unique_ptr<SamplerDescriptorMemory> samplerMemory = std::unique_ptr<SamplerDescriptorMemory>(SamplerDescriptorMemory::newSamplerDescriptorMemory(100));
 
-    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
+    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->descriptorByteOffset(0);
 
-    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance");
-    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampledTexture");
-    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampler");
+    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->descriptorByteOffset(0);
+
+    auto instanceIndex = resourceMemory->descriptorGroupOffset(TexturedDepthPipeline->descriptorGroup(0)->descriptorBufferSize());
+    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(2)->descriptorByteOffset(0)+instanceIndex;
+    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(2)->descriptorByteOffset(1)+instanceIndex;
+
 
     commandBuffer->begin();
-    descriptorPool->reset();
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
-    auto globalBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(0));
-    auto objectBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(1));
+    commandBuffer->bindDescriptorMemory(resourceMemory.get(),samplerMemory.get());
     auto globals = globalsBuffer->as<GlobalSet0Group>();
     auto proj = glm::perspective(95.0f,(float)target->width()/(float)target->height(),.01f,100.0f);
     glm::mat4 view = glm::mat4(1.0f);
@@ -1681,14 +1684,14 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
     globals->projectionView = projectionView;
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    globalBundle.setUniformBuffer(globalsIndex,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
+    resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),0,globalsBuffer->size());
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    objectBundle.setUniformBuffer(instanceTransformIndex,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setSampledTexture(instanceTextureIndex,0,objectTexture.get());
-    objectBundle.setSampler(instanceSamplerIndex,0,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
+    commandBuffer->bindGraphicsDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,0);
+    samplerMemory->setSampler(instanceSamplerIndex,DefaultSampler.get());
+    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::RESOURCE,0);
+    resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),0,objectBuffer->size());
+    resourceMemory->setSampledTexture(instanceTextureIndex,objectTexture.get());
+    commandBuffer->bindGraphicsDescriptorGroup(2,DescriptorGroup::DescriptorMemory::RESOURCE,instanceIndex);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
@@ -1768,19 +1771,20 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
     std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+    std::unique_ptr<ResourceDescriptorMemory> resourceMemory = std::unique_ptr<ResourceDescriptorMemory>(ResourceDescriptorMemory::newResourceDescriptorMemory(100));
+    std::unique_ptr<SamplerDescriptorMemory> samplerMemory = std::unique_ptr<SamplerDescriptorMemory>(SamplerDescriptorMemory::newSamplerDescriptorMemory(100));
 
-    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
+    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->descriptorByteOffset(0);
 
-    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance");
-    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampledTexture");
-    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampler");
+    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->descriptorByteOffset(0);
+
+    auto instanceIndex = resourceMemory->descriptorGroupOffset(TexturedDepthPipeline->descriptorGroup(0)->descriptorBufferSize());
+    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(2)->descriptorByteOffset(0)+instanceIndex;
+    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(2)->descriptorByteOffset(1)+instanceIndex;
+
 
     commandBuffer->begin();
-    descriptorPool->reset();
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
-    auto globalBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(0));
-    auto objectBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(1));
+    commandBuffer->bindDescriptorMemory(resourceMemory.get(),samplerMemory.get());
     auto globals = globalsBuffer->as<GlobalSet0Group>();
     auto proj = glm::perspective(95.0f,(float)target->width()/(float)target->height(),.01f,100.0f);
     glm::mat4 view = glm::mat4(1.0f);
@@ -1793,14 +1797,14 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
     globals->projectionView = projectionView;
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    globalBundle.setUniformBuffer(globalsIndex,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
+    resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),0,globalsBuffer->size());
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    objectBundle.setUniformBuffer(instanceTransformIndex,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setSampledTexture(instanceTextureIndex,0,objectTexture.get());
-    objectBundle.setSampler(instanceSamplerIndex,0,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
+    commandBuffer->bindGraphicsDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,0);
+    samplerMemory->setSampler(instanceSamplerIndex,DefaultSampler.get());
+    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::RESOURCE,0);
+    resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),0,objectBuffer->size());
+    resourceMemory->setSampledTexture(instanceTextureIndex,objectTexture.get());
+    commandBuffer->bindGraphicsDescriptorGroup(2,DescriptorGroup::DescriptorMemory::RESOURCE,instanceIndex);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
@@ -1883,19 +1887,20 @@ TEST_F(CommandBufferTest, DrawIndirect)
     std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+    std::unique_ptr<ResourceDescriptorMemory> resourceMemory = std::unique_ptr<ResourceDescriptorMemory>(ResourceDescriptorMemory::newResourceDescriptorMemory(100));
+    std::unique_ptr<SamplerDescriptorMemory> samplerMemory = std::unique_ptr<SamplerDescriptorMemory>(SamplerDescriptorMemory::newSamplerDescriptorMemory(100));
 
-    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
+    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->descriptorByteOffset(0);
 
-    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance");
-    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampledTexture");
-    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampler");
+    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->descriptorByteOffset(0);
+
+    auto instanceIndex = resourceMemory->descriptorGroupOffset(TexturedDepthPipeline->descriptorGroup(0)->descriptorBufferSize());
+    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(2)->descriptorByteOffset(0)+instanceIndex;
+    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(2)->descriptorByteOffset(1)+instanceIndex;
+
 
     commandBuffer->begin();
-    descriptorPool->reset();
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
-    auto globalBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(0));
-    auto objectBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(1));
+    commandBuffer->bindDescriptorMemory(resourceMemory.get(),samplerMemory.get());
     auto globals = globalsBuffer->as<GlobalSet0Group>();
     auto proj = glm::perspective(95.0f,(float)target->width()/(float)target->height(),.01f,100.0f);
     glm::mat4 view = glm::mat4(1.0f);
@@ -1908,14 +1913,14 @@ TEST_F(CommandBufferTest, DrawIndirect)
     globals->projectionView = projectionView;
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    globalBundle.setUniformBuffer(globalsIndex,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
+    resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),0,globalsBuffer->size());
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    objectBundle.setUniformBuffer(instanceTransformIndex,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setSampledTexture(instanceTextureIndex,0,objectTexture.get());
-    objectBundle.setSampler(instanceSamplerIndex,0,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
+    commandBuffer->bindGraphicsDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,0);
+    samplerMemory->setSampler(instanceSamplerIndex,DefaultSampler.get());
+    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::RESOURCE,0);
+    resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),0,objectBuffer->size());
+    resourceMemory->setSampledTexture(instanceTextureIndex,objectTexture.get());
+    commandBuffer->bindGraphicsDescriptorGroup(2,DescriptorGroup::DescriptorMemory::RESOURCE,instanceIndex);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
@@ -1992,19 +1997,20 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
     std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
     std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+    std::unique_ptr<ResourceDescriptorMemory> resourceMemory = std::unique_ptr<ResourceDescriptorMemory>(ResourceDescriptorMemory::newResourceDescriptorMemory(100));
+    std::unique_ptr<SamplerDescriptorMemory> samplerMemory = std::unique_ptr<SamplerDescriptorMemory>(SamplerDescriptorMemory::newSamplerDescriptorMemory(100));
 
-    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
+    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->descriptorByteOffset(0);
 
-    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance");
-    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampledTexture");
-    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampler");
+    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->descriptorByteOffset(0);
+
+    auto instanceIndex = resourceMemory->descriptorGroupOffset(TexturedDepthPipeline->descriptorGroup(0)->descriptorBufferSize());
+    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(2)->descriptorByteOffset(0)+instanceIndex;
+    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(2)->descriptorByteOffset(1)+instanceIndex;
+
 
     commandBuffer->begin();
-    descriptorPool->reset();
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
-    auto globalBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(0));
-    auto objectBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(1));
+    commandBuffer->bindDescriptorMemory(resourceMemory.get(),samplerMemory.get());
     auto globals = globalsBuffer->as<GlobalSet0Group>();
     auto proj = glm::perspective(95.0f,(float)target->width()/(float)target->height(),.01f,100.0f);
     glm::mat4 view = glm::mat4(1.0f);
@@ -2017,14 +2023,14 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
     globals->projectionView = projectionView;
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    globalBundle.setUniformBuffer(globalsIndex,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
+    resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),0,globalsBuffer->size());
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    objectBundle.setUniformBuffer(instanceTransformIndex,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setSampledTexture(instanceTextureIndex,0,objectTexture.get());
-    objectBundle.setSampler(instanceSamplerIndex,0,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
+    commandBuffer->bindGraphicsDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,0);
+    samplerMemory->setSampler(instanceSamplerIndex,DefaultSampler.get());
+    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::RESOURCE,0);
+    resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),0,objectBuffer->size());
+    resourceMemory->setSampledTexture(instanceTextureIndex,objectTexture.get());
+    commandBuffer->bindGraphicsDescriptorGroup(2,DescriptorGroup::DescriptorMemory::RESOURCE,instanceIndex);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
     Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
     commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
@@ -2099,7 +2105,8 @@ TEST_F(CommandBufferTest, Dispatch)
 {
     ShaderFile file{.pathIndicator = "resources/shaders/ParallelAdd", .stage = ShaderStageFlags::COMPUTE};
     auto compute = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(file);
-    std::unique_ptr<DescriptorPool> pool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+    std::unique_ptr<ResourceDescriptorMemory> resourceMemory = std::unique_ptr<ResourceDescriptorMemory>(ResourceDescriptorMemory::newResourceDescriptorMemory(100));
+    std::unique_ptr<SamplerDescriptorMemory> samplerMemory = std::unique_ptr<SamplerDescriptorMemory>(SamplerDescriptorMemory::newSamplerDescriptorMemory(100));
     std::vector<float>inputs(128);
     for (int i=0; i<128; i++)
     {
@@ -2110,18 +2117,18 @@ TEST_F(CommandBufferTest, Dispatch)
     std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::COMPUTE));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
 
-    auto buffer0Index = compute->descriptorGroup(0)->indexOf("buffer0");
-    auto buffer1Index = compute->descriptorGroup(0)->indexOf("buffer1");
-    auto resultIndex = compute->descriptorGroup(0)->indexOf("result");
+    auto buffer0Index = compute->descriptorGroup(0)->descriptorByteOffset(0);
+    auto buffer1Index = compute->descriptorGroup(0)->descriptorByteOffset(1);
+    auto resultIndex = compute->descriptorGroup(0)->descriptorByteOffset(2);
 
     commandBuffer->begin();
-    commandBuffer->bindDescriptorPool(pool.get());
-    auto parameters = pool->makeBundle(compute->descriptorGroup(0));
-    parameters.setStorageBuffer(buffer0Index,0,inputsBuffer.get(),0,64*sizeof(float));
-    parameters.setStorageBuffer(buffer1Index,0,inputsBuffer.get(),64*sizeof(float),64*sizeof(float));
-    parameters.setStorageBuffer(resultIndex,0,outputBuffer.get(),0,64*sizeof(float));
+    commandBuffer->bindDescriptorMemory(resourceMemory.get(),samplerMemory.get());
+
+    resourceMemory->setStorageBuffer(buffer0Index,inputsBuffer.get(),0,64*sizeof(float));
+    resourceMemory->setStorageBuffer(buffer1Index,inputsBuffer.get(),64*sizeof(float),64*sizeof(float));
+    resourceMemory->setStorageBuffer(resultIndex,outputBuffer.get(),0,64*sizeof(float));
     commandBuffer->bindComputeShaderPipeline(compute.get());
-    commandBuffer->bindComputeDescriptorBundle(0,parameters);
+    commandBuffer->bindComputeDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,0);
 
     commandBuffer->dispatch(64,1,1);
 
@@ -2157,7 +2164,8 @@ TEST_F(CommandBufferTest, DispatchBase)
 {
     ShaderFile file{.pathIndicator = "resources/shaders/ParallelAdd", .stage = ShaderStageFlags::COMPUTE};
     auto compute = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(file);
-    std::unique_ptr<DescriptorPool> pool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+    std::unique_ptr<ResourceDescriptorMemory> resourceMemory = std::unique_ptr<ResourceDescriptorMemory>(ResourceDescriptorMemory::newResourceDescriptorMemory(100));
+    std::unique_ptr<SamplerDescriptorMemory> samplerMemory = std::unique_ptr<SamplerDescriptorMemory>(SamplerDescriptorMemory::newSamplerDescriptorMemory(100));
     std::vector<float>inputs(128);
     for (int i=0; i<128; i++)
     {
@@ -2169,18 +2177,18 @@ TEST_F(CommandBufferTest, DispatchBase)
     std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::COMPUTE));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
 
-    auto buffer0Index = compute->descriptorGroup(0)->indexOf("buffer0");
-    auto buffer1Index = compute->descriptorGroup(0)->indexOf("buffer1");
-    auto resultIndex = compute->descriptorGroup(0)->indexOf("result");
+    auto buffer0Index = compute->descriptorGroup(0)->descriptorByteOffset(0);
+    auto buffer1Index = compute->descriptorGroup(0)->descriptorByteOffset(1);
+    auto resultIndex = compute->descriptorGroup(0)->descriptorByteOffset(2);
 
     commandBuffer->begin();
-    commandBuffer->bindDescriptorPool(pool.get());
-    auto parameters = pool->makeBundle(compute->descriptorGroup(0));
-    parameters.setStorageBuffer(buffer0Index,0,inputsBuffer.get(),0,64*sizeof(float));
-    parameters.setStorageBuffer(buffer1Index,0,inputsBuffer.get(),64*sizeof(float),64*sizeof(float));
-    parameters.setStorageBuffer(resultIndex,0,outputBuffer.get(),0,64*sizeof(float));
+    commandBuffer->bindDescriptorMemory(resourceMemory.get(),samplerMemory.get());
+
+    resourceMemory->setStorageBuffer(buffer0Index,inputsBuffer.get(),0,64*sizeof(float));
+    resourceMemory->setStorageBuffer(buffer1Index,inputsBuffer.get(),64*sizeof(float),64*sizeof(float));
+    resourceMemory->setStorageBuffer(resultIndex,outputBuffer.get(),0,64*sizeof(float));
     commandBuffer->bindComputeShaderPipeline(compute.get());
-    commandBuffer->bindComputeDescriptorBundle(0,parameters);
+    commandBuffer->bindComputeDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,0);
 
     commandBuffer->dispatchBase(32,0,0,64,1,1);
 
@@ -2225,7 +2233,8 @@ TEST_F(CommandBufferTest, DispatchIndirect)
 {
     ShaderFile file{.pathIndicator = "resources/shaders/ParallelAdd", .stage = ShaderStageFlags::COMPUTE};
     auto compute = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(file);
-    std::unique_ptr<DescriptorPool> pool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
+    std::unique_ptr<ResourceDescriptorMemory> resourceMemory = std::unique_ptr<ResourceDescriptorMemory>(ResourceDescriptorMemory::newResourceDescriptorMemory(100));
+    std::unique_ptr<SamplerDescriptorMemory> samplerMemory = std::unique_ptr<SamplerDescriptorMemory>(SamplerDescriptorMemory::newSamplerDescriptorMemory(100));
     std::vector<float>inputs(128);
     for (int i=0; i<128; i++)
     {
@@ -2238,18 +2247,18 @@ TEST_F(CommandBufferTest, DispatchIndirect)
     std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::COMPUTE));
     std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
 
-    auto buffer0Index = compute->descriptorGroup(0)->indexOf("buffer0");
-    auto buffer1Index = compute->descriptorGroup(0)->indexOf("buffer1");
-    auto resultIndex = compute->descriptorGroup(0)->indexOf("result");
+    auto buffer0Index = compute->descriptorGroup(0)->descriptorByteOffset(0);
+    auto buffer1Index = compute->descriptorGroup(0)->descriptorByteOffset(1);
+    auto resultIndex = compute->descriptorGroup(0)->descriptorByteOffset(2);
 
     commandBuffer->begin();
-    commandBuffer->bindDescriptorPool(pool.get());
-    auto parameters = pool->makeBundle(compute->descriptorGroup(0));
-    parameters.setStorageBuffer(buffer0Index,0,inputsBuffer.get(),0,64*sizeof(float));
-    parameters.setStorageBuffer(buffer1Index,0,inputsBuffer.get(),64*sizeof(float),64*sizeof(float));
-    parameters.setStorageBuffer(resultIndex,0,outputBuffer.get(),0,64*sizeof(float));
+    commandBuffer->bindDescriptorMemory(resourceMemory.get(),samplerMemory.get());
+
+    resourceMemory->setStorageBuffer(buffer0Index,inputsBuffer.get(),0,64*sizeof(float));
+    resourceMemory->setStorageBuffer(buffer1Index,inputsBuffer.get(),64*sizeof(float),64*sizeof(float));
+    resourceMemory->setStorageBuffer(resultIndex,outputBuffer.get(),0,64*sizeof(float));
     commandBuffer->bindComputeShaderPipeline(compute.get());
-    commandBuffer->bindComputeDescriptorBundle(0,parameters);
+    commandBuffer->bindComputeDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,0);
 
     commandBuffer->dispatchIndirect(indirectParameters.get(),0);
 

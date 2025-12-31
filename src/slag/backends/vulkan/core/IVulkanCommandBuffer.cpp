@@ -547,7 +547,7 @@ namespace slag
             vkCmdBindPipeline(_commandBuffer,VK_PIPELINE_BIND_POINT_COMPUTE,pipeLine->vulkanHandle());
         }
 
-        void IVulkanCommandBuffer::bindGraphicsDescriptorSet(uint32_t index, DescriptorGroup::DescriptorMemory memory,
+        void IVulkanCommandBuffer::bindGraphicsDescriptorGroup(uint32_t index, DescriptorGroup::DescriptorMemory memory,
             uint64_t offset)
         {
             SLAG_ASSERT(_boundVulkanGraphicsShaderPipelineLayout != nullptr && "No graphics shader is bound, unable to bind descriptor bundle");
@@ -556,7 +556,7 @@ namespace slag
             slag_vkCmdSetDescriptorBufferOffsetsEXT(_commandBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,_boundVulkanGraphicsShaderPipelineLayout,index,1,&bufferIndex,&bufferoffset);
         }
 
-        void IVulkanCommandBuffer::bindComputeDescriptorSet(uint32_t index, DescriptorGroup::DescriptorMemory memory,
+        void IVulkanCommandBuffer::bindComputeDescriptorGroup(uint32_t index, DescriptorGroup::DescriptorMemory memory,
             uint64_t offset)
         {
             SLAG_ASSERT(_boundVulkanComputePipelineLayout != nullptr && "No computer shader is bound, unable to bind descriptor bundle");

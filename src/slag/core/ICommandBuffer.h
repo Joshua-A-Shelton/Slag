@@ -323,14 +323,14 @@ namespace slag
          * @param memory Which Descriptor Memory to contains the data
          * @param offset The offset into the memory the descriptor group data begins
          */
-        virtual void bindGraphicsDescriptorSet(uint32_t index, DescriptorGroup::DescriptorMemory memory, uint64_t offset)=0;
+        virtual void bindGraphicsDescriptorGroup(uint32_t index, DescriptorGroup::DescriptorMemory memory, uint64_t offset)=0;
         /**
          * Bind a bundle of descriptors to a slot in a compute shader pipeline
          * @param index Descriptor Group Index to bind to
          * @param memory Which Descriptor Memory to contains the data
          * @param offset The offset into the memory the descriptor group data begins
          */
-        virtual void bindComputeDescriptorSet(uint32_t index, DescriptorGroup::DescriptorMemory memory, uint64_t offset)=0;
+        virtual void bindComputeDescriptorGroup(uint32_t index, DescriptorGroup::DescriptorMemory memory, uint64_t offset)=0;
 
         /**
          * Assign a small amount of arbitrary memory for a graphics shader pipeline (assume max of 128 bytes)
