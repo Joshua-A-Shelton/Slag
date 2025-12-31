@@ -83,7 +83,7 @@ namespace slag
                 .data = {.pSampler = &passSampler}
             };
             auto card = VulkanGraphicsCard::selected();
-            slag_vkGetDescriptorEXT(card->device(),&textureDescriptorInfo,card->sampledTextureDescriptorSize(),static_cast<unsigned char*>(_bufferPointer)+memoryLocation);
+            slag_vkGetDescriptorEXT(card->device(),&textureDescriptorInfo,card->samplerDescriptorSize(),static_cast<unsigned char*>(_bufferPointer)+memoryLocation);
         }
 
         VulkanBufferMoveData VulkanSamplerDescriptorMemory::moveMemory(VmaAllocation tempAllocation, CommandBuffer* copyDataBuffer)
