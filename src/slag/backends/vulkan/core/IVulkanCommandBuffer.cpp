@@ -562,7 +562,7 @@ namespace slag
             SLAG_ASSERT(_boundVulkanComputePipelineLayout != nullptr && "No computer shader is bound, unable to bind descriptor bundle");
             uint32_t bufferIndex = static_cast<uint32_t>(memory);
             VkDeviceSize bufferoffset = static_cast<VkDeviceSize>(offset);
-            slag_vkCmdSetDescriptorBufferOffsetsEXT(_commandBuffer,VK_PIPELINE_BIND_POINT_COMPUTE,_boundVulkanGraphicsShaderPipelineLayout,index,1,&bufferIndex,&bufferoffset);
+            slag_vkCmdSetDescriptorBufferOffsetsEXT(_commandBuffer,VK_PIPELINE_BIND_POINT_COMPUTE,_boundVulkanComputePipelineLayout,index,1,&bufferIndex,&bufferoffset);
         }
 
         void IVulkanCommandBuffer::pushGraphicsConstants(uint32_t offset, uint32_t size, void* data)
