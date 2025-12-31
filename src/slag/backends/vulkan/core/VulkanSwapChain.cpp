@@ -79,7 +79,7 @@ namespace slag
                 auto& rebuiltFrame = _frames[_currentFrameIndex];
 
                 commandsFinished = rebuiltFrame.commandsCompleteFence();
-                imageAcquired = frame.imageAcquiredFence();
+                imageAcquired = rebuiltFrame.imageAcquiredFence();
 
                 vkWaitForFences(device,1,&imageAcquired,VK_TRUE,UINT64_MAX);
                 vkResetFences(device,1,&commandsFinished);
