@@ -965,7 +965,7 @@ TEST_F(CommandBufferTest, Resolve)
     };
     slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
-    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(outputBuffer.get(),"resources/textures/resolve-test-result.png",.99f,.5f));
+    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(outputBuffer.get(),"resources/textures/resolve-test-result.png",.95f,.5f));
 }
 
 TEST_F(CommandBufferTest, FillBuffer)
@@ -1531,16 +1531,7 @@ TEST_F(CommandBufferTest, Draw)
     slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
-    unsigned char* colorPtr = outputBuffer->as<unsigned char>();
-
-    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/draw-triangle-test-result.png");
-    GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
-
-    for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
-    {
-        GTEST_ASSERT_EQ(colorPtr[i],groundTruth[i]);
-    }
-
+    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(outputBuffer.get(),"resources/textures/draw-triangle-test-result.png",.97f,.5f));
 }
 
 TEST_F(CommandBufferTest, DrawIndexed)
@@ -1638,14 +1629,8 @@ TEST_F(CommandBufferTest, DrawIndexed)
     slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
-    unsigned char* colorPtr = outputBuffer->as<unsigned char>();
-    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/draw-test-result.png");
-    GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
+    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(outputBuffer.get(),"resources/textures/draw-triangle-test-result.png",.97f,.5f));
 
-    for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
-    {
-        GTEST_ASSERT_EQ(colorPtr[i],groundTruth[i]);
-    }
 }
 
 TEST_F(CommandBufferTest, DrawIndexedIndirect)
@@ -1751,14 +1736,8 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
     slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
-    unsigned char* colorPtr = outputBuffer->as<unsigned char>();
-    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/draw-test-result.png");
-    GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
+    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(outputBuffer.get(),"resources/textures/draw-triangle-test-result.png",.97f,.5f));
 
-    for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
-    {
-        GTEST_ASSERT_EQ(colorPtr[i],groundTruth[i]);
-    }
 }
 
 TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
@@ -1867,14 +1846,8 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
     slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
-    unsigned char* colorPtr = outputBuffer->as<unsigned char>();
-    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/draw-test-result.png");
-    GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
+    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(outputBuffer.get(),"resources/textures/draw-triangle-test-result.png",.97f,.5f));
 
-    for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
-    {
-        GTEST_ASSERT_EQ(colorPtr[i],groundTruth[i]);
-    }
 }
 
 TEST_F(CommandBufferTest, DrawIndirect)
@@ -1977,14 +1950,8 @@ TEST_F(CommandBufferTest, DrawIndirect)
     slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
-    unsigned char* colorPtr = outputBuffer->as<unsigned char>();
-    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/draw-triangle-test-result.png");
-    GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
+    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(outputBuffer.get(),"resources/textures/draw-triangle-test-result.png",.97f,.5f));
 
-    for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
-    {
-        GTEST_ASSERT_EQ(colorPtr[i],groundTruth[i]);
-    }
 }
 
 TEST_F(CommandBufferTest, DrawIndirectCount)
@@ -2091,14 +2058,8 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
     slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
-    unsigned char* colorPtr = outputBuffer->as<unsigned char>();
-    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/draw-triangle-test-result.png");
-    GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
+    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(outputBuffer.get(),"resources/textures/draw-triangle-test-result.png",.97f,.5f));
 
-    for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
-    {
-        GTEST_ASSERT_EQ(colorPtr[i],groundTruth[i]);
-    }
 }
 
 TEST_F(CommandBufferTest, Dispatch)

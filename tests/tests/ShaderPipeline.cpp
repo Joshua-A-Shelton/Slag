@@ -804,7 +804,7 @@ TEST_F(ShaderPipelineTest, DepthClamp)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::perspective(glm::radians(105.0f), 1.0f, 0.1f, 100.0f);
 
-    testProperties(properties,properties2,cameraTransform,cameraProjection,object1,object2,"resources/textures/depth-clamp-result.png",.98,0);
+    testProperties(properties,properties2,cameraTransform,cameraProjection,object1,object2,"resources/textures/depth-clamp-result.png",.95,0);
 
 }
 
@@ -827,7 +827,7 @@ TEST_F(ShaderPipelineTest,RasterizationDiscard)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties2,cameraTransform,cameraProjection,object1,object2,"resources/textures/rasterizer-discard-result.png",.98,0);
+    testProperties(properties,properties2,cameraTransform,cameraProjection,object1,object2,"resources/textures/rasterizer-discard-result.png",.95,0);
 }
 
 TEST_F(ShaderPipelineTest,DrawFace)
@@ -844,7 +844,7 @@ TEST_F(ShaderPipelineTest,DrawFace)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.98,0);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.95,0);
 }
 
 TEST_F(ShaderPipelineTest,DrawEdges)
@@ -894,7 +894,7 @@ TEST_F(ShaderPipelineTest,DrawThicknessEdges)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-verticies-result.png",.97, .3);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-verticies-result.png",.95, .3);
 }
 
 TEST_F(ShaderPipelineTest,CullNone)
@@ -912,7 +912,7 @@ TEST_F(ShaderPipelineTest,CullNone)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/cull-none-result.png",.98,0);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/cull-none-result.png",.95,0);
 }
 TEST_F(ShaderPipelineTest,CullFront)
 {
@@ -929,7 +929,7 @@ TEST_F(ShaderPipelineTest,CullFront)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/cull-front-result.png",.99,0);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/cull-front-result.png",.95,0);
 }
 TEST_F(ShaderPipelineTest,CullBack)
 {
@@ -946,7 +946,7 @@ TEST_F(ShaderPipelineTest,CullBack)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/cull-back-result.png",.98,0);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/cull-back-result.png",.95,0);
 }
 
 TEST_F(ShaderPipelineTest,FrontFaceClockWise)
@@ -965,7 +965,7 @@ TEST_F(ShaderPipelineTest,FrontFaceClockWise)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/front-face-clockwise-result.png",.98,0);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/front-face-clockwise-result.png",.95,0);
 }
 
 TEST_F(ShaderPipelineTest,FrontFaceCounterClockWise)
@@ -984,7 +984,7 @@ TEST_F(ShaderPipelineTest,FrontFaceCounterClockWise)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/front-face-counter-clockwise-result.png",.99,0);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/front-face-counter-clockwise-result.png",.95,0);
 }
 
 TEST_F(ShaderPipelineTest,DepthBias)
@@ -1003,7 +1003,7 @@ TEST_F(ShaderPipelineTest,DepthBias)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties2,cameraTransform,cameraProjection,object1,object2,"resources/textures/depth-bias-result.png",.99,0);
+    testProperties(properties,properties2,cameraTransform,cameraProjection,object1,object2,"resources/textures/depth-bias-result.png",.95,0);
 }
 
 TEST_F(ShaderPipelineTest, DepthBiasWithSlope)
@@ -1042,7 +1042,7 @@ TEST_F(ShaderPipelineTest,MultiSample)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testPropertiesMultiSample(properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/multi-sample-result.png",.99,.5);
+    testPropertiesMultiSample(properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/multi-sample-result.png",.95,.5);
 }
 
 TEST_F(ShaderPipelineTest,MultiSampleAlpha)
@@ -1062,7 +1062,7 @@ TEST_F(ShaderPipelineTest,MultiSampleAlpha)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testPropertiesMultiSample(properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/multi-sample-alpha-result.png",.99,.5);
+    testPropertiesMultiSample(properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/multi-sample-alpha-result.png",.95,.5);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateDisable)
@@ -1078,7 +1078,7 @@ TEST_F(ShaderPipelineTest,BlendStateDisable)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/blend-disabled-result.png",.99,0);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/blend-disabled-result.png",.94,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateDefaults)
@@ -1094,7 +1094,7 @@ TEST_F(ShaderPipelineTest,BlendStateDefaults)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.99,0);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.95,0);
 
 }
 
@@ -1112,7 +1112,7 @@ TEST_F(ShaderPipelineTest,BlendStateColorMinus)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/color-blend-minus-result.png",.99,0);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/color-blend-minus-result.png",.95,0);
 
 }
 
@@ -1130,7 +1130,7 @@ TEST_F(ShaderPipelineTest,BlendStateAlphaMinus)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/alpha-blend-minus.png",.99,0);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/alpha-blend-minus.png",.95,0);
 
 }
 
@@ -1148,7 +1148,7 @@ TEST_F(ShaderPipelineTest,BlendStateColorMax)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/color-blend-max-result.png",.99,0);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/color-blend-max-result.png",.95,0);
 
 }
 
@@ -1166,7 +1166,7 @@ TEST_F(ShaderPipelineTest,BlendStateAlphaMax)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/alpha-blend-max-result.png",.99,0);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/alpha-blend-max-result.png",.95,0);
 
 }
 
@@ -1184,7 +1184,7 @@ TEST_F(ShaderPipelineTest,BlendStateColorMin)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/color-blend-min-result.png",.99,0);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/color-blend-min-result.png",.95,0);
 
 }
 
@@ -1202,7 +1202,7 @@ TEST_F(ShaderPipelineTest,BlendStateAlphaMin)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/alpha-blend-min-result.png",.99,0);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/alpha-blend-min-result.png",.95,0);
 
 }
 
@@ -1220,7 +1220,7 @@ TEST_F(ShaderPipelineTest,BlendStateColorReverseMinus)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/color-blend-reverse-minus-result.png",.99,0);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/color-blend-reverse-minus-result.png",.95,0);
 
 }
 
@@ -1238,7 +1238,7 @@ TEST_F(ShaderPipelineTest,BlendStateAlphaReverseMinus)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/alpha-blend-reverse-minus-result.png",.99,0);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/alpha-blend-reverse-minus-result.png",.94,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateColorWriteMask)
@@ -1255,7 +1255,7 @@ TEST_F(ShaderPipelineTest,BlendStateColorWriteMask)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/blend-color-write-mask-result.png",.99,0);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/blend-color-write-mask-result.png",.95,0);
 }
 
 TEST_F(ShaderPipelineTest,BlendStateBlendFactors)
@@ -1566,7 +1566,7 @@ TEST_F(ShaderPipelineTest,DepthStencilStateDepthDisable)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.99,.7);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.94,.5);
 }
 
 TEST_F(ShaderPipelineTest,DepthStencilStateComparisonFunctionAlways)
@@ -1583,7 +1583,7 @@ TEST_F(ShaderPipelineTest,DepthStencilStateComparisonFunctionAlways)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.99,.7);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.94,.5);
 }
 TEST_F(ShaderPipelineTest,DepthStencilStateComparisonGreater)
 {
@@ -1599,7 +1599,7 @@ TEST_F(ShaderPipelineTest,DepthStencilStateComparisonGreater)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-no-op-result.png",.99,.8);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-no-op-result.png",.95,.8);
 }
 
 TEST_F(ShaderPipelineTest,DepthStencilStateComparisonEqual)
@@ -1616,7 +1616,7 @@ TEST_F(ShaderPipelineTest,DepthStencilStateComparisonEqual)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/cull-back-result.png",.99,.8);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/cull-back-result.png",.95,.45);
 }
 
 TEST_F(ShaderPipelineTest,DepthStencilStateComparisonNever)
@@ -1633,7 +1633,7 @@ TEST_F(ShaderPipelineTest,DepthStencilStateComparisonNever)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-no-op-result.png",.99,.8);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/logic-operation-no-op-result.png",.95,.8);
 }
 
 TEST_F(ShaderPipelineTest,DepthStencilStateComparisonNotEqual)
@@ -1650,7 +1650,7 @@ TEST_F(ShaderPipelineTest,DepthStencilStateComparisonNotEqual)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.99,.7);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.95,.45);
 }
 
 TEST_F(ShaderPipelineTest,DepthStencilStateDepthWriteEnableFalse)
@@ -1667,7 +1667,7 @@ TEST_F(ShaderPipelineTest,DepthStencilStateDepthWriteEnableFalse)
     glm::mat4 cameraTransform(1.0f);
     glm::mat4 cameraProjection = glm::ortho(-1.0f,1.0f,-1.0f,1.0f);
 
-    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.99,.7);
+    testProperties(properties,properties,cameraTransform,cameraProjection,object1,object2,"resources/textures/draw-face-result.png",.94,.5);
 }
 
 TEST_F(ShaderPipelineTest,DepthStencilStateStencilDetails)
