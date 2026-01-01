@@ -77,8 +77,6 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/backends/vulkan/core/VulkanSwapChain.h
             src/slag/backends/vulkan/core/VulkanFrame.cpp
             src/slag/backends/vulkan/core/VulkanFrame.h
-            src/slag/backends/vulkan/core/VulkanBufferView.cpp
-            src/slag/backends/vulkan/core/VulkanBufferView.h
             src/slag/backends/vulkan/core/VulkanResourceDescriptorMemory.cpp
             src/slag/backends/vulkan/core/VulkanResourceDescriptorMemory.h
             src/slag/backends/vulkan/core/VulkanSamplerDescriptorMemory.cpp
@@ -175,8 +173,6 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/GraphicsTypes.h
         src/slag/core/VertexDescription.cpp
         src/slag/core/VertexDescription.h
-        src/slag/core/BufferView.cpp
-        src/slag/core/BufferView.h
         src/slag/core/PixelFormatProperties.h
         src/slag/core/ResourceDescriptorMemory.cpp
         src/slag/core/ResourceDescriptorMemory.h

@@ -37,8 +37,6 @@ namespace slag
         //Buffers
         virtual Buffer* newBuffer(size_t size, Buffer::Accessibility accessibility,Buffer::UsageFlags usage)=0;
         virtual Buffer* newBuffer(void* data, size_t dataSize, Buffer::Accessibility accessibility,Buffer::UsageFlags usage)=0;
-        //BufferViews
-        virtual BufferView* newBufferView(Buffer* buffer, Pixels::Format format, uint64_t offset, uint64_t size)=0;
         //swapchains
         virtual SwapChain* newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, const SwapChainDetails& details)=0;
         //samplers

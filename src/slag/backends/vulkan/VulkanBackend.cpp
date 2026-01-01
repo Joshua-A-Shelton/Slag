@@ -2,7 +2,6 @@
 #include "VulkanBackend.h"
 #include "VkBootstrap.h"
 #include "core/VulkanBuffer.h"
-#include "core/VulkanBufferView.h"
 #include "core/VulkanCommandBuffer.h"
 #include "VulkanExtensions.h"
 #include "core/VulkanGraphicsCard.h"
@@ -645,11 +644,6 @@ namespace slag
         Buffer* VulkanBackend::newBuffer(void* data, size_t dataSize, Buffer::Accessibility accessibility, Buffer::UsageFlags usage)
         {
             return new VulkanBuffer(data, dataSize, accessibility, usage);
-        }
-
-        BufferView* VulkanBackend::newBufferView(Buffer* buffer, Pixels::Format format, uint64_t offset, uint64_t size)
-        {
-            return new VulkanBufferView(buffer, format, offset, size);
         }
 
         SwapChain* VulkanBackend::newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, const SwapChainDetails& details)

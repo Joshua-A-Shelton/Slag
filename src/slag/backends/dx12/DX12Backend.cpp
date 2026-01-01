@@ -449,11 +449,6 @@ namespace slag
             return new DX12Buffer(data,dataSize,accessibility,usage);
         }
 
-        BufferView* DX12Backend::newBufferView(Buffer* buffer, Pixels::Format format, uint64_t offset, uint64_t size)
-        {
-            throw std::runtime_error("DX12Backend::newBufferView() not implemented");
-        }
-
         SwapChain* DX12Backend::newSwapChain(PlatformData platformData, uint32_t width, uint32_t height,const SwapChainDetails& details)
         {
             throw std::runtime_error("DX12Backend::newSwapChain() not implemented");
