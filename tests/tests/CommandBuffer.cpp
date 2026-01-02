@@ -1475,7 +1475,7 @@ TEST_F(CommandBufferTest, Draw)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,0);
     samplerMemory->setSampler(instanceSamplerIndex,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::RESOURCE,0);
+    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::SAMPLER,0);
     resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),0,objectBuffer->size());
     resourceMemory->setSampledTexture(instanceTextureIndex,objectTexture.get());
     commandBuffer->bindGraphicsDescriptorGroup(2,DescriptorGroup::DescriptorMemory::RESOURCE,instanceIndex);
@@ -1531,7 +1531,7 @@ TEST_F(CommandBufferTest, Draw)
     slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
-    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(outputBuffer.get(),"resources/textures/draw-triangle-test-result.png",.97f,.5f));
+    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(outputBuffer.get(),"resources/textures/draw-triangle-test-result.png",.97f,.6f));
 }
 
 TEST_F(CommandBufferTest, DrawIndexed)
@@ -1574,7 +1574,7 @@ TEST_F(CommandBufferTest, DrawIndexed)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,0);
     samplerMemory->setSampler(instanceSamplerIndex,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::RESOURCE,0);
+    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::SAMPLER,0);
     resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),0,objectBuffer->size());
     resourceMemory->setSampledTexture(instanceTextureIndex,objectTexture.get());
     commandBuffer->bindGraphicsDescriptorGroup(2,DescriptorGroup::DescriptorMemory::RESOURCE,instanceIndex);
@@ -1629,7 +1629,7 @@ TEST_F(CommandBufferTest, DrawIndexed)
     slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
-    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(outputBuffer.get(),"resources/textures/draw-triangle-test-result.png",.97f,.5f));
+    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(outputBuffer.get(),"resources/textures/draw-triangle-test-result.png",.97f,.6f));
 
 }
 
@@ -1673,7 +1673,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,0);
     samplerMemory->setSampler(instanceSamplerIndex,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::RESOURCE,0);
+    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::SAMPLER,0);
     resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),0,objectBuffer->size());
     resourceMemory->setSampledTexture(instanceTextureIndex,objectTexture.get());
     commandBuffer->bindGraphicsDescriptorGroup(2,DescriptorGroup::DescriptorMemory::RESOURCE,instanceIndex);
@@ -1736,7 +1736,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
     slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
-    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(outputBuffer.get(),"resources/textures/draw-triangle-test-result.png",.97f,.5f));
+    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(outputBuffer.get(),"resources/textures/draw-triangle-test-result.png",.97f,.6f));
 
 }
 
@@ -1780,7 +1780,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,0);
     samplerMemory->setSampler(instanceSamplerIndex,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::RESOURCE,0);
+    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::SAMPLER,0);
     resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),0,objectBuffer->size());
     resourceMemory->setSampledTexture(instanceTextureIndex,objectTexture.get());
     commandBuffer->bindGraphicsDescriptorGroup(2,DescriptorGroup::DescriptorMemory::RESOURCE,instanceIndex);
@@ -1846,7 +1846,7 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
     slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
     finished->waitForValue(1);
 
-    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(outputBuffer.get(),"resources/textures/draw-triangle-test-result.png",.97f,.5f));
+    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(outputBuffer.get(),"resources/textures/draw-triangle-test-result.png",.97f,.6f));
 
 }
 
@@ -1890,7 +1890,7 @@ TEST_F(CommandBufferTest, DrawIndirect)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,0);
     samplerMemory->setSampler(instanceSamplerIndex,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::RESOURCE,0);
+    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::SAMPLER,0);
     resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),0,objectBuffer->size());
     resourceMemory->setSampledTexture(instanceTextureIndex,objectTexture.get());
     commandBuffer->bindGraphicsDescriptorGroup(2,DescriptorGroup::DescriptorMemory::RESOURCE,instanceIndex);
@@ -1994,7 +1994,7 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,0);
     samplerMemory->setSampler(instanceSamplerIndex,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::RESOURCE,0);
+    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::SAMPLER,0);
     resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),0,objectBuffer->size());
     resourceMemory->setSampledTexture(instanceTextureIndex,objectTexture.get());
     commandBuffer->bindGraphicsDescriptorGroup(2,DescriptorGroup::DescriptorMemory::RESOURCE,instanceIndex);
