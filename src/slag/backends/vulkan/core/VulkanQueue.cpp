@@ -193,9 +193,10 @@ namespace slag
             commandBufferGeneral->transitionToLayout(backBuffer,VK_IMAGE_LAYOUT_UNDEFINED,VK_IMAGE_LAYOUT_GENERAL,VK_ACCESS_2_NONE,VK_ACCESS_MEMORY_READ_BIT|VK_ACCESS_MEMORY_WRITE_BIT,VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
             commandBufferGeneral->end();
 
+            VkSemaphoreSubmitInfo waitImageAcquired{.sType =  VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,.semaphore = vulkanFrame->imageAcquiredSemaphore(),.value = 1 };
 
-            transitionIntoGeneral.pWaitSemaphoreInfos = nullptr;
-            transitionIntoGeneral.waitSemaphoreInfoCount = 0;
+            transitionIntoGeneral.pWaitSemaphoreInfos = &waitImageAcquired;
+            transitionIntoGeneral.waitSemaphoreInfoCount = 1;
             transitionIntoGeneral.pCommandBufferInfos = &buffersGeneralSubmit;
             transitionIntoGeneral.commandBufferInfoCount = 1;
             transitionIntoGeneral.pSignalSemaphoreInfos = &signalGeneral;

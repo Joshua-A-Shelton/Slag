@@ -23,7 +23,7 @@ namespace slag
             virtual Texture* backBuffer() override;
             virtual uint8_t frameIndex() override;
             VulkanSwapChain* parentSwapChain() const;
-            VkFence imageAcquiredFence() const;
+            VkSemaphore imageAcquiredSemaphore() const;
             VkFence frameFinishedFence() const;
             VulkanCommandBuffer* backBufferToGeneral() const;
             VkSemaphore backBufferToGeneralSemaphore() const;
@@ -34,8 +34,7 @@ namespace slag
             void move(VulkanFrame& from);
             VulkanSwapChain* _parent = nullptr;
             uint32_t _frameIndex = 0;
-            //TODO: there may be reason to make this a semaphore, and wait on the GPU until the image is acquired, rather than wait on the CPU until it's acquired, but there's been a lot of syncronization issues between platforms, so this is it for now
-            VkFence _imageAcquiredFence = nullptr;
+            VkSemaphore _imageAcquiredSemaphore = nullptr;
             VkFence _frameFinsishedFence = nullptr;
 
             VulkanCommandBuffer* _backBufferToGeneral = nullptr;

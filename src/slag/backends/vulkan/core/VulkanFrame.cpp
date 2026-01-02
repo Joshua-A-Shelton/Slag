@@ -27,11 +27,12 @@ namespace slag
             semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
 
+            vkCreateSemaphore(device,&semaphoreInfo,nullptr,&_imageAcquiredSemaphore);
             VkFenceCreateInfo fenceInfo = {};
             fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
             fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-            vkCreateFence(device,&fenceInfo,nullptr,&_imageAcquiredFence);
+
             vkCreateFence(device,&fenceInfo,nullptr,&_frameFinsishedFence);
 
             _backBufferToGeneral = new VulkanCommandBuffer(GPUQueue::QueueType::GRAPHICS);
@@ -51,7 +52,7 @@ namespace slag
 
                 vkWaitForFences(device,1,&_frameFinsishedFence,true,1000000000);
 
-                vkDestroyFence(device, _imageAcquiredFence, nullptr);
+                vkDestroySemaphore(device, _imageAcquiredSemaphore, nullptr);
                 vkDestroyFence(device, _frameFinsishedFence, nullptr);
 
                 delete _backBufferToGeneral;
@@ -88,9 +89,9 @@ namespace slag
             return _parent;
         }
 
-        VkFence VulkanFrame::imageAcquiredFence() const
+        VkSemaphore VulkanFrame::imageAcquiredSemaphore() const
         {
-            return _imageAcquiredFence;
+            return _imageAcquiredSemaphore;
         }
 
         VkFence VulkanFrame::frameFinishedFence() const
@@ -124,7 +125,7 @@ namespace slag
             std::swap(_parent, from._parent);
             _frameIndex = from._frameIndex;
 
-            std::swap(_imageAcquiredFence,from._imageAcquiredFence);
+            std::swap(_imageAcquiredSemaphore,from._imageAcquiredSemaphore);
             std::swap( _frameFinsishedFence,from._frameFinsishedFence);
 
             std::swap( _backBufferToGeneral ,from._backBufferToGeneral);
