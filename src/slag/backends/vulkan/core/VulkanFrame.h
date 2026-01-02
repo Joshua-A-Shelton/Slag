@@ -23,28 +23,26 @@ namespace slag
             virtual Texture* backBuffer() override;
             virtual uint8_t frameIndex() override;
             VulkanSwapChain* parentSwapChain() const;
-            VkSemaphore imageAcquiredSemaphore() const;
-            VkSemaphore commandsCompleteSemaphore() const;
-            VkFence commandsCompleteFence() const;
             VkFence imageAcquiredFence() const;
-            VkSemaphore submittedCompleteSemaphore() const;
+            VkFence frameFinishedFence() const;
+            VulkanCommandBuffer* backBufferToGeneral() const;
             VkSemaphore backBufferToGeneralSemaphore() const;
-            VulkanCommandBuffer* backBufferToGeneral();
-            VulkanCommandBuffer* backBufferToPresent();
+            VkSemaphore mainCommandsCompleteSemaphore() const;
+            VulkanCommandBuffer* backBufferToPresent() const;
 
         protected:
             void move(VulkanFrame& from);
             VulkanSwapChain* _parent = nullptr;
             uint32_t _frameIndex = 0;
-
-            VkSemaphore _imageAcquiredSemaphore = nullptr;
+            //TODO: there may be reason to make this a semaphore, and wait on the GPU until the image is acquired, rather than wait on the CPU until it's acquired, but there's been a lot of syncronization issues between platforms, so this is it for now
             VkFence _imageAcquiredFence = nullptr;
+            VkFence _frameFinsishedFence = nullptr;
 
-            VkSemaphore _commandsCompleteSemaphore = nullptr;
-            VkFence _commandsCompleteFence = nullptr;
-            VkSemaphore _submittedCompleteSemaphore = nullptr;
             VulkanCommandBuffer* _backBufferToGeneral = nullptr;
             VkSemaphore _backBufferToGeneralSemaphore = nullptr;
+
+            VkSemaphore _mainCommandsCompleteSemaphore = nullptr;
+
             VulkanCommandBuffer* _backBufferToPresent = nullptr;
 
 

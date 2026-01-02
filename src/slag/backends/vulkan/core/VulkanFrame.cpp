@@ -1,5 +1,7 @@
 #include "VulkanFrame.h"
 
+#include <iostream>
+
 #include "VulkanGraphicsCard.h"
 #include "VulkanSemaphore.h"
 #include "VulkanSwapChain.h"
@@ -17,39 +19,44 @@ namespace slag
             {
                 throw std::invalid_argument("resources cannot be null");
             }
+            auto device = VulkanGraphicsCard::selected()->device();
             _parent = parent;
             _frameIndex = frameIndex;
 
             VkSemaphoreCreateInfo semaphoreInfo = {};
             semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-            vkCreateSemaphore(VulkanGraphicsCard::selected()->device(),&semaphoreInfo,nullptr,&_imageAcquiredSemaphore);
-            vkCreateSemaphore(VulkanGraphicsCard::selected()->device(),&semaphoreInfo,nullptr,&_commandsCompleteSemaphore);
 
             VkFenceCreateInfo fenceInfo = {};
             fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
             fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-            vkCreateFence(VulkanGraphicsCard::selected()->device(),&fenceInfo,nullptr,&_commandsCompleteFence);
-            vkCreateFence(VulkanGraphicsCard::selected()->device(),&fenceInfo,nullptr,&_imageAcquiredFence);
-            vkCreateSemaphore(VulkanGraphicsCard::selected()->device(),&semaphoreInfo,nullptr,&_submittedCompleteSemaphore);
+            vkCreateFence(device,&fenceInfo,nullptr,&_imageAcquiredFence);
+            vkCreateFence(device,&fenceInfo,nullptr,&_frameFinsishedFence);
+
             _backBufferToGeneral = new VulkanCommandBuffer(GPUQueue::QueueType::GRAPHICS);
-            vkCreateSemaphore(VulkanGraphicsCard::selected()->device(),&semaphoreInfo,nullptr,&_backBufferToGeneralSemaphore);
+            vkCreateSemaphore(device,&semaphoreInfo,nullptr,&_backBufferToGeneralSemaphore);
+
+            vkCreateSemaphore(device,&semaphoreInfo,nullptr,&_mainCommandsCompleteSemaphore);
+
             _backBufferToPresent = new VulkanCommandBuffer(GPUQueue::QueueType::GRAPHICS);
 
         }
 
         VulkanFrame::~VulkanFrame()
         {
-            if (_commandsCompleteFence)
+            if (_frameFinsishedFence)
             {
-                vkDestroySemaphore(VulkanGraphicsCard::selected()->device(), _imageAcquiredSemaphore, nullptr);
-                vkDestroySemaphore(VulkanGraphicsCard::selected()->device(), _commandsCompleteSemaphore, nullptr);
-                vkDestroyFence(VulkanGraphicsCard::selected()->device(), _commandsCompleteFence, nullptr);
-                vkDestroyFence(VulkanGraphicsCard::selected()->device(), _imageAcquiredFence, nullptr);
-                vkDestroySemaphore(VulkanGraphicsCard::selected()->device(), _submittedCompleteSemaphore, nullptr);
+                auto device = VulkanGraphicsCard::selected()->device();
+
+                vkWaitForFences(device,1,&_frameFinsishedFence,true,1000000000);
+
+                vkDestroyFence(device, _imageAcquiredFence, nullptr);
+                vkDestroyFence(device, _frameFinsishedFence, nullptr);
+
                 delete _backBufferToGeneral;
-                vkDestroySemaphore(VulkanGraphicsCard::selected()->device(), _backBufferToGeneralSemaphore, nullptr);
+                vkDestroySemaphore(device, _backBufferToGeneralSemaphore, nullptr);
+                vkDestroySemaphore(device, _mainCommandsCompleteSemaphore, nullptr);
                 delete _backBufferToPresent;
             }
         }
@@ -81,24 +88,14 @@ namespace slag
             return _parent;
         }
 
-        VkSemaphore VulkanFrame::imageAcquiredSemaphore() const
-        {
-            return _imageAcquiredSemaphore;
-        }
-
-        VkFence VulkanFrame::commandsCompleteFence() const
-        {
-            return _commandsCompleteFence;
-        }
-
         VkFence VulkanFrame::imageAcquiredFence() const
         {
             return _imageAcquiredFence;
         }
 
-        VkSemaphore VulkanFrame::submittedCompleteSemaphore() const
+        VkFence VulkanFrame::frameFinishedFence() const
         {
-            return _submittedCompleteSemaphore;
+            return _frameFinsishedFence;
         }
 
         VkSemaphore VulkanFrame::backBufferToGeneralSemaphore() const
@@ -106,19 +103,19 @@ namespace slag
             return _backBufferToGeneralSemaphore;
         }
 
-        VulkanCommandBuffer* VulkanFrame::backBufferToGeneral()
+        VkSemaphore VulkanFrame::mainCommandsCompleteSemaphore() const
+        {
+            return _mainCommandsCompleteSemaphore;
+        }
+
+        VulkanCommandBuffer* VulkanFrame::backBufferToGeneral() const
         {
             return _backBufferToGeneral;
         }
 
-        VulkanCommandBuffer* VulkanFrame::backBufferToPresent()
+        VulkanCommandBuffer* VulkanFrame::backBufferToPresent() const
         {
             return _backBufferToPresent;
-        }
-
-        VkSemaphore VulkanFrame::commandsCompleteSemaphore() const
-        {
-            return _commandsCompleteSemaphore;
         }
 
         void VulkanFrame::move(VulkanFrame& from)
@@ -126,13 +123,15 @@ namespace slag
             Frame::move(from);
             std::swap(_parent, from._parent);
             _frameIndex = from._frameIndex;
-            std::swap(_imageAcquiredSemaphore, from._imageAcquiredSemaphore);
-            std::swap(_imageAcquiredFence, from._imageAcquiredFence);
-            std::swap(_commandsCompleteSemaphore, from._commandsCompleteSemaphore);
-            std::swap(_commandsCompleteFence, from._commandsCompleteFence);
-            std::swap(_submittedCompleteSemaphore, from._submittedCompleteSemaphore);
-            std::swap(_backBufferToGeneral,from._backBufferToGeneral);
-            std::swap(_backBufferToGeneralSemaphore,from._backBufferToGeneralSemaphore);
+
+            std::swap(_imageAcquiredFence,from._imageAcquiredFence);
+            std::swap( _frameFinsishedFence,from._frameFinsishedFence);
+
+            std::swap( _backBufferToGeneral ,from._backBufferToGeneral);
+            std::swap( _backBufferToGeneralSemaphore ,from._backBufferToGeneralSemaphore);
+
+            std::swap( _mainCommandsCompleteSemaphore,from._mainCommandsCompleteSemaphore);
+
             std::swap(_backBufferToPresent,from._backBufferToPresent);
         }
     } // vulkan
