@@ -1,7 +1,6 @@
 public struct GroupOne
 {
     public float4 colorUniformBuffer;
-    public SamplerState sampler;
     public Texture2D sampledTexture;
     public WTexture2D storageTexture;
 }
@@ -17,6 +16,12 @@ public struct GroupTwo
     public RWBuffer<uint4> storageTexelBuffer[2];
     public StructuredBuffer<mything> storageBuffer;
 }
+
+public struct GroupThree
+{
+    public SamplerState sampler;
+}
+
 
 
 //Vertex Position 3D attribute
@@ -43,6 +48,7 @@ struct FragmentParameters
 
 public ParameterBlock<GroupOne> First;
 public ParameterBlock<GroupTwo> Second;
+public ParameterBlock<GroupThree> Third;
 
 [shader("vertex")]
 VertexStageOutput vertexMain(Vertex3D vertex3d: POSITION, UVCoordinates uvCoordinates: UV_COORDINATES)
@@ -56,7 +62,7 @@ VertexStageOutput vertexMain(Vertex3D vertex3d: POSITION, UVCoordinates uvCoordi
 [shader("fragment")]
 float4 fragmentMain(FragmentParameters fragmentParameters : FragmentParameters) : SV_Target
 {
-    var color = First.colorUniformBuffer * First.sampledTexture.Sample(First.sampler,fragmentParameters.uv);
+    var color = First.colorUniformBuffer * First.sampledTexture.Sample(Third.sampler,fragmentParameters.uv);
     var count = Second.storageBuffer.getCount();
     var read = Second.uniformTexelBuffer.Load(0);
     if(count < 1)

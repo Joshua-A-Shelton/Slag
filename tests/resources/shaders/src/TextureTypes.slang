@@ -1,7 +1,6 @@
 public struct GroupOne
 {
     public int index;
-    public SamplerState sampler;
     public Texture1D[3] texture1D;
     public Texture1DArray texture1DArray;
     public texture2D[3] texture2D;
@@ -9,6 +8,10 @@ public struct GroupOne
     public Texture3D[3] texture3D;
     public TextureCube[3] textureCube;
     public TextureCubeArray textureCubeArray;
+}
+public struct GroupTwo
+{
+    public SamplerState sampler;
 }
 public struct Vertex3D
 {
@@ -32,6 +35,7 @@ struct VertexStageOutput
 }
 
 public ParameterBlock<GroupOne> First;
+public ParameterBlock<GroupTwo> Second;
 
 [shader("vertex")]
 VertexStageOutput vertexMain(Vertex3D vertex3d: POSITION, UVCoordinates uvCoordinates: UV_COORDINATES)
@@ -45,13 +49,13 @@ VertexStageOutput vertexMain(Vertex3D vertex3d: POSITION, UVCoordinates uvCoordi
 [shader("fragment")]
 float4 fragmentMain(FragmentParameters fragmentParameters : FragmentParameters) : SV_Target
 {
-    var color1 = First.texture1D[First.index].Sample(First.sampler,.5);
-    var color2 = First.texture1DArray.Sample(First.sampler,float2(.5,.5));
-    var color3 = First.texture2D[First.index].Sample(First.sampler,fragmentParameters.uv);
-    var color4 = First.texture2DArray.Sample(First.sampler,float3(fragmentParameters.uv,.7));
-    var color5 = First.texture3D[First.index].Sample(First.sampler,float3(0,.5,.2));
-    var color6 = First.textureCube[First.index].Sample(First.sampler,float3(1,-1,1));
-    var color7 = First.textureCubeArray.Sample(First.sampler,float4(1,1,1,.6));
+    var color1 = First.texture1D[First.index].Sample(Second.sampler,.5);
+    var color2 = First.texture1DArray.Sample(Second.sampler,float2(.5,.5));
+    var color3 = First.texture2D[First.index].Sample(Second.sampler,fragmentParameters.uv);
+    var color4 = First.texture2DArray.Sample(Second.sampler,float3(fragmentParameters.uv,.7));
+    var color5 = First.texture3D[First.index].Sample(Second.sampler,float3(0,.5,.2));
+    var color6 = First.textureCube[First.index].Sample(Second.sampler,float3(1,-1,1));
+    var color7 = First.textureCubeArray.Sample(Second.sampler,float4(1,1,1,.6));
     return color1*color2*color3*color4*color5*color6*color7;
 
 }

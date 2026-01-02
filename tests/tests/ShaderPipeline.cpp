@@ -428,33 +428,35 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflection)
 
 
     auto pipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(stages,2,properties,vertexDescription,frameBufferDescription);
-    GTEST_ASSERT_EQ(pipeline->descriptorGroupCount(),3);
+    GTEST_ASSERT_EQ(pipeline->descriptorGroupCount(),4);
     auto group0 = pipeline->descriptorGroup(0);
     auto group1 = pipeline->descriptorGroup(1);
     auto group2 = pipeline->descriptorGroup(2);
+    auto group3 = pipeline->descriptorGroup(3);
     GTEST_ASSERT_EQ(group0->descriptorCount(),1);
-    GTEST_ASSERT_EQ(group1->descriptorCount(),3);
-    GTEST_ASSERT_EQ(group2->descriptorCount(),1);
+    GTEST_ASSERT_EQ(group1->descriptorCount(),1);
+    GTEST_ASSERT_EQ(group2->descriptorCount(),2);
+    GTEST_ASSERT_EQ(group3->descriptorCount(),1);
 
     GTEST_ASSERT_TRUE(group0->descriptor(0).shape().type == Descriptor::Type::UNIFORM_BUFFER);
     GTEST_ASSERT_EQ(group0->descriptor(0).shape().arrayDepth,1);
 
-    GTEST_ASSERT_TRUE(group1->descriptor(0).shape().type == Descriptor::Type::UNIFORM_BUFFER);
+    GTEST_ASSERT_TRUE(group1->descriptor(0).shape().type == Descriptor::Type::SAMPLER);
     GTEST_ASSERT_EQ(group1->descriptor(0).shape().arrayDepth,1);
-
-    GTEST_ASSERT_TRUE(group1->descriptor(1).shape().type == Descriptor::Type::SAMPLED_TEXTURE);
-    GTEST_ASSERT_EQ(group1->descriptor(1).shape().arrayDepth,1);
-
-    GTEST_ASSERT_EQ(group1->descriptor(2).shape().type, Descriptor::Type::SAMPLER);
-    GTEST_ASSERT_EQ(group1->descriptor(2).shape().arrayDepth,1);
 
     GTEST_ASSERT_TRUE(group2->descriptor(0).shape().type == Descriptor::Type::UNIFORM_BUFFER);
     GTEST_ASSERT_EQ(group2->descriptor(0).shape().arrayDepth,1);
 
+    GTEST_ASSERT_EQ(group2->descriptor(1).shape().type, Descriptor::Type::SAMPLED_TEXTURE);
+    GTEST_ASSERT_EQ(group2->descriptor(1).shape().arrayDepth,1);
+
+    GTEST_ASSERT_TRUE(group3->descriptor(0).shape().type == Descriptor::Type::UNIFORM_BUFFER);
+    GTEST_ASSERT_EQ(group3->descriptor(0).shape().arrayDepth,1);
+
     auto layout0_0 = pipeline->bufferLayout(0,0);
-    auto layout1_0 = pipeline->bufferLayout(1,0);
-    auto layout1_1 = pipeline->bufferLayout(1,1);
     auto layout2_0 = pipeline->bufferLayout(2,0);
+    auto layout2_1 = pipeline->bufferLayout(2,1);
+    auto layout3_0 = pipeline->bufferLayout(3,0);
 
     GTEST_ASSERT_EQ(layout0_0->childrenCount(),3);
     GTEST_ASSERT_EQ(layout0_0->size(),64*3);
@@ -465,14 +467,14 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflection)
         GTEST_ASSERT_EQ(child.absoluteOffset(),64*i);
     }
 
-    GTEST_ASSERT_EQ(layout1_0->childrenCount(),1);
-    GTEST_ASSERT_EQ(layout1_0->size(),16);
-    GTEST_ASSERT_EQ(layout1_0->child(0).type(), GraphicsType::VECTOR4);
+    GTEST_ASSERT_EQ(layout2_0->childrenCount(),1);
+    GTEST_ASSERT_EQ(layout2_0->size(),16);
+    GTEST_ASSERT_EQ(layout2_0->child(0).type(), GraphicsType::VECTOR4);
 
-    GTEST_ASSERT_EQ(layout1_1,nullptr);
+    GTEST_ASSERT_EQ(layout2_1,nullptr);
 
-    GTEST_ASSERT_EQ(layout2_0->size(),64);
-    GTEST_ASSERT_TRUE(is4x4MatrixType(&layout2_0->child(0)));
+    GTEST_ASSERT_EQ(layout3_0->size(),64);
+    GTEST_ASSERT_TRUE(is4x4MatrixType(&layout3_0->child(0)));
 
 
 }
@@ -499,27 +501,25 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflectionAllTypes)
 
 
     auto pipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(stages, 2, properties, vertexDescription, frameBufferDescription);
-    GTEST_ASSERT_EQ(pipeline->descriptorGroupCount(),2);
+    GTEST_ASSERT_EQ(pipeline->descriptorGroupCount(),3);
     auto group0 = pipeline->descriptorGroup(0);
     auto group1 = pipeline->descriptorGroup(1);
-    GTEST_ASSERT_EQ(group0->descriptorCount(),4);
+    auto group2 = pipeline->descriptorGroup(2);
+    GTEST_ASSERT_EQ(group0->descriptorCount(),3);
     GTEST_ASSERT_EQ(group1->descriptorCount(),3);
+    GTEST_ASSERT_EQ(group2->descriptorCount(),1);
 
     GTEST_ASSERT_TRUE(group0->descriptor(0).shape().type == Descriptor::Type::UNIFORM_BUFFER);
     GTEST_ASSERT_EQ(group0->descriptor(0).shape().arrayDepth,1);
     GTEST_ASSERT_EQ(group0->descriptor(0).shape().dimension,Descriptor::Dimension::ONE_DIMENSIONAL);
 
-    GTEST_ASSERT_TRUE(group0->descriptor(1).shape().type == Descriptor::Type::SAMPLER);
+    GTEST_ASSERT_TRUE(group0->descriptor(1).shape().type == Descriptor::Type::SAMPLED_TEXTURE);
     GTEST_ASSERT_EQ(group0->descriptor(1).shape().arrayDepth,1);
-    GTEST_ASSERT_EQ(group0->descriptor(1).shape().dimension,Descriptor::Dimension::ONE_DIMENSIONAL);
+    GTEST_ASSERT_EQ(group0->descriptor(1).shape().dimension,Descriptor::Dimension::TWO_DIMENSIONAL);
 
-    GTEST_ASSERT_TRUE(group0->descriptor(2).shape().type == Descriptor::Type::SAMPLED_TEXTURE);
+    GTEST_ASSERT_TRUE(group0->descriptor(2).shape().type == Descriptor::Type::STORAGE_TEXTURE);
     GTEST_ASSERT_EQ(group0->descriptor(2).shape().arrayDepth,1);
     GTEST_ASSERT_EQ(group0->descriptor(2).shape().dimension,Descriptor::Dimension::TWO_DIMENSIONAL);
-
-    GTEST_ASSERT_TRUE(group0->descriptor(3).shape().type == Descriptor::Type::STORAGE_TEXTURE);
-    GTEST_ASSERT_EQ(group0->descriptor(3).shape().arrayDepth,1);
-    GTEST_ASSERT_EQ(group0->descriptor(3).shape().dimension,Descriptor::Dimension::TWO_DIMENSIONAL);
 
     GTEST_ASSERT_TRUE(group1->descriptor(0).shape().type == Descriptor::Type::UNIFORM_TEXEL_BUFFER);
     GTEST_ASSERT_EQ(group1->descriptor(0).shape().arrayDepth,1);
@@ -532,6 +532,10 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflectionAllTypes)
     GTEST_ASSERT_TRUE(group1->descriptor(2).shape().type == Descriptor::Type::STORAGE_BUFFER);
     GTEST_ASSERT_EQ(group1->descriptor(2).shape().arrayDepth,1);
     GTEST_ASSERT_EQ(group1->descriptor(2).shape().dimension,Descriptor::Dimension::ONE_DIMENSIONAL);
+
+    GTEST_ASSERT_TRUE(group2->descriptor(0).shape().type == Descriptor::Type::SAMPLER);
+    GTEST_ASSERT_EQ(group2->descriptor(0).shape().arrayDepth,1);
+    GTEST_ASSERT_EQ(group2->descriptor(0).shape().dimension,Descriptor::Dimension::ONE_DIMENSIONAL);
 
     auto uniformBufferLayout = pipeline->bufferLayout(0,0);
     auto uniformTexelBufferLayout = pipeline->texelBufferDescription(1,0);
@@ -652,13 +656,13 @@ TEST_F(ShaderPipelineTest, TextureTypes)
     auto pipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(stages,2,properties,vertexDescription,frameBufferDescription);
     auto group = pipeline->descriptorGroup(0);
     //these names are a tad confusing. XXXArray means the array is coming from the texture itself, but isn't arrayed in the code
-    auto texture1D = group->descriptor(2);
-    auto texture1DArray = group->descriptor(3);
-    auto texture2D = group->descriptor(4);
-    auto texture2DArray = group->descriptor(5);
-    auto texture3D = group->descriptor(6);
-    auto textureCube = group->descriptor(7);
-    auto textureCubeArray = group->descriptor(8);
+    auto texture1D = group->descriptor(1);
+    auto texture1DArray = group->descriptor(2);
+    auto texture2D = group->descriptor(3);
+    auto texture2DArray = group->descriptor(4);
+    auto texture3D = group->descriptor(5);
+    auto textureCube = group->descriptor(6);
+    auto textureCubeArray = group->descriptor(7);
 
     GTEST_ASSERT_EQ(texture1D.shape().type, Descriptor::Type::SAMPLED_TEXTURE);
     GTEST_ASSERT_EQ(texture1D.shape().dimension,Descriptor::Dimension::ONE_DIMENSIONAL);

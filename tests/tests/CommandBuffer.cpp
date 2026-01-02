@@ -1208,7 +1208,6 @@ TEST_F(CommandBufferTest, SetScissor)
     finished->waitForValue(1);
 
     unsigned char* colorPtr = outputBuffer->as<unsigned char>();
-    lodepng::encode("C:\\Users\\jshelton\\Desktop\\output\\Scissor.png",colorPtr,target->width(),target->height());
 
     auto groundTruth = utilities::loadTexelsFromFile("resources/textures/set-scissor-test-result.png");
     GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
