@@ -70,7 +70,12 @@ namespace slag
             {
                 return memoryLocation;
             }
-            return memoryLocation + (memoryLocation % _descriptorSetAlignment);
+            auto offAlign = memoryLocation % _descriptorSetAlignment;
+            if (offAlign == 0)
+            {
+                return memoryLocation;
+            }
+            return memoryLocation + (_descriptorSetAlignment - (offAlign));
         }
 
         void VulkanResourceDescriptorMemory::setSampledTexture(uint64_t memoryLocation, Texture* texture)
