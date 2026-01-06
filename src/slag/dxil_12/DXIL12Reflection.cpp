@@ -76,10 +76,11 @@ namespace slag
 
         DXILReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount,std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
         {
-            throw std::runtime_error("DXILReflectionData::getReflectionData not supported yet");
             //TODO: move this out of here, I shouldn't create and destroy this every time
             Microsoft::WRL::ComPtr<IDxcUtils> dxilUtils = nullptr;
             DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxilUtils));
+
+            std::unordered_map<uint32_t,std::unordered_map<uint32_t,Descriptor>> descriptorGroups;
 
             for (auto i=0; i < shaderCount; i++)
             {
@@ -96,6 +97,7 @@ namespace slag
 
                 D3D12_SHADER_DESC shaderDesc{};
                 shaderReflection->GetDesc(&shaderDesc);
+
 
                 for (auto boundResourceIndex=0; boundResourceIndex< shaderDesc.BoundResources; boundResourceIndex++)
                 {
@@ -120,10 +122,27 @@ namespace slag
                         renameParameters.platformSpecificBindingIndex = bindDesc.BindPoint;
                         name = rename(renameParameters,renameData);
                     }
-                    //TODO: do something with data....
+                    auto group = descriptorGroups.find(bindDesc.Space);
+                    if (group == descriptorGroups.end())
+                    {
+                        group = descriptorGroups.insert(std::pair<uint32_t,std::unordered_map<uint32_t,Descriptor>>(bindDesc.Space,std::unordered_map<uint32_t,Descriptor>())).first;
+                    }
+                    auto descriptor = group->second.find(bindDesc.BindPoint);
+                    if (descriptor == group->second.end())
+                    {
+                        group->second.insert(std::pair<uint32_t,Descriptor>(bindDesc.BindPoint,Descriptor(name,type,dimension,bindDesc.BindCount,shader->stage())));
+                    }
+                    else
+                    {
+                        if (descriptor->second.shape().type!=type || descriptor->second.shape().dimension!=dimension || descriptor->second.shape().arrayDepth!=bindDesc.BindCount)
+                        {
+                            throw std::runtime_error("Incompatible descriptor sets bewteen shader stages");
+                        }
+                        descriptor->second = Descriptor(name,type,dimension,bindDesc.BindCount,shader->stage() | descriptor->second.shape().visibleStages);
+                    }
                 }
             }
-
+            //TODO: actually use the descriptors
             return DXILReflectionData();
         }
     }

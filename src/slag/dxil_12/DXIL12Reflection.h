@@ -8,15 +8,10 @@ namespace slag
 {
     namespace dxil
     {
-        struct IndexedDescriptor
-        {
-            Descriptor descriptor;
-            uint32_t index;
-        };
         struct DXILDescriptorGroupReflectionData
         {
             uint32_t groupIndex;
-            std::vector<IndexedDescriptor> descriptors;
+            std::vector<Descriptor> descriptors;
         };
 
         struct DXILReflectionData
