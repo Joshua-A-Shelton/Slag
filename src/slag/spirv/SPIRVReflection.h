@@ -10,6 +10,8 @@ namespace slag
         {
             uint32_t groupIndex;
             std::vector<Descriptor> descriptors;
+            std::vector<uint32_t> originalToNewIndices;
+            std::vector<Descriptor::Shape> orderedShapes;
         };
 
         struct SPVReflectionData
@@ -24,7 +26,7 @@ namespace slag
             uint32_t entryPointZDim=0;
         };
 
-        SPVReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount, std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData);
+        SPVReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount, DescriptorIdentity(*identify)(const DescriptorIdentityParameters&,void*), void* identifyData);
     } // spirv
 } // slag
 

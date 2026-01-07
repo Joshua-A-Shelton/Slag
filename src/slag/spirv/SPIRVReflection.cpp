@@ -1,8 +1,10 @@
 #include "SPIRVReflection.h"
 
 #include <functional>
+#include <iostream>
 #include <spirv_reflect.h>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "slag/utilities/SLAG_ASSERT.h"
 
@@ -307,8 +309,10 @@ namespace slag
         {
             uint32_t index=0;
             std::unordered_map<uint32_t, Descriptor> descriptors;
+            std::unordered_map<uint32_t, uint32_t> indices;
+            std::unordered_set<uint32_t> assignedIndices;
         };
-        SPVReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount,std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
+        SPVReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount,DescriptorIdentity(*identify)(const DescriptorIdentityParameters&,void*), void* identifyData)
         {
             uint32_t totalSets = 0;
             std::unordered_map<uint32_t, DescriptorGroupReflectionStub> groups;
@@ -353,14 +357,16 @@ namespace slag
                         {
                             auto& binding = set.bindings[i];
                             auto descriptor = descriptorReflection.descriptors.find(binding->binding);
+                            uint32_t descIndex = binding->binding;
                             if (descriptor == descriptorReflection.descriptors.end())
                             {
                                 std::string name = binding->name;
                                 auto type = descriptorTypeFromSPV(binding->descriptor_type);
                                 auto dimension = dimensionFromSPV(binding->image.dim);
-                                if (rename!=nullptr)
+
+                                if (identify!=nullptr)
                                 {
-                                    DescriptorRenameParameters renameParameters{};
+                                    DescriptorIdentityParameters renameParameters{};
                                     renameParameters.language = ShaderCode::CodeLanguage::SPIRV;
                                     renameParameters.originalName = name;
                                     renameParameters.descriptorGroupIndex = set.set;
@@ -369,9 +375,17 @@ namespace slag
                                     renameParameters.arrayDepth = binding->count;
                                     renameParameters.platformSpecificBindingIndex = binding->binding;
                                     renameParameters.platformData = binding;
-                                    name = rename(renameParameters,renameData);
+                                    auto identity = identify(renameParameters,identifyData);
+                                    name = identity.name;
+                                    descIndex = identity.index;
                                 }
                                 descriptor = descriptorReflection.descriptors.insert(std::pair<uint32_t,Descriptor>(binding->binding,Descriptor(name,type,dimension,binding->count,shader->stage()))).first;
+                                if (descriptorReflection.assignedIndices.find(descIndex)!=descriptorReflection.assignedIndices.end())
+                                {
+                                    throw std::runtime_error("Multiple descriptors in a single set are being assigned to the same index");
+                                }
+                                descriptorReflection.assignedIndices.emplace(descIndex);
+                                descriptorReflection.indices.insert(std::pair<uint32_t,uint32_t>(binding->binding,descIndex));
                             }
                             else
                             {
@@ -391,14 +405,14 @@ namespace slag
                                 if ( bufferDescription == bufferLayouts.end())
                                 {
                                     bufferDescription = bufferLayouts.insert(std::pair<uint32_t,std::unordered_map<uint32_t,BufferLayout>>(set.set,std::unordered_map<uint32_t,BufferLayout>{})).first;
-                                    bufferDescription->second.insert(std::pair<uint32_t,BufferLayout>(binding->binding,bufferDescriptorLayoutFromSPV(&binding->block)));
+                                    bufferDescription->second.insert(std::pair<uint32_t,BufferLayout>(descIndex,bufferDescriptorLayoutFromSPV(&binding->block)));
                                 }
                                 else
                                 {
-                                    auto description = bufferDescription->second.find(binding->binding);
+                                    auto description = bufferDescription->second.find(descIndex);
                                     if (description == bufferDescription->second.end())
                                     {
-                                        bufferDescription->second.insert(std::pair<uint32_t,BufferLayout>(binding->binding,bufferDescriptorLayoutFromSPV(&binding->block)));
+                                        bufferDescription->second.insert(std::pair<uint32_t,BufferLayout>(descIndex,bufferDescriptorLayoutFromSPV(&binding->block)));
                                     }
                                     else
                                     {
@@ -480,6 +494,8 @@ namespace slag
             for (auto& group : groups)
             {
                 std::vector<Descriptor> descriptors(group.second.descriptors.size());
+                std::vector<uint32_t> indices(group.second.indices.size());
+                std::vector<Descriptor::Shape> orderedShapes(group.second.descriptors.size());
                 auto type = group.second.descriptors[0].shape().type;
                 for (auto& kvpair : group.second.descriptors)
                 {
@@ -488,13 +504,16 @@ namespace slag
                     {
                         throw std::runtime_error(std::string("Descriptor group [")+std::to_string(kvpair.first)+"] mixes sampler and non-sampler descriptors, which is not supported");
                     }
-                    if (kvpair.first >= descriptors.size())
+                    uint32_t assignedIndex = group.second.indices.at(kvpair.first);
+                    if (assignedIndex >= descriptors.size())
                     {
                         descriptors.resize(kvpair.first+1);
                     }
-                    descriptors[kvpair.first] = kvpair.second;
+                    descriptors[assignedIndex] = kvpair.second;
+                    indices[kvpair.first] = assignedIndex;
+                    orderedShapes[kvpair.first] = kvpair.second.shape();
                 }
-                reflectionData.groups[group.first] = {.groupIndex = group.first,.descriptors = std::move(descriptors)};
+                reflectionData.groups[group.first] = {.groupIndex = group.first,.descriptors = std::move(descriptors),.originalToNewIndices = std::move(indices), .orderedShapes = std::move(orderedShapes)};
             }
             return reflectionData;
         }

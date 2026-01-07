@@ -9,7 +9,7 @@ namespace slag
 {
     namespace dx12
     {
-        DX12ShaderPipeline::DX12ShaderPipeline(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties,VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
+        DX12ShaderPipeline::DX12ShaderPipeline(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties,VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, DescriptorIdentity(*identify)(const DescriptorIdentityParameters&,void*), void* identifyData)
         {
             SLAG_ASSERT(shaderCount > 0 && "Must have at least one shader provided for the pipeline");
             ShaderCode::CodeLanguage language = ShaderCode::CodeLanguage::CUSTOM;
@@ -26,11 +26,11 @@ namespace slag
             }
             if (language == ShaderCode::CodeLanguage::SPIRV)
             {
-                spirvConstruct(shaders,shaderCount,properties,vertexDescription,framebufferDescription,rename,renameData);
+                spirvConstruct(shaders,shaderCount,properties,vertexDescription,framebufferDescription,identify,identifyData);
             }
             else if (language == ShaderCode::CodeLanguage::DXIL)
             {
-                dxilConstruct(shaders,shaderCount,properties,vertexDescription,framebufferDescription,rename,renameData);
+                dxilConstruct(shaders,shaderCount,properties,vertexDescription,framebufferDescription,identify,identifyData);
             }
             else
             {
@@ -38,7 +38,7 @@ namespace slag
             }
         }
 
-        DX12ShaderPipeline::DX12ShaderPipeline(const ShaderCode& computeShader,std::string(* rename)(const DescriptorRenameParameters&,void*), void* renameData)
+        DX12ShaderPipeline::DX12ShaderPipeline(const ShaderCode& computeShader,DescriptorIdentity(* identify)(const DescriptorIdentityParameters&,void*), void* identifyData)
         {
             throw std::runtime_error("DX12ShaderPipeline::DX12ShaderPipeline() not implemented");
         }
@@ -145,12 +145,12 @@ namespace slag
             _zthreads = from._zthreads;
         }
 
-        void DX12ShaderPipeline::spirvConstruct(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
+        void DX12ShaderPipeline::spirvConstruct(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, DescriptorIdentity(*identify)(const DescriptorIdentityParameters&,void*), void* identifyData)
         {
             throw std::runtime_error("SPIRV isn't supported yet for Direct X 12 Backend");
         }
 
-        void DX12ShaderPipeline::dxilConstruct(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties,VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
+        void DX12ShaderPipeline::dxilConstruct(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties,VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,DescriptorIdentity(*identify)(const DescriptorIdentityParameters&,void*), void* identifyData)
         {
             D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineDesc = {};
             for (auto i=0; i<shaderCount; i++)
@@ -177,7 +177,7 @@ namespace slag
 
             //TODO: Implement reflection data
 
-            auto reflectionData = dxil::getReflectionData(shaders, shaderCount,rename,renameData);
+            auto reflectionData = dxil::getReflectionData(shaders, shaderCount,identify,identifyData);
 
 
             D3D12_GRAPHICS_PIPELINE_STATE_DESC shaderDescription{};

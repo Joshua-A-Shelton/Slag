@@ -148,4 +148,35 @@ namespace slag
         }
         return true;
     }
+
+    utilities::DescriptorDictionary::DescriptorDictionary(uint32_t groups)
+    {
+        _entries = std::vector<std::unordered_map<std::string,DescriptorEntry>>(groups);
+    }
+
+    utilities::DescriptorEntry utilities::DescriptorDictionary::getEntry(uint32_t group, std::string originalName) const
+    {
+        if (group > _entries.size())
+        {
+            throw std::runtime_error("Group does not exist");
+        }
+        auto& entry = _entries[group];
+        auto descriptor = entry.find(originalName);
+        if (descriptor == entry.end())
+        {
+            throw std::runtime_error("No such descriptor");
+        }
+        return descriptor->second;
+    }
+
+    void utilities::DescriptorDictionary::addEntry(uint32_t group, const std::string& originalName, uint32_t index,
+        const std::string& name)
+    {
+        if (group > _entries.size())
+        {
+            throw std::runtime_error("Group does not exist");
+        }
+        auto& entry = _entries[group];
+        entry[originalName] = DescriptorEntry{.name = name, .index = index};
+    }
 } // slag

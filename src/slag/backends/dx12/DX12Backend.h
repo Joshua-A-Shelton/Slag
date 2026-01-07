@@ -58,8 +58,9 @@ namespace slag
             virtual Sampler* newSampler(SamplerParameters parameters)override;
             //shaders
             virtual std::vector<ShaderCode::CodeLanguage> acceptedLanuages()override;
-            virtual ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)override;
-            virtual ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader, std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)override;
+            virtual ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, DescriptorIdentity
+                                                      (*identify)(const DescriptorIdentityParameters&, void*), void* identifyData)override;
+            virtual ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader, DescriptorIdentity (*identify)(const DescriptorIdentityParameters&, void*), void* identifyData)override;
             //Pixel Properties
             virtual PixelFormatProperties pixelFormatProperties(Pixels::Format format)override;
             //Descriptor Memory

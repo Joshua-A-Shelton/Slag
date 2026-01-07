@@ -24,8 +24,8 @@ namespace slag
         class VulkanDescriptorGroupCache
         {
         public:
-            static VkDescriptorSetLayout getLayout(VulkanDescriptorGroup& group);
-            static void removeInstance(VulkanDescriptorGroup& group);
+            static VkDescriptorSetLayout getLayout(VulkanDescriptorGroup::Shape& shape);
+            static void removeInstance(VulkanDescriptorGroup::Shape& shape);
         private:
             static inline std::mutex _cacheMutex;
             static inline std::unordered_map<VulkanDescriptorGroup::Shape, CachedLayout,VulkanDescriptorGroup::Shape::DescriptorGroupShapeHash> _cachedLayouts;

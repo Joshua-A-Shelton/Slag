@@ -57,7 +57,7 @@ namespace slag
             return result;
         }
 
-        VulkanDescriptorGroup::VulkanDescriptorGroup(Descriptor* descriptors, uint32_t descriptorCount)
+        VulkanDescriptorGroup::VulkanDescriptorGroup(Descriptor* descriptors, uint32_t* indexMappings, uint32_t descriptorCount, VulkanDescriptorGroup::Shape& shape)
         {
 
             _descriptors.resize(descriptorCount);
@@ -69,15 +69,16 @@ namespace slag
                 descriptorShapes[i] = desc.shape();
                 _descriptors[i] = std::move(desc);
             }
-            _groupShape._descriptorShapes = std::move(descriptorShapes);
-            _layout = VulkanDescriptorGroupCache::getLayout(*this);
+            _groupShape = shape;
+            _layout = VulkanDescriptorGroupCache::getLayout(_groupShape);
 
             slag_vkGetDescriptorSetLayoutSizeEXT(VulkanGraphicsCard::selected()->device(),_layout,&_descriptorBufferSize);
             for (auto i = 0; i<descriptorCount; i++)
             {
                 VkDeviceSize offset = 0;
                 slag_vkGetDescriptorSetLayoutBindingOffsetEXT(VulkanGraphicsCard::selected()->device(),_layout,i,&offset);
-                _descriptorByteOffsets[i] = offset;
+
+                _descriptorByteOffsets[indexMappings[i]] = offset;
             }
         }
 
@@ -85,7 +86,7 @@ namespace slag
         {
             if(_layout)
             {
-                VulkanDescriptorGroupCache::removeInstance(*this);
+                VulkanDescriptorGroupCache::removeInstance(_groupShape);
             }
         }
 
@@ -116,7 +117,7 @@ namespace slag
             _descriptors = from._descriptors;
             _descriptorByteOffsets = from._descriptorByteOffsets;
             //do this instead of direct copy to increase the internal reference count
-            _layout = VulkanDescriptorGroupCache::getLayout(*this);
+            _layout = VulkanDescriptorGroupCache::getLayout(_groupShape);
             _groupShape = from._groupShape;
             _descriptorBufferSize = from._descriptorBufferSize;
         }
@@ -152,17 +153,8 @@ namespace slag
 
         bool VulkanDescriptorGroup::compatible(DescriptorGroup* with)
         {
-             auto against = static_cast<VulkanDescriptorGroup*>(with);
-             for (int i=0; i< _descriptors.size() && i<against->_descriptors.size(); i++)
-             {
-                 auto& me = _descriptors[i];
-                 auto& againstme = against->_descriptors[i];
-                 if (me.shape() != againstme.shape())
-                 {
-                     return false;
-                 }
-             }
-             return true;
+            auto against = static_cast<VulkanDescriptorGroup*>(with);
+            return _groupShape == against->_groupShape;
         }
 
 

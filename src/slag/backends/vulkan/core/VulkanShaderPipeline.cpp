@@ -46,7 +46,7 @@ namespace slag
             }
         };
 
-        VulkanShaderPipeline::VulkanShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
+        VulkanShaderPipeline::VulkanShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, DescriptorIdentity(*identify)(const DescriptorIdentityParameters&,void*), void* identifyData)
         {
             _pipelineType = PipelineType::GRAPHICS;
             _xthreads = 0;
@@ -54,14 +54,16 @@ namespace slag
             _zthreads = 0;
 // get the reflection data *********************************************************************************************
 
-            auto reflectionData = spirv::getReflectionData(shaders, shaderCount,rename,renameData);
+            auto reflectionData = spirv::getReflectionData(shaders, shaderCount,identify,identifyData);
             _bufferLayouts = std::move(reflectionData.bufferLayouts);
             _texelBufferDescriptions = std::move(reflectionData.texelBufferDescriptions);
             _descriptorGroups.resize(reflectionData.groups.size());
             for (auto i = 0; i < reflectionData.groups.size(); i++)
             {
-                auto descriptors = reflectionData.groups[i].descriptors;
-                _descriptorGroups[i] = VulkanDescriptorGroup(descriptors.data(),descriptors.size());
+                auto& descriptors = reflectionData.groups[i].descriptors;
+                auto& reorderedIndices = reflectionData.groups[i].originalToNewIndices;
+                VulkanDescriptorGroup::Shape shape(std::move(reflectionData.groups[i].orderedShapes));
+                _descriptorGroups[i] = VulkanDescriptorGroup(descriptors.data(),reorderedIndices.data(),descriptors.size(),shape);
             }
             _pushConstants = std::move(reflectionData.pushConstants);
 
@@ -318,11 +320,11 @@ namespace slag
 
         }
 
-        VulkanShaderPipeline::VulkanShaderPipeline(const ShaderCode& computeCode, std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
+        VulkanShaderPipeline::VulkanShaderPipeline(const ShaderCode& computeCode, DescriptorIdentity(*identify)(const DescriptorIdentityParameters&,void*), void* identifyData)
         {
             _pipelineType = PipelineType::COMPUTE;
             auto computeCodePtr = &const_cast<ShaderCode&>(computeCode);
-            auto reflectionData = spirv::getReflectionData(&computeCodePtr, 1,rename,renameData);
+            auto reflectionData = spirv::getReflectionData(&computeCodePtr, 1,identify,identifyData);
             _xthreads = reflectionData.entryPointXDim;
             _ythreads = reflectionData.entryPointYDim;
             _zthreads = reflectionData.entryPointZDim;
@@ -330,8 +332,10 @@ namespace slag
             _descriptorGroups.resize(reflectionData.groups.size());
             for (auto i = 0; i < reflectionData.groups.size(); i++)
             {
-                auto descriptors = reflectionData.groups[i].descriptors;
-                _descriptorGroups[i] = VulkanDescriptorGroup(descriptors.data(),descriptors.size());
+                auto& descriptors = reflectionData.groups[i].descriptors;
+                auto& reorderIndices = reflectionData.groups[i].originalToNewIndices;
+                VulkanDescriptorGroup::Shape shape(std::move(reflectionData.groups[i].orderedShapes));
+                _descriptorGroups[i] = VulkanDescriptorGroup(descriptors.data(),reorderIndices.data(),descriptors.size(),shape);
             }
             _pushConstants = std::move(reflectionData.pushConstants);
 

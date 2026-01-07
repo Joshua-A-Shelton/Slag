@@ -13,8 +13,8 @@ namespace slag
         class VulkanShaderPipeline: public ShaderPipeline
         {
         public:
-            VulkanShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData);
-            VulkanShaderPipeline(const ShaderCode& computeCode, std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData);
+            VulkanShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, DescriptorIdentity(*identify)(const DescriptorIdentityParameters&,void*), void* identifyData);
+            VulkanShaderPipeline(const ShaderCode& computeCode, DescriptorIdentity(*identify)(const DescriptorIdentityParameters&,void*), void* identifyData);
             VulkanShaderPipeline(const VulkanShaderPipeline&)=delete;
             VulkanShaderPipeline& operator=(const VulkanShaderPipeline&)=delete;
             VulkanShaderPipeline(VulkanShaderPipeline&& from);

@@ -664,14 +664,15 @@ namespace slag
             };
         }
 
-        ShaderPipeline* VulkanBackend::newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
+        ShaderPipeline* VulkanBackend::newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, DescriptorIdentity
+                                                         (*identify)(const DescriptorIdentityParameters&, void*), void* identifyData)
         {
-            return new VulkanShaderPipeline(shaders, shaderCount, properties, vertexDescription, framebufferDescription, rename, renameData);
+            return new VulkanShaderPipeline(shaders, shaderCount, properties, vertexDescription, framebufferDescription, identify, identifyData);
         }
 
-        ShaderPipeline* VulkanBackend::newShaderPipeline(const ShaderCode& computeShader, std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
+        ShaderPipeline* VulkanBackend::newShaderPipeline(const ShaderCode& computeShader, DescriptorIdentity (*identify)(const DescriptorIdentityParameters&, void*), void* identifyData)
         {
-            return new VulkanShaderPipeline(computeShader, rename, renameData);
+            return new VulkanShaderPipeline(computeShader, identify, identifyData);
         }
 
         ResourceDescriptorMemory* VulkanBackend::newResourceDescriptorMemory(uint64_t descriptorCount)

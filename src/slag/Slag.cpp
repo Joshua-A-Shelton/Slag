@@ -41,7 +41,7 @@ namespace slag
 #endif
 #ifdef SLAG_DX12_BACKEND
         case GraphicsBackend::DX12_GRAPHICS_BACKEND:
-            //Backend::_current = new dx12::DX12Backend(initInfo);
+            Backend::_current = new dx12::DX12Backend(initInfo);
             break;
 #endif
 

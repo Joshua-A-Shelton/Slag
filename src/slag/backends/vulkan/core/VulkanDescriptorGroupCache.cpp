@@ -8,35 +8,34 @@ namespace slag
 {
     namespace vulkan
     {
-        VkDescriptorSetLayout VulkanDescriptorGroupCache::getLayout(VulkanDescriptorGroup& group)
+        VkDescriptorSetLayout VulkanDescriptorGroupCache::getLayout(VulkanDescriptorGroup::Shape& shape)
         {
-            if(group.descriptorCount() == 0)
+            if(shape._descriptorShapes.size() == 0)
             {
                 return nullptr;
             }
             std::lock_guard<std::mutex> lock(_cacheMutex);
 
-            auto id = group.groupShape();
-            auto layout = _cachedLayouts.find(id);
+            auto layout = _cachedLayouts.find(shape);
             if(layout == _cachedLayouts.end())
             {
                 CachedLayout cached{};
                 cached.instanceCount = 1;
 
-                std::vector<VkDescriptorSetLayoutBinding> bindings(group.descriptorCount());
+                std::vector<VkDescriptorSetLayoutBinding> bindings(shape._descriptorShapes.size());
                 uint32_t actualBindings = 0;
-                for(size_t i=0; i< group.descriptorCount(); i++)
+                for(size_t i=0; i< shape._descriptorShapes.size(); i++)
                 {
-                    auto& descriptor = group.descriptor(i);
-                    if (descriptor.shape().type == Descriptor::Type::UNKNOWN)
+                    auto& descriptor = shape._descriptorShapes[i];
+                    if (descriptor.type == Descriptor::Type::UNKNOWN)
                     {
                         continue;
                     }
                     VkDescriptorSetLayoutBinding& binding = bindings[actualBindings];
-                    binding.descriptorType = VulkanBackend::vulkanizedDescriptorType(descriptor.shape().type);
-                    binding.descriptorCount = descriptor.shape().arrayDepth;
+                    binding.descriptorType = VulkanBackend::vulkanizedDescriptorType(descriptor.type);
+                    binding.descriptorCount = descriptor.arrayDepth;
                     binding.binding = i;//this is an assumption that *should* be true, it's possible we didn't set ourselves up correctly though and for this to be wrong
-                    binding.stageFlags = VulkanBackend::vulkanizedShaderFlags(descriptor.shape().visibleStages);
+                    binding.stageFlags = VulkanBackend::vulkanizedShaderFlags(descriptor.visibleStages);
                     actualBindings++;
                 }
                 VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -50,7 +49,7 @@ namespace slag
                 {
                     throw std::runtime_error("failed to create descriptor set layout");
                 }
-                _cachedLayouts.insert(std::make_pair(id,cached));
+                _cachedLayouts.insert(std::make_pair(shape,cached));
                 return cached.layout;
             }
             else
@@ -60,24 +59,23 @@ namespace slag
             }
         }
 
-        void VulkanDescriptorGroupCache::removeInstance(VulkanDescriptorGroup& group)
+        void VulkanDescriptorGroupCache::removeInstance(VulkanDescriptorGroup::Shape& shape)
         {
-            if(group.descriptorCount() == 0)
+            if(shape._descriptorShapes.size() == 0)
             {
                 return;
             }
 
             std::lock_guard<std::mutex> lock(_cacheMutex);
 
-            auto hash = group.groupShape();
-            auto layout = _cachedLayouts.find(hash);
+            auto layout = _cachedLayouts.find(shape);
             if(layout != _cachedLayouts.end())
             {
                 layout->second.instanceCount--;
                 if(layout->second.instanceCount == 0)
                 {
                     vkDestroyDescriptorSetLayout(VulkanGraphicsCard::selected()->device(),layout->second.layout, nullptr);
-                    _cachedLayouts.erase(hash);
+                    _cachedLayouts.erase(shape);
                 }
             }
         }

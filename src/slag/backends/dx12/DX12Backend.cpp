@@ -465,12 +465,13 @@ namespace slag
             return result;
         }
 
-        ShaderPipeline* DX12Backend::newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
+        ShaderPipeline* DX12Backend::newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, DescriptorIdentity
+                                                       (*identify)(const DescriptorIdentityParameters&, void*), void* identifyData)
         {
-            return new DX12ShaderPipeline(shaders, shaderCount, properties, vertexDescription, framebufferDescription,rename,renameData);
+            return new DX12ShaderPipeline(shaders, shaderCount, properties, vertexDescription, framebufferDescription,identify,identifyData);
         }
 
-        ShaderPipeline* DX12Backend::newShaderPipeline(const ShaderCode& computeShader,std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
+        ShaderPipeline* DX12Backend::newShaderPipeline(const ShaderCode& computeShader, DescriptorIdentity (*identify)(const DescriptorIdentityParameters&, void*), void* identifyData)
         {
             throw std::runtime_error("DX12Backend::newShaderPipeline() not implemented");
         }

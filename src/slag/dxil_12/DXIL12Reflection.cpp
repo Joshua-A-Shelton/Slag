@@ -74,7 +74,7 @@ namespace slag
         }
 
 
-        DXILReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount,std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
+        DXILReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount,DescriptorIdentity(*identify)(const DescriptorIdentityParameters&,void*), void* identifyData)
         {
             //TODO: move this out of here, I shouldn't create and destroy this every time
             Microsoft::WRL::ComPtr<IDxcUtils> dxilUtils = nullptr;
@@ -110,9 +110,9 @@ namespace slag
                     {
                         throw std::runtime_error(std::string("Unsupported descriptor type for variable \"")+bindDesc.Name+"\" in dxil shader code\"");
                     }
-                    if (rename!=nullptr)
+                    if (identify!=nullptr)
                     {
-                        DescriptorRenameParameters renameParameters{};
+                        DescriptorIdentityParameters renameParameters{};
                         renameParameters.language = ShaderCode::CodeLanguage::DXIL;
                         renameParameters.originalName = name;
                         renameParameters.descriptorGroupIndex = bindDesc.Space;
@@ -120,7 +120,8 @@ namespace slag
                         renameParameters.dimension = dimension;
                         renameParameters.arrayDepth = bindDesc.BindCount;
                         renameParameters.platformSpecificBindingIndex = bindDesc.BindPoint;
-                        name = rename(renameParameters,renameData);
+                        auto identity = identify(renameParameters,identifyData);
+                        name = identity.name;
                     }
                     auto group = descriptorGroups.find(bindDesc.Space);
                     if (group == descriptorGroups.end())
@@ -136,7 +137,7 @@ namespace slag
                     {
                         if (descriptor->second.shape().type!=type || descriptor->second.shape().dimension!=dimension || descriptor->second.shape().arrayDepth!=bindDesc.BindCount)
                         {
-                            throw std::runtime_error("Incompatible descriptor sets bewteen shader stages");
+                            //throw std::runtime_error("Incompatible descriptor sets bewteen shader stages");
                         }
                         descriptor->second = Descriptor(name,type,dimension,bindDesc.BindCount,shader->stage() | descriptor->second.shape().visibleStages);
                     }

@@ -18,16 +18,22 @@ namespace slag
                 std::vector<Descriptor::Shape> _descriptorShapes;
             public:
                 friend class VulkanDescriptorGroup;
+                friend class VulkanDescriptorGroupCache;
                 bool operator == (const Shape& to)const;
                 bool operator != (const Shape& to)const;
                 struct DescriptorGroupShapeHash
                 {
                     size_t operator()(const Shape& shape)const;
                 };
+                Shape(){}
+                Shape(std::vector<Descriptor::Shape>&& shapes)
+                {
+                    _descriptorShapes = std::move(shapes);
+                }
             };
 
             VulkanDescriptorGroup()=default;
-            VulkanDescriptorGroup(Descriptor* descriptors, uint32_t descriptorCount);
+            VulkanDescriptorGroup(Descriptor* descriptors, uint32_t* indexMappings, uint32_t descriptorCount, VulkanDescriptorGroup::Shape& shape);
             ~VulkanDescriptorGroup()override;
             VulkanDescriptorGroup(const VulkanDescriptorGroup& from);
             VulkanDescriptorGroup& operator=(const VulkanDescriptorGroup& from);

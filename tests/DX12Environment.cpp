@@ -39,7 +39,7 @@ namespace slag
 
     }
 
-    std::string dx12ShaderReflectionRename(const DescriptorRenameParameters& renameParams,void* userData)
+    std::string dx12ShaderReflectionRename(const DescriptorIdentityParameters& renameParams,void* userData)
     {
         std::string returnString = renameParams.originalName.substr(0, renameParams.originalName.find_last_of('_'));
         returnString = std::regex_replace(returnString, std::regex("\\_"), ".");
@@ -72,7 +72,28 @@ namespace slag
         {
             compiledStages[i] = &shaderCode[i];
         }
-        return std::unique_ptr<slag::ShaderPipeline>(slag::ShaderPipeline::newShaderPipeline(compiledStages.data(),compiledStages.size(),properties,vertexDescription,framebufferDescription,dx12ShaderReflectionRename));
+        return std::unique_ptr<slag::ShaderPipeline>(slag::ShaderPipeline::newShaderPipeline(compiledStages.data(),compiledStages.size(),properties,vertexDescription,framebufferDescription));
+    }
+
+    std::unique_ptr<slag::ShaderPipeline> DX12Environment::loadPipelineFromFiles(ShaderFile* stages, size_t stageCount,
+        ShaderProperties& properties, VertexDescription& vertexDescription,
+        FrameBufferDescription& framebufferDescription,
+        DescriptorIdentity(* identify)(const DescriptorIdentityParameters&, void*), void* identifyData)
+    {
+        std::vector<ShaderCode> shaderCode;
+        std::vector<ShaderCode*> compiledStages(stageCount);
+        for (size_t i = 0; i < stageCount; ++i)
+        {
+            std::vector<unsigned char> compiledStagesCode(stageCount);
+            auto path = stages[i].pathIndicator+".dxil";
+            shaderCode.push_back(ShaderCode(stages[i].stage,ShaderCode::CodeLanguage::DXIL,path));
+
+        }
+        for (size_t i = 0; i < stageCount; ++i)
+        {
+            compiledStages[i] = &shaderCode[i];
+        }
+        return std::unique_ptr<slag::ShaderPipeline>(slag::ShaderPipeline::newShaderPipeline(compiledStages.data(),compiledStages.size(),properties,vertexDescription,framebufferDescription,identify,identifyData));
     }
 
     std::unique_ptr<slag::ShaderPipeline> DX12Environment::loadPipelineFromFiles(ShaderFile& computeCode)

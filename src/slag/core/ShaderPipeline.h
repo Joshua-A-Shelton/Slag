@@ -248,8 +248,12 @@ namespace slag
         ///Depth target format, Pixels::Format::UNDEFINED means no depth target
         Pixels::Format depthTarget{Pixels::Format::UNDEFINED};
     };
-
-    struct DescriptorRenameParameters
+    struct DescriptorIdentity
+    {
+        std::string name;
+        uint32_t index = 0;
+    };
+    struct DescriptorIdentityParameters
     {
     public:
         ShaderCode::CodeLanguage language = ShaderCode::CodeLanguage::CUSTOM;
@@ -308,8 +312,8 @@ namespace slag
         ///Shader languages the current backend can accept to create a shader pipeline
         static std::vector<ShaderCode::CodeLanguage> acceptedLanguages();
 
-        static ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const DescriptorRenameParameters&,void*) = nullptr, void* renameData = nullptr);
-        static ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader,std::string(*rename)(const DescriptorRenameParameters&,void*) = nullptr, void* renameData = nullptr);
+        static ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, DescriptorIdentity(*identify)(const DescriptorIdentityParameters&, void*) = nullptr, void* identifyData = nullptr);
+        static ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader, DescriptorIdentity (*identify)(const DescriptorIdentityParameters&, void*) = nullptr, void* identifyData = nullptr);
 
     };
 } // slag

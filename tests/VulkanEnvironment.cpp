@@ -17,6 +17,15 @@ namespace slag
         }
     }
 
+    VulkanEnvironment::VulkanEnvironment()
+    {
+        auto& td = _shaderDictionaries.insert(std::pair<std::string,utilities::DescriptorDictionary>("TexturedDepth", utilities::DescriptorDictionary(3))).first->second;
+        td.addEntry(0,"Globals",0,"Globals");
+        td.addEntry(1,"Sampler.sampler",0,"Sampler.sampler");
+        td.addEntry(2,"Instance",1,"Instance");
+        td.addEntry(2,"Instance.sampledTexture",0,"Instance.sampledTexture");
+    }
+
     void VulkanEnvironment::SetUp()
     {
 #ifndef SLAG_VULKAN_BACKEND
@@ -66,10 +75,41 @@ namespace slag
 
     }
 
+    std::unique_ptr<slag::ShaderPipeline> VulkanEnvironment::loadPipelineFromFiles(ShaderFile* stages,
+        size_t stageCount, ShaderProperties& properties, VertexDescription& vertexDescription,
+        FrameBufferDescription& framebufferDescription,
+        DescriptorIdentity(* identify)(const DescriptorIdentityParameters&, void*), void* identifyData)
+    {
+        std::vector<ShaderCode> shaderCode;
+        std::vector<ShaderCode*> compiledStages(stageCount);
+        for (size_t i = 0; i < stageCount; ++i)
+        {
+            std::vector<unsigned char> compiledStagesCode(stageCount);
+            auto path = stages[i].pathIndicator+".spv";
+            shaderCode.push_back(ShaderCode(stages[i].stage,ShaderCode::CodeLanguage::SPIRV,path));
+
+        }
+        for (size_t i = 0; i < stageCount; ++i)
+        {
+            compiledStages[i] = &shaderCode[i];
+        }
+        return std::unique_ptr<slag::ShaderPipeline>(slag::ShaderPipeline::newShaderPipeline(compiledStages.data(),compiledStages.size(),properties,vertexDescription,framebufferDescription,identify,identifyData));
+    }
+
     std::unique_ptr<slag::ShaderPipeline> VulkanEnvironment::loadPipelineFromFiles(ShaderFile& computeCode)
     {
         ShaderCode shaderCode(computeCode.stage,ShaderCode::CodeLanguage::SPIRV,computeCode.pathIndicator+".spv");
         return std::unique_ptr<slag::ShaderPipeline>(slag::ShaderPipeline::newShaderPipeline(shaderCode));
+    }
+
+    utilities::DescriptorDictionary* VulkanEnvironment::getShaderDictionary(const std::string& shaderName)
+    {
+        auto dictionary =_shaderDictionaries.find(shaderName);
+        if (dictionary == _shaderDictionaries.end())
+        {
+            throw std::runtime_error("Shader not found");
+        }
+        return &dictionary->second;
     }
 
 

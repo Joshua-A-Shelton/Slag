@@ -135,7 +135,6 @@ TEST(DescriptorMemory, SetSampledTexture)
     slagGraphicsCard()->graphicsQueue()->submit(&submissionBatch,1);
     finished->waitForValue(1);
 
-    lodepng::encode("C:\\Users\\jshelton\\Desktop\\output\\sampler-texture-result.png",texturePixels->as<unsigned char>(),texture->width(),texture->height());
 
     GTEST_FAIL();
 }

@@ -1679,3 +1679,53 @@ TEST_F(ShaderPipelineTest,DepthStencilStateStencilDetails)
     //TODO: There's too many combinations to test
     GTEST_SKIP();
 }
+
+DescriptorIdentity identifyDescriptor(const DescriptorIdentityParameters& parameters, void* identifyData)
+{
+    DescriptorIdentity identity{};
+    utilities::DescriptorDictionary* dictionary = (utilities::DescriptorDictionary*)identifyData;
+    auto data = dictionary->getEntry(parameters.descriptorGroupIndex,parameters.originalName);
+    identity.name = data.name;
+    identity.index = data.index;
+    return identity;
+
+}
+TEST_F(ShaderPipelineTest,DescriptorReorder)
+{
+    ShaderFile files[]=
+    {
+        ShaderFile("resources/shaders/TexturedDepth.vertex",ShaderStageFlags::VERTEX),
+        ShaderFile("resources/shaders/TexturedDepth.fragment",ShaderStageFlags::FRAGMENT)
+    };
+
+    FrameBufferDescription framebufferDescription;
+    framebufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
+    framebufferDescription.depthTarget = Pixels::Format::D32_FLOAT;
+
+    ShaderProperties properties{};
+
+    auto shaderOriginal = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(files,2,properties,vertexPosUVDescription,framebufferDescription);
+    auto dictionary = GraphicsAPIEnvironment::graphicsAPIEnvironment()->getShaderDictionary("TexturedDepth");
+    auto shaderModified = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(files,2,properties,vertexPosUVDescription,framebufferDescription,identifyDescriptor,dictionary);
+
+    GTEST_ASSERT_EQ(shaderOriginal->descriptorGroupCount(),shaderModified->descriptorGroupCount());
+    for (auto i=0; i< shaderOriginal->descriptorGroupCount(); i++)
+    {
+        auto groupOriginal = shaderOriginal->descriptorGroup(i);
+        auto groupModified = shaderModified->descriptorGroup(i);
+        GTEST_ASSERT_EQ(groupOriginal->descriptorCount(), groupModified->descriptorCount());
+        GTEST_ASSERT_TRUE(groupOriginal->compatible(groupModified));
+    }
+    auto groupOriginal = shaderOriginal->descriptorGroup(2);
+    auto groupModified = shaderModified->descriptorGroup(2);
+    GTEST_ASSERT_EQ(groupOriginal->descriptor(0).shape(), groupModified->descriptor(1).shape());
+    GTEST_ASSERT_EQ(groupOriginal->descriptor(1).shape(), groupModified->descriptor(0).shape());
+    auto originalLayout = shaderOriginal->bufferLayout(2,0);
+    auto modifiedLayout = shaderModified->bufferLayout(2,1);
+    GTEST_ASSERT_TRUE(modifiedLayout != nullptr);
+    GTEST_ASSERT_EQ(originalLayout->childrenCount(),modifiedLayout->childrenCount());
+    GTEST_ASSERT_TRUE(BufferLayout::compatible(*originalLayout,*modifiedLayout));
+
+    GTEST_ASSERT_EQ(groupOriginal->descriptorByteOffset(0), groupModified->descriptorByteOffset(1));
+    GTEST_ASSERT_EQ(groupOriginal->descriptorByteOffset(1),groupModified->descriptorByteOffset(0));
+}
