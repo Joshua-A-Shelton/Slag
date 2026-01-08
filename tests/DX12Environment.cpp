@@ -16,6 +16,15 @@ namespace slag
         }
     }
 
+    DX12Environment::DX12Environment()
+    {
+        auto& td = _shaderDictionaries.insert(std::pair<std::string,utilities::DescriptorDictionary>("TexturedDepth", utilities::DescriptorDictionary(3))).first->second;
+        td.addEntry(0,"Globals_0",0,"Globals");
+        td.addEntry(1,"Sampler_sampler_0",0,"Sampler.sampler");
+        td.addEntry(2,"Instance_0",1,"Instance");
+        td.addEntry(2,"Instance_sampledTexture_0",0,"Instance.sampledTexture");
+    }
+
     void DX12Environment::SetUp()
     {
 #ifndef SLAG_DX12_BACKEND
@@ -100,6 +109,16 @@ namespace slag
     {
         ShaderCode shaderCode(computeCode.stage,ShaderCode::CodeLanguage::SPIRV,computeCode.pathIndicator+".dxil");
         return std::unique_ptr<slag::ShaderPipeline>(slag::ShaderPipeline::newShaderPipeline(shaderCode));
+    }
+
+    utilities::DescriptorDictionary* DX12Environment::getShaderDictionary(const std::string& shaderName)
+    {
+        auto dictionary =_shaderDictionaries.find(shaderName);
+        if (dictionary == _shaderDictionaries.end())
+        {
+            throw std::runtime_error("Shader not found");
+        }
+        return &dictionary->second;
     }
 
     SDL_WindowFlags DX12Environment::windowFlags()

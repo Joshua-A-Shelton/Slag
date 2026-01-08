@@ -174,11 +174,11 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/VertexDescription.cpp
         src/slag/core/VertexDescription.h
         src/slag/core/PixelFormatProperties.h
-        src/slag/core/ResourceDescriptorMemory.cpp
-        src/slag/core/ResourceDescriptorMemory.h
+        src/slag/core/DescriptorMemory.h
         src/slag/core/SamplerDescriptorMemory.cpp
         src/slag/core/SamplerDescriptorMemory.h
-
+        src/slag/core/ResourceDescriptorMemory.cpp
+        src/slag/core/ResourceDescriptorMemory.h
 )
 #link spirv if we need to
 if(USE_SPIRV_REFLECTION)
@@ -382,6 +382,8 @@ if(PROJECT_IS_TOP_LEVEL)
     target_include_directories(SlagCube PRIVATE src ${SDL2_LIBRARIES} ${stb_image_SOURCE_DIR})
 
     add_dependencies(SlagCube slagTestShaders)
+    add_custom_command(TARGET SlagCube POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/resources ${CMAKE_BINARY_DIR}/resources)
+
 
 else()
     message("Skipping tests")

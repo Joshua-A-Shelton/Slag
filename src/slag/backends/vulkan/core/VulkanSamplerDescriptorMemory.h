@@ -32,7 +32,7 @@ namespace slag
              * @param memoryLocation Location in memory to check for the next aligned descriptor set location for
              * @return
              */
-            virtual uint64_t descriptorGroupOffset(uint64_t memoryLocation);
+            virtual uint64_t nextDescriptorGroupOffset(uint64_t memoryLocation)override;
             /**
              * Create a descriptor that points to a given sampler
              * @param memoryLocation Location in the memory the new descriptor will be placed

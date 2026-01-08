@@ -46,6 +46,9 @@ namespace slag
             D3D12MA::Allocator* allocator()const;
             D3D12MA::Pool* sharedMemoryPool()const;
 
+            D3D12_CPU_DESCRIPTOR_HANDLE getSamplerHandle();
+            void freeSamplerHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle);
+
         private:
             Microsoft::WRL::ComPtr<ID3D12Device2> _device = nullptr;
             Microsoft::WRL::ComPtr<IDXGIFactory4> _dxgiFactory = nullptr;
@@ -54,6 +57,7 @@ namespace slag
             DX12Queue* _transfer = nullptr;
             D3D12MA::Allocator* _allocator = nullptr;
             D3D12MA::Pool* _sharedMemoryPool = nullptr;
+            ID3D12DescriptorHeap* _samplerHeap = nullptr;
             int _samplerIndex = 0;
             std::queue<D3D12_CPU_DESCRIPTOR_HANDLE> _freedSamplerHandles;
             bool _validGraphicsCard = false;

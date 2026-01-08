@@ -62,7 +62,7 @@ namespace slag
             return _size;
         }
 
-        uint64_t VulkanSamplerDescriptorMemory::descriptorGroupOffset(uint64_t memoryLocation)
+        uint64_t VulkanSamplerDescriptorMemory::nextDescriptorGroupOffset(uint64_t memoryLocation)
         {
             if (_descriptorSetAlignment == 0)
             {

@@ -547,20 +547,18 @@ namespace slag
             vkCmdBindPipeline(_commandBuffer,VK_PIPELINE_BIND_POINT_COMPUTE,pipeLine->vulkanHandle());
         }
 
-        void IVulkanCommandBuffer::bindGraphicsDescriptorGroup(uint32_t index, DescriptorGroup::DescriptorMemory memory,
-            uint64_t offset)
+        void IVulkanCommandBuffer::bindGraphicsDescriptorGroup(uint32_t index, DescriptorMemory* memory,uint64_t offset)
         {
             SLAG_ASSERT(_boundVulkanGraphicsShaderPipelineLayout != nullptr && "No graphics shader is bound, unable to bind descriptor bundle");
-            uint32_t bufferIndex = static_cast<uint32_t>(memory);
+            uint32_t bufferIndex = (uint32_t)memory->type();
             VkDeviceSize bufferoffset = static_cast<VkDeviceSize>(offset);
             slag_vkCmdSetDescriptorBufferOffsetsEXT(_commandBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,_boundVulkanGraphicsShaderPipelineLayout,index,1,&bufferIndex,&bufferoffset);
         }
 
-        void IVulkanCommandBuffer::bindComputeDescriptorGroup(uint32_t index, DescriptorGroup::DescriptorMemory memory,
-            uint64_t offset)
+        void IVulkanCommandBuffer::bindComputeDescriptorGroup(uint32_t index, DescriptorMemory* memory,uint64_t offset)
         {
             SLAG_ASSERT(_boundVulkanComputePipelineLayout != nullptr && "No computer shader is bound, unable to bind descriptor bundle");
-            uint32_t bufferIndex = static_cast<uint32_t>(memory);
+            uint32_t bufferIndex = (uint32_t)memory->type();
             VkDeviceSize bufferoffset = static_cast<VkDeviceSize>(offset);
             slag_vkCmdSetDescriptorBufferOffsetsEXT(_commandBuffer,VK_PIPELINE_BIND_POINT_COMPUTE,_boundVulkanComputePipelineLayout,index,1,&bufferIndex,&bufferoffset);
         }

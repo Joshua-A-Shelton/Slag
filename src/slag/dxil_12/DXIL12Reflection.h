@@ -10,8 +10,9 @@ namespace slag
     {
         struct DXILDescriptorGroupReflectionData
         {
-            uint32_t groupIndex;
+            uint32_t groupIndex = UINT32_MAX;
             std::vector<Descriptor> descriptors;
+            std::vector<uint32_t> descriptorOffsets;
         };
 
         struct DXILReflectionData

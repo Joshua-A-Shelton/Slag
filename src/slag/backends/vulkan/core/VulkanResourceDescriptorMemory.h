@@ -20,7 +20,7 @@ namespace slag
             VulkanResourceDescriptorMemory(VulkanResourceDescriptorMemory&& from);
             VulkanResourceDescriptorMemory& operator=(VulkanResourceDescriptorMemory&& from);
             virtual uint64_t size()override;
-            virtual uint64_t descriptorGroupOffset(uint64_t memoryLocation)override;
+            virtual uint64_t nextDescriptorGroupOffset(uint64_t memoryLocation)override;
             virtual void setSampledTexture(uint64_t memoryLocation, Texture* texture)override;
             virtual void setStorageTexture(uint64_t memoryLocation, Texture* texture)override;
             virtual void setUniformTexelBuffer(uint64_t memoryLocation, Buffer* buffer, Pixels::Format format, uint64_t offset, uint64_t length)override;

@@ -271,7 +271,7 @@ int main()
             instanceHandle[0] = instanceMatrix;
             instanceMatrix = glm::rotate(instanceMatrix,glm::radians(45.0f * delta),glm::vec3(0.0f,1.0f,0.0f));
 
-            resourceDescriptorMemoryOffset = resourceDescriptorMemory->descriptorGroupOffset(resourceDescriptorMemoryOffset);
+            resourceDescriptorMemoryOffset = resourceDescriptorMemory->nextDescriptorGroupOffset(resourceDescriptorMemoryOffset);
             auto globalsGroup = texturedDepthPipeline->descriptorGroup(0);
             if (resourceDescriptorMemoryOffset + globalsGroup->descriptorBufferSize() >= resourceDescriptorMemory->size())
             {
@@ -281,7 +281,7 @@ int main()
             resourceDescriptorMemory->setUniformBuffer(resourceDescriptorMemoryOffset + globalsGroup->descriptorByteOffset(0),globalsBuffer,0,globalsBuffer->size());
             resourceDescriptorMemoryOffset += globalsGroup->descriptorBufferSize();
 
-            samplerDescriptorMemoryOffset = samplerDescriptorMemory->descriptorGroupOffset(samplerDescriptorMemoryOffset);
+            samplerDescriptorMemoryOffset = samplerDescriptorMemory->nextDescriptorGroupOffset(samplerDescriptorMemoryOffset);
             auto samplerGroup = texturedDepthPipeline->descriptorGroup(1);
             if (resourceDescriptorMemoryOffset + samplerGroup->descriptorBufferSize() >= samplerDescriptorMemory->size())
             {
@@ -291,7 +291,7 @@ int main()
             samplerDescriptorMemory->setSampler(samplerDescriptorMemoryOffset + samplerGroup->descriptorByteOffset(0),defaultSampler);
             samplerDescriptorMemoryOffset += samplerGroup->descriptorBufferSize();
 
-            resourceDescriptorMemoryOffset = resourceDescriptorMemory->descriptorGroupOffset(resourceDescriptorMemoryOffset);
+            resourceDescriptorMemoryOffset = resourceDescriptorMemory->nextDescriptorGroupOffset(resourceDescriptorMemoryOffset);
             auto instanceGroup = texturedDepthPipeline->descriptorGroup(2);
             if (resourceDescriptorMemoryOffset + instanceGroup->descriptorBufferSize() >= resourceDescriptorMemory->size())
             {
@@ -302,9 +302,9 @@ int main()
             resourceDescriptorMemory->setSampledTexture(resourceDescriptorMemoryOffset + instanceGroup->descriptorByteOffset(1),texture);
             resourceDescriptorMemoryOffset += instanceGroup->descriptorBufferSize();
 
-            commandBuffer->bindGraphicsDescriptorGroup(0,slag::DescriptorGroup::DescriptorMemory::RESOURCE,globalsDescriptorSet);
-            commandBuffer->bindGraphicsDescriptorGroup(1,slag::DescriptorGroup::DescriptorMemory::SAMPLER,samplersDescriptorSet);
-            commandBuffer->bindGraphicsDescriptorGroup(2,slag::DescriptorGroup::DescriptorMemory::RESOURCE,instanceDescriptorSet);
+            commandBuffer->bindGraphicsDescriptorGroup(0,resourceDescriptorMemory,globalsDescriptorSet);
+            commandBuffer->bindGraphicsDescriptorGroup(1,samplerDescriptorMemory,samplersDescriptorSet);
+            commandBuffer->bindGraphicsDescriptorGroup(2,resourceDescriptorMemory,instanceDescriptorSet);
 
             commandBuffer->bindIndexBuffer(cubeIndices,slag::Buffer::IndexSize::UINT16,0);
 

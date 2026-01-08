@@ -1,25 +1,17 @@
-#ifndef SLAG_DESCRIPTORMEMORY_H
-#define SLAG_DESCRIPTORMEMORY_H
-#include <cstdint>
+#ifndef SLAG_RESOURCEDESCRIPTORMEMORY_H
+#define SLAG_RESOURCEDESCRIPTORMEMORY_H
+#include <slag/core/DescriptorMemory.h>
 #include <slag/core/Texture.h>
 #include <slag/core/Buffer.h>
-
 namespace slag
 {
-    ///Memory backing descriptors of non-sampler types (usually a special kind of buffer)
-    class ResourceDescriptorMemory
+    class ResourceDescriptorMemory: public DescriptorMemory
     {
     public:
-        virtual ~ResourceDescriptorMemory() = default;
+        virtual ~ResourceDescriptorMemory()override=default;
         ///Size in bytes of memory
         virtual uint64_t size()=0;
 
-        /**
-         * Get the location for the next descriptor group closest to the given memory address. Some API's require descriptor sets to be aligned to a boundary, so this call is required
-         * @param memoryLocation Location in memory to check for the next aligned descriptor group location for
-         * @return
-         */
-        virtual uint64_t descriptorGroupOffset(uint64_t memoryLocation)=0;
         /**
          * Create a descriptor that points to given sampled texture
          * @param memoryLocation Location in the memory the new descriptor will be placed
@@ -71,8 +63,10 @@ namespace slag
          * @param descriptorCount number of descriptors this buffer can contain
          * @return
          */
+
+        virtual DescriptorMemory::Type type() override;
         static ResourceDescriptorMemory* newResourceDescriptorMemory(uint64_t descriptorCount);
     };
 } // slag
 
-#endif //SLAG_DESCRIPTORMEMORY_H
+#endif //SLAG_RESOURCEDESCRIPTORMEMORY_H

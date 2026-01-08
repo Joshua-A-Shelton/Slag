@@ -53,8 +53,8 @@ namespace slag
             virtual void dispatchIndirect(Buffer* buffer, uint64_t offset) override;
             virtual void bindGraphicsShaderPipeline(ShaderPipeline* pipeline) override;
             virtual void bindComputeShaderPipeline(ShaderPipeline* pipeline) override;
-            virtual void bindGraphicsDescriptorGroup(uint32_t index, DescriptorGroup::DescriptorMemory memory, uint64_t offset)override;
-            virtual void bindComputeDescriptorGroup(uint32_t index, DescriptorGroup::DescriptorMemory memory, uint64_t offset)override;
+            virtual void bindGraphicsDescriptorGroup(uint32_t index, DescriptorMemory* memory, uint64_t offset)override;
+            virtual void bindComputeDescriptorGroup(uint32_t index, DescriptorMemory* memory, uint64_t offset)override;
             virtual void pushGraphicsConstants(uint32_t offset, uint32_t size, void* data)override;
             virtual void pushComputeConstants(uint32_t offset, uint32_t size, void* data)override;
             virtual void bindIndexBuffer(Buffer* buffer, Buffer::IndexSize indexSize, uint64_t offset) override;

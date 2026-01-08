@@ -106,10 +106,10 @@ protected:
         uint64_t globalsIndex = shader1->descriptorGroup(0)->descriptorByteOffset(0);
         uint64_t samplerDescriptorGroup = 0;
         uint64_t samplerIndex = shader1->descriptorGroup(1)->descriptorByteOffset(0);
-        uint64_t object1DescriptorGroup = resourceMemory->descriptorGroupOffset(shader1->descriptorGroup(0)->descriptorBufferSize());
+        uint64_t object1DescriptorGroup = resourceMemory->nextDescriptorGroupOffset(shader1->descriptorGroup(0)->descriptorBufferSize());
         uint64_t object1BufferIndex = object1DescriptorGroup + shader1->descriptorGroup(2)->descriptorByteOffset(0);
         uint64_t object1TextureIndex = object1DescriptorGroup + shader1->descriptorGroup(2)->descriptorByteOffset(1);
-        uint64_t object2DescriptorGroup = resourceMemory->descriptorGroupOffset(object1DescriptorGroup + shader1->descriptorGroup(2)->descriptorBufferSize());
+        uint64_t object2DescriptorGroup = resourceMemory->nextDescriptorGroupOffset(object1DescriptorGroup + shader1->descriptorGroup(2)->descriptorBufferSize());
         uint64_t object2BufferIndex = object2DescriptorGroup + shader2->descriptorGroup(2)->descriptorByteOffset(0);
         uint64_t object2TextureIndex = object2DescriptorGroup + shader2->descriptorGroup(2)->descriptorByteOffset(1);
 
@@ -150,12 +150,12 @@ protected:
             sizeof(glm::vec2),
         };
         commandBuffer->bindVertexBuffers(0,buffers,offsets,strides,2);
-        commandBuffer->bindGraphicsDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,globalsDescriptorGroup);
-        commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::SAMPLER,samplerDescriptorGroup);
-        commandBuffer->bindGraphicsDescriptorGroup(2,DescriptorGroup::DescriptorMemory::RESOURCE,object1DescriptorGroup);
+        commandBuffer->bindGraphicsDescriptorGroup(0,resourceMemory.get(),globalsDescriptorGroup);
+        commandBuffer->bindGraphicsDescriptorGroup(1,samplerMemory.get(),samplerDescriptorGroup);
+        commandBuffer->bindGraphicsDescriptorGroup(2,resourceMemory.get(),object1DescriptorGroup);
         commandBuffer->drawIndexed(triangleVerts->countAsArray<glm::vec3>(),1,0,0,0);
         commandBuffer->bindGraphicsShaderPipeline(shader2.get());
-        commandBuffer->bindGraphicsDescriptorGroup(2,DescriptorGroup::DescriptorMemory::RESOURCE,object2DescriptorGroup);
+        commandBuffer->bindGraphicsDescriptorGroup(2,resourceMemory.get(),object2DescriptorGroup);
         commandBuffer->drawIndexed(triangleVerts->countAsArray<glm::vec3>(),1,0,0,0);
 
         commandBuffer->endRendering();
@@ -228,10 +228,10 @@ protected:
         uint64_t globalsIndex = shader->descriptorGroup(0)->descriptorByteOffset(0);
         uint64_t samplerDescriptorGroup = 0;
         uint64_t samplerIndex = shader->descriptorGroup(1)->descriptorByteOffset(0);
-        uint64_t object1DescriptorGroup = resourceMemory->descriptorGroupOffset(shader->descriptorGroup(0)->descriptorBufferSize());
+        uint64_t object1DescriptorGroup = resourceMemory->nextDescriptorGroupOffset(shader->descriptorGroup(0)->descriptorBufferSize());
         uint64_t object1BufferIndex = object1DescriptorGroup + shader->descriptorGroup(2)->descriptorByteOffset(0);
         uint64_t object1TextureIndex = object1DescriptorGroup + shader->descriptorGroup(2)->descriptorByteOffset(1);
-        uint64_t object2DescriptorGroup = resourceMemory->descriptorGroupOffset(object1DescriptorGroup + shader->descriptorGroup(2)->descriptorBufferSize());
+        uint64_t object2DescriptorGroup = resourceMemory->nextDescriptorGroupOffset(object1DescriptorGroup + shader->descriptorGroup(2)->descriptorBufferSize());
         uint64_t object2BufferIndex = object2DescriptorGroup + shader->descriptorGroup(2)->descriptorByteOffset(0);
         uint64_t object2TextureIndex = object2DescriptorGroup + shader->descriptorGroup(2)->descriptorByteOffset(1);
 
@@ -275,11 +275,11 @@ protected:
         };
         commandBuffer->bindVertexBuffers(0,buffers,offsets,strides,2);
 
-        commandBuffer->bindGraphicsDescriptorGroup(0,DescriptorGroup::DescriptorMemory::RESOURCE,globalsDescriptorGroup);
-        commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::SAMPLER,samplerDescriptorGroup);
-        commandBuffer->bindGraphicsDescriptorGroup(2,DescriptorGroup::DescriptorMemory::RESOURCE,object1DescriptorGroup);
+        commandBuffer->bindGraphicsDescriptorGroup(0,resourceMemory.get(),globalsDescriptorGroup);
+        commandBuffer->bindGraphicsDescriptorGroup(1,samplerMemory.get(),samplerDescriptorGroup);
+        commandBuffer->bindGraphicsDescriptorGroup(2,resourceMemory.get(),object1DescriptorGroup);
         commandBuffer->drawIndexed(triangleVerts->countAsArray<glm::vec3>(),1,0,0,0);
-        commandBuffer->bindGraphicsDescriptorGroup(2,DescriptorGroup::DescriptorMemory::RESOURCE,object2DescriptorGroup);
+        commandBuffer->bindGraphicsDescriptorGroup(2,resourceMemory.get(),object2DescriptorGroup);
         commandBuffer->drawIndexed(triangleVerts->countAsArray<glm::vec3>(),1,0,0,0);
 
         commandBuffer->endRendering();

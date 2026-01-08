@@ -13,11 +13,11 @@ TEST(DescriptorMemory, ResourceDescriptorGroupOffset)
     if (slagGraphicsCard()->descriptorBufferOffsetAlignment() > 0)
     {
         auto resourceMemory = std::unique_ptr<ResourceDescriptorMemory>(ResourceDescriptorMemory::newResourceDescriptorMemory(1000));
-        GTEST_ASSERT_EQ(resourceMemory->descriptorGroupOffset(0),0);
-        GTEST_ASSERT_EQ(resourceMemory->descriptorGroupOffset(1),slagGraphicsCard()->descriptorBufferOffsetAlignment());
-        GTEST_ASSERT_EQ(resourceMemory->descriptorGroupOffset(slagGraphicsCard()->descriptorBufferOffsetAlignment()+1),slagGraphicsCard()->descriptorBufferOffsetAlignment()*2);
-        GTEST_ASSERT_EQ(resourceMemory->descriptorGroupOffset(slagGraphicsCard()->descriptorBufferOffsetAlignment()),slagGraphicsCard()->descriptorBufferOffsetAlignment());
-        GTEST_ASSERT_EQ(resourceMemory->descriptorGroupOffset(slagGraphicsCard()->descriptorBufferOffsetAlignment()*2),slagGraphicsCard()->descriptorBufferOffsetAlignment()*2);
+        GTEST_ASSERT_EQ(resourceMemory->nextDescriptorGroupOffset(0),0);
+        GTEST_ASSERT_EQ(resourceMemory->nextDescriptorGroupOffset(1),slagGraphicsCard()->descriptorBufferOffsetAlignment());
+        GTEST_ASSERT_EQ(resourceMemory->nextDescriptorGroupOffset(slagGraphicsCard()->descriptorBufferOffsetAlignment()+1),slagGraphicsCard()->descriptorBufferOffsetAlignment()*2);
+        GTEST_ASSERT_EQ(resourceMemory->nextDescriptorGroupOffset(slagGraphicsCard()->descriptorBufferOffsetAlignment()),slagGraphicsCard()->descriptorBufferOffsetAlignment());
+        GTEST_ASSERT_EQ(resourceMemory->nextDescriptorGroupOffset(slagGraphicsCard()->descriptorBufferOffsetAlignment()*2),slagGraphicsCard()->descriptorBufferOffsetAlignment()*2);
     }
     else
     {
@@ -29,11 +29,11 @@ TEST(DescriptorMemory, SamplerDescriptorGroupOffset)
     if (slagGraphicsCard()->descriptorBufferOffsetAlignment() > 0)
     {
         auto samplerMemory = std::unique_ptr<SamplerDescriptorMemory>(SamplerDescriptorMemory::newSamplerDescriptorMemory(1000));
-        GTEST_ASSERT_EQ(samplerMemory->descriptorGroupOffset(0),0);
-        GTEST_ASSERT_EQ(samplerMemory->descriptorGroupOffset(1),slagGraphicsCard()->descriptorBufferOffsetAlignment());
-        GTEST_ASSERT_EQ(samplerMemory->descriptorGroupOffset(slagGraphicsCard()->descriptorBufferOffsetAlignment()+1),slagGraphicsCard()->descriptorBufferOffsetAlignment()*2);
-        GTEST_ASSERT_EQ(samplerMemory->descriptorGroupOffset(slagGraphicsCard()->descriptorBufferOffsetAlignment()),slagGraphicsCard()->descriptorBufferOffsetAlignment());
-        GTEST_ASSERT_EQ(samplerMemory->descriptorGroupOffset(slagGraphicsCard()->descriptorBufferOffsetAlignment()*2),slagGraphicsCard()->descriptorBufferOffsetAlignment()*2);
+        GTEST_ASSERT_EQ(samplerMemory->nextDescriptorGroupOffset(0),0);
+        GTEST_ASSERT_EQ(samplerMemory->nextDescriptorGroupOffset(1),slagGraphicsCard()->descriptorBufferOffsetAlignment());
+        GTEST_ASSERT_EQ(samplerMemory->nextDescriptorGroupOffset(slagGraphicsCard()->descriptorBufferOffsetAlignment()+1),slagGraphicsCard()->descriptorBufferOffsetAlignment()*2);
+        GTEST_ASSERT_EQ(samplerMemory->nextDescriptorGroupOffset(slagGraphicsCard()->descriptorBufferOffsetAlignment()),slagGraphicsCard()->descriptorBufferOffsetAlignment());
+        GTEST_ASSERT_EQ(samplerMemory->nextDescriptorGroupOffset(slagGraphicsCard()->descriptorBufferOffsetAlignment()*2),slagGraphicsCard()->descriptorBufferOffsetAlignment()*2);
     }
     else
     {
@@ -82,8 +82,8 @@ TEST(DescriptorMemory, SetSampledTexture)
     commandBuffer->beginRendering(&attachment,1,nullptr,slag::Rectangle{{0,0},{target->width(),target->height()}});
     commandBuffer->bindDescriptorMemory(resourceMemory.get(),samplerMemory.get());
     commandBuffer->bindGraphicsShaderPipeline(pipeline.get());
-    commandBuffer->bindGraphicsDescriptorGroup(0,DescriptorGroup::DescriptorMemory::SAMPLER,0);
-    commandBuffer->bindGraphicsDescriptorGroup(1,DescriptorGroup::DescriptorMemory::RESOURCE,0);
+    commandBuffer->bindGraphicsDescriptorGroup(0,samplerMemory.get(),0);
+    commandBuffer->bindGraphicsDescriptorGroup(1,resourceMemory.get(),0);
     uint64_t bufferOffset = 0;
     uint64_t stride = sizeof(float)*2;
     auto trianglePtr = triangleData.get();

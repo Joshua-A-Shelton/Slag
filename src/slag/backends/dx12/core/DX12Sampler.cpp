@@ -38,8 +38,7 @@ namespace slag
             samplerDesc.MinLOD = _minLOD;
             samplerDesc.MaxLOD = _maxLOD;
 
-            throw std::runtime_error("DX12 Getting Sampler Handle not implemented");
-            //_descriptorHandle = DX12GraphicsCard::selected()->getSamplerHandle();
+            _descriptorHandle = DX12GraphicsCard::selected()->getSamplerHandle();
 
             DX12GraphicsCard::selected()->device()->CreateSampler(&samplerDesc,_descriptorHandle);
         }
@@ -59,8 +58,7 @@ namespace slag
         {
             if (_descriptorHandle.ptr)
             {
-                throw std::runtime_error("DX12 Destroying DX12 Sampler Handle not implemented");
-                //DX12GraphicsCard::selected()->freeSamplerHandle(_descriptorHandle);
+                DX12GraphicsCard::selected()->freeSamplerHandle(_descriptorHandle);
             }
         }
 

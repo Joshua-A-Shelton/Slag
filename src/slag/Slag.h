@@ -6,6 +6,7 @@
 #include "core/CommandBuffer.h"
 #include "core/Descriptor.h"
 #include "core/DescriptorGroup.h"
+#include "core/DescriptorMemory.h"
 #include "core/Dimensions.h"
 #include "core/Frame.h"
 #include "core/FrameResources.h"

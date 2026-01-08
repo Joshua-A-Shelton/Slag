@@ -11,11 +11,6 @@ namespace slag
     class DescriptorGroup
     {
     public:
-        enum class DescriptorMemory
-        {
-            RESOURCE = 0,
-            SAMPLER = 1
-        };
         virtual ~DescriptorGroup()=default;
         ///How many (non-sampler) descriptors are in this group
         virtual uint32_t descriptorCount()=0;
