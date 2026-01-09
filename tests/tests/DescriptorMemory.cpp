@@ -8,38 +8,7 @@ using namespace slag;
 float DESCRIPTOR_MEMORY_TRIANGLE_DATA[]={-1.0f,-1.0f,0,1.0f,1.0f,-1.0f};
 float DESCRIPTOR_MEMORY_UV_DATA[]={0,0,.5f,1.0f,0,1.0f};
 
-TEST(DescriptorMemory, ResourceDescriptorGroupOffset)
-{
-    if (slagGraphicsCard()->descriptorBufferOffsetAlignment() > 0)
-    {
-        auto resourceMemory = std::unique_ptr<ResourceDescriptorMemory>(ResourceDescriptorMemory::newResourceDescriptorMemory(1000));
-        GTEST_ASSERT_EQ(resourceMemory->nextDescriptorGroupOffset(0),0);
-        GTEST_ASSERT_EQ(resourceMemory->nextDescriptorGroupOffset(1),slagGraphicsCard()->descriptorBufferOffsetAlignment());
-        GTEST_ASSERT_EQ(resourceMemory->nextDescriptorGroupOffset(slagGraphicsCard()->descriptorBufferOffsetAlignment()+1),slagGraphicsCard()->descriptorBufferOffsetAlignment()*2);
-        GTEST_ASSERT_EQ(resourceMemory->nextDescriptorGroupOffset(slagGraphicsCard()->descriptorBufferOffsetAlignment()),slagGraphicsCard()->descriptorBufferOffsetAlignment());
-        GTEST_ASSERT_EQ(resourceMemory->nextDescriptorGroupOffset(slagGraphicsCard()->descriptorBufferOffsetAlignment()*2),slagGraphicsCard()->descriptorBufferOffsetAlignment()*2);
-    }
-    else
-    {
-        GTEST_SKIP();
-    }
-}
-TEST(DescriptorMemory, SamplerDescriptorGroupOffset)
-{
-    if (slagGraphicsCard()->descriptorBufferOffsetAlignment() > 0)
-    {
-        auto samplerMemory = std::unique_ptr<SamplerDescriptorMemory>(SamplerDescriptorMemory::newSamplerDescriptorMemory(1000));
-        GTEST_ASSERT_EQ(samplerMemory->nextDescriptorGroupOffset(0),0);
-        GTEST_ASSERT_EQ(samplerMemory->nextDescriptorGroupOffset(1),slagGraphicsCard()->descriptorBufferOffsetAlignment());
-        GTEST_ASSERT_EQ(samplerMemory->nextDescriptorGroupOffset(slagGraphicsCard()->descriptorBufferOffsetAlignment()+1),slagGraphicsCard()->descriptorBufferOffsetAlignment()*2);
-        GTEST_ASSERT_EQ(samplerMemory->nextDescriptorGroupOffset(slagGraphicsCard()->descriptorBufferOffsetAlignment()),slagGraphicsCard()->descriptorBufferOffsetAlignment());
-        GTEST_ASSERT_EQ(samplerMemory->nextDescriptorGroupOffset(slagGraphicsCard()->descriptorBufferOffsetAlignment()*2),slagGraphicsCard()->descriptorBufferOffsetAlignment()*2);
-    }
-    else
-    {
-        GTEST_SKIP();
-    }
-}
+
 TEST(DescriptorMemory, SetSampledTexture)
 {
     ShaderFile stages[] =
@@ -162,3 +131,53 @@ TEST(DescriptorMemory, SetSampler)
 {
     GTEST_FAIL();
 }
+#ifdef SLAG_DEBUG
+TEST(DescriptorMemory, SetSampledTextureWrongTextureUsage)
+{
+    GTEST_FAIL();
+}
+TEST(DescriptorMemory, SetStorageTextureFailWrongTextureUsage)
+{
+    GTEST_FAIL();
+}
+TEST(DescriptorMemory, SetUniformTexelBufferWrongBufferUsage)
+{
+    GTEST_FAIL();
+}
+TEST(DescriptorMemory, SetStorageTexelBufferWrongBufferUsage)
+{
+    GTEST_FAIL();
+}
+TEST(DescriptorMemory, SetUniformBufferWrongBufferUsage)
+{
+    GTEST_FAIL();
+}
+TEST(DescriptorMemory, SetStorageBufferWrongBufferUsage)
+{
+    GTEST_FAIL();
+}
+TEST(DescriptorMemory, SetUniformTexelBufferLengthExceeded)
+{
+    GTEST_FAIL();
+}
+TEST(DescriptorMemory, SetStorageTexelBufferBufferLengthExceeded)
+{
+    GTEST_FAIL();
+}
+TEST(DescriptorMemory, SetUniformBufferBufferLengthExceeded)
+{
+    GTEST_FAIL();
+}
+TEST(DescriptorMemory, SetStorageBufferBufferLengthExceeded)
+{
+    GTEST_FAIL();
+}
+TEST(DescriptorMemory, SetUniformTexelBufferNonColorFormat)
+{
+    GTEST_FAIL();
+}
+TEST(DescriptorMemory, SetStorageTexelBufferNonColorFormat)
+{
+    GTEST_FAIL();
+}
+#endif

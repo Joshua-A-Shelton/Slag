@@ -113,14 +113,14 @@ protected:
         uint64_t object2BufferIndex = object2DescriptorGroup + shader2->descriptorGroup(2)->descriptorByteOffset(0);
         uint64_t object2TextureIndex = object2DescriptorGroup + shader2->descriptorGroup(2)->descriptorByteOffset(1);
 
-        resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
+        resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),globalsBuffer->size(),0, 1);
 
         samplerMemory->setSampler(samplerIndex,defaultSampler.get());
 
-        resourceMemory->setUniformBuffer(object1BufferIndex,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
+        resourceMemory->setUniformBuffer(object1BufferIndex,objectBuffer.get(),sizeof(TexturedDepthSet1Group),0, 1);
         resourceMemory->setSampledTexture(object1TextureIndex,object1Texture.get());
 
-        resourceMemory->setUniformBuffer(object2BufferIndex,objectBuffer.get(),sizeof(TexturedDepthSet1Group),sizeof(TexturedDepthSet1Group));
+        resourceMemory->setUniformBuffer(object2BufferIndex,objectBuffer.get(),sizeof(TexturedDepthSet1Group),1, 1);
         resourceMemory->setSampledTexture(object2TextureIndex,object2Texture.get());
 
 
@@ -236,14 +236,14 @@ protected:
         uint64_t object2TextureIndex = object2DescriptorGroup + shader->descriptorGroup(2)->descriptorByteOffset(1);
 
 
-        resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
+        resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),globalsBuffer->size(),0, 1);
 
         samplerMemory->setSampler(samplerIndex,defaultSampler.get());
 
-        resourceMemory->setUniformBuffer(object1BufferIndex,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
+        resourceMemory->setUniformBuffer(object1BufferIndex,objectBuffer.get(),sizeof(TexturedDepthSet1Group),0, 1);
         resourceMemory->setSampledTexture(object1TextureIndex,object1Texture.get());
 
-        resourceMemory->setUniformBuffer(object2BufferIndex,objectBuffer.get(),sizeof(TexturedDepthSet1Group),sizeof(TexturedDepthSet1Group));
+        resourceMemory->setUniformBuffer(object2BufferIndex,objectBuffer.get(),sizeof(TexturedDepthSet1Group),1, 1);
         resourceMemory->setSampledTexture(object2TextureIndex,object2Texture.get());
 
 

@@ -10,8 +10,6 @@ namespace slag
     {
     public:
         virtual ~SamplerDescriptorMemory()override = default;
-        ///Size in bytes of memory
-        virtual uint64_t size()=0;
         /**
          * Create a descriptor that points to a given sampler
          * @param memoryLocation Location in the memory the new descriptor will be placed

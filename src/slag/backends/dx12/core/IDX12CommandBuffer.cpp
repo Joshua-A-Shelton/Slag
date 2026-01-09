@@ -307,6 +307,14 @@ namespace slag
 
         void IDX12CommandBuffer::bindGraphicsDescriptorGroup(uint32_t index, DescriptorMemory* memory, uint64_t offset)
         {
+            if (memory->type()==DescriptorMemory::Type::RESOURCE)
+            {
+
+            }
+            else
+            {
+
+            }
             throw std::runtime_error("IDX12CommandBuffer::bindGraphicsDescriptorSet(): not implemented");
         }
 

@@ -9,8 +9,6 @@ namespace slag
     {
     public:
         virtual ~ResourceDescriptorMemory()override=default;
-        ///Size in bytes of memory
-        virtual uint64_t size()=0;
 
         /**
          * Create a descriptor that points to given sampled texture
@@ -25,39 +23,41 @@ namespace slag
          */
         virtual void setStorageTexture(uint64_t memoryLocation, Texture* texture)=0;
         /**
-         * Create a descriptor that points to a given uniform texel buffer
+         * Create a descriptor that points to a given uniform texel buffer. Buffer is treated as an array of objects of type 'format'
          * @param memoryLocation Location in the memory the new descriptor will be placed
          * @param buffer Buffer containing texel data
          * @param format Texel format the buffer contains
-         * @param offset position into the buffer to bind
-         * @param length number of bytes of the buffer to bind
+         * @param startIndex Index of first element
+         * @param elementCount Number of elements to bind
          */
-        virtual void setUniformTexelBuffer(uint64_t memoryLocation, Buffer* buffer, Pixels::Format format, uint64_t offset, uint64_t length)=0;
+        virtual void setUniformTexelBuffer(uint64_t memoryLocation, Buffer* buffer, Pixels::Format format, uint64_t startIndex, uint64_t elementCount)=0;
         /**
-         * Create a descriptor that points to a given storage texel buffer
+         * Create a descriptor that points to a given storage texel buffer. Buffer is treated as an array of objects of type 'format'
          * @param memoryLocation Location in the memory the new descriptor will be placed
          * @param buffer Buffer containing texel data
          * @param format Texel format the buffer contains
-         * @param offset position into the buffer to bind
-         * @param length number of bytes of the buffer to bind
+         * @param startIndex Index of first element
+         * @param elementCount Number of elements to bind
          */
-        virtual void setStorageTexelBuffer(uint64_t memoryLocation, Buffer* buffer, Pixels::Format format, uint64_t offset, uint64_t length)=0;
+        virtual void setStorageTexelBuffer(uint64_t memoryLocation, Buffer* buffer, Pixels::Format format, uint64_t startIndex, uint64_t elementCount)=0;
         /**
-         * Create a descriptor that points to a given uniform buffer
+         * Create a descriptor that points to a given uniform buffer. Buffer is treated as an array of objects of of size 'dataStride'
          * @param memoryLocation Location in the memory the new descriptor will be placed
          * @param buffer Buffer the descriptor will reference
-        * @param offset position into the buffer to bind
-         * @param length number of bytes of the buffer to bind
+         * @param dataStride Size of an element in the buffer
+         * @param startIndex Index of first element
+         * @param elementCount Number of elements to bind
          */
-        virtual void setUniformBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t offset, uint64_t length)=0;
+        virtual void setUniformBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t dataStride, uint64_t startIndex, uint64_t elementCount)=0;
         /**
-         * Create a descriptor that points to a given storage buffer
+         * Create a descriptor that points to a given storage buffer. Buffer is treated as an array of objects of of size 'dataStride'
          * @param memoryLocation Location in the memory the new descriptor will be placed
          * @param buffer Buffer the descriptor will reference
-         * @param offset position into the buffer to bind
-         * @param length number of bytes of the buffer to bind
+         * @param dataStride Size of an element in the buffer
+         * @param startIndex Index of first element
+         * @param elementCount Number of elements to bind
          */
-        virtual void setStorageBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t offset, uint64_t length)=0;
+        virtual void setStorageBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t dataStride, uint64_t startIndex, uint64_t elementCount)=0;
         /**
          * Create a new resource descriptor memory block
          * @param descriptorCount number of descriptors this buffer can contain

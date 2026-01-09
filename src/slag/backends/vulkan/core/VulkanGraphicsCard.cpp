@@ -214,16 +214,6 @@ namespace slag
             return _transferQueue;
         }
 
-        uint64_t VulkanGraphicsCard::uniformBufferOffsetAlignment()
-        {
-            return _deviceProperties2.properties.limits.minUniformBufferOffsetAlignment;
-        }
-
-        uint64_t VulkanGraphicsCard::storageBufferOffsetAlignment()
-        {
-            return _deviceProperties2.properties.limits.minStorageBufferOffsetAlignment;
-        }
-
         uint64_t VulkanGraphicsCard::descriptorBufferOffsetAlignment()
         {
             return _descriptorBufferProperties.descriptorBufferOffsetAlignment;

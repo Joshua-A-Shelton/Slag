@@ -3,6 +3,7 @@
 #include "DX12CommandBuffer.h"
 #include "DX12GraphicsCard.h"
 #include "DX12Semaphore.h"
+#include "slag/backends/dx12/DX12Backend.h"
 #include "slag/utilities/SLAG_ASSERT.h"
 
 namespace slag

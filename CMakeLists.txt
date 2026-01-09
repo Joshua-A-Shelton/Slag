@@ -112,6 +112,8 @@ if(SLAG_DX12_BACKEND)
             src/slag/backends/dx12/core/DX12DescriptorGroup.h
             src/slag/backends/dx12/core/DX12Sampler.cpp
             src/slag/backends/dx12/core/DX12Sampler.h
+            src/slag/backends/dx12/core/DX12ResourceDescriptorMemory.cpp
+            src/slag/backends/dx12/core/DX12ResourceDescriptorMemory.h
     )
 endif()
 

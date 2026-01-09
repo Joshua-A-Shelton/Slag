@@ -35,12 +35,8 @@ namespace slag
             ///Gets the transfer queue, or a queue that processes it's commands
             virtual GPUQueue* transferQueue()override;
 
-            ///Alignment requirement when binding uniform buffer memory, (eg DescriptorBundle::setUniformBuffer(uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t *offset*, size_t length) and similar calls with an offset must be a multiple of this number)
-            virtual uint64_t uniformBufferOffsetAlignment()override;
-            ///Alignment requirement when binding storage buffer memory, (eg DescriptorBundle::setStorageBuffer(uint32_t binding, uint32_t arrayElement, Buffer* buffer, size_t *offset*, size_t length) and similar calls with an offset must be a multiple of this number)
-            virtual uint64_t storageBufferOffsetAlignment()override;
             ///Alignment requirement when binding descriptor buffer memory
-            virtual uint64_t descriptorBufferOffsetAlignment()override;
+            uint64_t descriptorBufferOffsetAlignment();
 
             uint64_t maxResourceDescriptorSize()const;
             uint64_t samplerDescriptorSize()const;

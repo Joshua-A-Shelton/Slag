@@ -24,6 +24,11 @@ namespace slag
          * @return
          */
         virtual uint64_t nextDescriptorGroupOffset(uint64_t memoryOffset)=0;
+
+        ///Size in bytes of memory
+        virtual uint64_t size()=0;
+        ///Handle to GPU memory. Not used in exposed API, but many backends do use it
+        virtual uint64_t handle()=0;
     };
 }
 #endif //SLAG_DESCRIPTORMEMORY_H

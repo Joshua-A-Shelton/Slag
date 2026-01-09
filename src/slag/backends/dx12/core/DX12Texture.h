@@ -39,13 +39,20 @@ namespace slag
             virtual Pixels::Format format()override;
 
             ID3D12Resource* dx12Handle()const;
+            D3D12_CPU_DESCRIPTOR_HANDLE targetHandle()const;
+            D3D12_CPU_DESCRIPTOR_HANDLE shaderResourceViewHandle()const;
+            D3D12_CPU_DESCRIPTOR_HANDLE unorderedAccessViewHandle()const;
         private:
             void move(DX12Texture&& from);
             void construct(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount);
             ID3D12Resource* _texture = nullptr;
             D3D12MA::Allocation* _allocation = nullptr;
-            ID3D12DescriptorHeap* _heap = nullptr;
-            D3D12_CPU_DESCRIPTOR_HANDLE _view{};
+            ID3D12DescriptorHeap* _srvHeap = nullptr;
+            ID3D12DescriptorHeap* _uavHeap = nullptr;
+            ID3D12DescriptorHeap* _targetHeap = nullptr;
+            D3D12_CPU_DESCRIPTOR_HANDLE _shaderResourceViewHandle{};
+            D3D12_CPU_DESCRIPTOR_HANDLE _unorderedAccessViewHandle{};
+            D3D12_CPU_DESCRIPTOR_HANDLE _targetHandle{};
             Texture::Type _type;
             uint32_t _width = 0;
             uint32_t _height = 0;

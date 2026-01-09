@@ -108,6 +108,9 @@ namespace slag
             samplerHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
             _device->CreateDescriptorHeap(&samplerHeapDesc, IID_PPV_ARGS(&_samplerHeap));
 
+            _resourceDescriptorSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            _samplerDescriptorSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+
             _validGraphicsCard = true;
         }
 
@@ -134,21 +137,6 @@ namespace slag
         GPUQueue* DX12GraphicsCard::transferQueue()
         {
             return _transfer;
-        }
-
-        uint64_t DX12GraphicsCard::uniformBufferOffsetAlignment()
-        {
-            throw std::runtime_error("Not implemented");
-        }
-
-        uint64_t DX12GraphicsCard::storageBufferOffsetAlignment()
-        {
-            throw std::runtime_error("Not implemented");
-        }
-
-        uint64_t DX12GraphicsCard::descriptorBufferOffsetAlignment()
-        {
-            throw std::runtime_error("Not implemented");
         }
 
         void DX12GraphicsCard::defragmentMemory(SemaphoreValue* waitFor, size_t waitForCount, SemaphoreValue* signal,
@@ -201,6 +189,16 @@ namespace slag
         void DX12GraphicsCard::freeSamplerHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle)
         {
             _freedSamplerHandles.push(handle);
+        }
+
+        uint64_t DX12GraphicsCard::resourceDescriptorSize() const
+        {
+            return _resourceDescriptorSize;
+        }
+
+        uint64_t DX12GraphicsCard::samplerDescriptorSize() const
+        {
+            return _samplerDescriptorSize;
         }
     } // dx12
 } // slag

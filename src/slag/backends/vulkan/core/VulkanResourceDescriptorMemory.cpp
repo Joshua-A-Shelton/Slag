@@ -7,6 +7,7 @@
 #include "VulkanTexture.h"
 #include "slag/backends/vulkan/VulkanBackend.h"
 #include "slag/backends/vulkan/VulkanExtensions.h"
+#include "slag/utilities/SLAG_ASSERT.h"
 
 namespace slag
 {
@@ -64,6 +65,11 @@ namespace slag
             return _size;
         }
 
+        uint64_t VulkanResourceDescriptorMemory::handle()
+        {
+            return deviceAddress();
+        }
+
         uint64_t VulkanResourceDescriptorMemory::nextDescriptorGroupOffset(uint64_t memoryLocation)
         {
             if (_descriptorSetAlignment == 0)
@@ -80,7 +86,7 @@ namespace slag
 
         void VulkanResourceDescriptorMemory::setSampledTexture(uint64_t memoryLocation, Texture* texture)
         {
-            assert((texture->usageFlags() & Texture::UsageFlags::SAMPLED_IMAGE) == Texture::UsageFlags::SAMPLED_IMAGE && "Given texture is not a sampled texture");
+            SLAG_ASSERT((texture->usageFlags() & Texture::UsageFlags::SAMPLED_IMAGE) == Texture::UsageFlags::SAMPLED_IMAGE && "Given texture is not a sampled texture");
             VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(texture);
             VkDescriptorImageInfo descriptorImageInfo{};
             descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
@@ -98,7 +104,7 @@ namespace slag
 
         void VulkanResourceDescriptorMemory::setStorageTexture(uint64_t memoryLocation, Texture* texture)
         {
-            assert((texture->usageFlags() & Texture::UsageFlags::STORAGE) == Texture::UsageFlags::STORAGE && "Given texture is not a storage texture");
+            SLAG_ASSERT((texture->usageFlags() & Texture::UsageFlags::STORAGE) == Texture::UsageFlags::STORAGE && "Given texture is not a storage texture");
             VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(texture);
             VkDescriptorImageInfo descriptorImageInfo{};
             descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
@@ -114,16 +120,19 @@ namespace slag
             slag_vkGetDescriptorEXT(card->device(),&textureDescriptorInfo,card->storageTextureDescriptorSize(),static_cast<unsigned char*>(_bufferPointer)+memoryLocation);
         }
 
-        void VulkanResourceDescriptorMemory::setUniformTexelBuffer(uint64_t memoryLocation, Buffer* buffer,Pixels::Format format,uint64_t offset, uint64_t length)
+        void VulkanResourceDescriptorMemory::setUniformTexelBuffer(uint64_t memoryLocation, Buffer* buffer, Pixels::Format format, uint64_t startIndex, uint64_t elementCount)
         {
-            assert(offset + length <= buffer->size() && "attempted to bind descriptor that exceeds buffer length");
+            SLAG_ASSERT((buffer->usage() & Buffer::UsageFlags::UNIFORM_TEXEL_BUFFER) == Buffer::UsageFlags::UNIFORM_TEXEL_BUFFER && "Given buffer is not a uniform texel buffer");
+            SLAG_ASSERT(Pixels::AspectFlags(format) == Pixels::AspectFlags::COLOR && "Only color formats can be bound as texel buffer");
+            auto size = Pixels::size(format);
+            SLAG_ASSERT((startIndex + elementCount)*size <= buffer->size() && "attempted to bind descriptor that exceeds buffer length");
             VulkanBuffer* vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
             VkDescriptorAddressInfoEXT addressInfo =
             {
                 .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_ADDRESS_INFO_EXT,
                 .pNext = nullptr,
-                .address = vulkanBuffer->deviceAddress() + offset,
-                .range = length,
+                .address = vulkanBuffer->deviceAddress() + (startIndex*size),
+                .range = elementCount*size,
                 .format = VulkanBackend::vulkanizedFormat(format).format
             };
 
@@ -139,16 +148,19 @@ namespace slag
             slag_vkGetDescriptorEXT(card->device(),&bufferDescriptorInfo,card->uniformTexelBufferDescriptorSize(),static_cast<unsigned char*>(_bufferPointer)+memoryLocation);
         }
 
-        void VulkanResourceDescriptorMemory::setStorageTexelBuffer(uint64_t memoryLocation, Buffer* buffer,Pixels::Format format, uint64_t offset, uint64_t length)
+        void VulkanResourceDescriptorMemory::setStorageTexelBuffer(uint64_t memoryLocation, Buffer* buffer, Pixels::Format format, uint64_t startIndex, uint64_t elementCount)
         {
-            assert(offset + length <= buffer->size() && "attempted to bind descriptor that exceeds buffer length");
+            SLAG_ASSERT((buffer->usage() & Buffer::UsageFlags::STORAGE_TEXEL_BUFFER) == Buffer::UsageFlags::STORAGE_TEXEL_BUFFER && "Given buffer is not a storage texel buffer");
+            SLAG_ASSERT(Pixels::AspectFlags(format) == Pixels::AspectFlags::COLOR && "Only color formats can be bound as texel buffer");
+            auto size = Pixels::size(format);
+            SLAG_ASSERT((startIndex + elementCount)*size <= buffer->size() && "attempted to bind descriptor that exceeds buffer length");
             VulkanBuffer* vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
             VkDescriptorAddressInfoEXT addressInfo =
             {
                 .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_ADDRESS_INFO_EXT,
                 .pNext = nullptr,
-                .address = vulkanBuffer->deviceAddress() + offset,
-                .range = length,
+                .address = vulkanBuffer->deviceAddress() + startIndex*size,
+                .range = elementCount * size,
                 .format = VulkanBackend::vulkanizedFormat(format).format
             };
 
@@ -164,16 +176,17 @@ namespace slag
             slag_vkGetDescriptorEXT(card->device(),&bufferDescriptorInfo,card->storageTexelBufferDescriptorSize(),static_cast<unsigned char*>(_bufferPointer)+memoryLocation);
         }
 
-        void VulkanResourceDescriptorMemory::setUniformBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t offset,uint64_t length)
+        void VulkanResourceDescriptorMemory::setUniformBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t dataStride, uint64_t startIndex, uint64_t elementCount)
         {
-            assert(offset + length <= buffer->size() && "attempted to bind descriptor that exceeds buffer length");
+            SLAG_ASSERT((buffer->usage() & Buffer::UsageFlags::UNIFORM_BUFFER) == Buffer::UsageFlags::UNIFORM_BUFFER && "Given buffer is not a uniform buffer");
+            SLAG_ASSERT((startIndex + elementCount)*dataStride <= buffer->size() && "attempted to bind descriptor that exceeds buffer length");
             VulkanBuffer* vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
             VkDescriptorAddressInfoEXT addressInfo =
             {
                 .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_ADDRESS_INFO_EXT,
                 .pNext = nullptr,
-                .address = vulkanBuffer->deviceAddress() + offset,
-                .range = length,
+                .address = vulkanBuffer->deviceAddress() + (startIndex*dataStride),
+                .range = elementCount*dataStride,
                 .format = VK_FORMAT_UNDEFINED
             };
 
@@ -189,17 +202,17 @@ namespace slag
             slag_vkGetDescriptorEXT(card->device(),&bufferDescriptorInfo,card->uniformBufferDescriptorSize(),static_cast<unsigned char*>(_bufferPointer)+memoryLocation);
         }
 
-        void VulkanResourceDescriptorMemory::setStorageBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t offset,
-            uint64_t length)
+        void VulkanResourceDescriptorMemory::setStorageBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t dataStride, uint64_t startIndex, uint64_t elementCount)
         {
-            assert(offset + length <= buffer->size() && "attempted to bind descriptor that exceeds buffer length");
+            SLAG_ASSERT((buffer->usage() & Buffer::UsageFlags::STORAGE_BUFFER) == Buffer::UsageFlags::STORAGE_BUFFER && "Given buffer is not a storage buffer");
+            SLAG_ASSERT((startIndex + elementCount)*dataStride <= buffer->size() && "attempted to bind descriptor that exceeds buffer length");
             VulkanBuffer* vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
             VkDescriptorAddressInfoEXT addressInfo =
             {
                 .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_ADDRESS_INFO_EXT,
                 .pNext = nullptr,
-                .address = vulkanBuffer->deviceAddress() + offset,
-                .range = length,
+                .address = vulkanBuffer->deviceAddress() + (startIndex*dataStride),
+                .range = elementCount*dataStride,
                 .format = VK_FORMAT_UNDEFINED
             };
 

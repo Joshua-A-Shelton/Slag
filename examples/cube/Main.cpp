@@ -278,7 +278,7 @@ int main()
                 resourceDescriptorMemoryOffset = 0;
             }
             auto globalsDescriptorSet = resourceDescriptorMemoryOffset;
-            resourceDescriptorMemory->setUniformBuffer(resourceDescriptorMemoryOffset + globalsGroup->descriptorByteOffset(0),globalsBuffer,0,globalsBuffer->size());
+            resourceDescriptorMemory->setUniformBuffer(resourceDescriptorMemoryOffset + globalsGroup->descriptorByteOffset(0),globalsBuffer,globalsBuffer->size(),0, 1);
             resourceDescriptorMemoryOffset += globalsGroup->descriptorBufferSize();
 
             samplerDescriptorMemoryOffset = samplerDescriptorMemory->nextDescriptorGroupOffset(samplerDescriptorMemoryOffset);
@@ -298,7 +298,7 @@ int main()
                 resourceDescriptorMemoryOffset = 0;
             }
             auto instanceDescriptorSet = resourceDescriptorMemoryOffset;
-            resourceDescriptorMemory->setUniformBuffer(resourceDescriptorMemoryOffset + instanceGroup->descriptorByteOffset(0),instanceBuffer,0,instanceBuffer->size());
+            resourceDescriptorMemory->setUniformBuffer(resourceDescriptorMemoryOffset + instanceGroup->descriptorByteOffset(0),instanceBuffer,instanceBuffer->size(),0, 1);
             resourceDescriptorMemory->setSampledTexture(resourceDescriptorMemoryOffset + instanceGroup->descriptorByteOffset(1),texture);
             resourceDescriptorMemoryOffset += instanceGroup->descriptorBufferSize();
 

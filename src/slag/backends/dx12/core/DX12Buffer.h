@@ -5,6 +5,8 @@
 #include <d3d12.h>
 #include <D3D12MemAlloc.h>
 
+#include "slag/core/Pixels.h"
+
 namespace slag
 {
     namespace dx12
@@ -52,6 +54,7 @@ namespace slag
             Accessibility _accessibility = Accessibility::CPU_AND_GPU;
             UsageFlags _usage = UsageFlags::DATA_BUFFER;
             void* _cpuHandle = nullptr;
+
         };
     } // dx12
 } // slag

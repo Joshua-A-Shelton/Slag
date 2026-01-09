@@ -56,9 +56,17 @@ namespace slag
             {
                 _allocation->Release();
             }
-            if (_heap)
+            if (_srvHeap)
             {
-                _heap->Release();
+                _srvHeap->Release();
+            }
+            if (_uavHeap)
+            {
+                _uavHeap->Release();
+            }
+            if (_targetHeap)
+            {
+                _targetHeap->Release();
             }
         }
 
@@ -112,6 +120,42 @@ namespace slag
             return _texture;
         }
 
+        D3D12_CPU_DESCRIPTOR_HANDLE DX12Texture::targetHandle() const
+        {
+            return _targetHandle;
+        }
+
+        D3D12_CPU_DESCRIPTOR_HANDLE DX12Texture::shaderResourceViewHandle() const
+        {
+            return _shaderResourceViewHandle;
+        }
+
+        D3D12_CPU_DESCRIPTOR_HANDLE DX12Texture::unorderedAccessViewHandle() const
+        {
+            return _unorderedAccessViewHandle;
+        }
+
+        void DX12Texture::move(DX12Texture&& from)
+        {
+            std::swap(_texture,from._texture);
+            std::swap(_allocation,from._allocation);
+            std::swap(_srvHeap,from._srvHeap);
+            std::swap(_uavHeap,from._uavHeap);
+            std::swap(_targetHeap,from._targetHeap);
+            _shaderResourceViewHandle = from._shaderResourceViewHandle;
+            _unorderedAccessViewHandle = from._unorderedAccessViewHandle;
+            _targetHandle = from._targetHandle;
+            _type = from._type;
+            _width = from._width;
+            _height = from._height;
+            _depth = from._depth;
+            _layers = from._layers;
+            _mipLevels = from._mipLevels;
+            _sampleCount=from._sampleCount;
+            _format = from._format;
+            _usage = from._usage;
+        }
+
         void DX12Texture::construct(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width,uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount)
         {
             SLAG_ASSERT(((type != Type::TEXTURE_3D) || (type == Type::TEXTURE_3D && layers == 1)) && "3D textures must only have one layer");
@@ -154,20 +198,36 @@ namespace slag
 
             D3D12_DESCRIPTOR_HEAP_DESC desc = {};
             desc.NumDescriptors = 1;
+
             if((uint8_t)(usageFlags & Texture::UsageFlags::RENDER_TARGET_ATTACHMENT))
             {
                 desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-                DX12GraphicsCard::selected()->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_heap));
-                _view = _heap->GetCPUDescriptorHandleForHeapStart();
-                DX12GraphicsCard::selected()->device()->CreateRenderTargetView(_texture, nullptr,_view);
+                DX12GraphicsCard::selected()->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_targetHeap));
+                _targetHandle = _targetHeap->GetCPUDescriptorHandleForHeapStart();
+                DX12GraphicsCard::selected()->device()->CreateRenderTargetView(_texture, nullptr,_targetHandle);
             }
             else if((uint8_t)(usageFlags & Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT))
             {
                 desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-                DX12GraphicsCard::selected()->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_heap));
-                _view = _heap->GetCPUDescriptorHandleForHeapStart();
-                DX12GraphicsCard::selected()->device()->CreateDepthStencilView(_texture, nullptr,_view);
+                DX12GraphicsCard::selected()->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_targetHeap));
+                _targetHandle = _targetHeap->GetCPUDescriptorHandleForHeapStart();
+                DX12GraphicsCard::selected()->device()->CreateDepthStencilView(_texture, nullptr,_targetHandle);
             }
+            desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+            if((uint8_t)(usageFlags & Texture::UsageFlags::SAMPLED_IMAGE))
+            {
+                DX12GraphicsCard::selected()->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_srvHeap));
+                _shaderResourceViewHandle = _srvHeap->GetCPUDescriptorHandleForHeapStart();
+                DX12GraphicsCard::selected()->device()->CreateShaderResourceView(_texture, nullptr,_shaderResourceViewHandle);
+            }
+            if((uint8_t)(usageFlags & Texture::UsageFlags::STORAGE))
+            {
+                DX12GraphicsCard::selected()->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_uavHeap));
+                _unorderedAccessViewHandle = _srvHeap->GetCPUDescriptorHandleForHeapStart();
+                //TODO: pDesc in this function inherits DX12 defaults, which in this case, means it only gets the first mip and all array slices. Maybe need all mips? https://learn.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12device-createunorderedaccessview
+                DX12GraphicsCard::selected()->device()->CreateUnorderedAccessView(_texture, nullptr,nullptr,_unorderedAccessViewHandle);
+            }
+
         }
     } // dx12
 } // slag

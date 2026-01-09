@@ -26,7 +26,8 @@ namespace slag
             VulkanSamplerDescriptorMemory(VulkanSamplerDescriptorMemory&& from);
             VulkanSamplerDescriptorMemory& operator=(VulkanSamplerDescriptorMemory&& from);
             ///Size in bytes of memory
-            virtual uint64_t size();
+            virtual uint64_t size()override;
+            virtual uint64_t handle()override;
             /**
              * Get the location for the next descriptor set closest to the given memory address. Some API's require descriptor sets to be aligned to a boundary, so this call is required
              * @param memoryLocation Location in memory to check for the next aligned descriptor set location for

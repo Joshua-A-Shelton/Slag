@@ -888,7 +888,7 @@ TEST_F(CommandBufferTest, Resolve)
 
     auto globalsGroup = TexturedDepthMultiSamplePipeline->descriptorGroup(0);
     auto globalsIndex = resourceMemory->nextDescriptorGroupOffset(0);
-    resourceMemory->setUniformBuffer(globalsIndex + globalsGroup->descriptorByteOffset(0),globalsBuffer.get(),0,globalsBuffer->size());
+    resourceMemory->setUniformBuffer(globalsIndex + globalsGroup->descriptorByteOffset(0),globalsBuffer.get(),globalsBuffer->size(),0, 1);
     commandBuffer->bindGraphicsDescriptorGroup(0,resourceMemory.get(),globalsIndex);
     auto samplerGroup = TexturedDepthMultiSamplePipeline->descriptorGroup(1);
     auto samplerIndex = resourceMemory->nextDescriptorGroupOffset(0);
@@ -896,7 +896,7 @@ TEST_F(CommandBufferTest, Resolve)
     commandBuffer->bindGraphicsDescriptorGroup(1,samplerMemory.get(),samplerIndex);
     auto objectGroup = TexturedDepthMultiSamplePipeline->descriptorGroup(2);
     auto objectIndex = resourceMemory->nextDescriptorGroupOffset(globalsIndex+globalsGroup->descriptorBufferSize());
-    resourceMemory->setUniformBuffer(objectIndex + objectGroup->descriptorByteOffset(0),objectBuffer.get(),0,objectBuffer->size());
+    resourceMemory->setUniformBuffer(objectIndex + objectGroup->descriptorByteOffset(0),objectBuffer.get(),objectBuffer->size(),0, 1);
     resourceMemory->setSampledTexture(objectIndex + objectGroup->descriptorByteOffset(1),objectTexture.get());
     commandBuffer->bindGraphicsDescriptorGroup(2,resourceMemory.get(),objectIndex);
     Attachment colorAttachment{.texture = multiSampled.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1042,11 +1042,11 @@ TEST_F(CommandBufferTest, SetViewport)
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
-    resourceMemory->setUniformBuffer(globalsIndex+globalsSet->descriptorByteOffset(0),globalsBuffer.get(),0,globalsBuffer->size());
+    resourceMemory->setUniformBuffer(globalsIndex+globalsSet->descriptorByteOffset(0),globalsBuffer.get(),globalsBuffer->size(),0, 1);
     commandBuffer->bindGraphicsDescriptorGroup(0,resourceMemory.get(),globalsIndex);
     samplerMemory->setSampler(samplersIndex+samplersSet->descriptorByteOffset(0),DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorGroup(1,samplerMemory.get(),samplersIndex);
-    resourceMemory->setUniformBuffer(instanceIndex+instanceSet->descriptorByteOffset(0),objectBuffer.get(),0,objectBuffer->size());
+    resourceMemory->setUniformBuffer(instanceIndex+instanceSet->descriptorByteOffset(0),objectBuffer.get(),objectBuffer->size(),0, 1);
     resourceMemory->setSampledTexture(instanceIndex+instanceSet->descriptorByteOffset(1),objectTexture.get());
     commandBuffer->bindGraphicsDescriptorGroup(2,resourceMemory.get(),instanceIndex);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1148,11 +1148,11 @@ TEST_F(CommandBufferTest, SetScissor)
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
-    resourceMemory->setUniformBuffer(globalsIndex+globalsSet->descriptorByteOffset(0),globalsBuffer.get(),0,globalsBuffer->size());
+    resourceMemory->setUniformBuffer(globalsIndex+globalsSet->descriptorByteOffset(0),globalsBuffer.get(),globalsBuffer->size(),0, 1);
     commandBuffer->bindGraphicsDescriptorGroup(0,resourceMemory.get(),globalsIndex);
     samplerMemory->setSampler(samplersIndex+samplersSet->descriptorByteOffset(0),DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorGroup(1,samplerMemory.get(),samplersIndex);
-    resourceMemory->setUniformBuffer(instanceIndex+instanceSet->descriptorByteOffset(0),objectBuffer.get(),0,objectBuffer->size());
+    resourceMemory->setUniformBuffer(instanceIndex+instanceSet->descriptorByteOffset(0),objectBuffer.get(),objectBuffer->size(),0, 1);
     resourceMemory->setSampledTexture(instanceIndex+instanceSet->descriptorByteOffset(1),objectTexture.get());
     commandBuffer->bindGraphicsDescriptorGroup(2,resourceMemory.get(),instanceIndex);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1269,7 +1269,7 @@ TEST_F(CommandBufferTest, PushGraphicsConstants)
 
     glm::mat4 matrix(1);// = glm::perspective(95.0f,(float)renderTarget->width()/(float)renderTarget->height(),.01f,100.0f);
     *uniformPtr = matrix;
-    resourceMemory->setUniformBuffer(uniformIndex, uniformBuffer.get(),0,uniformBuffer->size());
+    resourceMemory->setUniformBuffer(uniformIndex, uniformBuffer.get(),uniformBuffer->size(),0, 1);
     commandBuffer->bindGraphicsDescriptorGroup(0,resourceMemory.get(),0);
     struct pushConstants
     {
@@ -1471,12 +1471,12 @@ TEST_F(CommandBufferTest, Draw)
     globals->projectionView = projectionView;
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),0,globalsBuffer->size());
+    resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),globalsBuffer->size(),0, 1);
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorGroup(0,resourceMemory.get(),0);
     samplerMemory->setSampler(instanceSamplerIndex,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorGroup(1,samplerMemory.get(),0);
-    resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),0,objectBuffer->size());
+    resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),objectBuffer->size(),0, 1);
     resourceMemory->setSampledTexture(instanceTextureIndex,objectTexture.get());
     commandBuffer->bindGraphicsDescriptorGroup(2,resourceMemory.get(),instanceIndex);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1570,12 +1570,12 @@ TEST_F(CommandBufferTest, DrawIndexed)
     globals->projectionView = projectionView;
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),0,globalsBuffer->size());
+    resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),globalsBuffer->size(),0, 1);
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorGroup(0,resourceMemory.get(),0);
     samplerMemory->setSampler(instanceSamplerIndex,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorGroup(1,samplerMemory.get(),0);
-    resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),0,objectBuffer->size());
+    resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),objectBuffer->size(),0, 1);
     resourceMemory->setSampledTexture(instanceTextureIndex,objectTexture.get());
     commandBuffer->bindGraphicsDescriptorGroup(2,resourceMemory.get(),instanceIndex);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1669,12 +1669,12 @@ TEST_F(CommandBufferTest, DrawIndexedIndirect)
     globals->projectionView = projectionView;
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),0,globalsBuffer->size());
+    resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),globalsBuffer->size(),0, 1);
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorGroup(0,resourceMemory.get(),0);
     samplerMemory->setSampler(instanceSamplerIndex,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorGroup(1,samplerMemory.get(),0);
-    resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),0,objectBuffer->size());
+    resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),objectBuffer->size(),0, 1);
     resourceMemory->setSampledTexture(instanceTextureIndex,objectTexture.get());
     commandBuffer->bindGraphicsDescriptorGroup(2,resourceMemory.get(),instanceIndex);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1776,12 +1776,12 @@ TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
     globals->projectionView = projectionView;
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),0,globalsBuffer->size());
+    resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),globalsBuffer->size(),0, 1);
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorGroup(0,resourceMemory.get(),0);
     samplerMemory->setSampler(instanceSamplerIndex,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorGroup(1,samplerMemory.get(),0);
-    resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),0,objectBuffer->size());
+    resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),objectBuffer->size(),0, 1);
     resourceMemory->setSampledTexture(instanceTextureIndex,objectTexture.get());
     commandBuffer->bindGraphicsDescriptorGroup(2,resourceMemory.get(),instanceIndex);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1886,12 +1886,12 @@ TEST_F(CommandBufferTest, DrawIndirect)
     globals->projectionView = projectionView;
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),0,globalsBuffer->size());
+    resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),globalsBuffer->size(),0, 1);
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorGroup(0,resourceMemory.get(),0);
     samplerMemory->setSampler(instanceSamplerIndex,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorGroup(1,samplerMemory.get(),0);
-    resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),0,objectBuffer->size());
+    resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),objectBuffer->size(),0, 1);
     resourceMemory->setSampledTexture(instanceTextureIndex,objectTexture.get());
     commandBuffer->bindGraphicsDescriptorGroup(2,resourceMemory.get(),instanceIndex);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -1990,12 +1990,12 @@ TEST_F(CommandBufferTest, DrawIndirectCount)
     globals->projectionView = projectionView;
     auto object = objectBuffer->as<TexturedDepthSet1Group>();
     object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),0,globalsBuffer->size());
+    resourceMemory->setUniformBuffer(globalsIndex,globalsBuffer.get(),globalsBuffer->size(),0, 1);
     commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
     commandBuffer->bindGraphicsDescriptorGroup(0,resourceMemory.get(),0);
     samplerMemory->setSampler(instanceSamplerIndex,DefaultSampler.get());
     commandBuffer->bindGraphicsDescriptorGroup(1,samplerMemory.get(),0);
-    resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),0,objectBuffer->size());
+    resourceMemory->setUniformBuffer(instanceTransformIndex, objectBuffer.get(),objectBuffer->size(),0, 1);
     resourceMemory->setSampledTexture(instanceTextureIndex,objectTexture.get());
     commandBuffer->bindGraphicsDescriptorGroup(2,resourceMemory.get(),instanceIndex);
     Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
@@ -2085,9 +2085,9 @@ TEST_F(CommandBufferTest, Dispatch)
     commandBuffer->begin();
     commandBuffer->bindDescriptorMemory(resourceMemory.get(),samplerMemory.get());
 
-    resourceMemory->setStorageBuffer(buffer0Index,inputsBuffer.get(),0,64*sizeof(float));
-    resourceMemory->setStorageBuffer(buffer1Index,inputsBuffer.get(),64*sizeof(float),64*sizeof(float));
-    resourceMemory->setStorageBuffer(resultIndex,outputBuffer.get(),0,64*sizeof(float));
+    resourceMemory->setStorageBuffer(buffer0Index,inputsBuffer.get(),sizeof(float),0, 64);
+    resourceMemory->setStorageBuffer(buffer1Index,inputsBuffer.get(),sizeof(float),64, 64);
+    resourceMemory->setStorageBuffer(resultIndex,outputBuffer.get(),sizeof(float),0, 64);
     commandBuffer->bindComputeShaderPipeline(compute.get());
     commandBuffer->bindComputeDescriptorGroup(0,resourceMemory.get(),0);
 
@@ -2145,9 +2145,9 @@ TEST_F(CommandBufferTest, DispatchBase)
     commandBuffer->begin();
     commandBuffer->bindDescriptorMemory(resourceMemory.get(),samplerMemory.get());
 
-    resourceMemory->setStorageBuffer(buffer0Index,inputsBuffer.get(),0,64*sizeof(float));
-    resourceMemory->setStorageBuffer(buffer1Index,inputsBuffer.get(),64*sizeof(float),64*sizeof(float));
-    resourceMemory->setStorageBuffer(resultIndex,outputBuffer.get(),0,64*sizeof(float));
+    resourceMemory->setStorageBuffer(buffer0Index,inputsBuffer.get(),sizeof(float),0, 64);
+    resourceMemory->setStorageBuffer(buffer1Index,inputsBuffer.get(),sizeof(float),64, 64);
+    resourceMemory->setStorageBuffer(resultIndex,outputBuffer.get(),sizeof(float),0, 64);
     commandBuffer->bindComputeShaderPipeline(compute.get());
     commandBuffer->bindComputeDescriptorGroup(0,resourceMemory.get(),0);
 
@@ -2215,9 +2215,9 @@ TEST_F(CommandBufferTest, DispatchIndirect)
     commandBuffer->begin();
     commandBuffer->bindDescriptorMemory(resourceMemory.get(),samplerMemory.get());
 
-    resourceMemory->setStorageBuffer(buffer0Index,inputsBuffer.get(),0,64*sizeof(float));
-    resourceMemory->setStorageBuffer(buffer1Index,inputsBuffer.get(),64*sizeof(float),64*sizeof(float));
-    resourceMemory->setStorageBuffer(resultIndex,outputBuffer.get(),0,64*sizeof(float));
+    resourceMemory->setStorageBuffer(buffer0Index,inputsBuffer.get(),sizeof(float),0, 64);
+    resourceMemory->setStorageBuffer(buffer1Index,inputsBuffer.get(),sizeof(float),64, 64);
+    resourceMemory->setStorageBuffer(resultIndex,outputBuffer.get(),sizeof(float),0, 64);
     commandBuffer->bindComputeShaderPipeline(compute.get());
     commandBuffer->bindComputeDescriptorGroup(0,resourceMemory.get(),0);
 

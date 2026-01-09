@@ -20,13 +20,14 @@ namespace slag
             VulkanResourceDescriptorMemory(VulkanResourceDescriptorMemory&& from);
             VulkanResourceDescriptorMemory& operator=(VulkanResourceDescriptorMemory&& from);
             virtual uint64_t size()override;
+            virtual uint64_t handle()override;
             virtual uint64_t nextDescriptorGroupOffset(uint64_t memoryLocation)override;
             virtual void setSampledTexture(uint64_t memoryLocation, Texture* texture)override;
             virtual void setStorageTexture(uint64_t memoryLocation, Texture* texture)override;
-            virtual void setUniformTexelBuffer(uint64_t memoryLocation, Buffer* buffer, Pixels::Format format, uint64_t offset, uint64_t length)override;
-            virtual void setStorageTexelBuffer(uint64_t memoryLocation, Buffer* buffer, Pixels::Format format, uint64_t offset, uint64_t length)override;
-            virtual void setUniformBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t offset, uint64_t length)override;
-            virtual void setStorageBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t offset, uint64_t length)override;
+            virtual void setUniformTexelBuffer(uint64_t memoryLocation, Buffer* buffer, Pixels::Format format, uint64_t startIndex, uint64_t elements)override;
+            virtual void setStorageTexelBuffer(uint64_t memoryLocation, Buffer* buffer, Pixels::Format format, uint64_t startIndex, uint64_t elementCount)override;
+            virtual void setUniformBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t dataStride, uint64_t startIndex, uint64_t elementCount)override;
+            virtual void setStorageBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t dataStride, uint64_t startIndex, uint64_t elementCount)override;
 
             VulkanBufferMoveData moveMemory(VmaAllocation tempAllocation, CommandBuffer* copyDataBuffer);
 
