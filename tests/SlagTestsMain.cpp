@@ -19,10 +19,10 @@ int main(int argc, char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
 #ifdef SLAG_DX12_BACKEND
-    ::testing::AddGlobalTestEnvironment(new slag::DX12Environment());
+    //::testing::AddGlobalTestEnvironment(new slag::DX12Environment());
 #endif
 #ifdef SLAG_VULKAN_BACKEND
-    //::testing::AddGlobalTestEnvironment(new slag::VulkanEnvironment());
+    ::testing::AddGlobalTestEnvironment(new slag::VulkanEnvironment());
 #endif
 
     auto run = RUN_ALL_TESTS();

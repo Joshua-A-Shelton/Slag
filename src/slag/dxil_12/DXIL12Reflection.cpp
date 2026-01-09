@@ -4,7 +4,9 @@
 
 #include <wrl/client.h>
 
+#include <directx/d3dx12_root_signature.h>
 #include "slag/backends/dx12/DX12Backend.h"
+#include "slag/backends/dx12/core/DX12GraphicsCard.h"
 
 namespace slag
 {
@@ -73,24 +75,49 @@ namespace slag
             return Descriptor::Dimension::UNKNOWN;
         }
 
+        D3D12_DESCRIPTOR_RANGE_TYPE rangeType(Descriptor::Type type)
+        {
+            switch (type)
+            {
+                case Descriptor::Type::UNIFORM_BUFFER:
+                    return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+                case Descriptor::Type::STORAGE_BUFFER:
+                    return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+                case Descriptor::Type::SAMPLED_TEXTURE:
+                    return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+                case Descriptor::Type::STORAGE_TEXTURE:
+                    return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+                case Descriptor::Type::UNIFORM_TEXEL_BUFFER:
+                    return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+                case Descriptor::Type::STORAGE_TEXEL_BUFFER:
+                    return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+                case Descriptor::Type::SAMPLER:
+                    return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+                case Descriptor::Type::ACCELERATION_STRUCTURE:
+                default:
+                throw std::invalid_argument("Invalid descriptor type");
+            }
+        }
+
         struct DXPositionalDescriptor
         {
             Descriptor descriptor;
             uint32_t desiredOffset;
             D3D12_SHADER_INPUT_BIND_DESC reflectedBinding;
+            uint32_t descriptorCountFromTableRoot=UINT32_MAX;
         };
 
-        std::vector<Descriptor> DXILOrderDescriptors(
-            const std::vector<Descriptor>& uniformBuffers,
-            const std::vector<Descriptor>& uniformTexelBuffers,
-            const std::vector<Descriptor>& storageBuffers,
-            const std::vector<Descriptor>& storageTexelBuffers,
-            const std::vector<Descriptor>& sampledTextures,
-            const std::vector<Descriptor>& storageTextures,
-            const std::vector<Descriptor>& samplers,
-            const std::vector<Descriptor>& accelerationStructures)
+        std::vector<DXPositionalDescriptor> DXILOrderDescriptors(
+            const std::vector<DXPositionalDescriptor>& uniformBuffers,
+            const std::vector<DXPositionalDescriptor>& uniformTexelBuffers,
+            const std::vector<DXPositionalDescriptor>& storageBuffers,
+            const std::vector<DXPositionalDescriptor>& storageTexelBuffers,
+            const std::vector<DXPositionalDescriptor>& sampledTextures,
+            const std::vector<DXPositionalDescriptor>& storageTextures,
+            const std::vector<DXPositionalDescriptor>& samplers,
+            const std::vector<DXPositionalDescriptor>& accelerationStructures)
         {
-            std::vector<Descriptor> descriptors;
+            std::vector<DXPositionalDescriptor> descriptors;
             descriptors.reserve(
                 uniformBuffers.size() +
                 uniformTexelBuffers.size() +
@@ -133,20 +160,24 @@ namespace slag
             {
                 descriptors.emplace_back(accelerationStructures[i]);
             }
+            for (uint32_t i = 0; i < descriptors.size(); i++)
+            {
+                descriptors[i].descriptorCountFromTableRoot = i;
+            }
             return descriptors;
         }
 
-        std::vector<Descriptor> DXILExtractUnorderedDescriptors(const std::unordered_map<std::string, DXPositionalDescriptor>& descriptors)
+        std::vector<DXPositionalDescriptor> DXILExtractUnorderedDescriptors(const std::unordered_map<std::string, DXPositionalDescriptor>& descriptors)
         {
 
-            std::vector<Descriptor> uniformBuffers;
-            std::vector<Descriptor> uniformTexelBuffers;
-            std::vector<Descriptor> storageBuffers;
-            std::vector<Descriptor> storageTexelBuffers;
-            std::vector<Descriptor> sampledTextures;
-            std::vector<Descriptor> storageTextures;
-            std::vector<Descriptor> samplers;
-            std::vector<Descriptor> accelerationStructures;
+            std::vector<DXPositionalDescriptor> uniformBuffers;
+            std::vector<DXPositionalDescriptor> uniformTexelBuffers;
+            std::vector<DXPositionalDescriptor> storageBuffers;
+            std::vector<DXPositionalDescriptor> storageTexelBuffers;
+            std::vector<DXPositionalDescriptor> sampledTextures;
+            std::vector<DXPositionalDescriptor> storageTextures;
+            std::vector<DXPositionalDescriptor> samplers;
+            std::vector<DXPositionalDescriptor> accelerationStructures;
             for (auto& entry : descriptors)
             {
                 switch (entry.second.descriptor.shape().type)
@@ -155,41 +186,41 @@ namespace slag
                         throw std::runtime_error("Unknown descriptor type");
                         break;
                 case Descriptor::Type::SAMPLER:
-                    samplers.push_back(entry.second.descriptor);
+                    samplers.push_back(entry.second);
                     break;
                 case Descriptor::Type::SAMPLED_TEXTURE:
-                    sampledTextures.push_back(entry.second.descriptor);
+                    sampledTextures.push_back(entry.second);
                     break;
                 case Descriptor::Type::STORAGE_TEXTURE:
-                    storageTextures.push_back(entry.second.descriptor);
+                    storageTextures.push_back(entry.second);
                     break;
                 case Descriptor::Type::UNIFORM_TEXEL_BUFFER:
-                    uniformTexelBuffers.push_back(entry.second.descriptor);
+                    uniformTexelBuffers.push_back(entry.second);
                     break;
                 case Descriptor::Type::STORAGE_TEXEL_BUFFER:
-                    storageTexelBuffers.push_back(entry.second.descriptor);
+                    storageTexelBuffers.push_back(entry.second);
                     break;
                 case Descriptor::Type::UNIFORM_BUFFER:
-                    uniformBuffers.push_back(entry.second.descriptor);
+                    uniformBuffers.push_back(entry.second);
                     break;
                 case Descriptor::Type::STORAGE_BUFFER:
-                    storageBuffers.push_back(entry.second.descriptor);
+                    storageBuffers.push_back(entry.second);
                     break;
                 case Descriptor::Type::ACCELERATION_STRUCTURE:
-                    accelerationStructures.push_back(entry.second.descriptor);
+                    accelerationStructures.push_back(entry.second);
                     break;
                 }
             }
             return DXILOrderDescriptors(uniformBuffers,uniformTexelBuffers,storageTexelBuffers,storageTexelBuffers,sampledTextures,storageTextures,samplers,accelerationStructures);
         }
 
-        std::vector<Descriptor> DXILExtractOrderedDescriptors(const std::unordered_map<std::string, DXPositionalDescriptor>& descriptors)
+        std::vector<DXPositionalDescriptor> DXILExtractOrderedDescriptors(const std::vector<DXPositionalDescriptor>& descriptors)
         {
-            std::vector<Descriptor> orderedDescriptors(descriptors.size());
+            std::vector<DXPositionalDescriptor> orderedDescriptors(descriptors.size());
             for (auto& entry : descriptors)
             {
-                auto& desc = entry.second;
-                orderedDescriptors[desc.desiredOffset] = desc.descriptor;
+                auto& desc = entry;
+                orderedDescriptors[desc.desiredOffset] = desc;
             }
             return orderedDescriptors;
         }
@@ -269,25 +300,102 @@ namespace slag
                     }
                 }
             }
-            std::vector<DXILDescriptorGroupReflectionData> descriptorGroupReflections(descriptorGroups.size());
+
+            std::vector<std::vector<CD3DX12_DESCRIPTOR_RANGE1>> descriptorGroupRanges(descriptorGroups.size());
+            std::vector<std::vector<DXPositionalDescriptor>> descriptorGroupDescriptors(descriptorGroups.size());
+            for (int i = 0; i < descriptorGroups.size(); i++)
+            {
+                auto& group = descriptorGroups[i];
+                auto& groupRanges =  descriptorGroupRanges[i];
+                auto& groupDescriptors = descriptorGroupDescriptors[i];
+
+                groupDescriptors = std::move(DXILExtractUnorderedDescriptors(group));
+                groupRanges.resize(groupDescriptors.size());
+                for (int j=0; j<groupDescriptors.size(); j++)
+                {
+                    auto& currentDescriptor = groupDescriptors[j];
+                    groupRanges[j].Init(
+                        rangeType(currentDescriptor.descriptor.shape().type),
+                        1,
+                        j,
+                        i,//maybe should be reflected descriptor space?
+                        D3D12_DESCRIPTOR_RANGE_FLAG_NONE,//Not sure about this, may need to be volatile https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_descriptor_range_flags
+                        currentDescriptor.descriptorCountFromTableRoot);
+                    int x=0;
+                }
+            }
+
+            std::vector<CD3DX12_ROOT_PARAMETER1> rootParameters(descriptorGroupRanges.size());
+            for (int i = 0; i < descriptorGroupRanges.size(); i++)
+            {
+                auto& parameter = rootParameters[i];
+                auto& descRange = descriptorGroupRanges[i];
+                parameter.InitAsDescriptorTable(descRange.size(),descRange.data());
+            }
+
+            CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription(rootParameters.size(),rootParameters.data());
+            Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
+            Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
+            auto result = D3D12SerializeVersionedRootSignature(&rootSignatureDescription,&serializedRootSig,&errorBlob);
+            if (result != S_OK)
+            {
+                std::string error = "Failed to serialize root signature";
+                if (errorBlob)
+                {
+                    error = (static_cast<const char*>(errorBlob->GetBufferPointer()));
+                }
+                throw std::runtime_error(error);
+            }
+
+            Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature;
+            result = dx12::DX12GraphicsCard::selected()->device()->CreateRootSignature(0,serializedRootSig->GetBufferPointer(),serializedRootSig->GetBufferSize(),IID_PPV_ARGS(&rootSignature));
+            if (result != S_OK)
+            {
+                throw std::runtime_error("Failed to create root signature");
+            }
+
             //if identification was applied
             if (identify!=nullptr)
             {
-                for (const auto& group : descriptorGroups)
+                for (auto i=0; i< descriptorGroupDescriptors.size(); i++)
                 {
-                    descriptorGroupReflections[group.first] = DXILDescriptorGroupReflectionData{group.first,DXILExtractOrderedDescriptors(group.second)};
+                    auto& descriptors = descriptorGroupDescriptors[i];
+                    descriptors = std::move(DXILExtractOrderedDescriptors(descriptors));
                 }
             }
-            //otherwise auto sort
-            else
-            {
-                for (const auto& group : descriptorGroups)
-                {
-                    descriptorGroupReflections[group.first] = DXILDescriptorGroupReflectionData{group.first,DXILExtractUnorderedDescriptors(group.second)};
-                }
-            }
+
             //TODO: actually use the descriptors
-            return DXILReflectionData();
+            std::vector<DXILDescriptorGroupReflectionData> groupReflectionData(descriptorGroupDescriptors.size());
+            for (auto i=0; i< groupReflectionData.size(); i++)
+            {
+                auto& reflectionData = groupReflectionData[i];
+                auto& computedData = descriptorGroupDescriptors[i];
+                reflectionData.groupIndex = i;
+                reflectionData.descriptors.resize(computedData.size());
+                reflectionData.descriptorOffsets.resize(computedData.size());
+                for (int j=0; j<computedData.size(); j++)
+                {
+                    reflectionData.descriptors[j] = computedData[j].descriptor;
+                    if (computedData[j].descriptor.shape().type != slag::Descriptor::Type::SAMPLER)
+                    {
+                        reflectionData.descriptorOffsets[j] = computedData[j].descriptorCountFromTableRoot * dx12::DX12GraphicsCard::selected()->resourceDescriptorSize();
+                    }
+                    else
+                    {
+                        reflectionData.descriptorOffsets[j] = computedData[j].descriptorCountFromTableRoot * dx12::DX12GraphicsCard::selected()->samplerDescriptorSize();
+                    }
+                }
+            }
+            return DXILReflectionData
+            {
+                .rootSignature = rootSignature,
+                .groups = std::move(groupReflectionData),
+                //.bufferLayouts = ,
+                //.texelBufferDescriptions = ,
+                //.entryPointXDim = ,
+                //.entryPointYDim = ,
+                //.entryPointZDim = ,
+            };
         }
     }
 } // slag

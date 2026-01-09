@@ -176,17 +176,17 @@ namespace slag
             slag_vkGetDescriptorEXT(card->device(),&bufferDescriptorInfo,card->storageTexelBufferDescriptorSize(),static_cast<unsigned char*>(_bufferPointer)+memoryLocation);
         }
 
-        void VulkanResourceDescriptorMemory::setUniformBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t dataStride, uint64_t startIndex, uint64_t elementCount)
+        void VulkanResourceDescriptorMemory::setUniformBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t offset, uint64_t length)
         {
             SLAG_ASSERT((buffer->usage() & Buffer::UsageFlags::UNIFORM_BUFFER) == Buffer::UsageFlags::UNIFORM_BUFFER && "Given buffer is not a uniform buffer");
-            SLAG_ASSERT((startIndex + elementCount)*dataStride <= buffer->size() && "attempted to bind descriptor that exceeds buffer length");
+            SLAG_ASSERT(offset+length <= buffer->size() && "attempted to bind descriptor that exceeds buffer length");
             VulkanBuffer* vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
             VkDescriptorAddressInfoEXT addressInfo =
             {
                 .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_ADDRESS_INFO_EXT,
                 .pNext = nullptr,
-                .address = vulkanBuffer->deviceAddress() + (startIndex*dataStride),
-                .range = elementCount*dataStride,
+                .address = vulkanBuffer->deviceAddress() + offset,
+                .range = length,
                 .format = VK_FORMAT_UNDEFINED
             };
 

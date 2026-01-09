@@ -117,6 +117,11 @@ namespace slag
             return _cpuHandle;
         }
 
+        D3D12_GPU_VIRTUAL_ADDRESS DX12Buffer::gpuHandle() const
+        {
+            return _buffer->GetGPUVirtualAddress();
+        }
+
         ID3D12Resource* DX12Buffer::dx12Handle()
         {
             return _buffer;

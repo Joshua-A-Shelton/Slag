@@ -26,7 +26,7 @@ namespace slag
             virtual void setStorageTexture(uint64_t memoryLocation, Texture* texture)override;
             virtual void setUniformTexelBuffer(uint64_t memoryLocation, Buffer* buffer, Pixels::Format format, uint64_t startIndex, uint64_t elements)override;
             virtual void setStorageTexelBuffer(uint64_t memoryLocation, Buffer* buffer, Pixels::Format format, uint64_t startIndex, uint64_t elementCount)override;
-            virtual void setUniformBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t dataStride, uint64_t startIndex, uint64_t elementCount)override;
+            virtual void setUniformBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t offset, uint64_t length)override;
             virtual void setStorageBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t dataStride, uint64_t startIndex, uint64_t elementCount)override;
         private:
             void move(DX12ResourceDescriptorMemory& from);

@@ -123,6 +123,23 @@ namespace slag
             DX12GraphicsCard::selected()->device()->CreateUnorderedAccessView(dxBuffer->dx12Handle(), nullptr, &viewDesc, heapHandle);
         }
 
+        void DX12ResourceDescriptorMemory::setUniformBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t offset, uint64_t length)
+        {
+            SLAG_ASSERT((buffer->usage() & Buffer::UsageFlags::UNIFORM_BUFFER) == Buffer::UsageFlags::UNIFORM_BUFFER && "Given Buffer is not a uniform buffer");
+            SLAG_ASSERT(offset+length <= buffer->size() && "attempted to bind descriptor that exceeds buffer length");
+            DX12Buffer* dxBuffer = static_cast<DX12Buffer*>(buffer);
+            auto heapHandle = _heap->GetCPUDescriptorHandleForHeapStart();
+            heapHandle.ptr += memoryLocation;
+
+            auto handle = dxBuffer->gpuHandle();
+            handle += offset;
+            D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc = {};
+            viewDesc.BufferLocation = handle;
+            viewDesc.SizeInBytes = length;
+
+            DX12GraphicsCard::selected()->device()->CreateConstantBufferView(&viewDesc, heapHandle);
+        }
+
         void DX12ResourceDescriptorMemory::move(DX12ResourceDescriptorMemory& from)
         {
             std::swap(_heap, from._heap);

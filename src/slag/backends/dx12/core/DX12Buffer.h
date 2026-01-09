@@ -42,6 +42,8 @@ namespace slag
             ///The location of the buffer in host memory (if cpu accessible)
             virtual void* cpuHandle()override;
 
+            D3D12_GPU_VIRTUAL_ADDRESS gpuHandle()const;
+
             ID3D12Resource* dx12Handle();
         protected:
             void move(DX12Buffer& from);

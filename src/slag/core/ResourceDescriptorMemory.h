@@ -41,14 +41,13 @@ namespace slag
          */
         virtual void setStorageTexelBuffer(uint64_t memoryLocation, Buffer* buffer, Pixels::Format format, uint64_t startIndex, uint64_t elementCount)=0;
         /**
-         * Create a descriptor that points to a given uniform buffer. Buffer is treated as an array of objects of of size 'dataStride'
+         * Create a descriptor that points to a given uniform buffer
          * @param memoryLocation Location in the memory the new descriptor will be placed
          * @param buffer Buffer the descriptor will reference
-         * @param dataStride Size of an element in the buffer
-         * @param startIndex Index of first element
-         * @param elementCount Number of elements to bind
+         * @param offset Offset into the buffer to bind
+         * @param length Length of data in bytes to bind
          */
-        virtual void setUniformBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t dataStride, uint64_t startIndex, uint64_t elementCount)=0;
+        virtual void setUniformBuffer(uint64_t memoryLocation, Buffer* buffer, uint64_t offset, uint64_t length)=0;
         /**
          * Create a descriptor that points to a given storage buffer. Buffer is treated as an array of objects of of size 'dataStride'
          * @param memoryLocation Location in the memory the new descriptor will be placed
