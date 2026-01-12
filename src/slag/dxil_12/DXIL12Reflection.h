@@ -4,6 +4,8 @@
 #include <slag/Slag.h>
 #include <wrl/client.h>
 #include <d3d12.h>
+#include <d3d12shader.h>
+
 namespace slag
 {
     namespace dxil

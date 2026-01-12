@@ -152,38 +152,35 @@ namespace slag
 
         void DX12ShaderPipeline::dxilConstruct(ShaderCode** shaders, size_t shaderCount, ShaderProperties& properties,VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,DescriptorIdentity(*identify)(const DescriptorIdentityParameters&,void*), void* identifyData)
         {
-            D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineDesc = {};
+
+
+
+            auto reflectionData = dxil::getReflectionData(shaders, shaderCount,identify,identifyData);
+
+            D3D12_GRAPHICS_PIPELINE_STATE_DESC shaderDescription{};
+
             for (auto i=0; i<shaderCount; i++)
             {
                 auto* code = shaders[i];
                 switch (code->stage())
                 {
                 case ShaderStageFlags::VERTEX:
-                    pipelineDesc.VS.pShaderBytecode = code->data();
-                    pipelineDesc.VS.BytecodeLength = code->dataSize();
+                    shaderDescription.VS.pShaderBytecode = code->data();
+                    shaderDescription.VS.BytecodeLength = code->dataSize();
                     break;
                 case ShaderStageFlags::FRAGMENT:
-                    pipelineDesc.PS.pShaderBytecode = code->data();
-                    pipelineDesc.PS.BytecodeLength = code->dataSize();
+                    shaderDescription.PS.pShaderBytecode = code->data();
+                    shaderDescription.PS.BytecodeLength = code->dataSize();
                     break;
                 case ShaderStageFlags::GEOMETRY:
-                    pipelineDesc.GS.pShaderBytecode = code->data();
-                    pipelineDesc.GS.BytecodeLength = code->dataSize();
+                    shaderDescription.GS.pShaderBytecode = code->data();
+                    shaderDescription.GS.BytecodeLength = code->dataSize();
                     break;
                 default:
                     throw std::runtime_error("Invalid shader stage provided for graphics pipeline");
                 }
             }
-
-            //TODO: Implement reflection data
-
-            auto reflectionData = dxil::getReflectionData(shaders, shaderCount,identify,identifyData);
-
-
-            D3D12_GRAPHICS_PIPELINE_STATE_DESC shaderDescription{};
             shaderDescription.pRootSignature = reflectionData.rootSignature.Get();
-
-            //shaderDescription.pRootSignature = REFLECTED_DATA_HERE;
 
             //shaderDescription.StreamOutput = ; //TODO: I don't think this is required to make a shader work, but may be required if I'm enabling streaming in the API....
 
@@ -255,36 +252,7 @@ namespace slag
 
             D3D12_INPUT_LAYOUT_DESC& inputLayout = shaderDescription.InputLayout;
             std::vector<D3D12_INPUT_ELEMENT_DESC> inputElements;
-
-            for(auto i=0; i<vertexDescription.attributeChannels(); i++)
-            {
-                for(auto j=0; j< vertexDescription.attributeCount(i); j++)
-                {
-
-                    auto attr = vertexDescription.attribute(i,j);
-                    auto formats = DX12Backend::dx12GraphicsType(attr.dataType());
-                    if(formats.empty())
-                    {
-                        throw std::runtime_error("Unable to convert graphicsType type into underlying API type");
-                    }
-                    std::string semanticName("element");
-                    semanticName+=std::to_string(i);
-                    semanticName+="_";
-                    semanticName+=std::to_string(j);
-
-                    for(auto k=0; k<formats.size(); k++)
-                    {
-                        D3D12_INPUT_ELEMENT_DESC description{};
-                        description.SemanticName = semanticName.c_str();
-                        description.SemanticIndex = i;
-                        description.Format = formats[k];
-                        description.InputSlot = j;//not too sure about this, but I think it's right
-                        description.AlignedByteOffset = attr.offset() + (k*DX12Backend::dx12FormatSize(description.Format));
-                        description.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-                        inputElements.push_back(description);
-                    }
-                }
-            }
+            //TODO: read input elements from reflection
 
 
             inputLayout.pInputElementDescs = inputElements.data();
