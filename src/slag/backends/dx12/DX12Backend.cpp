@@ -473,7 +473,7 @@ namespace slag
             //return new DX12ShaderPipeline(shaders, shaderCount, properties, vertexDescription, framebufferDescription,identify,identifyData);
         }
 
-        ShaderPipeline* DX12Backend::newShaderPipeline(const ShaderCode& computeShader, DescriptorIdentity (*identify)(const DescriptorIdentityParameters&, void*), void* identifyData)
+        ShaderPipeline* DX12Backend::newShaderPipeline(ShaderCode* computeShader, DescriptorIdentity (*identify)(const DescriptorIdentityParameters&, void*), void* identifyData)
         {
             throw std::runtime_error("DX12Backend::newShaderPipeline() not implemented");
         }

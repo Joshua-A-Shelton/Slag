@@ -21,7 +21,7 @@ namespace slag
         return Backend::current()->newShaderPipeline(shaders, shaderCount, properties, vertexDescription, framebufferDescription,identify,identifyData);
     }
 
-    ShaderPipeline* ShaderPipeline::newShaderPipeline(const ShaderCode& computeShader, DescriptorIdentity (*identify)(const DescriptorIdentityParameters&, void*), void* identifyData)
+    ShaderPipeline* ShaderPipeline::newShaderPipeline(ShaderCode* computeShader, DescriptorIdentity (*identify)(const DescriptorIdentityParameters&, void*), void* identifyData)
     {
         return Backend::current()->newShaderPipeline(computeShader,identify,identifyData);
     }

@@ -61,7 +61,7 @@ namespace slag
             acceptedLanuages() override;
             virtual ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, DescriptorIdentity
                                                       (*identify)(const DescriptorIdentityParameters&, void*), void* identifyData)override;
-            virtual ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader, DescriptorIdentity (*identify)(const DescriptorIdentityParameters&, void*), void* identifyData)override;
+            virtual ShaderPipeline* newShaderPipeline(ShaderCode* computeShader, DescriptorIdentity (*identify)(const DescriptorIdentityParameters&, void*), void* identifyData)override;
             //Pixel Properties
             virtual PixelFormatProperties pixelFormatProperties(Pixels::Format format)override;
             //Descriptor Memory

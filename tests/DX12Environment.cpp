@@ -108,7 +108,7 @@ namespace slag
     std::unique_ptr<slag::ShaderPipeline> DX12Environment::loadPipelineFromFiles(ShaderFile& computeCode)
     {
         ShaderCode shaderCode(computeCode.stage,ShaderCode::CodeLanguage::SPIRV,computeCode.pathIndicator+".dxil");
-        return std::unique_ptr<slag::ShaderPipeline>(slag::ShaderPipeline::newShaderPipeline(shaderCode));
+        return std::unique_ptr<slag::ShaderPipeline>(slag::ShaderPipeline::newShaderPipeline(&shaderCode));
     }
 
     utilities::DescriptorDictionary* DX12Environment::getShaderDictionary(const std::string& shaderName)

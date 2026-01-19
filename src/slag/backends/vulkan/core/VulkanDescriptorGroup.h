@@ -33,7 +33,7 @@ namespace slag
             };
 
             VulkanDescriptorGroup()=default;
-            VulkanDescriptorGroup(const ShaderDescriptorBindingGroup& group, const std::unordered_map<uint32_t,DescriptorIdentity>& identities);
+            VulkanDescriptorGroup(const DescriptorBindingGroup& group, const std::unordered_map<uint32_t,DescriptorIdentity>& identities);
             ~VulkanDescriptorGroup()override;
             VulkanDescriptorGroup(const VulkanDescriptorGroup& from);
             VulkanDescriptorGroup& operator=(const VulkanDescriptorGroup& from);

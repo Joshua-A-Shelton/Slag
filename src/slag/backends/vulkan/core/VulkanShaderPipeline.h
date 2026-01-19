@@ -14,15 +14,13 @@ namespace slag
         {
         public:
             VulkanShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, DescriptorIdentity(*identify)(const DescriptorIdentityParameters&,void*), void* identifyData);
-            VulkanShaderPipeline(const ShaderCode& computeCode, DescriptorIdentity(*identify)(const DescriptorIdentityParameters&,void*), void* identifyData);
+            VulkanShaderPipeline(ShaderCode* computeCode, DescriptorIdentity(*identify)(const DescriptorIdentityParameters&,void*), void* identifyData);
             VulkanShaderPipeline(const VulkanShaderPipeline&)=delete;
             VulkanShaderPipeline& operator=(const VulkanShaderPipeline&)=delete;
             VulkanShaderPipeline(VulkanShaderPipeline&& from);
             VulkanShaderPipeline& operator=(VulkanShaderPipeline&& from);
             virtual ~VulkanShaderPipeline()override;
             virtual PipelineType pipelineType()override;
-            virtual  uint32_t vertexAttributeBufferCount()override;
-            virtual BufferLayout* vertexAttributeLayout(uint32_t index)override;
             virtual uint32_t descriptorGroupCount()override;
             BufferLayout* pushConstants() override;
             virtual VertexDescription* vertexDescription()override;
@@ -43,7 +41,6 @@ namespace slag
             VkPipeline _pipeline = nullptr;
             VkPipelineLayout _pipelineLayout = nullptr;
             std::unique_ptr<VertexDescription> _vertexDescription = nullptr;
-            std::vector<BufferLayout> _vertexBufferLayouts;
             std::vector<VulkanDescriptorGroup> _descriptorGroups;
             std::unique_ptr<BufferLayout> _pushConstants;
             std::unordered_map<uint32_t,std::unordered_map<uint32_t,BufferLayout>> _uniformBufferLayouts;

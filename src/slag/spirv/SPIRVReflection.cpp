@@ -276,7 +276,7 @@ namespace slag
             return Pixels::Format::UNDEFINED;
         }
 
-        ShaderVertexInputVariable inputFromSPV(const SpvReflectInterfaceVariable* variable)
+        VertexInputAttribute inputFromSPV(const SpvReflectInterfaceVariable* variable)
         {
             std::string name;
             if (variable->name!=nullptr){name = variable->name;}
@@ -284,7 +284,7 @@ namespace slag
             auto dims = variable->array.dims[0];
             auto arrayDepth = dims == 0? 1 : dims;
 
-            return ShaderVertexInputVariable(name,type,arrayDepth,variable->location);
+            return VertexInputAttribute(name,type,arrayDepth,variable->location);
         }
 
         BufferLayout bufferDescriptorLayoutFromSPV(const SpvReflectBlockVariable* block)
@@ -312,27 +312,27 @@ namespace slag
             return TexelBufferDescription(pixelFormatFromSPV(binding->image.image_format));
         }
 
-        ShaderDescriptorBindingGroup generateBindingGroup(SpvReflectDescriptorSet* group, ShaderStageFlags stage)
+        DescriptorBindingGroup generateBindingGroup(SpvReflectDescriptorSet* group, ShaderStageFlags stage)
         {
 
-            std::vector<ShaderDescriptorBinding> descriptors(group->binding_count);
+            std::vector<DescriptorBinding> descriptors(group->binding_count);
             for (auto i=0; i< group->binding_count; i++)
             {
                 auto currentBinding = group->bindings[i];
                 Descriptor descriptor(currentBinding->name,descriptorTypeFromSPV(currentBinding->descriptor_type),dimensionFromSPV(currentBinding->image.dim),currentBinding->count,stage);
-                descriptors[i] = ShaderDescriptorBinding(descriptor,currentBinding->binding);
+                descriptors[i] = DescriptorBinding(descriptor,currentBinding->binding);
             }
-            return ShaderDescriptorBindingGroup(descriptors.data(),descriptors.size(),group->set);
+            return DescriptorBindingGroup(descriptors.data(),descriptors.size(),group->set);
         }
 
         ShaderMetaData reflectShaderCode(ShaderCode& shaderCode)
         {
             ShaderStageFlags stage = shaderCode.stage();
-            std::vector<ShaderVertexInputVariable> vertexInputs;
-            std::vector<ShaderDescriptorBindingGroup> bindingGroups;
-            std::vector<ShaderBufferLayout> uniformBufferLayouts;
-            std::vector<ShaderBufferLayout> storageBufferLayouts;
-            std::vector<ShaderTexelBufferDescription> texelBufferDescriptions;
+            std::vector<VertexInputAttribute> vertexInputs;
+            std::vector<DescriptorBindingGroup> bindingGroups;
+            std::vector<BufferDescriptorBindingLayout> uniformBufferLayouts;
+            std::vector<BufferDescriptorBindingLayout> storageBufferLayouts;
+            std::vector<TexelBufferDescriptorBinding> texelBufferDescriptions;
             BufferLayout pushConstantsLayout;
             uint32_t xComputeThreads = 0;
             uint32_t yComputeThreads = 0;
@@ -391,7 +391,14 @@ namespace slag
                 {
                     SpvReflectResult result;
                     auto range = spvReflectGetPushConstantBlock(&module,blockIndex,&result);
-                    pushConstantsLayout = BufferLayout::merge(pushConstantsLayout,bufferDescriptorLayoutFromSPV(range));
+                    if (pushConstantsLayout.type()==GraphicsType::UNKNOWN)
+                    {
+                        pushConstantsLayout = bufferDescriptorLayoutFromSPV(range);
+                    }
+                    else
+                    {
+                        pushConstantsLayout = BufferLayout::merge(pushConstantsLayout,bufferDescriptorLayoutFromSPV(range));
+                    }
                 }
 
             }

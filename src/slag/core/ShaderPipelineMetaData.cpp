@@ -28,7 +28,7 @@ namespace slag {
         return _vertexInputs.size();
     }
 
-    const ShaderVertexInputVariable& ShaderPipelineMetaData::vertexInput(uint32_t index)
+    const VertexInputAttribute& ShaderPipelineMetaData::vertexInput(uint32_t index)
     {
         return _vertexInputs[index];
     }
@@ -38,7 +38,7 @@ namespace slag {
         return _bindingGroups.size();
     }
 
-    const ShaderDescriptorBindingGroup& ShaderPipelineMetaData::descriptorGroup(uint32_t index)
+    const DescriptorBindingGroup& ShaderPipelineMetaData::descriptorGroup(uint32_t index)
     {
         return _bindingGroups[index];
     }
@@ -48,7 +48,7 @@ namespace slag {
         return _uniformBufferLayouts.size();
     }
 
-    const ShaderBufferLayout& ShaderPipelineMetaData::uniformBufferLayout(uint32_t index)
+    const BufferDescriptorBindingLayout& ShaderPipelineMetaData::uniformBufferLayout(uint32_t index)
     {
         return _uniformBufferLayouts[index];
     }
@@ -58,7 +58,7 @@ namespace slag {
         return _storageBufferLayouts.size();
     }
 
-    const ShaderBufferLayout& ShaderPipelineMetaData::storageBufferLayout(uint32_t index)
+    const BufferDescriptorBindingLayout& ShaderPipelineMetaData::storageBufferLayout(uint32_t index)
     {
         return _storageBufferLayouts[index];
     }
@@ -68,7 +68,7 @@ namespace slag {
         return _texelBufferDescriptions.size();
     }
 
-    const ShaderTexelBufferDescription& ShaderPipelineMetaData::texelBufferDescription(uint32_t index)
+    const TexelBufferDescriptorBinding& ShaderPipelineMetaData::texelBufferDescription(uint32_t index)
     {
         return _texelBufferDescriptions[index];
     }
@@ -95,7 +95,7 @@ namespace slag {
 
     struct PIPELINE_META_DATA_BoundDescriptorAndLayout
     {
-        ShaderDescriptorBinding binding;
+        DescriptorBinding binding;
         BufferLayout layout;
         TexelBufferDescription bufferDescription;
     };
@@ -129,19 +129,19 @@ namespace slag {
             lastStage = stage->stage();
         }
         std::vector<std::unordered_map<uint64_t,PIPELINE_META_DATA_BoundDescriptorAndLayout>> combinedBindings;
-        BufferLayout pushConstantLayout;
+
         for (uint32_t i=0; i< stageCount; i++)
         {
             auto codeReflection = orderedStages[i]->metaData();
             if (codeReflection->pushConstantLayout().type() == GraphicsType::STRUCT)
             {
-                if (pushConstantLayout.type() == GraphicsType::UNKNOWN)
+                if (_pushConstantLayout.type() == GraphicsType::UNKNOWN)
                 {
-                    pushConstantLayout = codeReflection->pushConstantLayout();
+                    _pushConstantLayout = codeReflection->pushConstantLayout();
                 }
                 else
                 {
-                    pushConstantLayout = BufferLayout::merge(pushConstantLayout,codeReflection->pushConstantLayout());
+                    _pushConstantLayout = BufferLayout::merge(_pushConstantLayout,codeReflection->pushConstantLayout());
                 }
             }
             if (codeReflection->stage() == ShaderStageFlags::COMPUTE)
@@ -220,7 +220,7 @@ namespace slag {
         for (int descriptorGroupIndex=0; descriptorGroupIndex< combinedBindings.size(); descriptorGroupIndex++)
         {
             auto& currentGroup = combinedBindings[descriptorGroupIndex];
-            std::vector<ShaderDescriptorBinding> descriptors;
+            std::vector<DescriptorBinding> descriptors;
             descriptors.reserve(currentGroup.size());
             uint32_t currentDescriptorIndex = 0;
             for (auto& kvpair: currentGroup)
@@ -230,21 +230,21 @@ namespace slag {
                 if (type == Descriptor::Type::UNIFORM_BUFFER)
                 {
                     auto layout = kvpair.second.layout;
-                    _uniformBufferLayouts.push_back(ShaderBufferLayout(descriptorGroupIndex,currentDescriptorIndex,std::move(layout)));
+                    _uniformBufferLayouts.push_back(BufferDescriptorBindingLayout(descriptorGroupIndex,currentDescriptorIndex,std::move(layout)));
                 }
                 else if (type == Descriptor::Type::STORAGE_BUFFER)
                 {
                     auto layout = kvpair.second.layout;
-                    _storageBufferLayouts.push_back(ShaderBufferLayout(descriptorGroupIndex,currentDescriptorIndex,std::move(layout)));
+                    _storageBufferLayouts.push_back(BufferDescriptorBindingLayout(descriptorGroupIndex,currentDescriptorIndex,std::move(layout)));
                 }
                 else if (type == Descriptor::Type::UNIFORM_TEXEL_BUFFER || type == Descriptor::Type::STORAGE_TEXEL_BUFFER)
                 {
                     auto description = kvpair.second.bufferDescription;
-                    _texelBufferDescriptions.push_back(ShaderTexelBufferDescription(descriptorGroupIndex,currentDescriptorIndex,std::move(description)));
+                    _texelBufferDescriptions.push_back(TexelBufferDescriptorBinding(descriptorGroupIndex,currentDescriptorIndex,std::move(description)));
                 }
                 currentDescriptorIndex++;
             }
-            _bindingGroups.push_back(ShaderDescriptorBindingGroup(descriptors.data(),descriptors.size(),descriptorGroupIndex));
+            _bindingGroups.push_back(DescriptorBindingGroup(descriptors.data(),descriptors.size(),descriptorGroupIndex));
         }
     }
 } // slag

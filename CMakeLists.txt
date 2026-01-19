@@ -276,6 +276,10 @@ endif()
 target_include_directories(Slag PUBLIC src)
 
 if(PROJECT_IS_TOP_LEVEL)
+    OPTION(SLAG_TESTS_INCLUDE_SWAPCHAIN "Include Swapchain based tests. They're kinda finnicky because they're really hard to test without someone looking at it" OFF)
+    if(${SLAG_TESTS_INCLUDE_SWAPCHAIN})
+        add_definitions(-DSLAG_TESTS_INCLUDE_SWAPCHAIN)
+    endif ()
     fetchcontent_declare(
             SDL2
             GIT_REPOSITORY https://github.com/libsdl-org/SDL

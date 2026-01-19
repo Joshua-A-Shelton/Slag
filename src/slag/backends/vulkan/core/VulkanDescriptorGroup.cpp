@@ -57,7 +57,7 @@ namespace slag
             return result;
         }
 
-        VulkanDescriptorGroup::VulkanDescriptorGroup(const ShaderDescriptorBindingGroup& group, const std::unordered_map<uint32_t,DescriptorIdentity>& identities)
+        VulkanDescriptorGroup::VulkanDescriptorGroup(const DescriptorBindingGroup& group, const std::unordered_map<uint32_t,DescriptorIdentity>& identities)
         {
 
             _descriptors.resize(group.bindingCount());

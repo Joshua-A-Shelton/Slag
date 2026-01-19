@@ -56,16 +56,16 @@ namespace slag
         return a;
     }
 
-    class ShaderVertexInputVariable
+    class VertexInputAttribute
     {
     public:
-        ShaderVertexInputVariable()=default;
-        ShaderVertexInputVariable(const std::string& name, GraphicsType type, uint32_t arrayLength, uint64_t inputID);
-        ~ShaderVertexInputVariable() = default;
-        ShaderVertexInputVariable(const ShaderVertexInputVariable&)=default;
-        ShaderVertexInputVariable(ShaderVertexInputVariable&&)=default;
-        ShaderVertexInputVariable& operator=(const ShaderVertexInputVariable&)=default;
-        ShaderVertexInputVariable& operator=(ShaderVertexInputVariable&&)=default;
+        VertexInputAttribute()=default;
+        VertexInputAttribute(const std::string& name, GraphicsType type, uint32_t arrayLength, uint64_t inputID);
+        ~VertexInputAttribute() = default;
+        VertexInputAttribute(const VertexInputAttribute&)=default;
+        VertexInputAttribute(VertexInputAttribute&&)=default;
+        VertexInputAttribute& operator=(const VertexInputAttribute&)=default;
+        VertexInputAttribute& operator=(VertexInputAttribute&&)=default;
         [[nodiscard]] const std::string& name()const;
         [[nodiscard]] GraphicsType type()const;
         [[nodiscard]] uint32_t arrayLength()const;
@@ -78,44 +78,44 @@ namespace slag
         uint64_t _inputID = 0;
     };
 
-    class ShaderDescriptorBinding
+    class DescriptorBinding
     {
     public:
-        ShaderDescriptorBinding()=default;
-        ShaderDescriptorBinding(Descriptor descriptor, uint64_t bindingId);
+        DescriptorBinding()=default;
+        DescriptorBinding(Descriptor descriptor, uint64_t bindingId);
         const Descriptor& descriptor()const;
         ///This is a shader code language dependent id. They use different mechanisms to determine binding, but each platform should support squishing it into this id. Same ID means it occupies the same input slot across shaders
         [[nodiscard]] uint64_t bindingId()const;
     private:
         Descriptor _descriptor{};
         uint64_t _bindingId=0;
-        void copy(ShaderDescriptorBinding& other);
+        void copy(DescriptorBinding& other);
     };
 
-    class ShaderDescriptorBindingGroup
+    class DescriptorBindingGroup
     {
     public:
-        ShaderDescriptorBindingGroup()=default;
-        ShaderDescriptorBindingGroup(ShaderDescriptorBinding* bindings, uint32_t bindingCount, uint32_t groupIndex);
-        ~ShaderDescriptorBindingGroup()=default;
-        ShaderDescriptorBindingGroup(const ShaderDescriptorBinding&)=delete;
-        ShaderDescriptorBindingGroup& operator=(const ShaderDescriptorBindingGroup&)=delete;
-        ShaderDescriptorBindingGroup(ShaderDescriptorBindingGroup&& from);
-        ShaderDescriptorBindingGroup& operator=(ShaderDescriptorBindingGroup&& from);
+        DescriptorBindingGroup()=default;
+        DescriptorBindingGroup(DescriptorBinding* bindings, uint32_t bindingCount, uint32_t groupIndex);
+        ~DescriptorBindingGroup()=default;
+        DescriptorBindingGroup(const DescriptorBinding&)=delete;
+        DescriptorBindingGroup& operator=(const DescriptorBindingGroup&)=delete;
+        DescriptorBindingGroup(DescriptorBindingGroup&& from);
+        DescriptorBindingGroup& operator=(DescriptorBindingGroup&& from);
 
         [[nodiscard]] uint32_t descriptorGroupIndex() const;
         [[nodiscard]] uint32_t bindingCount()const;
-        [[nodiscard]] const ShaderDescriptorBinding& descriptorBinding(uint32_t index) const;
+        [[nodiscard]] const DescriptorBinding& descriptorBinding(uint32_t index) const;
     private:
-        void move(ShaderDescriptorBindingGroup& from);
+        void move(DescriptorBindingGroup& from);
         uint32_t _descriptorGroupIndex = UINT32_MAX;
-        std::vector<ShaderDescriptorBinding> _bindings;
+        std::vector<DescriptorBinding> _bindings;
     };
 
-    class ShaderBufferLayout
+    class BufferDescriptorBindingLayout
     {
     public:
-        ShaderBufferLayout(uint32_t descriptorGroupIndex, uint32_t descriptorIndex, BufferLayout&& layout);
+        BufferDescriptorBindingLayout(uint32_t descriptorGroupIndex, uint32_t descriptorIndex, BufferLayout&& layout);
         [[nodiscard]] uint32_t descriptorGroupIndex()const;
         [[nodiscard]] uint32_t descriptorIndex()const;
         [[nodiscard]] const BufferLayout& bufferLayout()const;
@@ -125,10 +125,10 @@ namespace slag
         BufferLayout _bufferLayout;
     };
 
-    class ShaderTexelBufferDescription
+    class TexelBufferDescriptorBinding
     {
     public:
-        ShaderTexelBufferDescription(uint32_t descriptorGroupIndex, uint32_t descriptorIndex, TexelBufferDescription&& description);
+        TexelBufferDescriptorBinding(uint32_t descriptorGroupIndex, uint32_t descriptorIndex, TexelBufferDescription&& description);
         [[nodiscard]] uint32_t descriptorGroupIndex()const;
         [[nodiscard]] uint32_t descriptorIndex()const;
         [[nodiscard]] const TexelBufferDescription& bufferDescription()const;
@@ -144,11 +144,11 @@ namespace slag
     public:
         ShaderMetaData(
             ShaderStageFlags stage,
-            std::vector<ShaderVertexInputVariable>&& vertexInputs,
-            std::vector<ShaderDescriptorBindingGroup>&& bindingGroups,
-            std::vector<ShaderBufferLayout>&& uniformLayouts,
-            std::vector<ShaderBufferLayout>&& storageLayouts,
-            std::vector<ShaderTexelBufferDescription>&& texelLayouts,
+            std::vector<VertexInputAttribute>&& vertexInputs,
+            std::vector<DescriptorBindingGroup>&& bindingGroups,
+            std::vector<BufferDescriptorBindingLayout>&& uniformLayouts,
+            std::vector<BufferDescriptorBindingLayout>&& storageLayouts,
+            std::vector<TexelBufferDescriptorBinding>&& texelLayouts,
             BufferLayout pushConstantLayout,
             uint32_t xComputeThreads,
             uint32_t yComputeThreads,
@@ -159,20 +159,20 @@ namespace slag
         ShaderMetaData(ShaderMetaData&& from);
         ShaderMetaData& operator=(ShaderMetaData&& from);
         [[nodiscard]] uint32_t inputCount() const;
-        [[nodiscard]] const ShaderVertexInputVariable& inputVariable(uint32_t index) const;
+        [[nodiscard]] const VertexInputAttribute& inputVariable(uint32_t index) const;
         [[nodiscard]] uint32_t descriptorBindingGroupCount() const;
-        [[nodiscard]] const ShaderDescriptorBindingGroup& descriptorBindingGroup(uint32_t index)const;
+        [[nodiscard]] const DescriptorBindingGroup& descriptorBindingGroup(uint32_t index)const;
         [[nodiscard]] uint32_t uniformBufferLayoutCount()const;
-        [[nodiscard]] const ShaderBufferLayout& uniformBufferLayout(uint32_t index)const;
+        [[nodiscard]] const BufferDescriptorBindingLayout& uniformBufferLayout(uint32_t index)const;
         [[nodiscard]] uint32_t storageBufferLayoutCount()const;
-        [[nodiscard]] const ShaderBufferLayout& storageBufferLayout(uint32_t index)const;
+        [[nodiscard]] const BufferDescriptorBindingLayout& storageBufferLayout(uint32_t index)const;
         [[nodiscard]] uint32_t texelBufferDescriptionCount()const;
-        [[nodiscard]] const ShaderTexelBufferDescription& texelBufferDescription(uint32_t index)const;
+        [[nodiscard]] const TexelBufferDescriptorBinding& texelBufferDescription(uint32_t index)const;
         BufferLayout pushConstantLayout()const;
 
-        const ShaderBufferLayout* uniformBufferLayout(uint32_t bindingGroup, uint32_t descriptorIndex) const;
-        const ShaderBufferLayout* storageBufferLayout(uint32_t bindingGroup, uint32_t descriptorIndex)const;
-        const ShaderTexelBufferDescription* texelBufferDescription(uint32_t bindingGroup, uint32_t descriptorIndex)const;
+        const BufferDescriptorBindingLayout* uniformBufferLayout(uint32_t bindingGroup, uint32_t descriptorIndex) const;
+        const BufferDescriptorBindingLayout* storageBufferLayout(uint32_t bindingGroup, uint32_t descriptorIndex)const;
+        const TexelBufferDescriptorBinding* texelBufferDescription(uint32_t bindingGroup, uint32_t descriptorIndex)const;
 
         [[nodiscard]] uint32_t xComputeThreads() const;
         [[nodiscard]] uint32_t yComputeThreads() const;
@@ -185,11 +185,11 @@ namespace slag
         void move(ShaderMetaData& from);
         explicit ShaderMetaData(ShaderCode& shaderCode);
         ShaderStageFlags _stage = static_cast<ShaderStageFlags>(0);
-        std::vector<ShaderVertexInputVariable> _vertexInputs;
-        std::vector<ShaderDescriptorBindingGroup> _bindingGroups;
-        std::vector<ShaderBufferLayout> _uniformBufferLayouts;
-        std::vector<ShaderBufferLayout> _storageBufferLayouts;
-        std::vector<ShaderTexelBufferDescription> _texelBufferDescriptions;
+        std::vector<VertexInputAttribute> _vertexInputs;
+        std::vector<DescriptorBindingGroup> _bindingGroups;
+        std::vector<BufferDescriptorBindingLayout> _uniformBufferLayouts;
+        std::vector<BufferDescriptorBindingLayout> _storageBufferLayouts;
+        std::vector<TexelBufferDescriptorBinding> _texelBufferDescriptions;
         BufferLayout _pushConstantLayout;
         uint32_t _xComputeThreads = 0;
         uint32_t _yComputeThreads = 0;

@@ -13,15 +13,15 @@ namespace slag
         ShaderPipelineMetaData(ShaderCode* stages, uint32_t stageCount);
         ShaderStageFlags stageFlags();
         uint32_t vertexInputCount();
-        const ShaderVertexInputVariable& vertexInput(uint32_t index);
+        const VertexInputAttribute& vertexInput(uint32_t index);
         uint32_t descriptorGroupsCount();
-        const ShaderDescriptorBindingGroup& descriptorGroup(uint32_t index);
+        const DescriptorBindingGroup& descriptorGroup(uint32_t index);
         uint32_t uniformBufferLayoutCount();
-        const ShaderBufferLayout& uniformBufferLayout(uint32_t index);
+        const BufferDescriptorBindingLayout& uniformBufferLayout(uint32_t index);
         uint32_t storageBufferLayoutCount();
-        const ShaderBufferLayout& storageBufferLayout(uint32_t index);
+        const BufferDescriptorBindingLayout& storageBufferLayout(uint32_t index);
         uint32_t texelBufferDescriptionCount();
-        const ShaderTexelBufferDescription& texelBufferDescription(uint32_t index);
+        const TexelBufferDescriptorBinding& texelBufferDescription(uint32_t index);
         const BufferLayout& pushConstantLayout();
         uint32_t xComputeThreads();
         uint32_t yComputeThreads();
@@ -30,11 +30,11 @@ namespace slag
     private:
         void build(ShaderCode** stagePointers, uint32_t stageCount);
         ShaderStageFlags _stages = static_cast<ShaderStageFlags>(0);
-        std::vector<ShaderVertexInputVariable> _vertexInputs;
-        std::vector<ShaderDescriptorBindingGroup> _bindingGroups;
-        std::vector<ShaderBufferLayout> _uniformBufferLayouts;
-        std::vector<ShaderBufferLayout> _storageBufferLayouts;
-        std::vector<ShaderTexelBufferDescription> _texelBufferDescriptions;
+        std::vector<VertexInputAttribute> _vertexInputs;
+        std::vector<DescriptorBindingGroup> _bindingGroups;
+        std::vector<BufferDescriptorBindingLayout> _uniformBufferLayouts;
+        std::vector<BufferDescriptorBindingLayout> _storageBufferLayouts;
+        std::vector<TexelBufferDescriptorBinding> _texelBufferDescriptions;
         BufferLayout _pushConstantLayout;
         uint32_t _xComputeThreads = 0;
         uint32_t _yComputeThreads = 0;

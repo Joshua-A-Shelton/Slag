@@ -12,7 +12,7 @@
 
 namespace slag
 {
-    ShaderVertexInputVariable::ShaderVertexInputVariable(const std::string& name, GraphicsType type,
+    VertexInputAttribute::VertexInputAttribute(const std::string& name, GraphicsType type,
         uint32_t arrayLength, uint64_t inputID)
     {
         SLAG_ASSERT(type != GraphicsType::STRUCT && type != GraphicsType::UNKNOWN && "Type must be a primitive graphics type");
@@ -22,33 +22,33 @@ namespace slag
         _inputID = inputID;
     }
 
-    const std::string& ShaderVertexInputVariable::name() const
+    const std::string& VertexInputAttribute::name() const
     {
         return _name;
     }
 
-    GraphicsType ShaderVertexInputVariable::type() const
+    GraphicsType VertexInputAttribute::type() const
     {
         return _type;
     }
 
-    uint32_t ShaderVertexInputVariable::arrayLength() const
+    uint32_t VertexInputAttribute::arrayLength() const
     {
         return _arrayLength;
     }
 
-    uint64_t ShaderVertexInputVariable::inputID() const
+    uint64_t VertexInputAttribute::inputID() const
     {
         return _inputID;
     }
 
-    void ShaderDescriptorBinding::copy(ShaderDescriptorBinding& other)
+    void DescriptorBinding::copy(DescriptorBinding& other)
     {
         _descriptor = other._descriptor;
         _bindingId = other._bindingId;
     }
 
-    ShaderDescriptorBindingGroup::ShaderDescriptorBindingGroup(ShaderDescriptorBinding* bindings,uint32_t bindingCount, uint32_t groupIndex)
+    DescriptorBindingGroup::DescriptorBindingGroup(DescriptorBinding* bindings,uint32_t bindingCount, uint32_t groupIndex)
     {
         _bindings.resize(bindingCount);
         for (int i=0; i<bindingCount; i++)
@@ -58,55 +58,55 @@ namespace slag
         _descriptorGroupIndex = groupIndex;
     }
 
-    ShaderDescriptorBinding::ShaderDescriptorBinding(Descriptor descriptor, uint64_t bindingId)
+    DescriptorBinding::DescriptorBinding(Descriptor descriptor, uint64_t bindingId)
     {
         _descriptor = descriptor;
         _bindingId = bindingId;
     }
 
-    const Descriptor& ShaderDescriptorBinding::descriptor() const
+    const Descriptor& DescriptorBinding::descriptor() const
     {
         return _descriptor;
     }
 
-    uint64_t ShaderDescriptorBinding::bindingId() const
+    uint64_t DescriptorBinding::bindingId() const
     {
         return _bindingId;
     }
 
-    ShaderDescriptorBindingGroup::ShaderDescriptorBindingGroup(ShaderDescriptorBindingGroup&& from)
+    DescriptorBindingGroup::DescriptorBindingGroup(DescriptorBindingGroup&& from)
     {
         move(from);
     }
 
-    ShaderDescriptorBindingGroup& ShaderDescriptorBindingGroup::operator=(ShaderDescriptorBindingGroup&& from)
+    DescriptorBindingGroup& DescriptorBindingGroup::operator=(DescriptorBindingGroup&& from)
     {
         move(from);
         return *this;
     }
 
-    uint32_t ShaderDescriptorBindingGroup::descriptorGroupIndex() const
+    uint32_t DescriptorBindingGroup::descriptorGroupIndex() const
     {
         return _descriptorGroupIndex;
     }
 
-    uint32_t ShaderDescriptorBindingGroup::bindingCount() const
+    uint32_t DescriptorBindingGroup::bindingCount() const
     {
         return _bindings.size();
     }
 
-    const ShaderDescriptorBinding& ShaderDescriptorBindingGroup::descriptorBinding(uint32_t index) const
+    const DescriptorBinding& DescriptorBindingGroup::descriptorBinding(uint32_t index) const
     {
         return _bindings[index];
     }
 
-    void ShaderDescriptorBindingGroup::move(ShaderDescriptorBindingGroup& from)
+    void DescriptorBindingGroup::move(DescriptorBindingGroup& from)
     {
         _descriptorGroupIndex = from._descriptorGroupIndex;
         _bindings.swap(from._bindings);
     }
 
-    ShaderBufferLayout::ShaderBufferLayout(uint32_t descriptorGroupIndex, uint32_t descriptorIndex,
+    BufferDescriptorBindingLayout::BufferDescriptorBindingLayout(uint32_t descriptorGroupIndex, uint32_t descriptorIndex,
         BufferLayout&& layout)
     {
         _descriptorBindingGroupIndex = descriptorGroupIndex;
@@ -114,47 +114,47 @@ namespace slag
         _bufferLayout = std::move(layout);
     }
 
-    uint32_t ShaderBufferLayout::descriptorGroupIndex() const
+    uint32_t BufferDescriptorBindingLayout::descriptorGroupIndex() const
     {
         return _descriptorBindingGroupIndex;
     }
 
-    uint32_t ShaderBufferLayout::descriptorIndex() const
+    uint32_t BufferDescriptorBindingLayout::descriptorIndex() const
     {
         return _descriptorIndex;
     }
 
-    const BufferLayout& ShaderBufferLayout::bufferLayout() const
+    const BufferLayout& BufferDescriptorBindingLayout::bufferLayout() const
     {
         return _bufferLayout;
     }
 
-    ShaderTexelBufferDescription::ShaderTexelBufferDescription(uint32_t descriptorGroupIndex, uint32_t descriptorIndex,
+    TexelBufferDescriptorBinding::TexelBufferDescriptorBinding(uint32_t descriptorGroupIndex, uint32_t descriptorIndex,
         TexelBufferDescription&& description): _descriptorBindingGroupIndex(descriptorGroupIndex), _descriptorIndex(descriptorIndex), _bufferDescription(std::move(description))
     {
     }
 
-    uint32_t ShaderTexelBufferDescription::descriptorGroupIndex() const
+    uint32_t TexelBufferDescriptorBinding::descriptorGroupIndex() const
     {
         return _descriptorBindingGroupIndex;
     }
 
-    uint32_t ShaderTexelBufferDescription::descriptorIndex() const
+    uint32_t TexelBufferDescriptorBinding::descriptorIndex() const
     {
         return _descriptorIndex;
     }
 
-    const TexelBufferDescription& ShaderTexelBufferDescription::bufferDescription() const
+    const TexelBufferDescription& TexelBufferDescriptorBinding::bufferDescription() const
     {
         return _bufferDescription;
     }
 
     ShaderMetaData::ShaderMetaData(ShaderStageFlags stage,
-            std::vector<ShaderVertexInputVariable>&& vertexInputs,
-            std::vector<ShaderDescriptorBindingGroup>&& bindingGroups,
-            std::vector<ShaderBufferLayout>&& uniformLayouts,
-            std::vector<ShaderBufferLayout>&& storageLayouts,
-            std::vector<ShaderTexelBufferDescription>&& texelLayouts,
+            std::vector<VertexInputAttribute>&& vertexInputs,
+            std::vector<DescriptorBindingGroup>&& bindingGroups,
+            std::vector<BufferDescriptorBindingLayout>&& uniformLayouts,
+            std::vector<BufferDescriptorBindingLayout>&& storageLayouts,
+            std::vector<TexelBufferDescriptorBinding>&& texelLayouts,
             BufferLayout pushConstantLayout,
             uint32_t xComputeThreads,
             uint32_t yComputeThreads,
@@ -190,7 +190,7 @@ namespace slag
         return _vertexInputs.size();
     }
 
-    const ShaderVertexInputVariable& ShaderMetaData::inputVariable(uint32_t index) const
+    const VertexInputAttribute& ShaderMetaData::inputVariable(uint32_t index) const
     {
         return _vertexInputs[index];
     }
@@ -200,7 +200,7 @@ namespace slag
         return _bindingGroups.size();
     }
 
-    const ShaderDescriptorBindingGroup& ShaderMetaData::descriptorBindingGroup(uint32_t index) const
+    const DescriptorBindingGroup& ShaderMetaData::descriptorBindingGroup(uint32_t index) const
     {
         return _bindingGroups[index];
     }
@@ -210,7 +210,7 @@ namespace slag
         return _uniformBufferLayouts.size();
     }
 
-    const ShaderBufferLayout& ShaderMetaData::uniformBufferLayout(uint32_t index) const
+    const BufferDescriptorBindingLayout& ShaderMetaData::uniformBufferLayout(uint32_t index) const
     {
         return _uniformBufferLayouts[index];
     }
@@ -220,7 +220,7 @@ namespace slag
         return _storageBufferLayouts.size();
     }
 
-    const ShaderBufferLayout& ShaderMetaData::storageBufferLayout(uint32_t index) const
+    const BufferDescriptorBindingLayout& ShaderMetaData::storageBufferLayout(uint32_t index) const
     {
         return _storageBufferLayouts[index];
     }
@@ -230,7 +230,7 @@ namespace slag
         return _texelBufferDescriptions.size();
     }
 
-    const ShaderTexelBufferDescription& ShaderMetaData::texelBufferDescription(uint32_t index) const
+    const TexelBufferDescriptorBinding& ShaderMetaData::texelBufferDescription(uint32_t index) const
     {
         return _texelBufferDescriptions[index];
     }
@@ -240,7 +240,7 @@ namespace slag
         return _pushConstantLayout;
     }
 
-    const ShaderBufferLayout* ShaderMetaData::uniformBufferLayout(uint32_t bindingGroup, uint32_t descriptorIndex) const
+    const BufferDescriptorBindingLayout* ShaderMetaData::uniformBufferLayout(uint32_t bindingGroup, uint32_t descriptorIndex) const
     {
         for (int i=0; i<_uniformBufferLayouts.size(); i++)
         {
@@ -253,7 +253,7 @@ namespace slag
         return nullptr;
     }
 
-    const ShaderBufferLayout* ShaderMetaData::storageBufferLayout(uint32_t bindingGroup, uint32_t descriptorIndex) const
+    const BufferDescriptorBindingLayout* ShaderMetaData::storageBufferLayout(uint32_t bindingGroup, uint32_t descriptorIndex) const
     {
         for (int i=0; i<_storageBufferLayouts.size(); i++)
         {
@@ -266,7 +266,7 @@ namespace slag
         return nullptr;
     }
 
-    const ShaderTexelBufferDescription* ShaderMetaData::texelBufferDescription(uint32_t bindingGroup, uint32_t descriptorIndex) const
+    const TexelBufferDescriptorBinding* ShaderMetaData::texelBufferDescription(uint32_t bindingGroup, uint32_t descriptorIndex) const
     {
         for (int i=0; i<_texelBufferDescriptions.size(); i++)
         {

@@ -99,7 +99,7 @@ namespace slag
     std::unique_ptr<slag::ShaderPipeline> VulkanEnvironment::loadPipelineFromFiles(ShaderFile& computeCode)
     {
         ShaderCode shaderCode(computeCode.stage,ShaderCode::CodeLanguage::SPIRV,computeCode.pathIndicator+".spv");
-        return std::unique_ptr<slag::ShaderPipeline>(slag::ShaderPipeline::newShaderPipeline(shaderCode));
+        return std::unique_ptr<slag::ShaderPipeline>(slag::ShaderPipeline::newShaderPipeline(&shaderCode));
     }
 
     utilities::DescriptorDictionary* VulkanEnvironment::getShaderDictionary(const std::string& shaderName)

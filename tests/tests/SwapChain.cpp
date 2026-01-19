@@ -20,6 +20,21 @@ public:
 
 };
 
+class SwapchainTest:public ::testing::Test
+{
+    void SetUp() override
+    {
+        bool runSwapchainTests = false;
+#ifdef SLAG_TESTS_INCLUDE_SWAPCHAIN
+        runSwapchainTests = true;
+#endif
+        if (!runSwapchainTests)
+        {
+            GTEST_SKIP();
+        }
+    }
+};
+
 FrameResources* createResources(uint8_t frameIndex, SwapChain* inSwapchain)
 {
     return new TestingResources();
@@ -85,7 +100,7 @@ uint64_t renderAttemptsEmptyFrames(SwapChain* swapchain, uint64_t successfulFram
     return loops;
 
 }
-TEST(SwapChain, PresentModes)
+TEST_F(SwapchainTest, PresentModes)
 {
     auto window = utilities::createWindow("Present Modes",150,150);
     SwapChainDetails details{};
@@ -110,7 +125,7 @@ TEST(SwapChain, PresentModes)
     GTEST_ASSERT_TRUE(tripleBufferTime < 300);
 }
 
-TEST(SwapChain, NextIfReady)
+TEST_F(SwapchainTest, NextIfReady)
 {
     auto window = utilities::createWindow("Next If Ready",150,150);
     SwapChainDetails details{};
@@ -137,7 +152,7 @@ TEST(SwapChain, NextIfReady)
     GTEST_ASSERT_GT(immediateAttempts, tripleBufferAttempts);
 }
 
-TEST(SwapChain, Resize)
+TEST_F(SwapchainTest, Resize)
 {
     uint32_t windowSize = 150;
     auto window = utilities::createWindow("Resize",windowSize,windowSize);
@@ -206,7 +221,7 @@ TEST(SwapChain, Resize)
 
 }
 
-TEST(SwapChain, Format)
+TEST_F(SwapchainTest, Format)
 {
     auto window = utilities::createWindow("Format",150,150);
     SwapChainDetails details{};
@@ -221,7 +236,7 @@ TEST(SwapChain, Format)
     GTEST_ASSERT_EQ(swapchain->backBufferFormat(),Pixels::Format::B8G8R8A8_UNORM);
     GTEST_ASSERT_EQ(swapchain->currentFrame()->backBuffer()->format(),Pixels::Format::B8G8R8A8_UNORM);
 }
-TEST(SwapChain, SetProperties)
+TEST_F(SwapchainTest, SetProperties)
 {
     SwapChainDetails details{};
     details.frameCount = 1;
@@ -246,7 +261,7 @@ TEST(SwapChain, SetProperties)
     GTEST_ASSERT_EQ(swapchain->currentFrame()->backBuffer()->format(),Pixels::Format::B8G8R8A8_UNORM);
 }
 #ifdef SLAG_DEBUG
-TEST(SwapChain, ForceSubmit)
+TEST_F(SwapchainTest, ForceSubmit)
 {
     GTEST_FLAG_SET(death_test_style, "threadsafe");
 

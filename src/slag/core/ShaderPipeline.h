@@ -204,10 +204,6 @@ namespace slag
         virtual ~ShaderPipeline()=default;
         ///What kind of shader pipeline this is
         virtual PipelineType pipelineType()=0;
-        ///How many vertex attribute buffers this pipeline expects when it executes (0 if there's no vertex or mesh shader)
-        virtual  uint32_t vertexAttributeBufferCount()=0;
-        ///Get vertex attribute buffer layout at index
-        virtual BufferLayout* vertexAttributeLayout(uint32_t index)=0;
         ///Number of descriptor groups this shader has
         virtual uint32_t descriptorGroupCount()=0;
         ///Retrieve descriptor group at index
@@ -252,7 +248,7 @@ namespace slag
         static std::vector<ShaderCode::CodeLanguage> acceptedLanguages();
 
         static ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, DescriptorIdentity(*identify)(const DescriptorIdentityParameters&, void*) = nullptr, void* identifyData = nullptr);
-        static ShaderPipeline* newShaderPipeline(const ShaderCode& computeShader, DescriptorIdentity (*identify)(const DescriptorIdentityParameters&, void*) = nullptr, void* identifyData = nullptr);
+        static ShaderPipeline* newShaderPipeline (ShaderCode* computeShader, DescriptorIdentity (*identify)(const DescriptorIdentityParameters&, void*) = nullptr, void* identifyData = nullptr);
 
     };
 } // slag

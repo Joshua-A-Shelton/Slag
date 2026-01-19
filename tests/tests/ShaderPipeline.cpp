@@ -540,7 +540,7 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflectionAllTypes)
     auto uniformBufferLayout = pipeline->uniformBufferLayout(0,0);
     auto uniformTexelBufferLayout = pipeline->texelBufferDescription(1,0);
     auto storageTexelBufferLayout = pipeline->texelBufferDescription(1,1);
-    auto storageBufferLayout = pipeline->uniformBufferLayout(1,2);
+    auto storageBufferLayout = pipeline->storageBufferLayout(1,2);
 
     GTEST_ASSERT_NE(uniformBufferLayout,nullptr);
     GTEST_ASSERT_NE(uniformTexelBufferLayout,nullptr);
@@ -1755,6 +1755,7 @@ TEST_F(ShaderPipelineTest, VertexBufferLayouts)
 
 
     auto pipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(stages,2,properties,vertexDescription,frameBufferDescription);
+    //GTEST_ASSERT_EQ(pipeline->ver)
     GTEST_ASSERT_EQ(pipeline->pushConstants(),nullptr);
     GTEST_FAIL();
 }
