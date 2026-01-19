@@ -10,22 +10,8 @@
 #include "Descriptor.h"
 #include "Operations.h"
 #include "Pixels.h"
+#include "ShaderCode.h"
 #include "VertexDescription.h"
-
-#define SHADER_STAGE_DEFINTITIONS(DEFINITION) \
-DEFINITION(VERTEX,0b0000000000000001,VK_SHADER_STAGE_VERTEX_BIT,D3D12_SHVER_VERTEX_SHADER) \
-DEFINITION(GEOMETRY,0b0000000000000010,VK_SHADER_STAGE_GEOMETRY_BIT,D3D12_SHVER_GEOMETRY_SHADER) \
-DEFINITION(FRAGMENT,0b0000000000000100,VK_SHADER_STAGE_FRAGMENT_BIT,D3D12_SHVER_PIXEL_SHADER) \
-DEFINITION(COMPUTE,0b0000000000001000,VK_SHADER_STAGE_COMPUTE_BIT,D3D12_SHVER_COMPUTE_SHADER) \
-DEFINITION(RAY_GENERATION,0b0000000000010000,VK_SHADER_STAGE_RAYGEN_BIT_KHR,D3D12_SHVER_RAY_GENERATION_SHADER) \
-DEFINITION(ANY_HIT,0b0000000000100000,VK_SHADER_STAGE_ANY_HIT_BIT_KHR,D3D12_SHVER_ANY_HIT_SHADER) \
-DEFINITION(CLOSEST_HIT,0b0000000001000000,VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,D3D12_SHVER_CLOSEST_HIT_SHADER) \
-DEFINITION(MISS,0b0000000010000000,VK_SHADER_STAGE_MISS_BIT_KHR,D3D12_SHVER_MISS_SHADER) \
-DEFINITION(INTERSECTION,0b0000000100000000,VK_SHADER_STAGE_INTERSECTION_BIT_KHR,D3D12_SHVER_INTERSECTION_SHADER) \
-DEFINITION(CALLABLE,0b0000001000000000,VK_SHADER_STAGE_CALLABLE_BIT_KHR,D3D12_SHVER_CALLABLE_SHADER) \
-DEFINITION(MESH,0b0000010000000000,VK_SHADER_STAGE_MESH_BIT_EXT,D3D12_SHVER_MESH_SHADER)   \
-DEFINITION(TASK,0b0000100000000000,VK_SHADER_STAGE_TASK_BIT_EXT,D3D12_SHVER_AMPLIFICATION_SHADER) \
-
 
 namespace slag
 {
@@ -34,68 +20,7 @@ namespace slag
     class DescriptorGroup;
     class Descriptor;
 
-    enum class ShaderStageFlags: uint16_t
-    {
-#define DEFINITION(SlagName, SlagValue, VulkanName, DXName) SlagName = SlagValue,
-        SHADER_STAGE_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-    };
 
-    inline ShaderStageFlags operator|(ShaderStageFlags a, ShaderStageFlags b)
-    {
-        return static_cast<ShaderStageFlags>(static_cast<uint16_t>(a) | static_cast<uint16_t>(b));
-    }
-
-    inline ShaderStageFlags operator&(ShaderStageFlags a, ShaderStageFlags b)
-    {
-        return static_cast<ShaderStageFlags>(static_cast<uint16_t>(a) & static_cast<uint16_t>(b));
-    }
-
-    inline ShaderStageFlags operator~(ShaderStageFlags a)
-    {
-        return static_cast<ShaderStageFlags>(~static_cast<uint16_t>(a));
-    }
-
-    inline ShaderStageFlags operator|=(ShaderStageFlags& a, ShaderStageFlags b)
-    {
-        a = a | b;
-        return a;
-    }
-
-    inline ShaderStageFlags operator&=(ShaderStageFlags& a, ShaderStageFlags b)
-    {
-        a = a & b;
-        return a;
-    }
-    ///Represents a stage of shader execution
-    class ShaderCode
-    {
-    public:
-        enum class CodeLanguage
-        {
-            SPIRV,
-            DXIL,
-            CUSTOM
-        };
-        ShaderCode(ShaderStageFlags stage, CodeLanguage language, void* data, size_t dataLength);
-        ShaderCode(ShaderStageFlags stage, CodeLanguage language, std::filesystem::path path);
-        ShaderCode(const ShaderCode&)=delete;
-        ShaderCode& operator=(const ShaderCode&)=delete;
-        ShaderCode(ShaderCode&& from);
-        ShaderCode& operator=(ShaderCode&& from);
-        ///Raw bytes of shader code
-        void* data();
-        ///Size in bytes of shader code
-        size_t dataSize();
-        ///Stage of shader pipeline this code represents
-        ShaderStageFlags stage();
-        CodeLanguage language();
-    private:
-        void move(ShaderCode& from);
-        ShaderStageFlags _stage;
-        CodeLanguage _codeLanguage;
-        std::vector<unsigned char> _data;
-    };
 
 
     ///Details about the rasterization of pixels
@@ -257,13 +182,14 @@ namespace slag
     {
     public:
         ShaderCode::CodeLanguage language = ShaderCode::CodeLanguage::CUSTOM;
-        std::string originalName{};
         uint32_t descriptorGroupIndex=0;
-        Descriptor::Type type = Descriptor::Type::UNKNOWN;
-        Descriptor::Dimension dimension = Descriptor::Dimension::UNKNOWN;
-        uint32_t arrayDepth = 1;
-        uint32_t platformSpecificBindingIndex = 0;
-        void* platformData = nullptr;
+        const Descriptor* descriptor=nullptr;
+    };
+
+    struct VertexShaderParameters
+    {
+        std::string name;
+        GraphicsType graphicsType = GraphicsType::STRUCT;
     };
 
     ///Collection of shaders that get executed in order to perform operations on the graphics card
@@ -278,6 +204,10 @@ namespace slag
         virtual ~ShaderPipeline()=default;
         ///What kind of shader pipeline this is
         virtual PipelineType pipelineType()=0;
+        ///How many vertex attribute buffers this pipeline expects when it executes (0 if there's no vertex or mesh shader)
+        virtual  uint32_t vertexAttributeBufferCount()=0;
+        ///Get vertex attribute buffer layout at index
+        virtual BufferLayout* vertexAttributeLayout(uint32_t index)=0;
         ///Number of descriptor groups this shader has
         virtual uint32_t descriptorGroupCount()=0;
         ///Retrieve descriptor group at index
@@ -286,13 +216,22 @@ namespace slag
         virtual DescriptorGroup* operator[](uint32_t index)=0;
         ///Get the layout of push constants, or null if there are none
         virtual BufferLayout* pushConstants()=0;
+        ///Get the description of vertex input, or null if there is none
+        virtual VertexDescription* vertexDescription()=0;
         /**
-         * Retrieve the layout of a buffer type descriptor
+         * Retrieve the layout of a uniform buffer type descriptor
          * @param descriptorGroup the descriptor group index
          * @param descriptorBinding the binding of the buffer
-         * @return Layout of a buffer descriptor (Uniform or Storage), or null if the index isn't a buffer type descriptor
+         * @return Layout of a uniform buffer descriptor, or null if the index isn't a uniform buffer type descriptor
          */
-        virtual BufferLayout* bufferLayout(uint32_t descriptorGroup,uint32_t descriptorBinding)=0;
+        virtual BufferLayout* uniformBufferLayout(uint32_t descriptorGroup,uint32_t descriptorBinding)=0;
+        /**
+         * Retrieve the layout of a storage buffer type descriptor
+         * @param descriptorGroup the descriptor group index
+         * @param descriptorBinding the binding of the buffer
+         * @return Layout of a storage buffer descriptor, or null if the index isn't a storage buffer type descriptor
+         */
+        virtual BufferLayout* storageBufferLayout(uint32_t descriptorGroup, uint32_t descriptorBinding)=0;
 
         /**
          * Retrieve the description of a texel buffer type descriptor

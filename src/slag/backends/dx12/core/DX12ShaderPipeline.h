@@ -31,13 +31,14 @@ namespace slag
             ///Retrieve descriptor group at index
             virtual DescriptorGroup* operator[](uint32_t index)override;
             virtual BufferLayout* pushConstants()override;
+            virtual VertexDescription* vertexDescription()override;
             /**
              * Retrieve the layout of a buffer type descriptor
              * @param descriptorGroup the descriptor group index
              * @param descriptorBinding the binding of the buffer
              * @return Layout of a buffer descriptor (Uniform or Storage), or null if the index isn't a buffer type descriptor
              */
-            virtual BufferLayout* bufferLayout(uint32_t descriptorGroup,uint32_t descriptorBinding)override;
+            virtual BufferLayout* uniformBufferLayout(uint32_t descriptorGroup,uint32_t descriptorBinding)override;
 
             /**
              * Retrieve the description of a texel buffer type descriptor
@@ -61,7 +62,7 @@ namespace slag
             PipelineType _pipelineType = PipelineType::GRAPHICS;
             std::vector<DX12DescriptorGroup> _descriptorGroups;
             std::unique_ptr<BufferLayout> _pushConstants;
-            std::unordered_map<uint32_t,std::unordered_map<uint32_t,BufferLayout>> _bufferLayouts;
+            std::unordered_map<uint32_t,std::unordered_map<uint32_t,BufferLayout>> _uniformBufferLayouts;
             std::unordered_map<uint32_t,std::unordered_map<uint32_t,TexelBufferDescription>> _texelBufferDescriptions;
             uint32_t _xthreads = 0;
             uint32_t _ythreads = 0;

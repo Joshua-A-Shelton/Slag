@@ -181,6 +181,10 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/SamplerDescriptorMemory.h
         src/slag/core/ResourceDescriptorMemory.cpp
         src/slag/core/ResourceDescriptorMemory.h
+        src/slag/core/ShaderCode.cpp
+        src/slag/core/ShaderCode.h
+        src/slag/core/ShaderPipelineMetaData.cpp
+        src/slag/core/ShaderPipelineMetaData.h
 )
 #link spirv if we need to
 if(USE_SPIRV_REFLECTION)
@@ -332,6 +336,7 @@ if(PROJECT_IS_TOP_LEVEL)
             tests/DX12Environment.h
             tests/tests/GraphicsCard.cpp
             tests/tests/DescriptorMemory.cpp
+            tests/tests/ShaderCode.cpp
     )
 
     target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)

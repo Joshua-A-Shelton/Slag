@@ -6,27 +6,7 @@ namespace slag
 {
     namespace spirv
     {
-        struct SPVDescriptorGroupReflectionData
-        {
-            uint32_t groupIndex;
-            std::vector<Descriptor> descriptors;
-            std::vector<uint32_t> originalToNewIndices;
-            std::vector<Descriptor::Shape> orderedShapes;
-        };
-
-        struct SPVReflectionData
-        {
-            std::vector<SPVDescriptorGroupReflectionData> groups;
-            std::unordered_map<uint32_t, std::unordered_map<uint32_t,BufferLayout>> bufferLayouts;
-            std::unique_ptr<BufferLayout> pushConstants=nullptr;
-            ShaderStageFlags pushConstantFlags;
-            std::unordered_map<uint32_t,std::unordered_map<uint32_t,TexelBufferDescription>> texelBufferDescriptions;
-            uint32_t entryPointXDim=0;
-            uint32_t entryPointYDim=0;
-            uint32_t entryPointZDim=0;
-        };
-
-        SPVReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount, DescriptorIdentity(*identify)(const DescriptorIdentityParameters&,void*), void* identifyData);
+        ShaderMetaData reflectShaderCode(ShaderCode& shaderCode);
     } // spirv
 } // slag
 

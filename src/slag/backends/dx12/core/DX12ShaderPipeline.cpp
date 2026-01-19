@@ -87,10 +87,15 @@ namespace slag
             return _pushConstants.get();
         }
 
-        BufferLayout* DX12ShaderPipeline::bufferLayout(uint32_t descriptorGroup, uint32_t descriptorBinding)
+        VertexDescription* DX12ShaderPipeline::vertexDescription()
         {
-            auto group = _bufferLayouts.find(descriptorGroup);
-            if(group == _bufferLayouts.end())
+            throw std::runtime_error("DX12ShaderPipeline::vertexDescription() not implemented");
+        }
+
+        BufferLayout* DX12ShaderPipeline::uniformBufferLayout(uint32_t descriptorGroup, uint32_t descriptorBinding)
+        {
+            auto group = _uniformBufferLayouts.find(descriptorGroup);
+            if(group == _uniformBufferLayouts.end())
             {
                 return nullptr;
             }
@@ -138,7 +143,7 @@ namespace slag
             PipelineType _pipelineType = from._pipelineType;
             _descriptorGroups.swap(from._descriptorGroups);
             _pushConstants.swap(from._pushConstants);
-            _bufferLayouts.swap(from._bufferLayouts);
+            _uniformBufferLayouts.swap(from._uniformBufferLayouts);
             _texelBufferDescriptions.swap(from._texelBufferDescriptions);
             _xthreads = from._xthreads;
             _ythreads = from._ythreads;
@@ -252,7 +257,7 @@ namespace slag
 
             D3D12_INPUT_LAYOUT_DESC& inputLayout = shaderDescription.InputLayout;
             std::vector<D3D12_INPUT_ELEMENT_DESC> inputElements;
-            //TODO: read input elements from reflection
+            //TODO: read input elements from reflection and add them to inputElements
 
 
             inputLayout.pInputElementDescs = inputElements.data();

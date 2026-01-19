@@ -57,28 +57,31 @@ namespace slag
             return result;
         }
 
-        VulkanDescriptorGroup::VulkanDescriptorGroup(Descriptor* descriptors, uint32_t* indexMappings, uint32_t descriptorCount, VulkanDescriptorGroup::Shape& shape)
+        VulkanDescriptorGroup::VulkanDescriptorGroup(const ShaderDescriptorBindingGroup& group, const std::unordered_map<uint32_t,DescriptorIdentity>& identities)
         {
 
-            _descriptors.resize(descriptorCount);
-            _descriptorByteOffsets.resize(descriptorCount);
-            std::vector<Descriptor::Shape> descriptorShapes(descriptorCount);
-            for(uint32_t i=0; i< descriptorCount; i++)
+            _descriptors.resize(group.bindingCount());
+            _descriptorByteOffsets.resize(group.bindingCount());
+            std::vector<Descriptor::Shape> descriptorShapes(group.bindingCount());
+            for(uint32_t i=0; i< group.bindingCount(); i++)
             {
-                auto desc = descriptors[i];
-                descriptorShapes[i] = desc.shape();
-                _descriptors[i] = std::move(desc);
+                auto desc = group.descriptorBinding(i);
+                auto& shape = desc.descriptor().shape();
+                descriptorShapes[desc.bindingId()] = shape;
+                auto& identity = identities.at(i);
+                _descriptors[identity.index] = Descriptor(identity.name,shape.type,shape.dimension,shape.arrayDepth,shape.visibleStages);
             }
-            _groupShape = shape;
+            _groupShape = VulkanDescriptorGroup::Shape(std::move(descriptorShapes));
             _layout = VulkanDescriptorGroupCache::getLayout(_groupShape);
 
             slag_vkGetDescriptorSetLayoutSizeEXT(VulkanGraphicsCard::selected()->device(),_layout,&_descriptorBufferSize);
-            for (auto i = 0; i<descriptorCount; i++)
+            for (auto i = 0; i<group.bindingCount(); i++)
             {
+                auto& identity = identities.at(i);
                 VkDeviceSize offset = 0;
                 slag_vkGetDescriptorSetLayoutBindingOffsetEXT(VulkanGraphicsCard::selected()->device(),_layout,i,&offset);
 
-                _descriptorByteOffsets[indexMappings[i]] = offset;
+                _descriptorByteOffsets[identity.index] = offset;
             }
         }
 

@@ -656,7 +656,8 @@ namespace slag
             return new VulkanSampler(parameters);
         }
 
-        std::vector<ShaderCode::CodeLanguage> VulkanBackend::acceptedLanuages()
+        std::vector<ShaderCode::CodeLanguage>
+        VulkanBackend::acceptedLanuages()
         {
             return std::vector<ShaderCode::CodeLanguage>
             {

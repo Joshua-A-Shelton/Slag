@@ -3,11 +3,13 @@
 
 namespace slag
 {
-    VertexAttribute::VertexAttribute(GraphicsType dataType, uint32_t offset)
+    VertexAttribute::VertexAttribute(GraphicsType dataType, uint32_t offset, uint32_t arrayLength)
     {
         SLAG_ASSERT(dataType != GraphicsType::STRUCT && "dataType cannot be struct for vertex attribute");
+        SLAG_ASSERT(((GraphicsTypeBits)dataType & GraphicsTypeBits::ANY_MATRIX_BIT) == GraphicsTypeBits::NONE_BIT && "matrices must be decomposed into arrays");
         _dataType = dataType;
         _offset = offset;
+        _arrayLength = arrayLength;
     }
 
 
@@ -21,6 +23,11 @@ namespace slag
         return _offset;
     }
 
+    uint32_t VertexAttribute::arrayLength() const
+    {
+        return _arrayLength;
+    }
+
     VertexDescription::VertexDescription(size_t attributeChannels)
     {
         _attributes.resize(attributeChannels);
@@ -28,13 +35,21 @@ namespace slag
 
     VertexDescription& VertexDescription::add(const VertexAttribute& attribute, size_t attributeChannel)
     {
+        if (!_attributes.at(attributeChannel).empty())
+        {
+            auto& lastAttribute = _attributes.at(attributeChannel).back();
+            if (attribute.offset() <= lastAttribute.offset())
+            {
+                throw std::runtime_error("Attribute must have a greater offset than previous attribute in stream");
+            }
+        }
         _attributes.at(attributeChannel).push_back(attribute);
         return *this;
     }
 
-    VertexDescription& VertexDescription::add(GraphicsType dataType, uint32_t offset, size_t attributeChannel)
+    VertexDescription& VertexDescription::add(GraphicsType dataType, uint32_t offset, size_t attributeChannel, uint32_t arrayLength)
     {
-        _attributes.at(attributeChannel).emplace_back(dataType,offset);
+        _attributes.at(attributeChannel).emplace_back(dataType,offset,arrayLength);
         return *this;
     }
 

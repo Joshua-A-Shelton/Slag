@@ -453,10 +453,10 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflection)
     GTEST_ASSERT_TRUE(group3->descriptor(0).shape().type == Descriptor::Type::UNIFORM_BUFFER);
     GTEST_ASSERT_EQ(group3->descriptor(0).shape().arrayDepth,1);
 
-    auto layout0_0 = pipeline->bufferLayout(0,0);
-    auto layout2_0 = pipeline->bufferLayout(2,0);
-    auto layout2_1 = pipeline->bufferLayout(2,1);
-    auto layout3_0 = pipeline->bufferLayout(3,0);
+    auto layout0_0 = pipeline->uniformBufferLayout(0,0);
+    auto layout2_0 = pipeline->uniformBufferLayout(2,0);
+    auto layout2_1 = pipeline->uniformBufferLayout(2,1);
+    auto layout3_0 = pipeline->uniformBufferLayout(3,0);
 
     GTEST_ASSERT_EQ(layout0_0->childrenCount(),3);
     GTEST_ASSERT_EQ(layout0_0->size(),64*3);
@@ -537,10 +537,10 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflectionAllTypes)
     GTEST_ASSERT_EQ(group2->descriptor(0).shape().arrayDepth,1);
     GTEST_ASSERT_EQ(group2->descriptor(0).shape().dimension,Descriptor::Dimension::ONE_DIMENSIONAL);
 
-    auto uniformBufferLayout = pipeline->bufferLayout(0,0);
+    auto uniformBufferLayout = pipeline->uniformBufferLayout(0,0);
     auto uniformTexelBufferLayout = pipeline->texelBufferDescription(1,0);
     auto storageTexelBufferLayout = pipeline->texelBufferDescription(1,1);
-    auto storageBufferLayout = pipeline->bufferLayout(1,2);
+    auto storageBufferLayout = pipeline->uniformBufferLayout(1,2);
 
     GTEST_ASSERT_NE(uniformBufferLayout,nullptr);
     GTEST_ASSERT_NE(uniformTexelBufferLayout,nullptr);
@@ -1684,7 +1684,7 @@ DescriptorIdentity identifyDescriptor(const DescriptorIdentityParameters& parame
 {
     DescriptorIdentity identity{};
     utilities::DescriptorDictionary* dictionary = (utilities::DescriptorDictionary*)identifyData;
-    auto data = dictionary->getEntry(parameters.descriptorGroupIndex,parameters.originalName);
+    auto data = dictionary->getEntry(parameters.descriptorGroupIndex,parameters.descriptor->name());
     identity.name = data.name;
     identity.index = data.index;
     return identity;
@@ -1720,12 +1720,41 @@ TEST_F(ShaderPipelineTest,DescriptorReorder)
     auto groupModified = shaderModified->descriptorGroup(2);
     GTEST_ASSERT_EQ(groupOriginal->descriptor(0).shape(), groupModified->descriptor(1).shape());
     GTEST_ASSERT_EQ(groupOriginal->descriptor(1).shape(), groupModified->descriptor(0).shape());
-    auto originalLayout = shaderOriginal->bufferLayout(2,0);
-    auto modifiedLayout = shaderModified->bufferLayout(2,1);
+    auto originalLayout = shaderOriginal->uniformBufferLayout(2,0);
+    auto modifiedLayout = shaderModified->uniformBufferLayout(2,1);
     GTEST_ASSERT_TRUE(modifiedLayout != nullptr);
     GTEST_ASSERT_EQ(originalLayout->childrenCount(),modifiedLayout->childrenCount());
     GTEST_ASSERT_TRUE(BufferLayout::compatible(*originalLayout,*modifiedLayout));
 
     GTEST_ASSERT_EQ(groupOriginal->descriptorByteOffset(0), groupModified->descriptorByteOffset(1));
     GTEST_ASSERT_EQ(groupOriginal->descriptorByteOffset(1),groupModified->descriptorByteOffset(0));
+}
+
+TEST_F(ShaderPipelineTest, VertexBufferLayouts)
+{
+    ShaderFile stages[] =
+    {
+        {
+            .pathIndicator = "resources/shaders/CombinedVertex.vertex",
+            .stage = ShaderStageFlags::VERTEX,
+        },
+     {
+         .pathIndicator = "resources/shaders/CombinedVertex.fragment",
+         .stage = ShaderStageFlags::FRAGMENT,
+         }
+    };
+    ShaderProperties properties{};
+    VertexDescription vertexDescription(3);
+    vertexDescription.add(GraphicsType::VECTOR3,0,0);
+    vertexDescription.add(GraphicsType::VECTOR2,0,1);
+    vertexDescription.add(GraphicsType::UNSIGNED_INTEGER,0,2,4);
+    vertexDescription.add(GraphicsType::FLOAT,32*4,2,4);
+    FrameBufferDescription frameBufferDescription;
+    frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
+    frameBufferDescription.depthTarget = Pixels::Format::D32_FLOAT;
+
+
+    auto pipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(stages,2,properties,vertexDescription,frameBufferDescription);
+    GTEST_ASSERT_EQ(pipeline->pushConstants(),nullptr);
+    GTEST_FAIL();
 }

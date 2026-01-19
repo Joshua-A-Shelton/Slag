@@ -14,16 +14,19 @@ namespace slag
         GraphicsType dataType()const;
         ///The offset in bytes from the start of the buffer this member is
         uint32_t offset()const;
+        uint32_t arrayLength()const;
         /**
          * Create a vertex attribute
          * @param dataType What data type this member of the vertex is
          * @param offset The offset in bytes from the start of the vertex this member is
+         * @param arrayLength Number of elements of this type in an array
          */
-        VertexAttribute(GraphicsType dataType, uint32_t offset);
+        VertexAttribute(GraphicsType dataType, uint32_t offset, uint32_t arrayLength=1);
 
     private:
-        GraphicsType _dataType = GraphicsType::STRUCT;
+        GraphicsType _dataType = GraphicsType::UNKNOWN;
         uint32_t _offset = 0;
+        uint32_t _arrayLength = 0;
 
     };
     ///Describes how a vertex will be read from a shader
@@ -47,9 +50,10 @@ namespace slag
          * @param dataType What data type this member of the vertex is
          * @param offset The offset in bytes from the start of the vertex this member is
          * @param attributeChannel Index of the buffer the attribute will be in
+         * @param arrayLength Number of elements in arrray
          * @return
          */
-        VertexDescription& add(GraphicsType dataType, uint32_t offset, size_t attributeChannel);
+        VertexDescription& add(GraphicsType dataType, uint32_t offset, size_t attributeChannel, uint32_t arrayLength=1);
         ///Number of attributes across all channels
         size_t attributeCount()const;
         /**

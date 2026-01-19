@@ -459,7 +459,8 @@ namespace slag
             return new DX12Sampler(parameters);
         }
 
-        std::vector<ShaderCode::CodeLanguage> DX12Backend::acceptedLanuages()
+        std::vector<ShaderCode::CodeLanguage>
+        DX12Backend::acceptedLanuages()
         {
             std::vector<ShaderCode::CodeLanguage> result{ShaderCode::CodeLanguage::DXIL};
             return result;
@@ -468,7 +469,8 @@ namespace slag
         ShaderPipeline* DX12Backend::newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, DescriptorIdentity
                                                        (*identify)(const DescriptorIdentityParameters&, void*), void* identifyData)
         {
-            return new DX12ShaderPipeline(shaders, shaderCount, properties, vertexDescription, framebufferDescription,identify,identifyData);
+            throw std::runtime_error("DX12Backend::newShaderPipeline() not implemented");
+            //return new DX12ShaderPipeline(shaders, shaderCount, properties, vertexDescription, framebufferDescription,identify,identifyData);
         }
 
         ShaderPipeline* DX12Backend::newShaderPipeline(const ShaderCode& computeShader, DescriptorIdentity (*identify)(const DescriptorIdentityParameters&, void*), void* identifyData)

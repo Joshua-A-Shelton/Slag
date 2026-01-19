@@ -1,11 +1,7 @@
 #include "SPIRVReflection.h"
-
 #include <functional>
-#include <iostream>
 #include <spirv_reflect.h>
-#include <unordered_map>
 #include <unordered_set>
-
 #include "slag/utilities/SLAG_ASSERT.h"
 
 namespace slag
@@ -280,6 +276,17 @@ namespace slag
             return Pixels::Format::UNDEFINED;
         }
 
+        ShaderVertexInputVariable inputFromSPV(const SpvReflectInterfaceVariable* variable)
+        {
+            std::string name;
+            if (variable->name!=nullptr){name = variable->name;}
+            auto type = graphicsTypeFromSPV(variable->type_description);
+            auto dims = variable->array.dims[0];
+            auto arrayDepth = dims == 0? 1 : dims;
+
+            return ShaderVertexInputVariable(name,type,arrayDepth,variable->location);
+        }
+
         BufferLayout bufferDescriptorLayoutFromSPV(const SpvReflectBlockVariable* block)
         {
             std::string name;
@@ -305,217 +312,95 @@ namespace slag
             return TexelBufferDescription(pixelFormatFromSPV(binding->image.image_format));
         }
 
-        struct DescriptorGroupReflectionStub
+        ShaderDescriptorBindingGroup generateBindingGroup(SpvReflectDescriptorSet* group, ShaderStageFlags stage)
         {
-            uint32_t index=0;
-            std::unordered_map<uint32_t, Descriptor> descriptors;
-            std::unordered_map<uint32_t, uint32_t> indices;
-            std::unordered_set<uint32_t> assignedIndices;
-        };
-        SPVReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount,DescriptorIdentity(*identify)(const DescriptorIdentityParameters&,void*), void* identifyData)
+
+            std::vector<ShaderDescriptorBinding> descriptors(group->binding_count);
+            for (auto i=0; i< group->binding_count; i++)
+            {
+                auto currentBinding = group->bindings[i];
+                Descriptor descriptor(currentBinding->name,descriptorTypeFromSPV(currentBinding->descriptor_type),dimensionFromSPV(currentBinding->image.dim),currentBinding->count,stage);
+                descriptors[i] = ShaderDescriptorBinding(descriptor,currentBinding->binding);
+            }
+            return ShaderDescriptorBindingGroup(descriptors.data(),descriptors.size(),group->set);
+        }
+
+        ShaderMetaData reflectShaderCode(ShaderCode& shaderCode)
         {
-            uint32_t totalSets = 0;
-            std::unordered_map<uint32_t, DescriptorGroupReflectionStub> groups;
-            std::unordered_map<uint32_t,std::unordered_map<uint32_t,BufferLayout>> bufferLayouts;
-            std::unordered_map<uint32_t,std::unordered_map<uint32_t,TexelBufferDescription>> texelBufferDescriptions;
-            std::unique_ptr<BufferLayout> pushConstants;
-            ShaderStageFlags pushConstantFlags = std::bit_cast<ShaderStageFlags>(uint16_t(0));
-            uint32_t dimX = 0;
-            uint32_t dimY = 0;
-            uint32_t dimZ = 0;
+            ShaderStageFlags stage = shaderCode.stage();
+            std::vector<ShaderVertexInputVariable> vertexInputs;
+            std::vector<ShaderDescriptorBindingGroup> bindingGroups;
+            std::vector<ShaderBufferLayout> uniformBufferLayouts;
+            std::vector<ShaderBufferLayout> storageBufferLayouts;
+            std::vector<ShaderTexelBufferDescription> texelBufferDescriptions;
+            BufferLayout pushConstantsLayout;
+            uint32_t xComputeThreads = 0;
+            uint32_t yComputeThreads = 0;
+            uint32_t zComputeThreads = 0;
 
-            for (size_t i = 0; i < shaderCount; i++)
+            SLAG_ASSERT(shaderCode.language() == ShaderCode::CodeLanguage::SPIRV && "Attempted to reflect spirv data on non spirv code");
+            SpvReflectShaderModule module;
+            if (spvReflectCreateShaderModule(shaderCode.dataSize(),shaderCode.data(),&module)== SPV_REFLECT_RESULT_SUCCESS)
             {
-                ShaderCode* shader = shaders[i];
-                SLAG_ASSERT(shader->language() == ShaderCode::CodeLanguage::SPIRV && "Attempted to reflect spirv variables on non spirv code");
-                SpvReflectShaderModule module;
-                if (spvReflectCreateShaderModule(shader->dataSize(),shader->data(),&module)== SPV_REFLECT_RESULT_SUCCESS)
+                if (shaderCode.stage() == ShaderStageFlags::COMPUTE)
                 {
-                    if (shader->stage() == ShaderStageFlags::COMPUTE)
-                    {
-                        SLAG_ASSERT(dimX == 0 && dimY == 0 && dimZ == 0 && "Multiple Compute Stages are defined");
-                        auto localSize = module.entry_points->local_size;
-                        dimX = localSize.x;
-                        dimY = localSize.y;
-                        dimZ = localSize.z;
-                    }
-                    for (auto i=0; i< module.descriptor_set_count; i++)
-                    {
-                        auto& set = module.descriptor_sets[i];
-                        if (set.set > totalSets)
-                        {
-                            totalSets = set.set;
-                        }
-                        auto group = groups.find(set.set);
-                        if (group == groups.end())
-                        {
-                            group = groups.insert(std::pair<uint32_t, DescriptorGroupReflectionStub>(set.set, DescriptorGroupReflectionStub{})).first;
-                            group->second.index = set.set;
-                        }
-                        auto& descriptorReflection = group->second;
-                        for (auto i=0; i< set.binding_count; i++)
-                        {
-                            auto& binding = set.bindings[i];
-                            auto descriptor = descriptorReflection.descriptors.find(binding->binding);
-                            uint32_t descIndex = binding->binding;
-                            if (descriptor == descriptorReflection.descriptors.end())
-                            {
-                                std::string name = binding->name;
-                                auto type = descriptorTypeFromSPV(binding->descriptor_type);
-                                auto dimension = dimensionFromSPV(binding->image.dim);
-
-                                if (identify!=nullptr)
-                                {
-                                    DescriptorIdentityParameters renameParameters{};
-                                    renameParameters.language = ShaderCode::CodeLanguage::SPIRV;
-                                    renameParameters.originalName = name;
-                                    renameParameters.descriptorGroupIndex = set.set;
-                                    renameParameters.type = type;
-                                    renameParameters.dimension = dimension;
-                                    renameParameters.arrayDepth = binding->count;
-                                    renameParameters.platformSpecificBindingIndex = binding->binding;
-                                    renameParameters.platformData = binding;
-                                    auto identity = identify(renameParameters,identifyData);
-                                    name = identity.name;
-                                    descIndex = identity.index;
-                                }
-                                descriptor = descriptorReflection.descriptors.insert(std::pair<uint32_t,Descriptor>(binding->binding,Descriptor(name,type,dimension,binding->count,shader->stage()))).first;
-                                if (descriptorReflection.assignedIndices.find(descIndex)!=descriptorReflection.assignedIndices.end())
-                                {
-                                    throw std::runtime_error("Multiple descriptors in a single set are being assigned to the same index");
-                                }
-                                descriptorReflection.assignedIndices.emplace(descIndex);
-                                descriptorReflection.indices.insert(std::pair<uint32_t,uint32_t>(binding->binding,descIndex));
-                            }
-                            else
-                            {
-                                auto& reflectedDescriptor = descriptor->second;
-                                //scary const casts, but necessary to edit data we're generally not supposed to
-                                auto& shape = const_cast<Descriptor::Shape&>(reflectedDescriptor.shape());
-                                if (shape.type != descriptorTypeFromSPV(binding->descriptor_type) || shape.arrayDepth != binding->count)
-                                {
-                                    throw std::runtime_error(std::string("Shader stages contain incompatible descriptor groups: Group "+std::to_string(set.set))+" Binding "+std::to_string(binding->binding));
-                                }
-                                shape.visibleStages |= shader->stage();
-                            }
-                            auto descriptorType = descriptor->second.shape().type;
-                            if (descriptorType == Descriptor::Type::UNIFORM_BUFFER || descriptorType == Descriptor::Type::STORAGE_BUFFER)
-                            {
-                                auto bufferDescription = bufferLayouts.find(set.set);
-                                if ( bufferDescription == bufferLayouts.end())
-                                {
-                                    bufferDescription = bufferLayouts.insert(std::pair<uint32_t,std::unordered_map<uint32_t,BufferLayout>>(set.set,std::unordered_map<uint32_t,BufferLayout>{})).first;
-                                    bufferDescription->second.insert(std::pair<uint32_t,BufferLayout>(descIndex,bufferDescriptorLayoutFromSPV(&binding->block)));
-                                }
-                                else
-                                {
-                                    auto description = bufferDescription->second.find(descIndex);
-                                    if (description == bufferDescription->second.end())
-                                    {
-                                        bufferDescription->second.insert(std::pair<uint32_t,BufferLayout>(descIndex,bufferDescriptorLayoutFromSPV(&binding->block)));
-                                    }
-                                    else
-                                    {
-                                        auto block = bufferDescriptorLayoutFromSPV(&binding->block);
-                                        auto match = BufferLayout::compatible(block,description->second);
-                                        if (match == 0)
-                                        {
-                                            throw std::runtime_error(std::string("Uniform buffer layout is incompatible across stages Set: ")+std::to_string(set.set)+" Binding: "+std::to_string(binding->binding));
-                                        }
-                                        else if (match == -1)
-                                        {
-                                            bufferDescription->second[binding->binding] = BufferLayout::merge(block,description->second);// std::move(block);
-                                        }
-                                        else
-                                        {
-                                            bufferDescription->second[binding->binding] = BufferLayout::merge(description->second,block);
-
-                                        }
-                                    }
-                                }
-                            }
-                            else if (descriptorType == Descriptor::Type::UNIFORM_TEXEL_BUFFER || descriptorType == Descriptor::Type::STORAGE_TEXEL_BUFFER)
-                            {
-                                auto bufferDescription = texelBufferDescriptions.find(set.set);
-                                //only add a new one if it doesn't already exist
-                                if ( bufferDescription == texelBufferDescriptions.end())
-                                {
-                                    bufferDescription = texelBufferDescriptions.insert(std::pair<uint32_t,std::unordered_map<uint32_t,TexelBufferDescription>>(set.set,std::unordered_map<uint32_t,TexelBufferDescription>{})).first;
-                                    bufferDescription->second.insert(std::pair<uint32_t,TexelBufferDescription>(binding->binding,texelBufferDescriptorLayoutFromSPV(binding)));
-                                }
-                                else
-                                {
-                                    bufferDescription->second.insert(std::pair<uint32_t,TexelBufferDescription>(binding->binding,texelBufferDescriptorLayoutFromSPV(binding)));
-                                }
-
-                            }
-
-                        }
-
-                    }
-
-                    uint32_t blockCount = 0;
-                    auto result = spvReflectEnumeratePushConstantBlocks(&module,&blockCount,nullptr);
-                    if (blockCount > 0)
-                    {
-                        pushConstantFlags|= shader->stage();
-                    }
-                    for (uint32_t blockIndex = 0; blockIndex < blockCount; ++blockIndex)
-                    {
-                        auto range = spvReflectGetPushConstantBlock(&module,blockIndex,&result);
-                        if (pushConstants.get()==nullptr)
-                        {
-                            pushConstants = std::make_unique<BufferLayout>(bufferDescriptorLayoutFromSPV(range));
-                        }
-                        else
-                        {
-                            *pushConstants = BufferLayout::merge(*pushConstants.get(),bufferDescriptorLayoutFromSPV(range));
-                        }
-                    }
-
-                    spvReflectDestroyShaderModule(&module);
+                    auto localSize = module.entry_points->local_size;
+                    xComputeThreads = localSize.x;
+                    yComputeThreads = localSize.y;
+                    zComputeThreads = localSize.z;
                 }
-                else
+                else if (shaderCode.stage() == ShaderStageFlags::VERTEX)
                 {
-                    throw std::runtime_error("Unable to retrieve reflection data from spirv code");
+                    vertexInputs.resize(module.input_variable_count);
+                    for (int j = 0; j < module.input_variable_count; j++)
+                    {
+                        auto inputVariable = module.input_variables[j];
+                        vertexInputs[j]=inputFromSPV(inputVariable);
+                    }
                 }
+
+                bindingGroups.resize(module.descriptor_set_count);
+                for (auto i=0; i< module.descriptor_set_count; i++)
+                {
+                    auto& currentGroup = module.descriptor_sets[i];
+                    auto& createdGroup = bindingGroups[i];
+                    createdGroup = generateBindingGroup(&currentGroup,stage);
+
+                    for (auto j=0; j<createdGroup.bindingCount(); j++)
+                    {
+                        auto& binding = createdGroup.descriptorBinding(j);
+                        switch (binding.descriptor().shape().type)
+                        {
+                        case Descriptor::Type::UNIFORM_BUFFER:
+                            uniformBufferLayouts.emplace_back(currentGroup.set,j,bufferDescriptorLayoutFromSPV(&currentGroup.bindings[j]->block));
+                            break;
+                        case Descriptor::Type::STORAGE_BUFFER:
+                            storageBufferLayouts.emplace_back(currentGroup.set,j,bufferDescriptorLayoutFromSPV(&currentGroup.bindings[j]->block));
+                            break;
+                        case Descriptor::Type::UNIFORM_TEXEL_BUFFER:
+                        case Descriptor::Type::STORAGE_TEXEL_BUFFER:
+                            texelBufferDescriptions.emplace_back(currentGroup.set,j,texelBufferDescriptorLayoutFromSPV(currentGroup.bindings[j]));
+                            break;
+                        default:
+                            break;
+                        }
+                    }
+                }
+
+                for (uint32_t blockIndex = 0; blockIndex < module.push_constant_block_count; ++blockIndex)
+                {
+                    SpvReflectResult result;
+                    auto range = spvReflectGetPushConstantBlock(&module,blockIndex,&result);
+                    pushConstantsLayout = BufferLayout::merge(pushConstantsLayout,bufferDescriptorLayoutFromSPV(range));
+                }
+
             }
-            SPVReflectionData reflectionData
+            else
             {
-                .groups = std::vector<SPVDescriptorGroupReflectionData>(totalSets+1),
-                .bufferLayouts = std::move(bufferLayouts),
-                .pushConstants = std::move(pushConstants),
-                .pushConstantFlags = pushConstantFlags,
-                .texelBufferDescriptions = std::move(texelBufferDescriptions),
-                .entryPointXDim=dimX,
-                .entryPointYDim=dimY,
-                .entryPointZDim=dimZ
-            };
-            for (auto& group : groups)
-            {
-                std::vector<Descriptor> descriptors(group.second.descriptors.size());
-                std::vector<uint32_t> indices(group.second.indices.size());
-                std::vector<Descriptor::Shape> orderedShapes(group.second.descriptors.size());
-                auto type = group.second.descriptors[0].shape().type;
-                for (auto& kvpair : group.second.descriptors)
-                {
-                    auto againstType = kvpair.second.shape().type;
-                    if ((type == Descriptor::Type::SAMPLER && againstType != Descriptor::Type::SAMPLER) || (againstType == Descriptor::Type::SAMPLER && type != Descriptor::Type::SAMPLER))
-                    {
-                        throw std::runtime_error(std::string("Descriptor group [")+std::to_string(kvpair.first)+"] mixes sampler and non-sampler descriptors, which is not supported");
-                    }
-                    uint32_t assignedIndex = group.second.indices.at(kvpair.first);
-                    if (assignedIndex >= descriptors.size())
-                    {
-                        descriptors.resize(kvpair.first+1);
-                    }
-                    descriptors[assignedIndex] = kvpair.second;
-                    indices[kvpair.first] = assignedIndex;
-                    orderedShapes[kvpair.first] = kvpair.second.shape();
-                }
-                reflectionData.groups[group.first] = {.groupIndex = group.first,.descriptors = std::move(descriptors),.originalToNewIndices = std::move(indices), .orderedShapes = std::move(orderedShapes)};
+                throw std::runtime_error("Unable to reflect spirv code");
             }
-            return reflectionData;
+            return ShaderMetaData(stage,std::move(vertexInputs),std::move(bindingGroups),std::move(uniformBufferLayouts),std::move(storageBufferLayouts),std::move(texelBufferDescriptions),pushConstantsLayout,xComputeThreads,yComputeThreads,zComputeThreads);
+
         }
     } // spirv
 } // slag

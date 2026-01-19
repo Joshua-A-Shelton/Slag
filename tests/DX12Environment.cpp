@@ -50,7 +50,7 @@ namespace slag
 
     std::string dx12ShaderReflectionRename(const DescriptorIdentityParameters& renameParams,void* userData)
     {
-        std::string returnString = renameParams.originalName.substr(0, renameParams.originalName.find_last_of('_'));
+        std::string returnString = renameParams.descriptor->name().substr(0, renameParams.descriptor->name().find_last_of('_'));
         returnString = std::regex_replace(returnString, std::regex("\\_"), ".");
         return returnString;
     }

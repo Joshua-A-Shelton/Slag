@@ -54,18 +54,129 @@ namespace slag
             _zthreads = 0;
 // get the reflection data *********************************************************************************************
 
-            auto reflectionData = spirv::getReflectionData(shaders, shaderCount,identify,identifyData);
-            _bufferLayouts = std::move(reflectionData.bufferLayouts);
-            _texelBufferDescriptions = std::move(reflectionData.texelBufferDescriptions);
-            _descriptorGroups.resize(reflectionData.groups.size());
-            for (auto i = 0; i < reflectionData.groups.size(); i++)
+            ShaderPipelineMetaData pipelineMetadata(shaders, shaderCount);
+
+            if (vertexDescription.attributeCount() != pipelineMetadata.vertexInputCount())
             {
-                auto& descriptors = reflectionData.groups[i].descriptors;
-                auto& reorderedIndices = reflectionData.groups[i].originalToNewIndices;
-                VulkanDescriptorGroup::Shape shape(std::move(reflectionData.groups[i].orderedShapes));
-                _descriptorGroups[i] = VulkanDescriptorGroup(descriptors.data(),reorderedIndices.data(),descriptors.size(),shape);
+                throw std::invalid_argument("vertexDescription must have same number of vertex attributes as the shader expects: "+std::to_string(pipelineMetadata.vertexInputCount()));
             }
-            _pushConstants = std::move(reflectionData.pushConstants);
+// reorder descriptors if required
+            std::vector<std::unordered_map<uint32_t,DescriptorIdentity>> indexRemappings(pipelineMetadata.descriptorGroupsCount());
+            std::vector<std::vector<bool>> mappedIndexes(pipelineMetadata.descriptorGroupsCount());
+            if (identify!=nullptr)
+            {
+                for (auto i = 0u; i < pipelineMetadata.descriptorGroupsCount(); i++)
+                {
+                    auto& descriptorGroup = pipelineMetadata.descriptorGroup(i);
+                    auto& groupRemap = indexRemappings[i];
+                    auto& indexes = mappedIndexes[i];
+                    indexes.resize(descriptorGroup.bindingCount(),false);
+                    for (auto j = 0u; j < descriptorGroup.bindingCount(); j++)
+                    {
+                        auto& binding = descriptorGroup.descriptorBinding(j);
+                        auto& curDescriptor = binding.descriptor();
+                        DescriptorIdentityParameters parameters
+                        {
+                            .language = ShaderCode::CodeLanguage::SPIRV,
+                            .descriptorGroupIndex = i,
+                            .descriptor = &curDescriptor,
+                        };
+                        auto identified = identify(parameters,identifyData);
+                        if (identified.index >= indexes.size())
+                        {
+                            throw std::runtime_error("Remapped index beyond range of descriptor count");
+                        }
+                        groupRemap.insert(std::pair(j,identified));
+                        if (indexes[identified.index] == true)
+                        {
+                            throw std::runtime_error("Multiple descriptors are being mapped to the same index");
+                        }
+                        indexes[identified.index] = true;
+                    }
+                }
+            }
+            else
+            {
+                for (auto i = 0u; i < pipelineMetadata.descriptorGroupsCount(); i++)
+                {
+                    auto& descriptorGroup = pipelineMetadata.descriptorGroup(i);
+                    auto& groupRemap = indexRemappings[i];
+                    auto& indexes = mappedIndexes[i];
+                    indexes.resize(descriptorGroup.bindingCount(),false);
+                    for (uint32_t j = 0u; j < descriptorGroup.bindingCount(); j++)
+                    {
+                        auto& binding = descriptorGroup.descriptorBinding(j);
+                        groupRemap.insert(std::pair(j,DescriptorIdentity(binding.descriptor().name(),binding.bindingId())));
+                        if (indexes[binding.bindingId()] == true)
+                        {
+                            throw std::runtime_error("Multiple descriptors are being mapped to the same index");
+                        }
+                        indexes[binding.bindingId()] = true;
+                    }
+                }
+            }
+
+            for (int i=0; i<mappedIndexes.size(); i++)
+            {
+                auto& indexCheck = mappedIndexes[i];
+                for (auto j=0; j < indexCheck.size(); j++)
+                {
+                    if (indexCheck[j] == false)
+                    {
+                        throw std::runtime_error("An empty descriptor index exists for a descriptor group");
+                    }
+                }
+            }
+
+// assemble shader pipeline
+            for (auto i=0; i<pipelineMetadata.uniformBufferLayoutCount(); i++)
+            {
+                auto& uniformBufferLayout = pipelineMetadata.uniformBufferLayout(i);
+                auto remappedDescriptorIndex = indexRemappings[uniformBufferLayout.descriptorGroupIndex()].at(uniformBufferLayout.descriptorIndex());
+                auto uniformBufferDescriptorGroup = _uniformBufferLayouts.find(uniformBufferLayout.descriptorGroupIndex());
+                if (uniformBufferDescriptorGroup == _uniformBufferLayouts.end())
+                {
+                    uniformBufferDescriptorGroup = _uniformBufferLayouts.insert(std::pair(uniformBufferLayout.descriptorGroupIndex(),std::unordered_map<uint32_t,BufferLayout>())).first;
+                }
+                uniformBufferDescriptorGroup->second[remappedDescriptorIndex.index] = uniformBufferLayout.bufferLayout();
+            }
+            for (auto i=0; i<pipelineMetadata.storageBufferLayoutCount(); i++)
+            {
+                auto& storageBufferLayout = pipelineMetadata.storageBufferLayout(i);
+                auto remappedDescriptorIndex = indexRemappings[storageBufferLayout.descriptorGroupIndex()].at(storageBufferLayout.descriptorIndex());
+                auto storageBufferDescriptorGroup = _storageBufferLayouts.find(storageBufferLayout.descriptorGroupIndex());
+                if (storageBufferDescriptorGroup == _storageBufferLayouts.end())
+                {
+                    storageBufferDescriptorGroup = _storageBufferLayouts.insert(std::pair(storageBufferLayout.descriptorGroupIndex(),std::unordered_map<uint32_t,BufferLayout>())).first;
+                }
+                storageBufferDescriptorGroup->second[remappedDescriptorIndex.index] = storageBufferLayout.bufferLayout();
+            }
+
+            for (auto i=0; i<pipelineMetadata.texelBufferDescriptionCount(); i++)
+            {
+                auto& texelBufferDescription = pipelineMetadata.texelBufferDescription(i);
+                auto remappedDescriptorIndex = indexRemappings[texelBufferDescription.descriptorGroupIndex()].at(texelBufferDescription.descriptorIndex());
+                auto texelBufferDescriptorGroup = _texelBufferDescriptions.find(texelBufferDescription.descriptorGroupIndex());
+                if (texelBufferDescriptorGroup == _texelBufferDescriptions.end())
+                {
+                    texelBufferDescriptorGroup = _texelBufferDescriptions.insert(std::pair(texelBufferDescription.descriptorGroupIndex(),std::unordered_map<uint32_t,TexelBufferDescription>())).first;
+                }
+                texelBufferDescriptorGroup->second.insert(std::pair(remappedDescriptorIndex.index,texelBufferDescription.bufferDescription())) ;
+            }
+
+
+            _descriptorGroups.resize(pipelineMetadata.descriptorGroupsCount());
+            for (auto i = 0; i < pipelineMetadata.descriptorGroupsCount(); i++)
+            {
+                auto& descriptors = pipelineMetadata.descriptorGroup(i);
+                auto& groupRemappings = indexRemappings[i];
+
+                _descriptorGroups[i] = VulkanDescriptorGroup(descriptors,groupRemappings);
+            }
+            if (pipelineMetadata.pushConstantLayout().type() != GraphicsType::UNKNOWN)
+            {
+                _pushConstants = std::make_unique<BufferLayout>(pipelineMetadata.pushConstantLayout());
+            }
 
 // assemble shader stages **********************************************************************************************
 
@@ -178,33 +289,38 @@ namespace slag
 
 
             std::vector<VkVertexInputAttributeDescription> attributes;
-            std::vector<VkVertexInputBindingDescription> bindingDescriptions;
-            uint32_t location = 0;
-            attributes.resize(vertexDescription.attributeCount());
-            bindingDescriptions.resize(vertexDescription.attributeChannels());
+            std::vector<VkVertexInputBindingDescription> bindingDescriptions(vertexDescription.attributeChannels());
             size_t attIndex = 0;
             for (size_t channel = 0; channel < vertexDescription.attributeChannels(); channel++)
             {
                 uint32_t stride = 0;
                 for (size_t attribute = 0; attribute < vertexDescription.attributeCount(channel); attribute++)
                 {
-                    auto& attr = attributes[attIndex];
+                    auto& reflectedAttr = pipelineMetadata.vertexInput(attIndex);
+                    //TODO: this isn't correct. I need to map it to the reflected ones instead of assuming they're in the same order
                     auto& description = vertexDescription.attribute(channel, attribute);
-                    attr.location = location;
-                    attr.binding = channel;
-                    attr.format = VulkanBackend::vulkanizedGraphicsType(description.dataType());
-                    if(attr.format == VK_FORMAT_UNDEFINED)
+                    for (uint32_t arrayIndex = 0; arrayIndex < reflectedAttr.arrayLength(); arrayIndex++)
                     {
-                        throw std::runtime_error("Unable to convert graphicsType type into underlying API type");
+                        SLAG_ASSERT(reflectedAttr.type() == description.dataType() && reflectedAttr.arrayLength() == description.arrayLength() && "Mismatch between vertex attributes and vertex description");
+                        VkVertexInputAttributeDescription attr;
+                        attr.location = reflectedAttr.inputID()+arrayIndex;
+                        attr.binding = channel;
+                        attr.format = VulkanBackend::vulkanizedGraphicsType(description.dataType());
+                        if(attr.format == VK_FORMAT_UNDEFINED)
+                        {
+                            throw std::runtime_error("Unable to convert graphicsType type into underlying API type");
+                        }
+                        attr.offset = description.offset() + (graphicsTypeSize(reflectedAttr.type()) * arrayIndex);
+
+                        size_t end = attr.offset + graphicsTypeSize(description.dataType());
+                        if (end > stride)
+                        {
+                            stride = end;
+                        }
+
+                        attributes.push_back(attr);
                     }
-                    attr.offset = description.offset();
-                    location++;
                     attIndex++;
-                    size_t end = attr.offset + graphicsTypeSize(description.dataType());
-                    if (end > stride)
-                    {
-                        stride = end;
-                    }
                 }
                 auto& bindingDescription = bindingDescriptions[channel];
                 bindingDescription.binding = channel;
@@ -322,13 +438,13 @@ namespace slag
 
         VulkanShaderPipeline::VulkanShaderPipeline(const ShaderCode& computeCode, DescriptorIdentity(*identify)(const DescriptorIdentityParameters&,void*), void* identifyData)
         {
-            _pipelineType = PipelineType::COMPUTE;
+            /*_pipelineType = PipelineType::COMPUTE;
             auto computeCodePtr = &const_cast<ShaderCode&>(computeCode);
             auto reflectionData = spirv::getReflectionData(&computeCodePtr, 1,identify,identifyData);
             _xthreads = reflectionData.entryPointXDim;
             _ythreads = reflectionData.entryPointYDim;
             _zthreads = reflectionData.entryPointZDim;
-            _bufferLayouts = std::move(reflectionData.bufferLayouts);
+            _uniformBufferLayouts = std::move(reflectionData.bufferLayouts);
             _descriptorGroups.resize(reflectionData.groups.size());
             for (auto i = 0; i < reflectionData.groups.size(); i++)
             {
@@ -386,7 +502,8 @@ namespace slag
                 vkDestroyPipeline(device,_pipeline,nullptr);
                 vkDestroyPipelineLayout(device,_pipelineLayout,nullptr);
                 throw std::runtime_error("Unable to create pipeline");
-            }
+            }*/
+
         }
 
         VulkanShaderPipeline::VulkanShaderPipeline(VulkanShaderPipeline&& from)
@@ -412,6 +529,16 @@ namespace slag
             return _pipelineType;
         }
 
+        uint32_t VulkanShaderPipeline::vertexAttributeBufferCount()
+        {
+            return _vertexBufferLayouts.size();
+        }
+
+        BufferLayout* VulkanShaderPipeline::vertexAttributeLayout(uint32_t index)
+        {
+            return &_vertexBufferLayouts[index];
+        }
+
         uint32_t VulkanShaderPipeline::descriptorGroupCount()
         {
             return _descriptorGroups.size();
@@ -420,6 +547,11 @@ namespace slag
         BufferLayout* VulkanShaderPipeline::pushConstants()
         {
             return _pushConstants.get();
+        }
+
+        VertexDescription* VulkanShaderPipeline::vertexDescription()
+        {
+            return _vertexDescription.get();
         }
 
         DescriptorGroup* VulkanShaderPipeline::descriptorGroup(uint32_t index)
@@ -432,10 +564,25 @@ namespace slag
             return &_descriptorGroups[index];
         }
 
-        BufferLayout* VulkanShaderPipeline::bufferLayout(uint32_t descriptorGroup,uint32_t descriptorBinding)
+        BufferLayout* VulkanShaderPipeline::uniformBufferLayout(uint32_t descriptorGroup,uint32_t descriptorBinding)
         {
-            auto group = _bufferLayouts.find(descriptorGroup);
-            if(group == _bufferLayouts.end())
+            auto group = _uniformBufferLayouts.find(descriptorGroup);
+            if(group == _uniformBufferLayouts.end())
+            {
+                return nullptr;
+            }
+            auto description = group->second.find(descriptorBinding);
+            if(description == group->second.end())
+            {
+                return nullptr;
+            }
+            return &description->second;
+        }
+
+        BufferLayout* VulkanShaderPipeline::storageBufferLayout(uint32_t descriptorGroup, uint32_t descriptorBinding)
+        {
+            auto group = _storageBufferLayouts.find(descriptorGroup);
+            if(group == _storageBufferLayouts.end())
             {
                 return nullptr;
             }
@@ -492,9 +639,12 @@ namespace slag
             _pipelineType = from._pipelineType;
             std::swap(_pipeline,from._pipeline);
             std::swap(_pipelineLayout,from._pipelineLayout);
+            _vertexDescription.swap(from._vertexDescription);
+            std::swap(_descriptorGroups,from._descriptorGroups);
             _descriptorGroups.swap(from._descriptorGroups);
             _pushConstants.swap(from._pushConstants);
-            _bufferLayouts.swap(from._bufferLayouts);
+            _uniformBufferLayouts.swap(from._uniformBufferLayouts);
+            _storageBufferLayouts.swap(from._storageBufferLayouts);
             _xthreads = from._xthreads;
             _ythreads = from._ythreads;
             _zthreads = from._zthreads;
