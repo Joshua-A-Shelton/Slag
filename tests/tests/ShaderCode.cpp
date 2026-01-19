@@ -5,3 +5,8 @@ TEST(ShaderCode, Reflection)
 {
     GTEST_FAIL();
 }
+
+TEST(ShaderCode, ShaderPipeLineMetaData)
+{
+    GTEST_FAIL();
+}

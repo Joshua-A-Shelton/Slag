@@ -301,7 +301,7 @@ namespace slag
             auto chain = swapchainBuilder.set_desired_format(VkSurfaceFormatKHR{format.format,VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
                 .set_desired_present_mode(presentMode)
                 .set_desired_extent(_width,_height)
-                .set_desired_min_image_count(_frames.size())
+                .set_desired_min_image_count(_frameCount)
                 .set_old_swapchain(_swapChain)
                 .add_image_usage_flags(imageUsageFlags)
                 .set_composite_alpha_flags(VulkanBackend::vulkanizedCompositeAlphaFlags(_compositing))
@@ -317,8 +317,8 @@ namespace slag
             }
             _swapChain = chain.value();
             //set actual width and height to what is actually is. There's some subtle resizing bug errors if we don't, because hey! Why actually resize to the new size when you can just not!
-            _width = chain->extent.width;
-            _height = chain->extent.height;
+            //_width = chain->extent.width;
+            //_height = chain->extent.height;
             auto images = chain->get_images().value();
             for (auto i=0; i<images.size(); i++)
             {

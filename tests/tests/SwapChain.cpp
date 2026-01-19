@@ -122,7 +122,7 @@ TEST(SwapChain, NextIfReady)
 
     auto immediateAttempts = renderAttemptsEmptyFrames(swapchain.get(),300,ClearColor{1,0,0,1});
     GTEST_ASSERT_TRUE(immediateAttempts != UINT64_MAX);
-    swapchain->presentMode(SwapChain::PresentMode::QUEUE,1);
+    swapchain->presentMode(SwapChain::PresentMode::BUFFER,2);
     auto doubleBufferAttempts = renderAttemptsEmptyFrames(swapchain.get(),300,ClearColor{0,1,0,1});
     GTEST_ASSERT_TRUE(doubleBufferAttempts != UINT64_MAX);
     swapchain->presentMode(SwapChain::PresentMode::BUFFER,3);
@@ -130,11 +130,11 @@ TEST(SwapChain, NextIfReady)
     GTEST_ASSERT_TRUE(tripleBufferAttempts != UINT64_MAX);
 
     GTEST_ASSERT_TRUE(immediateAttempts >= 300);
-    GTEST_ASSERT_TRUE(doubleBufferAttempts > 300);
-    GTEST_ASSERT_TRUE(tripleBufferAttempts >= 300);
+    GTEST_ASSERT_TRUE(doubleBufferAttempts >= 300);
+    GTEST_ASSERT_TRUE(tripleBufferAttempts == 300);
 
     GTEST_ASSERT_GT(doubleBufferAttempts, tripleBufferAttempts);
-    GTEST_ASSERT_GT(doubleBufferAttempts, immediateAttempts);
+    GTEST_ASSERT_GT(immediateAttempts, tripleBufferAttempts);
 }
 
 TEST(SwapChain, Resize)

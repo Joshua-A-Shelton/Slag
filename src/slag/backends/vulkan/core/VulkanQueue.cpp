@@ -216,6 +216,7 @@ namespace slag
             commandBufferPresent->end();
 
 
+
             transitionIntoPresent.pWaitSemaphoreInfos = &waitPresent;
             transitionIntoPresent.waitSemaphoreInfoCount = 1;
             transitionIntoPresent.pCommandBufferInfos = &buffersPresent;
@@ -223,7 +224,7 @@ namespace slag
             transitionIntoPresent.pSignalSemaphoreInfos = nullptr;
             transitionIntoPresent.signalSemaphoreInfoCount = 0;
 
-            vkQueueSubmit2(_queue,submit.size(),submit.data(),nullptr);
+            vkQueueSubmit2(_queue,submit.size(),submit.data(),vulkanFrame->frameFinishedFence());
 
             //Present image
             auto currentImageIndex = vulkanFrame->parentSwapChain()->currentImageIndex();
@@ -238,13 +239,13 @@ namespace slag
             presentInfo.pImageIndices = &currentImageIndex;
             presentInfo.pResults = &presentSuccess;
 
-            auto commandsComplete = vulkanFrame->frameFinishedFence();
+            /*auto commandsComplete = vulkanFrame->frameFinishedFence();
             VkSwapchainPresentFenceInfoEXT fenceInfo{};
             fenceInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT;
             fenceInfo.swapchainCount = 1;
             fenceInfo.pFences = &commandsComplete;
 
-            presentInfo.pNext = &fenceInfo;
+            presentInfo.pNext = &fenceInfo;*/
 
             vkQueuePresentKHR(_queue,&presentInfo);
             vulkanFrame->parentSwapChain()->advance();
