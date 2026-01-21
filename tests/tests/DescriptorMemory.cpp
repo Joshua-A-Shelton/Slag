@@ -24,8 +24,8 @@ TEST(DescriptorMemory, SetSampledTexture)
     };
     ShaderProperties properties{};
     VertexDescription vertexDescription(2);
-    vertexDescription.add(GraphicsType::VECTOR2, 0, 0);
-    vertexDescription.add(GraphicsType::VECTOR2, 0, 1);
+    vertexDescription.add("POSITION",GraphicsType::VECTOR2, 0,1, 0);
+    vertexDescription.add("UV_COORDINATES",GraphicsType::VECTOR2, 0,1, 1);
     FrameBufferDescription frameBufferDescription;
     frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
 

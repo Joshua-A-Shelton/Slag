@@ -9,7 +9,7 @@ RWStructuredBuffer<float> storage[2];
 
 [shader("compute")]
 [numthreads(1,1,1)]
-void main(uint3 threadId : SV_DispatchThreadID)
+void computeMain(uint3 threadId : SV_DispatchThreadID)
 {
     uint index = threadId.x;
     float4 first = operands1[arrayindex].Load(index);

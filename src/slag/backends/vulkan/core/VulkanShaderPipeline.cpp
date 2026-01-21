@@ -298,7 +298,12 @@ namespace slag
                 {
                     auto& reflectedAttr = pipelineMetadata.vertexInput(attIndex);
                     //TODO: this isn't correct. I need to map it to the reflected ones instead of assuming they're in the same order
-                    auto& description = vertexDescription.attribute(channel, attribute);
+                    auto descriptionPtr = vertexDescription.attribute(reflectedAttr.semanticName());
+                    if (descriptionPtr == nullptr)
+                    {
+                        throw std::runtime_error("Vertex Description does not have attribute with required semantic name: "+reflectedAttr.semanticName());
+                    }
+                    auto& description = *descriptionPtr;
                     for (uint32_t arrayIndex = 0; arrayIndex < reflectedAttr.arrayLength(); arrayIndex++)
                     {
                         SLAG_ASSERT(reflectedAttr.type() == description.dataType() && reflectedAttr.arrayLength() == description.arrayLength() && "Mismatch between vertex attributes and vertex description");
@@ -438,6 +443,7 @@ namespace slag
                 vkDestroyPipelineLayout(device,_pipelineLayout,nullptr);
                 throw std::runtime_error("Unable to create pipeline");
             }
+            _vertexDescription = std::make_unique<VertexDescription>(vertexDescription);
 
         }
 

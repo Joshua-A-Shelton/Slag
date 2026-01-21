@@ -14,9 +14,9 @@ public struct Globals
 ParameterBlock<Globals> globals;
 
 [shader("vertex")]
-float4 vertexMain(float3 vertex: VERTEX_POSITION): SV_Position
+float4 vertexMain(float3 VERTEX_POSITION: VERTEX_POSITION): SV_Position
 {
-    var modified = vertex + float3(pushConstants.position,0);
+    var modified = VERTEX_POSITION + float3(pushConstants.position,0);
     modified.x*= pushConstants.scale.x;
     modified.y*=pushConstants.scale.y;
     return mul(globals.projectionMatrix,float4(modified,1));

@@ -147,8 +147,8 @@ protected:
 
         CubeIndices = std::unique_ptr<Buffer>(Buffer::newBuffer(cindexes.data(),cindexes.size()*sizeof(uint16_t),Buffer::Accessibility::GPU,Buffer::UsageFlags::INDEX_BUFFER));
 
-        VertexPosDescription.add(GraphicsType::VECTOR3,0,0);
-        VertexPosUVDescription.add(GraphicsType::VECTOR3,0,0).add(GraphicsType::VECTOR2,0,1);
+        VertexPosDescription.add("POSITION",GraphicsType::VECTOR3,0,1,0);
+        VertexPosUVDescription.add("POSITION",GraphicsType::VECTOR3,0,1,0).add("UV_COORDINATES",GraphicsType::VECTOR2,0,1,1);
 
         std::vector<ShaderFile> shaderFiles =
         {
@@ -1245,7 +1245,7 @@ TEST_F(CommandBufferTest, PushGraphicsConstants)
     };
     ShaderProperties properties{};
     VertexDescription vertexDescription(1);
-    vertexDescription.add(GraphicsType::VECTOR3,0,0);
+    vertexDescription.add("VERTEX_POSITION",GraphicsType::VECTOR3,0,1,0);
     FrameBufferDescription frameBufferDescription;
     frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
 

@@ -25,12 +25,12 @@ public ParameterBlock<FlatTextureMaterial> FlatMaterialInstance;
 public ParameterBlock<ObjectInstanceData> ObjectInstance;
 
 [shader("vertex")]
-VertexStageOutput vertexMain(Vertex3D vertex3d: POSITION, UVCoordinates uvCoordinates: UV_COORDINATES)
+VertexStageOutput vertexMain(float3 POSITION: POSITION, float2 UV_COORDINATES: UV_COORDINATES)
 {
-    float3 worldPosition = mul(ObjectInstance.transform,float4(vertex3d.position,1)).xyz;
+    float3 worldPosition = mul(ObjectInstance.transform,float4(POSITION,1)).xyz;
 
     VertexStageOutput output;
-    output.fragmentParameters.uv = uvCoordinates.position;
+    output.fragmentParameters.uv = UV_COORDINATES;
     output.sv_position = mul(Camera.projectionView, float4(worldPosition,1));
     return output;
 }

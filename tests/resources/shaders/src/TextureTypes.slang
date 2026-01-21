@@ -13,15 +13,6 @@ public struct GroupTwo
 {
     public SamplerState sampler;
 }
-public struct Vertex3D
-{
-    public float3 position;
-}
-
-public struct UVCoordinates
-{
-    public float2 position;
-}
 
 struct FragmentParameters
 {
@@ -38,11 +29,11 @@ public ParameterBlock<GroupOne> First;
 public ParameterBlock<GroupTwo> Second;
 
 [shader("vertex")]
-VertexStageOutput vertexMain(Vertex3D vertex3d: POSITION, UVCoordinates uvCoordinates: UV_COORDINATES)
+VertexStageOutput vertexMain(float3 POSITION: POSITION, float2 UV_COORDINATES: UV_COORDINATES)
 {
     VertexStageOutput output;
-    output.fragmentParameters.uv = uvCoordinates.position;
-    output.sv_position = float4(vertex3d.position,1);
+    output.fragmentParameters.uv = UV_COORDINATES;
+    output.sv_position = float4(POSITION,1);
     return output;
 }
 

@@ -60,19 +60,19 @@ namespace slag
     {
     public:
         VertexInputAttribute()=default;
-        VertexInputAttribute(const std::string& name, GraphicsType type, uint32_t arrayLength, uint64_t inputID);
+        VertexInputAttribute(const std::string& semanticName, GraphicsType type, uint32_t arrayLength, uint64_t inputID);
         ~VertexInputAttribute() = default;
         VertexInputAttribute(const VertexInputAttribute&)=default;
         VertexInputAttribute(VertexInputAttribute&&)=default;
         VertexInputAttribute& operator=(const VertexInputAttribute&)=default;
         VertexInputAttribute& operator=(VertexInputAttribute&&)=default;
-        [[nodiscard]] const std::string& name()const;
+        [[nodiscard]] const std::string& semanticName()const;
         [[nodiscard]] GraphicsType type()const;
         [[nodiscard]] uint32_t arrayLength()const;
         ///This is a shader code language dependent id. They use different mechanisms to determine binding, but each platform should support squishing it into this id. Same ID means it occupies the same input slot across shaders
         [[nodiscard]] uint64_t inputID()const;
     private:
-        std::string _name;
+        std::string _semanticName;
         GraphicsType _type = GraphicsType::UNKNOWN;
         uint32_t _arrayLength = 0;
         uint64_t _inputID = 0;

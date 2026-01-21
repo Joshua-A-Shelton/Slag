@@ -1,39 +1,3 @@
-//Vertex Position 3D attribute
-public struct Vertex3D
-{
-    public float3 position;
-}
-//Vertex Position 2D attribute
-public struct Vertex2D
-{
-    public float2 position;
-}
-//Vertex Normal attribute
-public struct Normal
-{
-    public float3 direction;
-}
-public struct Tangent
-{
-    public float3 direction;
-}
-//Vertex UV coordinate attribute
-public struct UVCoordinates
-{
-    public float2 position;
-}
-//Vertex color attribute
-public struct VertexColor
-{
-    public uint8_t4 values;
-}
-//Vertex Bone Weights attribute
-public struct BoneWeights
-{
-    public uint32_t[4] boneIds;
-    public float[4] weights;
-}
-
 //Data that is set once per view (usually camera) per frame
 public struct ViewData
 {
@@ -77,14 +41,14 @@ public ParameterBlock<InstanceData> Instance;
 
 
 [shader("vertex")]
-VertexStageOutput vertexMain(Vertex3D position: POSITION, UVCoordinates uvCoordinates: UV_COORDINATES, BoneWeights boneWeights: BONE_WEIGHTS)
+VertexStageOutput vertexMain(float3 POSITION: POSITION, float2 UV_COORDINATES: UV_COORDINATES, uint32_t[4] BONE_INDEXES: BONE_INDEXES, float[4] BONE_WEIGHTS: BONE_WEIGHTS)
 {
-    float3 worldPosition = mul(Instance.transform,float4(position.position,1)).xyz;
-    worldPosition = mul(Instance.skeleton[boneWeights.boneIds[0]],float4(worldPosition,1)).xyz;
-    worldPosition.y *= boneWeights.weights[1];
+    float3 worldPosition = mul(Instance.transform,float4(POSITION,1)).xyz;
+    worldPosition = mul(Instance.skeleton[BONE_INDEXES[0]],float4(worldPosition,1)).xyz;
+    worldPosition.y *= BONE_WEIGHTS[1];
 
     VertexStageOutput output;
-    output.fragmentParameters.uv = uvCoordinates.position;
+    output.fragmentParameters.uv = UV_COORDINATES;
     output.sv_position = mul(Globals.projectionView, float4(worldPosition,1));
     return output;
 }

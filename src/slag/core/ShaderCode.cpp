@@ -12,19 +12,20 @@
 
 namespace slag
 {
-    VertexInputAttribute::VertexInputAttribute(const std::string& name, GraphicsType type,
+    VertexInputAttribute::VertexInputAttribute(const std::string& semanticName, GraphicsType type,
         uint32_t arrayLength, uint64_t inputID)
     {
+        SLAG_ASSERT(semanticName.size() > 0 &&  "VertexAttribute must have semantic name");
         SLAG_ASSERT(type != GraphicsType::STRUCT && type != GraphicsType::UNKNOWN && "Type must be a primitive graphics type");
-        _name = name;
+        _semanticName = semanticName;
         _type = type;
         _arrayLength = arrayLength;
         _inputID = inputID;
     }
 
-    const std::string& VertexInputAttribute::name() const
+    const std::string& VertexInputAttribute::semanticName() const
     {
-        return _name;
+        return _semanticName;
     }
 
     GraphicsType VertexInputAttribute::type() const

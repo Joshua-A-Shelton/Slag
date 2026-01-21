@@ -401,7 +401,7 @@ public:
         triangleUVs = std::unique_ptr<Buffer>(Buffer::newBuffer(tuvs.data(),tuvs.size()*sizeof(float),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
         triangleIndicies = std::unique_ptr<Buffer>(Buffer::newBuffer(tindexes.data(),tindexes.size()*sizeof(uint16_t),Buffer::Accessibility::GPU,Buffer::UsageFlags::INDEX_BUFFER));
 
-        vertexPosUVDescription.add(GraphicsType::VECTOR3,0,0).add(GraphicsType::VECTOR2,0,1);
+        vertexPosUVDescription.add("POSITION",GraphicsType::VECTOR3,0,1,0).add("UV_COORDINATES",GraphicsType::VECTOR2,0,1,1);
     }
 };
 
@@ -420,8 +420,8 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflection)
     };
     ShaderProperties properties{};
     VertexDescription vertexDescription(2);
-    vertexDescription.add(GraphicsType::VECTOR3,0,0);
-    vertexDescription.add(GraphicsType::VECTOR2,0,1);
+    vertexDescription.add("POSITION",GraphicsType::VECTOR3,0,1,0);
+    vertexDescription.add("UV_COORDINATES",GraphicsType::VECTOR2,0,1,1);
     FrameBufferDescription frameBufferDescription;
     frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
     frameBufferDescription.depthTarget = Pixels::Format::D32_FLOAT;
@@ -493,8 +493,8 @@ TEST_F(ShaderPipelineTest, DescriptorGroupReflectionAllTypes)
         };
     ShaderProperties properties{};
     VertexDescription vertexDescription(2);
-    vertexDescription.add(GraphicsType::VECTOR3, 0, 0);
-    vertexDescription.add(GraphicsType::VECTOR2, 0, 1);
+    vertexDescription.add("POSITION",GraphicsType::VECTOR3, 0,1, 0);
+    vertexDescription.add("UV_COORDINATES",GraphicsType::VECTOR2, 0,1, 1);
     FrameBufferDescription frameBufferDescription;
     frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
     frameBufferDescription.depthTarget = Pixels::Format::D32_FLOAT;
@@ -577,8 +577,8 @@ TEST_F(ShaderPipelineTest, NoPushConstants)
     };
     ShaderProperties properties{};
     VertexDescription vertexDescription(2);
-    vertexDescription.add(GraphicsType::VECTOR3,0,0);
-    vertexDescription.add(GraphicsType::VECTOR2,0,1);
+    vertexDescription.add("POSITION",GraphicsType::VECTOR3,0,1,0);
+    vertexDescription.add("UV_COORDINATES",GraphicsType::VECTOR2,0,1,1);
     FrameBufferDescription frameBufferDescription;
     frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
     frameBufferDescription.depthTarget = Pixels::Format::D32_FLOAT;
@@ -603,7 +603,7 @@ TEST_F(ShaderPipelineTest, PushConstants)
     };
     ShaderProperties properties{};
     VertexDescription vertexDescription(1);
-    vertexDescription.add(GraphicsType::VECTOR3,0,0);
+    vertexDescription.add("VERTEX_POSITION",GraphicsType::VECTOR3,0,1,0);
     FrameBufferDescription frameBufferDescription;
     frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
 
@@ -646,8 +646,8 @@ TEST_F(ShaderPipelineTest, TextureTypes)
 
     ShaderProperties properties{};
     VertexDescription vertexDescription(2);
-    vertexDescription.add(GraphicsType::VECTOR3,0,0);
-    vertexDescription.add(GraphicsType::VECTOR2,0,1);
+    vertexDescription.add("POSITION",GraphicsType::VECTOR3,0,1,0);
+    vertexDescription.add("UV_COORDINATES",GraphicsType::VECTOR2,0,1,1);
     FrameBufferDescription frameBufferDescription;
     frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
     frameBufferDescription.depthTarget = Pixels::Format::D32_FLOAT;
@@ -709,8 +709,8 @@ TEST_F(ShaderPipelineTest, GraphicsPipelineThreadGroups)
     };
     ShaderProperties properties{};
     VertexDescription vertexDescription(2);
-    vertexDescription.add(GraphicsType::VECTOR3,0,0);
-    vertexDescription.add(GraphicsType::VECTOR2,0,1);
+    vertexDescription.add("POSITION",GraphicsType::VECTOR3,0,1,0);
+    vertexDescription.add("UV_COORDINATES",GraphicsType::VECTOR2,0,1,1);
     FrameBufferDescription frameBufferDescription;
     frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
     frameBufferDescription.depthTarget = Pixels::Format::D32_FLOAT;
@@ -776,8 +776,8 @@ TEST_F(ShaderPipelineTest, MultiStageFlagFail)
 
     ShaderProperties properties{};
     VertexDescription vertexDescription(2);
-    vertexDescription.add(GraphicsType::VECTOR3,0,0);
-    vertexDescription.add(GraphicsType::VECTOR2,0,1);
+    vertexDescription.add("POSITION",GraphicsType::VECTOR3,0,1,0);
+    vertexDescription.add("UV_COORDINATES",GraphicsType::VECTOR2,0,1,1);
     FrameBufferDescription frameBufferDescription;
     frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
     frameBufferDescription.depthTarget = Pixels::Format::D32_FLOAT;
@@ -1730,7 +1730,7 @@ TEST_F(ShaderPipelineTest,DescriptorReorder)
     GTEST_ASSERT_EQ(groupOriginal->descriptorByteOffset(1),groupModified->descriptorByteOffset(0));
 }
 
-TEST_F(ShaderPipelineTest, VertexBufferLayouts)
+TEST_F(ShaderPipelineTest, VertexDescription)
 {
     ShaderFile stages[] =
     {
@@ -1745,17 +1745,43 @@ TEST_F(ShaderPipelineTest, VertexBufferLayouts)
     };
     ShaderProperties properties{};
     VertexDescription vertexDescription(3);
-    vertexDescription.add(GraphicsType::VECTOR3,0,0);
-    vertexDescription.add(GraphicsType::VECTOR2,0,1);
-    vertexDescription.add(GraphicsType::UNSIGNED_INTEGER,0,2,4);
-    vertexDescription.add(GraphicsType::FLOAT,32*4,2,4);
+    vertexDescription.add("POSITION",GraphicsType::VECTOR3,0,1,0);
+    vertexDescription.add("UV_COORDINATES",GraphicsType::VECTOR2,0,1,1);
+    vertexDescription.add("BONE_INDEXES",GraphicsType::UNSIGNED_INTEGER,0,4,2);
+    vertexDescription.add("BONE_WEIGHTS",GraphicsType::FLOAT,32*4,4,2);
     FrameBufferDescription frameBufferDescription;
     frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
     frameBufferDescription.depthTarget = Pixels::Format::D32_FLOAT;
 
 
     auto pipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(stages,2,properties,vertexDescription,frameBufferDescription);
-    //GTEST_ASSERT_EQ(pipeline->ver)
-    GTEST_ASSERT_EQ(pipeline->pushConstants(),nullptr);
-    GTEST_FAIL();
+    GTEST_ASSERT_NE(pipeline->vertexDescription(), nullptr);
+    GTEST_ASSERT_EQ(*(pipeline->vertexDescription()), vertexDescription);
+}
+
+TEST_F(ShaderPipelineTest, VertexDescriptionFail)
+{
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    ShaderFile stages[] =
+    {
+        {
+            .pathIndicator = "resources/shaders/CombinedVertex.vertex",
+            .stage = ShaderStageFlags::VERTEX,
+        },
+     {
+         .pathIndicator = "resources/shaders/CombinedVertex.fragment",
+         .stage = ShaderStageFlags::FRAGMENT,
+         }
+    };
+    ShaderProperties properties{};
+    VertexDescription vertexDescription(3);
+    vertexDescription.add("POSITION",GraphicsType::VECTOR3,0,1,0);
+    vertexDescription.add("UV_COORDINATES",GraphicsType::VECTOR2,0,1,1);
+    vertexDescription.add("BONE_INDEXES",GraphicsType::UNSIGNED_INTEGER,0,4,2);
+    FrameBufferDescription frameBufferDescription;
+    frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
+    frameBufferDescription.depthTarget = Pixels::Format::D32_FLOAT;
+    EXPECT_ANY_THROW(GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(stages,2,properties,vertexDescription,frameBufferDescription),"vertexDescription must have same number of vertex attributes as the shader expect");
+    vertexDescription.add("BONE_WEIGHTS_WITH_WRONG_NAME",GraphicsType::FLOAT,32*4,4,2);
+    EXPECT_ANY_THROW(GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(stages,2,properties,vertexDescription,frameBufferDescription),"Vertex Description does not have attribute with required semantic name");
 }

@@ -22,19 +22,6 @@ public struct GroupThree
     public SamplerState sampler;
 }
 
-
-
-//Vertex Position 3D attribute
-public struct Vertex3D
-{
-    public float3 position;
-}
-//Vertex UV coordinate attribute
-public struct UVCoordinates
-{
-    public float2 position;
-}
-
 struct VertexStageOutput
 {
     FragmentParameters fragmentParameters: FRAGMENT_PARAMETERS;
@@ -51,11 +38,11 @@ public ParameterBlock<GroupTwo> Second;
 public ParameterBlock<GroupThree> Third;
 
 [shader("vertex")]
-VertexStageOutput vertexMain(Vertex3D vertex3d: POSITION, UVCoordinates uvCoordinates: UV_COORDINATES)
+VertexStageOutput vertexMain(float3 POSITION: POSITION, float2 UV_COORDINATES: UV_COORDINATES)
 {
     VertexStageOutput output;
-    output.fragmentParameters.uv = uvCoordinates.position;
-    output.sv_position = float4(vertex3d.position,1);
+    output.fragmentParameters.uv = UV_COORDINATES;
+    output.sv_position = float4(POSITION,1);
     return output;
 }
 

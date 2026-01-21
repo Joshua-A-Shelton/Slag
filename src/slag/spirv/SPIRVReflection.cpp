@@ -279,7 +279,12 @@ namespace slag
         VertexInputAttribute inputFromSPV(const SpvReflectInterfaceVariable* variable)
         {
             std::string name;
-            if (variable->name!=nullptr){name = variable->name;}
+            if (variable->semantic!=nullptr){name = variable->semantic;}
+            else if (variable->name!=nullptr){name = variable->name;}
+            else
+            {
+                throw std::runtime_error("Vertex inputs must have a semantic or general name name");
+            }
             auto type = graphicsTypeFromSPV(variable->type_description);
             auto dims = variable->array.dims[0];
             auto arrayDepth = dims == 0? 1 : dims;
