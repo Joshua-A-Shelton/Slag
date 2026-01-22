@@ -138,7 +138,7 @@ int main()
 
 
     slag::VertexDescription vertexPosUVDescription(2);
-    vertexPosUVDescription.add(slag::GraphicsType::VECTOR3,0,0).add(slag::GraphicsType::VECTOR2,0,1);
+    vertexPosUVDescription.add("POSITION",slag::GraphicsType::VECTOR3,0,1,0).add("UV_COORDINATES",slag::GraphicsType::VECTOR2,0,1,1);
 
     slag::ShaderCode vertexShader(slag::ShaderStageFlags::VERTEX,slag::ShaderCode::CodeLanguage::SPIRV,"resources/shaders/TexturedDepth.vertex.spv");
     slag::ShaderCode fragmentShader(slag::ShaderStageFlags::FRAGMENT,slag::ShaderCode::CodeLanguage::SPIRV,"resources/shaders/TexturedDepth.fragment.spv");

@@ -13,13 +13,14 @@ public struct SamplerParam
 {
     public SamplerState sampler;
 }
-public struct TextureParam
+public struct TextureBufferParam
 {
-    public Texture2D texture;
+    [vk::image_format("rgba32f")]
+    public Buffer<float4> uniformTexelBuffer;
 }
 
 public ParameterBlock<SamplerParam> ColorSampler;
-public ParameterBlock<TextureParam> ColorTexture;
+public ParameterBlock<TextureBufferParam> ColorTextureBuffer;
 
 [shader("vertex")]
 VertexOutput vertexMain(float2 POSITION: POSITION, float2 UV_COORDINATES: UV_COORDINATES)
@@ -33,5 +34,5 @@ VertexOutput vertexMain(float2 POSITION: POSITION, float2 UV_COORDINATES: UV_COO
 [shader("fragment")]
 float4 fragmentMain(FragmentParameters fragmentParameters : FRAGMENT_PARAMETERS) : SV_Target
 {
-    return ColorTexture.texture.Sample(ColorSampler.sampler,fragmentParameters.uv_coords);
+    return ColorTextureBuffer.uniformTexelBuffer.Sample(ColorSampler.sampler,fragmentParameters.uv_coords.x);
 }

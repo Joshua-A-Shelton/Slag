@@ -123,7 +123,7 @@ namespace slag
         void VulkanResourceDescriptorMemory::setUniformTexelBuffer(uint64_t memoryLocation, Buffer* buffer, Pixels::Format format, uint64_t startIndex, uint64_t elementCount)
         {
             SLAG_ASSERT((buffer->usage() & Buffer::UsageFlags::UNIFORM_TEXEL_BUFFER) == Buffer::UsageFlags::UNIFORM_TEXEL_BUFFER && "Given buffer is not a uniform texel buffer");
-            SLAG_ASSERT(Pixels::AspectFlags(format) == Pixels::AspectFlags::COLOR && "Only color formats can be bound as texel buffer");
+            SLAG_ASSERT(Pixels::aspectFlags(format) == Pixels::AspectFlags::COLOR && "Only color formats can be bound as texel buffer");
             auto size = Pixels::size(format);
             SLAG_ASSERT((startIndex + elementCount)*size <= buffer->size() && "attempted to bind descriptor that exceeds buffer length");
             VulkanBuffer* vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
@@ -151,7 +151,7 @@ namespace slag
         void VulkanResourceDescriptorMemory::setStorageTexelBuffer(uint64_t memoryLocation, Buffer* buffer, Pixels::Format format, uint64_t startIndex, uint64_t elementCount)
         {
             SLAG_ASSERT((buffer->usage() & Buffer::UsageFlags::STORAGE_TEXEL_BUFFER) == Buffer::UsageFlags::STORAGE_TEXEL_BUFFER && "Given buffer is not a storage texel buffer");
-            SLAG_ASSERT(Pixels::AspectFlags(format) == Pixels::AspectFlags::COLOR && "Only color formats can be bound as texel buffer");
+            SLAG_ASSERT(Pixels::aspectFlags(format) == Pixels::AspectFlags::COLOR && "Only color formats can be bound as texel buffer");
             auto size = Pixels::size(format);
             SLAG_ASSERT((startIndex + elementCount)*size <= buffer->size() && "attempted to bind descriptor that exceeds buffer length");
             VulkanBuffer* vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
