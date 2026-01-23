@@ -157,7 +157,6 @@ TEST(DescriptorMemory, SetStorageTexture)
 }
 TEST(DescriptorMemory, SetUniformTexelBuffer)
 {
-    GTEST_FAIL();
     ShaderFile stages[] =
     {
         {
@@ -170,7 +169,6 @@ TEST(DescriptorMemory, SetUniformTexelBuffer)
         }
     };
     ShaderProperties properties{};
-    properties.rasterizationState.culling = RasterizationState::CullOptions::NONE;
     VertexDescription vertexDescription(2);
     vertexDescription.add("POSITION",GraphicsType::VECTOR2, 0,1, 0);
     vertexDescription.add("UV_COORDINATES",GraphicsType::VECTOR2, 0,1, 1);
@@ -182,27 +180,25 @@ TEST(DescriptorMemory, SetUniformTexelBuffer)
     auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
     auto triangleData = std::unique_ptr<Buffer>(Buffer::newBuffer(DESCRIPTOR_MEMORY_TRIANGLE_DATA,sizeof(float)*6,Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
     auto uvData = std::unique_ptr<Buffer>(Buffer::newBuffer(DESCRIPTOR_MEMORY_UV_DATA,sizeof(float)*6,Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
-    auto textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(float)*8,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_TEXEL_BUFFER));
+    auto textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(unsigned char)*8,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_TEXEL_BUFFER));
     auto target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,64,64,1,1,1));
     auto targetPixels = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
-    auto sampler = std::unique_ptr<Sampler>(Sampler::newSampler(SamplerParameters{}));
     auto resourceMemory = std::unique_ptr<ResourceDescriptorMemory>(ResourceDescriptorMemory::newResourceDescriptorMemory(1000));
     auto samplerMemory = std::unique_ptr<SamplerDescriptorMemory>(SamplerDescriptorMemory::newSamplerDescriptorMemory(1000));
     auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
 
-    auto texelArray = textureBuffer->as<float>();
+    auto texelArray = textureBuffer->as<unsigned char>();
     texelArray[0] = 0;
-    texelArray[1] = 1;
+    texelArray[1] = 255;
     texelArray[2] = 0;
-    texelArray[3] = 1;
+    texelArray[3] = 255;
     texelArray[4] = 0;
     texelArray[5] = 0;
-    texelArray[6] = 1;
-    texelArray[7] = 1;
+    texelArray[6] = 255;
+    texelArray[7] = 255;
 
 
-    resourceMemory->setUniformTexelBuffer(0+pipeline->descriptorGroup(1)->descriptorByteOffset(0),textureBuffer.get(),Pixels::Format::R32G32B32A32_FLOAT,0,2);
-    samplerMemory->setSampler(0+pipeline->descriptorGroup(0)->descriptorByteOffset(0),sampler.get());
+    resourceMemory->setUniformTexelBuffer(0+pipeline->descriptorGroup(0)->descriptorByteOffset(0),textureBuffer.get(),Pixels::Format::R8G8B8A8_UNORM,0,2);
     commandBuffer->begin();
     commandBuffer->setViewPort(0,0,target->width(),target->height(),0,1);
     commandBuffer->setScissors(slag::Rectangle{{0,0},{target->width(),target->height()}});
@@ -210,8 +206,7 @@ TEST(DescriptorMemory, SetUniformTexelBuffer)
     commandBuffer->beginRendering(&attachment,1,nullptr,slag::Rectangle{{0,0},{target->width(),target->height()}});
     commandBuffer->bindDescriptorMemory(resourceMemory.get(),samplerMemory.get());
     commandBuffer->bindGraphicsShaderPipeline(pipeline.get());
-    commandBuffer->bindGraphicsDescriptorGroup(0,samplerMemory.get(),0);
-    commandBuffer->bindGraphicsDescriptorGroup(1,resourceMemory.get(),0);
+    commandBuffer->bindGraphicsDescriptorGroup(0,resourceMemory.get(),0);
     uint64_t bufferOffset = 0;
     uint64_t stride = sizeof(float)*2;
     auto trianglePtr = triangleData.get();
@@ -263,15 +258,204 @@ TEST(DescriptorMemory, SetUniformTexelBuffer)
     slagGraphicsCard()->graphicsQueue()->submit(&submissionBatch,1);
     finished->waitForValue(1);
 
-    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(targetPixels.get(),"resources/textures/set-sampled-texture-result.png",.99,.9));
+
+    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(targetPixels.get(),"resources/textures/set-uniform-texel-buffer-result.png",.99,.9));
 }
 TEST(DescriptorMemory, SetStorageTexelBuffer)
 {
-    GTEST_FAIL();
+    ShaderFile compute{
+        .pathIndicator = "resources/shaders/SetStorageTexelBuffer",
+        .stage = ShaderStageFlags::COMPUTE,
+    };
+
+    auto pipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(compute);
+    auto resourceMemory = std::unique_ptr<ResourceDescriptorMemory>(ResourceDescriptorMemory::newResourceDescriptorMemory(1000));
+    auto samplerMemory = std::unique_ptr<SamplerDescriptorMemory>(SamplerDescriptorMemory::newSamplerDescriptorMemory(1000));
+    auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::COMPUTE));
+
+    auto operands1 = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(float)*4*4,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_TEXEL_BUFFER));
+    auto operands2 = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(unsigned char)*4*4,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_TEXEL_BUFFER));
+    auto results = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(float)*4*4,Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_TEXEL_BUFFER));
+
+    auto operands1Array = operands1->as<float>();
+    auto operands2Array = operands2->as<unsigned char>();
+    operands1Array[0] = 0;
+    operands1Array[1] = 0;
+    operands1Array[2] = 0;
+    operands1Array[3] = 1.0f;
+
+    operands1Array[4] = 1.0f;
+    operands1Array[5] = 0;
+    operands1Array[6] = 0;
+    operands1Array[7] = 1.0f;
+
+    operands1Array[8] = 0;
+    operands1Array[9] = 1.0f;
+    operands1Array[10] = 0;
+    operands1Array[11] = 1.0f;
+
+    operands1Array[12] = 0;
+    operands1Array[13] = 0;
+    operands1Array[14] = 1.0f;
+    operands1Array[15] = 1.0f;
+
+
+    operands2Array[0] = 255;
+    operands2Array[1] = 255;
+    operands2Array[2] = 255;
+    operands2Array[3] = 255;
+
+    operands2Array[4] = 0;
+    operands2Array[5] = 0;
+    operands2Array[6] = 255;
+    operands2Array[7] = 255;
+
+    operands2Array[8] = 255;
+    operands2Array[9] = 0;
+    operands2Array[10] = 0;
+    operands2Array[11] = 255;
+
+    operands2Array[12] = 0;
+    operands2Array[13] = 255;
+    operands2Array[14] = 0;
+    operands2Array[15] = 255;
+
+
+
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorMemory(resourceMemory.get(),samplerMemory.get());
+    resourceMemory->setStorageTexelBuffer(pipeline->descriptorGroup(0)->descriptorByteOffset(0),operands1.get(),Pixels::Format::R32G32B32A32_FLOAT,0,4);
+    resourceMemory->setStorageTexelBuffer(pipeline->descriptorGroup(0)->descriptorByteOffset(1),operands2.get(),Pixels::Format::R8G8B8A8_UNORM,0,4);
+    resourceMemory->setStorageTexelBuffer(pipeline->descriptorGroup(0)->descriptorByteOffset(2),results.get(),Pixels::Format::R32G32B32A32_FLOAT,0,4);
+    commandBuffer->bindComputeShaderPipeline(pipeline.get());
+    commandBuffer->bindComputeDescriptorGroup(0,resourceMemory.get(),0);
+    commandBuffer->dispatch(4,1,1);
+    commandBuffer->end();
+
+    SemaphoreValue signal{.semaphore = finished.get(),.value =1};
+    auto cmdBuffer = commandBuffer.get();
+    QueueSubmissionBatch submissionBatch
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &cmdBuffer,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    slagGraphicsCard()->computeQueue()->submit(&submissionBatch,1);
+    finished->waitForValue(1);
+    auto resultPointer = results->as<glm::vec4>();
+    GTEST_ASSERT_EQ(resultPointer[0],glm::vec4(.5f,.5f,.5f,1.0f));
+    GTEST_ASSERT_EQ(resultPointer[1],glm::vec4(.5f,0.0f,.5f,1.0f));
+    GTEST_ASSERT_EQ(resultPointer[2],glm::vec4(.5f,.5f,0.0f,1.0f));
+    GTEST_ASSERT_EQ(resultPointer[3],glm::vec4(0.0f,.5f,.5f,1.0f));
 }
 TEST(DescriptorMemory, SetUniformBuffer)
 {
-    GTEST_FAIL();
+    ShaderFile stages[] =
+    {
+        {
+            .pathIndicator = "resources/shaders/SetUniformBuffer.vertex",
+            .stage = ShaderStageFlags::VERTEX,
+        },
+        {
+            .pathIndicator = "resources/shaders/SetUniformBuffer.fragment",
+            .stage = ShaderStageFlags::FRAGMENT,
+        }
+    };
+    ShaderProperties properties{};
+    properties.rasterizationState.culling = RasterizationState::CullOptions::NONE;
+    VertexDescription vertexDescription(2);
+    vertexDescription.add("POSITION",GraphicsType::VECTOR2, 0,1, 0);
+    vertexDescription.add("UV_COORDINATES",GraphicsType::VECTOR2, 0,1, 1);
+    FrameBufferDescription frameBufferDescription;
+    frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
+
+
+    auto pipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(stages, 2, properties, vertexDescription, frameBufferDescription);
+    auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
+    auto triangleData = std::unique_ptr<Buffer>(Buffer::newBuffer(DESCRIPTOR_MEMORY_TRIANGLE_DATA,sizeof(float)*6,Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
+    auto uvData = std::unique_ptr<Buffer>(Buffer::newBuffer(DESCRIPTOR_MEMORY_UV_DATA,sizeof(float)*6,Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
+    auto texture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
+    auto target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,64,64,1,1,1));
+    struct shaderParameters
+    {
+        glm::vec4 color1,color2;
+        float boundary;
+    };
+    auto parameters = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(shaderParameters),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
+    auto shaderParams = parameters->as<shaderParameters>();
+    shaderParams->color1 = glm::vec4(1.0f,0.0f,0.0f,1.0f);
+    shaderParams->color2 = glm::vec4(0.0f,1.0f,0.0f,1.0f);
+    shaderParams->boundary = .6f;
+    auto targetPixels = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
+    auto resourceMemory = std::unique_ptr<ResourceDescriptorMemory>(ResourceDescriptorMemory::newResourceDescriptorMemory(1000));
+    auto samplerMemory = std::unique_ptr<SamplerDescriptorMemory>(SamplerDescriptorMemory::newSamplerDescriptorMemory(1000));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
+
+    resourceMemory->setUniformBuffer(0+pipeline->descriptorGroup(0)->descriptorByteOffset(0),parameters.get(),0,parameters->size());
+    commandBuffer->begin();
+    commandBuffer->setViewPort(0,0,target->width(),target->height(),0,1);
+    commandBuffer->setScissors(slag::Rectangle{{0,0},{target->width(),target->height()}});
+    Attachment attachment{.texture = target.get(),.autoClear=true,.clearValue=ClearColor{0,0,0,1.0f}};
+    commandBuffer->beginRendering(&attachment,1,nullptr,slag::Rectangle{{0,0},{target->width(),target->height()}});
+    commandBuffer->bindDescriptorMemory(resourceMemory.get(),samplerMemory.get());
+    commandBuffer->bindGraphicsShaderPipeline(pipeline.get());
+    commandBuffer->bindGraphicsDescriptorGroup(0,resourceMemory.get(),0);
+    uint64_t bufferOffset = 0;
+    uint64_t stride = sizeof(float)*2;
+    auto trianglePtr = triangleData.get();
+    auto uvPtr = uvData.get();
+    commandBuffer->bindVertexBuffers(0,&trianglePtr,&bufferOffset,&stride,1);
+    commandBuffer->bindVertexBuffers(1,&uvPtr,&bufferOffset,&stride,1);
+    commandBuffer->draw(3,1,0,0);
+    commandBuffer->endRendering();
+    commandBuffer->insertBarrier(TextureBarrier
+        {
+            .texture = target.get(),
+            .baseLayer = 0,
+            .layerCount = 1,
+            .baseMipLevel = 0,
+            .mipCount = 1,
+            .accessBefore = BarrierAccessFlags::NONE,
+            .accessAfter = BarrierAccessFlags::TRANSFER_READ,
+            .syncBefore = PipelineStageFlags::FRAGMENT_SHADER,
+            .syncAfter = PipelineStageFlags::TRANSFER
+        });
+    TextureBufferMapping mapping
+    {
+        .bufferOffset = 0,
+        .textureSubresource =
+        {
+            .aspectFlags = Pixels::AspectFlags::COLOR,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+        .textureOffset = {0,0,0},
+        .textureExtent = {target->width(),target->height(),1},
+    };
+    commandBuffer->copyTextureToBuffer(target.get(), targetPixels.get(),&mapping,1);
+    commandBuffer->end();
+
+    SemaphoreValue signal{.semaphore = finished.get(),.value =1};
+    auto cmdBuffer = commandBuffer.get();
+    QueueSubmissionBatch submissionBatch
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &cmdBuffer,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+
+    slagGraphicsCard()->graphicsQueue()->submit(&submissionBatch,1);
+    finished->waitForValue(1);
+
+    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(targetPixels.get(),"resources/textures/set-uniform-buffer-result.png",.99,.9));
 }
 TEST(DescriptorMemory, SetStorageBuffer)
 {
