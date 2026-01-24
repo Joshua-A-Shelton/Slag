@@ -50,7 +50,7 @@ namespace slag
             {
                 auto device = VulkanGraphicsCard::selected()->device();
 
-                vkWaitForFences(device,1,&_frameFinsishedFence,true,UINT64_MAX);
+                vkWaitForFences(device,1,&_frameFinsishedFence,true,1000000);
 
                 vkDestroySemaphore(device, _imageAcquiredSemaphore, nullptr);
                 vkDestroyFence(device, _frameFinsishedFence, nullptr);

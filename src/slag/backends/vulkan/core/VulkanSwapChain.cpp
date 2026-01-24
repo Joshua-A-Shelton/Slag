@@ -281,7 +281,6 @@ namespace slag
         void VulkanSwapChain::rebuild()
         {
             SLAG_ASSERT(_frameSubmitted && "Cannot rebuild swapchain between next and submit");
-
             _frames.clear();
             _images.clear();
             for (auto i = 0; i < _imageViews.size(); ++i)
@@ -317,8 +316,8 @@ namespace slag
             }
             _swapChain = chain.value();
             //set actual width and height to what is actually is. There's some subtle resizing bug errors if we don't, because hey! Why actually resize to the new size when you can just not!
-            //_width = chain->extent.width;
-            //_height = chain->extent.height;
+            _width = chain->extent.width;
+            _height = chain->extent.height;
             auto images = chain->get_images().value();
             for (auto i=0; i<images.size(); i++)
             {
@@ -336,7 +335,7 @@ namespace slag
                 viewCreateInfo.subresourceRange.baseArrayLayer = 0;
                 viewCreateInfo.subresourceRange.aspectMask = usageFlags;
                 vkCreateImageView(VulkanGraphicsCard::selected()->device(),&viewCreateInfo,nullptr,&view);
-                _images.push_back(VulkanTexture(images[i],view,_format,Texture::Type::TEXTURE_2D,_width,_height,1,1,1,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,Texture::SampleCount::ONE));
+                _images.push_back(VulkanTexture(images[i],view,_format,Texture::Type::TEXTURE_2D,chain->extent.width,chain->extent.height,1,1,1,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,Texture::SampleCount::ONE));
                 _imageViews.push_back(view);
             }
 

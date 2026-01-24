@@ -78,10 +78,12 @@ namespace slag
             for (auto i = 0; i<group.bindingCount(); i++)
             {
                 auto& identity = identities.at(i);
+                auto& desc = group.descriptorBinding(i);
                 VkDeviceSize offset = 0;
-                slag_vkGetDescriptorSetLayoutBindingOffsetEXT(VulkanGraphicsCard::selected()->device(),_layout,i,&offset);
+                slag_vkGetDescriptorSetLayoutBindingOffsetEXT(VulkanGraphicsCard::selected()->device(),_layout,desc.bindingId(),&offset);
 
                 _descriptorByteOffsets[identity.index] = offset;
+
             }
         }
 
