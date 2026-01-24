@@ -43,12 +43,12 @@ namespace slag
 
         uint64_t DX12ResourceDescriptorMemory::nextDescriptorGroupOffset(uint64_t memoryOffset)
         {
-            auto offAlign = memoryOffset % _descriptorSize;
-            if (offAlign == 0)
+
+            if (memoryLocation == 0)
             {
                 return memoryOffset;
             }
-            return memoryOffset + (_descriptorSize - (offAlign));
+            return ( ( memoryLocation - 1 ) | ( _descriptorSize - 1 ) ) + 1;
         }
 
         uint64_t DX12ResourceDescriptorMemory::size()
