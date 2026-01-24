@@ -1,5 +1,6 @@
 #include "ShaderCode.h"
 
+#include <cstring>
 #include <fstream>
 
 #include "slag/utilities/SLAG_ASSERT.h"

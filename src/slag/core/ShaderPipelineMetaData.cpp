@@ -1,5 +1,7 @@
 #include "ShaderPipelineMetaData.h"
 
+#include <algorithm>
+#include <cstring>
 #include <unordered_map>
 
 namespace slag {
