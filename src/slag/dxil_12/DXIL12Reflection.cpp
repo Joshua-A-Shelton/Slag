@@ -80,6 +80,7 @@ namespace slag
         DXILReflectionData getReflectionData(ShaderCode** shaders, size_t shaderCount,
             DescriptorIdentity(* identify)(const DescriptorIdentityParameters&, void*), void* identifyData)
         {
+            auto metaData = shaders[0]->metaData();
             throw std::runtime_error("DXIL12Reflection getReflectionData not implemented");
         }
     }

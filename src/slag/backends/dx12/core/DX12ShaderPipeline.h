@@ -33,12 +33,19 @@ namespace slag
             virtual BufferLayout* pushConstants()override;
             virtual VertexDescription* vertexDescription()override;
             /**
-             * Retrieve the layout of a buffer type descriptor
+             * Retrieve the layout of a uniform buffer type descriptor
              * @param descriptorGroup the descriptor group index
              * @param descriptorBinding the binding of the buffer
-             * @return Layout of a buffer descriptor (Uniform or Storage), or null if the index isn't a buffer type descriptor
+             * @return Layout of a uniform buffer descriptor, or null if the index isn't a buffer type descriptor
              */
             virtual BufferLayout* uniformBufferLayout(uint32_t descriptorGroup,uint32_t descriptorBinding)override;
+            /**
+             * Retrieve the layout of a storage buffer type descriptor
+             * @param descriptorGroup the descriptor group index
+             * @param descriptorBinding the binding of the buffer
+             * @return Layout of a storage buffer descriptor, or null if the index isn't a buffer type descriptor
+             */
+            virtual BufferLayout* storageBufferLayout(uint32_t descriptorGroup, uint32_t descriptorBinding)override;
 
             /**
              * Retrieve the description of a texel buffer type descriptor
@@ -63,6 +70,7 @@ namespace slag
             std::vector<DX12DescriptorGroup> _descriptorGroups;
             std::unique_ptr<BufferLayout> _pushConstants;
             std::unordered_map<uint32_t,std::unordered_map<uint32_t,BufferLayout>> _uniformBufferLayouts;
+            std::unordered_map<uint32_t,std::unordered_map<uint32_t,BufferLayout>> _storageBufferLayouts;
             std::unordered_map<uint32_t,std::unordered_map<uint32_t,TexelBufferDescription>> _texelBufferDescriptions;
             uint32_t _xthreads = 0;
             uint32_t _ythreads = 0;

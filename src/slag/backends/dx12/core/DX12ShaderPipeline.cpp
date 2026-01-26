@@ -107,6 +107,21 @@ namespace slag
             return &description->second;
         }
 
+        BufferLayout* DX12ShaderPipeline::storageBufferLayout(uint32_t descriptorGroup, uint32_t descriptorBinding)
+        {
+            auto group = _storageBufferLayouts.find(descriptorGroup);
+            if(group == _storageBufferLayouts.end())
+            {
+                return nullptr;
+            }
+            auto description = group->second.find(descriptorBinding);
+            if(description == group->second.end())
+            {
+                return nullptr;
+            }
+            return &description->second;
+        }
+
         TexelBufferDescription* DX12ShaderPipeline::texelBufferDescription(uint32_t descriptorGroup,uint32_t descriptorBinding)
         {
             auto group = _texelBufferDescriptions.find(descriptorGroup);
@@ -144,6 +159,7 @@ namespace slag
             _descriptorGroups.swap(from._descriptorGroups);
             _pushConstants.swap(from._pushConstants);
             _uniformBufferLayouts.swap(from._uniformBufferLayouts);
+            _storageBufferLayouts.swap(from._storageBufferLayouts);
             _texelBufferDescriptions.swap(from._texelBufferDescriptions);
             _xthreads = from._xthreads;
             _ythreads = from._ythreads;
