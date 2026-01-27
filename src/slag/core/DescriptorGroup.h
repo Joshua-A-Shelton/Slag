@@ -4,9 +4,6 @@
 #include "Descriptor.h"
 namespace slag
 {
-    class DescriptorIndex
-    {
-    };
     ///Describes the expected collection of descriptors required in a shader at a group level
     class DescriptorGroup
     {
