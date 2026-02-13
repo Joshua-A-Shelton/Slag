@@ -1,78 +1,30 @@
 #ifndef SLAG_DX12BACKEND_H
 #define SLAG_DX12BACKEND_H
-#include <slag/Slag.h>
-#include "../Backend.h"
-#include <d3d12.h>
-#include <dxgi1_6.h>
-#include <wrl/client.h>
+#include <string>
+#include <vector>
 
+#include "DX12GraphicsCard.h"
+#include "slag/Slag.h"
+#include "slag/core/IBackend.h"
+using SlagDebugHandlerPtr = void(*)(const std::string&,slag::DebugLevel,int32_t);
 namespace slag
 {
     namespace dx12
     {
-        class DX12Backend : public Backend
+        class DX12Backend: public IBackend
         {
         public:
-
-            static DXGI_FORMAT dx12Format(Pixels::Format format);
-            static D3D12_RESOURCE_DIMENSION dx12Dimension(Texture::Type type);
-            static D3D12_RESOURCE_FLAGS dx12UsageFlags(Texture::UsageFlags usage);
-            static D3D12_BLEND dx12blendFactor(Operations::BlendFactor blendFactor);
-            static D3D12_BLEND_OP dx12BlendOp(Operations::BlendOperation blendOperation);
-            static D3D12_LOGIC_OP  dx12LogicOp(Operations::LogicalOperation operation);
-            static D3D12_FILL_MODE dx12FillMode(RasterizationState::DrawMode drawMode);
-            static D3D12_CULL_MODE dx12CullMode(RasterizationState::CullOptions cullOptions);
-            static D3D12_COMPARISON_FUNC dx12ComparisonFunction(Operations::ComparisonFunction comparisonFunction);
-            static D3D12_DEPTH_STENCILOP_DESC dx12StencilOpDesc(StencilOpState state);
-            static D3D12_STENCIL_OP dx12StencilOp(Operations::StencilOperation operation);
-            static std::vector<DXGI_FORMAT> dx12GraphicsType(GraphicsType type);
-            static uint32_t dx12FormatSize(DXGI_FORMAT format);
-            static D3D12_FILTER dx12Filter(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipMapFilter, bool ansitrophyEnabled);
-            static D3D12_TEXTURE_ADDRESS_MODE dx12AddressMode(Sampler::AddressMode mode);
-
-            DX12Backend(SlagInitInfo initInfo);
-            virtual ~DX12Backend()override;
-            virtual void postGraphicsCardChosenSetup()override;
-            virtual void preGraphicsCardDestroyCleanup()override;
-
-            virtual bool valid()override;
-
-            virtual std::vector<std::unique_ptr<GraphicsCard>> getGraphicsCards()override;
-
-            virtual GraphicsBackend backendAPI()override;
-            //command buffers
-            virtual CommandBuffer* newCommandBuffer(GPUQueue::QueueType acceptsCommands)override;
-            virtual CommandBuffer* newSubCommandBuffer(CommandBuffer* parentBuffer)override;
-            //semaphores
-            virtual Semaphore* newSemaphore(uint64_t initialValue)override;
-            virtual void waitFor(SemaphoreValue* values, size_t count)override;
-            //textures
-            virtual Texture* newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount)override;
-            virtual Texture* newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData, uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount)override;
-            //Buffers
-            virtual Buffer* newBuffer(size_t size, Buffer::Accessibility accessibility, Buffer::UsageFlags usage)override;
-            virtual Buffer* newBuffer(void* data, size_t dataSize, Buffer::Accessibility accessibility,Buffer::UsageFlags usage)override;
-            //swapchains
-            virtual SwapChain* newSwapChain(PlatformData platformData, uint32_t width, uint32_t height,const SwapChainDetails& details)override;
-            //samplers
-            virtual Sampler* newSampler(SamplerParameters parameters)override;
-            //shaders
-            virtual std::vector<ShaderCode::CodeLanguage>
-            acceptedLanuages() override;
-            virtual ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, DescriptorIdentity
-                                                      (*identify)(const DescriptorIdentityParameters&, void*), void* identifyData)override;
-            virtual ShaderPipeline* newShaderPipeline(ShaderCode* computeShader, DescriptorIdentity (*identify)(const DescriptorIdentityParameters&, void*), void* identifyData)override;
-            //Pixel Properties
-            virtual PixelFormatProperties pixelFormatProperties(Pixels::Format format)override;
-            //Descriptor Memory
-            virtual ResourceDescriptorMemory* newResourceDescriptorMemory(uint64_t descriptorCount)override;
-            virtual SamplerDescriptorMemory* newSamplerDescriptorMemory(uint64_t descriptorCount)override;
-
-            void(* _dx12DebugHandler)(const std::string& message, SlagDebugLevel debugLevel, int32_t messageID)=nullptr;
-
+            DX12Backend();
+            ~DX12Backend()override=default;
+            [[nodiscard]] BackendAPI api()const override;
+            [[nodiscard]] uint32_t graphicsCardCount()const override;
+            [[nodiscard]] GraphicsCard* graphicsCard(uint32_t index)override;
+            [[nodiscard]] SlagDebugHandlerPtr getDebugHandler() const;
         private:
-            bool _valid = false;
-            Microsoft::WRL::ComPtr<IDXGIFactory4> _dxgiFactory;
+            SlagInitializationResult initializeBackend(const InitializationData& initializationData)override;
+            std::vector<DX12GraphicsCard> _graphicsCards;
+            void(*_debugHandler)(const std::string& message,DebugLevel debugLevel, int32_t messageID)=nullptr;
+            Microsoft::WRL::ComPtr<IDXGIFactory4> _dxgiFactory = nullptr;
         };
     } // dx12
 } // slag

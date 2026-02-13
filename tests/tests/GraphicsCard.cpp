@@ -1,143 +1,80 @@
 #include <gtest/gtest.h>
 #include <slag/Slag.h>
-
-#include "../third-party/LodePNG/lodepng.h"
-
 using namespace slag;
-
-TEST(GraphicsCard, Exists)
+TEST(GraphicsCard, Name)
 {
-    GTEST_ASSERT_NE(slagGraphicsCard(),nullptr);
+    GTEST_ASSERT_TRUE(Slag::backend()->graphicsCardCount() > 0);
+    for (auto i=0u; i< Slag::backend()->graphicsCardCount(); i++)
+    {
+        GraphicsCard* card = Slag::backend()->graphicsCard(i);
+        GTEST_ASSERT_TRUE(card->name().length()>1);
+    }
 }
-
 TEST(GraphicsCard, VideoMemory)
 {
-    GTEST_ASSERT_GT(slagGraphicsCard()->videoMemory(),0);
+    GTEST_ASSERT_TRUE(Slag::backend()->graphicsCardCount() > 0);
+    for (auto i=0u; i< Slag::backend()->graphicsCardCount(); i++)
+    {
+        GraphicsCard* card = Slag::backend()->graphicsCard(i);
+        GTEST_ASSERT_TRUE(card->videoMemory()>0);
+    }
 }
 
-TEST(GraphicsCard, ProvidesQueue)
+TEST(GraphicsCard, DefragmentAll)
 {
-    GTEST_ASSERT_NE(slagGraphicsCard()->graphicsQueue(),nullptr);
-    GTEST_ASSERT_NE(slagGraphicsCard()->computeQueue(),nullptr);
-    GTEST_ASSERT_NE(slagGraphicsCard()->transferQueue(),nullptr);
-}
-
-TEST(GraphicsCard, DefragmentMemory)
-{
-    auto tex1 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,50,50,1,3,5));
-    class uint8Pixel
+    auto card = Slag::backend()->graphicsCard(0);
+    auto buffer1 = std::unique_ptr<Buffer>(card->newBuffer(256));
+    auto buffer2 = std::unique_ptr<Buffer>(card->newBuffer(64));
+    auto buffer3 = std::unique_ptr<Buffer>(card->newBuffer(256));
+    auto buffer4 = std::unique_ptr<Buffer>(card->newBuffer(128));
+    auto buffer6 = std::unique_ptr<Buffer>(card->newBuffer(512));
+    auto buffer7 = std::unique_ptr<Buffer>(card->newBuffer(512));
+    auto buffer8 = std::unique_ptr<Buffer>(card->newBuffer(256));
+    auto uploadBuffer = std::unique_ptr<Buffer>(card->newBuffer(256,BufferUsage::ARBITRARY,BufferShaderAccess::READ_ONLY,BufferCPUAccess::READ_WRITE));
+    auto data = uploadBuffer->as<uint8_t>();
+    for (int i=0; i< 256; i++)
     {
-    public:
-        uint8_t r,g,b,a;
-    };
-    std::vector<uint8Pixel> pixels(tex1->byteSize(Pixels::AspectFlags::COLOR)/sizeof(uint8Pixel));
-    uint8_t red = 0;
-    uint8_t green = 0;
-    uint8_t blue = 0;
-    uint8_t alpha = 255;
-    for (size_t i=0; i<pixels.size(); i++)
-    {
-        if (red == 255)
-        {
-            if (green == 255)
-            {
-                if (blue == 255)
-                {
-                    red = 0;
-                    green = 0;
-                    blue = 0;
-                }
-                else
-                {
-                    blue++;
-                }
-            }
-            else
-            {
-                green++;
-            }
-        }
-        else
-        {
-            red++;
-        }
-        pixels[i].r = red;
-        pixels[i].g = green;
-        pixels[i].b = blue;
-        pixels[i].a = alpha;
+        data[i] = i;
     }
+    auto finished = std::unique_ptr<Semaphore>(card->newSemaphore());
 
-    TextureBufferMapping mappings[15];
-    size_t offset = 0;
-    for (auto arrayLevel = 0; arrayLevel<5; arrayLevel++)
-    {
-        for (auto mipLevel=0; mipLevel<3; mipLevel++)
-        {
-            auto mappingLevel = 3*arrayLevel + mipLevel;
-            auto& mapping = mappings[mappingLevel];
-            mapping.bufferOffset = offset;
-            mapping.textureExtent = {tex1->width(mipLevel),tex1->height(mipLevel),1};
-            mapping.textureOffset = {0,0,0};
-            mapping.textureSubresource.aspectFlags = Pixels::AspectFlags::COLOR;
-            mapping.textureSubresource.mipLevel = mipLevel;
-            mapping.textureSubresource.baseArrayLayer = arrayLevel;
-            mapping.textureSubresource.layerCount = 1;
+    auto virtualAddress = buffer8->deviceAddress();
 
-            offset+= tex1->byteSize(Pixels::AspectFlags::COLOR,mipLevel);
-        }
-    }
-
-
-    auto tex2 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,50,50,1,3,5,Texture::SampleCount::ONE,pixels.data(),pixels.size()*sizeof(uint8Pixel),mappings,15));
-    auto buf1 = std::unique_ptr<Buffer>(Buffer::newBuffer(64*64*64,Buffer::Accessibility::CPU_AND_GPU));
-    //I have to use the buffer somewhere, or it can get optimized away
-    if (buf1 == nullptr)
-    {
-        GTEST_FAIL();
-    }
-    auto afterBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(pixels.data(),pixels.size()*sizeof(uint8Pixel),Buffer::Accessibility::CPU_AND_GPU));
-    tex1 = nullptr;
-    buf1 = nullptr;
-    slagGraphicsCard()->defragmentMemory(nullptr,0,nullptr,0);
-
-    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::TRANSFER));
-    auto textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(tex2->byteSize(Pixels::AspectFlags::COLOR),Buffer::Accessibility::CPU_AND_GPU));
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(QueueType::TRANSFER));
     commandBuffer->begin();
-    commandBuffer->copyTextureToBuffer(tex2.get(),textureBuffer.get(),mappings,15);
+    commandBuffer->copyBufferToBuffer(uploadBuffer.get(),0,buffer8.get(),0,256);
     commandBuffer->end();
 
-    auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    SemaphoreValue signal{.semaphore = finished.get(),.value =1};
-    auto cbptr = commandBuffer.get();
-    QueueSubmissionBatch batch
+    SemaphoreValue signal
+    {
+        .semaphore = finished.get(),
+        .value = 1
+    };
+    auto cbuffer = commandBuffer.get();
+    SubmissionBatch batch
     {
         .waitSemaphores = nullptr,
         .waitSemaphoreCount = 0,
-        .commandBuffers = &cbptr,
+        .commandBuffers = &cbuffer,
         .commandBufferCount = 1,
         .signalSemaphores = &signal,
         .signalSemaphoreCount = 1,
     };
-    slagGraphicsCard()->transferQueue()->submit(&batch,1);
+
+    card->transferQueue()->submit(&batch,1);
     finished->waitForValue(1);
+    buffer2.release();
+    buffer6.release();
+    GTEST_ASSERT_EQ(virtualAddress, buffer8->deviceAddress());
+    auto defragmentFinished = std::unique_ptr<Semaphore>(card->newSemaphore());
+    signal.semaphore = defragmentFinished.get();
+    card->defragmentMemory(nullptr,0,&signal,1);
+    GTEST_ASSERT_NE(virtualAddress, buffer8->deviceAddress());
+    //TODO: make sure the data in the buffer is still the same
+    GTEST_FAIL();
+}
 
-
-
-    auto texPtr = textureBuffer->as<uint8Pixel>();
-    for (auto i=0; i<pixels.size(); i++)
-    {
-        GTEST_ASSERT_EQ(texPtr[i].r,pixels[i].r);
-        GTEST_ASSERT_EQ(texPtr[i].g,pixels[i].g);
-        GTEST_ASSERT_EQ(texPtr[i].b,pixels[i].b);
-        GTEST_ASSERT_EQ(texPtr[i].a,pixels[i].a);
-    }
-
-    auto pixelPtr = afterBuffer->as<uint8Pixel>();
-    for (auto i=0; i<pixels.size(); i++)
-    {
-        GTEST_ASSERT_EQ(pixelPtr[i].r,pixels[i].r);
-        GTEST_ASSERT_EQ(pixelPtr[i].g,pixels[i].g);
-        GTEST_ASSERT_EQ(pixelPtr[i].b,pixels[i].b);
-        GTEST_ASSERT_EQ(pixelPtr[i].a,pixels[i].a);
-    }
+TEST(GraphicsCard, DefragmentTarget)
+{
+    GTEST_FAIL();
 }

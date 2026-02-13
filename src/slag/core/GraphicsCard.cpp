@@ -1,4 +1,4 @@
-#include "CommandBuffer.h"
+#include "GraphicsCard.h"
 
 namespace slag
 {

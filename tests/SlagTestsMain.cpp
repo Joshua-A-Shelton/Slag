@@ -2,12 +2,10 @@
 #include <gtest/gtest.h>
 #include <slag/Slag.h>
 
-#include "DX12Environment.h"
-#include "VulkanEnvironment.h"
-#ifdef SLAG_DX12_BACKEND
-#include <intsafe.h>
 //TODO: see if there's a way to automate this, this part must be in the final executable, not a library
 // For Direct3D 12 Agility SDK
+#ifdef SLAG_DX12_BACKEND
+#include <intsafe.h>
 extern "C"
 {
     __declspec(dllexport) extern const UINT D3D12SDKVersion = 616;
@@ -15,16 +13,55 @@ extern "C"
 }
 #endif
 
+void DebugHandler(const std::string& message, slag::DebugLevel debugLevel, int32_t messageID)
+{
+    std::cout << message << std::endl;
+    if (debugLevel != slag::DebugLevel::INFO)
+    {
+        GTEST_FAIL();
+    }
+}
+
 int main(int argc, char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
-#ifdef SLAG_DX12_BACKEND
-    //::testing::AddGlobalTestEnvironment(new slag::DX12Environment());
-#endif
-#ifdef SLAG_VULKAN_BACKEND
-    ::testing::AddGlobalTestEnvironment(new slag::VulkanEnvironment());
-#endif
 
-    auto run = RUN_ALL_TESTS();
-    return run;
+    bool isBackend = false;
+    std::string backendName = "";
+    for (int i = 1; i < argc; ++i)
+    {
+        std::string arg = argv[i];
+        if (isBackend)
+        {
+            backendName = arg;
+            isBackend = false;
+        }
+        else if (arg == "--backend" || arg == "-B")
+        {
+            isBackend = true;
+        }
+    }
+
+    slag::InitializationData initData{};
+    initData.debugHandler = DebugHandler;
+    if (backendName == "vulkan")
+    {
+        initData.backend = slag::BackendAPI::VULKAN;
+    }
+    else if (backendName == "dx12")
+    {
+        initData.backend = slag::BackendAPI::DX12;
+    }
+    else
+    {
+        return 1;
+    }
+    if (slag::Slag::initialize(initData) == slag::SlagInitializationResult::SUCCESS)
+    {
+        auto run = RUN_ALL_TESTS();
+        slag::Slag::cleanup();
+        return run;
+    }
+    return 1;
+
 }

@@ -1,105 +1,28 @@
 #ifndef SLAG_VULKANBACKEND_H
 #define SLAG_VULKANBACKEND_H
-#include <slag/backends/Backend.h>
-#include <vulkan/vulkan_core.h>
 
-#include "VkBootstrap.h"
+#include <vector>
 
+#include "VulkanGraphicsCard.h"
+#include "slag/core/IBackend.h"
 namespace slag
 {
     namespace vulkan
     {
-        struct VulkanizedFormat
-        {
-            VkFormat format = VK_FORMAT_UNDEFINED;
-            VkComponentMapping mapping{};
-            VulkanizedFormat(VkFormat format, VkComponentSwizzle r, VkComponentSwizzle g, VkComponentSwizzle b, VkComponentSwizzle a)
-            {
-                this->format = format;
-                this->mapping.r = r;
-                this->mapping.g = g;
-                this->mapping.b = b;
-                this->mapping.a = a;
-            }
-        };
-
-        class VulkanBackend: public Backend
+        class VulkanBackend: public IBackend
         {
         public:
-
-            static VulkanizedFormat vulkanizedFormat(Pixels::Format format);
-            static VkImageUsageFlags vulkanizedUsage(Texture::UsageFlags flags);
-            static VkImageType vulkanizedImageType(Texture::Type type);
-            static VkImageViewType vulkanizedImageViewType(Texture::Type type, uint32_t layers);
-            static VkImageAspectFlags vulkanizedAspectFlags(Pixels::AspectFlags aspectFlags);
-            static VkBufferUsageFlags vulkanizedBufferUsage(Buffer::UsageFlags usageFlags);
-            static VkAccessFlagBits2 vulkanizedBarrierAccessMask(BarrierAccessFlags accessFlags);
-            static VkPipelineStageFlags2 vulkanizedStageMask(PipelineStageFlags stageFlags);
-            static VkIndexType vulkanizedIndexType(Buffer::IndexSize indexSize);
-            static VkPolygonMode vulkanizedPolygonMode(RasterizationState::DrawMode drawMode);
-            static VkCullModeFlags vulkanizedCullMode(RasterizationState::CullOptions cullOptions);
-            static VkFrontFace vulkanizedFrontFace(RasterizationState::FrontFacing frontFace);
-            static VkBlendFactor vulkanizedBlendFactor(Operations::BlendFactor blendFactor);
-            static VkBlendOp vulkanizedBlendOp(Operations::BlendOperation blendOperation);
-            static VkColorComponentFlags vulkanizedColorComponentFlags(Color::ComponentFlags colorComponentFlags);
-            static VkLogicOp vulkanizedLogicOp(Operations::LogicalOperation operation);
-            static VkCompareOp vulkanizedCompareOp(Operations::ComparisonFunction comparisonFunction);
-            static VkStencilOp vulkanizedStencilOp(Operations::StencilOperation stencilOperation);
-            static VkFormat vulkanizedGraphicsType(GraphicsType graphicsType);
-            static VkShaderStageFlagBits vulkanizedShaderStage(ShaderStageFlags stageFlags);
-            static VkDescriptorType vulkanizedDescriptorType(Descriptor::Type descriptorType);
-            static VkShaderStageFlags vulkanizedShaderFlags(ShaderStageFlags stageFlags);
-            static VkFilter vulkanizedFilter(Sampler::Filter filter);
-            static VkSamplerMipmapMode vulkanizedMipMapMode(Sampler::Filter mipmapFilter);
-            static VkSamplerAddressMode vulkanizedAddressMode(Sampler::AddressMode addressMode);
-            static VkPresentModeKHR vulkanizedPresentMode(SwapChain::PresentMode presentMode);
-            static VkCompositeAlphaFlagBitsKHR vulkanizedCompositeAlphaFlags(SwapChain::AlphaCompositing composite);
-
-            VulkanBackend(const SlagInitInfo& initInfo);
+            VulkanBackend();
             ~VulkanBackend()override;
-            virtual void postGraphicsCardChosenSetup()override;
-            virtual void preGraphicsCardDestroyCleanup()override;
-            virtual bool valid()override;
-            virtual std::vector<std::unique_ptr<GraphicsCard>> getGraphicsCards()override;
-            virtual GraphicsBackend backendAPI()override;
-
-            //command buffers
-            virtual CommandBuffer* newCommandBuffer(GPUQueue::QueueType acceptsCommands)override;
-            virtual CommandBuffer* newSubCommandBuffer(CommandBuffer* parentBuffer)override;
-            //semaphores
-            virtual Semaphore* newSemaphore(uint64_t initialValue)override;
-            virtual void waitFor(SemaphoreValue* values, size_t count)override;
-            //textures
-            virtual Texture* newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount)override;
-            virtual Texture* newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData,uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount)override;
-            //Buffers
-            virtual Buffer* newBuffer(size_t dataSize, Buffer::Accessibility accessibility,Buffer::UsageFlags usage)override;
-            virtual Buffer* newBuffer(void* data, size_t dataSize, Buffer::Accessibility accessibility,Buffer::UsageFlags usage)override;
-            //swapchains
-            virtual SwapChain* newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, const SwapChainDetails& details)override;
-            //samplers
-            virtual Sampler* newSampler(SamplerParameters parameters)override;
-            //shaders
-            virtual std::vector<ShaderCode::CodeLanguage>
-            acceptedLanuages() override;
-            virtual ShaderPipeline* newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, DescriptorIdentity
-                                                      (*identify)(const DescriptorIdentityParameters&, void*), void* identifyData)override;
-            virtual ShaderPipeline* newShaderPipeline(ShaderCode* computeShader, DescriptorIdentity (*identify)(const DescriptorIdentityParameters&, void*), void* identifyData)override;
-            //Descriptor Memory
-            virtual ResourceDescriptorMemory* newResourceDescriptorMemory(uint64_t descriptorCount)override;
-            virtual SamplerDescriptorMemory* newSamplerDescriptorMemory(uint64_t descriptorCount)override;
-
-            //Pixel Properties
-            virtual PixelFormatProperties pixelFormatProperties(Pixels::Format format)override;
-
-
-            vkb::Instance vulkanInstance();
+            [[nodiscard]] BackendAPI api()const override;
+            [[nodiscard]] uint32_t graphicsCardCount()const override;
+            [[nodiscard]] GraphicsCard* graphicsCard(uint32_t index)override;
         private:
+            SlagInitializationResult initializeBackend(const InitializationData& initializationData)override;
+            std::vector<VulkanGraphicsCard> _graphicsCards;
             vkb::Instance _instance{};
-            VkDebugUtilsMessengerEXT _debugMessenger = nullptr;
-            bool _isValid = false;
+            VkDebugUtilsMessengerEXT _debugMessenger=nullptr;
         };
-
     } // vulkan
 } // slag
 

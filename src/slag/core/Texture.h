@@ -1,147 +1,59 @@
 #ifndef SLAG_TEXTURE_H
 #define SLAG_TEXTURE_H
 #include <cstdint>
-
 #include "Pixels.h"
-
 namespace slag
 {
-    struct TextureBufferMapping;
-}
-
-namespace slag
-{
-    ///Holds texel data for many different kinds of uses, such as color data, depth, cubemaps, etc.
+    ///What the layout of a texture is
+    enum class TextureType
+    {
+        ///Texture has a width
+        ONE_DIMENSIONAL,
+        ///Texture has a width and height
+        TWO_DIMENSIONAL,
+        ///Texture has a width, height, and depth
+        THREE_DIMENSIONAL,
+        ///Texture has a fixed number (layers) of TWO_DIMENSIONAL images, accessed by index
+        TWO_DIMENSIONAL_ARRAY,
+        ///Texture has six TWO_DIMENSIONAL images, arranged into a cube, accessed by raycast from the center of that cube
+        CUBE_MAP
+    };
+    ///Structured data for Color or Depth information on the GPU
     class Texture
     {
+    protected:
+        Texture(TextureType textureType, uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, uint32_t mipMaps, PixelFormat format);
     public:
-        enum class Type
-        {
-            TEXTURE_1D,
-            TEXTURE_2D,
-            TEXTURE_3D,
-            TEXTURE_CUBE,
-        };
-
-        enum class UsageFlags: uint8_t
-        {
-            ///Texture can be sampled from
-            SAMPLED_IMAGE=0b00000001,
-            ///Texture can have read and writes in the same shader
-            STORAGE=0b00000010,
-            ///Texture can be written to as a color texture in rasterization shaders
-            RENDER_TARGET_ATTACHMENT=0b00000100,
-            ///Texture can be written to as a depth texture in rasterization shaders
-            DEPTH_STENCIL_ATTACHMENT=0b00001000,
-        };
-
-        enum class SampleCount
-        {
-            ONE = 1,
-            TWO = 2,
-            FOUR = 4,
-            EIGHT = 8,
-            SIXTEEN = 16,
-            THIRTY_TWO = 32,
-            SIXTY_FOUR = 64,
-        };
-
         virtual ~Texture()=default;
-        ///What kind of type this texture is
-        virtual Type type()=0;
-        ///What kind of usage does this texture support
-        virtual UsageFlags usageFlags()=0;
-        ///Samples used in multisampling
-        virtual SampleCount sampleCount()=0;
         ///Width in texels
-        virtual uint32_t width()=0;
-
+        uint32_t width();
+        ///Height in texels (1 for 1D textures)
+        uint32_t height();
+        ///Depth in texels (1 for non-THREE_DIMENSIONAL textures)
+        uint32_t depth();
+        ///Array count (1 for non TWO_DIMENSIONAL_ARRAY textures)
+        uint32_t layers();
+        ///Number of downsized LOD levels
+        uint32_t mipLevels();
         /**
-         * Width in texels at a given mip level
-         * @param mipLevel mip to calculate the pixel width for
-         * @return
-         */
-        uint32_t width(uint32_t mipLevel);
-        ///Height in pixels
-        virtual uint32_t height()=0;
-
-        /**
-         * Height in texels at a given mip level
-         * @param mipLevel mip to calculate the pixel height for
-         * @return
-         */
-        uint32_t height(uint32_t mipLevel);
-        ///Number of depth slices in 3D textures, 1 in everything else
-        virtual uint32_t depth()=0;
-        /**
-         * Depth in texels at a given mip level
+         * Width in texels of a mip level
          * @param mipLevel
          * @return
          */
-        uint32_t depth(uint32_t mipLevel);
-        ///Number of elements in the array (1D or 2D textures), (or 6 in cubemaps, one for each face of the cube), must be 1 in 3d Textures
-        virtual uint32_t layers()=0;
-        ///Number of mip levels (lower LOD images used in shader sampling)
-        virtual uint32_t mipLevels()=0;
-        ///The type of texel format backing the image
-        virtual Pixels::Format format()=0;
-
+        uint32_t mipWidth(uint32_t mipLevel);
         /**
-         * Get the size of the entire texture for a given aspect (assuming tightly packed, may be actually stored differently on hardware) in bytes
-         * @param aspect the aspect of the texture to get the size for
-         */
-        uint64_t byteSize(Pixels::AspectFlags aspect);
-
-        /**
-         * Get the size of a mip level in bytes (assuming tightly packed, may be actually stored differently on hardware) in bytes
-         * @param mipLevel
-         * @param aspect the aspect of the texture to get the size for
+         * Height in texels of a mip level
          * @return
          */
-        uint64_t byteSize(Pixels::AspectFlags aspect, uint32_t mipLevel);
-
-        static Texture* newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount = SampleCount::ONE);
-        static Texture* newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData, uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount);
+        uint32_t mipHeight(uint32_t);
+        /**
+         * Depth in texels of a mip level
+         * @return
+         */
+        uint32_t mipDepth(uint32_t);
+        ///Structure of texels in this texture
+        PixelFormat format();
     };
-
-    inline Texture::UsageFlags operator|(const Texture::UsageFlags& a, const Texture::UsageFlags& b)
-    {
-        return static_cast<Texture::UsageFlags>(static_cast<uint8_t>(a) | static_cast<uint8_t>(b));
-    }
-
-    inline Texture::UsageFlags operator&(const Texture::UsageFlags& a, const Texture::UsageFlags& b)
-    {
-        return static_cast<Texture::UsageFlags>(static_cast<uint8_t>(a) & static_cast<uint8_t>(b));
-    }
-
-    inline Texture::UsageFlags operator~(const Texture::UsageFlags& a)
-    {
-        return static_cast<Texture::UsageFlags>(~static_cast<uint8_t>(a));
-    }
-
-    inline Texture::UsageFlags operator^(const Texture::UsageFlags& a, const Texture::UsageFlags& b)
-    {
-        return static_cast<Texture::UsageFlags>(static_cast<uint8_t>(a) ^ static_cast<uint8_t>(b));
-    }
-
-    inline Texture::UsageFlags operator|=(Texture::UsageFlags& a, const Texture::UsageFlags& b)
-    {
-        a = a | b;
-        return a;
-    }
-
-    inline Texture::UsageFlags operator&=(Texture::UsageFlags& a, const Texture::UsageFlags& b)
-    {
-        a = a & b;
-        return a;
-    }
-
-    inline Texture::UsageFlags operator^=(Texture::UsageFlags& a, const Texture::UsageFlags& b)
-    {
-        a = a ^ b;
-        return a;
-    }
-
 } // slag
 
 #endif //SLAG_TEXTURE_H

@@ -1,109 +1,81 @@
 #include "Slag.h"
-
-#include <algorithm>
-#include <slag/backends/Backend.h>
-
-
-#include "utilities/SLAG_ASSERT.h"
-
+#include <slag/core/IBackend.h>
 #ifdef SLAG_VULKAN_BACKEND
 #include <slag/backends/vulkan/VulkanBackend.h>
 #endif
 #ifdef SLAG_DX12_BACKEND
-#include "backends/dx12/DX12Backend.h"
+#include <slag/backends/dx12/DX12Backend.h>
 #endif
-
 namespace slag
 {
-    std::unique_ptr<GraphicsCard> SLAG_CHOSEN_GRAPHICS_CARD=nullptr;
-
-    SlagInitializationResult initialize(const SlagInitInfo& initInfo)
+    IBackend* SLAG_GRAPHICS_BACKEND = nullptr;
+    SlagInitializationResult Slag::initialize(const InitializationData& initData)
     {
-        SLAG_ASSERT(Backend::current()==nullptr && SLAG_CHOSEN_GRAPHICS_CARD==nullptr);
-
-        switch (initInfo.graphicsBackend)
+        auto desiredBackend = initData.backend;
+        if (desiredBackend == BackendAPI::UNKNOWN)
         {
-        case GraphicsBackend::CUSTOM_GRAPHICS_BACKEND:
-            if (initInfo.customBackend)
-            {
-                Backend::_current = static_cast<Backend*>(initInfo.customBackend);
-            }
-            else
-            {
-                return SLAG_BACKEND_NOT_AVAILABLE;
-            }
-            break;
-        case GraphicsBackend::DEFAULT_GRAPHICS_BACKEND:
+#ifdef SLAG_DX12_BACKEND
+            desiredBackend = BackendAPI::DX12;
+#else
+            desiredBackend = BackendAPI::VULKAN;
+#endif
+
+        }
+
+        switch (desiredBackend)
+        {
 #ifdef SLAG_VULKAN_BACKEND
-        case GraphicsBackend::VULKAN_GRAPHICS_BACKEND:
-            Backend::_current = new vulkan::VulkanBackend(initInfo);
+        case BackendAPI::VULKAN:
+            SLAG_GRAPHICS_BACKEND = new vulkan::VulkanBackend();
             break;
 #endif
 #ifdef SLAG_DX12_BACKEND
-        case GraphicsBackend::DX12_GRAPHICS_BACKEND:
-            Backend::_current = new dx12::DX12Backend(initInfo);
+        case BackendAPI::DX12:
+            SLAG_GRAPHICS_BACKEND = new dx12::DX12Backend();
             break;
 #endif
-
-        default:
-            return SLAG_BACKEND_NOT_AVAILABLE;
-        }
-        if (Backend::current()==nullptr)
-        {
-            return SLAG_BACKEND_NOT_AVAILABLE;
-        }
-        if (!Backend::current()->valid())
-        {
-            delete Backend::_current;
-            Backend::_current = nullptr;
-            return SLAG_BACKEND_NOT_AVAILABLE;
-        }
-
-
-        //set default graphics card
-        auto cards = Backend::current()->getGraphicsCards();
-        if (cards.empty())
-        {
-            delete Backend::_current;
-            Backend::_current = nullptr;
-            return SLAG_NO_GRAPHICS_CARDS;
-        }
-        if (cards.size()==1)
-        {
-            SLAG_CHOSEN_GRAPHICS_CARD = std::move(cards.front());
-        }
-        else
-        {
-            if (initInfo.graphicsCardEvaluationHandler)
+        case BackendAPI::CUSTOM:
+            if (initData.customBackend!= nullptr)
             {
-                std::sort(cards.begin(), cards.end(),[&](const std::unique_ptr<GraphicsCard>& a, const std::unique_ptr<GraphicsCard>& b)
-                {
-                    return initInfo.graphicsCardEvaluationHandler(a.get(), b.get());
-                });
+                SLAG_GRAPHICS_BACKEND = initData.customBackend;
             }
             else
             {
-                std::sort(cards.begin(), cards.end(),[](const std::unique_ptr<GraphicsCard>& a, const std::unique_ptr<GraphicsCard>& b)
-                {
-                    return a->videoMemory() > b->videoMemory();
-                });
+                return SlagInitializationResult::BACKEND_UNSUPPORTED;
             }
-            SLAG_CHOSEN_GRAPHICS_CARD = std::move(cards.front());
+            break;
+        default:
+            return SlagInitializationResult::BACKEND_UNSUPPORTED;
+            break;
         }
-        Backend::_current->postGraphicsCardChosenSetup();
-        return SLAG_INITIALIZATION_SUCCESS;
+
+        auto result = SLAG_GRAPHICS_BACKEND->initializeBackend(initData);
+        if (result != SlagInitializationResult::SUCCESS)
+        {
+            delete SLAG_GRAPHICS_BACKEND;
+            SLAG_GRAPHICS_BACKEND = nullptr;
+            return result;
+        }
+        if (SLAG_GRAPHICS_BACKEND->graphicsCardCount() == 0)
+        {
+            delete SLAG_GRAPHICS_BACKEND;
+            SLAG_GRAPHICS_BACKEND = nullptr;
+            return SlagInitializationResult::NO_GRAPHICS_CARDS;
+        }
+        return SlagInitializationResult::SUCCESS;
     }
 
-    void cleanup()
+    void Slag::cleanup()
     {
-        Backend::_current->preGraphicsCardDestroyCleanup();
-        SLAG_CHOSEN_GRAPHICS_CARD = nullptr;
-        delete Backend::_current;
-        Backend::_current = nullptr;
+        if (SLAG_GRAPHICS_BACKEND != nullptr)
+        {
+            delete SLAG_GRAPHICS_BACKEND;
+            SLAG_GRAPHICS_BACKEND = nullptr;
+        }
     }
 
-    GraphicsCard* slagGraphicsCard()
+    IBackend* Slag::backend()
     {
-        return SLAG_CHOSEN_GRAPHICS_CARD.get();
+        return SLAG_GRAPHICS_BACKEND;
     }
-}
+} // slag

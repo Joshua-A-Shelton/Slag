@@ -1,120 +1,81 @@
 #ifndef SLAG_BUFFER_H
 #define SLAG_BUFFER_H
 #include <cstdint>
-#include <cstddef>
 
 namespace slag
 {
-    class SemaphoreValue;
-    ///Section of arbitrary memory
+    ///What kind of data the buffer will hold
+    enum class BufferUsage
+    {
+        ///Buffer contains generalized data, suitable for holding data for shaders to read or write to
+        ARBITRARY,
+        ///Buffer contains texel data, and shaders can automatically convert between compatible formats when reading or writing
+        TEXEL,
+        ///Buffer contains vertex attribute data, and is passed to shaders via binding in CommandBuffer:bindVertexBuffers
+        VERTEX,
+        ///Buffer contains vertex indices, and is used for retrieving vertices while drawing, and is bound in CommandBuffer:bindIndexBuffer
+        INDEX,
+        ///Buffer contains data to be used as parameters in indirect drawing commands
+        INDIRECT,
+    };
+    ///Read/Write permission for a buffer from a shader
+    enum class BufferShaderAccess
+    {
+        ///Shaders can only read data in the buffer, but not write to it (generally faster in shader execution)
+        READ_ONLY,
+        ///Shaders can read and write data in the buffer (generally slower in shader execution)
+        READ_WRITE,
+    };
+    ///Read/Write permission for a buffer from the CPU
+    enum class BufferCPUAccess
+    {
+        ///The CPU had no access to the buffer (generally fastest)
+        NONE,
+        ///The CPU can write data to the buffer, but not read from it (generally faster, should be same speed as NONE if GraphicsCard::cacheCoherentSharedMemory() is true)
+        WRITE_ONLY,
+        ///The CPU can read and write data in the buffer (generally slower)
+        READ_WRITE
+    };
+    ///Chunck of GPU accessible memory
     class Buffer
     {
+    protected:
+        Buffer();
     public:
-        enum class UsageFlags:uint8_t
-        {
-            ///every buffer is implicitly a data buffer, use this when no other buffer usage flags apply
-            DATA_BUFFER = 0b00000000,
-            ///Indicates the buffer contains vertex information
-            VERTEX_BUFFER = 0b00000001,
-            ///Indicates the buffer contains vertex indexes
-            INDEX_BUFFER = 0b00000010,
-            ///Indicates the buffer contains uniform buffer data
-            UNIFORM_BUFFER = 0b00000100,
-            ///Indicates the buffer is shader writeable
-            STORAGE_BUFFER = 0b00001000,
-            ///Indicates the buffer contains texel data
-            UNIFORM_TEXEL_BUFFER = 0b00010000,
-            ///Indicates the buffer contains texel data and is shader writable
-            STORAGE_TEXEL_BUFFER = 0b00100000,
-            ///Indicates the buffer is suitable as a parameter to indirect calls
-            INDIRECT_BUFFER = 0b01000000
-        };
-        enum class Accessibility
-        {
-            GPU=0b00000001,
-            CPU_AND_GPU = 0b000000010
-        };
-        ///Type of numeric inside an index array
-        enum class IndexSize
-        {
-            UINT16,
-            UINT32
-        };
-
         virtual ~Buffer()=default;
-        ///Who can natively access this buffer
-        virtual Accessibility accessibility()=0;
-        ///Size in bytes of the buffer
-        virtual uint64_t size()=0;
-        ///What kind of data this buffer can contain
-        virtual UsageFlags usage()=0;
+        ///Pointer to the beginning of the buffer, throws error if the CPU doesn't have access to the buffer
+        [[nodiscard]] virtual void* data()const=0;
+        ///Virtual address, useful for bindless shader access
+        [[nodiscard]] virtual uint64_t deviceAddress()const=0;
+        ///The kind of data this buffer holds
+        [[nodiscard]] virtual BufferUsage usage()const;
+        ///Read/Write permission for shader access to this buffer
+        [[nodiscard]] virtual BufferShaderAccess shaderAccess()const;
+        ///Read/Write permission for cpu access to this buffer
+        [[nodiscard]] virtual BufferCPUAccess cpuAccess()const;
+        ///Number of bytes in buffer
+        [[nodiscard]] virtual uint64_t size()const;
 
         /**
-         * Send data to buffer from CPU (goes through intermediate buffer automatically if required)
-         * @param offset position in the buffer to start updating
-         * @param data the new data to put into the buffer
-         * @param dataLength length of new data being inserted into the buffer
-         * @param wait semaphores to wait to be signaled before performing the update
-         * @param waitCount number of semaphores in wait array
-         * @param signal semaphores to signal when update is finished
-         * @param signalCount number of semaphores in signal array
+         * CPU accessible pointer as pointer to specific type
+         * @tparam T Type to interpret the pointer as
+         * @return
          */
-        virtual void update(uint64_t offset, void* data, uint64_t dataLength,SemaphoreValue* wait, uint32_t waitCount,SemaphoreValue* signal, uint32_t signalCount)=0;
-        ///The location of the buffer in host memory (if cpu accessible)
-        virtual void* cpuHandle()=0;
-        ///CPU handle as a pointer to an object
         template<class T> T* as()
         {
-            return static_cast<T*>(cpuHandle());
+            return static_cast<T*>(data);
         }
-        ///Number of elements of a given type assuming the buffer is an array of those objects
-        template<class T> uint64_t countAsArray()
+
+        /**
+         * Count of items in buffer when buffer is treated as an array of items of a specific type
+         * @tparam T Type of items in buffer
+         * @return
+         */
+        template<class T> [[nodiscard]] uint64_t arrayCount() const
         {
-            return size() / sizeof(T);
+            return size()/sizeof(T);
         }
-
-        static Buffer* newBuffer(void* data, size_t dataSize, Accessibility accessibility,UsageFlags usage = UsageFlags::DATA_BUFFER);
-        static Buffer* newBuffer(size_t size, Accessibility accessibility,UsageFlags usage= UsageFlags::DATA_BUFFER);
     };
-
-    inline Buffer::UsageFlags operator|(Buffer::UsageFlags lhs, Buffer::UsageFlags rhs)
-    {
-        return static_cast<Buffer::UsageFlags>((uint8_t)lhs | (uint8_t)rhs);
-    }
-
-    inline Buffer::UsageFlags operator&(Buffer::UsageFlags lhs, Buffer::UsageFlags rhs)
-    {
-        return static_cast<Buffer::UsageFlags>((uint8_t)lhs & (uint8_t)rhs);
-    }
-
-    inline Buffer::UsageFlags operator^(Buffer::UsageFlags lhs, Buffer::UsageFlags rhs)
-    {
-        return static_cast<Buffer::UsageFlags>((uint8_t)lhs ^ (uint8_t)rhs);
-    }
-
-    inline Buffer::UsageFlags operator|=(Buffer::UsageFlags lhs, Buffer::UsageFlags rhs)
-    {
-        lhs = lhs | rhs;
-        return lhs;
-    }
-
-    inline Buffer::UsageFlags operator&=(Buffer::UsageFlags lhs, Buffer::UsageFlags rhs)
-    {
-        lhs = lhs & rhs;
-        return lhs;
-    }
-
-    inline Buffer::UsageFlags operator^=(Buffer::UsageFlags lhs, Buffer::UsageFlags rhs)
-    {
-        lhs = lhs ^ rhs;
-        return lhs;
-    }
-
-    inline Buffer::UsageFlags operator~(Buffer::UsageFlags rhs)
-    {
-        return static_cast<Buffer::UsageFlags>(~(uint8_t)rhs);
-    }
-
 } // slag
 
 #endif //SLAG_BUFFER_H
