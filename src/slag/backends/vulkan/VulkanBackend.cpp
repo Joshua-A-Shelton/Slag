@@ -62,7 +62,46 @@ namespace slag
             return &_graphicsCards[index];
         }
 
+        VkBufferUsageFlagBits2 VulkanBackend::nativeBufferUsage(BufferUsage usage, BufferShaderAccess access)
+        {
+            VkBufferUsageFlagBits2 bufferUsage = VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_2_TRANSFER_DST_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR;
+            switch (usage)
+            {
+            case BufferUsage::ARBITRARY:
+                switch (access)
+                {
+                case BufferShaderAccess::READ_ONLY:
+                    bufferUsage |= VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT;
+                    break;
+                case BufferShaderAccess::READ_WRITE:
+                    bufferUsage |= VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT;
+                    break;
+                }
+                break;
+            case BufferUsage::TEXEL:
+                switch (access)
+                {
+                case BufferShaderAccess::READ_ONLY:
+                    bufferUsage |= VK_BUFFER_USAGE_2_UNIFORM_TEXEL_BUFFER_BIT;
+                    break;
+                case BufferShaderAccess::READ_WRITE:
+                    bufferUsage |= VK_BUFFER_USAGE_2_STORAGE_TEXEL_BUFFER_BIT;
+                    break;
+                }
+                break;
+            case BufferUsage::VERTEX:
+                bufferUsage |= VK_BUFFER_USAGE_2_VERTEX_BUFFER_BIT;
+                break;
+            case BufferUsage::INDEX:
+                bufferUsage |= VK_BUFFER_USAGE_2_INDEX_BUFFER_BIT;
+                break;
+            case BufferUsage::INDIRECT:
+                bufferUsage |= VK_BUFFER_USAGE_2_INDIRECT_BUFFER_BIT;
+                break;
+            }
 
+            return bufferUsage;
+        }
 
 
         SlagInitializationResult VulkanBackend::initializeBackend(const InitializationData& initializationData)

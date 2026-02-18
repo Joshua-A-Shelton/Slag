@@ -55,6 +55,16 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/backends/vulkan/VulkanBackend.h
             src/slag/backends/vulkan/VulkanGraphicsCard.cpp
             src/slag/backends/vulkan/VulkanGraphicsCard.h
+            src/slag/backends/vulkan/VulkanBuffer.cpp
+            src/slag/backends/vulkan/VulkanBuffer.h
+            src/slag/backends/vulkan/VulkanSemaphore.cpp
+            src/slag/backends/vulkan/VulkanSemaphore.h
+            src/slag/backends/vulkan/VulkanCommandBuffer.cpp
+            src/slag/backends/vulkan/VulkanCommandBuffer.h
+            src/slag/backends/vulkan/IVulkanCommandBuffer.cpp
+            src/slag/backends/vulkan/IVulkanCommandBuffer.h
+            src/slag/backends/vulkan/VulkanSubmissionQueue.cpp
+            src/slag/backends/vulkan/VulkanSubmissionQueue.h
     )
 endif()
 if(SLAG_DX12_BACKEND)
@@ -66,6 +76,10 @@ if(SLAG_DX12_BACKEND)
             src/slag/backends/dx12/DX12Backend.h
             src/slag/backends/dx12/DX12GraphicsCard.cpp
             src/slag/backends/dx12/DX12GraphicsCard.h
+            src/slag/backends/dx12/DX12Buffer.cpp
+            src/slag/backends/dx12/DX12Buffer.h
+            src/slag/backends/dx12/DX12Semaphore.cpp
+            src/slag/backends/dx12/DX12Semaphore.h
     )
 endif()
 
@@ -95,15 +109,13 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/Texture.h
         src/slag/core/Pixels.cpp
         src/slag/core/Pixels.h
-        src/slag/core/ICommandBuffer.cpp
         src/slag/core/ICommandBuffer.h
-        src/slag/core/CommandBuffer.cpp
         src/slag/core/CommandBuffer.h
         src/slag/core/Dimensions.h
-        src/slag/core/SubmissionQueue.cpp
         src/slag/core/SubmissionQueue.h
-        src/slag/core/Semaphore.cpp
         src/slag/core/Semaphore.h
+        src/slag/utilities/SLAG_ASSERT.h
+        src/slag/exceptions/ResourceCreationError.h
 )
 #link spirv if we need to
 if(USE_SPIRV_REFLECTION)
@@ -254,7 +266,12 @@ if(SLAG_BUILD_TESTS)
 
     add_executable(SlagTests
             tests/SlagTestsMain.cpp
-            tests/tests/GraphicsCard.cpp)
+            tests/tests/GraphicsCard.cpp
+            tests/tests/Buffer.cpp
+            tests/utilities/GeneralUtilities.h
+            tests/tests/Semaphore.cpp
+            tests/tests/CommandBuffer.cpp
+            tests/tests/SubmissionQueue.cpp)
 
     target_link_libraries(SlagTests GTest::gtest SDL3::SDL3 glm::glm slag::Slag)
 endif ()

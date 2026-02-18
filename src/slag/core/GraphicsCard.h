@@ -19,6 +19,8 @@ namespace slag
         [[nodiscard]] virtual uint64_t videoMemory()const=0;
         ///If the entire range of GPU memory is accessible by the CPU (true if under Unified Memory Access, or resizeable BAR is enabled)
         [[nodiscard]] virtual bool cacheCoherentSharedMemory()const=0;
+        ///The largest possible size in bytes of a buffer with BufferShaderAccess::READ_ONLY
+        [[nodiscard]] virtual uint64_t maxShaderAccessReadOnlyBufferSize()const=0;
 
         ///Queue that supports graphics operations
         [[nodiscard]] virtual SubmissionQueue* graphicsQueue()=0;
@@ -43,6 +45,7 @@ namespace slag
          * Create a new command buffer
          * @param type What kind of operations this buffer can perform
          * @return
+         * @throws slag::ResourceCreationError if unable to allocate a new command buffer
          */
         [[nodiscard]] virtual CommandBuffer* newCommandBuffer(QueueType type)=0;
 
@@ -51,6 +54,7 @@ namespace slag
          * Create a new Semaphore
          * @param initialValue initial value of the semaphore
          * @return
+         * @throws slag::ResourceCreationError if unable to allocate a new command buffer
          */
         [[nodiscard]] virtual Semaphore* newSemaphore(uint64_t initialValue=0)=0;
 
@@ -62,6 +66,7 @@ namespace slag
          * @param shaderAccess Data access permissions for shaders
          * @param cpuAccess Data access permissions for the cpu
          * @return
+         * @throws slag::ResourceCreationError if unable to allocate a new command buffer
          */
         [[nodiscard]] virtual Buffer* newBuffer(
             uint64_t size,

@@ -9,6 +9,8 @@ namespace slag
 {
     namespace vulkan
     {
+        class VulkanSubmissionQueue;
+
         class VulkanGraphicsCard: public GraphicsCard
         {
         public:
@@ -20,21 +22,29 @@ namespace slag
             VulkanGraphicsCard& operator=(VulkanGraphicsCard&& from);
             [[nodiscard]] std::string name()const override;
             [[nodiscard]] uint64_t videoMemory()const override;
+            [[nodiscard]] uint64_t maxShaderAccessReadOnlyBufferSize()const override;
             [[nodiscard]] bool cacheCoherentSharedMemory()const override;
+            [[nodiscard]] SubmissionQueue* graphicsQueue()override;
+            [[nodiscard]] SubmissionQueue* computeQueue()override;
+            [[nodiscard]] SubmissionQueue* transferQueue()override;
+            uint64_t defragmentMemory(SemaphoreValue* waitFor, uint32_t waitCount, SemaphoreValue* signal, uint32_t signalCount, uint64_t targetBytes=0)override;
+            //Command Buffers
+            [[nodiscard]] CommandBuffer* newCommandBuffer(QueueType type)override;
+            //Semaphores
+            [[nodiscard]] Semaphore* newSemaphore(uint64_t initialValue=0)override;
             //Buffers
-            /**
-             * Allocate a new buffer
-             * @param size Size in bytes of the buffer
-             * @param usage Kind of data will the buffer store
-             * @param shaderAccess Data access permissions for shaders
-             * @param cpuAccess Data access permissions for the cpu
-             * @return
-             */
             [[nodiscard]] Buffer* newBuffer(
                 uint64_t size,
                 BufferUsage usage = BufferUsage::ARBITRARY,
                 BufferShaderAccess shaderAccess = BufferShaderAccess::READ_WRITE,
                 BufferCPUAccess cpuAccess = BufferCPUAccess::WRITE_ONLY)override;
+
+            //Vulkan specific
+            VkDevice device() const;
+            VmaAllocator allocator() const;
+            uint32_t graphicsFamilyIndex()const;
+            uint32_t computeFamilyIndex()const;
+            uint32_t transferFamilyIndex()const;
         private:
             void move(VulkanGraphicsCard& from);
             std::string _name;
@@ -43,7 +53,13 @@ namespace slag
             VkPhysicalDeviceProperties _physicalDeviceProperties={};
             VkPhysicalDeviceMemoryProperties _physicalDeviceMemoryProperties={};
             VmaAllocator _allocator = nullptr;
+            VulkanSubmissionQueue* _graphicsQueue=nullptr;
+            VulkanSubmissionQueue* _computeQueue=nullptr;
+            VulkanSubmissionQueue* _transferQueue=nullptr;
             uint64_t _videoMemory = 0;
+            uint32_t _graphicsQueueFamily=0;
+            uint32_t _computeQueueFamily=0;
+            uint32_t _transferQueueFamily=0;
             bool _cacheCoherentSharedMemory = false;
 
         };

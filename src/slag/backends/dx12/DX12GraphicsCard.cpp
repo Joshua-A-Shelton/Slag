@@ -1,6 +1,8 @@
 #include "DX12GraphicsCard.h"
 
 #include "DX12Backend.h"
+#include "DX12Buffer.h"
+#include "DX12Semaphore.h"
 #include "slag/exceptions/NotImplemented.h"
 #undef ERROR
 
@@ -50,13 +52,16 @@ namespace slag
                     pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_INFO,FALSE);
                     pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_MESSAGE,FALSE);
 
-
+                    D3D12_MESSAGE_CATEGORY hide[] =
+                    {
+                        D3D12_MESSAGE_CATEGORY_STATE_CREATION,
+                    };
 
                     D3D12_INFO_QUEUE_FILTER NewFilter = {};
                     NewFilter.DenyList.NumSeverities = 0;
                     NewFilter.DenyList.pSeverityList = nullptr;
-                    NewFilter.DenyList.NumIDs = 0;
-                    NewFilter.DenyList.pIDList = nullptr;
+                    NewFilter.DenyList.NumCategories = std::size(hide);
+                    NewFilter.DenyList.pCategoryList = hide;
 
                     pInfoQueue->PushStorageFilter(&NewFilter);
                 }
@@ -69,10 +74,18 @@ namespace slag
                 infoQueue1->RegisterMessageCallback(DX12ErrorCallback,D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &callBackCookie);
             }
 
+
+            D3D12MA::ALLOCATOR_DESC allocatorDesc = {};
+            allocatorDesc.pDevice = _device.Get();
+            allocatorDesc.pAdapter = _dxgiAdapter4.Get();
+            // These flags are optional but recommended.
+            allocatorDesc.Flags = static_cast<D3D12MA::ALLOCATOR_FLAGS>(D3D12MA::ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED | D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED);
+            D3D12MA::CreateAllocator(&allocatorDesc,&_allocator);
+
             DXGI_ADAPTER_DESC3 desc;
             _dxgiAdapter4->GetDesc3(&desc);
-            D3D12_FEATURE_DATA_ARCHITECTURE1 architecture;
-            _device->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE1,&architecture,sizeof(architecture));
+            D3D12_FEATURE_DATA_ARCHITECTURE1 architecture{};
+            _device->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE1,&architecture,sizeof(D3D12_FEATURE_DATA_ARCHITECTURE1));
 
             _videoMemory = desc.DedicatedVideoMemory;
             _sharedMemory = architecture.CacheCoherentUMA;
@@ -111,15 +124,68 @@ namespace slag
             return _videoMemory;
         }
 
+        uint64_t DX12GraphicsCard::maxShaderAccessReadOnlyBufferSize() const
+        {
+            return 65536;
+        }
+
         bool DX12GraphicsCard::cacheCoherentSharedMemory() const
         {
             return _sharedMemory;
         }
 
-        Buffer* DX12GraphicsCard::newBuffer(uint64_t size, BufferUsage usage, BufferShaderAccess shaderAccess,
-                                            BufferCPUAccess cpuAccess)
+        SubmissionQueue* DX12GraphicsCard::graphicsQueue()
         {
             throw NotImplemented();
+        }
+
+        SubmissionQueue* DX12GraphicsCard::computeQueue()
+        {
+            throw NotImplemented();
+        }
+
+        SubmissionQueue* DX12GraphicsCard::transferQueue()
+        {
+            throw NotImplemented();
+        }
+
+        uint64_t DX12GraphicsCard::defragmentMemory(
+            SemaphoreValue* waitFor,
+            uint32_t waitCount,
+            SemaphoreValue* signal,
+            uint32_t signalCount,
+            uint64_t targetBytes)
+        {
+            throw NotImplemented();
+        }
+
+        CommandBuffer* DX12GraphicsCard::newCommandBuffer(QueueType type)
+        {
+            throw NotImplemented();
+        }
+
+        Semaphore* DX12GraphicsCard::newSemaphore(uint64_t initialValue)
+        {
+            return new DX12Semaphore(this,initialValue);
+        }
+
+        Buffer* DX12GraphicsCard::newBuffer(
+            uint64_t size,
+            BufferUsage usage,
+            BufferShaderAccess shaderAccess,
+            BufferCPUAccess cpuAccess)
+        {
+            return new DX12Buffer(this,size,usage,shaderAccess,cpuAccess);
+        }
+
+        D3D12MA::Allocator* DX12GraphicsCard::allocator()
+        {
+            return _allocator;
+        }
+
+        Microsoft::WRL::ComPtr<ID3D12Device2>& DX12GraphicsCard::device()
+        {
+            return _device;
         }
 
         void DX12GraphicsCard::move(DX12GraphicsCard& from)

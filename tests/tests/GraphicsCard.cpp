@@ -20,6 +20,16 @@ TEST(GraphicsCard, VideoMemory)
     }
 }
 
+TEST(GraphicsCard, MaxShaderAccessReadOnlyBufferSize)
+{
+    GTEST_ASSERT_TRUE(Slag::backend()->graphicsCardCount() > 0);
+    for (auto i=0u; i< Slag::backend()->graphicsCardCount(); i++)
+    {
+        GraphicsCard* card = Slag::backend()->graphicsCard(i);
+        GTEST_ASSERT_TRUE(card->maxShaderAccessReadOnlyBufferSize()>=16384);
+    }
+}
+
 TEST(GraphicsCard, DefragmentAll)
 {
     auto card = Slag::backend()->graphicsCard(0);
@@ -30,6 +40,7 @@ TEST(GraphicsCard, DefragmentAll)
     auto buffer6 = std::unique_ptr<Buffer>(card->newBuffer(512));
     auto buffer7 = std::unique_ptr<Buffer>(card->newBuffer(512));
     auto buffer8 = std::unique_ptr<Buffer>(card->newBuffer(256));
+    //auto texture = std::unique_ptr<Texture>(card->newTexture());
     auto uploadBuffer = std::unique_ptr<Buffer>(card->newBuffer(256,BufferUsage::ARBITRARY,BufferShaderAccess::READ_ONLY,BufferCPUAccess::READ_WRITE));
     auto data = uploadBuffer->as<uint8_t>();
     for (int i=0; i< 256; i++)
@@ -70,8 +81,22 @@ TEST(GraphicsCard, DefragmentAll)
     signal.semaphore = defragmentFinished.get();
     card->defragmentMemory(nullptr,0,&signal,1);
     GTEST_ASSERT_NE(virtualAddress, buffer8->deviceAddress());
-    //TODO: make sure the data in the buffer is still the same
-    GTEST_FAIL();
+
+    auto downloadData = std::unique_ptr<Buffer>(card->newBuffer(256,BufferUsage::ARBITRARY,BufferShaderAccess::READ_WRITE,BufferCPUAccess::READ_WRITE));
+    auto transferFinished = std::unique_ptr<Semaphore>(card->newSemaphore());
+    commandBuffer->begin();
+    commandBuffer->copyBufferToBuffer(buffer8.get(),0,downloadData.get(),0,256);
+    commandBuffer->end();
+
+    signal.semaphore = transferFinished.get();
+    cbuffer = commandBuffer.get();
+    card->transferQueue()->submit(&batch,1);
+    transferFinished->waitForValue(1);
+    data = downloadData->as<uint8_t>();
+    for (int i=0; i< 256; i++)
+    {
+        GTEST_ASSERT_EQ(data[i], i);
+    }
 }
 
 TEST(GraphicsCard, DefragmentTarget)

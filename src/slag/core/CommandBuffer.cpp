@@ -1,5 +1,0 @@
-#include "CommandBuffer.h"
-
-namespace slag
-{
-} // slag

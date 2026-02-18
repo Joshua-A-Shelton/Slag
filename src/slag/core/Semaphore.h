@@ -4,13 +4,14 @@
 
 namespace slag
 {
+    class GraphicsCard;
     ///Synchronization primitive that increases a counter to indicate when events have occurred on the GPU
     class Semaphore
     {
     public:
-        virtual ~Semaphore();
+        virtual ~Semaphore()=default;
         ///Current counter value of the semaphore
-        virtual uint64_t value()=0;
+        [[nodiscard]] virtual uint64_t value()=0;
         /**
          * Set the value of the semaphore from the CPU
          * @param value New value of the semaphore
@@ -21,6 +22,8 @@ namespace slag
          * @param value Value for the semaphore to reach that ends the wait
          */
         virtual void waitForValue(uint64_t value)=0;
+        ///Which graphics card this buffer is allocated on
+        [[nodiscard]] virtual GraphicsCard* graphicsCard()const=0;
     };
 
     struct SemaphoreValue

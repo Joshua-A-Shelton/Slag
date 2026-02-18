@@ -4,6 +4,7 @@
 
 namespace slag
 {
+    class GraphicsCard;
     ///What kind of data the buffer will hold
     enum class BufferUsage
     {
@@ -21,7 +22,7 @@ namespace slag
     ///Read/Write permission for a buffer from a shader
     enum class BufferShaderAccess
     {
-        ///Shaders can only read data in the buffer, but not write to it (generally faster in shader execution)
+        ///Shaders can only read data in the buffer (generally faster in shader execution). Buffers of this type must be a multiple of 256 bytes, and are often limited in max size (16-64 KB usually, depending on hardware)
         READ_ONLY,
         ///Shaders can read and write data in the buffer (generally slower in shader execution)
         READ_WRITE,
@@ -29,7 +30,7 @@ namespace slag
     ///Read/Write permission for a buffer from the CPU
     enum class BufferCPUAccess
     {
-        ///The CPU had no access to the buffer (generally fastest)
+        ///The CPU have no access to the buffer (generally fastest)
         NONE,
         ///The CPU can write data to the buffer, but not read from it (generally faster, should be same speed as NONE if GraphicsCard::cacheCoherentSharedMemory() is true)
         WRITE_ONLY,
@@ -40,21 +41,23 @@ namespace slag
     class Buffer
     {
     protected:
-        Buffer();
+        Buffer()=default;
     public:
         virtual ~Buffer()=default;
-        ///Pointer to the beginning of the buffer, throws error if the CPU doesn't have access to the buffer
+        ///Pointer to the beginning of the buffer, throws error if the CPU doesn't have access to the buffer if SLAG_DEBUG is defined
         [[nodiscard]] virtual void* data()const=0;
         ///Virtual address, useful for bindless shader access
         [[nodiscard]] virtual uint64_t deviceAddress()const=0;
         ///The kind of data this buffer holds
-        [[nodiscard]] virtual BufferUsage usage()const;
+        [[nodiscard]] virtual BufferUsage usage()const=0;
         ///Read/Write permission for shader access to this buffer
-        [[nodiscard]] virtual BufferShaderAccess shaderAccess()const;
+        [[nodiscard]] virtual BufferShaderAccess shaderAccess()const=0;
         ///Read/Write permission for cpu access to this buffer
-        [[nodiscard]] virtual BufferCPUAccess cpuAccess()const;
+        [[nodiscard]] virtual BufferCPUAccess cpuAccess()const=0;
         ///Number of bytes in buffer
-        [[nodiscard]] virtual uint64_t size()const;
+        [[nodiscard]] virtual uint64_t size()const=0;
+        ///Which graphics card this buffer is allocated on
+        [[nodiscard]] virtual GraphicsCard* graphicsCard()const=0;
 
         /**
          * CPU accessible pointer as pointer to specific type
@@ -63,7 +66,7 @@ namespace slag
          */
         template<class T> T* as()
         {
-            return static_cast<T*>(data);
+            return static_cast<T*>(data());
         }
 
         /**
