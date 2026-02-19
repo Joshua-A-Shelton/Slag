@@ -38,6 +38,7 @@ namespace slag
             [[nodiscard]] uint64_t size()const override;
             [[nodiscard]] GraphicsCard* graphicsCard() const override;
 
+            [[nodiscard]] ID3D12Resource* dx12Handle()const;
 
         private:
             void move(DX12Buffer& from);

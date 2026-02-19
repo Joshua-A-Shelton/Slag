@@ -2,7 +2,9 @@
 
 #include "DX12Backend.h"
 #include "DX12Buffer.h"
+#include "DX12CommandBuffer.h"
 #include "DX12Semaphore.h"
+#include "DX12SubmissionQueue.h"
 #include "slag/exceptions/NotImplemented.h"
 #undef ERROR
 
@@ -89,6 +91,20 @@ namespace slag
 
             _videoMemory = desc.DedicatedVideoMemory;
             _sharedMemory = architecture.CacheCoherentUMA;
+
+            _graphicsQueue = new DX12SubmissionQueue(this,QueueType::GRAPHICS);
+            _computeQueue = new DX12SubmissionQueue(this,QueueType::COMPUTE);
+            _transferQueue = new DX12SubmissionQueue(this,QueueType::TRANSFER);
+        }
+
+        DX12GraphicsCard::~DX12GraphicsCard()
+        {
+            if (_graphicsQueue)
+            {
+                delete _graphicsQueue;
+                delete _computeQueue;
+                delete _transferQueue;
+            }
         }
 
         DX12GraphicsCard::DX12GraphicsCard(DX12GraphicsCard&& from)
@@ -136,17 +152,17 @@ namespace slag
 
         SubmissionQueue* DX12GraphicsCard::graphicsQueue()
         {
-            throw NotImplemented();
+            return _graphicsQueue;
         }
 
         SubmissionQueue* DX12GraphicsCard::computeQueue()
         {
-            throw NotImplemented();
+            return _computeQueue;
         }
 
         SubmissionQueue* DX12GraphicsCard::transferQueue()
         {
-            throw NotImplemented();
+            return _transferQueue;
         }
 
         uint64_t DX12GraphicsCard::defragmentMemory(
@@ -161,7 +177,7 @@ namespace slag
 
         CommandBuffer* DX12GraphicsCard::newCommandBuffer(QueueType type)
         {
-            throw NotImplemented();
+            return new DX12CommandBuffer(this,type,CommandBufferLevel::PRIMARY);
         }
 
         Semaphore* DX12GraphicsCard::newSemaphore(uint64_t initialValue)
@@ -193,6 +209,9 @@ namespace slag
             _device = from._device;
             _dxgiFactory = from._dxgiFactory;
             _dxgiAdapter4 = from._dxgiAdapter4;
+            std::swap(_graphicsQueue,from._graphicsQueue);
+            std::swap(_computeQueue,from._computeQueue);
+            std::swap(_transferQueue,from._transferQueue);
         }
     } // dx12
 } // slag

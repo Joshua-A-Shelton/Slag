@@ -1,16 +1,18 @@
-#ifndef SLAG_IVULKANCOMMANDBUFFER_H
-#define SLAG_IVULKANCOMMANDBUFFER_H
+#ifndef SLAG_IDX12COMMANDBUFFER_H
+#define SLAG_IDX12COMMANDBUFFER_H
 #include <slag/Slag.h>
-#include <vulkan/vulkan.h>
+#include <d3d12.h>
+
 namespace slag
 {
-    namespace vulkan
+    namespace dx12
     {
-        class VulkanGraphicsCard;
-        class IVulkanCommandBuffer: public CommandBuffer
+        class DX12GraphicsCard;
+
+        class IDX12CommandBuffer: public CommandBuffer
         {
         public:
-            ~IVulkanCommandBuffer()override = default;
+            ~IDX12CommandBuffer()override = default;
             [[nodiscard]] GraphicsCard* graphicsCard() override;
             [[nodiscard]] QueueType type()const override;
             [[nodiscard]] CommandBufferLevel level()const override;
@@ -21,17 +23,17 @@ namespace slag
             void copyTextureToBuffer(Texture* source, Buffer* destination, TextureBufferMapping* copyData, uint32_t mappingCount)override;
             void copyBufferToTexture(Buffer* source, Texture* destination, TextureBufferMapping* copyData, uint32_t mappingCount)override;
 
-            [[nodiscard]] VkCommandBuffer vulkanHandle() const;
+            [[nodiscard]] ID3D12GraphicsCommandList7* dx12Handle() const;
 
-        protected:
-            void IVKCBMove(IVulkanCommandBuffer& from);
-            VkCommandBuffer _commandBuffer = nullptr;
-            VkCommandPool _commandPool = nullptr;
-            VulkanGraphicsCard* _graphicsCard = nullptr;
-            QueueType _type = QueueType::TRANSFER;
+            protected:
+            void IDXCBMove(IDX12CommandBuffer& from);
+            ID3D12GraphicsCommandList7* _commandBuffer = nullptr;
+            ID3D12CommandAllocator* _commandPool = nullptr;
+            DX12GraphicsCard* _graphicsCard = nullptr;
+            QueueType _queueType = QueueType::TRANSFER;
             CommandBufferLevel _level = CommandBufferLevel::PRIMARY;
         };
-    } // vulkan
+    } // dx12
 } // slag
 
-#endif //SLAG_IVULKANCOMMANDBUFFER_H
+#endif //SLAG_IDX12COMMANDBUFFER_H

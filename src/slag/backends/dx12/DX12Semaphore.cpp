@@ -58,6 +58,11 @@ namespace slag
             return _graphicsCard;
         }
 
+        ID3D12Fence* DX12Semaphore::dx12Handle() const
+        {
+            return _fence;
+        }
+
         void DX12Semaphore::move(DX12Semaphore& from)
         {
             std::swap(_fence, from._fence);

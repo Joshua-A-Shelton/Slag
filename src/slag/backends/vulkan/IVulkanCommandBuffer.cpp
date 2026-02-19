@@ -86,5 +86,14 @@ namespace slag
         {
             return _commandBuffer;
         }
+
+        void IVulkanCommandBuffer::IVKCBMove(IVulkanCommandBuffer& from)
+        {
+            std::swap(_commandBuffer, from._commandBuffer);
+            std::swap(_commandPool, from._commandPool);
+            _graphicsCard = from._graphicsCard;
+            _type = from._type;
+            _level = from._level;
+        }
     } // vulkan
 } // slag

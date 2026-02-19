@@ -5,6 +5,12 @@
 #include <dxgi1_6.h>
 #include <D3D12MemAlloc.h>
 #include <wrl/client.h>
+
+namespace slag::dx12
+{
+    class DX12SubmissionQueue;
+}
+
 namespace slag
 {
     namespace dx12
@@ -13,7 +19,7 @@ namespace slag
         {
         public:
             DX12GraphicsCard(Microsoft::WRL::ComPtr<ID3D12Device2> device, Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory,Microsoft::WRL::ComPtr<IDXGIAdapter4> dxgiAdapter, bool includeDebugHandling);
-            ~DX12GraphicsCard()=default;
+            ~DX12GraphicsCard();
             DX12GraphicsCard(const DX12GraphicsCard&) = delete;
             DX12GraphicsCard& operator=(const DX12GraphicsCard&) = delete;
             DX12GraphicsCard(DX12GraphicsCard&& from);
@@ -48,6 +54,9 @@ namespace slag
             Microsoft::WRL::ComPtr<IDXGIAdapter4> _dxgiAdapter4 = nullptr;
             uint64_t _videoMemory = 0;
             D3D12MA::Allocator* _allocator = nullptr;
+            DX12SubmissionQueue* _graphicsQueue = nullptr;
+            DX12SubmissionQueue* _computeQueue = nullptr;
+            DX12SubmissionQueue* _transferQueue = nullptr;
             bool _sharedMemory = false;
         };
     } // dx12

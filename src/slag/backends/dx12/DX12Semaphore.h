@@ -19,7 +19,9 @@ namespace slag
             uint64_t value()override;
             void signal(uint64_t value)override;
             void waitForValue(uint64_t value)override;
+
             [[nodiscard]] GraphicsCard* graphicsCard()const override;
+            [[nodiscard]] ID3D12Fence* dx12Handle() const;
         private:
             void move(DX12Semaphore& from);
             ID3D12Fence* _fence = nullptr;

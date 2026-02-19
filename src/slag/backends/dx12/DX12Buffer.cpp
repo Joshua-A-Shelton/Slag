@@ -133,6 +133,11 @@ namespace slag
             return _graphicsCard;
         }
 
+        ID3D12Resource* DX12Buffer::dx12Handle() const
+        {
+            return _buffer;
+        }
+
         void DX12Buffer::move(DX12Buffer& from)
         {
             _size = from._size;

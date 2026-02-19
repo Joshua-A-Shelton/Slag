@@ -14,8 +14,8 @@ namespace slag
             ~VulkanCommandBuffer()override;
             VulkanCommandBuffer(const VulkanCommandBuffer&) = delete;
             VulkanCommandBuffer& operator=(const VulkanCommandBuffer&) = delete;
-            VulkanCommandBuffer(VulkanCommandBuffer&& from);
-            VulkanCommandBuffer& operator=(VulkanCommandBuffer&& from);
+            VulkanCommandBuffer(VulkanCommandBuffer&& from) noexcept;
+            VulkanCommandBuffer& operator=(VulkanCommandBuffer&& from) noexcept;
 
         private:
             void move(VulkanCommandBuffer& from);

@@ -5,9 +5,12 @@
 #include "core/CommandBuffer.h"
 #include "core/Dimensions.h"
 #include "core/GraphicsCard.h"
+#include "core/IBackend.h"
 #include "core/ICommandBuffer.h"
 #include "core/IBackend.h"
 #include "core/Pixels.h"
+#include "core/Semaphore.h"
+#include "core/SubmissionQueue.h"
 #include "core/Texture.h"
 
 

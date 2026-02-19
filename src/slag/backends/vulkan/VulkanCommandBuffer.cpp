@@ -62,5 +62,21 @@ namespace slag
                 vkDestroyCommandPool(_graphicsCard->device(), _commandPool, nullptr);
             }
         }
+
+        VulkanCommandBuffer::VulkanCommandBuffer(VulkanCommandBuffer&& from) noexcept
+        {
+            move(from);
+        }
+
+        VulkanCommandBuffer& VulkanCommandBuffer::operator=(VulkanCommandBuffer&& from) noexcept
+        {
+            move(from);
+            return *this;
+        }
+
+        void VulkanCommandBuffer::move(VulkanCommandBuffer& from)
+        {
+            IVKCBMove(from);
+        }
     } // vulkan
 } // slag

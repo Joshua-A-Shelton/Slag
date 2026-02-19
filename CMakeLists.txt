@@ -80,6 +80,12 @@ if(SLAG_DX12_BACKEND)
             src/slag/backends/dx12/DX12Buffer.h
             src/slag/backends/dx12/DX12Semaphore.cpp
             src/slag/backends/dx12/DX12Semaphore.h
+            src/slag/backends/dx12/DX12SubmissionQueue.cpp
+            src/slag/backends/dx12/DX12SubmissionQueue.h
+            src/slag/backends/dx12/IDX12CommandBuffer.cpp
+            src/slag/backends/dx12/IDX12CommandBuffer.h
+            src/slag/backends/dx12/DX12CommandBuffer.cpp
+            src/slag/backends/dx12/DX12CommandBuffer.h
     )
 endif()
 
