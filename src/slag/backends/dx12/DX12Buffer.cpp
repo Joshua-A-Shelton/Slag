@@ -11,17 +11,15 @@ namespace slag
         DX12Buffer::DX12Buffer(
             DX12GraphicsCard* card,
             uint64_t size,
-            BufferUsage usage,
-            BufferShaderAccess shaderAccess,
+            BufferMemoryType shaderAccess,
             BufferCPUAccess cpuAccess)
         {
-            SLAG_ASSERT(((shaderAccess == BufferShaderAccess::READ_ONLY && size%256 == 0) || shaderAccess != BufferShaderAccess::READ_ONLY) && "Buffers with BufferShaderAccess::READ_ONLY must be a multiple of 256 bytes in size");
-            SLAG_ASSERT(((shaderAccess == BufferShaderAccess::READ_ONLY && size<= card->maxShaderAccessReadOnlyBufferSize()) || shaderAccess != BufferShaderAccess::READ_ONLY) && "Buffers with BufferShaderAccess::READ_ONLY cannot exceed size found in GraphicsCard::maxShaderAccessReadOnlyBufferSize");
+            SLAG_ASSERT(((shaderAccess == BufferMemoryType::UNIFORM && size%256 == 0) || shaderAccess != BufferMemoryType::UNIFORM) && "Buffers with BufferMemoryType::UNIFORM must be a multiple of 256 bytes in size");
+            SLAG_ASSERT(((shaderAccess == BufferMemoryType::UNIFORM && size<= card->maxShaderAccessUniformBufferSize()) || shaderAccess != BufferMemoryType::UNIFORM) && "Buffers with BufferMemoryType::UNIFORM cannot exceed size found in GraphicsCard::maxShaderAccessUniformBufferSize");
 
             _graphicsCard = card;
             _size = size;
-            _dataBits = static_cast<uint16_t>(usage);
-            _dataBits |= static_cast<uint16_t>(shaderAccess)<<DXBUFFER_SHADER_SHIFT;
+            _dataBits = static_cast<uint16_t>(shaderAccess);
             _dataBits |= static_cast<uint16_t>(cpuAccess)<<DXBUFFER_CPU_SHIFT;
 
             D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT;
@@ -108,14 +106,9 @@ namespace slag
             return  _buffer->GetGPUVirtualAddress();
         }
 
-        BufferUsage DX12Buffer::usage() const
+        BufferMemoryType DX12Buffer::memoryType() const
         {
-            return static_cast<BufferUsage>(_dataBits & DXBUFFER_USAGE_BITS);
-        }
-
-        BufferShaderAccess DX12Buffer::shaderAccess() const
-        {
-            return static_cast<BufferShaderAccess>((_dataBits & DXBUFFER_SHADER_BITS) >> DXBUFFER_SHADER_SHIFT);
+            return static_cast<BufferMemoryType>((_dataBits & DXBUFFER_MEMORY_BITS));
         }
 
         BufferCPUAccess DX12Buffer::cpuAccess() const
@@ -133,6 +126,16 @@ namespace slag
             return _graphicsCard;
         }
 
+        void* DX12Buffer::userData()
+        {
+            return _userData;
+        }
+
+        void DX12Buffer::setUserData(void* userData)
+        {
+            _userData = userData;
+        }
+
         ID3D12Resource* DX12Buffer::dx12Handle() const
         {
             return _buffer;
@@ -145,6 +148,7 @@ namespace slag
             std::swap(_allocation, from._allocation);
             std::swap(_graphicsCard,from._graphicsCard);
             std::swap(_cpuHandle,from._cpuHandle);
+            std::swap(_userData,from._userData);
             _dataBits = from._dataBits;
         }
     } // dx12

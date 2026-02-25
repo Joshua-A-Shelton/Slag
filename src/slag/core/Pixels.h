@@ -100,6 +100,12 @@ namespace slag
         STENCIL = 4,
     };
 
+    class Pixel
+    {
+    public:
+        static PixelAspectFlags aspectFlags(PixelFormat format);
+    };
+
     inline PixelAspectFlags operator|(PixelAspectFlags lhs, PixelAspectFlags rhs)
     {
         uint8_t l = static_cast<uint8_t>(lhs);

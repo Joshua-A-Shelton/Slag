@@ -1,9 +1,11 @@
 #include "VulkanGraphicsCard.h"
 
+#include "VulkanBackend.h"
 #include "VulkanBuffer.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanSemaphore.h"
 #include "VulkanSubmissionQueue.h"
+#include "VulkanTexture.h"
 #include "slag/exceptions/NotImplemented.h"
 
 namespace slag
@@ -158,9 +160,76 @@ namespace slag
             return _videoMemory;
         }
 
-        uint64_t VulkanGraphicsCard::maxShaderAccessReadOnlyBufferSize() const
+        uint64_t VulkanGraphicsCard::maxShaderAccessUniformBufferSize() const
         {
             return _physicalDeviceProperties.limits.maxUniformBufferRange;
+        }
+
+        PixelFormatProperties VulkanGraphicsCard::formatProperties(PixelFormat format) const
+        {
+            auto nativeFormat = VulkanBackend::nativeFormat(format);
+            VkFormatProperties2 formatProperties{.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2};
+            vkGetPhysicalDeviceFormatProperties2(_physicalDevice,nativeFormat.format,&formatProperties);
+            PixelFormatProperties properties{};
+            VkFormatFeatureFlags2 features = 0;
+            TextureUsageFlags usage =static_cast<TextureUsageFlags>(0);
+
+            if (formatProperties.formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT && formatProperties.formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT)
+            {
+                properties.tiling = TextureTiling::OPTIMIZED;
+                features = formatProperties.formatProperties.optimalTilingFeatures;
+            }
+            else if (formatProperties.formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT && formatProperties.formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT)
+            {
+                properties.tiling = TextureTiling::LINEAR;
+                features = formatProperties.formatProperties.optimalTilingFeatures;
+            }
+            else
+            {
+                properties.tiling = TextureTiling::UNSUPPORTED;
+                return properties;
+            }
+            bool hasUsage = false;
+            if (features & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT)
+            {
+                usage |= TextureUsageFlags::SAMPLED;
+                hasUsage = true;
+            }
+            if (features & VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT )
+            {
+                usage |= TextureUsageFlags::UNORDERED_ACCESS;
+                hasUsage = true;
+            }
+            if (features & VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT)
+            {
+                usage |= TextureUsageFlags::COLOR_TARGET;
+                hasUsage = true;
+            }
+            if (features & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+            {
+                usage |= TextureUsageFlags::DEPTH_STENCIL_TARGET;
+                hasUsage = true;
+            }
+            properties.validUsageFlags = usage;
+            if (!hasUsage)
+            {
+                properties.tiling = TextureTiling::UNSUPPORTED;
+                return properties;
+            }
+            if (features & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT)
+            {
+                properties.linearFilteringCapable = true;
+            }
+            if (features & VK_FORMAT_FEATURE_2_BLIT_SRC_BIT )
+            {
+                properties.blitSource = true;
+            }
+            if (features & VK_FORMAT_FEATURE_2_BLIT_DST_BIT )
+            {
+                properties.blitDestination = true;
+            }
+
+            return properties;
         }
 
         bool VulkanGraphicsCard::cacheCoherentSharedMemory() const
@@ -201,11 +270,33 @@ namespace slag
 
         Buffer* VulkanGraphicsCard::newBuffer(
             uint64_t size,
-            BufferUsage usage,
-            BufferShaderAccess shaderAccess,
+            BufferMemoryType memoryType,
             BufferCPUAccess cpuAccess)
         {
-            return new VulkanBuffer(this, size, usage, shaderAccess, cpuAccess);
+            return new VulkanBuffer(this, size, memoryType, cpuAccess);
+        }
+
+        Texture* VulkanGraphicsCard::newTexture(uint32_t width, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels, uint32_t layers)
+        {
+            return new VulkanTexture(this,width,format,usage,mipLevels,layers);
+        }
+
+        Texture* VulkanGraphicsCard::newTexture(uint32_t width, uint32_t height, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,
+            SampleCount sampleCount, uint32_t layers)
+        {
+            return new VulkanTexture(this,width,height,format,usage,mipLevels,sampleCount,layers);
+        }
+
+        Texture* VulkanGraphicsCard::newTexture(uint32_t width, uint32_t height, uint32_t depth, PixelFormat format, TextureUsageFlags usage,
+            uint32_t mipLevels)
+        {
+            throw NotImplemented();
+        }
+
+        Texture* VulkanGraphicsCard::newTextureCube(uint32_t dimension, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,
+            SampleCount sampleCount,uint32_t arrayDepth)
+        {
+            throw NotImplemented();
         }
 
         void VulkanGraphicsCard::move(VulkanGraphicsCard& from)

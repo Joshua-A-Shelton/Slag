@@ -11,16 +11,14 @@ namespace slag
         VulkanBuffer::VulkanBuffer(
             VulkanGraphicsCard* card,
             uint64_t size,
-            BufferUsage usage,
-            BufferShaderAccess shaderAccess,
+            BufferMemoryType shaderAccess,
             BufferCPUAccess cpuAccess)
         {
-            SLAG_ASSERT(((shaderAccess == BufferShaderAccess::READ_ONLY && size%256 == 0) || shaderAccess != BufferShaderAccess::READ_ONLY) && "Buffers with BufferShaderAccess::READ_ONLY must be a multiple of 256 bytes in size");
-            SLAG_ASSERT(((shaderAccess == BufferShaderAccess::READ_ONLY && size<= card->maxShaderAccessReadOnlyBufferSize()) || shaderAccess != BufferShaderAccess::READ_ONLY) && "Buffers with BufferShaderAccess::READ_ONLY cannot exceed size found in GraphicsCard::maxShaderAccessReadOnlyBufferSize");
+            SLAG_ASSERT(((shaderAccess == BufferMemoryType::UNIFORM && size%256 == 0) || shaderAccess != BufferMemoryType::UNIFORM) && "Buffers with BufferMemoryType::UNIFORM must be a multiple of 256 bytes in size");
+            SLAG_ASSERT(((shaderAccess == BufferMemoryType::UNIFORM && size<= card->maxShaderAccessUniformBufferSize()) || shaderAccess != BufferMemoryType::UNIFORM) && "Buffers with BufferMemoryType::UNIFORM cannot exceed size found in GraphicsCard::maxShaderAccessUniformBufferSize");
             _size = size;
             _graphicsCard = card;
-            _dataBits = static_cast<uint8_t>(usage);
-            _dataBits |= static_cast<uint8_t>(shaderAccess) << VKBUFFER_SHADER_SHIFT;
+            _dataBits = static_cast<uint8_t>(shaderAccess);
             _dataBits |= static_cast<uint8_t>(cpuAccess) << VKBUFFER_CPU_SHIFT;
 
             VmaAllocationCreateInfo allocationCreateInfo{};
@@ -48,7 +46,7 @@ namespace slag
             VkBufferCreateInfo bufferCreateInfo{};
             bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
             bufferCreateInfo.size = _size;
-            bufferCreateInfo.usage = VulkanBackend::nativeBufferUsage(usage,shaderAccess);
+            bufferCreateInfo.usage = VulkanBackend::nativeBufferUsage(shaderAccess);
 
             auto result = vmaCreateBuffer(_graphicsCard->allocator(),&bufferCreateInfo,&allocationCreateInfo,&_buffer,&_allocation,nullptr);
             if (result != VK_SUCCESS)
@@ -97,14 +95,9 @@ namespace slag
             return vkGetBufferDeviceAddress(_graphicsCard->device(), &address_info);
         }
 
-        BufferUsage VulkanBuffer::usage() const
+        BufferMemoryType VulkanBuffer::memoryType() const
         {
-            return static_cast<BufferUsage>(_dataBits & VKBUFFER_USAGE_BITS);
-        }
-
-        BufferShaderAccess VulkanBuffer::shaderAccess() const
-        {
-            return static_cast<BufferShaderAccess>((_dataBits & VKBUFFER_SHADER_BITS) >> VKBUFFER_SHADER_SHIFT);
+            return static_cast<BufferMemoryType>((_dataBits & VKBUFFER_MEMORY_BITS));
         }
 
         BufferCPUAccess VulkanBuffer::cpuAccess() const
@@ -122,6 +115,16 @@ namespace slag
             return _graphicsCard;
         }
 
+        void* VulkanBuffer::userData()
+        {
+            return _userData;
+        }
+
+        void VulkanBuffer::setUserData(void* userData)
+        {
+            _userData = userData;
+        }
+
         VkBuffer VulkanBuffer::vulkanHandle() const
         {
             return _buffer;
@@ -134,7 +137,13 @@ namespace slag
             std::swap(_buffer,from._buffer);
             std::swap(_allocation,from._allocation);
             std::swap(_data,from._data);
+            std::swap(_userData,from._userData);
             _dataBits = from._dataBits;
+
+            if (_allocation)
+            {
+                vmaSetAllocationUserData(_graphicsCard->allocator(),_allocation,&_selfReference);
+            }
         }
     } // vulkan
 } // slag

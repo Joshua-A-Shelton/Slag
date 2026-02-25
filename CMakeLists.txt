@@ -65,6 +65,9 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/backends/vulkan/IVulkanCommandBuffer.h
             src/slag/backends/vulkan/VulkanSubmissionQueue.cpp
             src/slag/backends/vulkan/VulkanSubmissionQueue.h
+            src/slag/backends/vulkan/VulkanTexture.cpp
+            src/slag/backends/vulkan/VulkanTexture.h
+            src/slag/backends/vulkan/VulkanGPUMemoryReference.h
     )
 endif()
 if(SLAG_DX12_BACKEND)
@@ -122,6 +125,7 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/Semaphore.h
         src/slag/utilities/SLAG_ASSERT.h
         src/slag/exceptions/ResourceCreationError.h
+        src/slag/core/PixelFormatProperties.h
 )
 #link spirv if we need to
 if(USE_SPIRV_REFLECTION)
@@ -277,7 +281,8 @@ if(SLAG_BUILD_TESTS)
             tests/utilities/GeneralUtilities.h
             tests/tests/Semaphore.cpp
             tests/tests/CommandBuffer.cpp
-            tests/tests/SubmissionQueue.cpp)
+            tests/tests/SubmissionQueue.cpp
+            tests/tests/Texture.cpp)
 
     target_link_libraries(SlagTests GTest::gtest SDL3::SDL3 glm::glm slag::Slag)
 endif ()

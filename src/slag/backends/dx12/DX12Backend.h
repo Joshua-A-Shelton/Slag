@@ -20,6 +20,8 @@ namespace slag
             [[nodiscard]] uint32_t graphicsCardCount()const override;
             [[nodiscard]] GraphicsCard* graphicsCard(uint32_t index)override;
             [[nodiscard]] SlagDebugHandlerPtr getDebugHandler() const;
+
+            static DXGI_FORMAT nativeFormat(PixelFormat format);
         private:
             SlagInitializationResult initializeBackend(const InitializationData& initializationData)override;
             std::vector<DX12GraphicsCard> _graphicsCards;

@@ -140,9 +140,77 @@ namespace slag
             return _videoMemory;
         }
 
-        uint64_t DX12GraphicsCard::maxShaderAccessReadOnlyBufferSize() const
+        uint64_t DX12GraphicsCard::maxShaderAccessUniformBufferSize() const
         {
             return 65536;
+        }
+
+        PixelFormatProperties DX12GraphicsCard::formatProperties(PixelFormat format) const
+        {
+             PixelFormatProperties properties{};
+            if (format == PixelFormat::UNDEFINED)
+            {
+                properties.tiling = TextureTiling::UNSUPPORTED;
+                return properties;
+            }
+
+            auto dxformat = DX12Backend::nativeFormat(format);
+            D3D12_FEATURE_DATA_FORMAT_SUPPORT formatSupport{dxformat};
+            _device->CheckFeatureSupport(D3D12_FEATURE_FORMAT_INFO,&formatSupport,sizeof(formatSupport));
+            if (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_NONE )
+            {
+                return properties;
+            }
+
+            if (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE)
+            {
+                properties.validUsageFlags |= TextureUsageFlags::SAMPLED;
+            }
+
+            if (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_RENDER_TARGET)
+            {
+                properties.validUsageFlags |= TextureUsageFlags::COLOR_TARGET;
+            }
+            if (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_DEPTH_STENCIL)
+            {
+                properties.validUsageFlags |= TextureUsageFlags::DEPTH_STENCIL_TARGET;
+            }
+            if (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_TYPED_UNORDERED_ACCESS_VIEW)
+            {
+                properties.validUsageFlags |= TextureUsageFlags::UNORDERED_ACCESS;
+            }
+
+            //TODO: not sure if this is right or not.... but there's not great documentation on which allow linear or not
+            //https://learn.microsoft.com/en-us/windows/win32/direct3ddxgi/checking-hardware-feature-support
+            if (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE)
+            {
+                properties.linearFilteringCapable = true;
+            }
+            else
+            {
+                properties.linearFilteringCapable = false;
+            }
+
+            if (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE)
+            {
+                properties.blitSource = true;
+            }
+            if (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_RENDER_TARGET)
+            {
+                properties.blitDestination = true;
+            }
+
+            //TODO: not sure about this... I think it's right, but could easily be wrong
+            if (formatSupport.Support2 & D3D12_FORMAT_SUPPORT2_TILED)
+            {
+                properties.tiling = TextureTiling::OPTIMIZED;
+            }
+            else
+            {
+                properties.tiling = TextureTiling::LINEAR;
+            }
+
+            return properties;
         }
 
         bool DX12GraphicsCard::cacheCoherentSharedMemory() const
@@ -187,11 +255,33 @@ namespace slag
 
         Buffer* DX12GraphicsCard::newBuffer(
             uint64_t size,
-            BufferUsage usage,
-            BufferShaderAccess shaderAccess,
+            BufferMemoryType memoryType,
             BufferCPUAccess cpuAccess)
         {
-            return new DX12Buffer(this,size,usage,shaderAccess,cpuAccess);
+            return new DX12Buffer(this,size,memoryType,cpuAccess);
+        }
+
+        Texture* DX12GraphicsCard::newTexture(uint32_t width, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,uint32_t arrayDepth)
+        {
+            throw NotImplemented();
+        }
+
+        Texture* DX12GraphicsCard::newTexture(uint32_t width, uint32_t height, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,
+            SampleCount sampleCount, uint32_t layers)
+        {
+            throw NotImplemented();
+        }
+
+        Texture* DX12GraphicsCard::newTexture(uint32_t width, uint32_t height, uint32_t depth, PixelFormat format, TextureUsageFlags usage,
+            uint32_t mipLevels)
+        {
+            throw NotImplemented();
+        }
+
+        Texture* DX12GraphicsCard::newTextureCube(uint32_t dimension, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,
+            SampleCount sampleCount,uint32_t arrayDepth)
+        {
+            throw NotImplemented();
         }
 
         D3D12MA::Allocator* DX12GraphicsCard::allocator()

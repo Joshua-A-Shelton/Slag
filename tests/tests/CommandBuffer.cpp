@@ -1,10 +1,19 @@
 #include <gtest/gtest.h>
 #include <slag/Slag.h>
+#include "../utilities/GeneralUtilities.h"
 using namespace slag;
 
 TEST(CommandBuffer, Create)
 {
-    GTEST_FAIL();
+    auto card = Slag::backend()->graphicsCard(0);
+    auto queueType = sequentialEnumRange(QueueType::GRAPHICS,QueueType::TRANSFER);
+    for (int i=0; i < queueType.size(); i++)
+    {
+        auto cb = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(queueType[i]));
+        GTEST_ASSERT_EQ(cb->graphicsCard(),card);
+        GTEST_ASSERT_EQ(cb->type(),queueType[i]);
+        GTEST_ASSERT_EQ(cb->level(),CommandBufferLevel::PRIMARY);
+    }
 }
 
 TEST(CommandBuffer, SubBuffer)
@@ -16,8 +25,8 @@ TEST(CommandBuffer, CopyBufferToBuffer)
 {
     auto card = Slag::backend()->graphicsCard(0);
     auto commandBuffer = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(QueueType::TRANSFER));
-    auto srcBuffer = std::unique_ptr<Buffer>(card->newBuffer(128,BufferUsage::ARBITRARY,BufferShaderAccess::READ_WRITE,BufferCPUAccess::WRITE_ONLY));
-    auto dstBuffer = std::unique_ptr<Buffer>(card->newBuffer(128,BufferUsage::ARBITRARY,BufferShaderAccess::READ_WRITE,BufferCPUAccess::READ_WRITE));
+    auto srcBuffer = std::unique_ptr<Buffer>(card->newBuffer(128,BufferMemoryType::GENERAL,BufferCPUAccess::WRITE_ONLY));
+    auto dstBuffer = std::unique_ptr<Buffer>(card->newBuffer(128,BufferMemoryType::GENERAL,BufferCPUAccess::READ_WRITE));
     auto finished = std::unique_ptr<Semaphore>(card->newSemaphore());
 
     auto srcPtr = srcBuffer->as<uint8_t>();

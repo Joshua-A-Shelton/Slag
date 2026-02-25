@@ -26,7 +26,7 @@ TEST(GraphicsCard, MaxShaderAccessReadOnlyBufferSize)
     for (auto i=0u; i< Slag::backend()->graphicsCardCount(); i++)
     {
         GraphicsCard* card = Slag::backend()->graphicsCard(i);
-        GTEST_ASSERT_TRUE(card->maxShaderAccessReadOnlyBufferSize()>=16384);
+        GTEST_ASSERT_TRUE(card->maxShaderAccessUniformBufferSize()>=16384);
     }
 }
 
@@ -40,8 +40,9 @@ TEST(GraphicsCard, DefragmentAll)
     auto buffer6 = std::unique_ptr<Buffer>(card->newBuffer(512));
     auto buffer7 = std::unique_ptr<Buffer>(card->newBuffer(512));
     auto buffer8 = std::unique_ptr<Buffer>(card->newBuffer(256));
-    //auto texture = std::unique_ptr<Texture>(card->newTexture());
-    auto uploadBuffer = std::unique_ptr<Buffer>(card->newBuffer(256,BufferUsage::ARBITRARY,BufferShaderAccess::READ_ONLY,BufferCPUAccess::READ_WRITE));
+    //need to do something here to see that it's moved... it should be returned as an object that's been moved
+    auto texture = std::unique_ptr<Texture>(card->newTexture(500,500,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+    auto uploadBuffer = std::unique_ptr<Buffer>(card->newBuffer(256,BufferMemoryType::UNIFORM,BufferCPUAccess::READ_WRITE));
     auto data = uploadBuffer->as<uint8_t>();
     for (int i=0; i< 256; i++)
     {
@@ -82,7 +83,7 @@ TEST(GraphicsCard, DefragmentAll)
     card->defragmentMemory(nullptr,0,&signal,1);
     GTEST_ASSERT_NE(virtualAddress, buffer8->deviceAddress());
 
-    auto downloadData = std::unique_ptr<Buffer>(card->newBuffer(256,BufferUsage::ARBITRARY,BufferShaderAccess::READ_WRITE,BufferCPUAccess::READ_WRITE));
+    auto downloadData = std::unique_ptr<Buffer>(card->newBuffer(256,BufferMemoryType::GENERAL,BufferCPUAccess::READ_WRITE));
     auto transferFinished = std::unique_ptr<Semaphore>(card->newSemaphore());
     commandBuffer->begin();
     commandBuffer->copyBufferToBuffer(buffer8.get(),0,downloadData.get(),0,256);
