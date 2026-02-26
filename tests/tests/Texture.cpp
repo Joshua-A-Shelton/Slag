@@ -9,7 +9,7 @@ TEST(Texture, Create)
     auto card = Slag::backend()->graphicsCard(0);
     auto tex1d = std::unique_ptr<Texture>(card->newTexture(256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::NONE,3));
     auto tex2d = std::unique_ptr<Texture>(card->newTexture(100,250,PixelFormat::R32_FLOAT,TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::UNORDERED_ACCESS,2,SampleCount::ONE));
-    auto tex2dDepth = std::unique_ptr<Texture>(card->newTexture(1920,1080,PixelFormat::D24_UNORM_S8_UINT,TextureUsageFlags::DEPTH_STENCIL_TARGET,4,SampleCount::EIGHT));
+    auto tex2dDepth = std::unique_ptr<Texture>(card->newTexture(1920,1080,PixelFormat::D32_FLOAT_S8X24_UINT,TextureUsageFlags::DEPTH_STENCIL_TARGET,4,SampleCount::EIGHT));
     auto tex2dArray = std::unique_ptr<Texture>(card->newTexture(50,50,PixelFormat::BC7_UNORM_SRGB,TextureUsageFlags::UNORDERED_ACCESS,2,SampleCount::TWO,5));
     auto tex3d = std::unique_ptr<Texture>(card->newTexture(25,25,25,PixelFormat::R32G32B32A32_FLOAT,TextureUsageFlags::SAMPLED | TextureUsageFlags::UNORDERED_ACCESS,3));
     auto cube = std::unique_ptr<Texture>(card->newTextureCube(500,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,3,SampleCount::FOUR));
