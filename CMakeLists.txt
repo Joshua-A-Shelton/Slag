@@ -89,6 +89,8 @@ if(SLAG_DX12_BACKEND)
             src/slag/backends/dx12/IDX12CommandBuffer.h
             src/slag/backends/dx12/DX12CommandBuffer.cpp
             src/slag/backends/dx12/DX12CommandBuffer.h
+            src/slag/backends/dx12/DX12Texture.cpp
+            src/slag/backends/dx12/DX12Texture.h
     )
 endif()
 

@@ -5,6 +5,7 @@
 #include "DX12CommandBuffer.h"
 #include "DX12Semaphore.h"
 #include "DX12SubmissionQueue.h"
+#include "DX12Texture.h"
 #include "slag/exceptions/NotImplemented.h"
 #undef ERROR
 
@@ -263,27 +264,27 @@ namespace slag
 
         Texture* DX12GraphicsCard::newTexture(uint32_t width, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,uint32_t arrayDepth)
         {
-            throw NotImplemented();
+            return new DX12Texture(this,width,format,usage,mipLevels,arrayDepth);
         }
 
         Texture* DX12GraphicsCard::newTexture(uint32_t width, uint32_t height, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,
             SampleCount sampleCount, uint32_t layers)
         {
-            throw NotImplemented();
+            return new DX12Texture(this,width,height,format,usage,mipLevels,sampleCount,layers);
         }
 
         Texture* DX12GraphicsCard::newTexture(uint32_t width, uint32_t height, uint32_t depth, PixelFormat format, TextureUsageFlags usage,
             uint32_t mipLevels)
         {
-            throw NotImplemented();
+            return new DX12Texture(this,width,height,depth,format,usage,mipLevels);
         }
 
         Texture* DX12GraphicsCard::newTextureCube(uint32_t dimension, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,uint32_t arrayDepth)
         {
-            throw NotImplemented();
+            return new DX12Texture(this,format,usage,dimension,mipLevels,arrayDepth);
         }
 
-        D3D12MA::Allocator* DX12GraphicsCard::allocator()
+        D3D12MA::Allocator* DX12GraphicsCard::allocator() const
         {
             return _allocator;
         }

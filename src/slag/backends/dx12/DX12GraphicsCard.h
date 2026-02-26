@@ -77,7 +77,7 @@ namespace slag
                 )override;
 
             //DX12 specific features
-            D3D12MA::Allocator* allocator();
+            D3D12MA::Allocator* allocator() const;
             Microsoft::WRL::ComPtr<ID3D12Device2>& device();
         private:
             void move(DX12GraphicsCard& from);

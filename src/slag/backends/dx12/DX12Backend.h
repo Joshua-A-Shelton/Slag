@@ -22,6 +22,7 @@ namespace slag
             [[nodiscard]] SlagDebugHandlerPtr getDebugHandler() const;
 
             static DXGI_FORMAT nativeFormat(PixelFormat format);
+            static D3D12_RESOURCE_FLAGS nativeTextureUsageFlags(TextureUsageFlags usage);
         private:
             SlagInitializationResult initializeBackend(const InitializationData& initializationData)override;
             std::vector<DX12GraphicsCard> _graphicsCards;

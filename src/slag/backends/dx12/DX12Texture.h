@@ -1,29 +1,27 @@
-#ifndef SLAG_VULKANTEXTURE_H
-#define SLAG_VULKANTEXTURE_H
+#ifndef SLAG_DX12TEXTURE_H
+#define SLAG_DX12TEXTURE_H
 #include <slag/Slag.h>
-#include <vulkan/vulkan.h>
-
-#include "vk_mem_alloc.h"
-#include "VulkanGPUMemoryReference.h"
+#include <d3d12.h>
+#include <D3D12MemAlloc.h>
 
 namespace slag
 {
-    namespace vulkan
+    namespace dx12
     {
-        class VulkanGraphicsCard;
-        class VulkanTexture: public Texture
+        class DX12GraphicsCard;
+        class DX12Texture: public Texture
         {
         public:
-            VulkanTexture(
-                VulkanGraphicsCard* card,
+            DX12Texture(
+                DX12GraphicsCard* card,
                 uint32_t width,
                 PixelFormat format,
                 TextureUsageFlags usage,
                 uint32_t mipLevels,
                 uint32_t layers);
 
-            VulkanTexture(
-                VulkanGraphicsCard* card,
+            DX12Texture(
+                DX12GraphicsCard* card,
                 uint32_t width,
                 uint32_t height,
                 PixelFormat format,
@@ -32,8 +30,8 @@ namespace slag
                 SampleCount sampleCount,
                 uint32_t layers);
 
-            VulkanTexture(
-                VulkanGraphicsCard* card,
+            DX12Texture(
+                DX12GraphicsCard* card,
                 uint32_t width,
                 uint32_t height,
                 uint32_t depth,
@@ -41,19 +39,19 @@ namespace slag
                 TextureUsageFlags usage,
                 uint32_t mipLevels);
 
-            VulkanTexture(
-                VulkanGraphicsCard* card,
+            DX12Texture(
+                DX12GraphicsCard* card,
                 PixelFormat format,
                 TextureUsageFlags usage,
                 uint32_t dimension,
                 uint32_t mipLevels,
                 uint32_t arrayDepth);
 
-            VulkanTexture(const VulkanTexture&)=delete;
-            VulkanTexture& operator=(const VulkanTexture&)=delete;
-            VulkanTexture(VulkanTexture&& from) noexcept;
-            VulkanTexture& operator=(VulkanTexture&& from) noexcept;
-            ~VulkanTexture()override;
+            DX12Texture(const DX12Texture&)=delete;
+            DX12Texture& operator=(const DX12Texture&)=delete;
+            DX12Texture(DX12Texture&& from) noexcept;
+            DX12Texture& operator=(DX12Texture&& from) noexcept;
+            ~DX12Texture()override;
             [[nodiscard]] uint32_t width()const override;
             [[nodiscard]] uint32_t height()const override;
             [[nodiscard]] uint32_t depth()const override;
@@ -68,13 +66,12 @@ namespace slag
             void setUserData(void* userData)override;
 
         private:
-            void move(VulkanTexture& from);
-            void construct(VkImageType imageType,PixelFormatProperties, VkImageCreateFlags flags);
-            VkImageViewCreateInfo _descriptorInfo{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-            VulkanGPUMemoryReference _selfReference{.memoryType = MemoryType::TEXTURE, .reference = {.texture = this}};
-            VulkanGraphicsCard* _graphicsCard = nullptr;
-            VmaAllocation _allocation = nullptr;
-            VkImage _texture = nullptr;
+            void move(DX12Texture& from);
+            void construct(D3D12_RESOURCE_DIMENSION dimension);
+
+            DX12GraphicsCard* _graphicsCard = nullptr;
+            ID3D12Resource* _texture = nullptr;
+            D3D12MA::Allocation* _allocation = nullptr;
             void* _userData = nullptr;
             PixelFormat _format = PixelFormat::UNDEFINED;
             TextureUsageFlags _usage = TextureUsageFlags::NONE;
@@ -82,7 +79,7 @@ namespace slag
             TextureType _type = TextureType::TWO_DIMENSIONAL;
             uint32_t _width = 1, _height = 1, _depth = 1, _layers = 1, _mipLevels = 1;
         };
-    } // vulkan
+    } // dx12
 } // slag
 
-#endif //SLAG_VULKANTEXTURE_H
+#endif //SLAG_DX12TEXTURE_H
