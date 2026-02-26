@@ -30,7 +30,7 @@ TEST(Texture, Create)
     GTEST_ASSERT_EQ(tex2d->depth(),1);
     GTEST_ASSERT_EQ(tex2d->layers(),1);
     GTEST_ASSERT_EQ(tex2d->format(),PixelFormat::R32_FLOAT);
-    GTEST_ASSERT_EQ(tex2d->usage(),TextureUsageFlags::COLOR_TARGET, TextureUsageFlags::UNORDERED_ACCESS);
+    GTEST_ASSERT_EQ(tex2d->usage(),TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::UNORDERED_ACCESS);
     GTEST_ASSERT_EQ(tex2d->mipLevels(),2);
     GTEST_ASSERT_EQ(tex2d->sampleCount(),SampleCount::ONE);
     GTEST_ASSERT_EQ(tex2d->type(), TextureType::TWO_DIMENSIONAL);
