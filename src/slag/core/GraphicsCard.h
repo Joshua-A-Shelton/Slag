@@ -107,6 +107,7 @@ namespace slag
          * @param format Format of texels in texture
          * @param usage Capabilities of this texture
          * @param mipLevels Number of downsized LOD levels
+         * @param sampleCount Number of samples per texel
          * @param layers Array depth of texture
          * @return
          * @throws slag::ResourceCreationError if unable to allocate a new texture
@@ -117,7 +118,7 @@ namespace slag
             PixelFormat format,
             TextureUsageFlags usage,
             uint32_t mipLevels = 1,
-            SampleCount = SampleCount::ONE,
+            SampleCount sampleCount = SampleCount::ONE,
             uint32_t layers = 1)=0;
 
         /**
@@ -145,7 +146,7 @@ namespace slag
          * @param format Format of texels in texture
          * @param usage Capabilities of this texture
          * @param mipLevels Number of downsized LOD levels
-         * @param arrayDepth number of cubes in the array (Total layers will be arrayDepth * 6)
+         * @param arrayDepth Number of cubes in the array (Total layers will be arrayDepth * 6)
          * @return
          * @throws slag::ResourceCreationError if unable to allocate a new texture
          */
@@ -154,7 +155,6 @@ namespace slag
             PixelFormat format,
             TextureUsageFlags usage,
             uint32_t mipLevels = 1,
-            SampleCount = SampleCount::ONE,
             uint32_t arrayDepth = 1
             )=0;
     };

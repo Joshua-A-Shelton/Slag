@@ -278,8 +278,7 @@ namespace slag
             throw NotImplemented();
         }
 
-        Texture* DX12GraphicsCard::newTextureCube(uint32_t dimension, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,
-            SampleCount sampleCount,uint32_t arrayDepth)
+        Texture* DX12GraphicsCard::newTextureCube(uint32_t dimension, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,uint32_t arrayDepth)
         {
             throw NotImplemented();
         }

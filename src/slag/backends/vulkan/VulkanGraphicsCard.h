@@ -68,7 +68,6 @@ namespace slag
                 PixelFormat format,
                 TextureUsageFlags usage,
                 uint32_t mipLevels,
-                SampleCount sampleCount,
                 uint32_t arrayDepth
                 )override;
 

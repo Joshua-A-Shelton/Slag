@@ -3,6 +3,7 @@
 #include "VulkanBackend.h"
 #include "VulkanGraphicsCard.h"
 #include "slag/exceptions/ResourceCreationError.h"
+#include "slag/utilities/SLAG_ASSERT.h"
 
 namespace slag
 {
@@ -27,6 +28,7 @@ namespace slag
             _usage = usage;
             _mipLevels = mipLevels;
             _layers = layers;
+            _type = TextureType::ONE_DIMENSIONAL;
 
             construct(VK_IMAGE_TYPE_1D,formatInfo,0);
 
@@ -42,6 +44,7 @@ namespace slag
             SampleCount sampleCount,
             uint32_t layers)
         {
+            SLAG_ASSERT(((mipLevels > 1 && sampleCount == SampleCount::ONE) || (sampleCount != SampleCount::ONE && mipLevels == 1) || (mipLevels == 1 && sampleCount == SampleCount::ONE)) && "Texture cannot have both multiple mip levels and have a sample count greater than one");
             auto formatInfo = card->formatProperties(format);
             if (formatInfo.tiling == TextureTiling::UNSUPPORTED)
             {
@@ -56,9 +59,58 @@ namespace slag
             _mipLevels = mipLevels;
             _sampleCount = sampleCount;
             _layers = layers;
+            _type = TextureType::TWO_DIMENSIONAL;
 
             construct(VK_IMAGE_TYPE_2D,formatInfo,0);
 
+        }
+
+        VulkanTexture::VulkanTexture(
+            VulkanGraphicsCard* card,
+            uint32_t width,
+            uint32_t height,
+            uint32_t depth,
+            PixelFormat format,
+            TextureUsageFlags usage,
+            uint32_t mipLevels)
+        {
+            auto formatInfo = card->formatProperties(format);
+            if (formatInfo.tiling == TextureTiling::UNSUPPORTED)
+            {
+                throw ResourceCreationError("Given Pixel Format is not compatible on this graphics card");
+            }
+
+            _graphicsCard = card;
+            _width = width;
+            _height = height;
+            _depth = depth;
+            _format = format;
+            _usage = usage;
+            _mipLevels = mipLevels;
+            _type = TextureType::THREE_DIMENSIONAL;
+
+            construct(VK_IMAGE_TYPE_3D,formatInfo,0);
+        }
+
+        VulkanTexture::VulkanTexture(VulkanGraphicsCard* card, PixelFormat format,
+            TextureUsageFlags usage, uint32_t dimension, uint32_t mipLevels, uint32_t arrayDepth)
+        {
+            auto formatInfo = card->formatProperties(format);
+            if (formatInfo.tiling == TextureTiling::UNSUPPORTED)
+            {
+                throw ResourceCreationError("Given Pixel Format is not compatible on this graphics card");
+            }
+
+            _graphicsCard = card;
+            _width = dimension;
+            _height = dimension;
+            _format = format;
+            _usage = usage;
+            _mipLevels = mipLevels;
+            _layers = arrayDepth*6;
+            _type = TextureType::CUBE_MAP;
+
+            construct(VK_IMAGE_TYPE_2D,formatInfo,VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT);
         }
 
         VulkanTexture::VulkanTexture(VulkanTexture&& from) noexcept

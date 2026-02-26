@@ -32,6 +32,23 @@ namespace slag
                 SampleCount sampleCount,
                 uint32_t layers);
 
+            VulkanTexture(
+                VulkanGraphicsCard* card,
+                uint32_t width,
+                uint32_t height,
+                uint32_t depth,
+                PixelFormat format,
+                TextureUsageFlags usage,
+                uint32_t mipLevels);
+
+            VulkanTexture(
+                VulkanGraphicsCard* card,
+                PixelFormat format,
+                TextureUsageFlags usage,
+                uint32_t dimension,
+                uint32_t mipLevels,
+                uint32_t arrayDepth);
+
             VulkanTexture(const VulkanTexture&)=delete;
             VulkanTexture& operator=(const VulkanTexture&)=delete;
             VulkanTexture(VulkanTexture&& from) noexcept;

@@ -168,9 +168,11 @@ namespace slag
         PixelFormatProperties VulkanGraphicsCard::formatProperties(PixelFormat format) const
         {
             auto nativeFormat = VulkanBackend::nativeFormat(format);
+            PixelFormatProperties properties{};
+
             VkFormatProperties2 formatProperties{.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2};
             vkGetPhysicalDeviceFormatProperties2(_physicalDevice,nativeFormat.format,&formatProperties);
-            PixelFormatProperties properties{};
+
             VkFormatFeatureFlags2 features = 0;
             TextureUsageFlags usage =static_cast<TextureUsageFlags>(0);
 
@@ -290,13 +292,13 @@ namespace slag
         Texture* VulkanGraphicsCard::newTexture(uint32_t width, uint32_t height, uint32_t depth, PixelFormat format, TextureUsageFlags usage,
             uint32_t mipLevels)
         {
-            throw NotImplemented();
+            return new VulkanTexture(this,width,height,depth,format,usage,mipLevels);
         }
 
         Texture* VulkanGraphicsCard::newTextureCube(uint32_t dimension, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,
-            SampleCount sampleCount,uint32_t arrayDepth)
+            uint32_t arrayDepth)
         {
-            throw NotImplemented();
+            return new VulkanTexture(this,format,usage,dimension,mipLevels,arrayDepth);
         }
 
         void VulkanGraphicsCard::move(VulkanGraphicsCard& from)

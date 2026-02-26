@@ -9,16 +9,17 @@ TEST(Texture, Create)
     auto card = Slag::backend()->graphicsCard(0);
     auto tex1d = std::unique_ptr<Texture>(card->newTexture(256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::NONE,3));
     auto tex2d = std::unique_ptr<Texture>(card->newTexture(100,250,PixelFormat::R32_FLOAT,TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::UNORDERED_ACCESS,2,SampleCount::ONE));
-    auto tex2dDepth = std::unique_ptr<Texture>(card->newTexture(1920,1080,PixelFormat::D32_FLOAT_S8X24_UINT,TextureUsageFlags::DEPTH_STENCIL_TARGET,4,SampleCount::EIGHT));
-    auto tex2dArray = std::unique_ptr<Texture>(card->newTexture(50,50,PixelFormat::BC7_UNORM_SRGB,TextureUsageFlags::UNORDERED_ACCESS,2,SampleCount::TWO,5));
+    auto tex2dDepth = std::unique_ptr<Texture>(card->newTexture(1920,1080,PixelFormat::D32_FLOAT_S8X24_UINT,TextureUsageFlags::DEPTH_STENCIL_TARGET,1,SampleCount::EIGHT));
+    auto tex2dDepthMultiMip = std::unique_ptr<Texture>(card->newTexture(1920,1080,PixelFormat::D32_FLOAT_S8X24_UINT,TextureUsageFlags::DEPTH_STENCIL_TARGET,3,SampleCount::ONE));
+    auto tex2dArray = std::unique_ptr<Texture>(card->newTexture(50,50,PixelFormat::BC7_UNORM_SRGB,TextureUsageFlags::SAMPLED,2,SampleCount::ONE,5));
     auto tex3d = std::unique_ptr<Texture>(card->newTexture(25,25,25,PixelFormat::R32G32B32A32_FLOAT,TextureUsageFlags::SAMPLED | TextureUsageFlags::UNORDERED_ACCESS,3));
-    auto cube = std::unique_ptr<Texture>(card->newTextureCube(500,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,3,SampleCount::FOUR));
+    auto cube = std::unique_ptr<Texture>(card->newTextureCube(500,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,3,2));
 
     GTEST_ASSERT_EQ(tex1d->width(),256);
     GTEST_ASSERT_EQ(tex1d->height(),1);
     GTEST_ASSERT_EQ(tex1d->depth(),1);
     GTEST_ASSERT_EQ(tex1d->layers(),1);
-    GTEST_ASSERT_EQ(tex1d->format(),PixelFormat::R8G8B8A8_SNORM);
+    GTEST_ASSERT_EQ(tex1d->format(),PixelFormat::R8G8B8A8_UNORM);
     GTEST_ASSERT_EQ(tex1d->usage(),TextureUsageFlags::NONE);
     GTEST_ASSERT_EQ(tex1d->mipLevels(),3);
     GTEST_ASSERT_EQ(tex1d->sampleCount(),SampleCount::ONE);
@@ -40,21 +41,32 @@ TEST(Texture, Create)
     GTEST_ASSERT_EQ(tex2dDepth->height(),1080);
     GTEST_ASSERT_EQ(tex2dDepth->depth(),1);
     GTEST_ASSERT_EQ(tex2dDepth->layers(),1);
-    GTEST_ASSERT_EQ(tex2dDepth->format(),PixelFormat::D24_UNORM_S8_UINT);
+    GTEST_ASSERT_EQ(tex2dDepth->format(),PixelFormat::D32_FLOAT_S8X24_UINT);
     GTEST_ASSERT_EQ(tex2dDepth->usage(),TextureUsageFlags::DEPTH_STENCIL_TARGET);
-    GTEST_ASSERT_EQ(tex2dDepth->mipLevels(),4);
+    GTEST_ASSERT_EQ(tex2dDepth->mipLevels(),1);
     GTEST_ASSERT_EQ(tex2dDepth->sampleCount(),SampleCount::EIGHT);
     GTEST_ASSERT_EQ(tex2dDepth->type(), TextureType::TWO_DIMENSIONAL);
     GTEST_ASSERT_EQ(tex2dDepth->graphicsCard(),card);
+
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->width(),1920);
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->height(),1080);
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->depth(),1);
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->layers(),1);
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->format(),PixelFormat::D32_FLOAT_S8X24_UINT);
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->usage(),TextureUsageFlags::DEPTH_STENCIL_TARGET);
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->mipLevels(),3);
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->sampleCount(),SampleCount::ONE);
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->type(), TextureType::TWO_DIMENSIONAL);
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->graphicsCard(),card);
 
     GTEST_ASSERT_EQ(tex2dArray->width(),50);
     GTEST_ASSERT_EQ(tex2dArray->height(),50);
     GTEST_ASSERT_EQ(tex2dArray->depth(),1);
     GTEST_ASSERT_EQ(tex2dArray->layers(),5);
     GTEST_ASSERT_EQ(tex2dArray->format(),PixelFormat::BC7_UNORM_SRGB);
-    GTEST_ASSERT_EQ(tex2dArray->usage(),TextureUsageFlags::UNORDERED_ACCESS);
+    GTEST_ASSERT_EQ(tex2dArray->usage(),TextureUsageFlags::SAMPLED);
     GTEST_ASSERT_EQ(tex2dArray->mipLevels(),2);
-    GTEST_ASSERT_EQ(tex2dArray->sampleCount(),SampleCount::TWO);
+    GTEST_ASSERT_EQ(tex2dArray->sampleCount(),SampleCount::ONE);
     GTEST_ASSERT_EQ(tex2dArray->type(), TextureType::TWO_DIMENSIONAL);
     GTEST_ASSERT_EQ(tex2dArray->graphicsCard(),card);
 
@@ -72,11 +84,11 @@ TEST(Texture, Create)
     GTEST_ASSERT_EQ(cube->width(),500);
     GTEST_ASSERT_EQ(cube->height(),500);
     GTEST_ASSERT_EQ(cube->depth(),1);
-    GTEST_ASSERT_EQ(cube->layers(),6);
+    GTEST_ASSERT_EQ(cube->layers(),12);
     GTEST_ASSERT_EQ(cube->format(),PixelFormat::R8G8B8A8_UNORM);
     GTEST_ASSERT_EQ(cube->usage(),TextureUsageFlags::SAMPLED);
     GTEST_ASSERT_EQ(cube->mipLevels(),3);
-    GTEST_ASSERT_EQ(cube->sampleCount(),SampleCount::FOUR);
+    GTEST_ASSERT_EQ(cube->sampleCount(),SampleCount::ONE);
     GTEST_ASSERT_EQ(cube->type(), TextureType::CUBE_MAP);
     GTEST_ASSERT_EQ(cube->graphicsCard(),card);
 }
@@ -129,13 +141,13 @@ TEST(Texture, InvalidColorAndDepthUsage)
     GTEST_FLAG_SET(death_test_style, "threadsafe");
     auto card = Slag::backend()->graphicsCard(0);
 
-    EXPECT_DEATH(auto tex = card->newTexture(25,25,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::DEPTH_STENCIL_TARGET),"Texture cannot be both a color target and a depth/stencil target");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture(25,25,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::DEPTH_STENCIL_TARGET)),"Texture cannot be both a color target and a depth/stencil target");
 }
 
 TEST(Texture, InvalidUnDefinedFormat)
 {
     auto card = Slag::backend()->graphicsCard(0);
-    EXPECT_THROW(auto tex = card->newTexture(25,25,PixelFormat::UNDEFINED,TextureUsageFlags::NONE),ResourceCreationError);
+    EXPECT_THROW(auto tex = std::unique_ptr<Texture>(card->newTexture(25,25,PixelFormat::UNDEFINED,TextureUsageFlags::NONE)),ResourceCreationError);
 }
 
 TEST(Texture, InvalidColorUsageFormat)
@@ -149,7 +161,7 @@ TEST(Texture, InvalidColorUsageFormat)
         PixelFormatProperties properties = card->formatProperties(format);
         if (properties.tiling == TextureTiling::UNSUPPORTED && format != PixelFormat::UNDEFINED)
         {
-            EXPECT_THROW(auto tex = card->newTexture(25,25,format,TextureUsageFlags::NONE),ResourceCreationError);
+            EXPECT_THROW(auto tex = std::unique_ptr<Texture>(card->newTexture(25,25,format,TextureUsageFlags::NONE)),ResourceCreationError);
             performedTest = true;
         }
     }
@@ -157,5 +169,13 @@ TEST(Texture, InvalidColorUsageFormat)
     {
         GTEST_SKIP();
     }
+}
+
+TEST(Texture,MipSampleCounts)
+{
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    auto card = Slag::backend()->graphicsCard(0);
+
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture(100,100,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,2,SampleCount::TWO)),"Texture cannot have both multiple mip levels and have a sample count greater than one");
 }
 #endif
