@@ -37,8 +37,6 @@ namespace slag
         DX12Texture::DX12Texture(DX12GraphicsCard* card, uint32_t width, uint32_t height, PixelFormat format,
             TextureUsageFlags usage, uint32_t mipLevels, SampleCount sampleCount, uint32_t layers)
         {
-            SLAG_ASSERT(((mipLevels > 1 && sampleCount == SampleCount::ONE) || (sampleCount != SampleCount::ONE && mipLevels == 1) || (mipLevels == 1 && sampleCount == SampleCount::ONE)) && "Texture cannot have both multiple mip levels and have a sample count greater than one");
-
             auto formatInfo = card->formatProperties(format);
             if (formatInfo.tiling == TextureTiling::UNSUPPORTED)
             {
@@ -82,6 +80,7 @@ namespace slag
         DX12Texture::DX12Texture(DX12GraphicsCard* card, PixelFormat format, TextureUsageFlags usage,
             uint32_t dimension, uint32_t mipLevels, uint32_t arrayDepth)
         {
+            SLAG_ASSERT(dimension > 0 && "Texture must have a dimension of at least 1");
             auto formatInfo = card->formatProperties(format);
             if (formatInfo.tiling == TextureTiling::UNSUPPORTED)
             {
@@ -202,6 +201,14 @@ namespace slag
 
         void DX12Texture::construct(D3D12_RESOURCE_DIMENSION dimension)
         {
+            SLAG_ASSERT(_width>0 && "Texture must have a width of at least 1");
+            SLAG_ASSERT(_height>0 && "Texture must have a height of at least 1");
+            SLAG_ASSERT(_depth>0 && "Texture must have a depth of at least 1");
+            SLAG_ASSERT(_layers>0 && "Texture must have a layer count of at least 1");
+            SLAG_ASSERT(_mipLevels>0 && "Texture must have a mip level count of at least 1");
+            SLAG_ASSERT((_usage & (TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::DEPTH_STENCIL_TARGET)) != (TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::DEPTH_STENCIL_TARGET) && "Texture cannot be both a color target and a depth/stencil target");
+            SLAG_ASSERT(((_mipLevels > 1 && _sampleCount == SampleCount::ONE) || (_sampleCount != SampleCount::ONE && _mipLevels == 1) || (_mipLevels == 1 && _sampleCount == SampleCount::ONE)) && "Texture cannot have both multiple mip levels and have a sample count greater than one");
+
             D3D12_RESOURCE_DESC resourceDesc = {};
             resourceDesc.Dimension = dimension;
             resourceDesc.Alignment = 0;
