@@ -90,12 +90,23 @@ namespace slag
             D3D12_FEATURE_DATA_ARCHITECTURE1 architecture{};
             _device->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE1,&architecture,sizeof(D3D12_FEATURE_DATA_ARCHITECTURE1));
 
-            _videoMemory = desc.DedicatedVideoMemory;
-            _sharedMemory = architecture.CacheCoherentUMA;
-
             _graphicsQueue = new DX12SubmissionQueue(this,QueueType::GRAPHICS);
             _computeQueue = new DX12SubmissionQueue(this,QueueType::COMPUTE);
             _transferQueue = new DX12SubmissionQueue(this,QueueType::TRANSFER);
+
+            //Memory Properties
+            _memoryProperties.videoMemory = desc.DedicatedVideoMemory;
+            _memoryProperties.cacheCoherentSharedMemory = architecture.CacheCoherentUMA;
+            _memoryProperties.maxUniformBufferSize = 65536;
+
+            //capabilities
+            _capabilities.defragmentable = true;
+            D3D12_FEATURE_DATA_D3D12_OPTIONS5 options5 = {};
+            if (SUCCEEDED(device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &options5, sizeof(options5))) && options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_0)
+            {
+                _capabilities.raytracing = true;
+            }
+
         }
 
         DX12GraphicsCard::~DX12GraphicsCard()
@@ -136,14 +147,14 @@ namespace slag
             return s_out;
         }
 
-        uint64_t DX12GraphicsCard::videoMemory() const
+        const GraphicsCardMemoryProperties& DX12GraphicsCard::memoryProperties() const
         {
-            return _videoMemory;
+            return _memoryProperties;
         }
 
-        uint64_t DX12GraphicsCard::maxShaderAccessUniformBufferSize() const
+        const GraphicsCardCapabilities& DX12GraphicsCard::capabilities() const
         {
-            return 65536;
+            return _capabilities;
         }
 
         PixelFormatProperties DX12GraphicsCard::formatProperties(PixelFormat format) const
@@ -214,11 +225,6 @@ namespace slag
             return properties;
         }
 
-        bool DX12GraphicsCard::cacheCoherentSharedMemory() const
-        {
-            return _sharedMemory;
-        }
-
         SubmissionQueue* DX12GraphicsCard::graphicsQueue()
         {
             return _graphicsQueue;
@@ -239,7 +245,8 @@ namespace slag
             uint32_t waitCount,
             SemaphoreValue* signal,
             uint32_t signalCount,
-            uint64_t targetBytes)
+            uint64_t targetBytes,
+            std::function<void(MemoryReference*)> memoryMoved)
         {
             throw NotImplemented();
         }
@@ -296,9 +303,12 @@ namespace slag
 
         void DX12GraphicsCard::move(DX12GraphicsCard& from)
         {
+            _memoryProperties = from._memoryProperties;
+            _capabilities = from._capabilities;
             _device = from._device;
             _dxgiFactory = from._dxgiFactory;
             _dxgiAdapter4 = from._dxgiAdapter4;
+            std::swap(_allocator, from._allocator);
             std::swap(_graphicsQueue,from._graphicsQueue);
             std::swap(_computeQueue,from._computeQueue);
             std::swap(_transferQueue,from._transferQueue);

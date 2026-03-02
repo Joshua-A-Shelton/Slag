@@ -26,14 +26,13 @@ namespace slag
             DX12GraphicsCard& operator=(DX12GraphicsCard&& from);
 
             [[nodiscard]] std::string name()const override;
-            [[nodiscard]] uint64_t videoMemory()const override;
-            [[nodiscard]] uint64_t maxShaderAccessUniformBufferSize()const override;
+            [[nodiscard]] const GraphicsCardMemoryProperties& memoryProperties()const override;
+            [[nodiscard]] const GraphicsCardCapabilities& capabilities()const override;
             [[nodiscard]] PixelFormatProperties formatProperties(PixelFormat format)const override;
-            [[nodiscard]] bool cacheCoherentSharedMemory()const override;
             [[nodiscard]] SubmissionQueue* graphicsQueue()override;
             [[nodiscard]] SubmissionQueue* computeQueue()override;
             [[nodiscard]] SubmissionQueue* transferQueue()override;
-            uint64_t defragmentMemory(SemaphoreValue* waitFor, uint32_t waitCount, SemaphoreValue* signal, uint32_t signalCount, uint64_t targetBytes=0)override;
+            uint64_t defragmentMemory(SemaphoreValue* waitFor, uint32_t waitCount, SemaphoreValue* signal, uint32_t signalCount, uint64_t targetBytes,std::function<void(MemoryReference*)> memoryMoved)override;
             //Command Buffers
             [[nodiscard]] CommandBuffer* newCommandBuffer(QueueType type)override;
             //Semaphores
@@ -81,15 +80,15 @@ namespace slag
             Microsoft::WRL::ComPtr<ID3D12Device2>& device();
         private:
             void move(DX12GraphicsCard& from);
+            GraphicsCardMemoryProperties _memoryProperties{};
+            GraphicsCardCapabilities _capabilities{};
             Microsoft::WRL::ComPtr<ID3D12Device2> _device = nullptr;
             Microsoft::WRL::ComPtr<IDXGIFactory4> _dxgiFactory = nullptr;
             Microsoft::WRL::ComPtr<IDXGIAdapter4> _dxgiAdapter4 = nullptr;
-            uint64_t _videoMemory = 0;
             D3D12MA::Allocator* _allocator = nullptr;
             DX12SubmissionQueue* _graphicsQueue = nullptr;
             DX12SubmissionQueue* _computeQueue = nullptr;
             DX12SubmissionQueue* _transferQueue = nullptr;
-            bool _sharedMemory = false;
         };
     } // dx12
 } // slag

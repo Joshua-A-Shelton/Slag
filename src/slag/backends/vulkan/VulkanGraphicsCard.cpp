@@ -16,9 +16,9 @@ namespace slag
         {
             _device = device.device;
             _physicalDevice = device.physical_device.physical_device;
-            _physicalDeviceProperties = device.physical_device.properties;
+            auto physicalDeviceProperties = device.physical_device.properties;
             _name = device.physical_device.name;
-            _physicalDeviceMemoryProperties = device.physical_device.memory_properties;
+            auto physicalDeviceMemoryProperties = device.physical_device.memory_properties;
 
             //guaranteed to have this, everything will fall back to this if they don't have one
             _graphicsQueueFamily = device.get_queue_index(vkb::QueueType::graphics).value();
@@ -97,27 +97,42 @@ namespace slag
             allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
             vmaCreateAllocator(&allocatorInfo, &_allocator);
 
-            for (int i=0; i< _physicalDeviceMemoryProperties.memoryHeapCount; i++)
+            //Establish memory properties
+
+            for (int i=0; i< physicalDeviceMemoryProperties.memoryHeapCount; i++)
             {
-                auto heap = _physicalDeviceMemoryProperties.memoryHeaps[i];
+                auto heap = physicalDeviceMemoryProperties.memoryHeaps[i];
                 if (heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
                 {
-                    _videoMemory += heap.size;
+                    _memoryProperties.videoMemory += heap.size;
                 }
             }
-            _cacheCoherentSharedMemory = true;
-            for (int i=0; i<_physicalDeviceMemoryProperties.memoryTypeCount; i++)
+            _memoryProperties.cacheCoherentSharedMemory = true;
+            for (int i=0; i<physicalDeviceMemoryProperties.memoryTypeCount; i++)
             {
-                auto type = _physicalDeviceMemoryProperties.memoryTypes[i];
+                auto type = physicalDeviceMemoryProperties.memoryTypes[i];
                 if (type.propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
                 {
                     if ((!(type.propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) && (type.propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)))
                     {
-                        _cacheCoherentSharedMemory = false;
+                        _memoryProperties.cacheCoherentSharedMemory = false;
                         break;
                     }
                 }
             }
+
+            _memoryProperties.maxUniformBufferSize = physicalDeviceProperties.limits.maxUniformBufferRange;
+
+            //Establish capabilities
+            _capabilities.defragmentable = true;
+
+            VkPhysicalDeviceProperties2 prop2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+            VkPhysicalDeviceRayTracingPipelinePropertiesKHR rtProps{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+            prop2.pNext = &rtProps;
+            vkGetPhysicalDeviceProperties2(_physicalDevice, &prop2);
+
+            _capabilities.raytracing =  rtProps.shaderGroupHandleSize > 0;
+
         }
 
         VulkanGraphicsCard::~VulkanGraphicsCard()
@@ -155,14 +170,14 @@ namespace slag
             return _name;
         }
 
-        uint64_t VulkanGraphicsCard::videoMemory() const
+        const GraphicsCardMemoryProperties& VulkanGraphicsCard::memoryProperties() const
         {
-            return _videoMemory;
+            return _memoryProperties;
         }
 
-        uint64_t VulkanGraphicsCard::maxShaderAccessUniformBufferSize() const
+        const GraphicsCardCapabilities& VulkanGraphicsCard::capabilities() const
         {
-            return _physicalDeviceProperties.limits.maxUniformBufferRange;
+            return _capabilities;
         }
 
         PixelFormatProperties VulkanGraphicsCard::formatProperties(PixelFormat format) const
@@ -234,11 +249,6 @@ namespace slag
             return properties;
         }
 
-        bool VulkanGraphicsCard::cacheCoherentSharedMemory() const
-        {
-            return _cacheCoherentSharedMemory;
-        }
-
         SubmissionQueue* VulkanGraphicsCard::graphicsQueue()
         {
             return _graphicsQueue;
@@ -254,8 +264,13 @@ namespace slag
             return _transferQueue;
         }
 
-        uint64_t VulkanGraphicsCard::defragmentMemory(SemaphoreValue* waitFor, uint32_t waitCount,
-                                                      SemaphoreValue* signal, uint32_t signalCount, uint64_t targetBytes)
+        uint64_t VulkanGraphicsCard::defragmentMemory(
+            SemaphoreValue* waitFor,
+            uint32_t waitCount,
+            SemaphoreValue* signal,
+            uint32_t signalCount,
+            uint64_t targetBytes,
+            std::function<void(MemoryReference*)> memoryMoved)
         {
             throw NotImplemented();
         }
@@ -304,19 +319,17 @@ namespace slag
         void VulkanGraphicsCard::move(VulkanGraphicsCard& from)
         {
             _name.swap(from._name);
+            _memoryProperties = from._memoryProperties;
+            _capabilities = from._capabilities;
             std::swap(_physicalDevice,from._physicalDevice);
             std::swap(_device,from._device);
-            _physicalDeviceProperties=from._physicalDeviceProperties;
-            _physicalDeviceMemoryProperties=from._physicalDeviceMemoryProperties;
             std::swap(_allocator,from._allocator);
             std::swap(_graphicsQueue,from._graphicsQueue);
             std::swap(_computeQueue,from._computeQueue);
             std::swap(_transferQueue,from._transferQueue);
-            _videoMemory = from._videoMemory;
             _graphicsQueueFamily=from._graphicsQueueFamily;
             _computeQueueFamily=from._computeQueueFamily;
             _transferQueueFamily=from._transferQueueFamily;
-            _cacheCoherentSharedMemory = from._cacheCoherentSharedMemory;
         }
 
         VkDevice VulkanGraphicsCard::device() const

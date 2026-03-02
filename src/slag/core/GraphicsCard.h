@@ -1,8 +1,10 @@
 #ifndef SLAG_GRAPHICSCARD_H
 #define SLAG_GRAPHICSCARD_H
+#include <functional>
 #include <string>
 #include "Buffer.h"
 #include "CommandBuffer.h"
+#include "Defragmentation.h"
 #include "PixelFormatProperties.h"
 #include "Pixels.h"
 #include "SubmissionQueue.h"
@@ -10,6 +12,23 @@
 
 namespace slag
 {
+    struct GraphicsCardMemoryProperties
+    {
+        ///Total size in bytes of video memory
+        uint64_t videoMemory=0;
+        ///The largest possible size in bytes of a buffer with BufferShaderAccess::UNIFORM
+        uint64_t maxUniformBufferSize = 0;
+        ///If the entire range of GPU memory is accessible by the CPU (true if under Unified Memory Access, or resizeable BAR is enabled)
+        bool cacheCoherentSharedMemory = false;
+    };
+
+    struct GraphicsCardCapabilities
+    {
+        ///If the graphics card is capable of calling GraphicsCard::defragmentMemory or not (should usually be true, false usually indicates the backend implementation doesn't support it, rather than the card)
+        bool defragmentable = false;
+        ///If the card is capable of handling ray tracing operations
+        bool raytracing = false;
+    };
     ///Hardware used for performing parallel computing. May or may not actually be a dedicated "Graphics Card" per se, but does support large scale parallel computation functionality
     class GraphicsCard
     {
@@ -19,12 +38,10 @@ namespace slag
         virtual ~GraphicsCard() = default;
         ///Name of Graphics Card
         [[nodiscard]] virtual std::string name()const=0;
-        ///Total size in bytes of video memory
-        [[nodiscard]] virtual uint64_t videoMemory()const=0;
-        ///If the entire range of GPU memory is accessible by the CPU (true if under Unified Memory Access, or resizeable BAR is enabled)
-        [[nodiscard]] virtual bool cacheCoherentSharedMemory()const=0;
-        ///The largest possible size in bytes of a buffer with BufferShaderAccess::UNIFORM
-        [[nodiscard]] virtual uint64_t maxShaderAccessUniformBufferSize()const=0;
+        ///Properties of the memory available to this graphics card
+        [[nodiscard]] virtual const GraphicsCardMemoryProperties& memoryProperties()const=0;
+        ///Capabilties this graphics card has
+        [[nodiscard]] virtual const GraphicsCardCapabilities& capabilities()const=0;
         /**
          * Checks if the graphics card supports a given format
          * @param format Format to see if is supported
@@ -45,9 +62,10 @@ namespace slag
          * @param signal Array of SemaphoreValues to signal after defragmentation ends
          * @param signalCount Number of SemaphoreValues in signal array
          * @param targetBytes Number of bytes to attempt to defragment before finishing, or 0 for a full defragmenation
+         * @param memoryMoved Function to execute when a segment of memory has been moved
          * @return number of bytes defragmented
          */
-        virtual uint64_t defragmentMemory(SemaphoreValue* waitFor, uint32_t waitCount, SemaphoreValue* signal, uint32_t signalCount, uint64_t targetBytes=0)=0;
+        virtual uint64_t defragmentMemory(SemaphoreValue* waitFor, uint32_t waitCount, SemaphoreValue* signal, uint32_t signalCount, uint64_t targetBytes=0, std::function<void(MemoryReference*)> memoryMoved = nullptr)=0;
 
         //Command Buffers
         /**

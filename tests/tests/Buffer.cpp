@@ -82,9 +82,9 @@ TEST(Buffer, ShaderReadOnlyMaxSize)
     GTEST_FLAG_SET(death_test_style, "threadsafe");
     auto card = Slag::backend()->graphicsCard(0);
     //FIXME: this function should probably only return multiples of 256, but there's some hardware where that's not the case (AMD), and that's why I'm subtracting the rem
-    auto size = card->maxShaderAccessUniformBufferSize()+256;
+    auto size = card->memoryProperties().maxUniformBufferSize+256;
     auto rem = size %256;
     size -= rem;
-    EXPECT_DEATH(auto buffer = std::unique_ptr<Buffer>(card->newBuffer(size,BufferMemoryType::UNIFORM,BufferCPUAccess::NONE)),"Buffers with BufferMemoryType::UNIFORM cannot exceed size found in GraphicsCard::maxShaderAccessUniformBufferSize");
+    EXPECT_DEATH(auto buffer = std::unique_ptr<Buffer>(card->newBuffer(size,BufferMemoryType::UNIFORM,BufferCPUAccess::NONE)),"Buffers with BufferMemoryType::UNIFORM cannot exceed size found in GraphicsCard::memoryProperties::maxUniformBufferSize");
 }
 #endif

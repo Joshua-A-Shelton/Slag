@@ -15,7 +15,7 @@ namespace slag
             BufferCPUAccess cpuAccess)
         {
             SLAG_ASSERT(((shaderAccess == BufferMemoryType::UNIFORM && size%256 == 0) || shaderAccess != BufferMemoryType::UNIFORM) && "Buffers with BufferMemoryType::UNIFORM must be a multiple of 256 bytes in size");
-            SLAG_ASSERT(((shaderAccess == BufferMemoryType::UNIFORM && size<= card->maxShaderAccessUniformBufferSize()) || shaderAccess != BufferMemoryType::UNIFORM) && "Buffers with BufferMemoryType::UNIFORM cannot exceed size found in GraphicsCard::maxShaderAccessUniformBufferSize");
+            SLAG_ASSERT(((shaderAccess == BufferMemoryType::UNIFORM && size<= card->memoryProperties().maxUniformBufferSize) || shaderAccess != BufferMemoryType::UNIFORM) && "Buffers with BufferMemoryType::UNIFORM cannot exceed size found in GraphicsCard::memoryProperties::maxUniformBufferSize");
             _size = size;
             _graphicsCard = card;
             _dataBits = static_cast<uint8_t>(shaderAccess);

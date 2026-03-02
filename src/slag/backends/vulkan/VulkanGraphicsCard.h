@@ -21,14 +21,13 @@ namespace slag
             VulkanGraphicsCard(VulkanGraphicsCard&& from);
             VulkanGraphicsCard& operator=(VulkanGraphicsCard&& from);
             [[nodiscard]] std::string name()const override;
-            [[nodiscard]] uint64_t videoMemory()const override;
-            [[nodiscard]] uint64_t maxShaderAccessUniformBufferSize()const override;
+            [[nodiscard]] const GraphicsCardMemoryProperties& memoryProperties()const override;
+            [[nodiscard]] const GraphicsCardCapabilities& capabilities()const override;
             [[nodiscard]] PixelFormatProperties formatProperties(PixelFormat format)const override;
-            [[nodiscard]] bool cacheCoherentSharedMemory()const override;
             [[nodiscard]] SubmissionQueue* graphicsQueue()override;
             [[nodiscard]] SubmissionQueue* computeQueue()override;
             [[nodiscard]] SubmissionQueue* transferQueue()override;
-            uint64_t defragmentMemory(SemaphoreValue* waitFor, uint32_t waitCount, SemaphoreValue* signal, uint32_t signalCount, uint64_t targetBytes=0)override;
+            uint64_t defragmentMemory(SemaphoreValue* waitFor, uint32_t waitCount, SemaphoreValue* signal, uint32_t signalCount, uint64_t targetBytes, std::function<void(MemoryReference*)> memoryMoved)override;
             //Command Buffers
             [[nodiscard]] CommandBuffer* newCommandBuffer(QueueType type)override;
             //Semaphores
@@ -80,19 +79,18 @@ namespace slag
         private:
             void move(VulkanGraphicsCard& from);
             std::string _name;
+            GraphicsCardMemoryProperties _memoryProperties{};
+            GraphicsCardCapabilities _capabilities{};
             VkPhysicalDevice _physicalDevice=nullptr;
             VkDevice _device=nullptr;
-            VkPhysicalDeviceProperties _physicalDeviceProperties={};
-            VkPhysicalDeviceMemoryProperties _physicalDeviceMemoryProperties={};
             VmaAllocator _allocator = nullptr;
             VulkanSubmissionQueue* _graphicsQueue=nullptr;
             VulkanSubmissionQueue* _computeQueue=nullptr;
             VulkanSubmissionQueue* _transferQueue=nullptr;
-            uint64_t _videoMemory = 0;
             uint32_t _graphicsQueueFamily=0;
             uint32_t _computeQueueFamily=0;
             uint32_t _transferQueueFamily=0;
-            bool _cacheCoherentSharedMemory = false;
+
 
         };
     } // vulkan
