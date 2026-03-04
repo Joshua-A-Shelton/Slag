@@ -27,16 +27,16 @@ namespace slag
             [[nodiscard]] SubmissionQueue* graphicsQueue()override;
             [[nodiscard]] SubmissionQueue* computeQueue()override;
             [[nodiscard]] SubmissionQueue* transferQueue()override;
-            uint64_t defragmentMemory(SemaphoreValue* waitFor, uint32_t waitCount, SemaphoreValue* signal, uint32_t signalCount, uint64_t targetBytes, std::function<void(MemoryReference*)> memoryMoved)override;
+            uint64_t defragmentMemory(uint64_t targetBytes, std::function<void(MemoryReference*)> memoryMoved)override;
             //Command Buffers
             [[nodiscard]] CommandBuffer* newCommandBuffer(QueueType type)override;
             //Semaphores
-            [[nodiscard]] Semaphore* newSemaphore(uint64_t initialValue=0)override;
+            [[nodiscard]] Semaphore* newSemaphore(uint64_t initialValue)override;
             //Buffers
             [[nodiscard]] Buffer* newBuffer(
                 uint64_t size,
-                BufferMemoryType memoryType = BufferMemoryType::GENERAL,
-                BufferCPUAccess cpuAccess = BufferCPUAccess::WRITE_ONLY)override;
+                BufferCPUAccess cpuAccess,
+                BufferMemoryType memoryType)override;
             //Textures
             [[nodiscard]] virtual Texture* newTexture(
             uint32_t width,

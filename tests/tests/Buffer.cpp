@@ -16,7 +16,7 @@ TEST(Buffer, Create)
     {
         for (auto cpu: cpuAccess)
         {
-            auto buffer = std::unique_ptr<Buffer>(card->newBuffer(256,type,cpu));
+            auto buffer = std::unique_ptr<Buffer>(card->newBuffer(256,cpu,type));
             GTEST_ASSERT_EQ(buffer->size(),256);
             GTEST_ASSERT_EQ(buffer->memoryType(),type);
             GTEST_ASSERT_EQ(buffer->cpuAccess(),cpu);
@@ -49,7 +49,7 @@ TEST(Buffer, ReadWrite)
 
     for (auto type: memoryType)
     {
-        auto buffer = std::unique_ptr<Buffer>(card->newBuffer(data.size(),type,BufferCPUAccess::READ_WRITE));
+        auto buffer = std::unique_ptr<Buffer>(card->newBuffer(data.size(),BufferCPUAccess::READ_WRITE,type));
         for (int i=0; i< buffer->size(); ++i)
         {
             buffer->as<uint8_t>()[i] = data[i];
@@ -74,7 +74,7 @@ TEST(Buffer, ShaderReadOnlyAlignment)
 {
     GTEST_FLAG_SET(death_test_style, "threadsafe");
     auto card = Slag::backend()->graphicsCard(0);
-    EXPECT_DEATH(auto buffer = std::unique_ptr<Buffer>(card->newBuffer(64,BufferMemoryType::UNIFORM,BufferCPUAccess::NONE)),"Buffers with BufferMemoryType::UNIFORM must be a multiple of 256 bytes in size");
+    EXPECT_DEATH(auto buffer = std::unique_ptr<Buffer>(card->newBuffer(64,BufferCPUAccess::NONE,BufferMemoryType::UNIFORM)),"Buffers with BufferMemoryType::UNIFORM must be a multiple of 256 bytes in size");
 }
 
 TEST(Buffer, ShaderReadOnlyMaxSize)
@@ -85,6 +85,6 @@ TEST(Buffer, ShaderReadOnlyMaxSize)
     auto size = card->memoryProperties().maxUniformBufferSize+256;
     auto rem = size %256;
     size -= rem;
-    EXPECT_DEATH(auto buffer = std::unique_ptr<Buffer>(card->newBuffer(size,BufferMemoryType::UNIFORM,BufferCPUAccess::NONE)),"Buffers with BufferMemoryType::UNIFORM cannot exceed size found in GraphicsCard::memoryProperties::maxUniformBufferSize");
+    EXPECT_DEATH(auto buffer = std::unique_ptr<Buffer>(card->newBuffer(size,BufferCPUAccess::NONE,BufferMemoryType::UNIFORM)),"Buffers with BufferMemoryType::UNIFORM cannot exceed size found in GraphicsCard::memoryProperties::maxUniformBufferSize");
 }
 #endif

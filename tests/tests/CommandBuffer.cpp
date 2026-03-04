@@ -25,8 +25,8 @@ TEST(CommandBuffer, CopyBufferToBuffer)
 {
     auto card = Slag::backend()->graphicsCard(0);
     auto commandBuffer = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(QueueType::TRANSFER));
-    auto srcBuffer = std::unique_ptr<Buffer>(card->newBuffer(128,BufferMemoryType::GENERAL,BufferCPUAccess::WRITE_ONLY));
-    auto dstBuffer = std::unique_ptr<Buffer>(card->newBuffer(128,BufferMemoryType::GENERAL,BufferCPUAccess::READ_WRITE));
+    auto srcBuffer = std::unique_ptr<Buffer>(card->newBuffer(128,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto dstBuffer = std::unique_ptr<Buffer>(card->newBuffer(128,BufferCPUAccess::READ_WRITE,BufferMemoryType::GENERAL));
     auto finished = std::unique_ptr<Semaphore>(card->newSemaphore());
 
     auto srcPtr = srcBuffer->as<uint8_t>();

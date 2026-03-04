@@ -49,8 +49,8 @@ namespace slag
     {
         uint64_t bufferOffset = 0;
         TextureSubresource subresource{};
-        Offset2D offset{};
-        Extent2D extent{};
+        Offset3D offset{};
+        Extent3D extent{};
     };
 
 }

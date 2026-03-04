@@ -19,8 +19,8 @@ namespace slag
             DX12Buffer(
                 DX12GraphicsCard* card,
                 uint64_t size,
-                BufferMemoryType memoryType,
-                BufferCPUAccess cpuAccess);
+                BufferCPUAccess cpuAccess,
+                BufferMemoryType memoryType);
             ~DX12Buffer()override;
             DX12Buffer(const DX12Buffer&) = delete;
             DX12Buffer& operator=(const DX12Buffer&) = delete;

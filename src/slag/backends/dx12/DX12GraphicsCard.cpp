@@ -119,12 +119,12 @@ namespace slag
             }
         }
 
-        DX12GraphicsCard::DX12GraphicsCard(DX12GraphicsCard&& from)
+        DX12GraphicsCard::DX12GraphicsCard(DX12GraphicsCard&& from) noexcept
         {
             move(from);
         }
 
-        DX12GraphicsCard& DX12GraphicsCard::operator=(DX12GraphicsCard&& from)
+        DX12GraphicsCard& DX12GraphicsCard::operator=(DX12GraphicsCard&& from) noexcept
         {
             move(from);
             return *this;
@@ -241,10 +241,6 @@ namespace slag
         }
 
         uint64_t DX12GraphicsCard::defragmentMemory(
-            SemaphoreValue* waitFor,
-            uint32_t waitCount,
-            SemaphoreValue* signal,
-            uint32_t signalCount,
             uint64_t targetBytes,
             std::function<void(MemoryReference*)> memoryMoved)
         {
@@ -263,10 +259,10 @@ namespace slag
 
         Buffer* DX12GraphicsCard::newBuffer(
             uint64_t size,
-            BufferMemoryType memoryType,
-            BufferCPUAccess cpuAccess)
+            BufferCPUAccess cpuAccess,
+            BufferMemoryType memoryType)
         {
-            return new DX12Buffer(this,size,memoryType,cpuAccess);
+            return new DX12Buffer(this,size,cpuAccess,memoryType);
         }
 
         Texture* DX12GraphicsCard::newTexture(uint32_t width, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,uint32_t arrayDepth)

@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 #include <slag/Slag.h>
+
+#include "../third-party/LodePNG/lodepng.h"
 using namespace slag;
 TEST(GraphicsCard, Name)
 {
@@ -30,7 +32,7 @@ TEST(GraphicsCard, MaxShaderAccessReadOnlyBufferSize)
     }
 }
 
-TEST(GraphicsCard, DefragmentAll)
+TEST(GraphicsCard, Defragment)
 {
     bool didTest = false;
     for (auto i=0u; i< Slag::backend()->graphicsCardCount(); i++)
@@ -50,8 +52,23 @@ TEST(GraphicsCard, DefragmentAll)
         auto buffer8 = std::unique_ptr<Buffer>(card->newBuffer(256));
         //need to do something here to see that it's moved... it should be returned as an object that's been moved
         auto texture1 = std::unique_ptr<Texture>(card->newTexture(500,500,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
-        auto texture2 = std::unique_ptr<Texture>(card->newTexture(750,750,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
-        auto uploadBuffer = std::unique_ptr<Buffer>(card->newBuffer(256,BufferMemoryType::UNIFORM,BufferCPUAccess::READ_WRITE));
+        auto texture2 = std::unique_ptr<Texture>(card->newTexture(500,500,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+        auto texture3 = std::unique_ptr<Texture>(card->newTexture(250,250,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+        auto texture4 = std::unique_ptr<Texture>(card->newTexture(1500,1500,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+        auto texture5 = std::unique_ptr<Texture>(card->newTexture(250,250,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+        auto texture6 = std::unique_ptr<Texture>(card->newTexture(750,750,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+        auto uploadBuffer = std::unique_ptr<Buffer>(card->newBuffer(256,BufferCPUAccess::READ_WRITE,BufferMemoryType::UNIFORM));
+
+        auto bufferSize = texture6->bufferSize(PixelAspect::COLOR);
+        auto dataBuffer = std::unique_ptr<Buffer>(card->newBuffer(bufferSize,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+        auto dataBufferPtr = dataBuffer->as<uint8_t>();
+        for (uint64_t i=0u; i<bufferSize; i+=4)
+        {
+            dataBufferPtr[i] = 255;
+            dataBufferPtr[i+1] = 172;
+            dataBufferPtr[i+2] = 0;
+            dataBufferPtr[i+3] = 255;
+        }
         auto data = uploadBuffer->as<uint8_t>();
         for (int i=0; i< 256; i++)
         {
@@ -64,6 +81,20 @@ TEST(GraphicsCard, DefragmentAll)
         auto commandBuffer = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(QueueType::TRANSFER));
         commandBuffer->begin();
         commandBuffer->copyBufferToBuffer(uploadBuffer.get(),0,buffer8.get(),0,256);
+        TextureBufferMapping mapping
+        {
+            .bufferOffset = 0,
+            .subresource =
+            {
+                .aspect = PixelAspect::COLOR,
+                .mipLevel = 0,
+                .baseArrayLayer =0,
+                .layerCount = 1
+            },
+            .offset = {0,0,0},
+            .extent = {texture6->width(),texture6->height(),1}
+        };
+        commandBuffer->copyBufferToTexture(dataBuffer.get(),texture6.get(),&mapping,1);
         commandBuffer->end();
 
         SemaphoreValue signal
@@ -84,27 +115,40 @@ TEST(GraphicsCard, DefragmentAll)
 
         card->transferQueue()->submit(&batch,1);
         finished->waitForValue(1);
-        buffer2.release();
-        buffer6.release();
+        buffer2 = nullptr;
+        buffer6 = nullptr;
+        texture1 = nullptr;
+        texture2 = nullptr;
+        texture3 = nullptr;
+        texture4 = nullptr;
+        texture5 = nullptr;
+        dataBuffer = nullptr;
         GTEST_ASSERT_EQ(virtualAddress, buffer8->deviceAddress());
-        auto defragmentFinished = std::unique_ptr<Semaphore>(card->newSemaphore());
-        signal.semaphore = defragmentFinished.get();
+
         std::vector<Texture*> movedTextures;
-        card->defragmentMemory(nullptr,0,&signal,1,0,[&movedTextures](MemoryReference* memoryReference)
+        std::vector<Buffer*> movedBuffers;
+        auto bytes = card->defragmentMemory(0,[&movedTextures, &movedBuffers](MemoryReference* memoryReference)
         {
             if (memoryReference->type == MemoryObjectType::TEXTURE)
             {
                 movedTextures.push_back(memoryReference->memory.texture);
             }
+            else
+            {
+                movedBuffers.push_back(memoryReference->memory.buffer);
+            }
         });
+        GTEST_ASSERT_GT(bytes,0);
         GTEST_ASSERT_NE(virtualAddress, buffer8->deviceAddress());
-        GTEST_ASSERT_EQ(movedTextures.size(), 1);
-        GTEST_ASSERT_EQ(movedTextures[0],texture2.get());
+        GTEST_ASSERT_GE(movedTextures.size(), 1);
+        GTEST_ASSERT_GE(movedBuffers.size(),1);
 
-        auto downloadData = std::unique_ptr<Buffer>(card->newBuffer(256,BufferMemoryType::GENERAL,BufferCPUAccess::READ_WRITE));
+        auto downloadData = std::unique_ptr<Buffer>(card->newBuffer(256,BufferCPUAccess::READ_WRITE,BufferMemoryType::GENERAL));
         auto transferFinished = std::unique_ptr<Semaphore>(card->newSemaphore());
+        auto downloadBuffer = std::unique_ptr<Buffer>(card->newBuffer(bufferSize,BufferCPUAccess::READ_WRITE));
         commandBuffer->begin();
         commandBuffer->copyBufferToBuffer(buffer8.get(),0,downloadData.get(),0,256);
+        commandBuffer->copyTextureToBuffer(texture6.get(),downloadBuffer.get(),&mapping,1);
         commandBuffer->end();
 
         signal.semaphore = transferFinished.get();
@@ -116,14 +160,19 @@ TEST(GraphicsCard, DefragmentAll)
         {
             GTEST_ASSERT_EQ(data[i], i);
         }
+
+        auto textureData = downloadBuffer->as<uint8_t>();
+        lodepng::encode("C:\\Users\\jshelton\\Desktop\\output\\tdata.png",textureData,texture6->width(),texture6->height());
+        for (uint64_t i=0; i< bufferSize; i+=4)
+        {
+            GTEST_ASSERT_EQ(textureData[i], 255);
+            GTEST_ASSERT_EQ(textureData[i+1], 172);
+            GTEST_ASSERT_EQ(textureData[i+2], 0);
+            GTEST_ASSERT_EQ(textureData[i+3], 255);
+        }
     }
     if (!didTest)
     {
         GTEST_SKIP();
     }
-}
-
-TEST(GraphicsCard, DefragmentTarget)
-{
-    GTEST_FAIL();
 }

@@ -11,8 +11,8 @@ namespace slag
         DX12Buffer::DX12Buffer(
             DX12GraphicsCard* card,
             uint64_t size,
-            BufferMemoryType shaderAccess,
-            BufferCPUAccess cpuAccess)
+            BufferCPUAccess cpuAccess,
+            BufferMemoryType shaderAccess)
         {
             SLAG_ASSERT(((shaderAccess == BufferMemoryType::UNIFORM && size%256 == 0) || shaderAccess != BufferMemoryType::UNIFORM) && "Buffers with BufferMemoryType::UNIFORM must be a multiple of 256 bytes in size");
             SLAG_ASSERT(((shaderAccess == BufferMemoryType::UNIFORM && size<= card->memoryProperties().maxUniformBufferSize) || shaderAccess != BufferMemoryType::UNIFORM) && "Buffers with BufferMemoryType::UNIFORM cannot exceed size found in GraphicsCard::memoryProperties::maxUniformBufferSize");

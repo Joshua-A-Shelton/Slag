@@ -4,13 +4,18 @@
 #include <vulkan/vulkan.h>
 
 #include "vk_mem_alloc.h"
-#include "VulkanGPUMemoryReference.h"
 
 namespace slag
 {
     namespace vulkan
     {
         class VulkanGraphicsCard;
+        struct VulkanImageMoveData
+        {
+            bool movedSucceded = false;
+            VkImage image=nullptr;
+        };
+
         class VulkanTexture: public Texture
         {
         public:
@@ -67,11 +72,15 @@ namespace slag
             [[nodiscard]] void* userData()override;
             void setUserData(void* userData)override;
 
+            VulkanImageMoveData moveMemory(VmaAllocation tempAllocation,CommandBuffer* transitionToGeneralBuffer, CommandBuffer* copyDataBuffer);
+
+            VkImage vulkanHandle()const;
+
         private:
             void move(VulkanTexture& from);
             void construct(VkImageType imageType,PixelFormatProperties, VkImageCreateFlags flags);
             VkImageViewCreateInfo _descriptorInfo{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-            VulkanGPUMemoryReference _selfReference{.memoryType = MemoryType::TEXTURE, .reference = {.texture = this}};
+            MemoryReference _selfReference{.type = MemoryObjectType::TEXTURE, .memory = {.texture = this}};
             VulkanGraphicsCard* _graphicsCard = nullptr;
             VmaAllocation _allocation = nullptr;
             VkImage _texture = nullptr;

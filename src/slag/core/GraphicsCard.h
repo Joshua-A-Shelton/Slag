@@ -57,15 +57,11 @@ namespace slag
 
         /**
          * Defragment video memory. This is a blocking call, and will not return until defragmentation is complete
-         * @param waitFor Array of SemaphoreValues to wait for before defragmentation begins
-         * @param waitCount Number of SemaphoreValues in waitFor array
-         * @param signal Array of SemaphoreValues to signal after defragmentation ends
-         * @param signalCount Number of SemaphoreValues in signal array
          * @param targetBytes Number of bytes to attempt to defragment before finishing, or 0 for a full defragmenation
          * @param memoryMoved Function to execute when a segment of memory has been moved
          * @return number of bytes defragmented
          */
-        virtual uint64_t defragmentMemory(SemaphoreValue* waitFor, uint32_t waitCount, SemaphoreValue* signal, uint32_t signalCount, uint64_t targetBytes=0, std::function<void(MemoryReference*)> memoryMoved = nullptr)=0;
+        virtual uint64_t defragmentMemory(uint64_t targetBytes=0, std::function<void(MemoryReference*)> memoryMoved = nullptr)=0;
 
         //Command Buffers
         /**
@@ -89,15 +85,15 @@ namespace slag
         /**
          * Allocate a new buffer
          * @param size Size in bytes of the buffer
-         * @param shaderAccess Data access permissions for shaders
          * @param cpuAccess Data access permissions for the cpu
+         * @param shaderAccess Data access permissions for shaders
          * @return
          * @throws slag::ResourceCreationError if unable to allocate a new buffer
          */
         [[nodiscard]] virtual Buffer* newBuffer(
             uint64_t size,
-            BufferMemoryType shaderAccess = BufferMemoryType::GENERAL,
-            BufferCPUAccess cpuAccess = BufferCPUAccess::NONE)=0;
+            BufferCPUAccess cpuAccess = BufferCPUAccess::NONE,
+            BufferMemoryType shaderAccess = BufferMemoryType::GENERAL)=0;
 
         //Textures
 

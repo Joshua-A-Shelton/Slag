@@ -103,7 +103,19 @@ namespace slag
     class Pixel
     {
     public:
+        /**
+         * Get the aspects flags a given format supports
+         * @param format Format to get aspect flags for
+         * @return
+         */
         static PixelAspectFlags aspectFlags(PixelFormat format);
+        /**
+         * Get the size of an aspect for a pixel on the CPU (or buffer)
+         * @param format
+         * @param aspect
+         * @return
+         */
+        static uint32_t aspectSize(PixelFormat format, PixelAspect aspect);
     };
 
     inline PixelAspectFlags operator|(PixelAspectFlags lhs, PixelAspectFlags rhs)

@@ -46,7 +46,7 @@ TEST(Semaphore, WaitAndSignalFromGPU)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(QueueType::TRANSFER));
     auto semaphore1 = std::unique_ptr<Semaphore>(card->newSemaphore(0));
     auto semaphore2 = std::unique_ptr<Semaphore>(card->newSemaphore(0));
-    auto sourceBuffer = std::unique_ptr<Buffer>(card->newBuffer(512,BufferMemoryType::UNIFORM,BufferCPUAccess::WRITE_ONLY));
+    auto sourceBuffer = std::unique_ptr<Buffer>(card->newBuffer(512,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
     auto destinationBuffer = std::unique_ptr<Buffer>(card->newBuffer(512));
 
     //fill the source with some data, doesn't really matter what

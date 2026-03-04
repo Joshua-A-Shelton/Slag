@@ -67,7 +67,6 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/backends/vulkan/VulkanSubmissionQueue.h
             src/slag/backends/vulkan/VulkanTexture.cpp
             src/slag/backends/vulkan/VulkanTexture.h
-            src/slag/backends/vulkan/VulkanGPUMemoryReference.h
     )
 endif()
 if(SLAG_DX12_BACKEND)
@@ -278,6 +277,8 @@ if(SLAG_BUILD_TESTS)
     enable_testing()
 
     add_executable(SlagTests
+            tests/third-party/LodePNG/lodepng.cpp
+            tests/third-party/LodePNG/lodepng.h
             tests/SlagTestsMain.cpp
             tests/tests/GraphicsCard.cpp
             tests/tests/Buffer.cpp
@@ -285,7 +286,8 @@ if(SLAG_BUILD_TESTS)
             tests/tests/Semaphore.cpp
             tests/tests/CommandBuffer.cpp
             tests/tests/SubmissionQueue.cpp
-            tests/tests/Texture.cpp)
+            tests/tests/Texture.cpp
+    )
 
     target_link_libraries(SlagTests GTest::gtest SDL3::SDL3 glm::glm slag::Slag)
 endif ()

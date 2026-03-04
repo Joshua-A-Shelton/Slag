@@ -1,6 +1,7 @@
 #include "VulkanBuffer.h"
 
 #include "VulkanBackend.h"
+#include "VulkanCommandBuffer.h"
 #include "slag/exceptions/ResourceCreationError.h"
 #include "slag/utilities/SLAG_ASSERT.h"
 
@@ -11,8 +12,8 @@ namespace slag
         VulkanBuffer::VulkanBuffer(
             VulkanGraphicsCard* card,
             uint64_t size,
-            BufferMemoryType shaderAccess,
-            BufferCPUAccess cpuAccess)
+            BufferCPUAccess cpuAccess,
+            BufferMemoryType shaderAccess)
         {
             SLAG_ASSERT(((shaderAccess == BufferMemoryType::UNIFORM && size%256 == 0) || shaderAccess != BufferMemoryType::UNIFORM) && "Buffers with BufferMemoryType::UNIFORM must be a multiple of 256 bytes in size");
             SLAG_ASSERT(((shaderAccess == BufferMemoryType::UNIFORM && size<= card->memoryProperties().maxUniformBufferSize) || shaderAccess != BufferMemoryType::UNIFORM) && "Buffers with BufferMemoryType::UNIFORM cannot exceed size found in GraphicsCard::memoryProperties::maxUniformBufferSize");
@@ -57,6 +58,8 @@ namespace slag
             {
                 vmaMapMemory(_graphicsCard->allocator(),_allocation,&_data);
             }
+
+            vmaSetAllocationUserData(_graphicsCard->allocator(),_allocation,&_selfReference);
         }
 
         VulkanBuffer::~VulkanBuffer()
@@ -128,6 +131,48 @@ namespace slag
         VkBuffer VulkanBuffer::vulkanHandle() const
         {
             return _buffer;
+        }
+
+        VulkanBufferMoveData VulkanBuffer::moveMemory(VmaAllocation tempAllocation, CommandBuffer* copyDataBuffer)
+        {
+            VkBuffer buffer;
+            VkBufferCreateInfo bufferInfo = {};
+            bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+            bufferInfo.size = _size;
+            //every buffer should support transfer
+            bufferInfo.usage = VulkanBackend::nativeBufferUsage(this->memoryType());
+            auto result = vkCreateBuffer(_graphicsCard->device(),&bufferInfo,nullptr,&buffer);
+            if (result != VK_SUCCESS)
+            {
+                vkDestroyBuffer(_graphicsCard->device(),buffer,nullptr);
+                return VulkanBufferMoveData{false,nullptr};
+            }
+            result = vmaBindBufferMemory(_graphicsCard->allocator(),tempAllocation,buffer);
+            if (result != VK_SUCCESS)
+            {
+                vkDestroyBuffer(_graphicsCard->device(),buffer,nullptr);
+                return VulkanBufferMoveData{false,nullptr};
+            }
+            auto b = static_cast<VulkanCommandBuffer*>(copyDataBuffer)->vulkanHandle();
+            VkBufferCopy copyRegion = {};
+            copyRegion.srcOffset = 0;
+            copyRegion.dstOffset = 0;
+            copyRegion.size = _size;
+            vkCmdCopyBuffer(b,_buffer,buffer,1,&copyRegion);
+
+            VulkanBufferMoveData moveData = {true,_buffer};
+            _buffer = buffer;
+            return moveData;
+        }
+
+        void VulkanBuffer::updatePointer()
+        {
+            if (_data)
+            {
+                VmaAllocationInfo allocationInfo = {};
+                vmaGetAllocationInfo(_graphicsCard->allocator(),_allocation,&allocationInfo);
+                _data = allocationInfo.pMappedData;
+            }
         }
 
         void VulkanBuffer::move(VulkanBuffer& from)

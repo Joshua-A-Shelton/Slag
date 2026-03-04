@@ -1,7 +1,9 @@
 #include "VulkanTexture.h"
 
 #include "VulkanBackend.h"
+#include "VulkanCommandBuffer.h"
 #include "VulkanGraphicsCard.h"
+#include "VulkanSemaphore.h"
 #include "slag/exceptions/ResourceCreationError.h"
 #include "slag/utilities/SLAG_ASSERT.h"
 
@@ -192,6 +194,159 @@ namespace slag
             _userData = userData;
         }
 
+        VulkanImageMoveData VulkanTexture::moveMemory(VmaAllocation tempAllocation,
+            CommandBuffer* transitionToGeneralBuffer, CommandBuffer* copyDataBuffer)
+        {
+            auto vulkanizedFormat = VulkanBackend::nativeFormat(_format);
+            auto pixelProperties = _graphicsCard->formatProperties(_format);
+
+            VkImageCreateInfo imageCreateInfo{};
+            imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+            imageCreateInfo.format = vulkanizedFormat.format;
+            imageCreateInfo.usage = VulkanBackend::nativeTextureUsage(_usage);
+
+            VkExtent3D imageExtent;
+            imageExtent.width = static_cast<uint32_t>(_width);
+            imageExtent.height = static_cast<uint32_t>(_height);
+            imageExtent.depth = static_cast<uint32_t>(_depth);
+
+
+            auto imageType = VK_IMAGE_TYPE_2D;
+            switch (_type)
+            {
+            case TextureType::ONE_DIMENSIONAL:
+                imageType = VK_IMAGE_TYPE_1D;
+                break;
+            case TextureType::TWO_DIMENSIONAL:
+                imageType = VK_IMAGE_TYPE_2D;
+                break;
+            case TextureType::THREE_DIMENSIONAL:
+                imageType = VK_IMAGE_TYPE_3D;
+                break;
+                case TextureType::CUBE_MAP:
+                imageType = VK_IMAGE_TYPE_2D;
+                imageCreateInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+                break;
+            }
+
+            imageCreateInfo.extent = imageExtent;
+            imageCreateInfo.imageType = imageType;
+            imageCreateInfo.mipLevels = _mipLevels;
+            imageCreateInfo.arrayLayers = _layers;
+            imageCreateInfo.samples = static_cast<VkSampleCountFlagBits>(_sampleCount);
+            if (pixelProperties.tiling == TextureTiling::OPTIMIZED)
+            {
+                imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+            }
+            else
+            {
+                imageCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
+            }
+            imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+            VkImage newImage;
+
+            auto result = vkCreateImage(_graphicsCard->device(),&imageCreateInfo,nullptr,&newImage);
+            if(result != VK_SUCCESS)
+            {
+                return VulkanImageMoveData{false,nullptr};
+            }
+
+
+            result = vmaBindImageMemory(_graphicsCard->allocator(),tempAllocation,newImage);
+            if (result != VK_SUCCESS)
+            {
+                vkDestroyImage(_graphicsCard->device(),newImage, nullptr);
+                return VulkanImageMoveData{false,nullptr};
+            }
+
+            //transition to general
+
+            auto tcb = static_cast<VulkanCommandBuffer*>(transitionToGeneralBuffer)->vulkanHandle();
+            auto vulkanAspectFlags = VulkanBackend::nativeTextureAspect(Pixel::aspectFlags(_format));
+            VkImageMemoryBarrier2 barrier{};
+
+
+            barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            barrier.pNext = nullptr,
+            barrier.srcStageMask = VK_PIPELINE_STAGE_2_NONE,
+            barrier.srcAccessMask = VK_ACCESS_2_NONE,
+            barrier.dstStageMask = VK_PIPELINE_STAGE_2_NONE,
+            barrier.dstAccessMask = VK_ACCESS_2_NONE,
+            barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL,
+            barrier.image = newImage,
+            barrier.subresourceRange = VkImageSubresourceRange
+            {
+                .aspectMask = vulkanAspectFlags,
+                .baseMipLevel = 0,
+                .levelCount = _mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount = _layers,
+            };
+
+
+            VkDependencyInfo dependencyInfo{};
+            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+            dependencyInfo.memoryBarrierCount = 0;
+            dependencyInfo.pMemoryBarriers = nullptr;
+            dependencyInfo.bufferMemoryBarrierCount = 0;
+            dependencyInfo.pBufferMemoryBarriers = nullptr;
+            dependencyInfo.imageMemoryBarrierCount = 1;
+            dependencyInfo.pImageMemoryBarriers = &barrier;
+            vkCmdPipelineBarrier2(tcb,&dependencyInfo);
+
+            //copy data
+            auto cdb = static_cast<VulkanCommandBuffer*>(copyDataBuffer)->vulkanHandle();
+            std::vector<VkImageBlit2> regions(_mipLevels,
+                {.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
+                .srcSubresource = {},
+                .srcOffsets = {{0,0,0},{0,0,0}},
+                .dstSubresource = {},
+                .dstOffsets = {{0,0,0},{0,0,0}}
+                });
+            for (auto i = 0u; i < _mipLevels; i++)
+            {
+                auto& region = regions[i];
+
+                region.srcSubresource.baseArrayLayer = 0;
+                region.srcSubresource.layerCount = _layers;
+                region.srcSubresource.mipLevel = i;
+                region.srcSubresource.aspectMask = vulkanAspectFlags;
+
+                region.dstSubresource = region.srcSubresource;
+
+                region.srcOffsets[1].x = Texture::mipWidth(i);
+                region.srcOffsets[1].y = Texture::mipHeight(i);
+                region.srcOffsets[1].z = Texture::mipDepth(i);
+
+                region.dstOffsets[1] = region.srcOffsets[1];
+            }
+            VkBlitImageInfo2 blitImageInfo
+            {
+                .sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
+                .srcImage = _texture,
+                .srcImageLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .dstImage = newImage,
+                .dstImageLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .regionCount = static_cast<uint32_t>(regions.size()),
+                .pRegions = regions.data(),
+                .filter = VK_FILTER_NEAREST,
+
+            };
+            vkCmdBlitImage2(cdb,&blitImageInfo);
+
+
+            VulkanImageMoveData imageMoveData = {true,_texture};
+            _texture = newImage;
+            return imageMoveData;
+        }
+
+        VkImage VulkanTexture::vulkanHandle() const
+        {
+            return _texture;
+        }
+
         void VulkanTexture::move(VulkanTexture& from)
         {
             _descriptorInfo = from._descriptorInfo;
@@ -308,6 +463,41 @@ namespace slag
                 .baseArrayLayer = 0,
                 .layerCount = _layers
             };
+
+            //Transition to general
+
+            VulkanCommandBuffer transitionBuffer(_graphicsCard,QueueType::TRANSFER,CommandBufferLevel::PRIMARY);
+            transitionBuffer.begin();
+            auto vkcmdbuffer = transitionBuffer.vulkanHandle();
+
+            VkImageMemoryBarrier2 barrier = {};
+            barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+            barrier.image = _texture;
+            barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+            barrier.subresourceRange = _descriptorInfo.subresourceRange;
+
+            VkDependencyInfo dependencyInfo = {};
+            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+            dependencyInfo.imageMemoryBarrierCount = 1;
+            dependencyInfo.pImageMemoryBarriers = &barrier;
+            vkCmdPipelineBarrier2(vkcmdbuffer,&dependencyInfo);
+            transitionBuffer.end();
+            VulkanSemaphore finished(_graphicsCard,0);
+            SemaphoreValue signal{.semaphore = &finished, .value = 1};
+            CommandBuffer* commandBuffers = &transitionBuffer;
+            SubmissionBatch batch
+            {
+                .waitSemaphores = nullptr,
+                .waitSemaphoreCount = 0,
+                .commandBuffers = &commandBuffers,
+                .commandBufferCount = 1,
+                .signalSemaphores = &signal,
+                .signalSemaphoreCount = 1,
+            };
+            _graphicsCard->transferQueue()->submit(&batch,1);
+            finished.waitForValue(1);
+
         }
     } // vulkan
 } // slag

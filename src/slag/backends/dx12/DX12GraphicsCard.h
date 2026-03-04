@@ -19,11 +19,11 @@ namespace slag
         {
         public:
             DX12GraphicsCard(Microsoft::WRL::ComPtr<ID3D12Device2> device, Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory,Microsoft::WRL::ComPtr<IDXGIAdapter4> dxgiAdapter, bool includeDebugHandling);
-            ~DX12GraphicsCard();
+            ~DX12GraphicsCard()override;
             DX12GraphicsCard(const DX12GraphicsCard&) = delete;
             DX12GraphicsCard& operator=(const DX12GraphicsCard&) = delete;
-            DX12GraphicsCard(DX12GraphicsCard&& from);
-            DX12GraphicsCard& operator=(DX12GraphicsCard&& from);
+            DX12GraphicsCard(DX12GraphicsCard&& from) noexcept;
+            DX12GraphicsCard& operator=(DX12GraphicsCard&& from) noexcept;
 
             [[nodiscard]] std::string name()const override;
             [[nodiscard]] const GraphicsCardMemoryProperties& memoryProperties()const override;
@@ -32,16 +32,16 @@ namespace slag
             [[nodiscard]] SubmissionQueue* graphicsQueue()override;
             [[nodiscard]] SubmissionQueue* computeQueue()override;
             [[nodiscard]] SubmissionQueue* transferQueue()override;
-            uint64_t defragmentMemory(SemaphoreValue* waitFor, uint32_t waitCount, SemaphoreValue* signal, uint32_t signalCount, uint64_t targetBytes,std::function<void(MemoryReference*)> memoryMoved)override;
+            uint64_t defragmentMemory(uint64_t targetBytes,std::function<void(MemoryReference*)> memoryMoved)override;
             //Command Buffers
             [[nodiscard]] CommandBuffer* newCommandBuffer(QueueType type)override;
             //Semaphores
-            [[nodiscard]] Semaphore* newSemaphore(uint64_t initialValue=0)override;
+            [[nodiscard]] Semaphore* newSemaphore(uint64_t initialValue)override;
             //Buffers
             [[nodiscard]] Buffer* newBuffer(
                 uint64_t size,
-                BufferMemoryType memoryType = BufferMemoryType::GENERAL,
-                BufferCPUAccess cpuAccess = BufferCPUAccess::WRITE_ONLY)override;
+                BufferCPUAccess cpuAccess,
+                BufferMemoryType memoryType)override;
             //Textures
             [[nodiscard]] Texture* newTexture(
             uint32_t width,
@@ -76,7 +76,7 @@ namespace slag
                 )override;
 
             //DX12 specific features
-            D3D12MA::Allocator* allocator() const;
+            [[nodiscard]] D3D12MA::Allocator* allocator() const;
             Microsoft::WRL::ComPtr<ID3D12Device2>& device();
         private:
             void move(DX12GraphicsCard& from);

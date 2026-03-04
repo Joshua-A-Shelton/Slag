@@ -265,14 +265,145 @@ namespace slag
         }
 
         uint64_t VulkanGraphicsCard::defragmentMemory(
-            SemaphoreValue* waitFor,
-            uint32_t waitCount,
-            SemaphoreValue* signal,
-            uint32_t signalCount,
             uint64_t targetBytes,
             std::function<void(MemoryReference*)> memoryMoved)
         {
-            throw NotImplemented();
+
+
+            VmaDefragmentationInfo defragInfo = {};
+            defragInfo.flags = VMA_DEFRAGMENTATION_FLAG_ALGORITHM_BALANCED_BIT;
+            defragInfo.maxBytesPerPass = targetBytes;
+
+
+            VmaDefragmentationContext defragCtx;
+            VkResult res = vmaBeginDefragmentation(_allocator, &defragInfo, &defragCtx);
+            if (res != VK_SUCCESS)
+            {
+                throw std::runtime_error("failed to begin defragmentation");
+            }
+            while (true)
+            {
+                VmaDefragmentationPassMoveInfo pass;
+                res = vmaBeginDefragmentationPass(_allocator, defragCtx, &pass);
+                if(res == VK_SUCCESS)
+                    break;
+                else if(res == VK_INCOMPLETE)
+                {
+                    std::vector<VulkanBufferMoveData> movedBuffers;
+                    std::vector<VulkanImageMoveData> movedTextures;
+                    std::vector<MemoryReference*> movedMemoryRefs;
+                    VulkanCommandBuffer transitionCB(this,QueueType::GRAPHICS,CommandBufferLevel::PRIMARY);
+                    VulkanCommandBuffer moveCB(this,QueueType::GRAPHICS,CommandBufferLevel::PRIMARY);
+                    VulkanSemaphore transitioned(this,0);
+                    VulkanSemaphore moved(this,0);
+                    transitionCB.begin();
+                    moveCB.begin();
+                    for(uint32_t i = 0; i < pass.moveCount; ++i)
+                    {
+                        // Inspect pass.pMoves[i].srcAllocation, identify what buffer/image it represents.
+                        VmaAllocationInfo allocInfo;
+                        vmaGetAllocationInfo(_allocator, pass.pMoves[i].srcAllocation, &allocInfo);
+                        MemoryReference* userData = (MemoryReference*)allocInfo.pUserData;
+                        if (userData->type == MemoryObjectType::TEXTURE)
+                        {
+                            auto texture = static_cast<VulkanTexture*>(userData->memory.texture);
+                            auto movedTexture = texture->moveMemory(pass.pMoves[i].dstTmpAllocation,&transitionCB,&moveCB);
+                            if (movedTexture.movedSucceded)
+                            {
+                                movedTextures.push_back(movedTexture);
+                                movedMemoryRefs.push_back(userData);
+                            }
+                            else
+                            {
+                                pass.pMoves[i].operation = VMA_DEFRAGMENTATION_MOVE_OPERATION_IGNORE;
+                            }
+                        }
+                        else
+                        {
+                            auto buffer = static_cast<VulkanBuffer*>(userData->memory.buffer);
+                            auto movedBuffer = buffer->moveMemory(pass.pMoves[i].dstTmpAllocation,&moveCB);
+                            if (movedBuffer.movedSucceded)
+                            {
+                                movedBuffers.push_back(movedBuffer);
+                                movedMemoryRefs.push_back(userData);
+                            }
+                            else
+                            {
+                                pass.pMoves[i].operation = VMA_DEFRAGMENTATION_MOVE_OPERATION_IGNORE;
+                            }
+                        }
+
+                    }
+                    transitionCB.end();
+                    moveCB.end();
+                    CommandBuffer* transitionedPtr = &transitionCB;
+                    CommandBuffer* movedPtr = &moveCB;
+                    SemaphoreValue transitionedValue{.semaphore = &transitioned,.value = 1};
+                    SemaphoreValue movedValue{.semaphore = &moved,.value = 1};
+                    SubmissionBatch batches[]
+                    {
+                        {
+                            .waitSemaphores = nullptr,
+                            .waitSemaphoreCount = 0,
+                            .commandBuffers = &transitionedPtr,
+                            .commandBufferCount = 1,
+                            .signalSemaphores = &transitionedValue,
+                            .signalSemaphoreCount = 1,
+                        },
+                        {
+                            .waitSemaphores = &transitionedValue,
+                            .waitSemaphoreCount = 1,
+                            .commandBuffers = &movedPtr,
+                            .commandBufferCount = 1,
+                            .signalSemaphores = &movedValue,
+                            .signalSemaphoreCount = 1,
+                        }
+                    };
+
+                    _graphicsQueue->submit(batches,2);
+                    moved.waitForValue(1);
+                    for (auto i=0; i< movedTextures.size(); i++)
+                    {
+                        vkDestroyImage(_device,movedTextures[i].image,nullptr);
+                    }
+                    movedTextures.clear();
+                    for (auto i=0; i< movedBuffers.size(); i++)
+                    {
+                        vkDestroyBuffer(_device,movedBuffers[i].buffer,nullptr);
+                    }
+                    movedBuffers.clear();
+                    if (memoryMoved != nullptr)
+                    {
+                        for (auto i=0; i< movedMemoryRefs.size(); i++)
+                        {
+                            if (movedMemoryRefs[i]->type == MemoryObjectType::BUFFER)
+                            {
+                                static_cast<VulkanBuffer*>(movedMemoryRefs[i]->memory.buffer)->updatePointer();
+                            }
+                            memoryMoved(movedMemoryRefs[i]);
+                        }
+                    }
+
+                    movedMemoryRefs.clear();
+                    res = vmaEndDefragmentationPass(_allocator, defragCtx, &pass);
+                    if(res == VK_SUCCESS)
+                    {
+                        break;
+                    }
+                    else if(res != VK_INCOMPLETE)
+                    {
+                        throw std::runtime_error("failed to defragment graphics memory");
+                    }
+
+                }
+                else
+                {
+                    throw std::runtime_error("failed to defragment graphics memory");
+                }
+            }
+            VmaDefragmentationStats stats{};
+            vmaEndDefragmentation(_allocator,defragCtx,&stats);
+            return stats.bytesMoved;
         }
 
         CommandBuffer* VulkanGraphicsCard::newCommandBuffer(QueueType type)
@@ -287,10 +418,10 @@ namespace slag
 
         Buffer* VulkanGraphicsCard::newBuffer(
             uint64_t size,
-            BufferMemoryType memoryType,
-            BufferCPUAccess cpuAccess)
+            BufferCPUAccess cpuAccess,
+            BufferMemoryType memoryType)
         {
-            return new VulkanBuffer(this, size, memoryType, cpuAccess);
+            return new VulkanBuffer(this, size, cpuAccess, memoryType);
         }
 
         Texture* VulkanGraphicsCard::newTexture(uint32_t width, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels, uint32_t layers)

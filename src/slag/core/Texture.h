@@ -1,6 +1,8 @@
 #ifndef SLAG_TEXTURE_H
 #define SLAG_TEXTURE_H
 #include <cstdint>
+
+#include "Dimensions.h"
 #include "Pixels.h"
 
 namespace slag
@@ -92,6 +94,12 @@ namespace slag
          * @return
          */
         [[nodiscard]] uint32_t mipDepth(uint32_t mipLevel)const;
+        /**
+         * Get the required size of a buffer needed to contain the data for this texture
+         * @param aspect The aspect of the texture to get the size of the buffer for
+         * @return
+         */
+        [[nodiscard]] uint64_t bufferSize(PixelAspect aspect)const;
     };
 
     inline TextureUsageFlags operator|(TextureUsageFlags lhs, TextureUsageFlags rhs)

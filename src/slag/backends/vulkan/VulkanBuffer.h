@@ -4,13 +4,16 @@
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
 
-#include "VulkanGPUMemoryReference.h"
-
 namespace slag
 {
     namespace vulkan
     {
         class VulkanGraphicsCard;
+        struct VulkanBufferMoveData
+        {
+            bool movedSucceded = false;
+            VkBuffer buffer = nullptr;
+        };
 
         const uint8_t VKBUFFER_MEMORY_BITS = 0b00000001;
         const uint8_t VKBUFFER_CPU_BITS    = 0b00000110;
@@ -23,8 +26,8 @@ namespace slag
             VulkanBuffer(
                 VulkanGraphicsCard* card,
                 uint64_t size,
-                BufferMemoryType memoryType,
-                BufferCPUAccess cpuAccess);
+                BufferCPUAccess cpuAccess,
+                BufferMemoryType memoryType);
             ~VulkanBuffer()override;
             VulkanBuffer(const VulkanBuffer&) = delete;
             VulkanBuffer& operator=(const VulkanBuffer&) = delete;
@@ -41,10 +44,12 @@ namespace slag
             void setUserData(void* userData) override;
 
             [[nodiscard]] VkBuffer vulkanHandle()const;
+            VulkanBufferMoveData moveMemory(VmaAllocation tempAllocation, CommandBuffer* copyDataBuffer);
+            void updatePointer();
 
         private:
             void move(VulkanBuffer& from);
-            VulkanGPUMemoryReference _selfReference{.memoryType = MemoryType::BUFFER, .reference = {.buffer = this}};
+            MemoryReference _selfReference{.type = MemoryObjectType::BUFFER, .memory = {.buffer = this}};
             uint64_t _size = 0;
             VulkanGraphicsCard* _graphicsCard = nullptr;
             VkBuffer _buffer = nullptr;
