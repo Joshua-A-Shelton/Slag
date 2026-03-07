@@ -1,6 +1,7 @@
 #include "DX12Texture.h"
 
 #include "DX12Backend.h"
+#include "DX12CommandBuffer.h"
 #include "DX12GraphicsCard.h"
 #include "slag/exceptions/ResourceCreationError.h"
 #include "slag/utilities/SLAG_ASSERT.h"
@@ -182,6 +183,30 @@ namespace slag
             _userData = userData;
         }
 
+        ID3D12Resource* DX12Texture::dx12Handle() const
+        {
+            return _texture;
+        }
+
+        ID3D12Resource* DX12Texture::moveMemory(D3D12MA::Allocation* tempAllocation, CommandBuffer* copyDataBuffer)
+        {
+            D3D12_RESOURCE_DESC resDesc = _texture->GetDesc();
+
+            ID3D12Resource* newRes;
+            _graphicsCard->device()->CreatePlacedResource(
+                tempAllocation->GetHeap(),
+                tempAllocation->GetOffset(), &resDesc,
+                D3D12_RESOURCE_STATE_COMMON, NULL, IID_PPV_ARGS(&newRes));
+
+            tempAllocation->SetResource(newRes);
+
+            DX12CommandBuffer* cb = static_cast<DX12CommandBuffer*>(copyDataBuffer);
+            cb->dx12Handle()->CopyResource(tempAllocation->GetResource(),_texture);
+            ID3D12Resource* returnVal = _texture;
+            _texture = tempAllocation->GetResource();
+            return returnVal;
+        }
+
         void DX12Texture::move(DX12Texture& from)
         {
             std::swap(_graphicsCard,from._graphicsCard);
@@ -197,6 +222,11 @@ namespace slag
             _depth = from._depth;
             _layers = from._layers;
             _mipLevels = from._mipLevels;
+
+            if (_allocation)
+            {
+                _allocation->SetPrivateData(&_selfReference);
+            }
         }
 
         void DX12Texture::construct(D3D12_RESOURCE_DIMENSION dimension)
@@ -209,7 +239,7 @@ namespace slag
             SLAG_ASSERT((_usage & (TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::DEPTH_STENCIL_TARGET)) != (TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::DEPTH_STENCIL_TARGET) && "Texture cannot be both a color target and a depth/stencil target");
             SLAG_ASSERT(((_mipLevels > 1 && _sampleCount == SampleCount::ONE) || (_sampleCount != SampleCount::ONE && _mipLevels == 1) || (_mipLevels == 1 && _sampleCount == SampleCount::ONE)) && "Texture cannot have both multiple mip levels and have a sample count greater than one");
 
-            D3D12_RESOURCE_DESC resourceDesc = {};
+            D3D12_RESOURCE_DESC1 resourceDesc = {};
             resourceDesc.Dimension = dimension;
             resourceDesc.Alignment = 0;
             resourceDesc.Width = _width;
@@ -229,14 +259,29 @@ namespace slag
             resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
             resourceDesc.Flags = DX12Backend::nativeTextureUsageFlags(_usage);
 
+            D3D12_RESOURCE_DESC rdesc{};
+            rdesc.Alignment = resourceDesc.Alignment;
+            rdesc.Width = resourceDesc.Width;
+            rdesc.Height = resourceDesc.Height;
+            rdesc.DepthOrArraySize = resourceDesc.DepthOrArraySize;
+            rdesc.MipLevels = resourceDesc.MipLevels;
+            rdesc.Format = resourceDesc.Format;
+            rdesc.SampleDesc = resourceDesc.SampleDesc;
+            rdesc.Layout = resourceDesc.Layout;
+            rdesc.Flags = resourceDesc.Flags;
 
-            auto allocInfo = _graphicsCard->device()->GetResourceAllocationInfo(0,1,&resourceDesc);
+            auto allocInfo = _graphicsCard->device()->GetResourceAllocationInfo(0,1,&rdesc);
             resourceDesc.Alignment = allocInfo.Alignment;
 
             D3D12MA::ALLOCATION_DESC allocationDesc = {};
             allocationDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
 
-            _graphicsCard->allocator()->CreateResource(&allocationDesc,&resourceDesc,D3D12_RESOURCE_STATE_COMMON,nullptr,&_allocation, IID_PPV_ARGS(&_texture));
+            if (_graphicsCard->allocator()->CreateResource3(&allocationDesc,&resourceDesc,D3D12_BARRIER_LAYOUT_COMMON,nullptr,0,nullptr,&_allocation, IID_PPV_ARGS(&_texture))!= S_OK)
+            {
+                throw ResourceCreationError("Failed to create texture");
+            }
+
+            _allocation->SetPrivateData(&_selfReference);
         }
     } // dx12
 } // slag

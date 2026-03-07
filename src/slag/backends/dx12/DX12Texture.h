@@ -65,10 +65,14 @@ namespace slag
             [[nodiscard]] void* userData()override;
             void setUserData(void* userData)override;
 
+            [[nodiscard]] ID3D12Resource* dx12Handle()const;
+            [[nodiscard]] ID3D12Resource* moveMemory(D3D12MA::Allocation* tempAllocation, CommandBuffer* copyDataBuffer);
+
         private:
             void move(DX12Texture& from);
             void construct(D3D12_RESOURCE_DIMENSION dimension);
 
+            MemoryReference _selfReference{.type = MemoryObjectType::TEXTURE, .memory = {.texture = this}};
             DX12GraphicsCard* _graphicsCard = nullptr;
             ID3D12Resource* _texture = nullptr;
             D3D12MA::Allocation* _allocation = nullptr;

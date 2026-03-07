@@ -128,6 +128,7 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/exceptions/ResourceCreationError.h
         src/slag/core/PixelFormatProperties.h
         src/slag/core/Defragmentation.h
+        src/slag/core/Barriers.h
 )
 #link spirv if we need to
 if(USE_SPIRV_REFLECTION)

@@ -44,12 +44,16 @@ TEST(GraphicsCard, Defragment)
         }
         didTest = true;
         auto buffer1 = std::unique_ptr<Buffer>(card->newBuffer(256));
-        auto buffer2 = std::unique_ptr<Buffer>(card->newBuffer(64));
-        auto buffer3 = std::unique_ptr<Buffer>(card->newBuffer(256));
-        auto buffer4 = std::unique_ptr<Buffer>(card->newBuffer(128));
+        auto buffer2 = std::unique_ptr<Buffer>(card->newBuffer(256));
+        auto buffer3 = std::unique_ptr<Buffer>(card->newBuffer(256*500));
+        auto buffer4 = std::unique_ptr<Buffer>(card->newBuffer(128*1024));
+        auto buffer5 = std::unique_ptr<Buffer>(card->newBuffer(256*500));
         auto buffer6 = std::unique_ptr<Buffer>(card->newBuffer(512));
-        auto buffer7 = std::unique_ptr<Buffer>(card->newBuffer(512));
-        auto buffer8 = std::unique_ptr<Buffer>(card->newBuffer(256));
+        auto buffer7 = std::unique_ptr<Buffer>(card->newBuffer(512*1024));
+        auto buffer8 = std::unique_ptr<Buffer>(card->newBuffer(256*500));
+        auto buffer9 = std::unique_ptr<Buffer>(card->newBuffer(128*1024));
+        auto buffer10 = std::unique_ptr<Buffer>(card->newBuffer(128*1024));
+        auto buffer11 = std::unique_ptr<Buffer>(card->newBuffer(128*1024));
         //need to do something here to see that it's moved... it should be returned as an object that's been moved
         auto texture1 = std::unique_ptr<Texture>(card->newTexture(500,500,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
         auto texture2 = std::unique_ptr<Texture>(card->newTexture(500,500,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
@@ -116,7 +120,11 @@ TEST(GraphicsCard, Defragment)
         card->transferQueue()->submit(&batch,1);
         finished->waitForValue(1);
         buffer2 = nullptr;
-        buffer6 = nullptr;
+        buffer3 = nullptr;
+        //buffer4 = nullptr;
+        buffer5 = nullptr;
+        //buffer6 = nullptr;
+        buffer7 = nullptr;
         texture1 = nullptr;
         texture2 = nullptr;
         texture3 = nullptr;
@@ -143,7 +151,7 @@ TEST(GraphicsCard, Defragment)
         GTEST_ASSERT_GE(movedTextures.size(), 1);
         GTEST_ASSERT_GE(movedBuffers.size(),1);
 
-        auto downloadData = std::unique_ptr<Buffer>(card->newBuffer(256,BufferCPUAccess::READ_WRITE,BufferMemoryType::GENERAL));
+        auto downloadData = std::unique_ptr<Buffer>(card->newBuffer(256,BufferCPUAccess::READ_WRITE));
         auto transferFinished = std::unique_ptr<Semaphore>(card->newSemaphore());
         auto downloadBuffer = std::unique_ptr<Buffer>(card->newBuffer(bufferSize,BufferCPUAccess::READ_WRITE));
         commandBuffer->begin();
@@ -162,7 +170,6 @@ TEST(GraphicsCard, Defragment)
         }
 
         auto textureData = downloadBuffer->as<uint8_t>();
-        lodepng::encode("C:\\Users\\jshelton\\Desktop\\output\\tdata.png",textureData,texture6->width(),texture6->height());
         for (uint64_t i=0; i< bufferSize; i+=4)
         {
             GTEST_ASSERT_EQ(textureData[i], 255);

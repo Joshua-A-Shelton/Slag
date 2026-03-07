@@ -372,14 +372,14 @@ namespace slag
                         vkDestroyBuffer(_device,movedBuffers[i].buffer,nullptr);
                     }
                     movedBuffers.clear();
-                    if (memoryMoved != nullptr)
+                    for (auto i=0; i< movedMemoryRefs.size(); i++)
                     {
-                        for (auto i=0; i< movedMemoryRefs.size(); i++)
+                        if (movedMemoryRefs[i]->type == MemoryObjectType::BUFFER)
                         {
-                            if (movedMemoryRefs[i]->type == MemoryObjectType::BUFFER)
-                            {
-                                static_cast<VulkanBuffer*>(movedMemoryRefs[i]->memory.buffer)->updatePointer();
-                            }
+                            static_cast<VulkanBuffer*>(movedMemoryRefs[i]->memory.buffer)->updatePointer();
+                        }
+                        if (memoryMoved != nullptr)
+                        {
                             memoryMoved(movedMemoryRefs[i]);
                         }
                     }

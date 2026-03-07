@@ -38,8 +38,12 @@ namespace slag
 
             [[nodiscard]] ID3D12Resource* dx12Handle()const;
 
+            [[nodiscard]] ID3D12Resource* moveMemory(D3D12MA::Allocation* tempAllocation, CommandBuffer* copyDataBuffer);
+            void updatePointer();
+
         private:
             void move(DX12Buffer& from);
+            MemoryReference _selfReference{.type = MemoryObjectType::BUFFER, .memory = {.buffer = this}};
             uint64_t _size = 0;
             ID3D12Resource* _buffer = nullptr;
             D3D12MA::Allocation* _allocation = nullptr;

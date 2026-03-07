@@ -94,6 +94,14 @@ namespace slag
             _computeQueue = new DX12SubmissionQueue(this,QueueType::COMPUTE);
             _transferQueue = new DX12SubmissionQueue(this,QueueType::TRANSFER);
 
+            D3D12MA::POOL_DESC poolDesc{};
+            poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_CUSTOM;
+            poolDesc.HeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE;
+            poolDesc.HeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_L0;
+            poolDesc.Flags = D3D12MA::POOL_FLAG_NONE;
+            poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+            _allocator->CreatePool(&poolDesc,&_cpuReadablePool);
+
             //Memory Properties
             _memoryProperties.videoMemory = desc.DedicatedVideoMemory;
             _memoryProperties.cacheCoherentSharedMemory = architecture.CacheCoherentUMA;
@@ -244,7 +252,102 @@ namespace slag
             uint64_t targetBytes,
             std::function<void(MemoryReference*)> memoryMoved)
         {
-            throw NotImplemented();
+            D3D12MA::DEFRAGMENTATION_DESC defragDesc = {};
+            defragDesc.Flags = D3D12MA::DEFRAGMENTATION_FLAG_ALGORITHM_BALANCED;
+            defragDesc.MaxBytesPerPass = targetBytes;
+
+            D3D12MA::DefragmentationContext* defragCtx;
+            _allocator->BeginDefragmentation(&defragDesc, &defragCtx);
+
+            for(;;)
+            {
+                D3D12MA::DEFRAGMENTATION_PASS_MOVE_INFO pass;
+                HRESULT hr = defragCtx->BeginPass(&pass);
+                if(hr == S_OK)
+                {
+                    break;
+                }
+                else if(hr != S_FALSE)
+                {
+                    throw std::runtime_error("failed to begin defragmentation");
+                }
+
+                std::vector<ID3D12Resource*> movedResources;
+                std::vector<MemoryReference*> movedMemoryRefs;
+                DX12CommandBuffer moveCB(this,QueueType::GRAPHICS,CommandBufferLevel::PRIMARY);
+                DX12Semaphore moved(this,0);
+                moveCB.begin();
+                for(UINT i = 0; i < pass.MoveCount; ++i)
+                {
+                    MemoryReference* userData = (MemoryReference*)pass.pMoves[i].pSrcAllocation->GetPrivateData();
+
+                    if (userData->type == MemoryObjectType::TEXTURE)
+                    {
+                        auto texture = static_cast<DX12Texture*>(userData->memory.texture);
+                        auto movedTexture = texture->moveMemory(pass.pMoves[i].pDstTmpAllocation,&moveCB);
+                        movedResources.push_back(movedTexture);
+                        movedMemoryRefs.push_back(userData);
+
+                    }
+                    else
+                    {
+                        auto buffer = static_cast<DX12Buffer*>(userData->memory.buffer);
+                        auto movedBuffer = buffer->moveMemory(pass.pMoves[i].pDstTmpAllocation,&moveCB);
+                        movedResources.push_back(movedBuffer);
+                        movedMemoryRefs.push_back(userData);
+                    }
+                }
+
+                moveCB.end();
+                CommandBuffer* movedPtr = &moveCB;
+                SemaphoreValue movedValue{.semaphore = &moved,.value = 1};
+                SubmissionBatch batch
+                {
+                    .waitSemaphores = nullptr,
+                    .waitSemaphoreCount = 0,
+                    .commandBuffers = &movedPtr,
+                    .commandBufferCount = 1,
+                    .signalSemaphores = &movedValue,
+                    .signalSemaphoreCount = 1,
+                };
+
+                _graphicsQueue->submit(&batch,1);
+                moved.waitForValue(1);
+                for (auto i=0; i< movedResources.size(); i++)
+                {
+                    movedResources[i]->Release();
+                }
+                movedResources.clear();
+                for (auto i=0; i< movedMemoryRefs.size(); i++)
+                {
+                    if (movedMemoryRefs[i]->type == MemoryObjectType::BUFFER)
+                    {
+                        static_cast<DX12Buffer*>(movedMemoryRefs[i]->memory.buffer)->updatePointer();
+                    }
+                    if (memoryMoved != nullptr)
+                    {
+                        memoryMoved(movedMemoryRefs[i]);
+                    }
+                }
+
+
+                movedMemoryRefs.clear();
+
+                hr = defragCtx->EndPass(&pass);
+                if(hr == S_OK)
+                {
+                    break;
+                }
+                else if(hr != S_FALSE)
+                {
+                    throw std::runtime_error("failed to defragment graphics memory");
+                }
+
+            }
+            D3D12MA::DEFRAGMENTATION_STATS stats;
+            defragCtx->GetStats(&stats);
+            defragCtx->Release();
+            return stats.BytesMoved;
         }
 
         CommandBuffer* DX12GraphicsCard::newCommandBuffer(QueueType type)
@@ -290,6 +393,11 @@ namespace slag
         D3D12MA::Allocator* DX12GraphicsCard::allocator() const
         {
             return _allocator;
+        }
+
+        D3D12MA::Pool* DX12GraphicsCard::cpuReadablePool() const
+        {
+            return _cpuReadablePool;
         }
 
         Microsoft::WRL::ComPtr<ID3D12Device2>& DX12GraphicsCard::device()

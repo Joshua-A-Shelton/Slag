@@ -266,7 +266,6 @@ namespace slag
             auto vulkanAspectFlags = VulkanBackend::nativeTextureAspect(Pixel::aspectFlags(_format));
             VkImageMemoryBarrier2 barrier{};
 
-
             barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             barrier.pNext = nullptr,
             barrier.srcStageMask = VK_PIPELINE_STAGE_2_NONE,

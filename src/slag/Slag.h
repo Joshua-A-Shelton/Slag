@@ -1,6 +1,7 @@
 #ifndef SLAG_SLAG_H
 #define SLAG_SLAG_H
 
+#include "core/Barriers.h"
 #include "core/Buffer.h"
 #include "core/CommandBuffer.h"
 #include "core/Defragmentation.h"

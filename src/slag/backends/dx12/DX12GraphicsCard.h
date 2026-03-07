@@ -77,6 +77,7 @@ namespace slag
 
             //DX12 specific features
             [[nodiscard]] D3D12MA::Allocator* allocator() const;
+            [[nodiscard]] D3D12MA::Pool* cpuReadablePool() const;
             Microsoft::WRL::ComPtr<ID3D12Device2>& device();
         private:
             void move(DX12GraphicsCard& from);
@@ -89,6 +90,7 @@ namespace slag
             DX12SubmissionQueue* _graphicsQueue = nullptr;
             DX12SubmissionQueue* _computeQueue = nullptr;
             DX12SubmissionQueue* _transferQueue = nullptr;
+            D3D12MA::Pool* _cpuReadablePool = nullptr;
         };
     } // dx12
 } // slag

@@ -1,5 +1,6 @@
 #include "DX12Buffer.h"
 
+#include "DX12CommandBuffer.h"
 #include "DX12GraphicsCard.h"
 #include "slag/exceptions/ResourceCreationError.h"
 #include "slag/utilities/SLAG_ASSERT.h"
@@ -23,6 +24,7 @@ namespace slag
             _dataBits |= static_cast<uint16_t>(cpuAccess)<<DXBUFFER_CPU_SHIFT;
 
             D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT;
+            D3D12MA::Pool* manualPool = nullptr;
             switch (cpuAccess)
             {
             case BufferCPUAccess::NONE:
@@ -39,11 +41,12 @@ namespace slag
                 }
                 break;
             case BufferCPUAccess::READ_WRITE:
-                heapType = D3D12_HEAP_TYPE_READBACK;
+                heapType = D3D12_HEAP_TYPE_CUSTOM;
+                manualPool = card->cpuReadablePool();
                 break;
             }
 
-            D3D12_RESOURCE_DESC resourceDesc = {};
+            D3D12_RESOURCE_DESC1 resourceDesc = {};
             resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
             resourceDesc.Alignment = 0;
             resourceDesc.Width = _size;
@@ -59,8 +62,9 @@ namespace slag
             D3D12MA::ALLOCATION_DESC allocationDesc{};
 
             allocationDesc.HeapType = heapType;
+            allocationDesc.CustomPool = manualPool;
 
-            if (_graphicsCard->allocator()->CreateResource(&allocationDesc,&resourceDesc,D3D12_RESOURCE_STATE_COMMON, nullptr,&_allocation, IID_PPV_ARGS(&_buffer)) != S_OK)
+            if (_graphicsCard->allocator()->CreateResource3(&allocationDesc,&resourceDesc,D3D12_BARRIER_LAYOUT_UNDEFINED,nullptr,0,nullptr,&_allocation, IID_PPV_ARGS(&_buffer)) != S_OK)
             {
                 throw ResourceCreationError("Unable to create buffer");
             }
@@ -69,6 +73,8 @@ namespace slag
             {
                 _buffer->Map(0,nullptr,&_cpuHandle);
             }
+
+            _allocation->SetPrivateData(&_selfReference);
         }
 
         DX12Buffer::~DX12Buffer()
@@ -141,6 +147,39 @@ namespace slag
             return _buffer;
         }
 
+        ID3D12Resource* DX12Buffer::moveMemory(D3D12MA::Allocation* tempAllocation, CommandBuffer* copyDataBuffer)
+        {
+            if (DX12Buffer::cpuAccess()!=BufferCPUAccess::NONE)
+            {
+                _buffer->Unmap(0, nullptr);
+            }
+
+            D3D12_RESOURCE_DESC resDesc = _buffer->GetDesc();
+
+            ID3D12Resource* newRes;
+            _graphicsCard->device()->CreatePlacedResource(
+                tempAllocation->GetHeap(),
+                tempAllocation->GetOffset(), &resDesc,
+                D3D12_RESOURCE_STATE_COMMON, NULL, IID_PPV_ARGS(&newRes));
+
+            tempAllocation->SetResource(newRes);
+
+
+            DX12CommandBuffer* cb = static_cast<DX12CommandBuffer*>(copyDataBuffer);
+            cb->dx12Handle()->CopyResource(tempAllocation->GetResource(),_buffer);
+            ID3D12Resource* returnVal = _buffer;
+            _buffer = tempAllocation->GetResource();
+            return returnVal;
+        }
+
+        void DX12Buffer::updatePointer()
+        {
+            if (this->cpuAccess() != BufferCPUAccess::NONE)
+            {
+                _buffer->Map(0,nullptr,&_cpuHandle);
+            }
+        }
+
         void DX12Buffer::move(DX12Buffer& from)
         {
             _size = from._size;
@@ -150,6 +189,11 @@ namespace slag
             std::swap(_cpuHandle,from._cpuHandle);
             std::swap(_userData,from._userData);
             _dataBits = from._dataBits;
+
+            if (_allocation)
+            {
+                _allocation->SetPrivateData(&_selfReference);
+            }
         }
     } // dx12
 } // slag
