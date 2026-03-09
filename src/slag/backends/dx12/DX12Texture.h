@@ -66,7 +66,7 @@ namespace slag
             void setUserData(void* userData)override;
 
             [[nodiscard]] ID3D12Resource* dx12Handle()const;
-            [[nodiscard]] ID3D12Resource* moveMemory(D3D12MA::Allocation* tempAllocation, CommandBuffer* copyDataBuffer);
+            [[nodiscard]] ID3D12Resource* moveMemory(D3D12MA::Allocation* tempAllocation, CommandBuffer* copyDataBuffer, std::vector<D3D12_TEXTURE_BARRIER>& transitionBarriers);
 
         private:
             void move(DX12Texture& from);

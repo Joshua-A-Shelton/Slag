@@ -275,6 +275,7 @@ namespace slag
                 std::vector<ID3D12Resource*> movedResources;
                 std::vector<MemoryReference*> movedMemoryRefs;
                 DX12CommandBuffer moveCB(this,QueueType::GRAPHICS,CommandBufferLevel::PRIMARY);
+                std::vector<D3D12_TEXTURE_BARRIER> textureBarriers;
                 DX12Semaphore moved(this,0);
                 moveCB.begin();
                 for(UINT i = 0; i < pass.MoveCount; ++i)
@@ -284,7 +285,7 @@ namespace slag
                     if (userData->type == MemoryObjectType::TEXTURE)
                     {
                         auto texture = static_cast<DX12Texture*>(userData->memory.texture);
-                        auto movedTexture = texture->moveMemory(pass.pMoves[i].pDstTmpAllocation,&moveCB);
+                        auto movedTexture = texture->moveMemory(pass.pMoves[i].pDstTmpAllocation,&moveCB,textureBarriers);
                         movedResources.push_back(movedTexture);
                         movedMemoryRefs.push_back(userData);
 
@@ -297,6 +298,14 @@ namespace slag
                         movedMemoryRefs.push_back(userData);
                     }
                 }
+                D3D12_BARRIER_GROUP barrierGroup =
+                {
+                    .Type = D3D12_BARRIER_TYPE_TEXTURE,
+                    .NumBarriers = static_cast<uint32_t>(textureBarriers.size()),
+                    .pTextureBarriers = textureBarriers.data()
+                };
+
+                moveCB.dx12Handle()->Barrier(1,&barrierGroup);
 
                 moveCB.end();
                 CommandBuffer* movedPtr = &moveCB;
@@ -330,7 +339,7 @@ namespace slag
                     }
                 }
 
-
+                textureBarriers.clear();
                 movedMemoryRefs.clear();
 
                 hr = defragCtx->EndPass(&pass);

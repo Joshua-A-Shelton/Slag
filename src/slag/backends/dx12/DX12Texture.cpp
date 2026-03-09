@@ -188,11 +188,12 @@ namespace slag
             return _texture;
         }
 
-        ID3D12Resource* DX12Texture::moveMemory(D3D12MA::Allocation* tempAllocation, CommandBuffer* copyDataBuffer)
+        ID3D12Resource* DX12Texture::moveMemory(D3D12MA::Allocation* tempAllocation, CommandBuffer* copyDataBuffer, std::vector<D3D12_TEXTURE_BARRIER>& transitionBarriers)
         {
             D3D12_RESOURCE_DESC resDesc = _texture->GetDesc();
 
             ID3D12Resource* newRes;
+
             _graphicsCard->device()->CreatePlacedResource(
                 tempAllocation->GetHeap(),
                 tempAllocation->GetOffset(), &resDesc,
@@ -200,10 +201,26 @@ namespace slag
 
             tempAllocation->SetResource(newRes);
 
+            transitionBarriers.push_back(
+            {
+                .SyncBefore = D3D12_BARRIER_SYNC_COPY,
+                .SyncAfter = D3D12_BARRIER_SYNC_ALL,
+                .AccessBefore = D3D12_BARRIER_ACCESS_COPY_DEST,
+                .AccessAfter = D3D12_BARRIER_ACCESS_COMMON,
+                .LayoutBefore = D3D12_BARRIER_LAYOUT_COMMON,
+                .LayoutAfter = D3D12_BARRIER_LAYOUT_COMMON,
+                .pResource = newRes,
+                .Subresources =
+                {
+                    .IndexOrFirstMipLevel = 0xffffffff
+                }
+            });
+
             DX12CommandBuffer* cb = static_cast<DX12CommandBuffer*>(copyDataBuffer);
             cb->dx12Handle()->CopyResource(tempAllocation->GetResource(),_texture);
             ID3D12Resource* returnVal = _texture;
             _texture = tempAllocation->GetResource();
+
             return returnVal;
         }
 
