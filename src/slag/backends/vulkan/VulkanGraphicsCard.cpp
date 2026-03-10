@@ -292,8 +292,8 @@ namespace slag
                     std::vector<VulkanBufferMoveData> movedBuffers;
                     std::vector<VulkanImageMoveData> movedTextures;
                     std::vector<MemoryReference*> movedMemoryRefs;
-                    VulkanCommandBuffer transitionCB(this,QueueType::GRAPHICS,CommandBufferLevel::PRIMARY);
-                    VulkanCommandBuffer moveCB(this,QueueType::GRAPHICS,CommandBufferLevel::PRIMARY);
+                    VulkanCommandBuffer transitionCB(this,QueueType::GRAPHICS);
+                    VulkanCommandBuffer moveCB(this,QueueType::GRAPHICS);
                     VulkanSemaphore transitioned(this,0);
                     VulkanSemaphore moved(this,0);
                     transitionCB.begin();
@@ -408,7 +408,7 @@ namespace slag
 
         CommandBuffer* VulkanGraphicsCard::newCommandBuffer(QueueType type)
         {
-            return new VulkanCommandBuffer(this, type,CommandBufferLevel::PRIMARY);
+            return new VulkanCommandBuffer(this, type);
         }
 
         Semaphore* VulkanGraphicsCard::newSemaphore(uint64_t initialValue)

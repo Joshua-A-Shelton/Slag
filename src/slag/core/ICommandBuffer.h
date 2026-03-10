@@ -47,14 +47,6 @@ namespace slag
         ///Local workgroups to dispatch in the Z dimension
         uint32_t groupCountZ = 1;
     };
-    ///If this command buffer is submitted to a queue or to other command buffers
-    enum class CommandBufferLevel
-    {
-        ///Command buffer is submitted to a graphics card queue
-        PRIMARY = 0,
-        ///Command buffer is submitted to another command buffer
-        SECONDARY = 1,
-    };
 
     class GraphicsCard;
     class ICommandBuffer
@@ -65,8 +57,6 @@ namespace slag
         [[nodiscard]] virtual GraphicsCard* graphicsCard()=0;
         ///Which kinds of commands this command buffer can execute
         [[nodiscard]] virtual QueueType type()const=0;
-        ///If this command buffer is submitted to a queue or to other command buffers
-        [[nodiscard]] virtual CommandBufferLevel level()const=0;
         ///Begin recording commands
         virtual void begin()=0;
         ///End recording commands

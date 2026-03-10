@@ -13,7 +13,6 @@ namespace slag
             ~IVulkanCommandBuffer()override = default;
             [[nodiscard]] GraphicsCard* graphicsCard() override;
             [[nodiscard]] QueueType type()const override;
-            [[nodiscard]] CommandBufferLevel level()const override;
 
             void begin() override;
             void end() override;
@@ -29,7 +28,6 @@ namespace slag
             VkCommandPool _commandPool = nullptr;
             VulkanGraphicsCard* _graphicsCard = nullptr;
             QueueType _type = QueueType::TRANSFER;
-            CommandBufferLevel _level = CommandBufferLevel::PRIMARY;
         };
     } // vulkan
 } // slag

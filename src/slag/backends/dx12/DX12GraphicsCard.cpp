@@ -274,7 +274,7 @@ namespace slag
 
                 std::vector<ID3D12Resource*> movedResources;
                 std::vector<MemoryReference*> movedMemoryRefs;
-                DX12CommandBuffer moveCB(this,QueueType::GRAPHICS,CommandBufferLevel::PRIMARY);
+                DX12CommandBuffer moveCB(this,QueueType::GRAPHICS);
                 std::vector<D3D12_TEXTURE_BARRIER> textureBarriers;
                 DX12Semaphore moved(this,0);
                 moveCB.begin();
@@ -361,7 +361,7 @@ namespace slag
 
         CommandBuffer* DX12GraphicsCard::newCommandBuffer(QueueType type)
         {
-            return new DX12CommandBuffer(this,type,CommandBufferLevel::PRIMARY);
+            return new DX12CommandBuffer(this,type);
         }
 
         Semaphore* DX12GraphicsCard::newSemaphore(uint64_t initialValue)

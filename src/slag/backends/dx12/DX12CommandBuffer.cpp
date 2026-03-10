@@ -6,11 +6,10 @@ namespace slag
 {
     namespace dx12
     {
-        DX12CommandBuffer::DX12CommandBuffer(DX12GraphicsCard* graphicsCard, QueueType type, CommandBufferLevel level)
+        DX12CommandBuffer::DX12CommandBuffer(DX12GraphicsCard* graphicsCard, QueueType type)
         {
             _graphicsCard = graphicsCard;
             _queueType = type;
-            _level = level;
 
             D3D12_COMMAND_LIST_TYPE comType = D3D12_COMMAND_LIST_TYPE_DIRECT;
             switch (_queueType)

@@ -118,10 +118,6 @@ namespace slag
         D3D12_RESOURCE_FLAGS DX12Backend::nativeTextureUsageFlags(TextureUsageFlags usage)
         {
             D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
-            if ((uint8_t)(usage & TextureUsageFlags::SAMPLED) == 0)
-            {
-                flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
-            }
             if((uint8_t)(usage & TextureUsageFlags::DEPTH_STENCIL_TARGET))
             {
                 flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;

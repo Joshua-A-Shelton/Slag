@@ -465,7 +465,7 @@ namespace slag
 
             //Transition to general
 
-            VulkanCommandBuffer transitionBuffer(_graphicsCard,QueueType::TRANSFER,CommandBufferLevel::PRIMARY);
+            VulkanCommandBuffer transitionBuffer(_graphicsCard,QueueType::TRANSFER);
             transitionBuffer.begin();
             auto vkcmdbuffer = transitionBuffer.vulkanHandle();
 

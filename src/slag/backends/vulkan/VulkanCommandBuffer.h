@@ -10,7 +10,7 @@ namespace slag
         class VulkanCommandBuffer: public IVulkanCommandBuffer
         {
         public:
-            VulkanCommandBuffer(VulkanGraphicsCard* graphicsCard,QueueType type, CommandBufferLevel level);
+            VulkanCommandBuffer(VulkanGraphicsCard* graphicsCard,QueueType type);
             ~VulkanCommandBuffer()override;
             VulkanCommandBuffer(const VulkanCommandBuffer&) = delete;
             VulkanCommandBuffer& operator=(const VulkanCommandBuffer&) = delete;

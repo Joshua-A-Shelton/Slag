@@ -24,11 +24,6 @@ namespace slag
             return _queueType;
         }
 
-        CommandBufferLevel IDX12CommandBuffer::level() const
-        {
-            return _level;
-        }
-
         void IDX12CommandBuffer::begin()
         {
             _commandBuffer->Reset(_commandPool,nullptr);
@@ -165,7 +160,6 @@ namespace slag
             std::swap(_commandPool,from._commandPool);
             _graphicsCard = from._graphicsCard;
             _queueType = from._queueType;
-            _level = from._level;
         }
     } // dx12
 } // slag

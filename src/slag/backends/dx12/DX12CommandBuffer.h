@@ -9,7 +9,7 @@ namespace slag
         class DX12CommandBuffer: public IDX12CommandBuffer
         {
         public:
-            DX12CommandBuffer(DX12GraphicsCard* graphicsCard,QueueType type, CommandBufferLevel level);
+            DX12CommandBuffer(DX12GraphicsCard* graphicsCard,QueueType type);
             ~DX12CommandBuffer()override;
             DX12CommandBuffer(const DX12CommandBuffer&) = delete;
             DX12CommandBuffer& operator=(const DX12CommandBuffer&) = delete;

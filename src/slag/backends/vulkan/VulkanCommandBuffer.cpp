@@ -8,11 +8,10 @@ namespace slag
 {
     namespace vulkan
     {
-        VulkanCommandBuffer::VulkanCommandBuffer(VulkanGraphicsCard* graphicsCard,QueueType type, CommandBufferLevel level)
+        VulkanCommandBuffer::VulkanCommandBuffer(VulkanGraphicsCard* graphicsCard,QueueType type)
         {
             _graphicsCard = graphicsCard;
             _type = type;
-            _level = level;
             uint32_t family = 0;
             switch (_type)
             {

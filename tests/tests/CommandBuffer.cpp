@@ -12,13 +12,7 @@ TEST(CommandBuffer, Create)
         auto cb = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(queueType[i]));
         GTEST_ASSERT_EQ(cb->graphicsCard(),card);
         GTEST_ASSERT_EQ(cb->type(),queueType[i]);
-        GTEST_ASSERT_EQ(cb->level(),CommandBufferLevel::PRIMARY);
     }
-}
-
-TEST(CommandBuffer, SubBuffer)
-{
-    GTEST_FAIL();
 }
 
 TEST(CommandBuffer, CopyBufferToBuffer)

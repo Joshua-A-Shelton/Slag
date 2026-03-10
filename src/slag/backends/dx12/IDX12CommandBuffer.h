@@ -15,7 +15,6 @@ namespace slag
             ~IDX12CommandBuffer()override = default;
             [[nodiscard]] GraphicsCard* graphicsCard() override;
             [[nodiscard]] QueueType type()const override;
-            [[nodiscard]] CommandBufferLevel level()const override;
 
             void begin() override;
             void end() override;
@@ -31,7 +30,6 @@ namespace slag
             ID3D12CommandAllocator* _commandPool = nullptr;
             DX12GraphicsCard* _graphicsCard = nullptr;
             QueueType _queueType = QueueType::TRANSFER;
-            CommandBufferLevel _level = CommandBufferLevel::PRIMARY;
         };
     } // dx12
 } // slag

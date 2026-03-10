@@ -23,11 +23,6 @@ namespace slag
             return _type;
         }
 
-        CommandBufferLevel IVulkanCommandBuffer::level() const
-        {
-            return _level;
-        }
-
         void IVulkanCommandBuffer::begin()
         {
             VkCommandBufferBeginInfo cmdBeginInfo = {};
@@ -149,7 +144,6 @@ namespace slag
             std::swap(_commandPool, from._commandPool);
             _graphicsCard = from._graphicsCard;
             _type = from._type;
-            _level = from._level;
         }
     } // vulkan
 } // slag
