@@ -30,6 +30,8 @@ namespace slag
             static NativeFormat nativeFormat(PixelFormat format);
             static VkImageUsageFlags nativeTextureUsage(TextureUsageFlags flags);
             inline static VkImageAspectFlags nativeTextureAspect(PixelAspectFlags aspect){return static_cast<VkImageAspectFlagBits>(aspect);}
+            static VkAccessFlags2 nativeMemoryCaches(MemoryCaches caches);
+            static VkPipelineStageFlags2 nativePipelineStages(SyncStages stages);
         private:
             SlagInitializationResult initializeBackend(const InitializationData& initializationData)override;
             std::vector<VulkanGraphicsCard> _graphicsCards;

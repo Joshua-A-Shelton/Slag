@@ -3,12 +3,14 @@
 #include <cstdint>
 
 #include "SubmissionQueue.h"
+#include "Barriers.h"
 
 namespace slag
 {
     class Buffer;
     class Texture;
     class TextureBufferMapping;
+
     ///Structure that contains the data for indirect draw calls
     struct IndirectDrawCommand
     {
@@ -62,7 +64,42 @@ namespace slag
         ///End recording commands
         virtual void end()=0;
         /**
-         * [TRANSFER] Copy data from one buffer to another
+         * [TRANSFER] Insert global memory barriers
+         * @param barriers Array of global barriers
+         * @param barrierCount Number of barriers in barriers array
+         */
+        virtual void insertBarriers(GlobalBarrier* barriers, uint32_t barrierCount)=0;
+        /**
+         * [TRANSFER] Insert buffer memory barriers
+         * @param barriers Array of buffer barriers
+         * @param barrierCount Number of barriers in barriers array
+         */
+        virtual void insertBarriers(BufferBarrier* barriers, uint32_t barrierCount)=0;
+        /**
+         * [TRANSFER] Insert texture memory barriers
+         * @param barriers Array of texture barriers
+         * @param barrierCount Number of barriers in barriers array
+         */
+        virtual void insertBarriers(TextureBarrier* barriers, uint32_t barrierCount)=0;
+        /**
+         * [TRANSFER] Insert memory barriers
+         * @param globalBarriers Array of global barriers
+         * @param globalBarrierCount Number of barriers in globalBarriers array
+         * @param bufferBarriers Array of buffer barriers
+         * @param bufferBarrierCount Number of barriers in bufferBarriers array
+         * @param textureBarriers Array of textureBarriers
+         * @param textureBarrierCount Number of barriers in textureBarriers array
+         */
+        virtual void insertBarriers(
+            GlobalBarrier* globalBarriers,
+            uint32_t globalBarrierCount,
+            BufferBarrier* bufferBarriers,
+            uint32_t bufferBarrierCount,
+            TextureBarrier* textureBarriers,
+            uint32_t textureBarrierCount
+            )=0;
+        /**
+         * [TRANSFER | MemoryCaches::COPY_READ, MemoryCaches::COPY_WRITE] Copy data from one buffer to another
          * @param source Buffer to copy from
          * @param sourceOffset Byte offset to start the copy from
          * @param destination Buffer to copy to
@@ -71,7 +108,7 @@ namespace slag
          */
         virtual void copyBufferToBuffer(Buffer* source, uint64_t sourceOffset, Buffer* destination, uint64_t destinationOffset, uint64_t length)=0;
         /**
-         * [TRANSFER] Copy data from a texture to a buffer
+         * [TRANSFER | MemoryCaches::COPY_READ, MemoryCaches::COPY_WRITE] Copy data from a texture to a buffer
          * @param source Texture to copy from
          * @param destination Buffer to copy to
          * @param copyData Array of structures containing the parameters of the copy operation
@@ -79,7 +116,7 @@ namespace slag
          */
         virtual void copyTextureToBuffer(Texture* source, Buffer* destination, TextureBufferMapping* copyData, uint32_t mappingCount)=0;
         /**
-         * [TRANSFER] Copy data from a buffer to a texture
+         * [TRANSFER | MemoryCaches::COPY_READ, MemoryCaches::COPY_WRITE] Copy data from a buffer to a texture
          * @param source Buffer to copy data from
          * @param destination Texture to copy data to
          * @param copyData Array of structures containing the parameters of the copy operation

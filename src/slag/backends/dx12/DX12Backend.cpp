@@ -118,17 +118,164 @@ namespace slag
         D3D12_RESOURCE_FLAGS DX12Backend::nativeTextureUsageFlags(TextureUsageFlags usage)
         {
             D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
-            if((uint8_t)(usage & TextureUsageFlags::DEPTH_STENCIL_TARGET))
+            if(static_cast<uint8_t>(usage & TextureUsageFlags::DEPTH_STENCIL_TARGET))
             {
                 flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
             }
-            if((uint8_t)(usage & TextureUsageFlags::COLOR_TARGET))
+            if(static_cast<uint8_t>(usage & TextureUsageFlags::COLOR_TARGET))
             {
                 flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
             }
-            if ((uint8_t)(usage & TextureUsageFlags::UNORDERED_ACCESS))
+            if (static_cast<uint8_t>(usage & TextureUsageFlags::UNORDERED_ACCESS))
             {
                 flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+            }
+            return flags;
+        }
+
+        D3D12_BARRIER_ACCESS DX12Backend::nativeMemoryCaches(MemoryCaches caches)
+        {
+
+            D3D12_BARRIER_ACCESS flags = D3D12_BARRIER_ACCESS_COMMON;
+
+            if (static_cast<bool>(caches & MemoryCaches::INDIRECT_COMMAND_READ))
+            {
+                flags |= D3D12_BARRIER_ACCESS_INDIRECT_ARGUMENT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::INDEX_READ))
+            {
+                flags |= D3D12_BARRIER_ACCESS_INDEX_BUFFER;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::VERTEX_ATTRIBUTE_READ))
+            {
+                flags |= D3D12_BARRIER_ACCESS_VERTEX_BUFFER;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::UNIFORM_READ))
+            {
+                flags |= D3D12_BARRIER_ACCESS_CONSTANT_BUFFER;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::COLOR_TARGET))
+            {
+                flags |= D3D12_BARRIER_ACCESS_RENDER_TARGET;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::DEPTH_TARGET_READ))
+            {
+                flags |= D3D12_BARRIER_ACCESS_DEPTH_STENCIL_READ;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::DEPTH_TARGET_WRITE))
+            {
+                flags |= D3D12_BARRIER_ACCESS_DEPTH_STENCIL_WRITE;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::SHADER_SAMPLED_READ))
+            {
+                flags |= D3D12_BARRIER_ACCESS_SHADER_RESOURCE;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::SHADER_UNORDERED_ACCESS))
+            {
+                flags |= D3D12_BARRIER_ACCESS_UNORDERED_ACCESS;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::BLIT_READ))
+            {
+                flags |= D3D12_BARRIER_ACCESS_UNORDERED_ACCESS;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::BLIT_WRITE))
+            {
+                flags |= D3D12_BARRIER_ACCESS_UNORDERED_ACCESS;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::COPY_READ))
+            {
+                flags |= D3D12_BARRIER_ACCESS_COPY_SOURCE;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::COPY_WRITE))
+            {
+                flags |= D3D12_BARRIER_ACCESS_COPY_DEST;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::RESOLVE_READ))
+            {
+                flags |= D3D12_BARRIER_ACCESS_RESOLVE_SOURCE;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::RESOLVE_WRITE))
+            {
+                flags |= D3D12_BARRIER_ACCESS_RESOLVE_DEST;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::CLEAR))
+            {
+                flags |= D3D12_BARRIER_ACCESS_UNORDERED_ACCESS;
+            }
+            return flags;
+        }
+
+        D3D12_BARRIER_SYNC DX12Backend::nativePipelineStages(SyncStages stages)
+        {
+            D3D12_BARRIER_SYNC flags = D3D12_BARRIER_SYNC_NONE;
+
+            if (static_cast<bool>(stages & SyncStages::ALL))
+            {
+                flags |= D3D12_BARRIER_SYNC_ALL;
+            }
+            if (static_cast<bool>(stages & SyncStages::ALL_GRAPHICS))
+            {
+                flags |= D3D12_BARRIER_SYNC_DRAW;
+            }
+            if (static_cast<bool>(stages & SyncStages::INDEX_INPUT))
+            {
+                flags |= D3D12_BARRIER_SYNC_INDEX_INPUT;
+            }
+            if (static_cast<bool>(stages & SyncStages::VERTEX_SHADER))
+            {
+                flags |= D3D12_BARRIER_SYNC_VERTEX_SHADING;
+            }
+            if (static_cast<bool>(stages & SyncStages::FRAGMENT_SHADER))
+            {
+                flags |= D3D12_BARRIER_SYNC_PIXEL_SHADING;
+            }
+            if (static_cast<bool>(stages & SyncStages::DEPTH_STENCIL_TARGET_OUTPUT))
+            {
+                flags |= D3D12_BARRIER_SYNC_DEPTH_STENCIL;
+            }
+            if (static_cast<bool>(stages & SyncStages::COLOR_TARGET_OUTPUT))
+            {
+                flags |= D3D12_BARRIER_SYNC_RENDER_TARGET;
+            }
+            if (static_cast<bool>(stages & SyncStages::COMPUTE_SHADER))
+            {
+                flags |= D3D12_BARRIER_SYNC_COMPUTE_SHADING;
+            }
+            if (static_cast<bool>(stages & SyncStages::RAYTRACING_SHADER))
+            {
+                flags |= D3D12_BARRIER_SYNC_RAYTRACING;
+            }
+            if (static_cast<bool>(stages & SyncStages::COPY))
+            {
+                flags |= D3D12_BARRIER_SYNC_COPY;
+            }
+            if (static_cast<bool>(stages & SyncStages::RESOLVE))
+            {
+                flags |= D3D12_BARRIER_SYNC_RESOLVE;
+            }
+            if (static_cast<bool>(stages & SyncStages::EXECUTE_INDIRECT))
+            {
+                flags |= D3D12_BARRIER_SYNC_EXECUTE_INDIRECT;
+            }
+            if (static_cast<bool>(stages & SyncStages::CLEAR))
+            {
+                flags |= D3D12_BARRIER_SYNC_RENDER_TARGET | D3D12_BARRIER_SYNC_DEPTH_STENCIL;
+            }
+            if (static_cast<bool>(stages & SyncStages::VIDEO_DECODE))
+            {
+                flags |= D3D12_BARRIER_SYNC_VIDEO_DECODE;
+            }
+            if (static_cast<bool>(stages & SyncStages::VIDEO_ENCODE))
+            {
+                flags |= D3D12_BARRIER_SYNC_VIDEO_ENCODE;
+            }
+            if (static_cast<bool>(stages & SyncStages::BUILD_ACCELERATION_STRUCTURE))
+            {
+                flags |= D3D12_BARRIER_SYNC_BUILD_RAYTRACING_ACCELERATION_STRUCTURE;
+            }
+            if (static_cast<bool>(stages & SyncStages::COPY_ACCELERATION_STRUCTURE))
+            {
+                flags |= D3D12_BARRIER_SYNC_COPY_RAYTRACING_ACCELERATION_STRUCTURE;
             }
             return flags;
         }

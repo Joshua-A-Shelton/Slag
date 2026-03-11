@@ -14,6 +14,83 @@ TEST(CommandBuffer, Create)
         GTEST_ASSERT_EQ(cb->type(),queueType[i]);
     }
 }
+//This test is really a "Trust me bro". There's no real way to check the barriers work, only that they don't work, so this really just checks for thrown errors
+TEST(CommandBuffer, InsertBarriers)
+{
+    auto card = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(QueueType::GRAPHICS));
+    auto finished = std::unique_ptr<Semaphore>(card->newSemaphore());
+    auto sourceBuffer = std::unique_ptr<Buffer>(card->newBuffer(256,BufferCPUAccess::WRITE_ONLY));
+    auto destinationBuffer = std::unique_ptr<Buffer>(card->newBuffer(256,BufferCPUAccess::READ_WRITE));
+    auto destinationTexture = std::unique_ptr<Texture>(card->newTexture(32,32,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+    auto srcBufferPtr = sourceBuffer->as<uint8_t>();
+    for (auto i=0; i< sourceBuffer->size(); i++)
+    {
+        srcBufferPtr[i] = i;
+    }
+    commandBuffer->begin();
+    commandBuffer->copyBufferToBuffer(sourceBuffer.get(),0,destinationBuffer.get(),0,128);
+    BufferBarrier bufferBarrier
+    {
+        .buffer = destinationBuffer.get(),
+        .offset = 0,
+        .length = 256,
+        .syncBefore = SyncStages::COPY,
+        .syncAfter = SyncStages::COPY,
+        .flush = MemoryCaches::COPY_WRITE,
+        .invalidate = MemoryCaches::NONE
+    };
+    commandBuffer->insertBarriers(&bufferBarrier,1);
+    TextureBufferMapping mapping
+    {
+        .bufferOffset = 0,
+        .subresource =
+        {
+            .aspect = PixelAspect::COLOR,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+        .offset = {0,0,0},
+        .extent = {32,1,1}
+    };
+    commandBuffer->copyBufferToTexture(sourceBuffer.get(),destinationTexture.get(),&mapping,1);
+    TextureBarrier textureBarrier
+    {
+        .texture = destinationTexture.get(),
+        .syncBefore = SyncStages::COPY,
+        .syncAfter = SyncStages::COPY,
+        .flush = MemoryCaches::COPY_WRITE,
+        .invalidate = MemoryCaches::NONE,
+    };
+    commandBuffer->insertBarriers(&textureBarrier,1);
+    commandBuffer->copyBufferToBuffer(sourceBuffer.get(),0,destinationBuffer.get(),128,128);
+    mapping.offset.y = 1;
+    commandBuffer->copyBufferToTexture(sourceBuffer.get(),destinationTexture.get(),&mapping,1);
+    GlobalBarrier globalBarrier
+    {
+        .syncBefore = SyncStages::COPY,
+        .syncAfter = SyncStages::COPY,
+        .flush = MemoryCaches::COPY_WRITE,
+        .invalidate = MemoryCaches::COPY_READ,
+    };
+    commandBuffer->insertBarriers(&globalBarrier,1);
+    mapping.offset.y = 2;
+    commandBuffer->copyBufferToTexture(sourceBuffer.get(),destinationTexture.get(),&mapping,1);
+    commandBuffer->insertBarriers(nullptr,0,nullptr,0,&textureBarrier,1);
+    commandBuffer->end();
+
+    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
+    auto cb = commandBuffer.get();
+    SubmissionBatch submissionBatch{};
+    submissionBatch.commandBuffers = &cb;
+    submissionBatch.commandBufferCount = 1;
+    submissionBatch.signalSemaphores = &signal;
+    submissionBatch.signalSemaphoreCount = 1;
+    card->graphicsQueue()->submit(&submissionBatch,1);
+    finished->waitForValue(1);
+
+}
 
 TEST(CommandBuffer, CopyBufferToBuffer)
 {

@@ -40,6 +40,146 @@ namespace slag
             vkEndCommandBuffer(_commandBuffer);
         }
 
+        void IVulkanCommandBuffer::insertBarriers(GlobalBarrier* barriers, uint32_t barrierCount)
+        {
+            SLAG_ASSERT(barriers != nullptr && "barriers cannot be nullptr");
+            SLAG_ASSERT(barrierCount != 0 && "barriersCount cannot be 0");
+            std::vector<VkMemoryBarrier2> memBarriers(barrierCount,VkMemoryBarrier2{});
+            for(size_t i=0; i< barrierCount; i++)
+            {
+                auto& memoryBarrier = memBarriers[i];
+                auto& memoryBarrierDesc = barriers[i];
+                memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
+                memoryBarrier.srcAccessMask = VulkanBackend::nativeMemoryCaches(memoryBarrierDesc.flush);
+                memoryBarrier.dstAccessMask = VulkanBackend::nativeMemoryCaches(memoryBarrierDesc.invalidate);
+                memoryBarrier.srcStageMask = VulkanBackend::nativePipelineStages(memoryBarrierDesc.syncBefore);
+                memoryBarrier.dstStageMask = VulkanBackend::nativePipelineStages(memoryBarrierDesc.syncAfter);
+            }
+            VkDependencyInfo dependencyInfo{};
+            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+            dependencyInfo.memoryBarrierCount = barrierCount;
+            dependencyInfo.pMemoryBarriers = memBarriers.data();
+            vkCmdPipelineBarrier2(_commandBuffer,&dependencyInfo);
+        }
+
+        void IVulkanCommandBuffer::insertBarriers(BufferBarrier* barriers, uint32_t barrierCount)
+        {
+            SLAG_ASSERT(barriers != nullptr && "barriers cannot be nullptr");
+            SLAG_ASSERT(barrierCount != 0 && "barriersCount cannot be 0");
+            std::vector<VkBufferMemoryBarrier2> bufferMemoryBarriers(barrierCount,VkBufferMemoryBarrier2{});
+            for(size_t i=0; i< barrierCount; i++)
+            {
+                auto& bufferBarrier = bufferMemoryBarriers[i];
+                auto bufferBarrierDesc = barriers[i];
+                auto buffer = static_cast<VulkanBuffer*>(bufferBarrierDesc.buffer);
+                bufferBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+                bufferBarrier.buffer = buffer->vulkanHandle();
+                bufferBarrier.srcAccessMask = VulkanBackend::nativeMemoryCaches(bufferBarrierDesc.flush);
+                bufferBarrier.dstAccessMask = VulkanBackend::nativeMemoryCaches(bufferBarrierDesc.invalidate);
+                bufferBarrier.offset = bufferBarrierDesc.offset;
+                bufferBarrier.size = bufferBarrierDesc.length != 0 ? bufferBarrierDesc.length : VK_WHOLE_SIZE;
+                bufferBarrier.srcStageMask = VulkanBackend::nativePipelineStages(bufferBarrierDesc.syncBefore);
+                bufferBarrier.dstStageMask = VulkanBackend::nativePipelineStages(bufferBarrierDesc.syncAfter);
+            }
+
+            VkDependencyInfo dependencyInfo{};
+            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+            dependencyInfo.bufferMemoryBarrierCount = barrierCount;
+            dependencyInfo.pBufferMemoryBarriers = bufferMemoryBarriers.data();
+            vkCmdPipelineBarrier2(_commandBuffer,&dependencyInfo);
+        }
+
+        void IVulkanCommandBuffer::insertBarriers(TextureBarrier* barriers, uint32_t barrierCount)
+        {
+            SLAG_ASSERT(barriers != nullptr && "barriers cannot be nullptr");
+            SLAG_ASSERT(barrierCount != 0 && "barriersCount cannot be 0");
+            std::vector<VkImageMemoryBarrier2> imageMemoryBarriers(barrierCount,VkImageMemoryBarrier2{});
+            for(size_t i=0; i< barrierCount; i++)
+            {
+                auto& vkbarrier = imageMemoryBarriers[i];
+                auto barrier = barriers[i];
+                auto texture = static_cast<VulkanTexture*>(barrier.texture);
+                vkbarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+                vkbarrier.srcAccessMask = VulkanBackend::nativeMemoryCaches(barrier.flush);
+                vkbarrier.dstAccessMask = VulkanBackend::nativeMemoryCaches(barrier.invalidate);
+                vkbarrier.image = texture->vulkanHandle();
+                vkbarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
+                vkbarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+                vkbarrier.srcStageMask = VulkanBackend::nativePipelineStages(barrier.syncBefore);
+                vkbarrier.dstStageMask = VulkanBackend::nativePipelineStages(barrier.syncAfter);
+                vkbarrier.subresourceRange = {.aspectMask = VulkanBackend::nativeTextureAspect(Pixel::aspectFlags(texture->format())), .baseMipLevel =barrier.baseMipLevel, .levelCount = barrier.mipCount == 0 ? texture->mipLevels()-barrier.baseMipLevel : barrier.mipCount, .baseArrayLayer = barrier.baseLayer, .layerCount = barrier.layerCount == 0 ? texture->layers()-barrier.baseLayer : barrier.layerCount};
+
+            }
+
+            VkDependencyInfo dependencyInfo{};
+            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+            dependencyInfo.imageMemoryBarrierCount = barrierCount;
+            dependencyInfo.pImageMemoryBarriers = imageMemoryBarriers.data();
+            vkCmdPipelineBarrier2(_commandBuffer,&dependencyInfo);
+        }
+
+        void IVulkanCommandBuffer::insertBarriers(
+            GlobalBarrier* globalBarriers,
+            uint32_t globalBarrierCount,
+            BufferBarrier* bufferBarriers,
+            uint32_t bufferBarrierCount,
+            TextureBarrier* textureBarriers,
+            uint32_t textureBarrierCount)
+        {
+            std::vector<VkImageMemoryBarrier2> imageMemoryBarriers(textureBarrierCount,VkImageMemoryBarrier2{});
+            for(size_t i=0; i< textureBarrierCount; i++)
+            {
+                auto& vkbarrier = imageMemoryBarriers[i];
+                auto barrier = textureBarriers[i];
+                auto texture = static_cast<VulkanTexture*>(barrier.texture);
+                vkbarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+                vkbarrier.srcAccessMask = VulkanBackend::nativeMemoryCaches(barrier.flush);
+                vkbarrier.dstAccessMask = VulkanBackend::nativeMemoryCaches(barrier.invalidate);
+                vkbarrier.image = texture->vulkanHandle();
+                vkbarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
+                vkbarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+                vkbarrier.srcStageMask = VulkanBackend::nativePipelineStages(barrier.syncBefore);
+                vkbarrier.dstStageMask = VulkanBackend::nativePipelineStages(barrier.syncAfter);
+                vkbarrier.subresourceRange = {.aspectMask = VulkanBackend::nativeTextureAspect(Pixel::aspectFlags(texture->format())), .baseMipLevel =barrier.baseMipLevel, .levelCount = barrier.mipCount == 0 ? texture->mipLevels()-barrier.baseMipLevel : barrier.mipCount, .baseArrayLayer = barrier.baseLayer, .layerCount = barrier.layerCount == 0 ? texture->layers()-barrier.baseLayer : barrier.layerCount};
+
+            }
+            std::vector<VkBufferMemoryBarrier2> bufferMemoryBarriers(bufferBarrierCount,VkBufferMemoryBarrier2{});
+            for(size_t i=0; i< bufferBarrierCount; i++)
+            {
+                auto& bufferBarrier = bufferMemoryBarriers[i];
+                auto bufferBarrierDesc = bufferBarriers[i];
+                auto buffer = static_cast<VulkanBuffer*>(bufferBarrierDesc.buffer);
+                bufferBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+                bufferBarrier.buffer = buffer->vulkanHandle();
+                bufferBarrier.srcAccessMask = VulkanBackend::nativeMemoryCaches(bufferBarrierDesc.flush);
+                bufferBarrier.dstAccessMask = VulkanBackend::nativeMemoryCaches(bufferBarrierDesc.invalidate);
+                bufferBarrier.offset = bufferBarrierDesc.offset;
+                bufferBarrier.size = bufferBarrierDesc.length != 0 ? bufferBarrierDesc.length : VK_WHOLE_SIZE;
+                bufferBarrier.srcStageMask = VulkanBackend::nativePipelineStages(bufferBarrierDesc.syncBefore);
+                bufferBarrier.dstStageMask = VulkanBackend::nativePipelineStages(bufferBarrierDesc.syncAfter);
+            }
+            std::vector<VkMemoryBarrier2> memBarriers(globalBarrierCount,VkMemoryBarrier2{});
+            for(size_t i=0; i< globalBarrierCount; i++)
+            {
+                auto& memoryBarrier = memBarriers[i];
+                auto& memoryBarrierDesc = globalBarriers[i];
+                memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
+                memoryBarrier.srcAccessMask = VulkanBackend::nativeMemoryCaches(memoryBarrierDesc.flush);
+                memoryBarrier.dstAccessMask = VulkanBackend::nativeMemoryCaches(memoryBarrierDesc.invalidate);
+                memoryBarrier.srcStageMask = VulkanBackend::nativePipelineStages(memoryBarrierDesc.syncBefore);
+                memoryBarrier.dstStageMask = VulkanBackend::nativePipelineStages(memoryBarrierDesc.syncAfter);
+            }
+            VkDependencyInfo dependencyInfo{};
+            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+            dependencyInfo.memoryBarrierCount = globalBarrierCount;
+            dependencyInfo.pMemoryBarriers = memBarriers.data();
+            dependencyInfo.bufferMemoryBarrierCount = bufferBarrierCount;
+            dependencyInfo.pBufferMemoryBarriers = bufferMemoryBarriers.data();
+            dependencyInfo.imageMemoryBarrierCount = textureBarrierCount;
+            dependencyInfo.pImageMemoryBarriers = imageMemoryBarriers.data();
+            vkCmdPipelineBarrier2(_commandBuffer,&dependencyInfo);
+        }
+
         void IVulkanCommandBuffer::copyBufferToBuffer(
             Buffer* source,
             uint64_t sourceOffset,

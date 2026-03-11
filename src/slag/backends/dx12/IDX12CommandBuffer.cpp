@@ -34,8 +34,165 @@ namespace slag
             _commandBuffer->Close();
         }
 
-        void IDX12CommandBuffer::copyBufferToBuffer(Buffer* source, uint64_t sourceOffset, Buffer* destination,
-            uint64_t destinationOffset, uint64_t length)
+        void IDX12CommandBuffer::insertBarriers(GlobalBarrier* barriers, uint32_t barrierCount)
+        {
+            SLAG_ASSERT(barriers != nullptr && "barriers cannot be nullptr");
+            SLAG_ASSERT(barrierCount != 0 && "barriersCount cannot be 0");
+
+            std::vector<D3D12_GLOBAL_BARRIER> globalBarriers(barrierCount);
+            for (int i=0; i<barrierCount; i++)
+            {
+                auto& copyBarrier = barriers[i];
+                auto& globalBarrier = globalBarriers[i];
+                globalBarrier.AccessBefore = DX12Backend::nativeMemoryCaches(copyBarrier.flush);
+                globalBarrier.AccessAfter = DX12Backend::nativeMemoryCaches(copyBarrier.invalidate);
+                globalBarrier.SyncBefore = DX12Backend::nativePipelineStages(copyBarrier.syncBefore);
+                globalBarrier.SyncAfter = DX12Backend::nativePipelineStages(copyBarrier.syncAfter);
+            }
+            D3D12_BARRIER_GROUP barrierGroup{};
+            barrierGroup.NumBarriers = barrierCount;
+            barrierGroup.Type = D3D12_BARRIER_TYPE_GLOBAL;
+            barrierGroup.pGlobalBarriers = globalBarriers.data();
+            _commandBuffer->Barrier(1, &barrierGroup);
+        }
+
+        void IDX12CommandBuffer::insertBarriers(BufferBarrier* barriers, uint32_t barrierCount)
+        {
+            SLAG_ASSERT(barriers != nullptr && "barriers cannot be nullptr");
+            SLAG_ASSERT(barrierCount != 0 && "barriersCount cannot be 0");
+
+            std::vector<D3D12_BUFFER_BARRIER> bufferBarriers(barrierCount);
+            for (int i=0; i<barrierCount; i++)
+            {
+                auto& copyBarrier = barriers[i];
+                auto& bufferBarrier = bufferBarriers[i];
+                bufferBarrier.AccessBefore = DX12Backend::nativeMemoryCaches(copyBarrier.flush);
+                bufferBarrier.AccessAfter = DX12Backend::nativeMemoryCaches(copyBarrier.invalidate);
+                bufferBarrier.SyncBefore = DX12Backend::nativePipelineStages(copyBarrier.syncBefore);
+                bufferBarrier.SyncAfter = DX12Backend::nativePipelineStages(copyBarrier.syncAfter);
+                bufferBarrier.pResource = static_cast<DX12Buffer*>(copyBarrier.buffer)->dx12Handle();
+                bufferBarrier.Offset = copyBarrier.offset;
+                bufferBarrier.Size = copyBarrier.length == 0 ? copyBarrier.buffer->size()-copyBarrier.offset : copyBarrier.length;
+            }
+            D3D12_BARRIER_GROUP barrierGroup{};
+            barrierGroup.NumBarriers = barrierCount;
+            barrierGroup.Type = D3D12_BARRIER_TYPE_BUFFER;
+            barrierGroup.pBufferBarriers = bufferBarriers.data();
+            _commandBuffer->Barrier(1, &barrierGroup);
+        }
+
+        void IDX12CommandBuffer::insertBarriers(TextureBarrier* barriers, uint32_t barrierCount)
+        {
+            SLAG_ASSERT(barriers != nullptr && "barriers cannot be nullptr");
+            SLAG_ASSERT(barrierCount != 0 && "barriersCount cannot be 0");
+
+            std::vector<D3D12_TEXTURE_BARRIER> textureBarriers(barrierCount);
+            for (int i=0; i<barrierCount; i++)
+            {
+                auto& copyBarrier = barriers[i];
+                auto& bufferBarrier = textureBarriers[i];
+                bufferBarrier.AccessBefore = DX12Backend::nativeMemoryCaches(copyBarrier.flush);
+                bufferBarrier.AccessAfter = DX12Backend::nativeMemoryCaches(copyBarrier.invalidate);
+                bufferBarrier.SyncBefore = DX12Backend::nativePipelineStages(copyBarrier.syncBefore);
+                bufferBarrier.SyncAfter = DX12Backend::nativePipelineStages(copyBarrier.syncAfter);
+                bufferBarrier.pResource = static_cast<DX12Texture*>(copyBarrier.texture)->dx12Handle();
+                //bufferBarrier.Flags = ;
+                bufferBarrier.LayoutBefore = D3D12_BARRIER_LAYOUT_COMMON;
+                bufferBarrier.LayoutAfter = D3D12_BARRIER_LAYOUT_COMMON;
+                bufferBarrier.Subresources = D3D12_BARRIER_SUBRESOURCE_RANGE
+                {
+                    .IndexOrFirstMipLevel = copyBarrier.baseMipLevel,
+                    .NumMipLevels = copyBarrier.mipCount == 0 ? copyBarrier.texture->mipLevels() - copyBarrier.baseMipLevel : copyBarrier.mipCount,
+                    .FirstArraySlice = copyBarrier.baseLayer,
+                    .NumArraySlices = copyBarrier.layerCount == 0 ? copyBarrier.texture->layers() - copyBarrier.baseLayer : copyBarrier.layerCount,
+                    .FirstPlane = 0,
+                    .NumPlanes = static_cast<UINT>(std::popcount(static_cast<uint8_t>(Pixel::aspectFlags(copyBarrier.texture->format()))))
+                };
+            }
+            D3D12_BARRIER_GROUP barrierGroup{};
+            barrierGroup.NumBarriers = barrierCount;
+            barrierGroup.Type = D3D12_BARRIER_TYPE_TEXTURE;
+            barrierGroup.pTextureBarriers = textureBarriers.data();
+            _commandBuffer->Barrier(1, &barrierGroup);
+        }
+
+        void IDX12CommandBuffer::insertBarriers(GlobalBarrier* globalBarriers, uint32_t globalBarrierCount,
+            BufferBarrier* bufferBarriers, uint32_t bufferBarrierCount, TextureBarrier* textureBarriers,
+            uint32_t textureBarrierCount)
+        {
+            std::vector<D3D12_GLOBAL_BARRIER> globalBarriersNative(globalBarrierCount);
+            for (int i=0; i<globalBarrierCount; i++)
+            {
+                auto& copyBarrier = globalBarriers[i];
+                auto& globalBarrier = globalBarriersNative[i];
+                globalBarrier.AccessBefore = DX12Backend::nativeMemoryCaches(copyBarrier.flush);
+                globalBarrier.AccessAfter = DX12Backend::nativeMemoryCaches(copyBarrier.invalidate);
+                globalBarrier.SyncBefore = DX12Backend::nativePipelineStages(copyBarrier.syncBefore);
+                globalBarrier.SyncAfter = DX12Backend::nativePipelineStages(copyBarrier.syncAfter);
+            }
+
+            std::vector<D3D12_BUFFER_BARRIER> bufferBarriersNative(bufferBarrierCount);
+            for (int i=0; i<bufferBarrierCount; i++)
+            {
+                auto& copyBarrier = bufferBarriers[i];
+                auto& bufferBarrier = bufferBarriersNative[i];
+                bufferBarrier.AccessBefore = DX12Backend::nativeMemoryCaches(copyBarrier.flush);
+                bufferBarrier.AccessAfter = DX12Backend::nativeMemoryCaches(copyBarrier.invalidate);
+                bufferBarrier.SyncBefore = DX12Backend::nativePipelineStages(copyBarrier.syncBefore);
+                bufferBarrier.SyncAfter = DX12Backend::nativePipelineStages(copyBarrier.syncAfter);
+                bufferBarrier.pResource = static_cast<DX12Buffer*>(copyBarrier.buffer)->dx12Handle();
+                bufferBarrier.Offset = copyBarrier.offset;
+                bufferBarrier.Size = copyBarrier.length == 0 ? copyBarrier.buffer->size()-copyBarrier.offset : copyBarrier.length;
+            }
+
+            std::vector<D3D12_TEXTURE_BARRIER> textureBarriersNative(textureBarrierCount);
+            for (int i=0; i<textureBarrierCount; i++)
+            {
+                auto& copyBarrier = textureBarriers[i];
+                auto& bufferBarrier = textureBarriersNative[i];
+                bufferBarrier.AccessBefore = DX12Backend::nativeMemoryCaches(copyBarrier.flush);
+                bufferBarrier.AccessAfter = DX12Backend::nativeMemoryCaches(copyBarrier.invalidate);
+                bufferBarrier.SyncBefore = DX12Backend::nativePipelineStages(copyBarrier.syncBefore);
+                bufferBarrier.SyncAfter = DX12Backend::nativePipelineStages(copyBarrier.syncAfter);
+                bufferBarrier.pResource = static_cast<DX12Texture*>(copyBarrier.texture)->dx12Handle();
+                //bufferBarrier.Flags = ;
+                bufferBarrier.LayoutBefore = D3D12_BARRIER_LAYOUT_COMMON;
+                bufferBarrier.LayoutAfter = D3D12_BARRIER_LAYOUT_COMMON;
+                bufferBarrier.Subresources = D3D12_BARRIER_SUBRESOURCE_RANGE
+                {
+                    .IndexOrFirstMipLevel = copyBarrier.baseMipLevel,
+                    .NumMipLevels = copyBarrier.mipCount == 0 ? copyBarrier.texture->mipLevels() - copyBarrier.baseMipLevel : copyBarrier.mipCount,
+                    .FirstArraySlice = copyBarrier.baseLayer,
+                    .NumArraySlices = copyBarrier.layerCount == 0 ? copyBarrier.texture->layers() - copyBarrier.baseLayer : copyBarrier.layerCount,
+                    .FirstPlane = 0,
+                    .NumPlanes = static_cast<UINT>(std::popcount(static_cast<uint8_t>(Pixel::aspectFlags(copyBarrier.texture->format()))))
+                };
+            }
+            D3D12_BARRIER_GROUP barrierGroups[3]{};
+            auto globalGroup = barrierGroups[0];
+            globalGroup.NumBarriers = globalBarrierCount;
+            globalGroup.Type = D3D12_BARRIER_TYPE_GLOBAL;
+            globalGroup.pGlobalBarriers = globalBarriersNative.data();
+
+            auto bufferGroup = barrierGroups[1];
+            bufferGroup.NumBarriers = bufferBarrierCount;
+            bufferGroup.Type = D3D12_BARRIER_TYPE_BUFFER;
+            globalGroup.pBufferBarriers = bufferBarriersNative.data();
+
+            auto textureGroup = barrierGroups[2];
+            textureGroup.NumBarriers = textureBarrierCount;
+            textureGroup.Type = D3D12_BARRIER_TYPE_TEXTURE;
+            textureGroup.pTextureBarriers = textureBarriersNative.data();
+
+            _commandBuffer->Barrier(3, barrierGroups);
+        }
+
+        void IDX12CommandBuffer::copyBufferToBuffer(
+            Buffer* source,
+            uint64_t sourceOffset,
+            Buffer* destination,
+            uint64_t destinationOffset,
+            uint64_t length)
         {
             DX12Buffer* src = static_cast<DX12Buffer*>(source);
             DX12Buffer* dst = static_cast<DX12Buffer*>(destination);

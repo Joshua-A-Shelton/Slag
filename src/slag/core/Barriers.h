@@ -7,28 +7,28 @@ namespace slag
     class Buffer;
     class Texture;
     ///Represent different caches in memory that may be read/written to that needs to be flushed or invalidated
-    enum class MemoryCache: uint32_t
+    enum class MemoryCaches: uint32_t
     {
         NONE                        = 0,
         INDIRECT_COMMAND_READ       = 1,
         INDEX_READ                  = 1 << 1,
         VERTEX_ATTRIBUTE_READ       = 1 << 2,
         UNIFORM_READ                = 1 << 3,
-        COLOR_TARGET_READ           = 1 << 4,
-        COLOR_TARGET_WRITE          = 1 << 5,
+        COLOR_TARGET                = 1 << 5,
         DEPTH_TARGET_READ           = 1 << 6,
         DEPTH_TARGET_WRITE          = 1 << 7,
         SHADER_SAMPLED_READ         = 1 << 8,
-        SHADER_UNORDERED_READ       = 1 << 9,
-        SHADER_UNORDERED_WRITE      = 1 << 10,
-        BLIT_READ                   = 1 << 11,
-        BLIT_WRITE                  = 1 << 12,
-        COPY_READ                   = 1 << 13,
-        COPY_WRITE                  = 1 << 14,
-        CLEAR                       = 1 << 15,
+        SHADER_UNORDERED_ACCESS     = 1 << 9,
+        BLIT_READ                   = 1 << 10,
+        BLIT_WRITE                  = 1 << 11,
+        COPY_READ                   = 1 << 12,
+        COPY_WRITE                  = 1 << 13,
+        RESOLVE_READ                = 1 << 14,
+        RESOLVE_WRITE               = 1 << 15,
+        CLEAR                       = 1 << 16,
     };
     ///Represents different stages of a shader pipeline's execution
-    enum class SyncStage: uint32_t
+    enum class SyncStages: uint32_t
     {
         NONE                            = 0,
         ALL                             = 1,
@@ -45,83 +45,82 @@ namespace slag
         EXECUTE_INDIRECT                = 1 << 11,
         CLEAR                           = 1 << 12,
         VIDEO_DECODE                    = 1 << 13,
-        VIDEO_PROCESS                   = 1 << 14,
-        VIDEO_ENCODE                    = 1 << 15,
-        BUILD_ACCELERATION_STRUCTURE    = 1 << 16,
-        COPY_ACCELERATION_STRUCTURE     = 1 << 17,
+        VIDEO_ENCODE                    = 1 << 14,
+        BUILD_ACCELERATION_STRUCTURE    = 1 << 15,
+        COPY_ACCELERATION_STRUCTURE     = 1 << 16,
     };
 
-    inline MemoryCache operator|(MemoryCache a, MemoryCache b)
+    inline MemoryCaches operator|(MemoryCaches a, MemoryCaches b)
     {
-        return static_cast<MemoryCache>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+        return static_cast<MemoryCaches>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
     }
 
-    inline MemoryCache operator&(MemoryCache a, MemoryCache b)
+    inline MemoryCaches operator&(MemoryCaches a, MemoryCaches b)
     {
-        return static_cast<MemoryCache>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
+        return static_cast<MemoryCaches>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
     }
 
-    inline MemoryCache operator^(MemoryCache a, MemoryCache b)
+    inline MemoryCaches operator^(MemoryCaches a, MemoryCaches b)
     {
-        return static_cast<MemoryCache>(static_cast<uint32_t>(a) ^ static_cast<uint32_t>(b));
+        return static_cast<MemoryCaches>(static_cast<uint32_t>(a) ^ static_cast<uint32_t>(b));
     }
     
-    inline MemoryCache operator~(MemoryCache a)
+    inline MemoryCaches operator~(MemoryCaches a)
     {
-        return static_cast<MemoryCache>(~static_cast<uint32_t>(a));
+        return static_cast<MemoryCaches>(~static_cast<uint32_t>(a));
     }
 
-    inline MemoryCache operator|=(MemoryCache a, MemoryCache b)
+    inline MemoryCaches operator|=(MemoryCaches a, MemoryCaches b)
     {
         a = a|b;
         return a;
     }
 
-    inline MemoryCache operator&=(MemoryCache a, MemoryCache b)
+    inline MemoryCaches operator&=(MemoryCaches a, MemoryCaches b)
     {
         a = a&b;
         return a;
     }
 
-    inline MemoryCache operator^=(MemoryCache a, MemoryCache b)
+    inline MemoryCaches operator^=(MemoryCaches a, MemoryCaches b)
     {
         a = a^b;
         return a;
     }
 
-    inline SyncStage operator|(SyncStage a, SyncStage b)
+    inline SyncStages operator|(SyncStages a, SyncStages b)
     {
-        return static_cast<SyncStage>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+        return static_cast<SyncStages>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
     }
 
-    inline SyncStage operator&(SyncStage a, SyncStage b)
+    inline SyncStages operator&(SyncStages a, SyncStages b)
     {
-        return static_cast<SyncStage>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
+        return static_cast<SyncStages>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
     }
 
-    inline SyncStage operator^(SyncStage a, SyncStage b)
+    inline SyncStages operator^(SyncStages a, SyncStages b)
     {
-        return static_cast<SyncStage>(static_cast<uint32_t>(a) ^ static_cast<uint32_t>(b));
+        return static_cast<SyncStages>(static_cast<uint32_t>(a) ^ static_cast<uint32_t>(b));
     }
     
-    inline SyncStage operator~(SyncStage a)
+    inline SyncStages operator~(SyncStages a)
     {
-        return static_cast<SyncStage>(~static_cast<uint32_t>(a));
+        return static_cast<SyncStages>(~static_cast<uint32_t>(a));
     }
 
-    inline SyncStage operator|=(SyncStage a, SyncStage b)
+    inline SyncStages operator|=(SyncStages a, SyncStages b)
     {
         a = a|b;
         return a;
     }
 
-    inline SyncStage operator&=(SyncStage a, SyncStage b)
+    inline SyncStages operator&=(SyncStages a, SyncStages b)
     {
         a = a&b;
         return a;
     }
 
-    inline SyncStage operator^=(SyncStage a, SyncStage b)
+    inline SyncStages operator^=(SyncStages a, SyncStages b)
     {
         a = a^b;
         return a;
@@ -132,13 +131,13 @@ namespace slag
     struct GlobalBarrier
     {
         ///Finish all work of this kind before the barrier executes
-        SyncStage syncBefore = SyncStage::ALL;
+        SyncStages syncBefore = SyncStages::ALL;
         ///Make all work of this kind wait until after the barrier executes
-        SyncStage syncAfter  = SyncStage::ALL;
+        SyncStages syncAfter  = SyncStages::ALL;
         ///Cache memory to write back to main memory
-        MemoryCache flush = MemoryCache::NONE;
+        MemoryCaches flush = MemoryCaches::NONE;
         ///Data to pull from main memory back into cache memory
-        MemoryCache invalidate = MemoryCache::NONE;
+        MemoryCaches invalidate = MemoryCaches::NONE;
     };
     ///Barrier that synchronizes buffer memory in execution of command buffer
     struct BufferBarrier
@@ -150,13 +149,13 @@ namespace slag
         ///Length of the buffer data to synchronize (0 means entire length of buffer)
         size_t length = 0;
         ///Finish all work of this kind before the barrier executes
-        SyncStage syncBefore = SyncStage::ALL;
+        SyncStages syncBefore = SyncStages::ALL;
         ///Make all work of this kind wait until after the barrier executes
-        SyncStage syncAfter  = SyncStage::ALL;
+        SyncStages syncAfter  = SyncStages::ALL;
         ///Cache memory to write back to main memory
-        MemoryCache flush = MemoryCache::NONE;
+        MemoryCaches flush = MemoryCaches::NONE;
         ///Data to pull from main memory back into cache memory
-        MemoryCache invalidate = MemoryCache::NONE;
+        MemoryCaches invalidate = MemoryCaches::NONE;
     };
     ///Barrier that synchronizes texture memory in execution of command buffer
     struct TextureBarrier
@@ -172,13 +171,13 @@ namespace slag
         ///Number of mip levels to have their memory synchronized
         uint32_t mipCount = 0;
         ///Finish all work of this kind before the barrier executes
-        SyncStage syncBefore = SyncStage::ALL;
+        SyncStages syncBefore = SyncStages::ALL;
         ///Make all work of this kind wait until after the barrier executes
-        SyncStage syncAfter  = SyncStage::ALL;
+        SyncStages syncAfter  = SyncStages::ALL;
         ///Cache memory to write back to main memory
-        MemoryCache flush = MemoryCache::NONE;
+        MemoryCaches flush = MemoryCaches::NONE;
         ///Data to pull from main memory back into cache memory
-        MemoryCache invalidate = MemoryCache::NONE;
+        MemoryCaches invalidate = MemoryCaches::NONE;
     };
 }
 #endif //SLAG_BARRIERS_H

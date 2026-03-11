@@ -23,6 +23,8 @@ namespace slag
 
             static DXGI_FORMAT nativeFormat(PixelFormat format);
             static D3D12_RESOURCE_FLAGS nativeTextureUsageFlags(TextureUsageFlags usage);
+            static D3D12_BARRIER_ACCESS nativeMemoryCaches(MemoryCaches caches);
+            static D3D12_BARRIER_SYNC nativePipelineStages(SyncStages stages);
         private:
             SlagInitializationResult initializeBackend(const InitializationData& initializationData)override;
             std::vector<DX12GraphicsCard> _graphicsCards;

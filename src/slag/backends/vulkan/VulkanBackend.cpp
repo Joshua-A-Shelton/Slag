@@ -188,6 +188,152 @@ namespace slag
         }
 
 
+        VkAccessFlags2 VulkanBackend::nativeMemoryCaches(MemoryCaches caches)
+        {
+            VkAccessFlags2 flags = VK_ACCESS_2_NONE;
+
+            if (static_cast<bool>(caches & MemoryCaches::INDIRECT_COMMAND_READ))
+            {
+                flags |= VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::INDEX_READ))
+            {
+                flags |= VK_ACCESS_2_INDEX_READ_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::VERTEX_ATTRIBUTE_READ))
+            {
+                flags |= VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::UNIFORM_READ))
+            {
+                flags |= VK_ACCESS_2_UNIFORM_READ_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::COLOR_TARGET))
+            {
+                flags |= VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::DEPTH_TARGET_READ))
+            {
+                flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::DEPTH_TARGET_WRITE))
+            {
+                flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::SHADER_SAMPLED_READ))
+            {
+                flags |= VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::SHADER_UNORDERED_ACCESS))
+            {
+                flags |= VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::BLIT_READ))
+            {
+                flags |= VK_ACCESS_2_TRANSFER_READ_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::BLIT_WRITE))
+            {
+                flags |= VK_ACCESS_2_TRANSFER_WRITE_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::COPY_READ))
+            {
+                flags |= VK_ACCESS_2_TRANSFER_READ_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::COPY_WRITE))
+            {
+                flags |= VK_ACCESS_2_TRANSFER_WRITE_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::RESOLVE_READ))
+            {
+                flags |= VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::RESOLVE_WRITE))
+            {
+                flags |= VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::CLEAR))
+            {
+                flags |= VK_ACCESS_2_TRANSFER_WRITE_BIT;
+            }
+            return flags;
+        }
+
+        VkPipelineStageFlags2 VulkanBackend::nativePipelineStages(SyncStages stages)
+        {
+            VkPipelineStageFlags2 flags = VK_PIPELINE_STAGE_2_NONE;
+
+            if (static_cast<bool>(stages & SyncStages::ALL))
+            {
+                flags |= VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::ALL_GRAPHICS))
+            {
+                flags |= VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::INDEX_INPUT))
+            {
+                flags |= VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::VERTEX_SHADER))
+            {
+                flags |= VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::FRAGMENT_SHADER))
+            {
+                flags |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::DEPTH_STENCIL_TARGET_OUTPUT))
+            {
+                flags |= VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT_KHR | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT_KHR;
+            }
+            if (static_cast<bool>(stages & SyncStages::COLOR_TARGET_OUTPUT))
+            {
+                flags |= VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::COMPUTE_SHADER))
+            {
+                flags |= VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::RAYTRACING_SHADER))
+            {
+                flags |= VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
+            }
+            if (static_cast<bool>(stages & SyncStages::COPY))
+            {
+                flags |= VK_PIPELINE_STAGE_2_COPY_BIT_KHR;
+            }
+            if (static_cast<bool>(stages & SyncStages::RESOLVE))
+            {
+                flags |= VK_PIPELINE_STAGE_2_RESOLVE_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::EXECUTE_INDIRECT))
+            {
+                flags |= VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::CLEAR))
+            {
+                flags |= VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::VIDEO_DECODE))
+            {
+                flags |= VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR;
+            }
+            if (static_cast<bool>(stages & SyncStages::VIDEO_ENCODE))
+            {
+                flags |= VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR;
+            }
+            if (static_cast<bool>(stages & SyncStages::BUILD_ACCELERATION_STRUCTURE))
+            {
+                flags |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+            }
+            if (static_cast<bool>(stages & SyncStages::COPY_ACCELERATION_STRUCTURE))
+            {
+                flags |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_COPY_BIT_KHR;
+            }
+            return flags;
+        }
+
         SlagInitializationResult VulkanBackend::initializeBackend(const InitializationData& initializationData)
         {
             if (initializationData.debugHandler)
