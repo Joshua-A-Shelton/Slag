@@ -5,6 +5,7 @@
 #include "DX12CommandBuffer.h"
 #include "DX12GraphicsCard.h"
 #include "DX12Semaphore.h"
+#include "slag/utilities/SLAG_ASSERT.h"
 
 namespace slag
 {
@@ -62,6 +63,8 @@ namespace slag
 
         void DX12SubmissionQueue::submit(SubmissionBatch* batches, uint32_t batchCount)
         {
+            SLAG_ASSERT(batchCount > 0 && "At least one batch must be submitted");
+            SLAG_ASSERT(batches != nullptr && "Parameter \"batches\" must not be nullptr");
             for (auto submissionIndex = 0; submissionIndex < batchCount; ++submissionIndex)
             {
                 auto& submission = batches[submissionIndex];
@@ -73,7 +76,9 @@ namespace slag
                 std::vector<ID3D12CommandList*> buffers(submission.commandBufferCount, nullptr);
                 for (auto bufferIndex = 0; bufferIndex < submission.commandBufferCount; ++bufferIndex)
                 {
+
                     buffers[bufferIndex] = static_cast<DX12CommandBuffer*>(submission.commandBuffers[bufferIndex])->dx12Handle();
+                    SLAG_ASSERT(QueueTypeSupportsCommands(_type,submission.commandBuffers[bufferIndex]->type()) && "Queue cannot process command buffer outside it's capabilities");
                 }
                 _queue->ExecuteCommandLists(buffers.size(), buffers.data());
                 for (auto signalIndex = 0; signalIndex < submission.signalSemaphoreCount; ++signalIndex)

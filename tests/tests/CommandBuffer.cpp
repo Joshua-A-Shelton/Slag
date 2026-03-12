@@ -144,15 +144,75 @@ TEST(CommandBuffer, CopyBufferToBuffer)
     }
 }
 
-TEST(CommandBuffer, CopyBufferToTexture)
+TEST(CommandBuffer, CopyBufferToTextureToBuffer)
 {
-    GTEST_FAIL();
+    auto card = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(QueueType::TRANSFER));
+    auto texture = std::unique_ptr<Texture>(card->newTexture(64,64,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,3));
+    auto finished = std::unique_ptr<Semaphore>(card->newSemaphore());
+    auto srcBuffer = std::unique_ptr<Buffer>(card->newBuffer((32*32*4)+32,BufferCPUAccess::WRITE_ONLY));
+    auto dstBuffer = std::unique_ptr<Buffer>(card->newBuffer(srcBuffer->size(),BufferCPUAccess::READ_WRITE));
+    auto srcBufferPtr = srcBuffer->as<uint8_t>();
+    for (auto i=16; i<srcBuffer->size()-16; i++)
+    {
+        srcBufferPtr[i] = 172;
+    }
+    auto dstPtr = dstBuffer->as<uint8_t>();
+    for (auto i=0; i<dstBuffer->size(); i++)
+    {
+        dstPtr[i] = 0;
+    }
+
+    commandBuffer->begin();
+    TextureBufferMapping mapping
+    {
+        .bufferOffset = 16,
+        .subresource =
+        {
+            .aspect = PixelAspect::COLOR,
+            .mipLevel = 1,
+            .baseArrayLayer = 0,
+            .layerCount = 1
+        },
+        .offset = {0,0,0},
+        .extent = {32,32,1}
+    };
+    commandBuffer->copyBufferToTexture(srcBuffer.get(),texture.get(),&mapping,1);
+    TextureBarrier textureBarrier
+    {
+        .texture = texture.get(),
+        .syncBefore = SyncStages::COPY,
+        .syncAfter = SyncStages::COPY,
+        .flush = MemoryCaches::COPY_WRITE,
+        .invalidate = MemoryCaches::COPY_READ,
+    };
+    commandBuffer->insertBarriers(&textureBarrier,1);
+    commandBuffer->copyTextureToBuffer(texture.get(),dstBuffer.get(),&mapping,1);
+    commandBuffer->end();
+
+    auto cb = commandBuffer.get();
+    SemaphoreValue signal{.semaphore = finished.get(),.value = 1};
+    SubmissionBatch batch{};
+    batch.commandBuffers = &cb;
+    batch.commandBufferCount = 1;
+    batch.signalSemaphores = &signal;
+    batch.signalSemaphoreCount = 1;
+    card->transferQueue()->submit(&batch,1);
+    finished->waitForValue(1);
+
+    for (int i=0; i< dstBuffer->size(); i++)
+    {
+        if (i<16 || i>= dstBuffer->size()-16)
+        {
+            GTEST_ASSERT_EQ(dstPtr[i],0);
+        }
+        else
+        {
+            GTEST_ASSERT_EQ(dstPtr[i],172);
+        }
+    }
 }
 
-TEST(CommandBuffer, CopyTextureToBuffer)
-{
-    GTEST_FAIL();
-}
 
 #ifdef SLAG_DEBUG
 TEST(CommandBuffer, TransferErrorComputeCommands)
