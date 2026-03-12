@@ -145,9 +145,9 @@ namespace slag
         ///Buffer whose memory needs to be synchronized
         Buffer* buffer = nullptr;
         ///Offset into the buffer to synchronize
-        size_t offset = 0;
+        uint64_t offset = 0;
         ///Length of the buffer data to synchronize (0 means entire length of buffer)
-        size_t length = 0;
+        uint64_t length = 0;
         ///Finish all work of this kind before the barrier executes
         SyncStages syncBefore = SyncStages::ALL;
         ///Make all work of this kind wait until after the barrier executes
