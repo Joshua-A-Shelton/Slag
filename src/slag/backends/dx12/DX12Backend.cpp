@@ -288,9 +288,17 @@ namespace slag
             {
                 _debugHandler = initializationData.debugHandler;
                 Microsoft::WRL::ComPtr<ID3D12Debug> debugInterface = nullptr;
-                D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface));
+                auto result = D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface));
+                if (result != S_OK)
+                {
+                    return SlagInitializationResult::INSUFFICIENT_CAPABILITIES;
+                }
                 Microsoft::WRL::ComPtr<ID3D12Debug1> debugController;
-                debugInterface->QueryInterface(IID_PPV_ARGS(&debugController));
+                result = debugInterface->QueryInterface(IID_PPV_ARGS(&debugController));
+                if (result != S_OK)
+                {
+                    return SlagInitializationResult::INSUFFICIENT_CAPABILITIES;
+                }
                 debugController->EnableDebugLayer();
                 debugController->SetEnableGPUBasedValidation(true);
 
