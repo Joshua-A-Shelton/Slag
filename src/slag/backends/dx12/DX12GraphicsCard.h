@@ -33,6 +33,8 @@ namespace slag
             [[nodiscard]] SubmissionQueue* computeQueue()override;
             [[nodiscard]] SubmissionQueue* transferQueue()override;
             uint64_t defragmentMemory(uint64_t targetBytes,std::function<void(MemoryReference*)> memoryMoved)override;
+            //Shaders
+            [[nodiscard]] ShaderModule* newShaderModule(ShaderLanguage language, void* data, uint32_t dataLength)override;
             //Command Buffers
             [[nodiscard]] CommandBuffer* newCommandBuffer(QueueType type)override;
             //Semaphores

@@ -19,6 +19,16 @@ namespace slag
         throw NotImplemented();
     }
 
+    uint32_t IBackend::supportedShaderLanguageCount() const
+    {
+        throw NotImplemented();
+    }
+
+    ShaderLanguage IBackend::supportedShaderLanguage(uint32_t index) const
+    {
+        throw NotImplemented();
+    }
+
     SlagInitializationResult IBackend::initializeBackend(const InitializationData& initializationData)
     {
         throw NotImplemented();

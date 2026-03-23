@@ -140,9 +140,9 @@ int main()
     slag::VertexDescription vertexPosUVDescription(2);
     vertexPosUVDescription.add("POSITION",slag::GraphicsType::VECTOR3,0,1,0).add("UV_COORDINATES",slag::GraphicsType::VECTOR2,0,1,1);
 
-    slag::ShaderCode vertexShader(slag::ShaderStageFlags::VERTEX,slag::ShaderCode::CodeLanguage::SPIRV,"resources/shaders/TexturedDepth.vertex.spv");
-    slag::ShaderCode fragmentShader(slag::ShaderStageFlags::FRAGMENT,slag::ShaderCode::CodeLanguage::SPIRV,"resources/shaders/TexturedDepth.fragment.spv");
-    slag::ShaderCode* code[]{&vertexShader,&fragmentShader};
+    slag::ShaderModule vertexShader(slag::ShaderStageFlags::VERTEX,slag::ShaderModule::CodeLanguage::SPIRV,"resources/shaders/TexturedDepth.vertex.spv");
+    slag::ShaderModule fragmentShader(slag::ShaderStageFlags::FRAGMENT,slag::ShaderModule::CodeLanguage::SPIRV,"resources/shaders/TexturedDepth.fragment.spv");
+    slag::ShaderModule* code[]{&vertexShader,&fragmentShader};
     slag::ShaderProperties properties{};
     slag::FrameBufferDescription frameBufferDescription{};
     frameBufferDescription.colorTargets[0] = slag::Pixels::Format::B8G8R8A8_UNORM;

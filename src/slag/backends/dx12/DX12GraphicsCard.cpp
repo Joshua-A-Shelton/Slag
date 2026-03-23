@@ -359,6 +359,11 @@ namespace slag
             return stats.BytesMoved;
         }
 
+        ShaderModule* DX12GraphicsCard::newShaderModule(ShaderLanguage language, void* data, uint32_t dataLength)
+        {
+            throw NotImplemented();
+        }
+
         CommandBuffer* DX12GraphicsCard::newCommandBuffer(QueueType type)
         {
             return new DX12CommandBuffer(this,type);

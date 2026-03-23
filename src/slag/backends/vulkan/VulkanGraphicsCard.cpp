@@ -4,9 +4,13 @@
 #include "VulkanBuffer.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanSemaphore.h"
+#include "VulkanShaderModule.h"
 #include "VulkanSubmissionQueue.h"
 #include "VulkanTexture.h"
+#include "slag/exceptions/InvalidShaderCodeError.h"
 #include "slag/exceptions/NotImplemented.h"
+#include "slag/shader-reflection/spirv/SPIRVShaderReflector.h"
+#include "slag/utilities/SLAG_ASSERT.h"
 
 namespace slag
 {
@@ -404,6 +408,15 @@ namespace slag
             VmaDefragmentationStats stats{};
             vmaEndDefragmentation(_allocator,defragCtx,&stats);
             return stats.bytesMoved;
+        }
+
+        ShaderModule* VulkanGraphicsCard::newShaderModule(ShaderLanguage language, void* data, uint32_t dataLength)
+        {
+            if (language != ShaderLanguage::SPIRV)
+            {
+                throw InvalidShaderCodeError("Vulkan Backend only accepts shaders in SPIRV format");
+            }
+            return new VulkanShaderModule(this,data,dataLength);
         }
 
         CommandBuffer* VulkanGraphicsCard::newCommandBuffer(QueueType type)

@@ -19,6 +19,8 @@ namespace slag
             [[nodiscard]] BackendAPI api()const override;
             [[nodiscard]] uint32_t graphicsCardCount()const override;
             [[nodiscard]] GraphicsCard* graphicsCard(uint32_t index)override;
+            [[nodiscard]] uint32_t supportedShaderLanguageCount()const override;
+            [[nodiscard]] ShaderLanguage supportedShaderLanguage(uint32_t index)const override;
             [[nodiscard]] SlagDebugHandlerPtr getDebugHandler() const;
 
             static DXGI_FORMAT nativeFormat(PixelFormat format);

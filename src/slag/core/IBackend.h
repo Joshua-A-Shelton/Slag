@@ -1,10 +1,11 @@
 #ifndef SLAG_IBACKEND_H
 #define SLAG_IBACKEND_H
 #include <cstdint>
-
+#include "ShaderModule.h"
 namespace slag
 {
     struct InitializationData;
+
 
     enum class BackendAPI
     {
@@ -33,6 +34,8 @@ namespace slag
         [[nodiscard]] virtual BackendAPI api()const;
         [[nodiscard]] virtual uint32_t graphicsCardCount()const;
         [[nodiscard]] virtual GraphicsCard* graphicsCard(uint32_t index);
+        [[nodiscard]] virtual uint32_t supportedShaderLanguageCount()const;
+        [[nodiscard]] virtual ShaderLanguage supportedShaderLanguage(uint32_t index)const;
     protected:
         friend class Slag;
         virtual SlagInitializationResult initializeBackend(const InitializationData& initializationData);

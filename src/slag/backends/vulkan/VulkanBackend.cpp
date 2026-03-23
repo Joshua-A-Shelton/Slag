@@ -1,6 +1,9 @@
 #define VMA_IMPLEMENTATION
 #include "VulkanBackend.h"
 
+#include "slag/shader-reflection/spirv/SPIRVShaderReflector.h"
+#include "slag/utilities/SLAG_ASSERT.h"
+
 namespace slag
 {
     namespace vulkan
@@ -141,6 +144,16 @@ namespace slag
         GraphicsCard* VulkanBackend::graphicsCard(uint32_t index)
         {
             return &_graphicsCards[index];
+        }
+
+        uint32_t VulkanBackend::supportedShaderLanguageCount() const
+        {
+            return 1;
+        }
+
+        ShaderLanguage VulkanBackend::supportedShaderLanguage(uint32_t index) const
+        {
+            return ShaderLanguage::SPIRV;
         }
 
         VkBufferUsageFlagBits2 VulkanBackend::nativeBufferUsage(BufferMemoryType access)

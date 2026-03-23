@@ -9,6 +9,7 @@
 #include "Pixels.h"
 #include "SubmissionQueue.h"
 #include "Texture.h"
+#include "ShaderModule.h"
 
 namespace slag
 {
@@ -62,6 +63,17 @@ namespace slag
          * @return number of bytes defragmented
          */
         virtual uint64_t defragmentMemory(uint64_t targetBytes=0, std::function<void(MemoryReference*)> memoryMoved = nullptr)=0;
+
+        //Shaders
+
+        /**
+         * Create a new shader module
+         * @param language The language of the shader module
+         * @param data Shader data
+         * @param dataLength Length of shader data
+         * @return
+         */
+        [[nodiscard]] virtual ShaderModule* newShaderModule(ShaderLanguage language, void* data, uint32_t dataLength)=0;
 
         //Command Buffers
         /**

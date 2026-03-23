@@ -5,6 +5,7 @@
 #include "core/Buffer.h"
 #include "core/CommandBuffer.h"
 #include "core/Defragmentation.h"
+#include "core/Descriptors.h"
 #include "core/Dimensions.h"
 #include "core/GraphicsCard.h"
 #include "core/IBackend.h"
@@ -13,6 +14,8 @@
 #include "core/PixelFormatProperties.h"
 #include "core/Pixels.h"
 #include "core/Semaphore.h"
+#include "core/ShaderModule.h"
+#include "core/ShaderPipeline.h"
 #include "core/SubmissionQueue.h"
 #include "core/Texture.h"
 

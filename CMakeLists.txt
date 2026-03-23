@@ -67,6 +67,8 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/backends/vulkan/VulkanSubmissionQueue.h
             src/slag/backends/vulkan/VulkanTexture.cpp
             src/slag/backends/vulkan/VulkanTexture.h
+            src/slag/backends/vulkan/VulkanShaderModule.cpp
+            src/slag/backends/vulkan/VulkanShaderModule.h
     )
 endif()
 if(SLAG_DX12_BACKEND)
@@ -96,7 +98,9 @@ endif()
 if(USE_SPIRV_REFLECTION)
     add_definitions(-DUSE_SLAG_SPIRV_REFLECTION)
     SET(SLAG_SPIRV_REFLECT_SOURCES
-            )
+            src/slag/shader-reflection/spirv/SPIRVShaderReflector.cpp
+            src/slag/shader-reflection/spirv/SPIRVShaderReflector.h
+    )
 endif()
 
 if(USE_DXIL_12_REFLECTION)
@@ -129,6 +133,13 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/PixelFormatProperties.h
         src/slag/core/Defragmentation.h
         src/slag/core/Barriers.h
+        src/slag/core/ShaderPipeline.h
+        src/slag/core/ShaderModule.cpp
+        src/slag/core/ShaderModule.h
+        src/slag/core/Descriptors.cpp
+        src/slag/core/Descriptors.h
+        src/slag/core/GraphicsTypes.h
+        src/slag/exceptions/InvalidShaderCodeError.h
 
 )
 #link spirv if we need to
@@ -177,7 +188,6 @@ if(SLAG_VULKAN_BACKEND)
         FetchContent_Declare(
                 vk-bootstrap
                 GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
-                #TODO: update this to vulkan 1.4, it's currently causing issues building on systems where the sdk isn't up to 1.4 yet, so we're waiting until it's widely available
                 GIT_TAG v1.4.341
                 GIT_SHALLOW TRUE
                 OVERRIDE_FIND_PACKAGE
@@ -262,6 +272,7 @@ if(SLAG_BUILD_TESTS OR SLAG_BUILD_CUBE)
     )
     FetchContent_MakeAvailable(STB_IMAGE)
     find_package(STB_IMAGE)
+
 endif ()
 
 if(SLAG_BUILD_TESTS)
@@ -289,7 +300,20 @@ if(SLAG_BUILD_TESTS)
             tests/tests/CommandBuffer.cpp
             tests/tests/SubmissionQueue.cpp
             tests/tests/Texture.cpp
+            tests/tests/ShaderCode.cpp
+            tests/utilities/PlatformUtilities.cpp
+            tests/utilities/PlatformUtilities.h
     )
 
     target_link_libraries(SlagTests GTest::gtest SDL3::SDL3 glm::glm slag::Slag)
+
+
+    add_custom_command(
+            TARGET SlagTests
+            POST_BUILD
+            COMMAND  ${CMAKE_COMMAND} -E copy_directory_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/resources/
+            ${CMAKE_CURRENT_BINARY_DIR}/resources/
+            COMMENT "Copying resources files"
+    )
 endif ()

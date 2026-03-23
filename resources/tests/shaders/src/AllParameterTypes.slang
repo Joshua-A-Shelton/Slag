@@ -1,0 +1,62 @@
+public struct GroupOne
+{
+    public float4 colorUniformBuffer;
+    public Texture2D sampledTexture;
+    public WTexture2D storageTexture;
+}
+public struct mything
+{
+    public float mything1;
+    public int mything2;
+}
+public struct GroupTwo
+{
+    [vk::image_format("rgba32f")]
+    public Buffer<float4> uniformTexelBuffer;
+    public RWBuffer<uint4> storageTexelBuffer[2];
+    public StructuredBuffer<mything> storageBuffer;
+}
+
+public struct GroupThree
+{
+    public SamplerState sampler;
+}
+
+struct VertexStageOutput
+{
+    FragmentParameters fragmentParameters: FRAGMENT_PARAMETERS;
+    float4 sv_position: SV_Position;
+}
+
+struct FragmentParameters
+{
+    float2 uv;
+}
+
+public ParameterBlock<GroupOne> First;
+public ParameterBlock<GroupTwo> Second;
+public ParameterBlock<GroupThree> Third;
+
+[shader("vertex")]
+VertexStageOutput vertexMain(float3 POSITION: POSITION, float2 UV_COORDINATES: UV_COORDINATES)
+{
+    VertexStageOutput output;
+    output.fragmentParameters.uv = UV_COORDINATES;
+    output.sv_position = float4(POSITION,1);
+    return output;
+}
+
+[shader("fragment")]
+float4 fragmentMain(FragmentParameters fragmentParameters : FragmentParameters) : SV_Target
+{
+    var color = First.colorUniformBuffer * First.sampledTexture.Sample(Third.sampler,fragmentParameters.uv);
+    var count = Second.storageBuffer.getCount();
+    var read = Second.uniformTexelBuffer.Load(0);
+    if(count < 1)
+    {
+        First.storageTexture.Store(uint2(0,0),color);
+        Second.storageTexelBuffer[0].Store(0,uint4((uint)(read.x*255),(uint)(read.y*255),(uint)(read.z*255),(uint)(read.w*255)));
+    }
+
+    return color;
+}

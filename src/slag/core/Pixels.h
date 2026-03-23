@@ -82,7 +82,7 @@ namespace slag
         NV12,
         OPAQUE_420,
         YUY2,
-        B4G4R4A4_UNORM
+        B4G4R4A4_UNORM,
     };
 
     enum class PixelAspectFlags: uint8_t

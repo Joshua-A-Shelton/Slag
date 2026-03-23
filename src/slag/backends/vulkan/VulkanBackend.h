@@ -25,6 +25,8 @@ namespace slag
             [[nodiscard]] BackendAPI api()const override;
             [[nodiscard]] uint32_t graphicsCardCount()const override;
             [[nodiscard]] GraphicsCard* graphicsCard(uint32_t index)override;
+            [[nodiscard]] uint32_t supportedShaderLanguageCount()const override;
+            [[nodiscard]] ShaderLanguage supportedShaderLanguage(uint32_t index)const override;
 
             static VkBufferUsageFlagBits2 nativeBufferUsage(BufferMemoryType access);
             static NativeFormat nativeFormat(PixelFormat format);

@@ -1,5 +1,7 @@
 #include "DX12Backend.h"
 
+#include "slag/exceptions/NotImplemented.h"
+
 namespace slag
 {
     namespace dx12
@@ -103,6 +105,16 @@ namespace slag
         GraphicsCard* DX12Backend::graphicsCard(uint32_t index)
         {
             return &_graphicsCards[index];
+        }
+
+        uint32_t DX12Backend::supportedShaderLanguageCount() const
+        {
+            return 1;
+        }
+
+        ShaderLanguage DX12Backend::supportedShaderLanguage(uint32_t index) const
+        {
+            return ShaderLanguage::DXIL;
         }
 
         SlagDebugHandlerPtr DX12Backend::getDebugHandler() const
