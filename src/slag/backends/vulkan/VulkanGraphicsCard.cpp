@@ -437,18 +437,18 @@ namespace slag
             return new VulkanBuffer(this, size, cpuAccess, memoryType);
         }
 
-        Texture* VulkanGraphicsCard::newTexture(uint32_t width, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels, uint32_t layers)
+        Texture* VulkanGraphicsCard::newTexture1D(uint32_t width, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels, uint32_t layers)
         {
             return new VulkanTexture(this,width,format,usage,mipLevels,layers);
         }
 
-        Texture* VulkanGraphicsCard::newTexture(uint32_t width, uint32_t height, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,
+        Texture* VulkanGraphicsCard::newTexture2D(uint32_t width, uint32_t height, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,
             SampleCount sampleCount, uint32_t layers)
         {
             return new VulkanTexture(this,width,height,format,usage,mipLevels,sampleCount,layers);
         }
 
-        Texture* VulkanGraphicsCard::newTexture(uint32_t width, uint32_t height, uint32_t depth, PixelFormat format, TextureUsageFlags usage,
+        Texture* VulkanGraphicsCard::newTexture3D(uint32_t width, uint32_t height, uint32_t depth, PixelFormat format, TextureUsageFlags usage,
             uint32_t mipLevels)
         {
             return new VulkanTexture(this,width,height,depth,format,usage,mipLevels);

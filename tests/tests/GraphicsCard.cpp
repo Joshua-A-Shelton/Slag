@@ -55,12 +55,12 @@ TEST(GraphicsCard, Defragment)
         auto buffer10 = std::unique_ptr<Buffer>(card->newBuffer(128*1024));
         auto buffer11 = std::unique_ptr<Buffer>(card->newBuffer(128*1024));
         //need to do something here to see that it's moved... it should be returned as an object that's been moved
-        auto texture1 = std::unique_ptr<Texture>(card->newTexture(500,500,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
-        auto texture2 = std::unique_ptr<Texture>(card->newTexture(500,500,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
-        auto texture3 = std::unique_ptr<Texture>(card->newTexture(250,250,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
-        auto texture4 = std::unique_ptr<Texture>(card->newTexture(1500,1500,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
-        auto texture5 = std::unique_ptr<Texture>(card->newTexture(250,250,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
-        auto texture6 = std::unique_ptr<Texture>(card->newTexture(750,750,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+        auto texture1 = std::unique_ptr<Texture>(card->newTexture2D(500,500,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+        auto texture2 = std::unique_ptr<Texture>(card->newTexture2D(500,500,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+        auto texture3 = std::unique_ptr<Texture>(card->newTexture2D(250,250,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+        auto texture4 = std::unique_ptr<Texture>(card->newTexture2D(1500,1500,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+        auto texture5 = std::unique_ptr<Texture>(card->newTexture2D(250,250,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+        auto texture6 = std::unique_ptr<Texture>(card->newTexture2D(750,750,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
         auto uploadBuffer = std::unique_ptr<Buffer>(card->newBuffer(256,BufferCPUAccess::READ_WRITE,BufferMemoryType::UNIFORM));
 
         auto bufferSize = texture6->bufferSize(PixelAspect::COLOR);

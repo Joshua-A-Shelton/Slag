@@ -40,14 +40,14 @@ namespace slag
                 BufferCPUAccess cpuAccess,
                 BufferMemoryType memoryType)override;
             //Textures
-            [[nodiscard]] virtual Texture* newTexture(
+            [[nodiscard]] virtual Texture* newTexture1D(
             uint32_t width,
             PixelFormat format,
             TextureUsageFlags usage,
             uint32_t mipLevels,
             uint32_t layers)override;
 
-            [[nodiscard]] virtual Texture* newTexture(
+            [[nodiscard]] virtual Texture* newTexture2D(
                 uint32_t width,
                 uint32_t height,
                 PixelFormat format,
@@ -56,7 +56,7 @@ namespace slag
                 SampleCount sampleCount,
                 uint32_t layers)override;
 
-            [[nodiscard]] virtual Texture* newTexture(
+            [[nodiscard]] virtual Texture* newTexture3D(
                 uint32_t width,
                 uint32_t height,
                 uint32_t depth,

@@ -92,6 +92,8 @@ if(SLAG_DX12_BACKEND)
             src/slag/backends/dx12/DX12CommandBuffer.h
             src/slag/backends/dx12/DX12Texture.cpp
             src/slag/backends/dx12/DX12Texture.h
+            src/slag/backends/dx12/DX12ShaderModule.cpp
+            src/slag/backends/dx12/DX12ShaderModule.h
     )
 endif()
 
@@ -106,6 +108,8 @@ endif()
 if(USE_DXIL_12_REFLECTION)
     add_definitions(-DUSE_SLAG_DXIL_12_REFLECTION)
     SET(SLAG_DXIL_12_REFLECT_SOURCES
+            src/slag/shader-reflection/dxil12/DXILShaderReflector.cpp
+            src/slag/shader-reflection/dxil12/DXILShaderReflector.h
     )
 endif()
 

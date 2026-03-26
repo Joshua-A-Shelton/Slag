@@ -403,11 +403,11 @@ namespace slag
                     throw InvalidShaderCodeError("Invalid descriptor type");
                     break;
                 case DescriptorType::SAMPLER:
-                    bindings.emplace_back(binding.name,binding.binding,type,SamplerDescription(textureTypeFromSPV(binding.image.dim)));
+                    bindings.emplace_back(binding.name,binding.binding,type,SamplerDescription{});
                     break;
                 case DescriptorType::SAMPLED_TEXTURE:
                 case DescriptorType::UNORDERED_ACCESS_TEXTURE:
-                    bindings.emplace_back(binding.name,binding.binding,type,TextureDescription(textureTypeFromSPV(binding.image.dim)));
+                    bindings.emplace_back(binding.name,binding.binding,type,TextureDescription(textureTypeFromSPV(binding.image.dim),binding.image.ms,binding.image.arrayed));
                     break;
                 case DescriptorType::UNIFORM_BUFFER:
                 case DescriptorType::UNORDERED_ACCESS_BUFFER:

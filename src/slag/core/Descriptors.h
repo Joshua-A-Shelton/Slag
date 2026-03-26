@@ -34,11 +34,12 @@ namespace slag
 
     struct SamplerDescription
     {
-        TextureType type;
     };
     struct TextureDescription
     {
         TextureType type;
+        bool multiSampled;
+        bool arrayed;
     };
     class StructMember
     {

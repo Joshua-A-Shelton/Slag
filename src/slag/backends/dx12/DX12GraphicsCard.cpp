@@ -4,6 +4,7 @@
 #include "DX12Buffer.h"
 #include "DX12CommandBuffer.h"
 #include "DX12Semaphore.h"
+#include "DX12ShaderModule.h"
 #include "DX12SubmissionQueue.h"
 #include "DX12Texture.h"
 #include "slag/exceptions/NotImplemented.h"
@@ -361,7 +362,7 @@ namespace slag
 
         ShaderModule* DX12GraphicsCard::newShaderModule(ShaderLanguage language, void* data, uint32_t dataLength)
         {
-            throw NotImplemented();
+            return new DX12ShaderModule(this,language,data,dataLength);
         }
 
         CommandBuffer* DX12GraphicsCard::newCommandBuffer(QueueType type)
@@ -382,18 +383,18 @@ namespace slag
             return new DX12Buffer(this,size,cpuAccess,memoryType);
         }
 
-        Texture* DX12GraphicsCard::newTexture(uint32_t width, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,uint32_t arrayDepth)
+        Texture* DX12GraphicsCard::newTexture1D(uint32_t width, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,uint32_t arrayDepth)
         {
             return new DX12Texture(this,width,format,usage,mipLevels,arrayDepth);
         }
 
-        Texture* DX12GraphicsCard::newTexture(uint32_t width, uint32_t height, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,
+        Texture* DX12GraphicsCard::newTexture2D(uint32_t width, uint32_t height, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,
             SampleCount sampleCount, uint32_t layers)
         {
             return new DX12Texture(this,width,height,format,usage,mipLevels,sampleCount,layers);
         }
 
-        Texture* DX12GraphicsCard::newTexture(uint32_t width, uint32_t height, uint32_t depth, PixelFormat format, TextureUsageFlags usage,
+        Texture* DX12GraphicsCard::newTexture3D(uint32_t width, uint32_t height, uint32_t depth, PixelFormat format, TextureUsageFlags usage,
             uint32_t mipLevels)
         {
             return new DX12Texture(this,width,height,depth,format,usage,mipLevels);

@@ -119,7 +119,7 @@ namespace slag
          * @return
          * @throws slag::ResourceCreationError if unable to allocate a new texture
          */
-        [[nodiscard]] virtual Texture* newTexture(
+        [[nodiscard]] virtual Texture* newTexture1D(
             uint32_t width,
             PixelFormat format,
             TextureUsageFlags usage,
@@ -138,7 +138,7 @@ namespace slag
          * @return
          * @throws slag::ResourceCreationError if unable to allocate a new texture
          */
-        [[nodiscard]] virtual Texture* newTexture(
+        [[nodiscard]] virtual Texture* newTexture2D(
             uint32_t width,
             uint32_t height,
             PixelFormat format,
@@ -158,7 +158,7 @@ namespace slag
          * @return
          * @throws slag::ResourceCreationError if unable to allocate a new texture
          */
-        [[nodiscard]] virtual Texture* newTexture(
+        [[nodiscard]] virtual Texture* newTexture3D(
             uint32_t width,
             uint32_t height,
             uint32_t depth,

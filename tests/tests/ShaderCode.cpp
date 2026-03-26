@@ -36,35 +36,94 @@ bool is4x4MatrixType(const StructMember& member)
     return false;
 }
 
-TEST(ShaderCode, Reflection)
+
+TEST(ShaderCode, VertexShader)
 {
     auto card = Slag::backend()->graphicsCard(0);
 
-    auto shaderModule = slagTestsCreateShaderModule(card, "resources/tests/shaders/compiled/UnlitTextured.vertex");
-    GTEST_ASSERT_TRUE(shaderModule->metaData().type() == ShaderType::VERTEX);
-    GTEST_ASSERT_TRUE(shaderModule->metaData().bindGroupCount() == 2);
+    auto shaderModule = slagTestsCreateShaderModule(card, "resources/tests/shaders/compiled/TexturedDepth.vertex");
+    GTEST_FAIL();
+}
 
-    auto bindGroup0 = shaderModule->metaData().bindGroup(0);
-    auto bindGroup1 = shaderModule->metaData().bindGroup(1);
+TEST(ShaderCode, GeometryShader)
+{
+    GTEST_FAIL();
+}
 
+TEST(ShaderCode, FragmentShader)
+{
+    auto card = Slag::backend()->graphicsCard(0);
 
-    GTEST_ASSERT_TRUE(bindGroup0.bindIndex() == 0);
-    GTEST_ASSERT_TRUE(bindGroup0.descriptorInfoCount() == 1);
-    auto& descInfo = bindGroup0.descriptorInfo(0);
-    GTEST_ASSERT_TRUE(descInfo.type() == DescriptorType::UNIFORM_BUFFER);
-    GTEST_ASSERT_TRUE(descInfo.bufferDetails()->memberCount() == 3);
-    for (int i=0; i < descInfo.bufferDetails()->memberCount(); i++)
-    {
-        GTEST_ASSERT_TRUE(is4x4MatrixType(descInfo.bufferDetails()->member(i)));
-    }
+    auto shaderModule = slagTestsCreateShaderModule(card, "resources/tests/shaders/compiled/TexturedDepth.fragment");
+    GTEST_FAIL();
+}
 
-    auto binding1 = shaderModule->metaData().bindGroup(1);
-    GTEST_ASSERT_TRUE(binding1.bindIndex() == 3);
-    GTEST_ASSERT_TRUE(binding1.descriptorInfoCount() == 1);
-    auto& descInfo1 = binding1.descriptorInfo(0);
-    GTEST_ASSERT_TRUE(descInfo1.type() == DescriptorType::UNIFORM_BUFFER);
-    GTEST_ASSERT_TRUE(descInfo1.bufferDetails()->memberCount() == 1);
-    GTEST_ASSERT_TRUE(is4x4MatrixType(descInfo1.bufferDetails()->member(0)));
+TEST(ShaderCode, ComputeShader)
+{
+    GTEST_FAIL();
+}
 
+TEST(ShaderCode, RayGenShader)
+{
+    GTEST_FAIL();
+}
+
+TEST(ShaderCode, AnyHitShader)
+{
+    GTEST_FAIL();
+}
+
+TEST(ShaderCode, ClosestHitShader)
+{
+    GTEST_FAIL();
+}
+
+TEST(ShaderCode, MissShader)
+{
+    GTEST_FAIL();
+}
+
+TEST(ShaderCode, IntersectionShader)
+{
+    GTEST_FAIL();
+}
+
+TEST(ShaderCode, CallableShader)
+{
+    GTEST_FAIL();
+}
+
+TEST(ShaderCode, MeshShader)
+{
+    GTEST_FAIL();
+}
+
+TEST(ShaderCode, TaskShader)
+{
+    GTEST_FAIL();
+}
+
+TEST(ShaderCode, BufferLayoutReflection)
+{
+    GTEST_FAIL();
+}
+
+TEST(ShaderCode, TexelBufferReflection)
+{
+    GTEST_FAIL();
+}
+
+TEST(ShaderCode, TextureTypeReflection)
+{
+    GTEST_FAIL();
+}
+
+TEST(ShaderCode, SamplerReflection)
+{
+    GTEST_FAIL();
+}
+
+TEST(ShaderCode, AccelerationStructureReflection)
+{
     GTEST_FAIL();
 }

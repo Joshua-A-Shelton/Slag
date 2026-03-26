@@ -22,7 +22,7 @@ TEST(CommandBuffer, InsertBarriers)
     auto finished = std::unique_ptr<Semaphore>(card->newSemaphore());
     auto sourceBuffer = std::unique_ptr<Buffer>(card->newBuffer(256,BufferCPUAccess::WRITE_ONLY));
     auto destinationBuffer = std::unique_ptr<Buffer>(card->newBuffer(256,BufferCPUAccess::READ_WRITE));
-    auto destinationTexture = std::unique_ptr<Texture>(card->newTexture(32,32,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+    auto destinationTexture = std::unique_ptr<Texture>(card->newTexture2D(32,32,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
     auto srcBufferPtr = sourceBuffer->as<uint8_t>();
     for (auto i=0; i< sourceBuffer->size(); i++)
     {
@@ -148,7 +148,7 @@ TEST(CommandBuffer, CopyBufferToTextureToBuffer)
 {
     auto card = Slag::backend()->graphicsCard(0);
     auto commandBuffer = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(QueueType::TRANSFER));
-    auto texture = std::unique_ptr<Texture>(card->newTexture(64,64,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,3));
+    auto texture = std::unique_ptr<Texture>(card->newTexture2D(64,64,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,3));
     auto finished = std::unique_ptr<Semaphore>(card->newSemaphore());
     auto srcBuffer = std::unique_ptr<Buffer>(card->newBuffer((32*32*4)+32,BufferCPUAccess::WRITE_ONLY));
     auto dstBuffer = std::unique_ptr<Buffer>(card->newBuffer(srcBuffer->size(),BufferCPUAccess::READ_WRITE));
