@@ -1,5 +1,7 @@
 #include "ShaderModule.h"
 
+#include <limits>
+
 #include "slag/Slag.h"
 #include "slag/utilities/SLAG_ASSERT.h"
 
