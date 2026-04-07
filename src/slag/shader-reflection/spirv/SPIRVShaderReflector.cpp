@@ -403,19 +403,19 @@ namespace slag
                     throw InvalidShaderCodeError("Invalid descriptor type");
                     break;
                 case DescriptorType::SAMPLER:
-                    bindings.emplace_back(binding.name,binding.binding,type,SamplerDescription{});
+                    bindings.emplace_back(binding.name,type,binding.set,binding.binding,binding.count,SamplerDescription{});
                     break;
                 case DescriptorType::SAMPLED_TEXTURE:
                 case DescriptorType::UNORDERED_ACCESS_TEXTURE:
-                    bindings.emplace_back(binding.name,binding.binding,type,TextureDescription(textureTypeFromSPV(binding.image.dim),binding.image.ms,binding.image.arrayed));
+                    bindings.emplace_back(binding.name,type,binding.set,binding.binding,binding.count,TextureDescription(textureTypeFromSPV(binding.image.dim),binding.image.ms,binding.image.arrayed));
                     break;
                 case DescriptorType::UNIFORM_BUFFER:
                 case DescriptorType::UNORDERED_ACCESS_BUFFER:
-                    bindings.emplace_back(binding.name,binding.binding,type,getBufferLayout(binding.block));
+                    bindings.emplace_back(binding.name,type,binding.set,binding.binding,binding.count,getBufferLayout(binding.block));
                     break;
                 case DescriptorType::UNIFORM_TEXEL_BUFFER:
                 case DescriptorType::UNORDERED_ACCESS_TEXEL_BUFFER:
-                    bindings.emplace_back(binding.name,binding.binding,type,pixelFormatFromSPV(binding.image.image_format));
+                    bindings.emplace_back(binding.name,type,binding.set,binding.binding,binding.count,pixelFormatFromSPV(binding.image.image_format));
                     break;
                 case DescriptorType::ACCELERATION_STRUCTURE:
                     throw NotImplemented();
@@ -427,9 +427,9 @@ namespace slag
         return groups;
     }
 
-    std::vector<InputVariable> getInputVariables(SpvReflectShaderModule& module)
+    std::vector<ShaderInterfaceVariable> getInputVariables(SpvReflectShaderModule& module)
     {
-        std::vector<InputVariable> inputVariables;
+        std::vector<ShaderInterfaceVariable> inputVariables;
         inputVariables.reserve(module.input_variable_count);
 
         for (uint32_t i = 0; i < module.input_variable_count; i++)
@@ -441,13 +441,27 @@ namespace slag
         return inputVariables;
     }
 
+    std::vector<ShaderInterfaceVariable> getOutputVariables(SpvReflectShaderModule& module)
+    {
+        std::vector<ShaderInterfaceVariable> outputVariables;
+        outputVariables.reserve(module.output_variable_count);
+
+        for (uint32_t i = 0; i < module.output_variable_count; i++)
+        {
+            auto outputVariable = module.output_variables[i];
+            outputVariables.emplace_back(outputVariable->name != nullptr? outputVariable->name : "",getGraphicsTypeFromSPV(outputVariable->type_description),outputVariable->location);
+        }
+
+        return outputVariables;
+    }
+
     ShaderMetaData SPIRVShaderReflector::GetMetaData(void* data, uint32_t dataLength)
     {
         SpvReflectShaderModule shaderModule;
         ShaderType shaderStage = ShaderType::VERTEX;
         std::vector<BindGroup> bindGroups;
-        std::vector<InputVariable> inputVariables;
-
+        std::vector<ShaderInterfaceVariable> inputVariables;
+        std::vector<ShaderInterfaceVariable> outputVariables;
         try
         {
             if (spvReflectCreateShaderModule(dataLength, data, &shaderModule) != SPV_REFLECT_RESULT_SUCCESS)
@@ -457,6 +471,7 @@ namespace slag
             shaderStage = getShaderStage(shaderModule);
             bindGroups = getBindings(shaderModule);
             inputVariables = getInputVariables(shaderModule);
+            outputVariables = getOutputVariables(shaderModule);
         }
         catch (...)
         {
@@ -466,6 +481,6 @@ namespace slag
 
         spvReflectDestroyShaderModule(&shaderModule);
 
-        return ShaderMetaData(shaderStage,std::move(bindGroups),std::move(inputVariables));
+        return ShaderMetaData(shaderStage,std::move(bindGroups),std::move(inputVariables),std::move(outputVariables));
     }
 } // slag

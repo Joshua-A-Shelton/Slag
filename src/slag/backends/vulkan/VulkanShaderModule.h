@@ -16,6 +16,8 @@ namespace slag
 
             [[nodiscard]] ShaderLanguage shaderLanguage() const override;
             [[nodiscard]] const ShaderMetaData& metaData()override;
+            [[nodiscard]] GraphicsCard* graphicsCard()const override;
+            [[nodiscard]]VkShaderModule nativeModule()const;
 
         private:
             ShaderLanguage _shaderLanguage = ShaderLanguage::SPIRV;

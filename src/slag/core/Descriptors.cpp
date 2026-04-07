@@ -1,5 +1,6 @@
 #include "Descriptors.h"
 
+#include "slag/exceptions/IncompatibleShaderBindGroupsError.h"
 #include "slag/utilities/SLAG_ASSERT.h"
 
 namespace slag
@@ -86,6 +87,20 @@ namespace slag
         return _arrayLength;
     }
 
+    uint64_t StructMember::size() const
+    {
+        if (_type == GraphicsType::STRUCT)
+        {
+            auto& lastChild = _children.back();
+
+            return ((lastChild.totalOffset()+lastChild.size())-_totalOffset)*_arrayLength;
+        }
+        else
+        {
+            return graphicsTypeSize(_type) * _arrayLength;
+        }
+    }
+
     void StructMember::move(StructMember& from)
     {
         _children.swap(from._children);
@@ -153,53 +168,63 @@ namespace slag
         _members = from._members;
     }
 
-    DescriptorMeta::DescriptorMeta(const std::string& name, uint32_t setOffset, DescriptorType type,
+    DescriptorMeta::DescriptorMeta(const std::string& name, DescriptorType type,  uint32_t descriptorBindGroup, uint32_t firstBinding, uint32_t bindingCount,
                                    const SamplerDescription& samplerDescription)
     {
         SLAG_ASSERT(type == DescriptorType::SAMPLER && "type must be DescriptorType::SAMPLER when providing sampler description");
         _name = name;
-        _setOffset = setOffset;
+        _descriptorBindGroup = descriptorBindGroup;
+        _firstBinding = firstBinding;
+        _bindingCount = bindingCount;
         _type = type;
         _details = samplerDescription;
 
     }
 
-    DescriptorMeta::DescriptorMeta(const std::string& name, uint32_t setOffset, DescriptorType type,
+    DescriptorMeta::DescriptorMeta(const std::string& name, DescriptorType type, uint32_t descriptorBindGroup, uint32_t firstBinding, uint32_t bindingCount,
         const TextureDescription& textureDescription)
     {
         SLAG_ASSERT((type == DescriptorType::SAMPLED_TEXTURE || type == DescriptorType::UNORDERED_ACCESS_TEXTURE) && "type must be DescriptorType::SAMPLED_TEXTURE or DescriptorType::UNORDERED_ACCESS_TEXTURE when providing texture description");
         _name = name;
-        _setOffset = setOffset;
+        _descriptorBindGroup = descriptorBindGroup;
+        _firstBinding = firstBinding;
+        _bindingCount = bindingCount;
         _type = type;
         _details = textureDescription;
     }
 
-    DescriptorMeta::DescriptorMeta(const std::string& name, uint32_t setOffset, DescriptorType type,
+    DescriptorMeta::DescriptorMeta(const std::string& name, DescriptorType type,  uint32_t descriptorBindGroup, uint32_t firstBinding, uint32_t bindingCount,
         BufferLayout&& bufferLayout)
     {
         SLAG_ASSERT((type == DescriptorType::UNIFORM_BUFFER || type == DescriptorType::UNORDERED_ACCESS_BUFFER) && "type must be DescriptorType::UNIFORM_BUFFER or DescriptorType::UNORDERED_ACCESS_BUFFER when providing buffer description");
         _name = name;
-        _setOffset = setOffset;
+        _descriptorBindGroup = descriptorBindGroup;
+        _firstBinding = firstBinding;
+        _bindingCount = bindingCount;
         _type = type;
-        _details = std::move(bufferLayout);
+        _details = BufferDescription{.layout = std::move(bufferLayout)};
     }
 
-    DescriptorMeta::DescriptorMeta(const std::string& name, uint32_t setOffset, DescriptorType type,
+    DescriptorMeta::DescriptorMeta(const std::string& name, DescriptorType type, uint32_t descriptorBindGroup, uint32_t firstBinding, uint32_t bindingCount,
         const PixelFormat& pixelFormat)
     {
         SLAG_ASSERT((type == DescriptorType::UNIFORM_TEXEL_BUFFER || type == DescriptorType::UNORDERED_ACCESS_TEXEL_BUFFER) && "type must be DescriptorType::UNIFORM_TEXEL_BUFFER or DescriptorType::UNORDERED_ACCESS_TEXEL_BUFFER when providing a PixelFormat");
         _name = name;
-        _setOffset = setOffset;
+        _descriptorBindGroup = descriptorBindGroup;
+        _firstBinding = firstBinding;
+        _bindingCount = bindingCount;
         _type = type;
-        _details = pixelFormat;
+        _details = TexelBufferDescription{.format = pixelFormat};
     }
 
-    DescriptorMeta::DescriptorMeta(const std::string& name, uint32_t setOffset, DescriptorType type,
+    DescriptorMeta::DescriptorMeta(const std::string& name, DescriptorType type, uint32_t descriptorBindGroup, uint32_t firstBinding, uint32_t bindingCount,
         const AccelerationStructureDescription& accelerationDescription)
     {
         SLAG_ASSERT((type == DescriptorType::ACCELERATION_STRUCTURE) && "type must be DescriptorType::UNIFORM_TEXEL_BUFFER or DescriptorType::UNORDERED_ACCESS_TEXEL_BUFFER when providing a PixelFormat");
         _name = name;
-        _setOffset = setOffset;
+        _descriptorBindGroup = descriptorBindGroup;
+        _firstBinding = firstBinding;
+        _bindingCount = bindingCount;
         _type = type;
         _details = accelerationDescription;
     }
@@ -231,9 +256,19 @@ namespace slag
         return _name;
     }
 
-    uint32_t DescriptorMeta::setOffset() const
+    uint32_t DescriptorMeta::descriptorBindGroup() const
     {
-        return _setOffset;
+        return _descriptorBindGroup;
+    }
+
+    uint32_t DescriptorMeta::firstBinding() const
+    {
+        return _firstBinding;
+    }
+
+    uint32_t DescriptorMeta::bindingCount() const
+    {
+        return _bindingCount;
     }
 
     DescriptorType DescriptorMeta::type() const
@@ -251,14 +286,14 @@ namespace slag
         return std::get_if<TextureDescription>(&_details);
     }
 
-    const BufferLayout* DescriptorMeta::bufferDetails() const
+    const BufferDescription* DescriptorMeta::bufferDetails() const
     {
-        return std::get_if<BufferLayout>(&_details);
+        return std::get_if<BufferDescription>(&_details);
     }
 
-    const PixelFormat* DescriptorMeta::texelBufferDetails() const
+    const TexelBufferDescription* DescriptorMeta::texelBufferDetails() const
     {
-        return std::get_if<PixelFormat>(&_details);
+        return std::get_if<TexelBufferDescription>(&_details);
     }
 
     const AccelerationStructureDescription* DescriptorMeta::accelerationStructureDetails() const
@@ -270,7 +305,9 @@ namespace slag
     void DescriptorMeta::move(DescriptorMeta& from)
     {
         _name.swap(from._name);
-        _setOffset = from._setOffset;
+        _descriptorBindGroup = from._descriptorBindGroup;
+        _firstBinding = from._firstBinding;
+        _bindingCount = from._bindingCount;
         _type = from._type;
         _details.swap(from._details);
     }
@@ -278,7 +315,9 @@ namespace slag
     void DescriptorMeta::copy(const DescriptorMeta& from)
     {
         _name = from._name;
-        _setOffset = from._setOffset;
+        _descriptorBindGroup = from._descriptorBindGroup;
+        _firstBinding = from._firstBinding;
+        _bindingCount = from._bindingCount;
         _type = from._type;
         _details = from._details;
     }

@@ -16,7 +16,7 @@ namespace slag
             [[nodiscard]] ShaderLanguage shaderLanguage() const override;
             ///Metadata details about the shader itself
             [[nodiscard]] const ShaderMetaData& metaData()override;
-            [[nodiscard]] DX12GraphicsCard* graphicsCard() const;
+            [[nodiscard]] GraphicsCard* graphicsCard() const override;
         private:
             std::vector<uint32_t> _data;
             ShaderMetaData _metaData{};

@@ -41,6 +41,7 @@ namespace slag
         bool multiSampled;
         bool arrayed;
     };
+
     class StructMember
     {
     public:
@@ -58,6 +59,8 @@ namespace slag
         [[nodiscard]] uint64_t relativeOffset() const;
         [[nodiscard]] uint64_t totalOffset() const;
         [[nodiscard]] uint32_t arrayLength() const;
+
+        [[nodiscard]] uint64_t size() const;
     private:
         void move(StructMember& from);
         void copy(const StructMember& from);
@@ -84,16 +87,28 @@ namespace slag
         void copy(const BufferLayout& from);
         std::vector<StructMember> _members;
     };
-    struct AccelerationStructureDescription{};
+
+    struct BufferDescription
+    {
+        BufferLayout layout;
+    };
+    struct TexelBufferDescription
+    {
+        PixelFormat format;
+    };
+    struct AccelerationStructureDescription
+    {
+        BufferLayout layout;
+    };
 
     class DescriptorMeta
     {
     public:
-        DescriptorMeta(const std::string& name, uint32_t setOffset, DescriptorType type, const SamplerDescription& samplerDescription);
-        DescriptorMeta(const std::string& name, uint32_t setOffset, DescriptorType type, const TextureDescription& textureDescription);
-        DescriptorMeta(const std::string& name, uint32_t setOffset, DescriptorType type, BufferLayout&& bufferLayout);
-        DescriptorMeta(const std::string& name, uint32_t setOffset, DescriptorType type, const PixelFormat& pixelFormat);
-        DescriptorMeta(const std::string& name, uint32_t setOffset, DescriptorType type, const AccelerationStructureDescription& accelerationDescription);
+        DescriptorMeta(const std::string& name, DescriptorType type, uint32_t descriptorBindGroup, uint32_t firstBinding, uint32_t bindingCount, const SamplerDescription& samplerDescription);
+        DescriptorMeta(const std::string& name, DescriptorType type, uint32_t descriptorBindGroup, uint32_t firstBinding, uint32_t bindingCount, const TextureDescription& textureDescription);
+        DescriptorMeta(const std::string& name, DescriptorType type, uint32_t descriptorBindGroup, uint32_t firstBinding, uint32_t bindingCount, BufferLayout&& bufferLayout);
+        DescriptorMeta(const std::string& name, DescriptorType type, uint32_t descriptorBindGroup, uint32_t firstBinding, uint32_t bindingCount, const PixelFormat& pixelFormat);
+        DescriptorMeta(const std::string& name, DescriptorType type, uint32_t descriptorBindGroup, uint32_t firstBinding, uint32_t bindingCount, const AccelerationStructureDescription& accelerationDescription);
         DescriptorMeta(const DescriptorMeta& from);
         DescriptorMeta& operator=(const DescriptorMeta& from);
         DescriptorMeta(DescriptorMeta&& from) noexcept;
@@ -101,21 +116,25 @@ namespace slag
         ~DescriptorMeta()=default;
 
         [[nodiscard]] const std::string& name()const;
-        [[nodiscard]] uint32_t setOffset()const;
+        [[nodiscard]] uint32_t descriptorBindGroup()const;
+        [[nodiscard]] uint32_t firstBinding()const;
+        [[nodiscard]] uint32_t bindingCount()const;
         [[nodiscard]] DescriptorType type()const;
-        const SamplerDescription* samplerDetails()const;
-        const TextureDescription* textureDetails()const;
-        const BufferLayout* bufferDetails()const;
-        const PixelFormat* texelBufferDetails()const;
-        const AccelerationStructureDescription* accelerationStructureDetails()const;
+        [[nodiscard]] const SamplerDescription* samplerDetails()const;
+        [[nodiscard]] const TextureDescription* textureDetails()const;
+        [[nodiscard]] const BufferDescription* bufferDetails()const;
+        [[nodiscard]] const TexelBufferDescription* texelBufferDetails()const;
+        [[nodiscard]] const AccelerationStructureDescription* accelerationStructureDetails()const;
+
     private:
         void move(DescriptorMeta& from);
         void copy(const DescriptorMeta& from);
-        std::variant<SamplerDescription,TextureDescription,BufferLayout,PixelFormat,AccelerationStructureDescription> _details;
+        std::variant<SamplerDescription,TextureDescription,BufferDescription,TexelBufferDescription,AccelerationStructureDescription> _details;
         std::string _name;
         DescriptorType _type = DescriptorType::UNKNOWN;
-        uint32_t _setOffset = 0;
-
+        uint32_t _descriptorBindGroup = 0;
+        uint32_t _firstBinding = 0;
+        uint32_t _bindingCount = 0;
     };
 
 }

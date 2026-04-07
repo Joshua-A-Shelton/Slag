@@ -10,6 +10,8 @@
 #include "SubmissionQueue.h"
 #include "Texture.h"
 #include "ShaderModule.h"
+#include "ShaderPipeline.h"
+#include "VertexDescription.h"
 
 namespace slag
 {
@@ -30,6 +32,28 @@ namespace slag
         ///If the card is capable of handling ray tracing operations
         bool raytracing = false;
     };
+
+    struct DescriptorTableDetails
+    {
+        uint32_t resourceTableAlignment=0;
+        uint32_t samplerTableAlignment=0;
+        uint32_t samplerDescriptorSize=0;
+        uint32_t samplerDescriptorAlignment=0;
+        uint32_t sampledTextureSize=0;
+        uint32_t sampledTextureAlignment=0;
+        uint32_t unorderedAccessTextureSize=0;
+        uint32_t unorderedAccessTextureAlignment=0;
+        uint32_t uniformBufferSize=0;
+        uint32_t uniformBufferAlignment=0;
+        uint32_t unorderedAccessBufferSize=0;
+        uint32_t unorderedAccessBufferAlignment=0;
+        uint32_t uniformTexelBufferSize=0;
+        uint32_t uniformTexelBufferAlignment=0;
+        uint32_t unorderedAccessTexelBufferSize=0;
+        uint32_t unorderedAccessTexelBufferAlignment=0;
+        uint32_t accelerationStructureSize=0;
+        uint32_t accelerationStructureAlignment=0;
+    };
     ///Hardware used for performing parallel computing. May or may not actually be a dedicated "Graphics Card" per se, but does support large scale parallel computation functionality
     class GraphicsCard
     {
@@ -43,6 +67,8 @@ namespace slag
         [[nodiscard]] virtual const GraphicsCardMemoryProperties& memoryProperties()const=0;
         ///Capabilties this graphics card has
         [[nodiscard]] virtual const GraphicsCardCapabilities& capabilities()const=0;
+        ///Offsets and alignments required for descriptor tables
+        [[nodiscard]] virtual const DescriptorTableDetails& descriptorTableDetails()const=0;
         /**
          * Checks if the graphics card supports a given format
          * @param format Format to see if is supported
@@ -74,6 +100,14 @@ namespace slag
          * @return
          */
         [[nodiscard]] virtual ShaderModule* newShaderModule(ShaderLanguage language, void* data, uint32_t dataLength)=0;
+
+
+        [[nodiscard]] virtual ShaderPipeline* newShaderPipeline(
+            const VertexDescription& vertexDescription,
+            ShaderModule* vertexShader,
+            ShaderModule* fragmentShader,
+            const PipelineState& pipelineState,
+            const FramebufferDescription& framebufferDescription)=0;
 
         //Command Buffers
         /**

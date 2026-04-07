@@ -309,18 +309,18 @@ namespace slag
         switch (type)
         {
         case DescriptorType::SAMPLER:
-            return DescriptorMeta(bindDesc.Name,bindDesc.BindPoint,type,SamplerDescription{});
+            return DescriptorMeta(bindDesc.Name,type,bindDesc.Space,bindDesc.BindPoint,bindDesc.BindCount,SamplerDescription{});
         case DescriptorType::SAMPLED_TEXTURE:
         case DescriptorType::UNORDERED_ACCESS_TEXTURE:
-            return DescriptorMeta(bindDesc.Name,bindDesc.BindPoint,type,getTextureDescription(bindDesc.Dimension));
+            return DescriptorMeta(bindDesc.Name,type,bindDesc.Space,bindDesc.BindPoint,bindDesc.BindCount,getTextureDescription(bindDesc.Dimension));
         case DescriptorType::UNIFORM_BUFFER:
         case DescriptorType::UNORDERED_ACCESS_BUFFER:
             if (bindDesc.Type == D3D_SIT_CBUFFER)
             {
                 auto constBuffer = reflection->GetConstantBufferByName(bindDesc.Name);
-                return DescriptorMeta(bindDesc.Name,bindDesc.BindPoint,type,getBufferLayout(constBuffer));
+                return DescriptorMeta(bindDesc.Name,type,bindDesc.Space,bindDesc.BindPoint,bindDesc.BindCount,getBufferLayout(constBuffer));
             }
-            return DescriptorMeta(bindDesc.Name,bindDesc.BindPoint,type,BufferLayout(std::vector<StructMember>()));
+            return DescriptorMeta(bindDesc.Name,type,bindDesc.Space,bindDesc.BindPoint,bindDesc.BindCount,BufferLayout(std::vector<StructMember>()));
             break;
         case DescriptorType::UNIFORM_TEXEL_BUFFER:
         case DescriptorType::UNORDERED_ACCESS_TEXEL_BUFFER:
@@ -366,17 +366,30 @@ namespace slag
         return bindGroups;
     }
 
-    std::vector<InputVariable> getInputs(const D3D12_SHADER_DESC& shaderDesc, const Microsoft::WRL::ComPtr<ID3D12ShaderReflection>& reflection)
+    std::vector<ShaderInterfaceVariable> getInputs(const D3D12_SHADER_DESC& shaderDesc, const Microsoft::WRL::ComPtr<ID3D12ShaderReflection>& reflection)
     {
-        std::vector<InputVariable> inputs;
+        std::vector<ShaderInterfaceVariable> inputs;
         inputs.reserve(shaderDesc.InputParameters);
         for (auto i=0u; i<shaderDesc.InputParameters; i++)
         {
             D3D12_SIGNATURE_PARAMETER_DESC paramDesc;
             reflection->GetInputParameterDesc(i,&paramDesc);
-            inputs.emplace_back(InputVariable(paramDesc.SemanticName,getGraphicsType(paramDesc.ComponentType,std::popcount(paramDesc.Mask)),paramDesc.Register));
+            inputs.emplace_back(ShaderInterfaceVariable(paramDesc.SemanticName,getGraphicsType(paramDesc.ComponentType,std::popcount(paramDesc.Mask)),paramDesc.Register));
         }
         return inputs;
+    }
+
+    std::vector<ShaderInterfaceVariable> getOutputs(const D3D12_SHADER_DESC& shaderDesc, const Microsoft::WRL::ComPtr<ID3D12ShaderReflection>& reflection)
+    {
+        std::vector<ShaderInterfaceVariable> outputs;
+        outputs.reserve(shaderDesc.OutputParameters);
+        for (auto i=0u; i<shaderDesc.OutputParameters; i++)
+        {
+            D3D12_SIGNATURE_PARAMETER_DESC paramDesc;
+            reflection->GetOutputParameterDesc(i,&paramDesc);
+            outputs.emplace_back(ShaderInterfaceVariable(paramDesc.SemanticName,getGraphicsType(paramDesc.ComponentType,std::popcount(paramDesc.Mask)),paramDesc.Register));
+        }
+        return outputs;
     }
 
     ShaderMetaData DXILShaderReflector::GetMetaData(void* data, uint32_t dataLength)
@@ -406,7 +419,8 @@ namespace slag
         auto type = getShaderType((shaderDesc.Version & 0xFFFF0000)>>16);
         auto groups = getBindGroups(shaderDesc, shaderReflection);
         auto inputs = getInputs(shaderDesc, shaderReflection);
+        auto outputs = getOutputs(shaderDesc, shaderReflection);
 
-        return ShaderMetaData(type,std::move(groups),std::move(inputs));
+        return ShaderMetaData(type,std::move(groups),std::move(inputs),std::move(outputs));
     }
 } // slag

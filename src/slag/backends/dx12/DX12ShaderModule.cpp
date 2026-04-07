@@ -1,5 +1,6 @@
 #include "DX12ShaderModule.h"
 
+#include "DX12GraphicsCard.h"
 #include "slag/exceptions/InvalidShaderCodeError.h"
 #include "slag/shader-reflection/dxil12/DXILShaderReflector.h"
 #include "slag/shader-reflection/spirv/SPIRVShaderReflector.h"
@@ -40,7 +41,7 @@ namespace slag
             return _metaData;
         }
 
-        DX12GraphicsCard* DX12ShaderModule::graphicsCard() const
+        GraphicsCard* DX12ShaderModule::graphicsCard() const
         {
             return _graphicsCard;
         }

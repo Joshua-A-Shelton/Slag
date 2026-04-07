@@ -115,6 +115,30 @@ namespace slag
             {
                 _capabilities.raytracing = true;
             }
+            
+            //descriptor table details
+            auto samplerSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+            auto resourceSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+            _descriptorTableDetails.resourceTableAlignment=resourceSize;
+            _descriptorTableDetails.samplerTableAlignment=samplerSize;
+
+            _descriptorTableDetails.samplerDescriptorSize=samplerSize;
+            _descriptorTableDetails.samplerDescriptorAlignment=samplerSize;
+            _descriptorTableDetails.sampledTextureSize=resourceSize;
+            _descriptorTableDetails.sampledTextureAlignment=resourceSize;
+            _descriptorTableDetails.unorderedAccessTextureSize=resourceSize;
+            _descriptorTableDetails.unorderedAccessTextureAlignment=resourceSize;
+            _descriptorTableDetails.uniformBufferSize=resourceSize;
+            _descriptorTableDetails.uniformBufferAlignment=resourceSize;
+            _descriptorTableDetails.unorderedAccessBufferSize=resourceSize;
+            _descriptorTableDetails.unorderedAccessBufferAlignment=resourceSize;
+            _descriptorTableDetails.uniformTexelBufferSize=resourceSize;
+            _descriptorTableDetails.uniformTexelBufferAlignment=resourceSize;
+            _descriptorTableDetails.unorderedAccessTexelBufferSize=resourceSize;
+            _descriptorTableDetails.unorderedAccessTexelBufferAlignment=resourceSize;
+            _descriptorTableDetails.accelerationStructureSize=resourceSize;
+            _descriptorTableDetails.accelerationStructureAlignment=resourceSize;
 
         }
 
@@ -164,6 +188,11 @@ namespace slag
         const GraphicsCardCapabilities& DX12GraphicsCard::capabilities() const
         {
             return _capabilities;
+        }
+
+        const DescriptorTableDetails& DX12GraphicsCard::descriptorTableDetails() const
+        {
+            return _descriptorTableDetails;
         }
 
         PixelFormatProperties DX12GraphicsCard::formatProperties(PixelFormat format) const
@@ -363,6 +392,13 @@ namespace slag
         ShaderModule* DX12GraphicsCard::newShaderModule(ShaderLanguage language, void* data, uint32_t dataLength)
         {
             return new DX12ShaderModule(this,language,data,dataLength);
+        }
+
+        ShaderPipeline* DX12GraphicsCard::newShaderPipeline(const VertexDescription& vertexDescription,
+            ShaderModule* vertexShader, ShaderModule* fragmentShader, const PipelineState& pipelineState,
+            const FramebufferDescription& framebufferDescription)
+        {
+            throw NotImplemented();
         }
 
         CommandBuffer* DX12GraphicsCard::newCommandBuffer(QueueType type)

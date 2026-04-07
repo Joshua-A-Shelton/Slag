@@ -18,6 +18,7 @@
 #include "core/ShaderPipeline.h"
 #include "core/SubmissionQueue.h"
 #include "core/Texture.h"
+#include "core/VertexDescription.h"
 
 
 namespace slag

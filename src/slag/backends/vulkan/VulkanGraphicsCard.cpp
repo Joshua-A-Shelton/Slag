@@ -5,6 +5,7 @@
 #include "VulkanCommandBuffer.h"
 #include "VulkanSemaphore.h"
 #include "VulkanShaderModule.h"
+#include "VulkanShaderPipeline.h"
 #include "VulkanSubmissionQueue.h"
 #include "VulkanTexture.h"
 #include "slag/exceptions/InvalidShaderCodeError.h"
@@ -127,15 +128,38 @@ namespace slag
 
             _memoryProperties.maxUniformBufferSize = physicalDeviceProperties.limits.maxUniformBufferRange;
 
-            //Establish capabilities
-            _capabilities.defragmentable = true;
 
             VkPhysicalDeviceProperties2 prop2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
             VkPhysicalDeviceRayTracingPipelinePropertiesKHR rtProps{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
             prop2.pNext = &rtProps;
+            VkPhysicalDeviceDescriptorHeapPropertiesEXT dhProps{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_HEAP_PROPERTIES_EXT};
+            rtProps.pNext = &dhProps;
             vkGetPhysicalDeviceProperties2(_physicalDevice, &prop2);
 
+            //Establish capabilities
+            _capabilities.defragmentable = true;
             _capabilities.raytracing =  rtProps.shaderGroupHandleSize > 0;
+
+            //Establish Descriptor table details
+            _descriptorTableDetails.resourceTableAlignment=dhProps.resourceHeapAlignment;
+            _descriptorTableDetails.samplerTableAlignment=dhProps.samplerHeapAlignment;
+
+            _descriptorTableDetails.samplerDescriptorSize=dhProps.samplerDescriptorSize;
+            _descriptorTableDetails.samplerDescriptorAlignment=dhProps.samplerDescriptorAlignment;
+            _descriptorTableDetails.sampledTextureSize=dhProps.imageDescriptorSize;
+            _descriptorTableDetails.sampledTextureAlignment=dhProps.imageDescriptorAlignment;
+            _descriptorTableDetails.unorderedAccessTextureSize=dhProps.imageDescriptorSize;
+            _descriptorTableDetails.unorderedAccessTextureAlignment=dhProps.imageDescriptorAlignment;
+            _descriptorTableDetails.uniformBufferSize=dhProps.bufferDescriptorSize;
+            _descriptorTableDetails.uniformBufferAlignment=dhProps.bufferDescriptorAlignment;
+            _descriptorTableDetails.unorderedAccessBufferSize=dhProps.bufferDescriptorSize;
+            _descriptorTableDetails.unorderedAccessBufferAlignment=dhProps.bufferDescriptorAlignment;
+            _descriptorTableDetails.uniformTexelBufferSize=dhProps.imageDescriptorAlignment;
+            _descriptorTableDetails.uniformTexelBufferAlignment=dhProps.imageDescriptorSize;
+            _descriptorTableDetails.unorderedAccessTexelBufferSize=dhProps.imageDescriptorAlignment;
+            _descriptorTableDetails.unorderedAccessTexelBufferAlignment=dhProps.imageDescriptorSize;
+            _descriptorTableDetails.accelerationStructureSize=dhProps.bufferDescriptorSize;
+            _descriptorTableDetails.accelerationStructureAlignment=dhProps.bufferDescriptorAlignment;
 
         }
 
@@ -182,6 +206,11 @@ namespace slag
         const GraphicsCardCapabilities& VulkanGraphicsCard::capabilities() const
         {
             return _capabilities;
+        }
+
+        const DescriptorTableDetails& VulkanGraphicsCard::descriptorTableDetails() const
+        {
+            return _descriptorTableDetails;
         }
 
         PixelFormatProperties VulkanGraphicsCard::formatProperties(PixelFormat format) const
@@ -417,6 +446,16 @@ namespace slag
                 throw InvalidShaderCodeError("Vulkan Backend only accepts shaders in SPIRV format");
             }
             return new VulkanShaderModule(this,data,dataLength);
+        }
+
+        ShaderPipeline* VulkanGraphicsCard::newShaderPipeline(
+            const VertexDescription& vertexDescription,
+            ShaderModule* vertexShader,
+            ShaderModule* fragmentShader,
+            const PipelineState& pipelineState,
+            const FramebufferDescription& framebufferDescription)
+        {
+            return new VulkanShaderPipeline(this,vertexDescription,vertexShader,fragmentShader,pipelineState,framebufferDescription);
         }
 
         CommandBuffer* VulkanGraphicsCard::newCommandBuffer(QueueType type)

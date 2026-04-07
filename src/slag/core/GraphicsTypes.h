@@ -263,5 +263,58 @@ namespace slag
         return static_cast<GraphicsTypeBits>(!l);
     }
 
+    static uint32_t graphicsTypeSize(GraphicsType type)
+    {
+        if (type == GraphicsType::STRUCT)
+        {
+            return 0;
+        }
+        uint32_t dim1 = 1;
+        uint32_t dim2 = 1;
+        if ((uint32_t)type & (uint32_t)(GraphicsTypeBits::MATRIX4X_BIT))
+        {
+            dim1 = 4;
+        }
+        else if ((uint32_t)type & (uint32_t)GraphicsTypeBits::MATRIX3X_BIT)
+        {
+            dim1 = 3;
+        }
+        else if ((uint32_t)type & (uint32_t)GraphicsTypeBits::MATRIX2X_BIT)
+        {
+            dim1 = 2;
+        }
+        if ((uint32_t)type & (uint32_t)GraphicsTypeBits::VECTOR4_BIT)
+        {
+            dim2 = 4;
+        }
+        else if ((uint32_t)type & (uint32_t)GraphicsTypeBits::VECTOR3_BIT)
+        {
+            dim2 = 3;
+        }
+        else if ((uint32_t)type & (uint32_t)GraphicsTypeBits::VECTOR2_BIT)
+        {
+            dim2 = 2;
+        }
+        uint32_t size = 0;
+        if (bool(type & (GraphicsTypeBits::INTEGER_8_BIT)))
+        {
+            size = 1;
+        }
+        else if (bool(type & (GraphicsTypeBits::INTEGER_16_BIT | GraphicsTypeBits::FLOAT_16_BIT)))
+        {
+            size = 2;
+        }
+        else if (bool(type & (GraphicsTypeBits::INTEGER_32_BIT | GraphicsTypeBits::FLOAT_32_BIT | GraphicsTypeBits::BOOLEAN_BIT)))
+        {
+            size = 4;
+        }
+        else if (bool(type & (GraphicsTypeBits::INTEGER_64_BIT | GraphicsTypeBits::FLOAT_64_BIT)))
+        {
+            size = 8;
+        }
+
+        return size * dim1 * dim2;
+    }
+
 }
 #endif //SLAG_GRAPHICSTYPES_H

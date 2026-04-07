@@ -347,6 +347,164 @@ namespace slag
             return flags;
         }
 
+        VkPolygonMode VULKAN_POLYGON_MODES[]
+        {
+            VK_POLYGON_MODE_FILL,
+            VK_POLYGON_MODE_LINE,
+            VK_POLYGON_MODE_POINT
+        };
+
+        VkPolygonMode VulkanBackend::nativePolygonMode(RasterizationState::DrawMode mode)
+        {
+            return VULKAN_POLYGON_MODES[static_cast<uint8_t>(mode)];
+        }
+
+        VkCullModeFlags VULKAN_CULL_FLAGS[]
+        {
+            VK_CULL_MODE_NONE,
+            VK_CULL_MODE_FRONT_BIT,
+            VK_CULL_MODE_BACK_BIT,
+        };
+
+        VkCullModeFlags VulkanBackend::nativeCullMode(RasterizationState::CullOptions mode)
+        {
+            return VULKAN_CULL_FLAGS[static_cast<uint8_t>(mode)];
+        }
+
+        VkFrontFace VULKAN_FRONT_FACES[]
+        {
+            VK_FRONT_FACE_CLOCKWISE,
+            VK_FRONT_FACE_COUNTER_CLOCKWISE
+        };
+
+        VkFrontFace VulkanBackend::nativeFrontFace(RasterizationState::FrontFacing frontFace)
+        {
+            return VULKAN_FRONT_FACES[static_cast<uint8_t>(frontFace)];
+        }
+
+        VkBlendFactor VULKAN_BLEND_FACTORS[]
+        {
+            VK_BLEND_FACTOR_ZERO,
+            VK_BLEND_FACTOR_ONE,
+            VK_BLEND_FACTOR_SRC_COLOR,
+            VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR,
+            VK_BLEND_FACTOR_DST_COLOR,
+            VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR,
+            VK_BLEND_FACTOR_SRC_ALPHA,
+            VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+            VK_BLEND_FACTOR_DST_ALPHA,
+            VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,
+            VK_BLEND_FACTOR_CONSTANT_COLOR,
+            VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR,
+            VK_BLEND_FACTOR_CONSTANT_ALPHA,
+            VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA,
+            VK_BLEND_FACTOR_SRC_ALPHA_SATURATE,
+            VK_BLEND_FACTOR_SRC1_COLOR,
+            VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR,
+            VK_BLEND_FACTOR_SRC1_ALPHA,
+            VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA
+        };
+
+        VkBlendFactor VulkanBackend::nativeBlendFactor(BlendFactor blendFactor)
+        {
+            return VULKAN_BLEND_FACTORS[static_cast<uint8_t>(blendFactor)];
+        }
+
+        VkBlendOp VULKAN_BLEND_OPS[]
+        {
+            VK_BLEND_OP_ADD,
+            VK_BLEND_OP_SUBTRACT,
+            VK_BLEND_OP_REVERSE_SUBTRACT,
+            VK_BLEND_OP_MIN,
+            VK_BLEND_OP_MAX
+        };
+
+        VkBlendOp VulkanBackend::nativeBlendOp(BlendOperation blendOp)
+        {
+            return VULKAN_BLEND_OPS[static_cast<uint8_t>(blendOp)];
+        }
+
+        VkLogicOp VULKAN_LOGIC_OPS[]
+        {
+            VK_LOGIC_OP_CLEAR,
+            VK_LOGIC_OP_AND,
+            VK_LOGIC_OP_AND_REVERSE,
+            VK_LOGIC_OP_COPY,
+            VK_LOGIC_OP_AND_INVERTED,
+            VK_LOGIC_OP_NO_OP,
+            VK_LOGIC_OP_XOR,
+            VK_LOGIC_OP_OR,
+            VK_LOGIC_OP_NOR,
+            VK_LOGIC_OP_EQUIVALENT,
+            VK_LOGIC_OP_INVERT,
+            VK_LOGIC_OP_OR_REVERSE,
+            VK_LOGIC_OP_COPY_INVERTED,
+            VK_LOGIC_OP_OR_INVERTED,
+            VK_LOGIC_OP_NAND,
+            VK_LOGIC_OP_SET
+        };
+
+        VkLogicOp VulkanBackend::nativeLogicOp(LogicOperation logicOp)
+        {
+            return VULKAN_LOGIC_OPS[static_cast<uint8_t>(logicOp)];
+        }
+
+        VkStencilOp VULKAN_STENCIL_OPS[]
+        {
+            VK_STENCIL_OP_KEEP,
+            VK_STENCIL_OP_ZERO,
+            VK_STENCIL_OP_REPLACE,
+            VK_STENCIL_OP_INCREMENT_AND_CLAMP,
+            VK_STENCIL_OP_DECREMENT_AND_CLAMP,
+            VK_STENCIL_OP_INVERT,
+            VK_STENCIL_OP_INCREMENT_AND_WRAP,
+            VK_STENCIL_OP_DECREMENT_AND_WRAP
+        };
+
+        VkStencilOp VulkanBackend::nativeStencilOp(StencilOperation stencilOp)
+        {
+            return VULKAN_STENCIL_OPS[static_cast<uint8_t>(stencilOp)];
+        }
+
+        VkColorComponentFlags VulkanBackend::nativeColorComponentFlags(ColorComponents colorComponentFlags)
+        {
+            VkColorComponentFlags nativeColorComponentFlags = 0;
+            if (static_cast<bool>(colorComponentFlags & ColorComponents::RED))
+            {
+                nativeColorComponentFlags |= VK_COLOR_COMPONENT_R_BIT;
+            }
+            if (static_cast<bool>(colorComponentFlags & ColorComponents::GREEN))
+            {
+                nativeColorComponentFlags |= VK_COLOR_COMPONENT_G_BIT;
+            }
+            if (static_cast<bool>(colorComponentFlags & ColorComponents::BLUE))
+            {
+                nativeColorComponentFlags |= VK_COLOR_COMPONENT_B_BIT;
+            }
+            if (static_cast<bool>(colorComponentFlags & ColorComponents::ALPHA))
+            {
+                nativeColorComponentFlags |= VK_COLOR_COMPONENT_A_BIT;
+            }
+            return nativeColorComponentFlags;
+        }
+
+        VkCompareOp VULKAN_COMPARE_OPS[]
+        {
+            VK_COMPARE_OP_NEVER,
+            VK_COMPARE_OP_LESS,
+            VK_COMPARE_OP_LESS_OR_EQUAL,
+            VK_COMPARE_OP_GREATER,
+            VK_COMPARE_OP_GREATER_OR_EQUAL,
+            VK_COMPARE_OP_EQUAL,
+            VK_COMPARE_OP_NOT_EQUAL,
+            VK_COMPARE_OP_ALWAYS
+        };
+
+        VkCompareOp VulkanBackend::nativeCompareOp(ComparisonFunction compareOp)
+        {
+            return VULKAN_COMPARE_OPS[static_cast<uint8_t>(compareOp)];
+        }
+
         SlagInitializationResult VulkanBackend::initializeBackend(const InitializationData& initializationData)
         {
             if (initializationData.debugHandler)
@@ -414,6 +572,7 @@ namespace slag
                 .add_required_extension("VK_EXT_swapchain_maintenance1")
                 .add_required_extension("VK_EXT_custom_border_color")
                 .add_required_extension("VK_KHR_compute_shader_derivatives")
+                .add_required_extension("VK_EXT_descriptor_heap")
                 .defer_surface_initialization()
                 .select_devices();
 

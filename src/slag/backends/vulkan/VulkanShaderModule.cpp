@@ -46,5 +46,15 @@ namespace slag
         {
             return _metaData;
         }
+
+        GraphicsCard* VulkanShaderModule::graphicsCard() const
+        {
+            return _graphicsCard;
+        }
+
+        VkShaderModule VulkanShaderModule::nativeModule() const
+        {
+            return _module;
+        }
     } // vulkan
 } // slag

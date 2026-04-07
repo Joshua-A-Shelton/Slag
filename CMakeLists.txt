@@ -69,6 +69,8 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/backends/vulkan/VulkanTexture.h
             src/slag/backends/vulkan/VulkanShaderModule.cpp
             src/slag/backends/vulkan/VulkanShaderModule.h
+            src/slag/backends/vulkan/VulkanShaderPipeline.cpp
+            src/slag/backends/vulkan/VulkanShaderPipeline.h
     )
 endif()
 if(SLAG_DX12_BACKEND)
@@ -137,6 +139,7 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/PixelFormatProperties.h
         src/slag/core/Defragmentation.h
         src/slag/core/Barriers.h
+        src/slag/core/ShaderPipeline.cpp
         src/slag/core/ShaderPipeline.h
         src/slag/core/ShaderModule.cpp
         src/slag/core/ShaderModule.h
@@ -144,6 +147,16 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/Descriptors.h
         src/slag/core/GraphicsTypes.h
         src/slag/exceptions/InvalidShaderCodeError.h
+        src/slag/core/Operations.h
+        src/slag/core/Color.cpp
+        src/slag/core/Color.h
+        src/slag/core/VertexDescription.cpp
+        src/slag/core/VertexDescription.h
+        src/slag/exceptions/InvalidShaderVertexBindingError.h
+        src/slag/exceptions/IncompatibleShaderBindGroupsError.h
+        src/slag/core/PipelineBinding.cpp
+        src/slag/core/PipelineBinding.h
+
 
 )
 #link spirv if we need to
@@ -307,6 +320,7 @@ if(SLAG_BUILD_TESTS)
             tests/tests/ShaderCode.cpp
             tests/utilities/PlatformUtilities.cpp
             tests/utilities/PlatformUtilities.h
+            tests/tests/ShaderPipeline.cpp
     )
 
     target_link_libraries(SlagTests GTest::gtest SDL3::SDL3 glm::glm slag::Slag)

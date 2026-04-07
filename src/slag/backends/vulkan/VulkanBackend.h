@@ -34,6 +34,15 @@ namespace slag
             inline static VkImageAspectFlags nativeTextureAspect(PixelAspectFlags aspect){return static_cast<VkImageAspectFlagBits>(aspect);}
             static VkAccessFlags2 nativeMemoryCaches(MemoryCaches caches);
             static VkPipelineStageFlags2 nativePipelineStages(SyncStages stages);
+            static VkPolygonMode nativePolygonMode(RasterizationState::DrawMode mode);
+            static VkCullModeFlags nativeCullMode(RasterizationState::CullOptions mode);
+            static VkFrontFace nativeFrontFace(RasterizationState::FrontFacing frontFace);
+            static VkBlendFactor nativeBlendFactor(BlendFactor blendFactor);
+            static VkBlendOp nativeBlendOp(BlendOperation blendOp);
+            static VkLogicOp nativeLogicOp(LogicOperation logicOp);
+            static VkStencilOp nativeStencilOp(StencilOperation stencilOp);
+            static VkColorComponentFlags nativeColorComponentFlags(ColorComponents colorComponentFlags);
+            static VkCompareOp nativeCompareOp(ComparisonFunction compareOp);
         private:
             SlagInitializationResult initializeBackend(const InitializationData& initializationData)override;
             std::vector<VulkanGraphicsCard> _graphicsCards;

@@ -28,6 +28,7 @@ namespace slag
             [[nodiscard]] std::string name()const override;
             [[nodiscard]] const GraphicsCardMemoryProperties& memoryProperties()const override;
             [[nodiscard]] const GraphicsCardCapabilities& capabilities()const override;
+            [[nodiscard]] const DescriptorTableDetails& descriptorTableDetails()const override;
             [[nodiscard]] PixelFormatProperties formatProperties(PixelFormat format)const override;
             [[nodiscard]] SubmissionQueue* graphicsQueue()override;
             [[nodiscard]] SubmissionQueue* computeQueue()override;
@@ -35,6 +36,12 @@ namespace slag
             uint64_t defragmentMemory(uint64_t targetBytes,std::function<void(MemoryReference*)> memoryMoved)override;
             //Shaders
             [[nodiscard]] ShaderModule* newShaderModule(ShaderLanguage language, void* data, uint32_t dataLength)override;
+            [[nodiscard]] ShaderPipeline* newShaderPipeline(
+                const VertexDescription& vertexDescription,
+                ShaderModule* vertexShader,
+                ShaderModule* fragmentShader,
+                const PipelineState& pipelineState,
+                const FramebufferDescription& framebufferDescription)override;
             //Command Buffers
             [[nodiscard]] CommandBuffer* newCommandBuffer(QueueType type)override;
             //Semaphores
@@ -85,6 +92,7 @@ namespace slag
             void move(DX12GraphicsCard& from);
             GraphicsCardMemoryProperties _memoryProperties{};
             GraphicsCardCapabilities _capabilities{};
+            DescriptorTableDetails _descriptorTableDetails{};
             Microsoft::WRL::ComPtr<ID3D12Device2> _device = nullptr;
             Microsoft::WRL::ComPtr<IDXGIFactory4> _dxgiFactory = nullptr;
             Microsoft::WRL::ComPtr<IDXGIAdapter4> _dxgiAdapter4 = nullptr;

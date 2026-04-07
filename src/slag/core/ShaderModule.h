@@ -62,11 +62,11 @@ namespace slag
         std::vector<DescriptorMeta> _descriptorInfo;
     };
 
-    ///Input variable
-    class InputVariable
+    ///Variable that serves as an input or output of a shader
+    class ShaderInterfaceVariable
     {
     public:
-        InputVariable(const std::string& name, GraphicsType type, uint32_t location);
+        ShaderInterfaceVariable(const std::string& name, GraphicsType type, uint32_t location);
         [[nodiscard]] const std::string& name()const;
         [[nodiscard]] GraphicsType type()const;
         [[nodiscard]] uint32_t location()const;
@@ -81,7 +81,7 @@ namespace slag
     {
     public:
         ShaderMetaData()=default;
-        ShaderMetaData(ShaderType type, std::vector<BindGroup>&& bindGroups, std::vector<InputVariable>&& inputVariables);
+        ShaderMetaData(ShaderType type, std::vector<BindGroup>&& bindGroups, std::vector<ShaderInterfaceVariable>&& inputVariables, std::vector<ShaderInterfaceVariable>&& outputVariables);
         ///What kind of shader this is
         [[nodiscard]] ShaderType type() const;
         ///Number of bind groups
@@ -92,12 +92,27 @@ namespace slag
          * @return
          */
         [[nodiscard]] const BindGroup& bindGroup(uint32_t index)const;
-        [[nodiscard]] const uint32_t inputVariableCount()const;
-        [[nodiscard]] const InputVariable& inputVariable(uint32_t index)const;
+        ///Number of input variables into the shader
+        [[nodiscard]] uint32_t inputVariableCount()const;
+        /**
+         * Get an input variable
+         * @param index Index of input variable
+         * @return
+         */
+        [[nodiscard]] const ShaderInterfaceVariable& inputVariable(uint32_t index)const;
+        ///Number of output variables from the shader
+        [[nodiscard]] uint32_t outputVariableCount ()const;
+        /**
+         * Get an output variable
+         * @param index Index of output variable
+         * @return
+         */
+        [[nodiscard]] const ShaderInterfaceVariable& outputVariable(uint32_t index)const;
     private:
         ShaderType _type = ShaderType::VERTEX;
         std::vector<BindGroup> _bindGroups;
-        std::vector<InputVariable> _inputVariables;
+        std::vector<ShaderInterfaceVariable> _inputVariables;
+        std::vector<ShaderInterfaceVariable> _outputVariables;
     };
     ///All the data for a shader stage that is ready to be fed into a shader pipeline
     class ShaderModule
@@ -108,6 +123,8 @@ namespace slag
         [[nodiscard]] virtual ShaderLanguage shaderLanguage() const = 0;
         ///Metadata details about the shader itself
         [[nodiscard]] virtual const ShaderMetaData& metaData() = 0;
+        ///The graphics card this module is on
+        [[nodiscard]] virtual GraphicsCard* graphicsCard()const = 0;
     };
 } // slag
 
