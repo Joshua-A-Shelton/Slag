@@ -36,31 +36,13 @@ namespace slag
         bool raytracing = false;
     };
 
-    struct DescriptorTableDetails
-    {
-        uint32_t resourceTableAlignment=0;
-        uint32_t samplerTableAlignment=0;
-        uint32_t samplerDescriptorSize=0;
-        uint32_t samplerDescriptorAlignment=0;
-        uint32_t sampledTextureSize=0;
-        uint32_t sampledTextureAlignment=0;
-        uint32_t unorderedAccessTextureSize=0;
-        uint32_t unorderedAccessTextureAlignment=0;
-        uint32_t uniformBufferSize=0;
-        uint32_t uniformBufferAlignment=0;
-        uint32_t unorderedAccessBufferSize=0;
-        uint32_t unorderedAccessBufferAlignment=0;
-        uint32_t uniformTexelBufferSize=0;
-        uint32_t uniformTexelBufferAlignment=0;
-        uint32_t unorderedAccessTexelBufferSize=0;
-        uint32_t unorderedAccessTexelBufferAlignment=0;
-        uint32_t accelerationStructureSize=0;
-        uint32_t accelerationStructureAlignment=0;
-    };
-
     struct DescriptorHeapDetails
     {
-        ///Maximum size in bytes a of a descriptor heap
+        ///Size to increment when writing descriptors to a resource descriptor heap
+        uint32_t resourceDescriptorIncrementSize=0;
+        ///Size to increment when writing samplers to a sampler descriptor heap
+        uint32_t samplerDescriptorIncrementSize=0;
+        ///Maximum size in bytes of a descriptor heap
         uint32_t maxResourceDescriptorHeapSize=0;
         ///Maximum size in bytes of a sampler descriptor heap
         uint32_t maxSamplerDescriptorHeapSize=0;
@@ -82,9 +64,7 @@ namespace slag
         [[nodiscard]] virtual const GraphicsCardMemoryProperties& memoryProperties()const=0;
         ///Capabilties this graphics card has
         [[nodiscard]] virtual const GraphicsCardCapabilities& capabilities()const=0;
-        ///Offsets and alignments required for descriptor tables
-        [[nodiscard]] virtual const DescriptorTableDetails& descriptorTableDetails()const=0;
-        ///Limitations on descriptor heaps
+        ///Limitations and descriptor sizes on descriptor heaps
         [[nodiscard]] virtual const DescriptorHeapDetails& descriptorHeapDetails()const=0;
         /**
          * Checks if the graphics card supports a given format

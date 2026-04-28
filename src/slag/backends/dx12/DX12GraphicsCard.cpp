@@ -116,37 +116,14 @@ namespace slag
             {
                 _capabilities.raytracing = true;
             }
-            
-            //descriptor table details
-            auto samplerSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-            auto resourceSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-            _descriptorTableDetails.resourceTableAlignment=resourceSize;
-            _descriptorTableDetails.samplerTableAlignment=samplerSize;
-
-            _descriptorTableDetails.samplerDescriptorSize=samplerSize;
-            _descriptorTableDetails.samplerDescriptorAlignment=samplerSize;
-            _descriptorTableDetails.sampledTextureSize=resourceSize;
-            _descriptorTableDetails.sampledTextureAlignment=resourceSize;
-            _descriptorTableDetails.unorderedAccessTextureSize=resourceSize;
-            _descriptorTableDetails.unorderedAccessTextureAlignment=resourceSize;
-            _descriptorTableDetails.uniformBufferSize=resourceSize;
-            _descriptorTableDetails.uniformBufferAlignment=resourceSize;
-            _descriptorTableDetails.unorderedAccessBufferSize=resourceSize;
-            _descriptorTableDetails.unorderedAccessBufferAlignment=resourceSize;
-            _descriptorTableDetails.uniformTexelBufferSize=resourceSize;
-            _descriptorTableDetails.uniformTexelBufferAlignment=resourceSize;
-            _descriptorTableDetails.unorderedAccessTexelBufferSize=resourceSize;
-            _descriptorTableDetails.unorderedAccessTexelBufferAlignment=resourceSize;
-            _descriptorTableDetails.accelerationStructureSize=resourceSize;
-            _descriptorTableDetails.accelerationStructureAlignment=resourceSize;
-
 
             //descriptor heap details
             D3D12_FEATURE_DATA_D3D12_OPTIONS options = {};
             _device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options));
-            _descriptorHeapDetails.maxResourceDescriptorHeapSize = 1015808 * resourceSize;
-            _descriptorHeapDetails.maxSamplerDescriptorHeapSize = 4000*samplerSize;
+            _descriptorHeapDetails.resourceDescriptorIncrementSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            _descriptorHeapDetails.samplerDescriptorIncrementSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+            _descriptorHeapDetails.maxResourceDescriptorHeapSize = 1015808 *  _descriptorHeapDetails.resourceDescriptorIncrementSize;
+            _descriptorHeapDetails.maxSamplerDescriptorHeapSize = 4000 * _descriptorHeapDetails.samplerDescriptorIncrementSize;
             _descriptorHeapDetails.resourceReservedRangeSize = 0;
             _descriptorHeapDetails.samplerReservedRangeSize = 0;
 
@@ -198,11 +175,6 @@ namespace slag
         const GraphicsCardCapabilities& DX12GraphicsCard::capabilities() const
         {
             return _capabilities;
-        }
-
-        const DescriptorTableDetails& DX12GraphicsCard::descriptorTableDetails() const
-        {
-            return _descriptorTableDetails;
         }
 
         const DescriptorHeapDetails& DX12GraphicsCard::descriptorHeapDetails() const
@@ -493,7 +465,6 @@ namespace slag
             _memoryProperties = from._memoryProperties;
             _capabilities = from._capabilities;
             _device = from._device;
-            _descriptorTableDetails = from._descriptorTableDetails;
             _descriptorHeapDetails = from._descriptorHeapDetails;
             _dxgiFactory = from._dxgiFactory;
             _dxgiAdapter4 = from._dxgiAdapter4;

@@ -142,28 +142,9 @@ namespace slag
             _capabilities.defragmentable = true;
             _capabilities.raytracing =  rtProps.shaderGroupHandleSize > 0;
 
-            //Establish Descriptor table details
-            _descriptorTableDetails.resourceTableAlignment=dhProps.resourceHeapAlignment;
-            _descriptorTableDetails.samplerTableAlignment=dhProps.samplerHeapAlignment;
-
-            _descriptorTableDetails.samplerDescriptorSize=dhProps.samplerDescriptorSize;
-            _descriptorTableDetails.samplerDescriptorAlignment=dhProps.samplerDescriptorAlignment;
-            _descriptorTableDetails.sampledTextureSize=dhProps.imageDescriptorSize;
-            _descriptorTableDetails.sampledTextureAlignment=dhProps.imageDescriptorAlignment;
-            _descriptorTableDetails.unorderedAccessTextureSize=dhProps.imageDescriptorSize;
-            _descriptorTableDetails.unorderedAccessTextureAlignment=dhProps.imageDescriptorAlignment;
-            _descriptorTableDetails.uniformBufferSize=dhProps.bufferDescriptorSize;
-            _descriptorTableDetails.uniformBufferAlignment=dhProps.bufferDescriptorAlignment;
-            _descriptorTableDetails.unorderedAccessBufferSize=dhProps.bufferDescriptorSize;
-            _descriptorTableDetails.unorderedAccessBufferAlignment=dhProps.bufferDescriptorAlignment;
-            _descriptorTableDetails.uniformTexelBufferSize=dhProps.imageDescriptorAlignment;
-            _descriptorTableDetails.uniformTexelBufferAlignment=dhProps.imageDescriptorSize;
-            _descriptorTableDetails.unorderedAccessTexelBufferSize=dhProps.imageDescriptorAlignment;
-            _descriptorTableDetails.unorderedAccessTexelBufferAlignment=dhProps.imageDescriptorSize;
-            _descriptorTableDetails.accelerationStructureSize=dhProps.bufferDescriptorSize;
-            _descriptorTableDetails.accelerationStructureAlignment=dhProps.bufferDescriptorAlignment;
-
             //establish descriptor heap details
+            _descriptorHeapDetails.resourceDescriptorIncrementSize = dhProps.samplerDescriptorSize;
+            _descriptorHeapDetails.samplerDescriptorIncrementSize = dhProps.samplerDescriptorSize;
             _descriptorHeapDetails.maxResourceDescriptorHeapSize=dhProps.maxResourceHeapSize-dhProps.minResourceHeapReservedRange;
             _descriptorHeapDetails.maxSamplerDescriptorHeapSize=dhProps.maxSamplerHeapSize-dhProps.minSamplerHeapReservedRange;
             _descriptorHeapDetails.resourceReservedRangeSize=dhProps.minResourceHeapReservedRange;
@@ -224,11 +205,6 @@ namespace slag
         const GraphicsCardCapabilities& VulkanGraphicsCard::capabilities() const
         {
             return _capabilities;
-        }
-
-        const DescriptorTableDetails& VulkanGraphicsCard::descriptorTableDetails() const
-        {
-            return _descriptorTableDetails;
         }
 
         const DescriptorHeapDetails& VulkanGraphicsCard::descriptorHeapDetails() const
@@ -551,7 +527,6 @@ namespace slag
             _name.swap(from._name);
             _memoryProperties = from._memoryProperties;
             _capabilities = from._capabilities;
-            _descriptorTableDetails = from._descriptorTableDetails;
             _descriptorHeapDetails = from._descriptorHeapDetails;
             std::swap(_physicalDevice,from._physicalDevice);
             std::swap(_device,from._device);

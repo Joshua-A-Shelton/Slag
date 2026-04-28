@@ -23,7 +23,6 @@ namespace slag
             [[nodiscard]] std::string name()const override;
             [[nodiscard]] const GraphicsCardMemoryProperties& memoryProperties()const override;
             [[nodiscard]] const GraphicsCardCapabilities& capabilities()const override;
-            [[nodiscard]] const DescriptorTableDetails& descriptorTableDetails()const override;
             [[nodiscard]] const DescriptorHeapDetails& descriptorHeapDetails()const override;
             [[nodiscard]] PixelFormatProperties formatProperties(PixelFormat format)const override;
             [[nodiscard]] SubmissionQueue* graphicsQueue()override;
@@ -123,7 +122,6 @@ namespace slag
             std::string _name;
             GraphicsCardMemoryProperties _memoryProperties{};
             GraphicsCardCapabilities _capabilities{};
-            DescriptorTableDetails _descriptorTableDetails{};
             DescriptorHeapDetails _descriptorHeapDetails{};
             VkPhysicalDevice _physicalDevice=nullptr;
             VkDevice _device=nullptr;

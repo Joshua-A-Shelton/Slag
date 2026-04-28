@@ -170,7 +170,18 @@ namespace slag
                                     .resourceMask = VK_SPIRV_RESOURCE_TYPE_ALL_EXT,
                                     .source = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_PUSH_INDEX_EXT,
                                 };
-                                rangeInput.sourceData.pushIndex.heapOffset = curRange.offsetInDescriptorsFromTableStart * _graphicsCard->descriptorTableDetails().sampledTextureSize;
+                                switch (curRange.type)
+                                {
+                                case DescriptorRangeType::UNIFORM_BUFFER:
+                                case DescriptorRangeType::READONLY_RESOURCE:
+                                case DescriptorRangeType::UNORDERED_ACCESS_RESOURCE:
+                                    rangeInput.sourceData.pushIndex.heapOffset = curRange.offsetInDescriptorsFromTableStart * _graphicsCard->descriptorHeapDetails().resourceDescriptorIncrementSize;
+                                    break;
+                                case DescriptorRangeType::SAMPLER:
+                                    rangeInput.sourceData.pushIndex.heapOffset = curRange.offsetInDescriptorsFromTableStart * _graphicsCard->descriptorHeapDetails().samplerDescriptorIncrementSize;
+                                    break;
+                                }
+
                                 rangeInput.sourceData.pushIndex.heapIndexStride = 1;
                                 rangeInput.sourceData.pushIndex.pushOffset = binding.location();
                                 bindingMappings.push_back(rangeInput);

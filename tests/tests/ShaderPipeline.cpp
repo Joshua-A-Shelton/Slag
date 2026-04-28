@@ -83,24 +83,24 @@ TEST(ShaderPipeline, Sandbox)
     auto texture = utilities::loadTexture("resources\\tests\\textures\\gradient.jpg",card);
 
 
-    auto resourceHeap = std::unique_ptr<DescriptorHeap>(card->newDescriptorHeap(DescriptorHeapType::RESOURCE,card->descriptorTableDetails().sampledTextureSize*500));
-    auto samplerHeap = std::unique_ptr<DescriptorHeap>(card->newDescriptorHeap(DescriptorHeapType::SAMPLER,card->descriptorTableDetails().samplerDescriptorSize*200));
+    auto resourceHeap = std::unique_ptr<DescriptorHeap>(card->newDescriptorHeap(DescriptorHeapType::RESOURCE,card->descriptorHeapDetails().resourceDescriptorIncrementSize*500));
+    auto samplerHeap = std::unique_ptr<DescriptorHeap>(card->newDescriptorHeap(DescriptorHeapType::SAMPLER,card->descriptorHeapDetails().samplerDescriptorIncrementSize*200));
     uint32_t resourceHeapOffset = 0;
     uint32_t samplerHeapOffset = 0;
 
     auto table0Offset = resourceHeapOffset;
     resourceHeap->writeUniformBufferDescriptor(resourceHeapOffset,globals.get(),0,globals->size());
-    resourceHeapOffset += card->descriptorTableDetails().sampledTextureSize;
+    resourceHeapOffset += card->descriptorHeapDetails().resourceDescriptorIncrementSize;
 
     auto table1Offset = samplerHeapOffset;
     samplerHeap->writeSamplerDescriptor(samplerHeapOffset,sampler.get());
-    samplerHeapOffset += card->descriptorTableDetails().samplerDescriptorSize;
+    samplerHeapOffset += card->descriptorHeapDetails().samplerDescriptorIncrementSize;
 
     auto table2Offset = resourceHeapOffset;
     resourceHeap->writeUniformBufferDescriptor(resourceHeapOffset,transform.get(),0,transform->size());
-    resourceHeapOffset += card->descriptorTableDetails().sampledTextureSize;
+    resourceHeapOffset += card->descriptorHeapDetails().resourceDescriptorIncrementSize;
     resourceHeap->writeSampledTextureDescriptor(resourceHeapOffset,texture.get());
-    resourceHeapOffset += card->descriptorTableDetails().sampledTextureSize;
+    resourceHeapOffset += card->descriptorHeapDetails().resourceDescriptorIncrementSize;
 
 
     commandBuffer->begin();

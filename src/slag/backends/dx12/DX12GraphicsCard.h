@@ -28,7 +28,6 @@ namespace slag
             [[nodiscard]] std::string name()const override;
             [[nodiscard]] const GraphicsCardMemoryProperties& memoryProperties()const override;
             [[nodiscard]] const GraphicsCardCapabilities& capabilities()const override;
-            [[nodiscard]] const DescriptorTableDetails& descriptorTableDetails()const override;
             [[nodiscard]] const DescriptorHeapDetails& descriptorHeapDetails()const override;
             [[nodiscard]] PixelFormatProperties formatProperties(PixelFormat format)const override;
             [[nodiscard]] SubmissionQueue* graphicsQueue()override;
@@ -113,7 +112,6 @@ namespace slag
             void move(DX12GraphicsCard& from);
             GraphicsCardMemoryProperties _memoryProperties{};
             GraphicsCardCapabilities _capabilities{};
-            DescriptorTableDetails _descriptorTableDetails{};
             DescriptorHeapDetails _descriptorHeapDetails{};
             Microsoft::WRL::ComPtr<ID3D12Device2> _device = nullptr;
             Microsoft::WRL::ComPtr<IDXGIFactory4> _dxgiFactory = nullptr;
