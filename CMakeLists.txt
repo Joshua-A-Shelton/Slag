@@ -71,6 +71,10 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/backends/vulkan/VulkanShaderModule.h
             src/slag/backends/vulkan/VulkanShaderPipeline.cpp
             src/slag/backends/vulkan/VulkanShaderPipeline.h
+            src/slag/backends/vulkan/VulkanSampler.cpp
+            src/slag/backends/vulkan/VulkanSampler.h
+            src/slag/backends/vulkan/VulkanDescriptorHeap.cpp
+            src/slag/backends/vulkan/VulkanDescriptorHeap.h
     )
 endif()
 if(SLAG_DX12_BACKEND)
@@ -139,7 +143,6 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/PixelFormatProperties.h
         src/slag/core/Defragmentation.h
         src/slag/core/Barriers.h
-        src/slag/core/ShaderPipeline.cpp
         src/slag/core/ShaderPipeline.h
         src/slag/core/ShaderModule.cpp
         src/slag/core/ShaderModule.h
@@ -154,8 +157,13 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/VertexDescription.h
         src/slag/exceptions/InvalidShaderVertexBindingError.h
         src/slag/exceptions/IncompatibleShaderBindGroupsError.h
-        src/slag/core/PipelineBinding.cpp
-        src/slag/core/PipelineBinding.h
+        src/slag/core/PipelineInputMapping.cpp
+        src/slag/core/PipelineInputMapping.h
+        src/slag/core/Clear.h
+        src/slag/core/Attachment.h
+        src/slag/core/DescriptorHeap.h
+        src/slag/core/Sampler.h
+        src/slag/exceptions/PipelineInputMappingSizeExceeded.h
 
 
 )
@@ -321,10 +329,12 @@ if(SLAG_BUILD_TESTS)
             tests/utilities/PlatformUtilities.cpp
             tests/utilities/PlatformUtilities.h
             tests/tests/ShaderPipeline.cpp
+            tests/utilities/SlagUtilities.cpp
+            tests/utilities/SlagUtilities.h
     )
 
     target_link_libraries(SlagTests GTest::gtest SDL3::SDL3 glm::glm slag::Slag)
-
+    target_include_directories(SlagTests PRIVATE ${stb_image_SOURCE_DIR})
 
     add_custom_command(
             TARGET SlagTests

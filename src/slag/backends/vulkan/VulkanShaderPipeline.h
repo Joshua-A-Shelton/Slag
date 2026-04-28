@@ -16,6 +16,7 @@ namespace slag
                 const VertexDescription& vertexDescription,
                 ShaderModule* vertexShader,
                 ShaderModule* fragmentShader,
+                PipelineInputMapping* inputBindings,
                 const PipelineState& pipelineState,
                 const FramebufferDescription& framebufferDescription);
             ~VulkanShaderPipeline()override;
@@ -26,15 +27,15 @@ namespace slag
 
             ShaderPipelineType type()override;
             GraphicsCard* graphicsCard()override;
-            uint32_t parameterTableCount()override;
-            const ShaderParameterTable& parameterTable(uint32_t index)override;
+            const PipelineInputMapping& bindings()override;
+            VkPipeline vulkanHandle() const;
         private:
             static void initNativeRasterizationInfo(const RasterizationState& slagRasterizationState, VkPipelineRasterizationStateCreateInfo* outRasterizationStateInfo);
             static void initMultisampleInfo(const MultiSampleState& multiSampleState, VkPipelineMultisampleStateCreateInfo* outMultisampleStateInfo);
             static std::vector<VkPipelineColorBlendAttachmentState> initColorAttachmentInfo(const BlendState& slagBlendState, const FramebufferDescription& frameBufferDescription, VkPipelineColorBlendStateCreateInfo* outPipelineColorBlendStateInfo);
             static void initDepthAttachmentInfo(const DepthStencilState& slagDepthStencilState, VkPipelineDepthStencilStateCreateInfo* outDepthStencilStateInfo);
             void move(VulkanShaderPipeline& from);
-            std::vector<ShaderParameterTable> _parameterTables;
+            PipelineInputMapping _bindings = PipelineInputMapping(std::vector<PipelineInput>());
             VulkanGraphicsCard* _graphicsCard = nullptr;
             VkPipeline _pipeline = nullptr;
             ShaderPipelineType _type = ShaderPipelineType::GRAPHICS;

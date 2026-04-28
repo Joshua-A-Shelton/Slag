@@ -1,10 +1,11 @@
 #ifndef SLAG_BUFFER_H
 #define SLAG_BUFFER_H
 #include <cstdint>
-
+#include "Pixels.h"
 namespace slag
 {
     class GraphicsCard;
+    class Sampler;
 
     ///Indicates what memory caching will be used in shaders
     enum class BufferMemoryType

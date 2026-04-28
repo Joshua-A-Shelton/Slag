@@ -5,8 +5,11 @@
 #include "Buffer.h"
 #include "CommandBuffer.h"
 #include "Defragmentation.h"
+#include "DescriptorHeap.h"
+#include "PipelineInputMapping.h"
 #include "PixelFormatProperties.h"
 #include "Pixels.h"
+#include "Sampler.h"
 #include "SubmissionQueue.h"
 #include "Texture.h"
 #include "ShaderModule.h"
@@ -54,6 +57,18 @@ namespace slag
         uint32_t accelerationStructureSize=0;
         uint32_t accelerationStructureAlignment=0;
     };
+
+    struct DescriptorHeapDetails
+    {
+        ///Maximum size in bytes a of a descriptor heap
+        uint32_t maxResourceDescriptorHeapSize=0;
+        ///Maximum size in bytes of a sampler descriptor heap
+        uint32_t maxSamplerDescriptorHeapSize=0;
+        ///Back end reservation of memory for implementation of certain api features. Is seperate from maxResourceDescriptorHeapSize
+        uint32_t resourceReservedRangeSize=0;
+        ///Back end reservation of memory for implementation of certain api features. Is seperate from maxSamplerDescriptorHeapSize
+        uint32_t samplerReservedRangeSize=0;
+    };
     ///Hardware used for performing parallel computing. May or may not actually be a dedicated "Graphics Card" per se, but does support large scale parallel computation functionality
     class GraphicsCard
     {
@@ -69,6 +84,8 @@ namespace slag
         [[nodiscard]] virtual const GraphicsCardCapabilities& capabilities()const=0;
         ///Offsets and alignments required for descriptor tables
         [[nodiscard]] virtual const DescriptorTableDetails& descriptorTableDetails()const=0;
+        ///Limitations on descriptor heaps
+        [[nodiscard]] virtual const DescriptorHeapDetails& descriptorHeapDetails()const=0;
         /**
          * Checks if the graphics card supports a given format
          * @param format Format to see if is supported
@@ -106,6 +123,7 @@ namespace slag
             const VertexDescription& vertexDescription,
             ShaderModule* vertexShader,
             ShaderModule* fragmentShader,
+            PipelineInputMapping* inputBindings,
             const PipelineState& pipelineState,
             const FramebufferDescription& framebufferDescription)=0;
 
@@ -140,6 +158,14 @@ namespace slag
             uint64_t size,
             BufferCPUAccess cpuAccess = BufferCPUAccess::NONE,
             BufferMemoryType shaderAccess = BufferMemoryType::GENERAL)=0;
+
+        /**
+         * Allocate a new descriptor heap
+         * @param type which kind of descriptors this will hold
+         * @param size number of bytes in the heap
+         * @return
+         */
+        [[nodiscard]] virtual DescriptorHeap* newDescriptorHeap(DescriptorHeapType type, uint32_t size)=0;
 
         //Textures
 
@@ -217,6 +243,22 @@ namespace slag
             uint32_t mipLevels = 1,
             uint32_t arrayDepth = 1
             )=0;
+
+        [[nodiscard]] virtual Sampler* newSampler(
+                SamplerFilter min = SamplerFilter::NEAREST,
+                SamplerFilter mag = SamplerFilter::NEAREST,
+                SamplerFilter mip = SamplerFilter::NEAREST,
+                SamplerAddressMode u = SamplerAddressMode::REPEAT,
+                SamplerAddressMode v = SamplerAddressMode::REPEAT,
+                SamplerAddressMode w = SamplerAddressMode::REPEAT,
+                float mipLODBias = 0,
+                bool anisotrophyEnabled = false,
+                uint8_t  maxAnisotrophy = 0,
+                ComparisonFunction comparisonFunction = ComparisonFunction::NEVER,
+                Color borderColor = Color(0.0f, 0.0f, 0.0f),
+                float minLOD = 0,
+                float maxLOD = 1000
+                )=0;
     };
 } // slag
 

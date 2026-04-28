@@ -29,6 +29,7 @@ namespace slag
             [[nodiscard]] const GraphicsCardMemoryProperties& memoryProperties()const override;
             [[nodiscard]] const GraphicsCardCapabilities& capabilities()const override;
             [[nodiscard]] const DescriptorTableDetails& descriptorTableDetails()const override;
+            [[nodiscard]] const DescriptorHeapDetails& descriptorHeapDetails()const override;
             [[nodiscard]] PixelFormatProperties formatProperties(PixelFormat format)const override;
             [[nodiscard]] SubmissionQueue* graphicsQueue()override;
             [[nodiscard]] SubmissionQueue* computeQueue()override;
@@ -40,6 +41,7 @@ namespace slag
                 const VertexDescription& vertexDescription,
                 ShaderModule* vertexShader,
                 ShaderModule* fragmentShader,
+                PipelineInputMapping* inputBindings,
                 const PipelineState& pipelineState,
                 const FramebufferDescription& framebufferDescription)override;
             //Command Buffers
@@ -51,6 +53,9 @@ namespace slag
                 uint64_t size,
                 BufferCPUAccess cpuAccess,
                 BufferMemoryType memoryType)override;
+
+            DescriptorHeap* newDescriptorHeap(DescriptorHeapType type, uint32_t size)override;
+
             //Textures
             [[nodiscard]] Texture* newTexture1D(
             uint32_t width,
@@ -84,6 +89,22 @@ namespace slag
                 uint32_t arrayDepth
                 )override;
 
+            [[nodiscard]] Sampler* newSampler(
+                SamplerFilter min,
+                SamplerFilter mag,
+                SamplerFilter mip,
+                SamplerAddressMode u,
+                SamplerAddressMode v,
+                SamplerAddressMode w,
+                float mipLODBias,
+                bool anisotrophyEnabled,
+                uint8_t  maxAnisotrophy,
+                ComparisonFunction comparisonFunction,
+                Color borderColor,
+                float minLOD,
+                float maxLOD
+                )override;
+
             //DX12 specific features
             [[nodiscard]] D3D12MA::Allocator* allocator() const;
             [[nodiscard]] D3D12MA::Pool* cpuReadablePool() const;
@@ -93,6 +114,7 @@ namespace slag
             GraphicsCardMemoryProperties _memoryProperties{};
             GraphicsCardCapabilities _capabilities{};
             DescriptorTableDetails _descriptorTableDetails{};
+            DescriptorHeapDetails _descriptorHeapDetails{};
             Microsoft::WRL::ComPtr<ID3D12Device2> _device = nullptr;
             Microsoft::WRL::ComPtr<IDXGIFactory4> _dxgiFactory = nullptr;
             Microsoft::WRL::ComPtr<IDXGIAdapter4> _dxgiAdapter4 = nullptr;

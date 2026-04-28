@@ -1,8 +1,12 @@
 #include "IVulkanCommandBuffer.h"
 
+#include <bit>
+
 #include "VulkanBackend.h"
 #include "VulkanBuffer.h"
+#include "VulkanDescriptorHeap.h"
 #include "VulkanGraphicsCard.h"
+#include "VulkanShaderPipeline.h"
 #include "VulkanTexture.h"
 #include "slag/exceptions/NotImplemented.h"
 #include "slag/utilities/SLAG_ASSERT.h"
@@ -38,6 +42,10 @@ namespace slag
         void IVulkanCommandBuffer::end()
         {
             vkEndCommandBuffer(_commandBuffer);
+#ifdef SLAG_DEBUG
+            _setViewport = false;
+            _setScissor = false;
+#endif
         }
 
         void IVulkanCommandBuffer::insertBarriers(GlobalBarrier* barriers, uint32_t barrierCount)
@@ -180,6 +188,51 @@ namespace slag
             vkCmdPipelineBarrier2(_commandBuffer,&dependencyInfo);
         }
 
+        void IVulkanCommandBuffer::bindDescriptorHeaps(DescriptorHeap* resourceHeap, DescriptorHeap* samplerHeap)
+        {
+            if (resourceHeap)
+            {
+                auto rHeap = static_cast<VulkanDescriptorHeap*>(resourceHeap);
+                SLAG_ASSERT(rHeap->type() == DescriptorHeapType::RESOURCE);
+                VkBindHeapInfoEXT bindHeapInfo
+                {
+                    .sType = VK_STRUCTURE_TYPE_BIND_HEAP_INFO_EXT,
+                    .pNext = nullptr,
+                    .heapRange = {.address = rHeap->deviceAddress(), .size = rHeap->size() + rHeap->reserved()},
+                    .reservedRangeOffset = rHeap->size(),
+                    .reservedRangeSize = rHeap->reserved()
+                };
+                _graphicsCard->vkCmdBindResourceHeap(_commandBuffer,&bindHeapInfo);
+            }
+            if (samplerHeap)
+            {
+                auto sHeap = static_cast<VulkanDescriptorHeap*>(samplerHeap);
+                SLAG_ASSERT(sHeap->type() == DescriptorHeapType::SAMPLER);
+                VkBindHeapInfoEXT bindHeapInfo
+               {
+                   .sType = VK_STRUCTURE_TYPE_BIND_HEAP_INFO_EXT,
+                   .pNext = nullptr,
+                   .heapRange = {.address = sHeap->deviceAddress(), .size = sHeap->size() + sHeap->reserved()},
+                   .reservedRangeOffset = sHeap->size(),
+                   .reservedRangeSize = sHeap->reserved()
+               };
+                _graphicsCard->vkCmdBindSamplerHeap(_commandBuffer,&bindHeapInfo);
+            }
+        }
+
+        void IVulkanCommandBuffer::setInputBindingTable(uint32_t byteOffset, uint32_t heapOffset)
+        {
+            VkPushDataInfoEXT pushDataInfo
+            {
+                .sType = VK_STRUCTURE_TYPE_PUSH_DATA_INFO_EXT,
+                .pNext = nullptr,
+                .offset = byteOffset,
+                .data = {.address = &heapOffset,.size = sizeof(heapOffset)}
+            };
+            _graphicsCard->vkCmdPushData(_commandBuffer,&pushDataInfo);
+        }
+
+
         void IVulkanCommandBuffer::copyBufferToBuffer(
             Buffer* source,
             uint64_t sourceOffset,
@@ -271,6 +324,151 @@ namespace slag
             }
 
             vkCmdCopyBufferToImage(_commandBuffer,buffer->vulkanHandle(),image->vulkanHandle(),VK_IMAGE_LAYOUT_GENERAL,mappingCount,regions.data());
+        }
+
+        void IVulkanCommandBuffer::bindGraphicsPipeline(ShaderPipeline* pipeline)
+        {
+            auto vulkanPipeline = static_cast<VulkanShaderPipeline*>(pipeline);
+            vkCmdBindPipeline(_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanPipeline->vulkanHandle());
+        }
+
+        void IVulkanCommandBuffer::beginRendering(Attachment* colorAttachments, uint32_t colorAttachmentCount,
+            Attachment* depthAttachment, const Rectangle& bounds)
+        {
+            std::vector<VkRenderingAttachmentInfo> descriptions(colorAttachmentCount);
+            for(auto i=0; i< colorAttachmentCount; i++)
+            {
+
+                auto attachment = colorAttachments[i];
+                auto colorTexture = static_cast<VulkanTexture*>(attachment.texture);
+                SLAG_ASSERT(colorTexture != nullptr && "color texture cannot be null");
+                SLAG_ASSERT((bool)(colorTexture->usage() & TextureUsageFlags::COLOR_TARGET) && "Color attachment without Texture::UsageFlags::RENDER_TARGET_ATTACHMENT provided");
+                descriptions[i]=VkRenderingAttachmentInfo
+                {
+                    .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
+                    .imageView = colorTexture->vulkanView(),
+                    .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
+                    .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+                    .clearValue = std::bit_cast<VkClearValue>(attachment.clearValue)
+                };
+                if(attachment.autoClear)
+                {
+                    descriptions[i].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+                }
+                else
+                {
+                    descriptions[i].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+                }
+            }
+            VkRenderingAttachmentInfo depth{};
+            bool hasStencil = false;
+            if(depthAttachment)
+            {
+                auto depthTex = static_cast<VulkanTexture*>(depthAttachment->texture);
+                depth.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+                depth.imageView = depthTex->vulkanView();
+                depth.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+                depth.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+                depth.clearValue = std::bit_cast<VkClearValue>(depthAttachment->clearValue);
+                if(depthAttachment->autoClear)
+                {
+                    depth.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+                }
+                else
+                {
+                    depth.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+                }
+                if(static_cast<bool>(Pixel::aspectFlags(depthAttachment->texture->format()) & PixelAspectFlags::STENCIL_FLAG))
+                {
+                    hasStencil = true;
+                }
+            }
+            VkRenderingInfoKHR render_info
+            {
+                .sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+                .renderArea = {{bounds.offset.x,bounds.offset.y},{bounds.extent.width,bounds.extent.height}},
+                .layerCount = 1,
+                .colorAttachmentCount = colorAttachmentCount,
+                .pColorAttachments = descriptions.data(),
+                .pDepthAttachment = depthAttachment == nullptr? nullptr : &depth,
+                .pStencilAttachment = hasStencil ? &depth : nullptr
+            };
+            vkCmdBeginRendering(_commandBuffer,&render_info);
+#ifdef SLAG_DEBUG
+            _inRenderPass = true;
+#endif
+
+        }
+
+        void IVulkanCommandBuffer::endRendering()
+        {
+            vkCmdEndRendering(_commandBuffer);
+#ifdef SLAG_DEBUG
+            _inRenderPass = false;
+#endif
+        }
+
+        void IVulkanCommandBuffer::setViewPort(float x, float y, float width, float height, float minDepth,float maxDepth)
+        {
+            VkViewport viewport{};
+            viewport.x = x;
+            viewport.y = height+y;
+            viewport.width = width;
+            viewport.height = -height;
+            viewport.minDepth = minDepth;
+            viewport.maxDepth = maxDepth;
+
+            vkCmdSetViewport(_commandBuffer,0,1,&viewport);
+#if SLAG_DEBUG
+            _setViewport = true;
+#endif
+        }
+
+        void IVulkanCommandBuffer::setScissors(const Rectangle& rect)
+        {
+            VkRect2D rectangle{.offset{rect.offset.x,rect.offset.y},.extent{rect.extent.width,rect.extent.height}};
+            vkCmdSetScissor(_commandBuffer,0,1,&rectangle);
+#if SLAG_DEBUG
+            _setScissor = true;
+#endif
+        }
+
+        void IVulkanCommandBuffer::bindIndexBuffer(Buffer* buffer, IndexBufferType indexType, uint64_t offset)
+        {
+            auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
+            vkCmdBindIndexBuffer(_commandBuffer,vulkanBuffer->vulkanHandle(),offset, indexType == IndexBufferType::UINT_16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
+        }
+
+        void IVulkanCommandBuffer::bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, uint64_t* bufferOffsets, uint64_t* strides, uint32_t bufferCount)
+        {
+            std::vector<VkBuffer> vulkanBuffers(bufferCount);
+            for (auto i = 0; i < bufferCount; i++)
+            {
+                vulkanBuffers[i] = static_cast<VulkanBuffer*>(buffers[i])->vulkanHandle();
+            }
+            vkCmdBindVertexBuffers2(_commandBuffer, firstBinding,bufferCount,vulkanBuffers.data(),bufferOffsets,nullptr,strides);
+        }
+
+        void IVulkanCommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
+                                        uint32_t firstInstance)
+        {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+            SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
+#endif
+            vkCmdDraw(_commandBuffer,vertexCount,instanceCount,firstVertex,firstInstance);
+        }
+
+        void IVulkanCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
+            int32_t vertexOffset, uint32_t firstInstance)
+        {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+            SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
+#endif
+            vkCmdDrawIndexed(_commandBuffer,indexCount,instanceCount,firstIndex,vertexOffset,firstInstance);
         }
 
         VkCommandBuffer IVulkanCommandBuffer::vulkanHandle() const

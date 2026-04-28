@@ -4,9 +4,13 @@
 
 #include "SubmissionQueue.h"
 #include "Barriers.h"
+#include "Dimensions.h"
 
 namespace slag
 {
+    class Attachment;
+    class DescriptorHeap;
+    class ShaderPipeline;
     class Buffer;
     class Texture;
     class TextureBufferMapping;
@@ -99,6 +103,14 @@ namespace slag
             uint32_t textureBarrierCount
             )=0;
         /**
+         * Binds sections of memory shaders can pull descriptors from
+         * @param resourceHeap Heap that holds the resource descriptors
+         * @param samplerHeap Heap that holds the sampler descriptors
+         */
+        virtual void bindDescriptorHeaps(DescriptorHeap* resourceHeap, DescriptorHeap* samplerHeap)=0;
+
+        virtual void setInputBindingTable(uint32_t byteOffset, uint32_t heapOffset)=0;
+        /**
          * [TRANSFER | MemoryCaches::COPY_READ, MemoryCaches::COPY_WRITE] Copy data from one buffer to another
          * @param source Buffer to copy from
          * @param sourceOffset Byte offset to start the copy from
@@ -123,6 +135,70 @@ namespace slag
          * @param mappingCount Number of items in copyData array
          */
         virtual void copyBufferToTexture(Buffer* source, Texture* destination, TextureBufferMapping* copyData, uint32_t mappingCount)=0;
+        /**
+         * [GRAPHICS] Set a graphics pipeline as current
+         * @param pipeline The pipeline to set as active
+         */
+        virtual void bindGraphicsPipeline(ShaderPipeline* pipeline)=0;
+        /**
+         * Start a renderpass with the given render targets
+         * @param colorAttachments Color attachments that shaders will render to in this pa
+         * @param colorAttachmentCount Number of Color Attachments
+         * @param depthAttachment Depth attachment that shaders will use as depth target in render pass (or nullptr if no depth attachment is needed)
+         * @param bounds Area that is affected in render pass
+         */
+        virtual void beginRendering(Attachment* colorAttachments, uint32_t colorAttachmentCount,Attachment* depthAttachment, const Rectangle& bounds)=0;
+        ///End renderpass
+        virtual void endRendering()=0;
+        /**
+        * Sets the drawing area relative to the window, final image will be drawn scaled to the drawing area
+        * @param x Pixels away from the left of window to draw
+        * @param y Pixels away from the top of the window to draw
+        * @param width width in pixels of drawing area
+        * @param height height in pixels of drawing area
+        * @param minDepth minimum depth of drawn pixels
+        * @param maxDepth maximum depth of drawn pixels
+        */
+        virtual void setViewPort(float x, float y, float width, float height, float minDepth, float maxDepth)=0;
+        /**
+         * Sets the drawing area relative to the window, final image will be clipped to the drawing area
+         * @param rectangle
+         */
+        virtual void setScissors(const Rectangle& rect)=0;
+        /**
+         * Bind a buffer that contains drawing indices
+         * @param buffer Buffer containing index data
+         * @param indexType If the data in the index buffer is uint16 or uint32
+         * @param offset Byte offset into buffer index data begins
+         */
+        virtual void bindIndexBuffer(Buffer* buffer, IndexBufferType indexType, uint64_t offset)=0;
+        /**
+         * Bind buffers that contain vertex data
+         * @param firstBinding First binding index of the buffers to update
+         * @param buffers Buffers to assign as vertex data
+         * @param bufferOffsets Offsets into each buffer to start pulling vertex data
+         * @param strides Strides of vertex attributes in each vertex buffer
+         * @param bufferCount Number of buffers to bind
+         */
+        virtual void bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, uint64_t* bufferOffsets, uint64_t* strides, uint32_t bufferCount)=0;
+        /**
+         * Draw geometry with currently bound vertex buffers and bound shader
+         * @param vertexCount Number of vertices per instance
+         * @param instanceCount Number of instances
+         * @param firstVertex Offset into bound vertex buffer to start drawing from
+         * @param firstInstance First instance ID (used in shaders)
+         */
+        virtual void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)=0;
+        /**
+         * Draw geometry with currently bound vertex buffers, index buffer, and bound shader
+         * @param indexCount Number of indexes per instance
+         * @param instanceCount Number of instances
+         * @param firstIndex Offset into bound buffer to start drawing from
+         * @param vertexOffset Offset into bound vertex buffer to start drawing from
+         * @param firstInstance First instance ID (used in shaders)
+         */
+        virtual void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance)=0;
+
     };
 } // slag
 

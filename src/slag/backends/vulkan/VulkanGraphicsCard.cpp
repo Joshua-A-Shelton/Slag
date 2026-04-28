@@ -3,6 +3,8 @@
 #include "VulkanBackend.h"
 #include "VulkanBuffer.h"
 #include "VulkanCommandBuffer.h"
+#include "VulkanDescriptorHeap.h"
+#include "VulkanSampler.h"
 #include "VulkanSemaphore.h"
 #include "VulkanShaderModule.h"
 #include "VulkanShaderPipeline.h"
@@ -161,6 +163,22 @@ namespace slag
             _descriptorTableDetails.accelerationStructureSize=dhProps.bufferDescriptorSize;
             _descriptorTableDetails.accelerationStructureAlignment=dhProps.bufferDescriptorAlignment;
 
+            //establish descriptor heap details
+            _descriptorHeapDetails.maxResourceDescriptorHeapSize=dhProps.maxResourceHeapSize-dhProps.minResourceHeapReservedRange;
+            _descriptorHeapDetails.maxSamplerDescriptorHeapSize=dhProps.maxSamplerHeapSize-dhProps.minSamplerHeapReservedRange;
+            _descriptorHeapDetails.resourceReservedRangeSize=dhProps.minResourceHeapReservedRange;
+            _descriptorHeapDetails.samplerReservedRangeSize=dhProps.minSamplerHeapReservedRange;
+
+
+            //load extension methods
+            vkCmdBindSamplerHeap=reinterpret_cast<PFN_vkCmdBindSamplerHeapEXT>(vkGetDeviceProcAddr(_device,"vkCmdBindSamplerHeapEXT"));
+            vkCmdBindResourceHeap=reinterpret_cast<PFN_vkCmdBindResourceHeapEXT>(vkGetDeviceProcAddr(_device,"vkCmdBindResourceHeapEXT"));
+            vkWriteSamplerDescriptors=reinterpret_cast<PFN_vkWriteSamplerDescriptorsEXT>(vkGetDeviceProcAddr(_device,"vkWriteSamplerDescriptorsEXT"));
+            vkWriteResourceDescriptors=reinterpret_cast<PFN_vkWriteResourceDescriptorsEXT>(vkGetDeviceProcAddr(_device,"vkWriteResourceDescriptorsEXT"));
+            vkRegisterCustomBorderColor=reinterpret_cast<PFN_vkRegisterCustomBorderColorEXT>(vkGetDeviceProcAddr(_device,"vkRegisterCustomBorderColorEXT"));
+            vkUnregisterCustomBorderColor=reinterpret_cast<PFN_vkUnregisterCustomBorderColorEXT>(vkGetDeviceProcAddr(_device,"vkUnregisterCustomBorderColorEXT"));
+            vkCmdPushData=reinterpret_cast<PFN_vkCmdPushDataEXT>(vkGetDeviceProcAddr(_device,"vkCmdPushDataEXT"));
+
         }
 
         VulkanGraphicsCard::~VulkanGraphicsCard()
@@ -182,12 +200,12 @@ namespace slag
             }
         }
 
-        VulkanGraphicsCard::VulkanGraphicsCard(VulkanGraphicsCard&& from)
+        VulkanGraphicsCard::VulkanGraphicsCard(VulkanGraphicsCard&& from) noexcept
         {
             move(from);
         }
 
-        VulkanGraphicsCard& VulkanGraphicsCard::operator=(VulkanGraphicsCard&& from)
+        VulkanGraphicsCard& VulkanGraphicsCard::operator=(VulkanGraphicsCard&& from)noexcept
         {
             move(from);
             return *this;
@@ -211,6 +229,11 @@ namespace slag
         const DescriptorTableDetails& VulkanGraphicsCard::descriptorTableDetails() const
         {
             return _descriptorTableDetails;
+        }
+
+        const DescriptorHeapDetails& VulkanGraphicsCard::descriptorHeapDetails() const
+        {
+            return _descriptorHeapDetails;
         }
 
         PixelFormatProperties VulkanGraphicsCard::formatProperties(PixelFormat format) const
@@ -452,10 +475,11 @@ namespace slag
             const VertexDescription& vertexDescription,
             ShaderModule* vertexShader,
             ShaderModule* fragmentShader,
+            PipelineInputMapping* inputBindings,
             const PipelineState& pipelineState,
             const FramebufferDescription& framebufferDescription)
         {
-            return new VulkanShaderPipeline(this,vertexDescription,vertexShader,fragmentShader,pipelineState,framebufferDescription);
+            return new VulkanShaderPipeline(this,vertexDescription,vertexShader,fragmentShader,inputBindings,pipelineState,framebufferDescription);
         }
 
         CommandBuffer* VulkanGraphicsCard::newCommandBuffer(QueueType type)
@@ -474,6 +498,11 @@ namespace slag
             BufferMemoryType memoryType)
         {
             return new VulkanBuffer(this, size, cpuAccess, memoryType);
+        }
+
+        DescriptorHeap* VulkanGraphicsCard::newDescriptorHeap(DescriptorHeapType type, uint32_t size)
+        {
+            return new VulkanDescriptorHeap(this,type,size);
         }
 
         Texture* VulkanGraphicsCard::newTexture1D(uint32_t width, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels, uint32_t layers)
@@ -499,11 +528,31 @@ namespace slag
             return new VulkanTexture(this,format,usage,dimension,mipLevels,arrayDepth);
         }
 
+        Sampler* VulkanGraphicsCard::newSampler(
+            SamplerFilter min,
+            SamplerFilter mag,
+            SamplerFilter mip,
+            SamplerAddressMode u,
+            SamplerAddressMode v,
+            SamplerAddressMode w,
+            float mipLODBias,
+            bool anisotrophyEnabled,
+            uint8_t maxAnisotrophy,
+            ComparisonFunction comparisonFunction,
+            Color borderColor,
+            float minLOD,
+            float maxLOD)
+        {
+            return new VulkanSampler(this,min,mag,mip,u,v,w,mipLODBias,anisotrophyEnabled,maxAnisotrophy,comparisonFunction,borderColor,minLOD,maxLOD);
+        }
+
         void VulkanGraphicsCard::move(VulkanGraphicsCard& from)
         {
             _name.swap(from._name);
             _memoryProperties = from._memoryProperties;
             _capabilities = from._capabilities;
+            _descriptorTableDetails = from._descriptorTableDetails;
+            _descriptorHeapDetails = from._descriptorHeapDetails;
             std::swap(_physicalDevice,from._physicalDevice);
             std::swap(_device,from._device);
             std::swap(_allocator,from._allocator);
@@ -513,6 +562,16 @@ namespace slag
             _graphicsQueueFamily=from._graphicsQueueFamily;
             _computeQueueFamily=from._computeQueueFamily;
             _transferQueueFamily=from._transferQueueFamily;
+            _allocatedSamplers=from._allocatedSamplers;
+
+
+            vkCmdBindSamplerHeap=from.vkCmdBindSamplerHeap;
+            vkCmdBindResourceHeap=from.vkCmdBindResourceHeap;
+            vkWriteSamplerDescriptors=from.vkWriteSamplerDescriptors;
+            vkWriteResourceDescriptors=from.vkWriteResourceDescriptors;
+            vkRegisterCustomBorderColor=from.vkRegisterCustomBorderColor;
+            vkUnregisterCustomBorderColor=from.vkUnregisterCustomBorderColor;
+            vkCmdPushData=from.vkCmdPushData;
         }
 
         VkDevice VulkanGraphicsCard::device() const

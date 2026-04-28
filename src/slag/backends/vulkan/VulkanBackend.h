@@ -5,6 +5,8 @@
 
 #include "VulkanGraphicsCard.h"
 #include "slag/core/IBackend.h"
+#include "slag/core/Sampler.h"
+
 namespace slag
 {
     namespace vulkan
@@ -43,6 +45,8 @@ namespace slag
             static VkStencilOp nativeStencilOp(StencilOperation stencilOp);
             static VkColorComponentFlags nativeColorComponentFlags(ColorComponents colorComponentFlags);
             static VkCompareOp nativeCompareOp(ComparisonFunction compareOp);
+            static VkFilter nativeFilter(SamplerFilter filter);
+            static VkSamplerAddressMode nativeSamplerAddressMode(SamplerAddressMode mode);
         private:
             SlagInitializationResult initializeBackend(const InitializationData& initializationData)override;
             std::vector<VulkanGraphicsCard> _graphicsCards;

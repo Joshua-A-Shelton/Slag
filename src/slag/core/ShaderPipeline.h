@@ -3,6 +3,7 @@
 #include "Color.h"
 #include "ShaderModule.h"
 #include "Operations.h"
+#include "PipelineInputMapping.h"
 
 namespace slag
 {
@@ -163,30 +164,6 @@ namespace slag
         PixelFormat depthFormat = PixelFormat::UNDEFINED;
     };
 
-    struct ShaderTableEntry
-    {
-        DescriptorMeta details;
-        uint32_t tableOffset;
-    };
-
-    class ShaderParameterTable
-    {
-    public:
-        ShaderParameterTable(const BindGroup& group, const GraphicsCard* graphicsCard);
-        ~ShaderParameterTable()=default;
-        ShaderParameterTable(const ShaderParameterTable&)=delete;
-        ShaderParameterTable& operator=(const ShaderParameterTable&)=delete;
-        ShaderParameterTable(ShaderParameterTable&& from) noexcept ;
-        ShaderParameterTable& operator=(ShaderParameterTable&& from) noexcept;
-        [[nodiscard]] uint32_t bindingIndex()const;
-        [[nodiscard]] uint32_t entryCount()const;
-        [[nodiscard]] const ShaderTableEntry& entry(uint32_t index)const;
-    private:
-        void move(ShaderParameterTable& from);
-        uint32_t _bindingIndex = 0;
-        std::vector<ShaderTableEntry> _entries;
-    };
-
 
     class ShaderPipeline
     {
@@ -194,8 +171,7 @@ namespace slag
         virtual ~ShaderPipeline()=default;
         virtual ShaderPipelineType type()=0;
         virtual GraphicsCard* graphicsCard()=0;
-        virtual uint32_t parameterTableCount()=0;
-        virtual const ShaderParameterTable& parameterTable(uint32_t index)=0;
+        virtual const PipelineInputMapping& bindings()=0;
 
     };
 }

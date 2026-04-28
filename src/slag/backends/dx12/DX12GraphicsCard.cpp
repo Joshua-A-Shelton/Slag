@@ -9,6 +9,7 @@
 #include "DX12Texture.h"
 #include "slag/exceptions/NotImplemented.h"
 #undef ERROR
+#undef max
 
 namespace slag
 {
@@ -140,6 +141,15 @@ namespace slag
             _descriptorTableDetails.accelerationStructureSize=resourceSize;
             _descriptorTableDetails.accelerationStructureAlignment=resourceSize;
 
+
+            //descriptor heap details
+            D3D12_FEATURE_DATA_D3D12_OPTIONS options = {};
+            _device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options));
+            _descriptorHeapDetails.maxResourceDescriptorHeapSize = 1015808 * resourceSize;
+            _descriptorHeapDetails.maxSamplerDescriptorHeapSize = 4000*samplerSize;
+            _descriptorHeapDetails.resourceReservedRangeSize = 0;
+            _descriptorHeapDetails.samplerReservedRangeSize = 0;
+
         }
 
         DX12GraphicsCard::~DX12GraphicsCard()
@@ -193,6 +203,11 @@ namespace slag
         const DescriptorTableDetails& DX12GraphicsCard::descriptorTableDetails() const
         {
             return _descriptorTableDetails;
+        }
+
+        const DescriptorHeapDetails& DX12GraphicsCard::descriptorHeapDetails() const
+        {
+            return _descriptorHeapDetails;
         }
 
         PixelFormatProperties DX12GraphicsCard::formatProperties(PixelFormat format) const
@@ -394,8 +409,12 @@ namespace slag
             return new DX12ShaderModule(this,language,data,dataLength);
         }
 
-        ShaderPipeline* DX12GraphicsCard::newShaderPipeline(const VertexDescription& vertexDescription,
-            ShaderModule* vertexShader, ShaderModule* fragmentShader, const PipelineState& pipelineState,
+        ShaderPipeline* DX12GraphicsCard::newShaderPipeline(
+            const VertexDescription& vertexDescription,
+            ShaderModule* vertexShader,
+            ShaderModule* fragmentShader,
+            PipelineInputMapping* inputBindings,
+            const PipelineState& pipelineState,
             const FramebufferDescription& framebufferDescription)
         {
             throw NotImplemented();
@@ -417,6 +436,11 @@ namespace slag
             BufferMemoryType memoryType)
         {
             return new DX12Buffer(this,size,cpuAccess,memoryType);
+        }
+
+        DescriptorHeap* DX12GraphicsCard::newDescriptorHeap(DescriptorHeapType type, uint32_t size)
+        {
+            throw NotImplemented();
         }
 
         Texture* DX12GraphicsCard::newTexture1D(uint32_t width, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,uint32_t arrayDepth)
@@ -441,6 +465,14 @@ namespace slag
             return new DX12Texture(this,format,usage,dimension,mipLevels,arrayDepth);
         }
 
+        Sampler* DX12GraphicsCard::newSampler(SamplerFilter min, SamplerFilter mag, SamplerFilter mip,
+            SamplerAddressMode u, SamplerAddressMode v, SamplerAddressMode w, float mipLODBias, bool anisotrophyEnabled,
+            uint8_t maxAnisotrophy, ComparisonFunction comparisonFunction, Color borderColor, float minLOD,
+            float maxLOD)
+        {
+            throw NotImplemented();
+        }
+
         D3D12MA::Allocator* DX12GraphicsCard::allocator() const
         {
             return _allocator;
@@ -461,6 +493,8 @@ namespace slag
             _memoryProperties = from._memoryProperties;
             _capabilities = from._capabilities;
             _device = from._device;
+            _descriptorTableDetails = from._descriptorTableDetails;
+            _descriptorHeapDetails = from._descriptorHeapDetails;
             _dxgiFactory = from._dxgiFactory;
             _dxgiAdapter4 = from._dxgiAdapter4;
             std::swap(_allocator, from._allocator);

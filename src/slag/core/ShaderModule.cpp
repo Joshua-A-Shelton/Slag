@@ -10,17 +10,17 @@
 
 namespace slag
 {
-    BindGroup::BindGroup(uint32_t bindIndex, std::vector<DescriptorMeta>&& descriptorInfo)
+    BindGroup::BindGroup(uint32_t groupIndex, std::vector<DescriptorMeta>&& descriptorInfo)
     {
         SLAG_ASSERT(descriptorInfo.size() > 0 && "Cannot have an empty bind group");
         SLAG_ASSERT(descriptorInfo.size() <= std::numeric_limits<uint32_t>::max() && "Too many descriptors provided for bind group");
-        _bindIndex = bindIndex;
+        _groupIndex = groupIndex;
         _descriptorInfo = descriptorInfo;
     }
 
-    uint32_t BindGroup::bindIndex() const
+    uint32_t BindGroup::groupIndex() const
     {
-        return _bindIndex;
+        return _groupIndex;
     }
 
     uint32_t BindGroup::descriptorInfoCount() const

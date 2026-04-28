@@ -505,6 +505,34 @@ namespace slag
             return VULKAN_COMPARE_OPS[static_cast<uint8_t>(compareOp)];
         }
 
+        VkFilter VulkanBackend::nativeFilter(SamplerFilter filter)
+        {
+            switch (filter)
+            {
+            case SamplerFilter::LINEAR:
+                return VK_FILTER_LINEAR;
+            case SamplerFilter::NEAREST:
+                return VK_FILTER_NEAREST;
+            }
+            return VK_FILTER_NEAREST;
+        }
+
+        VkSamplerAddressMode VulkanBackend::nativeSamplerAddressMode(SamplerAddressMode mode)
+        {
+            switch (mode)
+            {
+            case SamplerAddressMode::REPEAT:
+                return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            case SamplerAddressMode::MIRRORED_REPEAT:
+                return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+            case SamplerAddressMode::CLAMP_TO_EDGE:
+                return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            case SamplerAddressMode::CLAMP_TO_BORDER:
+                return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+            }
+            return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        }
+
         SlagInitializationResult VulkanBackend::initializeBackend(const InitializationData& initializationData)
         {
             if (initializationData.debugHandler)
@@ -538,8 +566,13 @@ namespace slag
             basicFeatures.fragmentStoresAndAtomics = true;
             basicFeatures.shaderStorageImageMultisample = true;
 
+            VkPhysicalDeviceDescriptorHeapFeaturesEXT descriptorHeapFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_HEAP_FEATURES_EXT};
+            descriptorHeapFeatures.descriptorHeap = true;
+            descriptorHeapFeatures.descriptorHeapCaptureReplay = true;
+
             VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcrFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES};
             ycbcrFeatures.samplerYcbcrConversion = true;
+            ycbcrFeatures.pNext = &descriptorHeapFeatures;
 
             VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR shaderDerivativesFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_KHR};
             shaderDerivativesFeatures.pNext = &ycbcrFeatures;

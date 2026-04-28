@@ -1,10 +1,13 @@
 #ifndef SLAG_SLAG_H
 #define SLAG_SLAG_H
 
+#include "core/Attachment.h"
 #include "core/Barriers.h"
 #include "core/Buffer.h"
+#include "core/Clear.h"
 #include "core/CommandBuffer.h"
 #include "core/Defragmentation.h"
+#include "core/DescriptorHeap.h"
 #include "core/Descriptors.h"
 #include "core/Dimensions.h"
 #include "core/GraphicsCard.h"
@@ -13,6 +16,7 @@
 #include "core/ICommandBuffer.h"
 #include "core/PixelFormatProperties.h"
 #include "core/Pixels.h"
+#include "core/Sampler.h"
 #include "core/Semaphore.h"
 #include "core/ShaderModule.h"
 #include "core/ShaderPipeline.h"

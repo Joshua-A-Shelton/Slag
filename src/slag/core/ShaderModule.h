@@ -40,15 +40,14 @@ namespace slag
         MESH,
         ///Prepares work for the MESH shaders
         TASK
-
     };
     ///Collection of descriptors that get bound together
     class BindGroup
     {
     public:
-        BindGroup(uint32_t bindIndex, std::vector<DescriptorMeta>&& descriptorInfo);
-        ///The index of the bind group
-        [[nodiscard]] uint32_t bindIndex()const;
+        BindGroup(uint32_t groupIndex, std::vector<DescriptorMeta>&& descriptorInfo);
+        ///The identifier (DX12 register space/ Vulkan descriptor set) of the bind group
+        [[nodiscard]] uint32_t groupIndex()const;
         ///Total number of descriptor data this bind group contains
         [[nodiscard]] uint32_t descriptorInfoCount()const;
         /**
@@ -58,7 +57,7 @@ namespace slag
          */
         [[nodiscard]] const DescriptorMeta& descriptorInfo(uint32_t index)const;
     private:
-        uint32_t _bindIndex=0;
+        uint32_t _groupIndex=0;
         std::vector<DescriptorMeta> _descriptorInfo;
     };
 

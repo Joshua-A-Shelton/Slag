@@ -187,6 +187,16 @@ namespace slag
             _commandBuffer->Barrier(3, barrierGroups);
         }
 
+        void IDX12CommandBuffer::bindDescriptorHeaps(DescriptorHeap* resourceHeap, DescriptorHeap* samplerHeap)
+        {
+            throw NotImplemented();
+        }
+
+        void IDX12CommandBuffer::setInputBindingTable(uint32_t byteOffset, uint32_t heapOffset)
+        {
+            throw NotImplemented();
+        }
+
         void IDX12CommandBuffer::copyBufferToBuffer(
             Buffer* source,
             uint64_t sourceOffset,
@@ -304,6 +314,55 @@ namespace slag
                 }
 
             }
+        }
+
+        void IDX12CommandBuffer::bindGraphicsPipeline(ShaderPipeline* pipeline)
+        {
+            throw NotImplemented();
+        }
+
+        void IDX12CommandBuffer::beginRendering(Attachment* colorAttachments, uint32_t colorAttachmentCount,
+            Attachment* depthAttachment, const Rectangle& bounds)
+        {
+            throw NotImplemented();
+        }
+
+        void IDX12CommandBuffer::endRendering()
+        {
+            throw NotImplemented();
+        }
+
+        void IDX12CommandBuffer::setViewPort(float x, float y, float width, float height, float minDepth,
+            float maxDepth)
+        {
+            throw NotImplemented();
+        }
+
+        void IDX12CommandBuffer::setScissors(const Rectangle& rect)
+        {
+            throw NotImplemented();
+        }
+
+        void IDX12CommandBuffer::bindIndexBuffer(Buffer* buffer, IndexBufferType indexType, uint64_t offset)
+        {
+            throw NotImplemented();
+        }
+
+        void IDX12CommandBuffer::bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, uint64_t* bufferOffsets, uint64_t* strides, uint32_t bufferCount)
+        {
+            throw NotImplemented();
+        }
+
+        void IDX12CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
+                                      uint32_t firstInstance)
+        {
+            throw NotImplemented();
+        }
+
+        void IDX12CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
+            int32_t vertexOffset, uint32_t firstInstance)
+        {
+            throw NotImplemented();
         }
 
         ID3D12GraphicsCommandList7* IDX12CommandBuffer::dx12Handle() const

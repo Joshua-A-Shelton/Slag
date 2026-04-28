@@ -53,5 +53,11 @@ namespace slag
         Extent3D extent{};
     };
 
+    enum class IndexBufferType
+    {
+        UINT_16,
+        UINT_32,
+    };
+
 }
 #endif //SLAG_DIMENSIONS_H

@@ -29,9 +29,20 @@ namespace slag
                 TextureBarrier* textureBarriers,
                 uint32_t textureBarrierCount
                 )override;
+            void bindDescriptorHeaps(DescriptorHeap* resourceHeap, DescriptorHeap* samplerHeap)override;
+            void setInputBindingTable(uint32_t byteOffset, uint32_t heapOffset)override;
             void copyBufferToBuffer(Buffer* source, uint64_t sourceOffset, Buffer* destination, uint64_t destinationOffset, uint64_t length)override;
             void copyTextureToBuffer(Texture* source, Buffer* destination, TextureBufferMapping* copyData, uint32_t mappingCount)override;
             void copyBufferToTexture(Buffer* source, Texture* destination, TextureBufferMapping* copyData, uint32_t mappingCount)override;
+            void bindGraphicsPipeline(ShaderPipeline* pipeline)override;
+            void beginRendering(Attachment* colorAttachments, uint32_t colorAttachmentCount,Attachment* depthAttachment, const Rectangle& bounds)override;
+            void endRendering()override;
+            void setViewPort(float x, float y, float width, float height, float minDepth, float maxDepth)override;
+            void setScissors(const Rectangle& rect)override;
+            void bindIndexBuffer(Buffer* buffer, IndexBufferType indexType, uint64_t offset)override;
+            void bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, uint64_t* bufferOffsets, uint64_t* strides, uint32_t bufferCount)override;
+            void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)override;
+            void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance)override;
 
             [[nodiscard]] ID3D12GraphicsCommandList7* dx12Handle() const;
 

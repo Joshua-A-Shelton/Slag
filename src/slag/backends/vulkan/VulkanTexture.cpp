@@ -338,6 +338,28 @@ namespace slag
 
             VulkanImageMoveData imageMoveData = {true,_texture};
             _texture = newImage;
+            if (_view != nullptr)
+            {
+                vkDestroyImageView(_graphicsCard->device(),_view,nullptr);
+                auto format = VulkanBackend::nativeFormat(_format);
+                VkImageViewCreateInfo viewCreateInfo
+                {
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                    .image = _texture,
+                    .viewType = _descriptorInfo.viewType,
+                    .format = format.format,
+                    .components ={format.rSwizzle,format.gSwizzle,format.bSwizzle, format.aSwizzle},
+                    .subresourceRange =
+                        {
+                            .aspectMask = VulkanBackend::nativeTextureAspect(Pixel::aspectFlags(_format)),
+                            .baseMipLevel = 0,
+                            .levelCount = _mipLevels,
+                            .baseArrayLayer = 0,
+                            .layerCount = _layers,
+                        }
+                };
+                vkCreateImageView(_graphicsCard->device(),&viewCreateInfo,nullptr,&_view);
+            }
             return imageMoveData;
         }
 
@@ -346,12 +368,23 @@ namespace slag
             return _texture;
         }
 
+        const VkImageViewCreateInfo& VulkanTexture::descriptorInfo()
+        {
+            return _descriptorInfo;
+        }
+
+        VkImageView VulkanTexture::vulkanView() const
+        {
+            return _view;
+        }
+
         void VulkanTexture::move(VulkanTexture& from)
         {
             _descriptorInfo = from._descriptorInfo;
             std::swap(_graphicsCard,from._graphicsCard);
             std::swap(_allocation,from._allocation);
             std::swap(_texture,from._texture);
+            std::swap(_view,from._view);
             std::swap(_userData,from._userData);
             _format = from._format;
             _usage = from._usage;
@@ -462,6 +495,12 @@ namespace slag
                 .baseArrayLayer = 0,
                 .layerCount = _layers
             };
+
+            if (static_cast<bool>(_usage & (TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::DEPTH_STENCIL_TARGET)))
+            {
+
+                vkCreateImageView(_graphicsCard->device(),&_descriptorInfo,nullptr,&_view);
+            }
 
             //Transition to general
 

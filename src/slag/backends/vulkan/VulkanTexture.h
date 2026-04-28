@@ -74,7 +74,9 @@ namespace slag
 
             VulkanImageMoveData moveMemory(VmaAllocation tempAllocation,CommandBuffer* transitionToGeneralBuffer, CommandBuffer* copyDataBuffer);
 
-            VkImage vulkanHandle()const;
+            [[nodiscard]] VkImage vulkanHandle()const;
+            [[nodiscard]] const VkImageViewCreateInfo& descriptorInfo();
+            [[nodiscard]] VkImageView vulkanView()const;
 
         private:
             void move(VulkanTexture& from);
@@ -84,6 +86,7 @@ namespace slag
             VulkanGraphicsCard* _graphicsCard = nullptr;
             VmaAllocation _allocation = nullptr;
             VkImage _texture = nullptr;
+            VkImageView _view = nullptr;
             void* _userData = nullptr;
             PixelFormat _format = PixelFormat::UNDEFINED;
             TextureUsageFlags _usage = TextureUsageFlags::NONE;
