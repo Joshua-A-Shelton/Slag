@@ -410,7 +410,7 @@ namespace slag
             return new DX12Buffer(this,size,cpuAccess,memoryType);
         }
 
-        DescriptorHeap* DX12GraphicsCard::newDescriptorHeap(DescriptorHeapType type, uint32_t size)
+        DescriptorHeap* DX12GraphicsCard::newDescriptorHeap(DescriptorHeapType type, uint32_t descriptorCount)
         {
             throw NotImplemented();
         }

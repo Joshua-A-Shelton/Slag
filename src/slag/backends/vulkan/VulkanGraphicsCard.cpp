@@ -476,9 +476,9 @@ namespace slag
             return new VulkanBuffer(this, size, cpuAccess, memoryType);
         }
 
-        DescriptorHeap* VulkanGraphicsCard::newDescriptorHeap(DescriptorHeapType type, uint32_t size)
+        DescriptorHeap* VulkanGraphicsCard::newDescriptorHeap(DescriptorHeapType type, uint32_t descriptorCount)
         {
-            return new VulkanDescriptorHeap(this,type,size);
+            return new VulkanDescriptorHeap(this,type,descriptorCount);
         }
 
         Texture* VulkanGraphicsCard::newTexture1D(uint32_t width, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels, uint32_t layers)

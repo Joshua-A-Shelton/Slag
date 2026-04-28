@@ -83,8 +83,8 @@ TEST(ShaderPipeline, Sandbox)
     auto texture = utilities::loadTexture("resources\\tests\\textures\\gradient.jpg",card);
 
 
-    auto resourceHeap = std::unique_ptr<DescriptorHeap>(card->newDescriptorHeap(DescriptorHeapType::RESOURCE,card->descriptorHeapDetails().resourceDescriptorIncrementSize*500));
-    auto samplerHeap = std::unique_ptr<DescriptorHeap>(card->newDescriptorHeap(DescriptorHeapType::SAMPLER,card->descriptorHeapDetails().samplerDescriptorIncrementSize*200));
+    auto resourceHeap = std::unique_ptr<DescriptorHeap>(card->newDescriptorHeap(DescriptorHeapType::RESOURCE,500));
+    auto samplerHeap = std::unique_ptr<DescriptorHeap>(card->newDescriptorHeap(DescriptorHeapType::SAMPLER,200));
     uint32_t resourceHeapOffset = 0;
     uint32_t samplerHeapOffset = 0;
 

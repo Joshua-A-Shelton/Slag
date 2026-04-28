@@ -12,13 +12,13 @@ namespace slag
 {
     namespace vulkan
     {
-        VulkanDescriptorHeap::VulkanDescriptorHeap(VulkanGraphicsCard* graphicsCard, DescriptorHeapType type, uint32_t size)
+        VulkanDescriptorHeap::VulkanDescriptorHeap(VulkanGraphicsCard* graphicsCard, DescriptorHeapType type, uint32_t descriptorCount)
         {
-            _size = size;
+            _size = descriptorCount * (type == DescriptorHeapType::RESOURCE ? graphicsCard->descriptorHeapDetails().resourceDescriptorIncrementSize : graphicsCard->descriptorHeapDetails().samplerDescriptorIncrementSize);
             _graphicsCard = graphicsCard;
             _type = type;
             auto limits = _graphicsCard->descriptorHeapDetails();
-            SLAG_ASSERT((type == DescriptorHeapType::RESOURCE && size <= limits.maxResourceDescriptorHeapSize) || (type == DescriptorHeapType::SAMPLER && size <= limits.maxSamplerDescriptorHeapSize) && "Exceeded max heap size");
+            SLAG_ASSERT((type == DescriptorHeapType::RESOURCE && _size <= limits.maxResourceDescriptorHeapSize) || (type == DescriptorHeapType::SAMPLER && _size <= limits.maxSamplerDescriptorHeapSize) && "Exceeded max heap size");
 
             VmaAllocationCreateInfo allocationCreateInfo{};
             allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;

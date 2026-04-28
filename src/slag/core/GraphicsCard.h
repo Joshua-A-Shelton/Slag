@@ -141,11 +141,11 @@ namespace slag
 
         /**
          * Allocate a new descriptor heap
-         * @param type which kind of descriptors this will hold
-         * @param size number of bytes in the heap
+         * @param type Which kind of descriptors this will hold
+         * @param descriptorCount Number of descriptors in the heap
          * @return
          */
-        [[nodiscard]] virtual DescriptorHeap* newDescriptorHeap(DescriptorHeapType type, uint32_t size)=0;
+        [[nodiscard]] virtual DescriptorHeap* newDescriptorHeap(DescriptorHeapType type, uint32_t descriptorCount)=0;
 
         //Textures
 

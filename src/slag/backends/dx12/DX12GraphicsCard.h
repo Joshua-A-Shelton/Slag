@@ -53,7 +53,7 @@ namespace slag
                 BufferCPUAccess cpuAccess,
                 BufferMemoryType memoryType)override;
 
-            DescriptorHeap* newDescriptorHeap(DescriptorHeapType type, uint32_t size)override;
+            DescriptorHeap* newDescriptorHeap(DescriptorHeapType type, uint32_t descriptorCount)override;
 
             //Textures
             [[nodiscard]] Texture* newTexture1D(

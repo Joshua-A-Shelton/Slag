@@ -13,7 +13,7 @@ namespace slag
         class VulkanDescriptorHeap: public DescriptorHeap
         {
         public:
-            VulkanDescriptorHeap(VulkanGraphicsCard* graphicsCard, DescriptorHeapType type, uint32_t size);
+            VulkanDescriptorHeap(VulkanGraphicsCard* graphicsCard, DescriptorHeapType type, uint32_t descriptorCount);
             VulkanDescriptorHeap(const VulkanDescriptorHeap&)=delete;
             VulkanDescriptorHeap& operator=(const VulkanDescriptorHeap&)=delete;
             VulkanDescriptorHeap(VulkanDescriptorHeap&& from) noexcept;
