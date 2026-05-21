@@ -1,7 +1,7 @@
 #ifndef SLAG_IBACKEND_H
 #define SLAG_IBACKEND_H
 #include <cstdint>
-#include "ShaderModule.h"
+#include "ShaderCode.h"
 namespace slag
 {
     struct InitializationData;

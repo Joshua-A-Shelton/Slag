@@ -30,12 +30,10 @@ namespace slag
             [[nodiscard]] SubmissionQueue* transferQueue()override;
             uint64_t defragmentMemory(uint64_t targetBytes, std::function<void(MemoryReference*)> memoryMoved)override;
             //Shaders
-            [[nodiscard]] ShaderModule* newShaderModule(ShaderLanguage language, void* data, uint32_t dataLength)override;
             [[nodiscard]] ShaderPipeline* newShaderPipeline(
                 const VertexDescription& vertexDescription,
-                ShaderModule* vertexShader,
-                ShaderModule* fragmentShader,
-                PipelineInputMapping* inputBindings,
+                const ShaderCode& vertexShader,
+                const ShaderCode& fragmentShader,
                 const PipelineState& pipelineState,
                 const FramebufferDescription& framebufferDescription)override;
 
@@ -49,7 +47,9 @@ namespace slag
                 BufferCPUAccess cpuAccess,
                 BufferMemoryType memoryType)override;
 
-            DescriptorHeap* newDescriptorHeap(DescriptorHeapType type, uint32_t descriptorCount)override;
+            [[nodiscard]] ResourceDescriptorHeap* newResourceDescriptorHeap(uint32_t descriptorCount)override;
+
+            [[nodiscard]] SamplerDescriptorHeap* newSamplerDescriptorHeap(uint32_t descriptorCount)override;
 
             //Textures
             [[nodiscard]] virtual Texture* newTexture1D(

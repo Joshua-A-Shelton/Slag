@@ -4,7 +4,7 @@
 #include <fstream>
 #include <stdexcept>
 
-std::unique_ptr<slag::ShaderModule> slagTestsCreateShaderModule(slag::GraphicsCard* card, const std::string& shaderIdentifier)
+ShaderModule slagTestsCreateShaderModule(slag::GraphicsCard* card, const std::string& shaderIdentifier)
 {
     auto api = slag::Slag::backend()->api();
     std::filesystem::path shaderPath = shaderIdentifier;
@@ -27,11 +27,17 @@ std::unique_ptr<slag::ShaderModule> slagTestsCreateShaderModule(slag::GraphicsCa
         throw std::runtime_error("Failed to open file");
     }
 
+    ShaderModule shaderModule{};
+
     const std::size_t fileSize = file.tellg();
     file.seekg(0, std::ios::beg);
 
-    std::vector<std::byte> buffer(fileSize);
-    file.read(reinterpret_cast<char*>(buffer.data()), fileSize);
+    shaderModule.loadedCode.resize(fileSize);
+    file.read(reinterpret_cast<char*>(shaderModule.loadedCode.data()), fileSize);
     file.close();
-    return std::unique_ptr<slag::ShaderModule>(card->newShaderModule(language, buffer.data(), fileSize));
+
+    shaderModule.details.code = shaderModule.loadedCode.data();
+    shaderModule.details.codeLength = fileSize;
+    shaderModule.details.language = language;
+    return shaderModule;
 }

@@ -1,7 +1,6 @@
 #define VMA_IMPLEMENTATION
 #include "VulkanBackend.h"
 
-#include "slag/shader-reflection/spirv/SPIRVShaderReflector.h"
 #include "slag/utilities/SLAG_ASSERT.h"
 
 namespace slag
@@ -566,22 +565,30 @@ namespace slag
             basicFeatures.fragmentStoresAndAtomics = true;
             basicFeatures.shaderStorageImageMultisample = true;
 
+            VkPhysicalDeviceMaintenance5Features maintenance5Features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES};
+            maintenance5Features.maintenance5 = true;
+
+            VkPhysicalDeviceShaderUntypedPointersFeaturesKHR untypedPointersFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_UNTYPED_POINTERS_FEATURES_KHR};
+            untypedPointersFeatures.shaderUntypedPointers = true;
+            untypedPointersFeatures.pNext = &maintenance5Features;
+
             VkPhysicalDeviceDescriptorHeapFeaturesEXT descriptorHeapFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_HEAP_FEATURES_EXT};
             descriptorHeapFeatures.descriptorHeap = true;
             descriptorHeapFeatures.descriptorHeapCaptureReplay = true;
+            descriptorHeapFeatures.pNext = &untypedPointersFeatures;
 
             VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcrFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES};
             ycbcrFeatures.samplerYcbcrConversion = true;
             ycbcrFeatures.pNext = &descriptorHeapFeatures;
 
             VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR shaderDerivativesFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_KHR};
-            shaderDerivativesFeatures.pNext = &ycbcrFeatures;
             shaderDerivativesFeatures.computeDerivativeGroupLinear = true;
             shaderDerivativesFeatures.computeDerivativeGroupQuads = true;
+            shaderDerivativesFeatures.pNext = &ycbcrFeatures;
 
             VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT};
-            swapchainFeatures.pNext = &shaderDerivativesFeatures;
             swapchainFeatures.swapchainMaintenance1 = true;
+            swapchainFeatures.pNext = &shaderDerivativesFeatures;
 
             VkPhysicalDeviceVulkan12Features features1_2{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
             features1_2.bufferDeviceAddress = true;
@@ -606,6 +613,8 @@ namespace slag
                 .add_required_extension("VK_EXT_custom_border_color")
                 .add_required_extension("VK_KHR_compute_shader_derivatives")
                 .add_required_extension("VK_EXT_descriptor_heap")
+                .add_required_extension("VK_KHR_shader_untyped_pointers")
+                .add_required_extension("VK_KHR_maintenance5")
                 .defer_surface_initialization()
                 .select_devices();
 

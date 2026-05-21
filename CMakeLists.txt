@@ -19,8 +19,6 @@ OPTION(SLAG_WAYLAND_BACKEND "Use Wayland Windowing Backend" ON)
 OPTION(SLAG_BUILD_TESTS "Build Slag Tests" ON)
 OPTION(SLAG_BUILD_CUBE "Build Slag Example Cube" ON)
 
-SET(USE_SPIRV_REFLECTION ON)
-
 if(WIN32)
     set(SLAG_X11_BACKEND OFF)
     set(SLAG_WAYLAND_BACKEND OFF)
@@ -48,7 +46,6 @@ endif()
 if(SLAG_VULKAN_BACKEND)
     find_package(Vulkan 1.4.341 REQUIRED)
     add_definitions(-DSLAG_VULKAN_BACKEND=1)
-    SET(USE_SPIRV_REFLECTION ON)
     message("adding vulkan backend")
     SET(SLAG_VULKAN_SOURCES
             src/slag/backends/vulkan/VulkanBackend.cpp
@@ -67,19 +64,18 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/backends/vulkan/VulkanSubmissionQueue.h
             src/slag/backends/vulkan/VulkanTexture.cpp
             src/slag/backends/vulkan/VulkanTexture.h
-            src/slag/backends/vulkan/VulkanShaderModule.cpp
-            src/slag/backends/vulkan/VulkanShaderModule.h
             src/slag/backends/vulkan/VulkanShaderPipeline.cpp
             src/slag/backends/vulkan/VulkanShaderPipeline.h
             src/slag/backends/vulkan/VulkanSampler.cpp
             src/slag/backends/vulkan/VulkanSampler.h
-            src/slag/backends/vulkan/VulkanDescriptorHeap.cpp
-            src/slag/backends/vulkan/VulkanDescriptorHeap.h
+            src/slag/backends/vulkan/VulkanSamplerDescriptorHeap.cpp
+            src/slag/backends/vulkan/VulkanSamplerDescriptorHeap.h
+            src/slag/backends/vulkan/VulkanResourceDescriptorHeap.cpp
+            src/slag/backends/vulkan/VulkanResourceDescriptorHeap.h
     )
 endif()
 if(SLAG_DX12_BACKEND)
     add_definitions(-DSLAG_DX12_BACKEND=1)
-    SET(USE_DXIL_12_REFLECTION ON)
     message("adding direct x 12 backend")
     SET(SLAG_DX12_SOURCES
             src/slag/backends/dx12/DX12Backend.cpp
@@ -98,24 +94,8 @@ if(SLAG_DX12_BACKEND)
             src/slag/backends/dx12/DX12CommandBuffer.h
             src/slag/backends/dx12/DX12Texture.cpp
             src/slag/backends/dx12/DX12Texture.h
-            src/slag/backends/dx12/DX12ShaderModule.cpp
-            src/slag/backends/dx12/DX12ShaderModule.h
-    )
-endif()
-
-if(USE_SPIRV_REFLECTION)
-    add_definitions(-DUSE_SLAG_SPIRV_REFLECTION)
-    SET(SLAG_SPIRV_REFLECT_SOURCES
-            src/slag/shader-reflection/spirv/SPIRVShaderReflector.cpp
-            src/slag/shader-reflection/spirv/SPIRVShaderReflector.h
-    )
-endif()
-
-if(USE_DXIL_12_REFLECTION)
-    add_definitions(-DUSE_SLAG_DXIL_12_REFLECTION)
-    SET(SLAG_DXIL_12_REFLECT_SOURCES
-            src/slag/shader-reflection/dxil12/DXILShaderReflector.cpp
-            src/slag/shader-reflection/dxil12/DXILShaderReflector.h
+            src/slag/backends/dx12/DX12ShaderPipeline.cpp
+            src/slag/backends/dx12/DX12ShaderPipeline.h
     )
 endif()
 
@@ -144,8 +124,7 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/Defragmentation.h
         src/slag/core/Barriers.h
         src/slag/core/ShaderPipeline.h
-        src/slag/core/ShaderModule.cpp
-        src/slag/core/ShaderModule.h
+        src/slag/core/ShaderCode.h
         src/slag/core/Descriptors.cpp
         src/slag/core/Descriptors.h
         src/slag/core/GraphicsTypes.h
@@ -157,42 +136,15 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/VertexDescription.h
         src/slag/exceptions/InvalidShaderVertexBindingError.h
         src/slag/exceptions/IncompatibleShaderBindGroupsError.h
-        src/slag/core/PipelineInputMapping.cpp
-        src/slag/core/PipelineInputMapping.h
         src/slag/core/Clear.h
         src/slag/core/Attachment.h
-        src/slag/core/DescriptorHeap.h
         src/slag/core/Sampler.h
         src/slag/exceptions/PipelineInputMappingSizeExceeded.h
+        src/slag/core/SamplerDescriptorHeap.h
+        src/slag/core/ResourceDescriptorHeap.h
 
 
 )
-#link spirv if we need to
-if(USE_SPIRV_REFLECTION)
-    OPTION(SPIRV_REFLECT_EXECUTABLE "build spirv reflect executable" OFF)
-    OPTION(SPIRV_REFLECT_EXAMPLES "build spirv reflect examples" OFF)
-    OPTION(SPIRV_REFLECT_STATIC_LIB "build spirv reflect library" ON)
-    FetchContent_Declare(
-            SPIRV_REFLECT
-            GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Reflect
-            GIT_TAG vulkan-sdk-1.4.341.0
-            GIT_SHALLOW TRUE
-            OVERRIDE_FIND_PACKAGE
-    )
-    FetchContent_MakeAvailable(SPIRV_REFLECT)
-    target_link_libraries(Slag PRIVATE spirv-reflect-static)
-endif ()
-
-if(USE_DXIL_12_REFLECTION)
-    target_include_directories(Slag PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/DXC/inc)
-
-    find_library(DXCompiler_LIB NAMES dxcompiler PATHS ${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/DXC/lib/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID})
-    find_library(DXIL_LIB NAMES dxil PATHS ${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/DXC/lib/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID})
-
-    target_link_libraries(Slag PRIVATE ${DXCompiler_LIB} ${DXIL_LIB})
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/DXC/bin/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}/dxcompiler.dll ${CMAKE_BINARY_DIR}/dxcompiler.dll COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/DXC/bin/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}/dxil.dll ${CMAKE_BINARY_DIR}/dxil.dll COPYONLY)
-endif ()
 
 if(SLAG_VULKAN_BACKEND)
     message("vulkan directory: ${Vulkan_INCLUDE_DIR}")
@@ -208,6 +160,7 @@ if(SLAG_VULKAN_BACKEND)
         FetchContent_MakeAvailable(VulkanMemoryAllocator)
     endif ()
     find_package(VulkanMemoryAllocator REQUIRED)
+
     find_package(vk-bootstrap QUIET)
     if(NOT vk-bootstrap_FOUND)
         FetchContent_Declare(
@@ -220,8 +173,20 @@ if(SLAG_VULKAN_BACKEND)
         FetchContent_MakeAvailable(vk-bootstrap)
     endif ()
 
+    find_package(SPIRV_REFLECT QUIET)
+    if(NOT SPIRV_REFLECT_FOUND)
+        FetchContent_Declare(
+                SPIRV_REFLECT
+                GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Reflect
+                GIT_TAG vulkan-sdk-1.4.350.0
+                GIT_SHALLOW TRUE
+                OVERRIDE_FIND_PACKAGE
+        )
+        FetchContent_MakeAvailable(SPIRV_REFLECT)
+        find_package(SPIRV_REFLECT REQUIRED)
+    endif ()
     target_include_directories(Slag PRIVATE ${Vulkan_INCLUDE_DIR})
-    target_link_libraries(Slag PRIVATE ${Vulkan_LIBRARIES} GPUOpen::VulkanMemoryAllocator vk-bootstrap)
+    target_link_libraries(Slag PRIVATE ${Vulkan_LIBRARIES} GPUOpen::VulkanMemoryAllocator vk-bootstrap spirv-reflect-static)
 endif()
 
 if(SLAG_DX12_BACKEND)

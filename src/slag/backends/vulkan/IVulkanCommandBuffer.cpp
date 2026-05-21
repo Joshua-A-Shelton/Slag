@@ -4,8 +4,9 @@
 
 #include "VulkanBackend.h"
 #include "VulkanBuffer.h"
-#include "VulkanDescriptorHeap.h"
 #include "VulkanGraphicsCard.h"
+#include "VulkanResourceDescriptorHeap.h"
+#include "VulkanSamplerDescriptorHeap.h"
 #include "VulkanShaderPipeline.h"
 #include "VulkanTexture.h"
 #include "slag/exceptions/NotImplemented.h"
@@ -188,12 +189,11 @@ namespace slag
             vkCmdPipelineBarrier2(_commandBuffer,&dependencyInfo);
         }
 
-        void IVulkanCommandBuffer::bindDescriptorHeaps(DescriptorHeap* resourceHeap, DescriptorHeap* samplerHeap)
+        void IVulkanCommandBuffer::bindDescriptorHeaps(ResourceDescriptorHeap* resourceHeap, SamplerDescriptorHeap* samplerHeap)
         {
             if (resourceHeap)
             {
-                auto rHeap = static_cast<VulkanDescriptorHeap*>(resourceHeap);
-                SLAG_ASSERT(rHeap->type() == DescriptorHeapType::RESOURCE);
+                auto rHeap = static_cast<VulkanResourceDescriptorHeap*>(resourceHeap);
                 VkBindHeapInfoEXT bindHeapInfo
                 {
                     .sType = VK_STRUCTURE_TYPE_BIND_HEAP_INFO_EXT,
@@ -206,8 +206,7 @@ namespace slag
             }
             if (samplerHeap)
             {
-                auto sHeap = static_cast<VulkanDescriptorHeap*>(samplerHeap);
-                SLAG_ASSERT(sHeap->type() == DescriptorHeapType::SAMPLER);
+                auto sHeap = static_cast<VulkanSamplerDescriptorHeap*>(samplerHeap);
                 VkBindHeapInfoEXT bindHeapInfo
                {
                    .sType = VK_STRUCTURE_TYPE_BIND_HEAP_INFO_EXT,
@@ -220,14 +219,16 @@ namespace slag
             }
         }
 
-        void IVulkanCommandBuffer::setInputBindingTable(uint32_t byteOffset, uint32_t heapOffset)
+        void IVulkanCommandBuffer::setGraphicsShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
         {
+            SLAG_ASSERT(shaderDataOffset + dataSize < 128 && "Exceeded size of shader parameter data");
+            SLAG_ASSERT(shaderDataOffset %4 == 0 && "Shader data offset must be aligned to 4 bytes");
             VkPushDataInfoEXT pushDataInfo
             {
                 .sType = VK_STRUCTURE_TYPE_PUSH_DATA_INFO_EXT,
                 .pNext = nullptr,
-                .offset = byteOffset,
-                .data = {.address = &heapOffset,.size = sizeof(heapOffset)}
+                .offset = shaderDataOffset,
+                .data = {.address = data, .size = dataSize},
             };
             _graphicsCard->vkCmdPushData(_commandBuffer,&pushDataInfo);
         }

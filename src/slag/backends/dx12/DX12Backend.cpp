@@ -292,6 +292,140 @@ namespace slag
             return flags;
         }
 
+        D3D12_BLEND D3D12_NATIVE_BLEND_FACTORS[]
+        {
+            D3D12_BLEND_ZERO,
+            D3D12_BLEND_ONE,
+            D3D12_BLEND_SRC_COLOR,
+            D3D12_BLEND_INV_SRC_COLOR,
+            D3D12_BLEND_DEST_COLOR,
+            D3D12_BLEND_INV_DEST_COLOR,
+            D3D12_BLEND_SRC_ALPHA,
+            D3D12_BLEND_INV_SRC_ALPHA,
+            D3D12_BLEND_DEST_ALPHA,
+            D3D12_BLEND_INV_DEST_ALPHA,
+            D3D12_BLEND_BLEND_FACTOR,
+            D3D12_BLEND_INV_BLEND_FACTOR,
+            D3D12_BLEND_ALPHA_FACTOR,
+            D3D12_BLEND_INV_ALPHA_FACTOR,
+            D3D12_BLEND_SRC_ALPHA_SAT,
+            D3D12_BLEND_SRC1_COLOR,
+            D3D12_BLEND_INV_SRC1_COLOR,
+            D3D12_BLEND_SRC1_ALPHA,
+            D3D12_BLEND_INV_SRC1_ALPHA
+        };
+        D3D12_BLEND DX12Backend::nativeBlendFactor(BlendFactor factor)
+        {
+            return D3D12_NATIVE_BLEND_FACTORS[(uint32_t)factor];
+        }
+
+
+        D3D12_BLEND_OP D3D12_NATIVE_BLEND_OPS[]
+        {
+            D3D12_BLEND_OP_ADD,
+            D3D12_BLEND_OP_SUBTRACT,
+            D3D12_BLEND_OP_REV_SUBTRACT,
+            D3D12_BLEND_OP_MIN,
+            D3D12_BLEND_OP_MAX
+        };
+        D3D12_BLEND_OP DX12Backend::nativeBlendOp(BlendOperation op)
+        {
+            return D3D12_NATIVE_BLEND_OPS[(uint32_t)op];
+        }
+
+        D3D12_LOGIC_OP D3D12_NATIVE_LOGIC_OPS[]
+        {
+            D3D12_LOGIC_OP_CLEAR,
+            D3D12_LOGIC_OP_AND,
+            D3D12_LOGIC_OP_AND_REVERSE,
+            D3D12_LOGIC_OP_COPY,
+            D3D12_LOGIC_OP_AND_INVERTED,
+            D3D12_LOGIC_OP_NOOP,
+            D3D12_LOGIC_OP_XOR,
+            D3D12_LOGIC_OP_OR,
+            D3D12_LOGIC_OP_NOR,
+            D3D12_LOGIC_OP_EQUIV,
+            D3D12_LOGIC_OP_INVERT,
+            D3D12_LOGIC_OP_AND_REVERSE,
+            D3D12_LOGIC_OP_COPY_INVERTED,
+            D3D12_LOGIC_OP_OR_INVERTED,
+            D3D12_LOGIC_OP_NAND,
+            D3D12_LOGIC_OP_SET
+        };
+        D3D12_LOGIC_OP DX12Backend::nativeLogicOp(LogicOperation op)
+        {
+            return D3D12_NATIVE_LOGIC_OPS[(uint32_t)op];
+        }
+
+        D3D12_FILL_MODE DX12Backend::nativeFillMode(RasterizationState::DrawMode mode)
+        {
+            switch(mode)
+            {
+            case RasterizationState::DrawMode::FACE:
+                return D3D12_FILL_MODE_SOLID;
+            case RasterizationState::DrawMode::EDGE:
+            case RasterizationState::DrawMode::VERTEX:
+                return D3D12_FILL_MODE_WIREFRAME;
+            }
+            return D3D12_FILL_MODE_SOLID;
+        }
+
+        D3D12_CULL_MODE DX12Backend::nativeCullMode(RasterizationState::CullOptions mode)
+        {
+            switch(mode)
+            {
+            case RasterizationState::CullOptions::NONE:
+                return D3D12_CULL_MODE_NONE;
+                break;
+            case RasterizationState::CullOptions::FRONT_FACING:
+                return D3D12_CULL_MODE_FRONT;
+                break;
+            case RasterizationState::CullOptions::BACK_FACING:
+                return D3D12_CULL_MODE_BACK;
+                break;
+            }
+            return D3D12_CULL_MODE_NONE;
+
+        }
+
+        D3D12_COMPARISON_FUNC D3D12_NATIVE_COMPARISON_FUNCS[]
+        {
+            D3D12_COMPARISON_FUNC_NEVER,
+            D3D12_COMPARISON_FUNC_LESS,
+            D3D12_COMPARISON_FUNC_LESS_EQUAL,
+            D3D12_COMPARISON_FUNC_GREATER,
+            D3D12_COMPARISON_FUNC_GREATER_EQUAL,
+            D3D12_COMPARISON_FUNC_EQUAL,
+            D3D12_COMPARISON_FUNC_NOT_EQUAL,
+            D3D12_COMPARISON_FUNC_ALWAYS
+        };
+        D3D12_COMPARISON_FUNC DX12Backend::nativeCompareFunc(ComparisonFunction func)
+        {
+            return D3D12_NATIVE_COMPARISON_FUNCS[(uint32_t)func];
+        }
+
+        D3D12_STENCIL_OP D3D12_NATIVE_STENCIL_OPS[]
+        {
+            D3D12_STENCIL_OP_KEEP,
+            D3D12_STENCIL_OP_ZERO,
+            D3D12_STENCIL_OP_REPLACE,
+            D3D12_STENCIL_OP_INCR_SAT,
+            D3D12_STENCIL_OP_DECR_SAT,
+            D3D12_STENCIL_OP_INVERT,
+            D3D12_STENCIL_OP_INCR,
+            D3D12_STENCIL_OP_DECR
+        };
+
+        D3D12_DEPTH_STENCILOP_DESC DX12Backend::nativeDepthStencilOpDesc(StencilOpState state)
+        {
+            D3D12_DEPTH_STENCILOP_DESC desc{};
+            desc.StencilFailOp = D3D12_NATIVE_STENCIL_OPS[(uint32_t)state.failOp];
+            desc.StencilDepthFailOp = D3D12_NATIVE_STENCIL_OPS[(uint32_t)state.depthFailOp];
+            desc.StencilPassOp = D3D12_NATIVE_STENCIL_OPS[(uint32_t)state.passOp];
+            desc.StencilFunc = nativeCompareFunc(state.compareOp);
+            return desc;
+        }
+
         SlagInitializationResult DX12Backend::initializeBackend(const InitializationData& initializationData)
         {
             Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory;

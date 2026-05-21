@@ -35,8 +35,8 @@ TEST(ShaderPipeline, Sandbox)
     auto colorTarget = std::unique_ptr<Texture>(card->newTexture2D(250,250,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
     auto depthTarget = std::unique_ptr<Texture>(card->newTexture2D(250,250,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
 
-    auto globals = std::unique_ptr<Buffer>(card->newBuffer(/*192*/256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
-    auto transform = std::unique_ptr<Buffer>(card->newBuffer(/*64*/256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
+    auto globals = std::unique_ptr<Buffer>(card->newBuffer(/*192*/256,BufferCPUAccess::WRITE_ONLY));
+    auto transform = std::unique_ptr<Buffer>(card->newBuffer(/*64*/256,BufferCPUAccess::WRITE_ONLY));
     auto proj = glm::perspective(95.0f,(float)colorTarget->width()/(float)colorTarget->height(),.01f,100.0f);
     glm::mat4 view = glm::mat4(1.0f);
     view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
@@ -52,8 +52,8 @@ TEST(ShaderPipeline, Sandbox)
     transformPtr[0] = glm::rotate(glm::mat4(1),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
 
 
-    auto vertex = slagTestsCreateShaderModule(card, "resources/tests/shaders/compiled/TexturedDepth.vertex");
-    auto fragment = slagTestsCreateShaderModule(card, "resources/tests/shaders/compiled/TexturedDepth.fragment");
+    auto vertex = slagTestsCreateShaderModule(card, "resources/tests/shaders/compiled/TexturedDepthBindless.vertex");
+    auto fragment = slagTestsCreateShaderModule(card, "resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
 
     std::vector<VertexBinding> vertexBindings = {
         VertexBinding(0,sizeof(float)*3,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
@@ -61,20 +61,11 @@ TEST(ShaderPipeline, Sandbox)
     };
     VertexDescription vertexDescription(vertexBindings);
 
-    DescriptorRange constantRange(DescriptorRangeType::UNIFORM_BUFFER,0,0,1,0);
-    DescriptorRange samplerRange(DescriptorRangeType::SAMPLER,1,0,1,0);
-    DescriptorRange instanceRanges[]
-    {
-        DescriptorRange{DescriptorRangeType::UNIFORM_BUFFER,2,0,1,0},
-        DescriptorRange{DescriptorRangeType::READONLY_RESOURCE,2,1,1,1}
-    };
-    PipelineInputMappingBuilder mappingBuilder(card);
-    mappingBuilder.addDescriptorTable(&constantRange,1).addDescriptorTable(&samplerRange,1).addDescriptorTable(instanceRanges,2);
-    auto bindings = mappingBuilder.build();
+
     FramebufferDescription framebufferDesc;
     framebufferDesc.colorFormats[0] = colorTarget->format();
     framebufferDesc.depthFormat = depthTarget->format();
-    auto pipeline = std::unique_ptr<ShaderPipeline>(card->newShaderPipeline(vertexDescription,vertex.get(),fragment.get(),&bindings,PipelineState(),framebufferDesc));
+    auto pipeline = std::unique_ptr<ShaderPipeline>(card->newShaderPipeline(vertexDescription,vertex.details,fragment.details,PipelineState(),framebufferDesc));
 
     auto commandBuffer = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(QueueType::GRAPHICS));
     auto finished = std::unique_ptr<Semaphore>(card->newSemaphore());
@@ -83,24 +74,8 @@ TEST(ShaderPipeline, Sandbox)
     auto texture = utilities::loadTexture("resources\\tests\\textures\\gradient.jpg",card);
 
 
-    auto resourceHeap = std::unique_ptr<DescriptorHeap>(card->newDescriptorHeap(DescriptorHeapType::RESOURCE,500));
-    auto samplerHeap = std::unique_ptr<DescriptorHeap>(card->newDescriptorHeap(DescriptorHeapType::SAMPLER,200));
-    uint32_t resourceHeapOffset = 0;
-    uint32_t samplerHeapOffset = 0;
-
-    auto table0Offset = resourceHeapOffset;
-    resourceHeap->writeUniformBufferDescriptor(resourceHeapOffset,globals.get(),0,globals->size());
-    resourceHeapOffset += card->descriptorHeapDetails().resourceDescriptorIncrementSize;
-
-    auto table1Offset = samplerHeapOffset;
-    samplerHeap->writeSamplerDescriptor(samplerHeapOffset,sampler.get());
-    samplerHeapOffset += card->descriptorHeapDetails().samplerDescriptorIncrementSize;
-
-    auto table2Offset = resourceHeapOffset;
-    resourceHeap->writeUniformBufferDescriptor(resourceHeapOffset,transform.get(),0,transform->size());
-    resourceHeapOffset += card->descriptorHeapDetails().resourceDescriptorIncrementSize;
-    resourceHeap->writeSampledTextureDescriptor(resourceHeapOffset,texture.get());
-    resourceHeapOffset += card->descriptorHeapDetails().resourceDescriptorIncrementSize;
+    auto resourceHeap = std::unique_ptr<ResourceDescriptorHeap>(card->newResourceDescriptorHeap(500));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(card->newSamplerDescriptorHeap(200));
 
 
     commandBuffer->begin();
@@ -119,9 +94,20 @@ TEST(ShaderPipeline, Sandbox)
     commandBuffer->bindIndexBuffer(triangleIndices.get(),IndexBufferType::UINT_16,0);
     commandBuffer->bindGraphicsPipeline(pipeline.get());
 
-    commandBuffer->setInputBindingTable(bindings.input(0).location(),table0Offset);
-    commandBuffer->setInputBindingTable(bindings.input(1).location(),table1Offset);
-    commandBuffer->setInputBindingTable(bindings.input(2).location(),table2Offset);
+    resourceHeap->setStorageBuffer(0,globals.get(),0,globals->size());
+    resourceHeap->setStorageBuffer(1,transform.get(),0,transform->size());
+    resourceHeap->setUniformTexture(2,texture.get());
+    samplerHeap->setSampler(0,sampler.get());
+
+    uint32_t globalIndex = 0;
+    uint32_t instanceIndex = 1;
+    uint32_t textureIndex = 2;
+    uint32_t samplerIndex = 0;
+    commandBuffer->setGraphicsShaderParameters(0,&globalIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(8,&instanceIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(16,&textureIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(24,&samplerIndex,sizeof(uint32_t));
+
     commandBuffer->drawIndexed(tindexes.size(),1,0,0,0);
 
     commandBuffer->endRendering();

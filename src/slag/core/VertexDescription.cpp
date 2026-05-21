@@ -11,7 +11,7 @@ namespace slag
         _offset = offset;
     }
 
-    std::string VertexAttribute::name() const
+    const std::string& VertexAttribute::name() const
     {
         return _name;
     }

@@ -27,8 +27,8 @@ namespace slag
                 TextureBarrier* textureBarriers,
                 uint32_t textureBarrierCount
                 )override;
-            void bindDescriptorHeaps(DescriptorHeap* resourceHeap, DescriptorHeap* samplerHeap)override;
-            void setInputBindingTable(uint32_t byteOffset, uint32_t heapOffset)override;
+            void bindDescriptorHeaps(ResourceDescriptorHeap* resourceHeap, SamplerDescriptorHeap* samplerHeap)override;
+            void setGraphicsShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)override;
             void copyBufferToBuffer(Buffer* source, uint64_t sourceOffset, Buffer* destination, uint64_t destinationOffset, uint64_t length)override;
             void copyTextureToBuffer(Texture* source, Buffer* destination, TextureBufferMapping* copyData, uint32_t mappingCount)override;
             void copyBufferToTexture(Buffer* source, Texture* destination, TextureBufferMapping* copyData, uint32_t mappingCount)override;

@@ -5,14 +5,13 @@
 #include "Buffer.h"
 #include "CommandBuffer.h"
 #include "Defragmentation.h"
-#include "DescriptorHeap.h"
-#include "PipelineInputMapping.h"
 #include "PixelFormatProperties.h"
 #include "Pixels.h"
+#include "ResourceDescriptorHeap.h"
 #include "Sampler.h"
 #include "SubmissionQueue.h"
 #include "Texture.h"
-#include "ShaderModule.h"
+#include "ShaderCode.h"
 #include "ShaderPipeline.h"
 #include "VertexDescription.h"
 
@@ -42,13 +41,13 @@ namespace slag
         uint32_t resourceDescriptorIncrementSize=0;
         ///Size to increment when writing samplers to a sampler descriptor heap
         uint32_t samplerDescriptorIncrementSize=0;
-        ///Maximum size in bytes of a descriptor heap
-        uint32_t maxResourceDescriptorHeapSize=0;
-        ///Maximum size in bytes of a sampler descriptor heap
-        uint32_t maxSamplerDescriptorHeapSize=0;
-        ///Back end reservation of memory for implementation of certain api features. Is seperate from maxResourceDescriptorHeapSize
+        ///Maximum number of descriptors that can be stored in a resource descriptor heap
+        uint32_t maxResourceDescriptors=0;
+        ///Maximum number of descriptors that can be stored in a sampler descriptor heap
+        uint32_t maxSamplerDescriptors=0;
+        ///Back end reservation of memory for implementation of certain api features
         uint32_t resourceReservedRangeSize=0;
-        ///Back end reservation of memory for implementation of certain api features. Is seperate from maxSamplerDescriptorHeapSize
+        ///Back end reservation of memory for implementation of certain api features
         uint32_t samplerReservedRangeSize=0;
     };
     ///Hardware used for performing parallel computing. May or may not actually be a dedicated "Graphics Card" per se, but does support large scale parallel computation functionality
@@ -88,22 +87,10 @@ namespace slag
         virtual uint64_t defragmentMemory(uint64_t targetBytes=0, std::function<void(MemoryReference*)> memoryMoved = nullptr)=0;
 
         //Shaders
-
-        /**
-         * Create a new shader module
-         * @param language The language of the shader module
-         * @param data Shader data
-         * @param dataLength Length of shader data
-         * @return
-         */
-        [[nodiscard]] virtual ShaderModule* newShaderModule(ShaderLanguage language, void* data, uint32_t dataLength)=0;
-
-
         [[nodiscard]] virtual ShaderPipeline* newShaderPipeline(
             const VertexDescription& vertexDescription,
-            ShaderModule* vertexShader,
-            ShaderModule* fragmentShader,
-            PipelineInputMapping* inputBindings,
+            const ShaderCode& vertexShader,
+            const ShaderCode& fragmentShader,
             const PipelineState& pipelineState,
             const FramebufferDescription& framebufferDescription)=0;
 
@@ -140,12 +127,18 @@ namespace slag
             BufferMemoryType shaderAccess = BufferMemoryType::GENERAL)=0;
 
         /**
-         * Allocate a new descriptor heap
-         * @param type Which kind of descriptors this will hold
-         * @param descriptorCount Number of descriptors in the heap
+         * Allocate a new resource descriptor heap
+         * @param descriptorCount number of descriptors in the heap
          * @return
          */
-        [[nodiscard]] virtual DescriptorHeap* newDescriptorHeap(DescriptorHeapType type, uint32_t descriptorCount)=0;
+        [[nodiscard]] virtual ResourceDescriptorHeap* newResourceDescriptorHeap(uint32_t descriptorCount)=0;
+
+        /**
+         * Allocate a new sampler descriptor heap
+         * @param descriptorCount number of descriptors in the heap
+         * @return
+         */
+        [[nodiscard]] virtual SamplerDescriptorHeap* newSamplerDescriptorHeap(uint32_t descriptorCount)=0;
 
         //Textures
 

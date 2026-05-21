@@ -4,7 +4,7 @@
 #include "DX12Buffer.h"
 #include "DX12CommandBuffer.h"
 #include "DX12Semaphore.h"
-#include "DX12ShaderModule.h"
+#include "DX12ShaderPipeline.h"
 #include "DX12SubmissionQueue.h"
 #include "DX12Texture.h"
 #include "slag/exceptions/NotImplemented.h"
@@ -122,8 +122,9 @@ namespace slag
             _device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options));
             _descriptorHeapDetails.resourceDescriptorIncrementSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
             _descriptorHeapDetails.samplerDescriptorIncrementSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-            _descriptorHeapDetails.maxResourceDescriptorHeapSize = 1015808 *  _descriptorHeapDetails.resourceDescriptorIncrementSize;
-            _descriptorHeapDetails.maxSamplerDescriptorHeapSize = 4000 * _descriptorHeapDetails.samplerDescriptorIncrementSize;
+            //TODO: this is only true on max hardware tiers. I should query it and set it from the query
+            _descriptorHeapDetails.maxResourceDescriptors = 1015808;
+            _descriptorHeapDetails.maxSamplerDescriptors = 2048;
             _descriptorHeapDetails.resourceReservedRangeSize = 0;
             _descriptorHeapDetails.samplerReservedRangeSize = 0;
 
@@ -376,20 +377,14 @@ namespace slag
             return stats.BytesMoved;
         }
 
-        ShaderModule* DX12GraphicsCard::newShaderModule(ShaderLanguage language, void* data, uint32_t dataLength)
-        {
-            return new DX12ShaderModule(this,language,data,dataLength);
-        }
-
         ShaderPipeline* DX12GraphicsCard::newShaderPipeline(
             const VertexDescription& vertexDescription,
-            ShaderModule* vertexShader,
-            ShaderModule* fragmentShader,
-            PipelineInputMapping* inputBindings,
+            const ShaderCode& vertexShader,
+            const ShaderCode& fragmentShader,
             const PipelineState& pipelineState,
             const FramebufferDescription& framebufferDescription)
         {
-            throw NotImplemented();
+            return new DX12ShaderPipeline(this,vertexDescription,vertexShader,fragmentShader,pipelineState,framebufferDescription);
         }
 
         CommandBuffer* DX12GraphicsCard::newCommandBuffer(QueueType type)
@@ -410,7 +405,12 @@ namespace slag
             return new DX12Buffer(this,size,cpuAccess,memoryType);
         }
 
-        DescriptorHeap* DX12GraphicsCard::newDescriptorHeap(DescriptorHeapType type, uint32_t descriptorCount)
+        ResourceDescriptorHeap* DX12GraphicsCard::newResourceDescriptorHeap(uint32_t descriptorCount)
+        {
+            throw NotImplemented();
+        }
+
+        SamplerDescriptorHeap* DX12GraphicsCard::newSamplerDescriptorHeap(uint32_t descriptorCount)
         {
             throw NotImplemented();
         }

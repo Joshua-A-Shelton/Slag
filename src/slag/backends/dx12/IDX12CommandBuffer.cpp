@@ -187,12 +187,12 @@ namespace slag
             _commandBuffer->Barrier(3, barrierGroups);
         }
 
-        void IDX12CommandBuffer::bindDescriptorHeaps(DescriptorHeap* resourceHeap, DescriptorHeap* samplerHeap)
+        void IDX12CommandBuffer::bindDescriptorHeaps(ResourceDescriptorHeap* resourceHeap, SamplerDescriptorHeap* samplerHeap)
         {
             throw NotImplemented();
         }
 
-        void IDX12CommandBuffer::setInputBindingTable(uint32_t byteOffset, uint32_t heapOffset)
+        void IDX12CommandBuffer::setGraphicsShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
         {
             throw NotImplemented();
         }

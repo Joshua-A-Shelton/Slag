@@ -1,10 +1,10 @@
 #include "VulkanShaderPipeline.h"
 
 #include "VulkanBackend.h"
-#include "VulkanShaderModule.h"
 #include "slag/exceptions/InvalidShaderVertexBindingError.h"
 #include "slag/exceptions/ResourceCreationError.h"
 #include "slag/utilities/SLAG_ASSERT.h"
+#include <spirv_reflect.h>
 
 namespace slag
 {
@@ -13,15 +13,13 @@ namespace slag
         VulkanShaderPipeline::VulkanShaderPipeline(
             VulkanGraphicsCard* graphicsCard,
             const VertexDescription& vertexDescription,
-            ShaderModule* vertexShader,
-            ShaderModule* fragmentShader,
-            PipelineInputMapping* inputBindings,
+            const ShaderCode& vertexShader,
+            const ShaderCode& fragmentShader,
             const PipelineState& pipelineState,
             const FramebufferDescription& framebufferDescription)
         {
-            SLAG_ASSERT(vertexShader != nullptr && vertexShader->metaData().type() == ShaderType::VERTEX && "provided vertex shader is not a vertex shader");
-            SLAG_ASSERT(fragmentShader != nullptr && fragmentShader->metaData().type() == ShaderType::FRAGMENT && "provided fragment shader is not a fragment shader");
-            SLAG_ASSERT(vertexShader->graphicsCard() == graphicsCard && fragmentShader->graphicsCard() == graphicsCard && "All shader modules must be on the graphics card creating the shader pipeline");
+            SLAG_ASSERT(vertexShader.language == ShaderLanguage::SPIRV && "Shader code must be SPIRV for Vulkan");
+            SLAG_ASSERT(fragmentShader.language == ShaderLanguage::SPIRV && "Shader code must be SPIRV for Vulkan");
             _graphicsCard = graphicsCard;
 
 
@@ -37,44 +35,56 @@ namespace slag
             VkPipelineDepthStencilStateCreateInfo depthStencilInfo{};
             initDepthAttachmentInfo(pipelineState.depthStencilState,&depthStencilInfo);
 
-            std::vector<std::string> foundNames;
-            auto& vertexMeta = vertexShader->metaData();
-            foundNames.reserve(vertexMeta.inputVariableCount());
             std::vector<VkVertexInputAttributeDescription> attributes;
             std::vector<VkVertexInputBindingDescription> bindingDescriptions;
+            struct AttributeKey
+            {
+                uint32_t location;
+                SpvReflectFormat format;
+            };
+            std::unordered_map<std::string,AttributeKey> attributeMap;
+
+            SpvReflectShaderModule vertexReflectionModule;
+
+            auto result = spvReflectCreateShaderModule(vertexShader.codeLength,vertexShader.code,&vertexReflectionModule);
+            if (result != SPV_REFLECT_RESULT_SUCCESS)
+            {
+                spvReflectDestroyShaderModule(&vertexReflectionModule);
+                throw InvalidShaderVertexBindingError("Unable to read shader code");
+            }*/
+            for (auto i=0u; i< vertexReflectionModule.input_variable_count; ++i)
+            {
+                auto inputVariable = vertexReflectionModule.input_variables[i];
+                auto attInput = attributeMap.find(inputVariable->semantic);
+                if (attInput == attributeMap.end())
+                {
+                    spvReflectDestroyShaderModule(&vertexReflectionModule);
+                    throw InvalidShaderVertexBindingError("Vertex shader has duplicate attribute name");
+                }
+                attributeMap[inputVariable->semantic] = {inputVariable->location, inputVariable->format};
+            }
+            spvReflectDestroyShaderModule(&vertexReflectionModule);
 
 
             for (auto i=0u; i< vertexDescription.bindingCount(); ++i)
             {
                 auto& binding = vertexDescription[i];
-                for (auto attribute = 0u; attribute < binding.attributeCount(); ++attribute)
-                {
-                    auto& curAttribute = binding[attribute];
-                    bool foundMatch = false;
-                    uint32_t vulkanLocation = 0;
-                    for (auto input=0u; input< vertexMeta.inputVariableCount(); ++input)
-                    {
-                        auto& curInput = vertexMeta.inputVariable(input);
-                        if (curInput.name() == curAttribute.name())
-                        {
-                            foundMatch = true;
-                            vulkanLocation = curInput.location();
-                            attributes.emplace_back(vulkanLocation,binding.bindingIndex(),VulkanBackend::nativeFormat(curAttribute.loadAs()).format,curAttribute.offset());
-                            break;
-                        }
-                    }
-                    if (!foundMatch)
-                    {
-                        throw InvalidShaderVertexBindingError("Expected vertex shader to have vertex attribute \""+curAttribute.name()+"\"");
-                    }
-                }
-
                 bindingDescriptions.emplace_back(binding.bindingIndex(),binding.stride(),VK_VERTEX_INPUT_RATE_VERTEX);
+                for (auto j=0u; j< binding.attributeCount(); ++j)
+                {
+                    auto& attribute = binding[j];
+
+                    auto attInput = attributeMap.find(attribute.name());
+                    if (attInput == attributeMap.end())
+                    {
+                        throw InvalidShaderVertexBindingError("Attribute '" + attribute.name() + "' is not present in shader");
+                    }
+                    //TODO: see if the type of the attribute matches
+
+                    attributes.emplace_back(attInput->second.location,binding.bindingIndex(),VulkanBackend::nativeFormat(attribute.loadAs()).format,attribute.offset());
+                }
             }
-            if (attributes.size() != vertexMeta.inputVariableCount())
-            {
-                throw InvalidShaderVertexBindingError("Mismatch between vertex shader inputs and provided vertex description");
-            }
+
 
             VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
             vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -111,107 +121,47 @@ namespace slag
             pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 
             VkShaderDescriptorSetAndBindingMappingInfoEXT mappings{.sType = VK_STRUCTURE_TYPE_SHADER_DESCRIPTOR_SET_AND_BINDING_MAPPING_INFO_EXT};
-            std::vector<VkDescriptorSetAndBindingMappingEXT> bindingMappings;
-            if (inputBindings!=nullptr)
-            {
-                _bindings = *inputBindings;
-                for (auto i=0u; i< inputBindings->inputCount(); i++)
-                {
-                    auto& binding = inputBindings->input(i);
-                    switch (binding.type())
-                    {
-                    case PipelineInputType::CONSTANT_RANGE:
-                        {
-                            auto constRange = binding.constantRange();
-                            VkDescriptorSetAndBindingMappingEXT constRangeInput
-                            {
-                                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_AND_BINDING_MAPPING_EXT,
-                                .pNext = nullptr,
-                                .descriptorSet = constRange->bindGroupIndex,
-                                .firstBinding = constRange->binding,
-                                .bindingCount = 1,
-                                .resourceMask = VK_SPIRV_RESOURCE_TYPE_ALL_EXT,
-                                .source = VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_DATA_EXT,
-                            };
-                            constRangeInput.sourceData.pushDataOffset = binding.location();
-                            bindingMappings.push_back(constRangeInput);
-                        }
-                        break;
-                    case PipelineInputType::DESCRIPTOR:
-                        {
-                            auto descriptor = binding.descriptor();
-                            VkDescriptorSetAndBindingMappingEXT descriptorInput
-                            {
-                                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_AND_BINDING_MAPPING_EXT,
-                                .pNext = nullptr,
-                                .descriptorSet = descriptor->bindGroupIndex,
-                                .firstBinding = descriptor->binding,
-                                .bindingCount = 1,
-                                .resourceMask = VK_SPIRV_RESOURCE_TYPE_ALL_EXT,
-                                .source = VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT,
-                            };
-                            descriptorInput.sourceData.pushAddressOffset = binding.location();
-                            bindingMappings.push_back(descriptorInput);
-                        }
-                        break;
-                    case PipelineInputType::DESCRIPTOR_TABLE:
-                        {
-                            auto table = binding.descriptorTable();
-                            for (auto range = 0u; range < table->rangeCount(); range++)
-                            {
-                                auto curRange = table->descriptorRange(range);
-                                VkDescriptorSetAndBindingMappingEXT rangeInput
-                                {
-                                    .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_AND_BINDING_MAPPING_EXT,
-                                    .pNext = nullptr,
-                                    .descriptorSet = curRange.bindGroupIndex,
-                                    .firstBinding = curRange.firstBinding,
-                                    .bindingCount = curRange.bindingCount,
-                                    .resourceMask = VK_SPIRV_RESOURCE_TYPE_ALL_EXT,
-                                    .source = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_PUSH_INDEX_EXT,
-                                };
-                                switch (curRange.type)
-                                {
-                                case DescriptorRangeType::UNIFORM_BUFFER:
-                                case DescriptorRangeType::READONLY_RESOURCE:
-                                case DescriptorRangeType::UNORDERED_ACCESS_RESOURCE:
-                                    rangeInput.sourceData.pushIndex.heapOffset = curRange.offsetInDescriptorsFromTableStart * _graphicsCard->descriptorHeapDetails().resourceDescriptorIncrementSize;
-                                    break;
-                                case DescriptorRangeType::SAMPLER:
-                                    rangeInput.sourceData.pushIndex.heapOffset = curRange.offsetInDescriptorsFromTableStart * _graphicsCard->descriptorHeapDetails().samplerDescriptorIncrementSize;
-                                    break;
-                                }
+            VkDescriptorSetAndBindingMappingEXT bindingMapping{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_AND_BINDING_MAPPING_EXT};
+            bindingMapping.descriptorSet = 0;
+            bindingMapping.firstBinding = 0;
+            bindingMapping.bindingCount = 1;
+            bindingMapping.resourceMask = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+            bindingMapping.source = VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_DATA_EXT;
+            bindingMapping.sourceData.pushDataOffset = 0;
+            mappings.mappingCount = 1;
+            mappings.pMappings = &bindingMapping;
 
-                                rangeInput.sourceData.pushIndex.heapIndexStride = 1;
-                                rangeInput.sourceData.pushIndex.pushOffset = binding.location();
-                                bindingMappings.push_back(rangeInput);
-                            }
-                        }
-                        break;
-                    }
-                }
-            }
-            mappings.mappingCount = bindingMappings.size();
-            mappings.pMappings = bindingMappings.data();
+            VkShaderModuleCreateInfo shaderModuleInfo[2];
+            shaderModuleInfo[0].sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+            shaderModuleInfo[0].pNext = &mappings;
+            shaderModuleInfo[0].flags = 0;
+            shaderModuleInfo[0].codeSize = vertexShader.codeLength;
+            shaderModuleInfo[0].pCode = static_cast<uint32_t*>(vertexShader.code);
+
+            shaderModuleInfo[1].sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+            shaderModuleInfo[1].pNext = &mappings;
+            shaderModuleInfo[1].flags = 0;
+            shaderModuleInfo[1].codeSize = fragmentShader.codeLength;
+            shaderModuleInfo[1].pCode = static_cast<uint32_t*>(fragmentShader.code);
 
             VkPipelineShaderStageCreateInfo shaderStages[2];
             shaderStages[0] =
             {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-                .pNext = &mappings,
+                .pNext = &shaderModuleInfo[0],
                 .flags = 0,
                 .stage = VK_SHADER_STAGE_VERTEX_BIT,
-                .module = static_cast<VulkanShaderModule*>(vertexShader)->nativeModule(),
+                .module = nullptr,
                 .pName = "main",
                 .pSpecializationInfo = nullptr
             };
             shaderStages[1] =
             {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-                .pNext = &mappings,
+                .pNext = &shaderModuleInfo[1],
                 .flags = 0,
                 .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-                .module = static_cast<VulkanShaderModule*>(fragmentShader)->nativeModule(),
+                .module = nullptr,
                 .pName = "main",
                 .pSpecializationInfo = nullptr
             };
@@ -285,11 +235,6 @@ namespace slag
         GraphicsCard* VulkanShaderPipeline::graphicsCard()
         {
             return _graphicsCard;
-        }
-
-        const PipelineInputMapping& VulkanShaderPipeline::bindings()
-        {
-            return _bindings;
         }
 
         VkPipeline VulkanShaderPipeline::vulkanHandle() const
@@ -406,7 +351,6 @@ namespace slag
 
         void VulkanShaderPipeline::move(VulkanShaderPipeline& from)
         {
-            std::swap(_bindings,from._bindings);
             _graphicsCard = from._graphicsCard;
             std::swap(_pipeline, from._pipeline);
             _type = from._type;

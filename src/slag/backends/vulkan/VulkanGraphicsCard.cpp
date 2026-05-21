@@ -3,16 +3,15 @@
 #include "VulkanBackend.h"
 #include "VulkanBuffer.h"
 #include "VulkanCommandBuffer.h"
-#include "VulkanDescriptorHeap.h"
+#include "VulkanResourceDescriptorHeap.h"
 #include "VulkanSampler.h"
+#include "VulkanSamplerDescriptorHeap.h"
 #include "VulkanSemaphore.h"
-#include "VulkanShaderModule.h"
 #include "VulkanShaderPipeline.h"
 #include "VulkanSubmissionQueue.h"
 #include "VulkanTexture.h"
 #include "slag/exceptions/InvalidShaderCodeError.h"
 #include "slag/exceptions/NotImplemented.h"
-#include "slag/shader-reflection/spirv/SPIRVShaderReflector.h"
 #include "slag/utilities/SLAG_ASSERT.h"
 
 namespace slag
@@ -143,10 +142,10 @@ namespace slag
             _capabilities.raytracing =  rtProps.shaderGroupHandleSize > 0;
 
             //establish descriptor heap details
-            _descriptorHeapDetails.resourceDescriptorIncrementSize = dhProps.samplerDescriptorSize;
+            _descriptorHeapDetails.resourceDescriptorIncrementSize = dhProps.imageDescriptorSize;
             _descriptorHeapDetails.samplerDescriptorIncrementSize = dhProps.samplerDescriptorSize;
-            _descriptorHeapDetails.maxResourceDescriptorHeapSize=dhProps.maxResourceHeapSize-dhProps.minResourceHeapReservedRange;
-            _descriptorHeapDetails.maxSamplerDescriptorHeapSize=dhProps.maxSamplerHeapSize-dhProps.minSamplerHeapReservedRange;
+            _descriptorHeapDetails.maxResourceDescriptors=(dhProps.maxResourceHeapSize-dhProps.minResourceHeapReservedRange) / dhProps.imageDescriptorSize;
+            _descriptorHeapDetails.maxSamplerDescriptors=(dhProps.maxSamplerHeapSize-dhProps.minSamplerHeapReservedRange) / dhProps.samplerDescriptorSize;
             _descriptorHeapDetails.resourceReservedRangeSize=dhProps.minResourceHeapReservedRange;
             _descriptorHeapDetails.samplerReservedRangeSize=dhProps.minSamplerHeapReservedRange;
 
@@ -438,24 +437,14 @@ namespace slag
             return stats.bytesMoved;
         }
 
-        ShaderModule* VulkanGraphicsCard::newShaderModule(ShaderLanguage language, void* data, uint32_t dataLength)
-        {
-            if (language != ShaderLanguage::SPIRV)
-            {
-                throw InvalidShaderCodeError("Vulkan Backend only accepts shaders in SPIRV format");
-            }
-            return new VulkanShaderModule(this,data,dataLength);
-        }
-
         ShaderPipeline* VulkanGraphicsCard::newShaderPipeline(
             const VertexDescription& vertexDescription,
-            ShaderModule* vertexShader,
-            ShaderModule* fragmentShader,
-            PipelineInputMapping* inputBindings,
+            const ShaderCode& vertexShader,
+            const ShaderCode& fragmentShader,
             const PipelineState& pipelineState,
             const FramebufferDescription& framebufferDescription)
         {
-            return new VulkanShaderPipeline(this,vertexDescription,vertexShader,fragmentShader,inputBindings,pipelineState,framebufferDescription);
+            return new VulkanShaderPipeline(this,vertexDescription,vertexShader,fragmentShader,pipelineState,framebufferDescription);
         }
 
         CommandBuffer* VulkanGraphicsCard::newCommandBuffer(QueueType type)
@@ -476,9 +465,14 @@ namespace slag
             return new VulkanBuffer(this, size, cpuAccess, memoryType);
         }
 
-        DescriptorHeap* VulkanGraphicsCard::newDescriptorHeap(DescriptorHeapType type, uint32_t descriptorCount)
+        ResourceDescriptorHeap* VulkanGraphicsCard::newResourceDescriptorHeap(uint32_t descriptorCount)
         {
-            return new VulkanDescriptorHeap(this,type,descriptorCount);
+            return new VulkanResourceDescriptorHeap(this,descriptorCount);
+        }
+
+        SamplerDescriptorHeap* VulkanGraphicsCard::newSamplerDescriptorHeap(uint32_t descriptorCount)
+        {
+            return new VulkanSamplerDescriptorHeap(this,descriptorCount);
         }
 
         Texture* VulkanGraphicsCard::newTexture1D(uint32_t width, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels, uint32_t layers)

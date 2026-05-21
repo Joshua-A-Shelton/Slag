@@ -17,7 +17,7 @@ namespace slag
          */
         VertexAttribute(const std::string& name, PixelFormat loadAs, uint32_t offset);
         ///Name to match on when making a shader pipeline
-        [[nodiscard]] std::string name()const;
+        [[nodiscard]] const std::string& name()const;
         ///Graphics Type of the vertex attribute
         [[nodiscard]] PixelFormat loadAs()const;
         ///Offset into the vertex binding buffer this attribute is

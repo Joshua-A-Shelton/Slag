@@ -1,9 +1,7 @@
 #ifndef SLAG_SHADERPIPELINE_H
 #define SLAG_SHADERPIPELINE_H
 #include "Color.h"
-#include "ShaderModule.h"
 #include "Operations.h"
-#include "PipelineInputMapping.h"
 
 namespace slag
 {
@@ -171,8 +169,6 @@ namespace slag
         virtual ~ShaderPipeline()=default;
         virtual ShaderPipelineType type()=0;
         virtual GraphicsCard* graphicsCard()=0;
-        virtual const PipelineInputMapping& bindings()=0;
-
     };
 }
 #endif //SLAG_SHADERPIPELINE_H
