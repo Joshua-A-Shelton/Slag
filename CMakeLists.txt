@@ -173,18 +173,18 @@ if(SLAG_VULKAN_BACKEND)
         FetchContent_MakeAvailable(vk-bootstrap)
     endif ()
 
-    find_package(SPIRV_REFLECT QUIET)
-    if(NOT SPIRV_REFLECT_FOUND)
-        FetchContent_Declare(
-                SPIRV_REFLECT
-                GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Reflect
-                GIT_TAG vulkan-sdk-1.4.350.0
-                GIT_SHALLOW TRUE
-                OVERRIDE_FIND_PACKAGE
-        )
-        FetchContent_MakeAvailable(SPIRV_REFLECT)
-        find_package(SPIRV_REFLECT REQUIRED)
-    endif ()
+    OPTION(SPIRV_REFLECT_EXECUTABLE "build spirv reflect executable" OFF)
+    OPTION(SPIRV_REFLECT_EXAMPLES "build spirv reflect examples" OFF)
+    OPTION(SPIRV_REFLECT_STATIC_LIB "build spirv reflect library" ON)
+    FetchContent_Declare(
+            spirv-reflect
+            GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Reflect
+            GIT_TAG vulkan-sdk-1.4.350.0
+            GIT_SHALLOW TRUE
+            OVERRIDE_FIND_PACKAGE
+    )
+    FetchContent_MakeAvailable(spirv-reflect)
+    find_package(spirv-reflect REQUIRED)
     target_include_directories(Slag PRIVATE ${Vulkan_INCLUDE_DIR})
     target_link_libraries(Slag PRIVATE ${Vulkan_LIBRARIES} GPUOpen::VulkanMemoryAllocator vk-bootstrap spirv-reflect-static)
 endif()

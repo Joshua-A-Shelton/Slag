@@ -51,7 +51,7 @@ namespace slag
             {
                 spvReflectDestroyShaderModule(&vertexReflectionModule);
                 throw InvalidShaderVertexBindingError("Unable to read shader code");
-            }*/
+            }
             for (auto i=0u; i< vertexReflectionModule.input_variable_count; ++i)
             {
                 auto inputVariable = vertexReflectionModule.input_variables[i];
