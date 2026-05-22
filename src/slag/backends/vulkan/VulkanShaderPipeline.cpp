@@ -6,6 +6,8 @@
 #include "slag/utilities/SLAG_ASSERT.h"
 #include <spirv_reflect.h>
 
+#include "slag/exceptions/InvalidShaderCodeError.h"
+
 namespace slag
 {
     namespace vulkan
@@ -50,7 +52,7 @@ namespace slag
             if (result != SPV_REFLECT_RESULT_SUCCESS)
             {
                 spvReflectDestroyShaderModule(&vertexReflectionModule);
-                throw InvalidShaderVertexBindingError("Unable to read shader code");
+                throw InvalidShaderCodeError("Unable to read shader code");
             }
             for (auto i=0u; i< vertexReflectionModule.input_variable_count; ++i)
             {
