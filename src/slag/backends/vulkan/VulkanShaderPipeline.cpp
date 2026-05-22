@@ -66,7 +66,11 @@ namespace slag
                     {
                         uint32_t targetId = code[index + 1];
                         std::string name = reinterpret_cast<const char*>(&code[index + 2]);
-                        names[targetId] = name;
+                        //only set the name if it hasn't been set, let user semantic take priority
+                        if (!names.contains(targetId))
+                        {
+                            names[targetId] = name;
+                        }
                         break;
                     }
                     case OpDecorate:
@@ -78,6 +82,11 @@ namespace slag
                             uint32_t location = code[index + 3];
                             locations[targetId] = location;
                         }
+                        /*else if (decoration == 5635)//User semantic is 5635
+                        {
+                            const char* semantic_string = reinterpret_cast<const char*>(&code[index+3]);
+                            names[targetId] = semantic_string;
+                        }*/
                         break;
                     }
                     case OpVariable:
