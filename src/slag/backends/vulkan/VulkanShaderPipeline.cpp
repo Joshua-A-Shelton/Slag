@@ -4,14 +4,114 @@
 #include "slag/exceptions/InvalidShaderVertexBindingError.h"
 #include "slag/exceptions/ResourceCreationError.h"
 #include "slag/utilities/SLAG_ASSERT.h"
-#include <spirv_reflect.h>
-
-#include "slag/exceptions/InvalidShaderCodeError.h"
 
 namespace slag
 {
+
     namespace vulkan
     {
+
+        std::unordered_map<std::string,uint32_t> getInputAttributes(const ShaderCode& vertexShader)
+        {
+            // SPIR-V Opcodes needed for extraction
+            enum Opcode
+            {
+                OpName = 5,
+                OpDecorate = 71,
+                OpVariable = 59,
+                OpTypePointer = 38
+            };
+
+            // Storage Classes
+            enum StorageClass
+            {
+                UniformConstant = 0,
+                Input = 1,
+                Uniform = 2,
+                Output = 3,
+                Workgroup = 4,
+                CrossWorkgroup = 5,
+                Private = 6,
+                Function = 7,
+                Generic = 8,
+                PushConstant = 9,
+                AtomicCounter = 10,
+                Image = 11,
+                StorageBuffer = 12
+            };
+
+            std::unordered_map<std::string,uint32_t> attributeMap;
+
+            auto code = reinterpret_cast<const uint32_t*>(vertexShader.code);
+
+            if (code[0] != 0x07230203)
+            {
+                throw InvalidShaderVertexBindingError("Invalid SPIR-V header");
+            }
+
+            std::unordered_map<uint32_t, std::string> names;
+            std::unordered_map<uint32_t, uint32_t> locations;
+            std::unordered_map<uint32_t, uint32_t> storageClasses;
+
+            size_t index = 5; // Start after the SPIR-V header
+
+            while (index < vertexShader.codeLength/sizeof(uint32_t))
+            {
+                uint16_t wordCount = code[index] >> 16;
+                uint16_t opcode = code[index] & 0xFFFF;
+
+                switch (opcode)
+                {
+                    case OpName:
+                    {
+                        uint32_t targetId = code[index + 1];
+                        std::string name = reinterpret_cast<const char*>(&code[index + 2]);
+                        names[targetId] = name;
+                        break;
+                    }
+                    case OpDecorate:
+                    {
+                        uint32_t targetId = code[index + 1];
+                        uint32_t decoration = code[index + 2];
+                        if (decoration == 30) // Decoration Location is 30
+                        {
+                            uint32_t location = code[index + 3];
+                            locations[targetId] = location;
+                        }
+                        break;
+                    }
+                    case OpVariable:
+                    {
+                        //uint32_t typeId = code[index + 1];
+                        uint32_t variableId = code[index + 2];
+                        uint32_t storage_class = code[index + 3];
+                        storageClasses[variableId] = storage_class;
+                        break;
+                    }
+                    default:
+                        break;
+                }
+
+                index += wordCount;
+            }
+
+            for (const auto& [variableId, storageClass] : storageClasses)
+            {
+                if (storageClass == Input)
+                {
+                    std::string name = names.count(variableId) ? names[variableId] : "";
+                    uint32_t location = locations.count(variableId) ? locations[variableId] : 0xFFFFFFFF;
+
+                    if (name.empty() || location == 0xFFFFFFFF) {
+                        throw InvalidShaderVertexBindingError("Invalid Input Variable");
+                    }
+                    attributeMap[name] = location;
+                }
+            }
+
+            return attributeMap;
+        }
+
         VulkanShaderPipeline::VulkanShaderPipeline(
             VulkanGraphicsCard* graphicsCard,
             const VertexDescription& vertexDescription,
@@ -39,33 +139,8 @@ namespace slag
 
             std::vector<VkVertexInputAttributeDescription> attributes;
             std::vector<VkVertexInputBindingDescription> bindingDescriptions;
-            struct AttributeKey
-            {
-                uint32_t location;
-                SpvReflectFormat format;
-            };
-            std::unordered_map<std::string,AttributeKey> attributeMap;
 
-            SpvReflectShaderModule vertexReflectionModule;
-
-            auto result = spvReflectCreateShaderModule(vertexShader.codeLength,vertexShader.code,&vertexReflectionModule);
-            if (result != SPV_REFLECT_RESULT_SUCCESS)
-            {
-                spvReflectDestroyShaderModule(&vertexReflectionModule);
-                throw InvalidShaderCodeError("Unable to read shader code");
-            }
-            for (auto i=0u; i< vertexReflectionModule.input_variable_count; ++i)
-            {
-                auto inputVariable = vertexReflectionModule.input_variables[i];
-                auto attInput = attributeMap.find(inputVariable->semantic);
-                if (attInput == attributeMap.end())
-                {
-                    spvReflectDestroyShaderModule(&vertexReflectionModule);
-                    throw InvalidShaderVertexBindingError("Vertex shader has duplicate attribute name");
-                }
-                attributeMap[inputVariable->semantic] = {inputVariable->location, inputVariable->format};
-            }
-            spvReflectDestroyShaderModule(&vertexReflectionModule);
+            auto attributeMap = getInputAttributes(vertexShader);
 
 
             for (auto i=0u; i< vertexDescription.bindingCount(); ++i)
@@ -81,9 +156,7 @@ namespace slag
                     {
                         throw InvalidShaderVertexBindingError("Attribute '" + attribute.name() + "' is not present in shader");
                     }
-                    //TODO: see if the type of the attribute matches
-
-                    attributes.emplace_back(attInput->second.location,binding.bindingIndex(),VulkanBackend::nativeFormat(attribute.loadAs()).format,attribute.offset());
+                    attributes.emplace_back(attInput->second,binding.bindingIndex(),VulkanBackend::nativeFormat(attribute.loadAs()).format,attribute.offset());
                 }
             }
 
