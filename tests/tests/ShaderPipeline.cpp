@@ -71,7 +71,7 @@ TEST(ShaderPipeline, Sandbox)
     auto finished = std::unique_ptr<Semaphore>(card->newSemaphore());
 
     auto sampler = std::unique_ptr<Sampler>(card->newSampler());
-    auto texture = utilities::loadTexture("resources\\tests\\textures\\gradient.jpg",card);
+    auto texture = utilities::loadTexture("resources/tests/textures/gradient.jpg",card);
 
 
     auto resourceHeap = std::unique_ptr<ResourceDescriptorHeap>(card->newResourceDescriptorHeap(500));
@@ -126,7 +126,7 @@ TEST(ShaderPipeline, Sandbox)
     };
     card->graphicsQueue()->submit(&batch,1);
     finished->waitForValue(1);
-    utilities::saveTexture("C:\\Users\\jshelton\\Desktop\\results\\output.png",colorTarget.get());
+    utilities::saveTexture("/home/josh/Desktop/output.png",colorTarget.get());
     GTEST_FAIL();
 }
 

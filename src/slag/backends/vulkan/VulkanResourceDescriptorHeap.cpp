@@ -89,7 +89,7 @@ namespace slag
             };
             VkImageDescriptorInfoEXT imageInfo
             {
-                .sType = VK_STRUCTURE_TYPE_RESOURCE_DESCRIPTOR_INFO_EXT,
+                .sType = VK_STRUCTURE_TYPE_IMAGE_DESCRIPTOR_INFO_EXT,
                 .pNext = nullptr,
                 .pView = &vulkanTexture->descriptorInfo(),
                 .layout = VK_IMAGE_LAYOUT_GENERAL,
@@ -111,7 +111,7 @@ namespace slag
             };
             VkImageDescriptorInfoEXT imageInfo
             {
-                .sType = VK_STRUCTURE_TYPE_RESOURCE_DESCRIPTOR_INFO_EXT,
+                .sType = VK_STRUCTURE_TYPE_IMAGE_DESCRIPTOR_INFO_EXT,
                 .pNext = nullptr,
                 .pView = &vulkanTexture->descriptorInfo(),
                 .layout = VK_IMAGE_LAYOUT_GENERAL,
@@ -176,7 +176,7 @@ namespace slag
             };
             VkTexelBufferDescriptorInfoEXT texelBufferInfo
             {
-                .sType = VK_STRUCTURE_TYPE_RESOURCE_DESCRIPTOR_INFO_EXT,
+                .sType = VK_STRUCTURE_TYPE_TEXEL_BUFFER_DESCRIPTOR_INFO_EXT,
                 .pNext = nullptr,
                 .format = VulkanBackend::nativeFormat(format).format,
                 .addressRange =
@@ -204,7 +204,7 @@ namespace slag
             };
             VkTexelBufferDescriptorInfoEXT texelBufferInfo
             {
-                .sType = VK_STRUCTURE_TYPE_RESOURCE_DESCRIPTOR_INFO_EXT,
+                .sType = VK_STRUCTURE_TYPE_TEXEL_BUFFER_DESCRIPTOR_INFO_EXT,
                 .pNext = nullptr,
                 .format = VulkanBackend::nativeFormat(format).format,
                 .addressRange =

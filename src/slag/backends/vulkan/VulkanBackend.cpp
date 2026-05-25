@@ -604,6 +604,9 @@ namespace slag
             features1_3.dynamicRendering = true;
             features1_3.synchronization2 = true;
 
+            VkPhysicalDeviceVulkan14Features features1_4{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES };
+            features1_4.maintenance5 = true;
+
             vkb::PhysicalDeviceSelector selector{_instance};
             auto physicalDevices = selector.set_minimum_version(1,4)
                 .set_required_features_13(features1_3)
