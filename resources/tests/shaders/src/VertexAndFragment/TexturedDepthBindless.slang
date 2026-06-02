@@ -14,7 +14,7 @@ struct FragmentParameters
 }
 struct VertexStageOutput
 {
-    FragmentParameters fragmentParameters: FRAMENT_PARAMETERS;
+    FragmentParameters fragmentParameters: FRAGMENT_PARAMETERS;
     float4 sv_position: SV_Position;
 }
 
@@ -39,7 +39,7 @@ VertexStageOutput vertexMain(float3 POSITION: POSITION, float2 UV_COORDINATES: U
 }
 
 [shader("fragment")]
-float4 fragmentMain(FragmentParameters fragmentParameters : FragmentParameters) : SV_Target
+float4 fragmentMain(FragmentParameters fragmentParameters : FRAGMENT_PARAMETERS) : SV_Target
 {
     var texture = getDescriptorFromHandle(instanceTexture);
     var texsampler = getDescriptorFromHandle(sampler);

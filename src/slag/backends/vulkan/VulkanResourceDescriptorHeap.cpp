@@ -77,7 +77,7 @@ namespace slag
             return _descriptorCount;
         }
 
-        void VulkanResourceDescriptorHeap::setUniformTexture(uint32_t index, Texture* texture)
+        void VulkanResourceDescriptorHeap::setUniformTexture(uint32_t index, Texture* texture, uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount)
         {
             auto vulkanTexture = static_cast<VulkanTexture*>(texture);
             VkHostAddressRangeEXT hostAddressRange{.address = ((unsigned char*)_data) + (index * _descriptorSize), .size = _descriptorSize};
@@ -87,11 +87,18 @@ namespace slag
                 .pNext = nullptr,
                 .type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
             };
+
+
+            auto descriptorInfo = vulkanTexture->descriptorInfo();
+            descriptorInfo.subresourceRange.baseMipLevel = baseMip;
+            descriptorInfo.subresourceRange.levelCount = mipCount;
+            descriptorInfo.subresourceRange.baseArrayLayer = baseLayer;
+            descriptorInfo.subresourceRange.layerCount = layerCount;
             VkImageDescriptorInfoEXT imageInfo
             {
                 .sType = VK_STRUCTURE_TYPE_IMAGE_DESCRIPTOR_INFO_EXT,
                 .pNext = nullptr,
-                .pView = &vulkanTexture->descriptorInfo(),
+                .pView = &descriptorInfo,
                 .layout = VK_IMAGE_LAYOUT_GENERAL,
             };
             resourceDescriptorInfo.data.pImage = &imageInfo;
@@ -99,7 +106,7 @@ namespace slag
             _card->vkWriteResourceDescriptors(_card->device(),1,&resourceDescriptorInfo,&hostAddressRange);
         }
 
-        void VulkanResourceDescriptorHeap::setUnorderedAccessTexture(uint32_t index, Texture* texture)
+        void VulkanResourceDescriptorHeap::setUnorderedAccessTexture(uint32_t index, Texture* texture, uint32_t mip, uint32_t baseLayer, uint32_t layerCount)
         {
             auto vulkanTexture = static_cast<VulkanTexture*>(texture);
             VkHostAddressRangeEXT hostAddressRange{.address = ((unsigned char*)_data) + (index * _descriptorSize), .size = _descriptorSize};
@@ -109,11 +116,16 @@ namespace slag
                 .pNext = nullptr,
                 .type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
             };
+            auto descriptorInfo = vulkanTexture->descriptorInfo();
+            descriptorInfo.subresourceRange.baseMipLevel = mip;
+            descriptorInfo.subresourceRange.levelCount = 1;
+            descriptorInfo.subresourceRange.baseArrayLayer = baseLayer;
+            descriptorInfo.subresourceRange.layerCount = layerCount;
             VkImageDescriptorInfoEXT imageInfo
             {
                 .sType = VK_STRUCTURE_TYPE_IMAGE_DESCRIPTOR_INFO_EXT,
                 .pNext = nullptr,
-                .pView = &vulkanTexture->descriptorInfo(),
+                .pView = &descriptorInfo,
                 .layout = VK_IMAGE_LAYOUT_GENERAL,
             };
             resourceDescriptorInfo.data.pImage = &imageInfo;
@@ -121,8 +133,8 @@ namespace slag
             _card->vkWriteResourceDescriptors(_card->device(),1,&resourceDescriptorInfo,&hostAddressRange);
         }
 
-        void VulkanResourceDescriptorHeap::setUniformBuffer(uint32_t index, Buffer* buffer, uint32_t offset,
-            uint32_t length)
+        void VulkanResourceDescriptorHeap::setUniformStructuredBuffer(uint32_t index, Buffer* buffer, uint64_t elementIndex,
+                                                            uint64_t elementCount, uint64_t elementStride)
         {
             auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
             VkHostAddressRangeEXT hostAddressRange{.address = ((unsigned char*)_data) + (index * _descriptorSize), .size = _descriptorSize};
@@ -134,16 +146,16 @@ namespace slag
             };
             VkDeviceAddressRangeEXT rangeInfo
             {
-                .address = vulkanBuffer->deviceAddress() + offset,
-                .size = length,
+                .address = vulkanBuffer->deviceAddress() + (elementIndex * elementStride),
+                .size = elementCount*elementStride,
             };
             resourceDescriptorInfo.data.pAddressRange = &rangeInfo;
 
             _card->vkWriteResourceDescriptors(_card->device(),1,&resourceDescriptorInfo,&hostAddressRange);
         }
 
-        void VulkanResourceDescriptorHeap::setStorageBuffer(uint32_t index, Buffer* buffer, uint32_t offset,
-            uint32_t length)
+        void VulkanResourceDescriptorHeap::setStorageStructuredBuffer(uint32_t index, Buffer* buffer, uint64_t elementIndex,
+                                                            uint64_t elementCount, uint64_t elementStride)
         {
             auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
             VkHostAddressRangeEXT hostAddressRange{.address = ((unsigned char*)_data) + (index * _descriptorSize), .size = _descriptorSize};
@@ -155,8 +167,8 @@ namespace slag
             };
             VkDeviceAddressRangeEXT rangeInfo
             {
-                .address = vulkanBuffer->deviceAddress() + offset,
-                .size = length,
+                .address = vulkanBuffer->deviceAddress() + (elementIndex * elementStride),
+                .size = elementCount*elementStride,
             };
             resourceDescriptorInfo.data.pAddressRange = &rangeInfo;
 
@@ -164,7 +176,7 @@ namespace slag
         }
 
         void VulkanResourceDescriptorHeap::setUniformTexelBuffer(uint32_t index, Buffer* buffer, PixelFormat format,
-            uint32_t offset, uint32_t length)
+                                                                 uint64_t offset, uint64_t length)
         {
             auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
             VkHostAddressRangeEXT hostAddressRange{.address = ((unsigned char*)_data) + (index * _descriptorSize), .size = _descriptorSize};
@@ -192,7 +204,7 @@ namespace slag
         }
 
         void VulkanResourceDescriptorHeap::setStorageTexelBuffer(uint32_t index, Buffer* buffer, PixelFormat format,
-            uint32_t offset, uint32_t length)
+                                                                 uint64_t offset, uint64_t length)
         {
             auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
             VkHostAddressRangeEXT hostAddressRange{.address = ((unsigned char*)_data) + (index * _descriptorSize), .size = _descriptorSize};

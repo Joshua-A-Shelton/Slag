@@ -6,7 +6,12 @@
 #include "DX12Semaphore.h"
 #include "DX12ShaderPipeline.h"
 #include "DX12SubmissionQueue.h"
+#include "DX12ResourceDescriptorHeap.h"
 #include "DX12Texture.h"
+#include <directx/d3dx12.h>
+
+#include "DX12Sampler.h"
+#include "DX12SamplerDescriptorHeap.h"
 #include "slag/exceptions/NotImplemented.h"
 #undef ERROR
 #undef max
@@ -24,7 +29,6 @@ namespace slag
                 DebugLevel level = DebugLevel::INFO;
                 if(severity == D3D12_MESSAGE_SEVERITY_ERROR || severity == D3D12_MESSAGE_SEVERITY_CORRUPTION)
                 {
-
                     level = DebugLevel::ERROR;
                 }
                 else if(severity == D3D12_MESSAGE_SEVERITY_WARNING)
@@ -102,7 +106,11 @@ namespace slag
             poolDesc.HeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_L0;
             poolDesc.Flags = D3D12MA::POOL_FLAG_NONE;
             poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
-            _allocator->CreatePool(&poolDesc,&_cpuReadablePool);
+            auto result = _allocator->CreatePool(&poolDesc,&_cpuReadablePool);
+            if (FAILED(result))
+            {
+                throw std::runtime_error("Failed to create CPU readable buffer pool");
+            }
 
             //Memory Properties
             _memoryProperties.videoMemory = desc.DedicatedVideoMemory;
@@ -128,6 +136,38 @@ namespace slag
             _descriptorHeapDetails.resourceReservedRangeSize = 0;
             _descriptorHeapDetails.samplerReservedRangeSize = 0;
 
+            //root signature
+            D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
+            D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED |
+            D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED |
+            D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+            D3D12_ROOT_PARAMETER rootParameter
+            {
+                .ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
+                .Constants = {.ShaderRegister = 0, .RegisterSpace = 0, .Num32BitValues = 32},
+                .ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL
+            };
+
+            D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc = {};
+            rootSignatureDesc.NumParameters = 1;
+            rootSignatureDesc.pParameters = &rootParameter;
+            rootSignatureDesc.NumStaticSamplers = 0;
+            rootSignatureDesc.pStaticSamplers = nullptr;
+            rootSignatureDesc.Flags = rootSignatureFlags;
+
+            // Serialize and create the signature
+            Microsoft::WRL::ComPtr<ID3DBlob> signature;
+            Microsoft::WRL::ComPtr<ID3DBlob> error;
+
+            HRESULT hr = D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1_0, &signature, &error);
+            if (FAILED(hr))
+            {
+                throw std::runtime_error(std::string("Failed to serialize root signature: ") + std::string(reinterpret_cast<const char*>(error->GetBufferPointer()), error->GetBufferSize()));
+            }
+
+            device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&_rootSignature));
+
         }
 
         DX12GraphicsCard::~DX12GraphicsCard()
@@ -137,6 +177,8 @@ namespace slag
                 delete _graphicsQueue;
                 delete _computeQueue;
                 delete _transferQueue;
+                _cpuReadablePool->Release();
+                _rootSignature->Release();
             }
         }
 
@@ -407,12 +449,12 @@ namespace slag
 
         ResourceDescriptorHeap* DX12GraphicsCard::newResourceDescriptorHeap(uint32_t descriptorCount)
         {
-            throw NotImplemented();
+            return new DX12ResourceDescriptorHeap(this,descriptorCount);
         }
 
         SamplerDescriptorHeap* DX12GraphicsCard::newSamplerDescriptorHeap(uint32_t descriptorCount)
         {
-            throw NotImplemented();
+            return new DX12SamplerDescriptorHeap(this,descriptorCount);
         }
 
         Texture* DX12GraphicsCard::newTexture1D(uint32_t width, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,uint32_t arrayDepth)
@@ -442,7 +484,7 @@ namespace slag
             uint8_t maxAnisotrophy, ComparisonFunction comparisonFunction, Color borderColor, float minLOD,
             float maxLOD)
         {
-            throw NotImplemented();
+            return new DX12Sampler(this, min, mag, mip, u, v, w, mipLODBias, anisotrophyEnabled, maxAnisotrophy, comparisonFunction, borderColor, minLOD, maxLOD);
         }
 
         D3D12MA::Allocator* DX12GraphicsCard::allocator() const
@@ -460,6 +502,11 @@ namespace slag
             return _device;
         }
 
+        ID3D12RootSignature* DX12GraphicsCard::rootSignature()
+        {
+            return _rootSignature;
+        }
+
         void DX12GraphicsCard::move(DX12GraphicsCard& from)
         {
             _memoryProperties = from._memoryProperties;
@@ -472,6 +519,8 @@ namespace slag
             std::swap(_graphicsQueue,from._graphicsQueue);
             std::swap(_computeQueue,from._computeQueue);
             std::swap(_transferQueue,from._transferQueue);
+            std::swap(_cpuReadablePool,from._cpuReadablePool);
+            std::swap(_rootSignature,from._rootSignature);
         }
     } // dx12
 } // slag

@@ -27,6 +27,8 @@ namespace slag
 
             ShaderPipelineType type()override;
             GraphicsCard* graphicsCard()override;
+
+            ID3D12PipelineState* dx12Handle() const;
         private:
             void move(DX12ShaderPipeline& from);
             DX12GraphicsCard* _graphicsCard = nullptr;

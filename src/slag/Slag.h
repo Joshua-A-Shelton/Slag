@@ -22,6 +22,7 @@
 #include "core/ShaderCode.h"
 #include "core/ShaderPipeline.h"
 #include "core/SubmissionQueue.h"
+#include "core/SwapChain.h"
 #include "core/Texture.h"
 #include "core/VertexDescription.h"
 

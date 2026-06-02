@@ -4,6 +4,7 @@
 #include "DX12GraphicsCard.h"
 #include "directx/d3dx12_core.h"
 #include "directx/d3dx12_default.h"
+#include "slag/exceptions/InvalidShaderCodeError.h"
 #include "slag/exceptions/NotImplemented.h"
 #include "slag/utilities/SLAG_ASSERT.h"
 
@@ -29,9 +30,7 @@ namespace slag
             pipelineDesc.PS.pShaderBytecode = fragmentShader.code;
             pipelineDesc.PS.BytecodeLength = fragmentShader.codeLength;
 
-            throw NotImplemented();
-            //pipelineDesc.pRootSignature = _graphicsCard->getOrCreateRootSignature(&_bindings);
-
+            pipelineDesc.pRootSignature = _graphicsCard->rootSignature();
 
             D3D12_BLEND_DESC& blendDesc = pipelineDesc.BlendState;
             blendDesc.AlphaToCoverageEnable = !pipelineState.multiSampleState.alphaToOneEnable; //FIXME: this is definitely a shot in the dark, no idea if it's correct
@@ -86,7 +85,12 @@ namespace slag
             rasterizerDesc.DepthClipEnable = pipelineState.rasterizationState.depthClampEnable;//TODO: not sure if this is the corresponding property, but seems likely
             rasterizerDesc.MultisampleEnable = pipelineState.multiSampleState.sampleShadingEnable;
             rasterizerDesc.AntialiasedLineEnable = true;//Seems sensible default, only applies if doing line rendering and no multisampling
-            rasterizerDesc.ForcedSampleCount = pipelineState.multiSampleState.minSampleShading;
+            if (pipelineState.multiSampleState.sampleShadingEnable)
+            {
+                //TODO: not sure what this actually is, but setting it causes errors (currently hidden by D3D12_MESSAGE_CATEGORY_STATE_CREATION being a hidden category in graphics card creation)
+                rasterizerDesc.ForcedSampleCount = pipelineState.multiSampleState.minSampleShading;
+            }
+
             rasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;//Eh? nothing like this in vulkan
 
             D3D12_DEPTH_STENCIL_DESC& depthStencilDesc = pipelineDesc.DepthStencilState;
@@ -139,7 +143,11 @@ namespace slag
             DXGI_SAMPLE_DESC& sampleDesc = pipelineDesc.SampleDesc;
             sampleDesc.Count = pipelineState.multiSampleState.rasterizationSamples;
 
-            _graphicsCard->device()->CreateGraphicsPipelineState(&pipelineDesc, IID_PPV_ARGS(&_pipelineState));
+            auto result = _graphicsCard->device()->CreateGraphicsPipelineState(&pipelineDesc, IID_PPV_ARGS(&_pipelineState));
+            if (FAILED(result))
+            {
+                throw InvalidShaderCodeError("Unable to create shader pipeline");
+            }
 
         }
 
@@ -170,6 +178,11 @@ namespace slag
         GraphicsCard* DX12ShaderPipeline::graphicsCard()
         {
             return _graphicsCard;
+        }
+
+        ID3D12PipelineState* DX12ShaderPipeline::dx12Handle() const
+        {
+            return _pipelineState;
         }
 
         void DX12ShaderPipeline::move(DX12ShaderPipeline& from)

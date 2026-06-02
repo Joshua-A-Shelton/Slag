@@ -4,6 +4,8 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <D3D12MemAlloc.h>
+#include <mutex>
+#include <queue>
 #include <wrl/client.h>
 
 namespace slag::dx12
@@ -108,6 +110,7 @@ namespace slag
             [[nodiscard]] D3D12MA::Allocator* allocator() const;
             [[nodiscard]] D3D12MA::Pool* cpuReadablePool() const;
             Microsoft::WRL::ComPtr<ID3D12Device2>& device();
+            ID3D12RootSignature* rootSignature();
 
         private:
             void move(DX12GraphicsCard& from);
@@ -122,6 +125,7 @@ namespace slag
             DX12SubmissionQueue* _computeQueue = nullptr;
             DX12SubmissionQueue* _transferQueue = nullptr;
             D3D12MA::Pool* _cpuReadablePool = nullptr;
+            ID3D12RootSignature* _rootSignature = nullptr;
         };
     } // dx12
 } // slag

@@ -96,6 +96,13 @@ if(SLAG_DX12_BACKEND)
             src/slag/backends/dx12/DX12Texture.h
             src/slag/backends/dx12/DX12ShaderPipeline.cpp
             src/slag/backends/dx12/DX12ShaderPipeline.h
+            src/slag/backends/dx12/DX12Sampler.cpp
+            src/slag/backends/dx12/DX12Sampler.h
+            src/slag/backends/dx12/DX12ResourceDescriptorHeap.cpp
+            src/slag/backends/dx12/DX12ResourceDescriptorHeap.h
+            src/slag/backends/dx12/DX12SamplerDescriptorHeap.cpp
+            src/slag/backends/dx12/DX12SamplerDescriptorHeap.h
+            src/slag/core/Frame.h
     )
 endif()
 
@@ -142,6 +149,8 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/exceptions/PipelineInputMappingSizeExceeded.h
         src/slag/core/SamplerDescriptorHeap.h
         src/slag/core/ResourceDescriptorHeap.h
+        src/slag/core/SwapChain.h
+        src/slag/core/Frame.h
 
 
 )
@@ -289,6 +298,40 @@ if(SLAG_BUILD_TESTS)
     target_link_libraries(SlagTests GTest::gtest SDL3::SDL3 glm::glm slag::Slag)
     target_include_directories(SlagTests PRIVATE ${stb_image_SOURCE_DIR})
 
+    file(GLOB TEST_VERT_FRAG_SHADERS "${CMAKE_CURRENT_SOURCE_DIR}/resources/tests/shaders/src/VertexAndFragment/*.slang")
+
+    foreach (SHADER ${TEST_VERT_FRAG_SHADERS})
+        get_filename_component(FILENAME ${SHADER} NAME_WE)
+        set(OUTPUT_FILE_RAW "${CMAKE_CURRENT_SOURCE_DIR}/resources/tests/shaders/compiled/${FILENAME}")
+        add_custom_command(
+                OUTPUT "${OUTPUT_FILE_RAW}.vertex.spv"
+                COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.spv"
+                DEPENDS ${SHADER}
+                COMMENT "Compiling ${FILENAME} to spirv vertex"
+        )
+        add_custom_command(
+                OUTPUT "${OUTPUT_FILE_RAW}.fragment.spv"
+                COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.spv"
+                DEPENDS ${SHADER}
+                COMMENT "Compiling ${FILENAME} to spirv fragment"
+        )
+        add_custom_command(
+                OUTPUT "${OUTPUT_FILE_RAW}.vertex.dxil"
+                COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.dxil"
+                DEPENDS ${SHADER}
+                COMMENT "Compiling ${FILENAME} to dxil vertex"
+        )
+        add_custom_command(
+                OUTPUT "${OUTPUT_FILE_RAW}.fragment.dxil"
+                COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.dxil"
+                DEPENDS ${SHADER}
+                COMMENT "Compiling ${FILENAME} to dxil fragment"
+        )
+        list(APPEND COMPILED_SHADER_FILES ${OUTPUT_FILE_RAW}.vertex.spv ${OUTPUT_FILE_RAW}.fragment.spv ${OUTPUT_FILE_RAW}.vertex.dxil ${OUTPUT_FILE_RAW}.fragment.dxil)
+    endforeach ()
+
+    add_custom_target(CompileShaders ALL DEPENDS ${COMPILED_SHADER_FILES})
+
     add_custom_command(
             TARGET SlagTests
             POST_BUILD
@@ -297,4 +340,6 @@ if(SLAG_BUILD_TESTS)
             ${CMAKE_CURRENT_BINARY_DIR}/resources/
             COMMENT "Copying resources files"
     )
+
+    add_dependencies(SlagTests CompileShaders)
 endif ()

@@ -15,7 +15,7 @@ namespace slag
             BufferCPUAccess cpuAccess,
             BufferMemoryType shaderAccess)
         {
-            SLAG_ASSERT(((shaderAccess == BufferMemoryType::UNIFORM && size%256 == 0) || shaderAccess != BufferMemoryType::UNIFORM) && "Buffers with BufferMemoryType::UNIFORM must be a multiple of 256 bytes in size");
+            //SLAG_ASSERT(((shaderAccess == BufferMemoryType::UNIFORM && size%256 == 0) || shaderAccess != BufferMemoryType::UNIFORM) && "Buffers with BufferMemoryType::UNIFORM must be a multiple of 256 bytes in size");
             SLAG_ASSERT(((shaderAccess == BufferMemoryType::UNIFORM && size<= card->memoryProperties().maxUniformBufferSize) || shaderAccess != BufferMemoryType::UNIFORM) && "Buffers with BufferMemoryType::UNIFORM cannot exceed size found in GraphicsCard::memoryProperties::maxUniformBufferSize");
 
             _graphicsCard = card;
@@ -37,7 +37,9 @@ namespace slag
                 }
                 else
                 {
-                    heapType = D3D12_HEAP_TYPE_UPLOAD;
+                    //heapType = D3D12_HEAP_TYPE_UPLOAD;
+                    heapType = D3D12_HEAP_TYPE_CUSTOM;
+                    manualPool = card->cpuReadablePool();
                 }
                 break;
             case BufferCPUAccess::READ_WRITE:
@@ -58,13 +60,19 @@ namespace slag
             resourceDesc.SampleDesc.Quality = 0;
             resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
             resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+            if (shaderAccess == BufferMemoryType::GENERAL)
+            {
+                resourceDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+            }
 
             D3D12MA::ALLOCATION_DESC allocationDesc{};
 
             allocationDesc.HeapType = heapType;
             allocationDesc.CustomPool = manualPool;
 
-            if (_graphicsCard->allocator()->CreateResource3(&allocationDesc,&resourceDesc,D3D12_BARRIER_LAYOUT_UNDEFINED,nullptr,0,nullptr,&_allocation, IID_PPV_ARGS(&_buffer)) != S_OK)
+
+            auto result = _graphicsCard->allocator()->CreateResource3(&allocationDesc,&resourceDesc,D3D12_BARRIER_LAYOUT_UNDEFINED,nullptr,0,nullptr,&_allocation, IID_PPV_ARGS(&_buffer));
+            if (result != S_OK)
             {
                 throw ResourceCreationError("Unable to create buffer");
             }

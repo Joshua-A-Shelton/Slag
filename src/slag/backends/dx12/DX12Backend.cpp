@@ -426,6 +426,121 @@ namespace slag
             return desc;
         }
 
+        D3D12_FILTER DX12Backend::nativeFilter(SamplerFilter min, SamplerFilter mag, SamplerFilter mip,
+            bool anisotrophyEnabled)
+        {
+            if(anisotrophyEnabled)
+            {
+                return D3D12_FILTER_ANISOTROPIC;
+            }
+            if(min == SamplerFilter::LINEAR)
+            {
+                if(mag == SamplerFilter::LINEAR)
+                {
+                    if(mip == SamplerFilter::LINEAR)
+                    {
+                        return D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+                    }
+                    else if(mip == SamplerFilter::NEAREST)
+                    {
+                        return D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+                    }
+                }
+                else if(mag == SamplerFilter::NEAREST)
+                {
+                    if(mip == SamplerFilter::LINEAR)
+                    {
+                        return D3D12_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
+                    }
+                    else if(mip == SamplerFilter::NEAREST)
+                    {
+                        return D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT;
+                    }
+                }
+            }
+            else if(min == SamplerFilter::NEAREST)
+            {
+                if(mag == SamplerFilter::LINEAR)
+                {
+                    if(mip == SamplerFilter::LINEAR)
+                    {
+                        return D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR;
+                    }
+                    else if(mip == SamplerFilter::NEAREST)
+                    {
+                        return D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;
+                    }
+                }
+                else if(mag == SamplerFilter::NEAREST)
+                {
+                    if(mip == SamplerFilter::LINEAR)
+                    {
+                        return D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR;
+                    }
+                    else if(mip == SamplerFilter::NEAREST)
+                    {
+                        return D3D12_FILTER_MIN_MAG_MIP_POINT;
+                    }
+                }
+            }
+            return D3D12_FILTER_ANISOTROPIC;
+        }
+
+        D3D12_TEXTURE_ADDRESS_MODE DX12Backend::nativeAddressMode(SamplerAddressMode mode)
+        {
+            switch (mode)
+            {
+            case SamplerAddressMode::REPEAT:
+                return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+            case SamplerAddressMode::MIRRORED_REPEAT:
+                return D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+            case SamplerAddressMode::CLAMP_TO_EDGE:
+                return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+            case SamplerAddressMode::CLAMP_TO_BORDER:
+                return D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+            }
+            return D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+        }
+
+        D3D12_SRV_DIMENSION DX12Backend::nativeSRVTextureDimension(TextureType type, uint32_t arraySize, SampleCount sampleCount)
+        {
+            switch (type)
+            {
+            case TextureType::ONE_DIMENSIONAL:
+                return arraySize == 1 ? D3D12_SRV_DIMENSION_TEXTURE1D : D3D12_SRV_DIMENSION_TEXTURE1DARRAY;
+            case TextureType::TWO_DIMENSIONAL:
+                if (sampleCount == SampleCount::ONE)
+                {
+                    return arraySize == 1 ? D3D12_SRV_DIMENSION_TEXTURE2D : D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+                }
+                return arraySize == 1 ? D3D12_SRV_DIMENSION_TEXTURE2DMS : D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY;
+            case TextureType::THREE_DIMENSIONAL:
+                return D3D12_SRV_DIMENSION_TEXTURE3D;
+            case TextureType::CUBE_MAP:
+                return arraySize == 6 ? D3D12_SRV_DIMENSION_TEXTURECUBE : D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
+            }
+            return D3D12_SRV_DIMENSION_UNKNOWN;
+        }
+
+        D3D12_UAV_DIMENSION DX12Backend::nativeUAVTextureDimension(TextureType type, uint32_t arraySize,
+            SampleCount sampleCount)
+        {
+            switch (type)
+            {
+            case TextureType::ONE_DIMENSIONAL:
+                return arraySize == 1 ? D3D12_UAV_DIMENSION_TEXTURE1D : D3D12_UAV_DIMENSION_TEXTURE1DARRAY;
+            case TextureType::TWO_DIMENSIONAL:
+                if (sampleCount == SampleCount::ONE)
+                {
+                    return arraySize == 1 ? D3D12_UAV_DIMENSION_TEXTURE2D : D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+                }
+                return arraySize == 1 ? D3D12_UAV_DIMENSION_TEXTURE2DMS : D3D12_UAV_DIMENSION_TEXTURE2DMSARRAY;
+            case TextureType::THREE_DIMENSIONAL:
+                return D3D12_UAV_DIMENSION_TEXTURE3D;
+            }
+            return D3D12_UAV_DIMENSION_UNKNOWN;
+        }
+
         SlagInitializationResult DX12Backend::initializeBackend(const InitializationData& initializationData)
         {
             Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory;
@@ -486,6 +601,17 @@ namespace slag
                     D3D12_FEATURE_DATA_D3D12_OPTIONS13 features13{};
                     res = device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS13,&features13,sizeof(features13));
                     if (!features13.UnrestrictedBufferTextureCopyPitchSupported)
+                    {
+                        continue;
+                    }
+                    D3D12_FEATURE_DATA_SHADER_MODEL shaderModel{};
+                    shaderModel.HighestShaderModel = D3D_SHADER_MODEL_6_6;
+                    res = device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL,&shaderModel,sizeof(shaderModel));
+                    if (FAILED(res))
+                    {
+                        continue;
+                    }
+                    if (shaderModel.HighestShaderModel < D3D_SHADER_MODEL_6_6)
                     {
                         continue;
                     }

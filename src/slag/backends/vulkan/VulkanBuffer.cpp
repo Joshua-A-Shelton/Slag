@@ -15,7 +15,7 @@ namespace slag
             BufferCPUAccess cpuAccess,
             BufferMemoryType shaderAccess)
         {
-            SLAG_ASSERT(((shaderAccess == BufferMemoryType::UNIFORM && size%256 == 0) || shaderAccess != BufferMemoryType::UNIFORM) && "Buffers with BufferMemoryType::UNIFORM must be a multiple of 256 bytes in size");
+            //SLAG_ASSERT(((shaderAccess == BufferMemoryType::UNIFORM && size%256 == 0) || shaderAccess != BufferMemoryType::UNIFORM) && "Buffers with BufferMemoryType::UNIFORM must be a multiple of 256 bytes in size");
             SLAG_ASSERT(((shaderAccess == BufferMemoryType::UNIFORM && size<= card->memoryProperties().maxUniformBufferSize) || shaderAccess != BufferMemoryType::UNIFORM) && "Buffers with BufferMemoryType::UNIFORM cannot exceed size found in GraphicsCard::memoryProperties::maxUniformBufferSize");
             _size = size;
             _graphicsCard = card;
@@ -49,7 +49,16 @@ namespace slag
             bufferCreateInfo.size = _size;
             bufferCreateInfo.usage = VulkanBackend::nativeBufferUsage(shaderAccess);
 
-            auto result = vmaCreateBuffer(_graphicsCard->allocator(),&bufferCreateInfo,&allocationCreateInfo,&_buffer,&_allocation,nullptr);
+            VkResult result = VK_SUCCESS;
+            //uniform buffers have alignment requirements
+            if (shaderAccess == BufferMemoryType::UNIFORM)
+            {
+                result = vmaCreateBufferWithAlignment(_graphicsCard->allocator(),&bufferCreateInfo,&allocationCreateInfo,64,&_buffer,&_allocation,nullptr);
+            }
+            else
+            {
+                result = vmaCreateBuffer(_graphicsCard->allocator(),&bufferCreateInfo,&allocationCreateInfo,&_buffer,&_allocation,nullptr);
+            }
             if (result != VK_SUCCESS)
             {
                 throw ResourceCreationError("failed to create buffer");

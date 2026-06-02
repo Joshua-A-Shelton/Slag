@@ -34,6 +34,11 @@ namespace slag
             static D3D12_CULL_MODE nativeCullMode(RasterizationState::CullOptions mode);
             static D3D12_COMPARISON_FUNC nativeCompareFunc(ComparisonFunction func);
             static D3D12_DEPTH_STENCILOP_DESC nativeDepthStencilOpDesc(StencilOpState opstate);
+            static D3D12_FILTER nativeFilter(SamplerFilter min, SamplerFilter mag, SamplerFilter mip, bool anisotrophyEnabled);
+            static D3D12_TEXTURE_ADDRESS_MODE nativeAddressMode(SamplerAddressMode mode);
+
+            static D3D12_SRV_DIMENSION nativeSRVTextureDimension(TextureType type, uint32_t arraySize, SampleCount sampleCount);
+            static D3D12_UAV_DIMENSION nativeUAVTextureDimension(TextureType type, uint32_t arraySize, SampleCount sampleCount);
         protected:
             SlagInitializationResult initializeBackend(const InitializationData& initializationData)override;
         private:
