@@ -330,6 +330,11 @@ int main()
             }
             commandsFinished = graphicsCard->newSemaphore();
             auto backBuffer = frame->renderBuffer();
+            if (depthBuffer->width() != backBuffer->width() || depthBuffer->height() != backBuffer->height())
+            {
+                delete depthBuffer;
+                depthBuffer = graphicsCard->newTexture2D(backBuffer->width(),backBuffer->height(),slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET);
+            }
 
             commandBuffer->begin();
             commandBuffer->bindDescriptorHeaps(resourceHeap,samplerHeap);

@@ -50,6 +50,7 @@ namespace slag
             if (_swapChain)
             {
                 _frames.clear();
+                vkQueueWaitIdle(static_cast<VulkanSubmissionQueue*>(_graphicsCard->graphicsQueue())->vulkanHandle());
                 vkDestroySwapchainKHR(_graphicsCard->device(), _swapChain, nullptr);
                 vkDestroySurfaceKHR(static_cast<VulkanBackend*>(Slag::backend())->instance().instance, _surface, nullptr);
                 for (auto& fence : _imageAcquiredFence)
@@ -144,6 +145,12 @@ namespace slag
             }
             _width = chain->extent.width;
             _height = chain->extent.height;
+            if (_swapChain !=nullptr)
+            {
+                //TODO: there's probably a better way to do this
+                vkQueueWaitIdle(static_cast<VulkanSubmissionQueue*>(_graphicsCard->graphicsQueue())->vulkanHandle());
+                vkDestroySwapchainKHR(_graphicsCard->device(),_swapChain,nullptr);
+            }
             _swapChain = chain->swapchain;
             _parameters.imageCount = images.size();
             _parameters.presentMode = VulkanBackend::crossPlatformPresentMode(chain->present_mode);
