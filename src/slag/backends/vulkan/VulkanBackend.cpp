@@ -883,10 +883,6 @@ namespace slag
             .add_required_extension_features(descriptorHeapFeatures)
                 //.add_required_extension("VK_EXT_swapchain_maintenance1")
                 .add_required_extension("VK_EXT_custom_border_color")
-
-
-
-
                 .defer_surface_initialization()
                 .select_devices();
 
