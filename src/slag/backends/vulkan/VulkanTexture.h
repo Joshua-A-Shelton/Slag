@@ -54,6 +54,9 @@ namespace slag
                 uint32_t mipLevels,
                 uint32_t arrayDepth);
 
+            //create a texture from existing resources, used for swapchain images
+            VulkanTexture(VulkanGraphicsCard* card, TextureType type, VkImage image, VkImageView view, PixelFormat format, TextureUsageFlags usage, uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, uint32_t mipLevels, SampleCount sampleCount);
+
             VulkanTexture(const VulkanTexture&)=delete;
             VulkanTexture& operator=(const VulkanTexture&)=delete;
             VulkanTexture(VulkanTexture&& from) noexcept;

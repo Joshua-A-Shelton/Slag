@@ -39,6 +39,8 @@ namespace slag
 
             static D3D12_SRV_DIMENSION nativeSRVTextureDimension(TextureType type, uint32_t arraySize, SampleCount sampleCount);
             static D3D12_UAV_DIMENSION nativeUAVTextureDimension(TextureType type, uint32_t arraySize, SampleCount sampleCount);
+
+            static D3D12_BARRIER_LAYOUT nativeImageLayout(TextureLayout layout);
         protected:
             SlagInitializationResult initializeBackend(const InitializationData& initializationData)override;
         private:

@@ -112,8 +112,8 @@ namespace slag
                 vkbarrier.srcAccessMask = VulkanBackend::nativeMemoryCaches(barrier.flush);
                 vkbarrier.dstAccessMask = VulkanBackend::nativeMemoryCaches(barrier.invalidate);
                 vkbarrier.image = texture->vulkanHandle();
-                vkbarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
-                vkbarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+                vkbarrier.oldLayout = VulkanBackend::nativeImageLayout(barrier.layoutBefore);
+                vkbarrier.newLayout = VulkanBackend::nativeImageLayout(barrier.layoutAfter);
                 vkbarrier.srcStageMask = VulkanBackend::nativePipelineStages(barrier.syncBefore);
                 vkbarrier.dstStageMask = VulkanBackend::nativePipelineStages(barrier.syncAfter);
                 vkbarrier.subresourceRange = {.aspectMask = VulkanBackend::nativeTextureAspect(Pixel::aspectFlags(texture->format())), .baseMipLevel =barrier.baseMipLevel, .levelCount = barrier.mipCount == 0 ? texture->mipLevels()-barrier.baseMipLevel : barrier.mipCount, .baseArrayLayer = barrier.baseLayer, .layerCount = barrier.layerCount == 0 ? texture->layers()-barrier.baseLayer : barrier.layerCount};
@@ -348,7 +348,7 @@ namespace slag
                 {
                     .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
                     .imageView = colorTexture->vulkanView(),
-                    .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
+                    .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                     .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
                     .clearValue = std::bit_cast<VkClearValue>(attachment.clearValue)
                 };
@@ -368,7 +368,7 @@ namespace slag
                 auto depthTex = static_cast<VulkanTexture*>(depthAttachment->texture);
                 depth.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
                 depth.imageView = depthTex->vulkanView();
-                depth.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+                depth.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
                 depth.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
                 depth.clearValue = std::bit_cast<VkClearValue>(depthAttachment->clearValue);
                 if(depthAttachment->autoClear)

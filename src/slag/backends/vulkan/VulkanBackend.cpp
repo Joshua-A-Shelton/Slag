@@ -112,6 +112,195 @@ namespace slag
             {VK_FORMAT_A4R4G4B4_UNORM_PACK16,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY}
         };
 
+        PixelFormat VULKAN_CROSS_PLATFORM_FORMATS[]
+        {
+            PixelFormat::UNDEFINED, //VK_FORMAT_UNDEFINED = 0,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R4G4_UNORM_PACK8 = 1,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R4G4B4A4_UNORM_PACK16 = 2,
+            PixelFormat::B4G4R4A4_UNORM,// VK_FORMAT_B4G4R4A4_UNORM_PACK16 = 3,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R5G6B5_UNORM_PACK16 = 4,
+            PixelFormat::B5G6R5_UNORM,// VK_FORMAT_B5G6R5_UNORM_PACK16 = 5,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R5G5B5A1_UNORM_PACK16 = 6,
+            PixelFormat::B5G5R5A1_UNORM,// VK_FORMAT_B5G5R5A1_UNORM_PACK16 = 7,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A1R5G5B5_UNORM_PACK16 = 8,
+            PixelFormat::R8_UNORM,// VK_FORMAT_R8_UNORM = 9,
+            PixelFormat::R8_SNORM,// VK_FORMAT_R8_SNORM = 10,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8_USCALED = 11,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8_SSCALED = 12,
+            PixelFormat::R8_UINT,// VK_FORMAT_R8_UINT = 13,
+            PixelFormat::R8_SINT,// VK_FORMAT_R8_SINT = 14,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8_SRGB = 15,
+            PixelFormat::R8G8_UNORM,// VK_FORMAT_R8G8_UNORM = 16,
+            PixelFormat::R8G8_SNORM,// VK_FORMAT_R8G8_SNORM = 17,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8_USCALED = 18,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8_SSCALED = 19,
+            PixelFormat::R8G8_UINT,// VK_FORMAT_R8G8_UINT = 20,
+            PixelFormat::R8G8_SINT,// VK_FORMAT_R8G8_SINT = 21,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8_SRGB = 22,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8B8_UNORM = 23,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8B8_SNORM = 24,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8B8_USCALED = 25,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8B8_SSCALED = 26,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8B8_UINT = 27,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8B8_SINT = 28,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8B8_SRGB = 29,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8_UNORM = 30,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8_SNORM = 31,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8_USCALED = 32,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8_SSCALED = 33,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8_UINT = 34,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8_SINT = 35,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8_SRGB = 36,
+            PixelFormat::R8G8B8A8_UNORM,// VK_FORMAT_R8G8B8A8_UNORM = 37,
+            PixelFormat::R8G8B8A8_SNORM,// VK_FORMAT_R8G8B8A8_SNORM = 38,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8B8A8_USCALED = 39,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8B8A8_SSCALED = 40,
+            PixelFormat::R8G8B8A8_UINT,// VK_FORMAT_R8G8B8A8_UINT = 41,
+            PixelFormat::R8G8B8A8_SINT,// VK_FORMAT_R8G8B8A8_SINT = 42,
+            PixelFormat::R8G8B8A8_UNORM_SRGB,// VK_FORMAT_R8G8B8A8_SRGB = 43,
+            PixelFormat::B8G8R8A8_UNORM,// VK_FORMAT_B8G8R8A8_UNORM = 44,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8A8_SNORM = 45,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8A8_USCALED = 46,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8A8_SSCALED = 47,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8A8_UINT = 48,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8A8_SINT = 49,
+            PixelFormat::B8G8R8A8_UNORM_SRGB,// VK_FORMAT_B8G8R8A8_SRGB = 50,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A8B8G8R8_UNORM_PACK32 = 51,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A8B8G8R8_SNORM_PACK32 = 52,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A8B8G8R8_USCALED_PACK32 = 53,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A8B8G8R8_SSCALED_PACK32 = 54,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A8B8G8R8_UINT_PACK32 = 55,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A8B8G8R8_SINT_PACK32 = 56,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A8B8G8R8_SRGB_PACK32 = 57,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2R10G10B10_UNORM_PACK32 = 58,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2R10G10B10_SNORM_PACK32 = 59,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2R10G10B10_USCALED_PACK32 = 60,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2R10G10B10_SSCALED_PACK32 = 61,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2R10G10B10_UINT_PACK32 = 62,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2R10G10B10_SINT_PACK32 = 63,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2B10G10R10_UNORM_PACK32 = 64,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2B10G10R10_SNORM_PACK32 = 65,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2B10G10R10_USCALED_PACK32 = 66,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2B10G10R10_SSCALED_PACK32 = 67,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2B10G10R10_UINT_PACK32 = 68,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2B10G10R10_SINT_PACK32 = 69,
+            PixelFormat::R16_UNORM,// VK_FORMAT_R16_UNORM = 70,
+            PixelFormat::R16_SNORM,// VK_FORMAT_R16_SNORM = 71,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16_USCALED = 72,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16_SSCALED = 73,
+            PixelFormat::R16_UINT,// VK_FORMAT_R16_UINT = 74,
+            PixelFormat::R16_SINT,// VK_FORMAT_R16_SINT = 75,
+            PixelFormat::R16_FLOAT,// VK_FORMAT_R16_SFLOAT = 76,
+            PixelFormat::R16G16_UNORM,// VK_FORMAT_R16G16_UNORM = 77,
+            PixelFormat::R16G16_SNORM,// VK_FORMAT_R16G16_SNORM = 78,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16_USCALED = 79,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16_SSCALED = 80,
+            PixelFormat::R16G16_UINT,// VK_FORMAT_R16G16_UINT = 81,
+            PixelFormat::R16G16_SINT,// VK_FORMAT_R16G16_SINT = 82,
+            PixelFormat::R16G16_FLOAT,// VK_FORMAT_R16G16_SFLOAT = 83,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16B16_UNORM = 84,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16B16_SNORM = 85,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16B16_USCALED = 86,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16B16_SSCALED = 87,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16B16_UINT = 88,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16B16_SINT = 89,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16B16_SFLOAT = 90,
+            PixelFormat::R16G16B16A16_UNORM,// VK_FORMAT_R16G16B16A16_UNORM = 91,
+            PixelFormat::R16G16B16A16_SNORM,// VK_FORMAT_R16G16B16A16_SNORM = 92,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16B16A16_USCALED = 93,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16B16A16_SSCALED = 94,
+            PixelFormat::R16G16B16A16_UINT,// VK_FORMAT_R16G16B16A16_UINT = 95,
+            PixelFormat::R16G16B16A16_SINT,// VK_FORMAT_R16G16B16A16_SINT = 96,
+            PixelFormat::R16G16B16A16_FLOAT,// VK_FORMAT_R16G16B16A16_SFLOAT = 97,
+            PixelFormat::R32_UINT,// VK_FORMAT_R32_UINT = 98,
+            PixelFormat::R32_SINT,// VK_FORMAT_R32_SINT = 99,
+            PixelFormat::R32_FLOAT,// VK_FORMAT_R32_SFLOAT = 100,
+            PixelFormat::R32G32_UINT,// VK_FORMAT_R32G32_UINT = 101,
+            PixelFormat::R32G32_SINT,// VK_FORMAT_R32G32_SINT = 102,
+            PixelFormat::R32G32_FLOAT,// VK_FORMAT_R32G32_SFLOAT = 103,
+            PixelFormat::R32G32B32_UINT,// VK_FORMAT_R32G32B32_UINT = 104,
+            PixelFormat::R32G32B32_SINT,// VK_FORMAT_R32G32B32_SINT = 105,
+            PixelFormat::R32G32B32_FLOAT,// VK_FORMAT_R32G32B32_SFLOAT = 106,
+            PixelFormat::R32G32B32A32_UINT,// VK_FORMAT_R32G32B32A32_UINT = 107,
+            PixelFormat::R32G32B32A32_SINT,// VK_FORMAT_R32G32B32A32_SINT = 108,
+            PixelFormat::R32G32B32A32_FLOAT,// VK_FORMAT_R32G32B32A32_SFLOAT = 109,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64_UINT = 110,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64_SINT = 111,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64_SFLOAT = 112,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64G64_UINT = 113,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64G64_SINT = 114,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64G64_SFLOAT = 115,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64G64B64_UINT = 116,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64G64B64_SINT = 117,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64G64B64_SFLOAT = 118,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64G64B64A64_UINT = 119,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64G64B64A64_SINT = 120,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64G64B64A64_SFLOAT = 121,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B10G11R11_UFLOAT_PACK32 = 122,
+            PixelFormat::UNDEFINED,// VK_FORMAT_E5B9G9R9_UFLOAT_PACK32 = 123,
+            PixelFormat::D16_UNORM,// VK_FORMAT_D16_UNORM = 124,
+            PixelFormat::UNDEFINED,// VK_FORMAT_X8_D24_UNORM_PACK32 = 125,
+            PixelFormat::D32_FLOAT,// VK_FORMAT_D32_SFLOAT = 126,
+            PixelFormat::UNDEFINED,// VK_FORMAT_S8_UINT = 127,
+            PixelFormat::UNDEFINED,// VK_FORMAT_D16_UNORM_S8_UINT = 128,
+            PixelFormat::D24_UNORM_S8_UINT,// VK_FORMAT_D24_UNORM_S8_UINT = 129,
+            PixelFormat::D32_FLOAT_S8X24_UINT,// VK_FORMAT_D32_SFLOAT_S8_UINT = 130,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC1_RGB_UNORM_BLOCK = 131,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC1_RGB_SRGB_BLOCK = 132,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC1_RGBA_UNORM_BLOCK = 133,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC1_RGBA_SRGB_BLOCK = 134,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC2_UNORM_BLOCK = 135,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC2_SRGB_BLOCK = 136,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC3_UNORM_BLOCK = 137,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC3_SRGB_BLOCK = 138,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC4_UNORM_BLOCK = 139,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC4_SNORM_BLOCK = 140,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC5_UNORM_BLOCK = 141,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC5_SNORM_BLOCK = 142,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC6H_UFLOAT_BLOCK = 143,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC6H_SFLOAT_BLOCK = 144,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC7_UNORM_BLOCK = 145,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC7_SRGB_BLOCK = 146,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK = 147,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK = 148,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK = 149,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK = 150,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK = 151,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK = 152,
+            PixelFormat::UNDEFINED,// VK_FORMAT_EAC_R11_UNORM_BLOCK = 153,
+            PixelFormat::UNDEFINED,// VK_FORMAT_EAC_R11_SNORM_BLOCK = 154,
+            PixelFormat::UNDEFINED,// VK_FORMAT_EAC_R11G11_UNORM_BLOCK = 155,
+            PixelFormat::UNDEFINED,// VK_FORMAT_EAC_R11G11_SNORM_BLOCK = 156,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_4x4_UNORM_BLOCK = 157,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_4x4_SRGB_BLOCK = 158,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_5x4_UNORM_BLOCK = 159,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_5x4_SRGB_BLOCK = 160,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_5x5_UNORM_BLOCK = 161,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_5x5_SRGB_BLOCK = 162,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_6x5_UNORM_BLOCK = 163,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_6x5_SRGB_BLOCK = 164,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_6x6_UNORM_BLOCK = 165,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_6x6_SRGB_BLOCK = 166,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_8x5_UNORM_BLOCK = 167,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_8x5_SRGB_BLOCK = 168,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_8x6_UNORM_BLOCK = 169,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_8x6_SRGB_BLOCK = 170,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_8x8_UNORM_BLOCK = 171,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_8x8_SRGB_BLOCK = 172,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_10x5_UNORM_BLOCK = 173,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_10x5_SRGB_BLOCK = 174,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_10x6_UNORM_BLOCK = 175,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_10x6_SRGB_BLOCK = 176,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_10x8_UNORM_BLOCK = 177,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_10x8_SRGB_BLOCK = 178,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_10x10_UNORM_BLOCK = 179,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_10x10_SRGB_BLOCK = 180,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_12x10_UNORM_BLOCK = 181,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_12x10_SRGB_BLOCK = 182,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_12x12_UNORM_BLOCK = 183,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_12x12_SRGB_BLOCK = 184,
+        };
+
         VulkanBackend::VulkanBackend()
         {
         }
@@ -155,6 +344,11 @@ namespace slag
             return ShaderLanguage::SPIRV;
         }
 
+        vkb::Instance& VulkanBackend::instance()
+        {
+            return _instance;
+        }
+
         VkBufferUsageFlagBits2 VulkanBackend::nativeBufferUsage(BufferMemoryType access)
         {
             VkBufferUsageFlagBits2 bufferUsage = VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_2_TRANSFER_DST_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR;
@@ -174,6 +368,16 @@ namespace slag
         NativeFormat VulkanBackend::nativeFormat(PixelFormat format)
         {
             return VULKAN_NATIVE_FORMATS[uint32_t(format)];
+        }
+
+        PixelFormat VulkanBackend::crossPlatformFormat(VkFormat format)
+        {
+            uint32_t index = format;
+            if (format >= sizeof(VULKAN_CROSS_PLATFORM_FORMATS) / sizeof(PixelFormat))
+            {
+                return PixelFormat::UNDEFINED;
+            }
+            return VULKAN_CROSS_PLATFORM_FORMATS[index];
         }
 
         VkImageUsageFlags VulkanBackend::nativeTextureUsage(TextureUsageFlags flags)
@@ -532,6 +736,68 @@ namespace slag
             return VK_SAMPLER_ADDRESS_MODE_REPEAT;
         }
 
+        VkCompositeAlphaFlagBitsKHR VulkanBackend::nativeCompositeAlphaFlags(AlphaCompositing alphaCompositing)
+        {
+            switch (alphaCompositing)
+            {
+            case AlphaCompositing::IGNORE_ALPHA:
+                return VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+                break;
+            case AlphaCompositing::PREMULTIPLIED:
+                return VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
+                break;
+            case AlphaCompositing::POSTMULTIPLIED:
+                return VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
+                break;
+            }
+            return VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        }
+
+        VkPresentModeKHR VulkanBackend::nativePresentMode(PresentMode presentMode)
+        {
+            switch (presentMode)
+            {
+            case PresentMode::IMMEDIATE:
+                return VK_PRESENT_MODE_IMMEDIATE_KHR;
+                break;
+            case PresentMode::BUFFER:
+                return VK_PRESENT_MODE_FIFO_KHR;
+                break;
+            case PresentMode::QUEUE:
+                return VK_PRESENT_MODE_FIFO_KHR;
+                break;
+            }
+            return VK_PRESENT_MODE_MAILBOX_KHR;
+        }
+
+        PresentMode VulkanBackend::crossPlatformPresentMode(VkPresentModeKHR presentMode)
+        {
+            switch (presentMode)
+            {
+            case VK_PRESENT_MODE_IMMEDIATE_KHR:
+                return PresentMode::IMMEDIATE;
+            case VK_PRESENT_MODE_MAILBOX_KHR:
+                return PresentMode::BUFFER;
+            case VK_PRESENT_MODE_FIFO_KHR:
+                return PresentMode::QUEUE;
+            }
+            return PresentMode::BUFFER;
+        }
+
+        VkImageLayout VULKAN_IMAGE_LAYOUTS[]
+        {
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_GENERAL,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+        };
+
+        VkImageLayout VulkanBackend::nativeImageLayout(TextureLayout layout)
+        {
+            return VULKAN_IMAGE_LAYOUTS[static_cast<uint32_t>(layout)];
+        }
+
         SlagInitializationResult VulkanBackend::initializeBackend(const InitializationData& initializationData)
         {
             if (initializationData.debugHandler)
@@ -555,6 +821,27 @@ namespace slag
             _instance = inst.value();
 
 
+            VkPhysicalDeviceMaintenance5Features maintenance5Features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES};
+            maintenance5Features.maintenance5 = true;
+
+            VkPhysicalDeviceShaderUntypedPointersFeaturesKHR untypedPointersFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_UNTYPED_POINTERS_FEATURES_KHR};
+            untypedPointersFeatures.shaderUntypedPointers = true;
+
+            VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR shaderDerivativesFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_KHR};
+            shaderDerivativesFeatures.computeDerivativeGroupLinear = true;
+            shaderDerivativesFeatures.computeDerivativeGroupQuads = true;
+
+            VkPhysicalDeviceDescriptorHeapFeaturesEXT descriptorHeapFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_HEAP_FEATURES_EXT};
+            descriptorHeapFeatures.descriptorHeap = true;
+            //descriptorHeapFeatures.descriptorHeapCaptureReplay = true;
+
+            /*VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcrFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES};
+            ycbcrFeatures.samplerYcbcrConversion = true;
+
+            VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT};
+            swapchainFeatures.swapchainMaintenance1 = true;*/
+
+
             VkPhysicalDeviceFeatures basicFeatures{};
             basicFeatures.fillModeNonSolid = true;
             basicFeatures.wideLines = true;
@@ -565,31 +852,6 @@ namespace slag
             basicFeatures.fragmentStoresAndAtomics = true;
             basicFeatures.shaderStorageImageMultisample = true;
 
-            VkPhysicalDeviceMaintenance5Features maintenance5Features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES};
-            maintenance5Features.maintenance5 = true;
-
-            VkPhysicalDeviceShaderUntypedPointersFeaturesKHR untypedPointersFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_UNTYPED_POINTERS_FEATURES_KHR};
-            untypedPointersFeatures.shaderUntypedPointers = true;
-            untypedPointersFeatures.pNext = &maintenance5Features;
-
-            VkPhysicalDeviceDescriptorHeapFeaturesEXT descriptorHeapFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_HEAP_FEATURES_EXT};
-            descriptorHeapFeatures.descriptorHeap = true;
-            descriptorHeapFeatures.descriptorHeapCaptureReplay = true;
-            descriptorHeapFeatures.pNext = &untypedPointersFeatures;
-
-            VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcrFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES};
-            ycbcrFeatures.samplerYcbcrConversion = true;
-            ycbcrFeatures.pNext = &descriptorHeapFeatures;
-
-            VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR shaderDerivativesFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_KHR};
-            shaderDerivativesFeatures.computeDerivativeGroupLinear = true;
-            shaderDerivativesFeatures.computeDerivativeGroupQuads = true;
-            shaderDerivativesFeatures.pNext = &ycbcrFeatures;
-
-            VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT};
-            swapchainFeatures.swapchainMaintenance1 = true;
-            swapchainFeatures.pNext = &shaderDerivativesFeatures;
-
             VkPhysicalDeviceVulkan12Features features1_2{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
             features1_2.bufferDeviceAddress = true;
             features1_2.descriptorIndexing = true;
@@ -597,7 +859,6 @@ namespace slag
             features1_2.drawIndirectCount = true;
             features1_2.shaderInt8 = true;
             features1_2.shaderFloat16 = true;
-            features1_2.pNext = &swapchainFeatures;
 
 
             VkPhysicalDeviceVulkan13Features features1_3{.sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
@@ -612,12 +873,20 @@ namespace slag
                 .set_required_features_13(features1_3)
                 .set_required_features_12(features1_2)
                 .set_required_features(basicFeatures)
-                .add_required_extension("VK_EXT_swapchain_maintenance1")
+            .add_required_extension("VK_KHR_maintenance5")
+            .add_required_extension_features(maintenance5Features)
+            .add_required_extension("VK_KHR_shader_untyped_pointers")
+            .add_required_extension_features(untypedPointersFeatures)
+            .add_required_extension("VK_KHR_compute_shader_derivatives")
+            .add_required_extension_features(shaderDerivativesFeatures)
+            .add_required_extension("VK_EXT_descriptor_heap")
+            .add_required_extension_features(descriptorHeapFeatures)
+                //.add_required_extension("VK_EXT_swapchain_maintenance1")
                 .add_required_extension("VK_EXT_custom_border_color")
-                .add_required_extension("VK_KHR_compute_shader_derivatives")
-                .add_required_extension("VK_EXT_descriptor_heap")
-                .add_required_extension("VK_KHR_shader_untyped_pointers")
-                .add_required_extension("VK_KHR_maintenance5")
+
+
+
+
                 .defer_surface_initialization()
                 .select_devices();
 

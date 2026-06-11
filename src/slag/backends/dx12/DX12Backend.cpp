@@ -541,6 +541,20 @@ namespace slag
             return D3D12_UAV_DIMENSION_UNKNOWN;
         }
 
+        D3D12_BARRIER_LAYOUT DX12_NATIVE_LAYOUTS[]
+        {
+            D3D12_BARRIER_LAYOUT_UNDEFINED,
+            D3D12_BARRIER_LAYOUT_COMMON,
+            D3D12_BARRIER_LAYOUT_RENDER_TARGET,
+            D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_WRITE,
+            D3D12_BARRIER_LAYOUT_PRESENT
+        };
+
+        D3D12_BARRIER_LAYOUT DX12Backend::nativeImageLayout(TextureLayout layout)
+        {
+            return DX12_NATIVE_LAYOUTS[static_cast<uint32_t>(layout)];
+        }
+
         SlagInitializationResult DX12Backend::initializeBackend(const InitializationData& initializationData)
         {
             Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory;

@@ -9,6 +9,7 @@
 #include "VulkanSemaphore.h"
 #include "VulkanShaderPipeline.h"
 #include "VulkanSubmissionQueue.h"
+#include "VulkanSwapChain.h"
 #include "VulkanTexture.h"
 #include "slag/exceptions/InvalidShaderCodeError.h"
 #include "slag/exceptions/NotImplemented.h"
@@ -437,6 +438,11 @@ namespace slag
             return stats.bytesMoved;
         }
 
+        SwapChain* VulkanGraphicsCard::newSwapchain(const PlatformData& platformData, uint32_t width, uint32_t height, const SwapChainParameters& parameters)
+        {
+            return new VulkanSwapChain(this,platformData,width,height,parameters);
+        }
+
         ShaderPipeline* VulkanGraphicsCard::newShaderPipeline(
             const VertexDescription& vertexDescription,
             const ShaderCode& vertexShader,
@@ -546,6 +552,11 @@ namespace slag
         VkDevice VulkanGraphicsCard::device() const
         {
             return _device;
+        }
+
+        VkPhysicalDevice VulkanGraphicsCard::physicalDevice() const
+        {
+            return _physicalDevice;
         }
 
         VmaAllocator VulkanGraphicsCard::allocator() const

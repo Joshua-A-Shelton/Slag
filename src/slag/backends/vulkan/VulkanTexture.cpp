@@ -115,6 +115,22 @@ namespace slag
             construct(VK_IMAGE_TYPE_2D,formatInfo,VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT);
         }
 
+        VulkanTexture::VulkanTexture(VulkanGraphicsCard* card, TextureType type, VkImage image, VkImageView view, PixelFormat format, TextureUsageFlags usage, uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, uint32_t mipLevels, SampleCount sampleCount)
+        {
+            _graphicsCard = card;
+            _type = type;
+            _texture = image;
+            _view = view;
+            _format = format;
+            _usage = usage;
+            _width = width;
+            _height = height;
+            _depth = depth;
+            _layers = layers;
+            _mipLevels = mipLevels;
+            _sampleCount = sampleCount;
+        }
+
         VulkanTexture::VulkanTexture(VulkanTexture&& from) noexcept
         {
             move(from);
@@ -128,10 +144,18 @@ namespace slag
 
         VulkanTexture::~VulkanTexture()
         {
-            if (_allocation)
+            if (_texture)
             {
-                vmaDestroyImage(_graphicsCard->allocator(),_texture,_allocation);
+                if (_allocation)
+                {
+                    vmaDestroyImage(_graphicsCard->allocator(),_texture,_allocation);
+                }
+                if (_view)
+                {
+                    vkDestroyImageView(_graphicsCard->device(),_view,nullptr);
+                }
             }
+
         }
 
         uint32_t VulkanTexture::width() const

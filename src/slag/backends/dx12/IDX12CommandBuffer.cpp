@@ -112,9 +112,9 @@ namespace slag
                 bufferBarrier.SyncBefore = DX12Backend::nativePipelineStages(copyBarrier.syncBefore);
                 bufferBarrier.SyncAfter = DX12Backend::nativePipelineStages(copyBarrier.syncAfter);
                 bufferBarrier.pResource = static_cast<DX12Texture*>(copyBarrier.texture)->dx12Handle();
-                //bufferBarrier.Flags = ;
-                bufferBarrier.LayoutBefore = D3D12_BARRIER_LAYOUT_COMMON;
-                bufferBarrier.LayoutAfter = D3D12_BARRIER_LAYOUT_COMMON;
+
+                bufferBarrier.LayoutBefore = DX12Backend::nativeImageLayout(copyBarrier.layoutBefore);
+                bufferBarrier.LayoutAfter = DX12Backend::nativeImageLayout(copyBarrier.layoutAfter);
                 bufferBarrier.Subresources = D3D12_BARRIER_SUBRESOURCE_RANGE
                 {
                     .IndexOrFirstMipLevel = copyBarrier.baseMipLevel,
@@ -124,6 +124,10 @@ namespace slag
                     .FirstPlane = 0,
                     .NumPlanes = static_cast<UINT>(std::popcount(static_cast<uint8_t>(Pixel::aspectFlags(copyBarrier.texture->format()))))
                 };
+                if (copyBarrier.layoutBefore == TextureLayout::UNKNOWN)
+                {
+                    bufferBarrier.Flags = D3D12_TEXTURE_BARRIER_FLAG_DISCARD;
+                }
             }
             D3D12_BARRIER_GROUP barrierGroup{};
             barrierGroup.NumBarriers = barrierCount;

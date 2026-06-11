@@ -72,6 +72,10 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/backends/vulkan/VulkanSamplerDescriptorHeap.h
             src/slag/backends/vulkan/VulkanResourceDescriptorHeap.cpp
             src/slag/backends/vulkan/VulkanResourceDescriptorHeap.h
+            src/slag/backends/vulkan/VulkanSwapChain.cpp
+            src/slag/backends/vulkan/VulkanSwapChain.h
+            src/slag/backends/vulkan/VulkanFrame.cpp
+            src/slag/backends/vulkan/VulkanFrame.h
     )
 endif()
 if(SLAG_DX12_BACKEND)
@@ -151,6 +155,7 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/ResourceDescriptorHeap.h
         src/slag/core/SwapChain.h
         src/slag/core/Frame.h
+        src/slag/core/PlatformData.h
 
 
 )
@@ -327,19 +332,72 @@ if(SLAG_BUILD_TESTS)
                 DEPENDS ${SHADER}
                 COMMENT "Compiling ${FILENAME} to dxil fragment"
         )
-        list(APPEND COMPILED_SHADER_FILES ${OUTPUT_FILE_RAW}.vertex.spv ${OUTPUT_FILE_RAW}.fragment.spv ${OUTPUT_FILE_RAW}.vertex.dxil ${OUTPUT_FILE_RAW}.fragment.dxil)
+        list(APPEND COMPILED_TEST_SHADER_FILES ${OUTPUT_FILE_RAW}.vertex.spv ${OUTPUT_FILE_RAW}.fragment.spv ${OUTPUT_FILE_RAW}.vertex.dxil ${OUTPUT_FILE_RAW}.fragment.dxil)
     endforeach ()
 
-    add_custom_target(CompileShaders ALL DEPENDS ${COMPILED_SHADER_FILES})
+    add_custom_target(CompileTestShaders ALL DEPENDS ${COMPILED_TEST_SHADER_FILES})
 
     add_custom_command(
             TARGET SlagTests
             POST_BUILD
             COMMAND  ${CMAKE_COMMAND} -E copy_directory_if_different
-            ${CMAKE_CURRENT_SOURCE_DIR}/resources/
-            ${CMAKE_CURRENT_BINARY_DIR}/resources/
-            COMMENT "Copying resources files"
+            ${CMAKE_CURRENT_SOURCE_DIR}/resources/tests
+            ${CMAKE_CURRENT_BINARY_DIR}/resources/tests
+            COMMENT "Copying test resource files"
     )
 
-    add_dependencies(SlagTests CompileShaders)
+    add_dependencies(SlagTests CompileTestShaders)
 endif ()
+
+if(SLAG_BUILD_CUBE)
+    add_executable(SlagCube
+            examples/cube/Main.cpp
+    )
+    target_link_libraries(SlagCube SDL3::SDL3 glm::glm slag::Slag)
+    target_include_directories(SlagCube PRIVATE ${stb_image_SOURCE_DIR})
+
+    file(GLOB EXAMPLE_VERT_FRAG_SHADERS "${CMAKE_CURRENT_SOURCE_DIR}/resources/examples/shaders/src/VertexAndFragment/*.slang")
+
+    foreach (SHADER ${EXAMPLE_VERT_FRAG_SHADERS})
+        get_filename_component(FILENAME ${SHADER} NAME_WE)
+        set(OUTPUT_FILE_RAW "${CMAKE_CURRENT_SOURCE_DIR}/resources/examples/shaders/compiled/${FILENAME}")
+        add_custom_command(
+                OUTPUT "${OUTPUT_FILE_RAW}.vertex.spv"
+                COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.spv"
+                DEPENDS ${SHADER}
+                COMMENT "Compiling ${FILENAME} to spirv vertex"
+        )
+        add_custom_command(
+                OUTPUT "${OUTPUT_FILE_RAW}.fragment.spv"
+                COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.spv"
+                DEPENDS ${SHADER}
+                COMMENT "Compiling ${FILENAME} to spirv fragment"
+        )
+        add_custom_command(
+                OUTPUT "${OUTPUT_FILE_RAW}.vertex.dxil"
+                COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.dxil"
+                DEPENDS ${SHADER}
+                COMMENT "Compiling ${FILENAME} to dxil vertex"
+        )
+        add_custom_command(
+                OUTPUT "${OUTPUT_FILE_RAW}.fragment.dxil"
+                COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.dxil"
+                DEPENDS ${SHADER}
+                COMMENT "Compiling ${FILENAME} to dxil fragment"
+        )
+        list(APPEND COMPILED_EXAMPLE_SHADER_FILES ${OUTPUT_FILE_RAW}.vertex.spv ${OUTPUT_FILE_RAW}.fragment.spv ${OUTPUT_FILE_RAW}.vertex.dxil ${OUTPUT_FILE_RAW}.fragment.dxil)
+    endforeach ()
+
+    add_custom_target(CompileExampleShaders ALL DEPENDS ${COMPILED_EXAMPLE_SHADER_FILES})
+
+    add_custom_command(
+            TARGET SlagCube
+            POST_BUILD
+            COMMAND  ${CMAKE_COMMAND} -E copy_directory_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/resources/examples/
+            ${CMAKE_CURRENT_BINARY_DIR}/resources/examples/
+            COMMENT "Copying test resource files"
+    )
+
+    add_dependencies(SlagCube CompileExampleShaders)
+endif()

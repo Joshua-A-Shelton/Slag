@@ -29,6 +29,8 @@ namespace slag
             [[nodiscard]] SubmissionQueue* computeQueue()override;
             [[nodiscard]] SubmissionQueue* transferQueue()override;
             uint64_t defragmentMemory(uint64_t targetBytes, std::function<void(MemoryReference*)> memoryMoved)override;
+
+            SwapChain* newSwapchain(const PlatformData& platformData, uint32_t width, uint32_t height, const SwapChainParameters& parameters)override;
             //Shaders
             [[nodiscard]] ShaderPipeline* newShaderPipeline(
                 const VertexDescription& vertexDescription,
@@ -102,6 +104,7 @@ namespace slag
 
             //Vulkan specific
             [[nodiscard]] VkDevice device() const;
+            [[nodiscard]] VkPhysicalDevice physicalDevice() const;
             [[nodiscard]] VmaAllocator allocator() const;
             [[nodiscard]] uint32_t graphicsFamilyIndex()const;
             [[nodiscard]] uint32_t computeFamilyIndex()const;

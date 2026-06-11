@@ -50,6 +50,20 @@ namespace slag
         COPY_ACCELERATION_STRUCTURE     = 1 << 16,
     };
 
+    enum class TextureLayout
+    {
+        ///Unknown layout, only valid for layoutBefore, and will discard the contents of the image
+        UNKNOWN,
+        ///Layout for most operations
+        GENERAL,
+        ///Layout required for an image to be a render target
+        COLOR_TARGET,
+        ///Layout required for an image to be a depth stencil target
+        DEPTH_STENCIL_TARGET,
+        ///Layout required to present an image to the screen
+        PRESENT,
+    };
+
     inline MemoryCaches operator|(MemoryCaches a, MemoryCaches b)
     {
         return static_cast<MemoryCaches>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
@@ -178,6 +192,10 @@ namespace slag
         MemoryCaches flush = MemoryCaches::NONE;
         ///Data to pull from main memory back into cache memory
         MemoryCaches invalidate = MemoryCaches::NONE;
+        ///Layout of the texture before the barrier executes
+        TextureLayout layoutBefore = TextureLayout::GENERAL;
+        ///Layout of the texture after the barrier executes
+        TextureLayout layoutAfter = TextureLayout::GENERAL;
     };
 }
 #endif //SLAG_BARRIERS_H

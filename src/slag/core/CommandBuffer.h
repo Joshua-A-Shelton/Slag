@@ -4,6 +4,7 @@
 
 namespace slag
 {
+    class SwapChain;
     class CommandBuffer:public ICommandBuffer
     {
     public:

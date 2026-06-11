@@ -82,10 +82,44 @@ TEST(ShaderPipeline, Sandbox)
 
     commandBuffer->bindDescriptorHeaps(resourceHeap.get(),samplerHeap.get());
     commandBuffer->setViewPort(0,0,colorTarget->width(),colorTarget->height(),0.0f,1.0f);
-    commandBuffer->setScissors(Rectangle{0,0,colorTarget->width(),colorTarget->height()});
+    commandBuffer->setScissors(slag::Rectangle{0,0,colorTarget->width(),colorTarget->height()});
     Attachment colorAttachment(colorTarget.get(),true,ClearValue{.5,.2,.1,1});
     Attachment depthAttachment(depthTarget.get(),true,ClearValue{1,0});
-    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,Rectangle{0,0,colorTarget->width(),colorTarget->height()});
+
+    TextureBarrier barriers[]
+    {
+        TextureBarrier
+        {
+            colorTarget.get(),
+            0,
+            1,
+            0,
+            1,
+            SyncStages::ALL,
+            SyncStages::ALL_GRAPHICS,
+            MemoryCaches::NONE,
+            MemoryCaches::NONE,
+            TextureLayout::GENERAL,
+            TextureLayout::COLOR_TARGET
+        },
+        TextureBarrier
+        {
+            depthTarget.get(),
+            0,
+            1,
+            0,
+            1,
+            SyncStages::ALL,
+            SyncStages::ALL_GRAPHICS,
+            MemoryCaches::NONE,
+            MemoryCaches::NONE,
+            TextureLayout::GENERAL,
+            TextureLayout::DEPTH_STENCIL_TARGET
+        },
+    };
+    commandBuffer->insertBarriers(barriers,2);
+
+    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{0,0,colorTarget->width(),colorTarget->height()});
 
     Buffer* buffers[] = {triangleVerts.get(),triangleUVs.get()};
     uint64_t offsets[] = {0,0};
@@ -111,6 +145,14 @@ TEST(ShaderPipeline, Sandbox)
     commandBuffer->drawIndexed(tindexes.size(),1,0,0,0);
 
     commandBuffer->endRendering();
+
+    barriers[0].layoutBefore = TextureLayout::COLOR_TARGET;
+    barriers[0].layoutAfter = TextureLayout::GENERAL;
+    barriers[0].syncBefore = SyncStages::ALL_GRAPHICS;
+    barriers[0].syncAfter = SyncStages::ALL;
+    barriers[0].flush = MemoryCaches::COLOR_TARGET;
+    barriers[0].invalidate = MemoryCaches::NONE;
+    commandBuffer->insertBarriers(barriers,1);
 
     commandBuffer->end();
     auto cmdBufferPtr = commandBuffer.get();

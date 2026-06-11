@@ -7,7 +7,8 @@
 #include "Defragmentation.h"
 #include "PixelFormatProperties.h"
 #include "Pixels.h"
-#include "ResourceDescriptorHeap.h"
+#include "PlatformData.h"
+#include "SwapChain.h"
 #include "Sampler.h"
 #include "SubmissionQueue.h"
 #include "Texture.h"
@@ -85,6 +86,16 @@ namespace slag
          * @return number of bytes defragmented
          */
         virtual uint64_t defragmentMemory(uint64_t targetBytes=0, std::function<void(MemoryReference*)> memoryMoved = nullptr)=0;
+
+        /**
+         * Create a new swapchain
+         * @param platformData Platform specific data for the swapchain
+         * @param width Width of the swapchain in pixels
+         * @param height Height of the swapchain in pixels
+         * @param parameters Parameters for the swapchain
+         * @return New swapchain object
+         */
+        virtual SwapChain* newSwapchain(const PlatformData& platformData, uint32_t width, uint32_t height, const SwapChainParameters& parameters)=0;
 
         //Shaders
         [[nodiscard]] virtual ShaderPipeline* newShaderPipeline(

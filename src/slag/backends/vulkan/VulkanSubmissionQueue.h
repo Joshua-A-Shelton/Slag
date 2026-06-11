@@ -20,6 +20,7 @@ namespace slag
             [[nodiscard]] QueueType type()const override;
             [[nodiscard]] GraphicsCard* graphicsCard()override;
             void submit(SubmissionBatch* batches, uint32_t batchCount)override;
+            VkQueue vulkanHandle()const;
         private:
             void move(VulkanSubmissionQueue& from);
             VkQueue _queue = nullptr;

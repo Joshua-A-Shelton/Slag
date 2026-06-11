@@ -419,6 +419,11 @@ namespace slag
             return stats.BytesMoved;
         }
 
+        SwapChain* DX12GraphicsCard::newSwapchain(const PlatformData& platformData, uint32_t width, uint32_t height, const SwapChainParameters& parameters)
+        {
+            throw NotImplemented();
+        }
+
         ShaderPipeline* DX12GraphicsCard::newShaderPipeline(
             const VertexDescription& vertexDescription,
             const ShaderCode& vertexShader,

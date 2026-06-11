@@ -91,6 +91,11 @@ namespace slag
             vkQueueSubmit2(_queue,batchCount,submit.data(),nullptr);
         }
 
+        VkQueue VulkanSubmissionQueue::vulkanHandle() const
+        {
+            return _queue;
+        }
+
         void VulkanSubmissionQueue::move(VulkanSubmissionQueue& from)
         {
             _queue = from._queue;

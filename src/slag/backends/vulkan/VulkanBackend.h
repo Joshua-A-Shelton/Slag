@@ -29,9 +29,11 @@ namespace slag
             [[nodiscard]] GraphicsCard* graphicsCard(uint32_t index)override;
             [[nodiscard]] uint32_t supportedShaderLanguageCount()const override;
             [[nodiscard]] ShaderLanguage supportedShaderLanguage(uint32_t index)const override;
+            [[nodiscard]] vkb::Instance& instance();
 
             static VkBufferUsageFlagBits2 nativeBufferUsage(BufferMemoryType access);
             static NativeFormat nativeFormat(PixelFormat format);
+            static PixelFormat crossPlatformFormat(VkFormat format);
             static VkImageUsageFlags nativeTextureUsage(TextureUsageFlags flags);
             inline static VkImageAspectFlags nativeTextureAspect(PixelAspectFlags aspect){return static_cast<VkImageAspectFlagBits>(aspect);}
             static VkAccessFlags2 nativeMemoryCaches(MemoryCaches caches);
@@ -47,6 +49,10 @@ namespace slag
             static VkCompareOp nativeCompareOp(ComparisonFunction compareOp);
             static VkFilter nativeFilter(SamplerFilter filter);
             static VkSamplerAddressMode nativeSamplerAddressMode(SamplerAddressMode mode);
+            static VkCompositeAlphaFlagBitsKHR nativeCompositeAlphaFlags(AlphaCompositing alphaCompositing);
+            static VkPresentModeKHR nativePresentMode(PresentMode presentMode);
+            static PresentMode crossPlatformPresentMode(VkPresentModeKHR presentMode);
+            static VkImageLayout nativeImageLayout(TextureLayout layout);
         private:
             SlagInitializationResult initializeBackend(const InitializationData& initializationData)override;
             std::vector<VulkanGraphicsCard> _graphicsCards;
