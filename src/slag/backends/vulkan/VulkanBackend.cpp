@@ -835,6 +835,10 @@ namespace slag
             descriptorHeapFeatures.descriptorHeap = true;
             descriptorHeapFeatures.descriptorHeapCaptureReplay = true;
 
+            VkPhysicalDeviceCustomBorderColorFeaturesEXT customBorderFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT};
+            customBorderFeatures.customBorderColors = true;
+            customBorderFeatures.customBorderColorWithoutFormat = true;
+
             /*VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcrFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES};
             ycbcrFeatures.samplerYcbcrConversion = true;
 
@@ -881,8 +885,8 @@ namespace slag
             .add_required_extension_features(shaderDerivativesFeatures)
             .add_required_extension("VK_EXT_descriptor_heap")
             .add_required_extension_features(descriptorHeapFeatures)
-                //.add_required_extension("VK_EXT_swapchain_maintenance1")
-                .add_required_extension("VK_EXT_custom_border_color")
+            .add_required_extension("VK_EXT_custom_border_color")
+            .add_required_extension_features(customBorderFeatures)
                 .defer_surface_initialization()
                 .select_devices();
 

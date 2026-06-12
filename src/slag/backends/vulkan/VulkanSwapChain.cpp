@@ -217,7 +217,7 @@ namespace slag
             createWaylandInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
             createWaylandInfo.display = static_cast<wl_display*>(data.display);
             createWaylandInfo.surface = static_cast<wl_surface*>(data.surface);
-            vkCreateWaylandSurfaceKHR(((VulkanBackend*)Backend::current())->vulkanInstance(),&createWaylandInfo, nullptr,&surface);
+            vkCreateWaylandSurfaceKHR(((VulkanBackend*)Slag::backend())->instance(),&createWaylandInfo, nullptr,&surface);
             return surface;
 #else
             throw std::runtime_error("Cannot initialize Vulkan Swapchain on X11 backend");
@@ -233,7 +233,7 @@ namespace slag
             createX11Info.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
             createX11Info.window = reinterpret_cast<Window>(data.window);
             createX11Info.dpy = static_cast<Display*>(data.display);
-            vkCreateXlibSurfaceKHR(((VulkanBackend*)Backend::current())->vulkanInstance(),&createX11Info, nullptr,&surface);
+            vkCreateXlibSurfaceKHR(((VulkanBackend*)Slag::backend())->instance(),&createX11Info, nullptr,&surface);
             return surface;
 #else
             throw std::runtime_error("Cannot initialize Vulkan Swapchain on X11 backend");

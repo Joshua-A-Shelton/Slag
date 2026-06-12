@@ -48,11 +48,10 @@ namespace slag
             VkSamplerCustomBorderColorCreateInfoEXT borderExt
             {
                 .sType = VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT,
-                .customBorderColor = {.float32 = {borderColor.red,borderColor.green,borderColor.blue,borderColor.alpha}}
+                .customBorderColor = {.float32 = {borderColor.red,borderColor.green,borderColor.blue,borderColor.alpha}},
             };
             _graphicsCard->vkRegisterCustomBorderColor(_graphicsCard->device(),&borderExt,true,&_borderExt.index);
 
-            _graphicsCard->_allocatedSamplers +=1;
         }
 
         VulkanSampler::~VulkanSampler()
@@ -60,7 +59,6 @@ namespace slag
             if (_graphicsCard)
             {
                 _graphicsCard->vkUnregisterCustomBorderColor(_graphicsCard->device(),_borderExt.index);
-                _graphicsCard->_allocatedSamplers -=1;
             }
         }
 

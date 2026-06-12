@@ -320,18 +320,20 @@ if(SLAG_BUILD_TESTS)
                 DEPENDS ${SHADER}
                 COMMENT "Compiling ${FILENAME} to spirv fragment"
         )
-        add_custom_command(
-                OUTPUT "${OUTPUT_FILE_RAW}.vertex.dxil"
-                COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.dxil"
-                DEPENDS ${SHADER}
-                COMMENT "Compiling ${FILENAME} to dxil vertex"
-        )
-        add_custom_command(
-                OUTPUT "${OUTPUT_FILE_RAW}.fragment.dxil"
-                COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.dxil"
-                DEPENDS ${SHADER}
-                COMMENT "Compiling ${FILENAME} to dxil fragment"
-        )
+        if(WIN32)
+            add_custom_command(
+                    OUTPUT "${OUTPUT_FILE_RAW}.vertex.dxil"
+                    COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.dxil"
+                    DEPENDS ${SHADER}
+                    COMMENT "Compiling ${FILENAME} to dxil vertex"
+            )
+            add_custom_command(
+                    OUTPUT "${OUTPUT_FILE_RAW}.fragment.dxil"
+                    COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.dxil"
+                    DEPENDS ${SHADER}
+                    COMMENT "Compiling ${FILENAME} to dxil fragment"
+            )
+        endif ()
         list(APPEND COMPILED_TEST_SHADER_FILES ${OUTPUT_FILE_RAW}.vertex.spv ${OUTPUT_FILE_RAW}.fragment.spv ${OUTPUT_FILE_RAW}.vertex.dxil ${OUTPUT_FILE_RAW}.fragment.dxil)
     endforeach ()
 
@@ -373,18 +375,20 @@ if(SLAG_BUILD_CUBE)
                 DEPENDS ${SHADER}
                 COMMENT "Compiling ${FILENAME} to spirv fragment"
         )
-        add_custom_command(
-                OUTPUT "${OUTPUT_FILE_RAW}.vertex.dxil"
-                COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.dxil"
-                DEPENDS ${SHADER}
-                COMMENT "Compiling ${FILENAME} to dxil vertex"
-        )
-        add_custom_command(
-                OUTPUT "${OUTPUT_FILE_RAW}.fragment.dxil"
-                COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.dxil"
-                DEPENDS ${SHADER}
-                COMMENT "Compiling ${FILENAME} to dxil fragment"
-        )
+        if(WIN32)
+            add_custom_command(
+                    OUTPUT "${OUTPUT_FILE_RAW}.vertex.dxil"
+                    COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.dxil"
+                    DEPENDS ${SHADER}
+                    COMMENT "Compiling ${FILENAME} to dxil vertex"
+            )
+            add_custom_command(
+                    OUTPUT "${OUTPUT_FILE_RAW}.fragment.dxil"
+                    COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.dxil"
+                    DEPENDS ${SHADER}
+                    COMMENT "Compiling ${FILENAME} to dxil fragment"
+            )
+        endif ()
         list(APPEND COMPILED_EXAMPLE_SHADER_FILES ${OUTPUT_FILE_RAW}.vertex.spv ${OUTPUT_FILE_RAW}.fragment.spv ${OUTPUT_FILE_RAW}.vertex.dxil ${OUTPUT_FILE_RAW}.fragment.dxil)
     endforeach ()
 

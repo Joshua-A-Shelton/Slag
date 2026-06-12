@@ -135,7 +135,6 @@ namespace slag
             uint32_t _graphicsQueueFamily=0;
             uint32_t _computeQueueFamily=0;
             uint32_t _transferQueueFamily=0;
-            uint32_t _allocatedSamplers=0;
         };
     } // vulkan
 } // slag

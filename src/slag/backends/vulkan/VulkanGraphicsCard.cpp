@@ -537,7 +537,6 @@ namespace slag
             _graphicsQueueFamily=from._graphicsQueueFamily;
             _computeQueueFamily=from._computeQueueFamily;
             _transferQueueFamily=from._transferQueueFamily;
-            _allocatedSamplers=from._allocatedSamplers;
 
 
             vkCmdBindSamplerHeap=from.vkCmdBindSamplerHeap;
