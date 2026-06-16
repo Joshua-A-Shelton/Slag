@@ -270,8 +270,8 @@ int main()
 
     auto sampler = graphicsCard->newSampler();
     auto texture = loadTexture("resources/examples/textures/gradient.jpg",graphicsCard);
-    auto globals = graphicsCard->newBuffer(192,slag::BufferCPUAccess::WRITE_ONLY, slag::BufferMemoryType::GENERAL);
-    auto transform = graphicsCard->newBuffer(64,slag::BufferCPUAccess::WRITE_ONLY, slag::BufferMemoryType::GENERAL);
+    auto globals = graphicsCard->newBuffer(192,slag::BufferCPUAccess::WRITE_ONLY, slag::BufferMemoryType::UNIFORM);
+    auto transform = graphicsCard->newBuffer(64,slag::BufferCPUAccess::WRITE_ONLY, slag::BufferMemoryType::UNIFORM);
     auto proj = glm::perspective(95.0f,(float)depthBuffer->width()/(float)depthBuffer->height(),.01f,100.0f);
     glm::mat4 view = glm::mat4(1.0f);
     view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
@@ -294,6 +294,7 @@ int main()
     };
     slag::VertexDescription vertexDescription(vertexBindings);
     slag::PipelineState pipelineState{};
+    pipelineState.rasterizationState.culling = slag::RasterizationState::CullOptions::NONE;
     slag::FramebufferDescription framebufferDesc;
     framebufferDesc.colorFormats[0] = swapChain->parameters().imageFormat;
     framebufferDesc.depthFormat = depthBuffer->format();
@@ -386,8 +387,8 @@ int main()
             commandBuffer->bindVertexBuffers(0,buffers,offsets,strides,2);
             commandBuffer->bindIndexBuffer(cubeIndices,slag::IndexBufferType::UINT_16,0);
 
-            resourceHeap->setStorageStructuredBuffer(0,globals,0,1, globals->size());
-            resourceHeap->setStorageStructuredBuffer(1,transform,0,1,transform->size());
+            resourceHeap->setUniformStructuredBuffer(0,globals,0,1, globals->size());
+            resourceHeap->setUniformStructuredBuffer(1,transform,0,1,transform->size());
             resourceHeap->setUniformTexture(2,texture,0,1,0,1);
             samplerHeap->setSampler(0,sampler);
 

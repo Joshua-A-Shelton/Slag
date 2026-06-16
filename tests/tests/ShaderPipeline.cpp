@@ -35,8 +35,8 @@ TEST(ShaderPipeline, Sandbox)
     auto colorTarget = std::unique_ptr<Texture>(card->newTexture2D(250,250,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
     auto depthTarget = std::unique_ptr<Texture>(card->newTexture2D(250,250,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
 
-    auto globals = std::unique_ptr<Buffer>(card->newBuffer(192,BufferCPUAccess::WRITE_ONLY, BufferMemoryType::GENERAL));
-    auto transform = std::unique_ptr<Buffer>(card->newBuffer(64,BufferCPUAccess::WRITE_ONLY, BufferMemoryType::GENERAL));
+    auto globals = std::unique_ptr<Buffer>(card->newBuffer(192,BufferCPUAccess::WRITE_ONLY, BufferMemoryType::UNIFORM));
+    auto transform = std::unique_ptr<Buffer>(card->newBuffer(64,BufferCPUAccess::WRITE_ONLY, BufferMemoryType::UNIFORM));
     auto proj = glm::perspective(95.0f,(float)colorTarget->width()/(float)colorTarget->height(),.01f,100.0f);
     glm::mat4 view = glm::mat4(1.0f);
     view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
@@ -128,8 +128,8 @@ TEST(ShaderPipeline, Sandbox)
     commandBuffer->bindIndexBuffer(triangleIndices.get(),IndexBufferType::UINT_16,0);
     commandBuffer->bindGraphicsPipeline(pipeline.get());
 
-    resourceHeap->setStorageStructuredBuffer(0,globals.get(),0,1, globals->size());
-    resourceHeap->setStorageStructuredBuffer(1,transform.get(),0,1,transform->size());
+    resourceHeap->setUniformStructuredBuffer(0,globals.get(),0,1, globals->size());
+    resourceHeap->setUniformStructuredBuffer(1,transform.get(),0,1,transform->size());
     resourceHeap->setUniformTexture(2,texture.get(),0,1,0,1);
     samplerHeap->setSampler(0,sampler.get());
 
