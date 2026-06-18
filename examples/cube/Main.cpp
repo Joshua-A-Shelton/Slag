@@ -8,6 +8,10 @@
 #include <SDL3/SDL.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <thread>
+#include <chrono>
+
+using namespace slag;
 
 void graphicsDebug(const std::string& message, slag::DebugLevel level, int32_t id)
 {
@@ -131,6 +135,7 @@ int main()
              std::cout << "No graphics cards with required features found" << std::endl;
              break;
          }
+         std::this_thread::sleep_for(std::chrono::milliseconds(500));
          return 1;
      }
 
@@ -255,24 +260,17 @@ int main()
     auto queue = graphicsCard->graphicsQueue();
     auto resourceHeap = graphicsCard->newResourceDescriptorHeap(100000);
     auto samplerHeap = graphicsCard->newSamplerDescriptorHeap(100);
-    uint64_t resourceDescriptorMemoryOffset = 0;
-    uint64_t samplerDescriptorMemoryOffset = 0;
 
-    slag::Buffer* vertexBuffers[]={cubeVerts,cubeUVs};
-    uint64_t vertexOffsets[]={0,0};
-    uint64_t vertexStrides[]{sizeof(glm::vec3),sizeof(glm::vec2)};
-
-    glm::mat4 instanceMatrix(1);
 
     slag::Semaphore* commandsFinished = nullptr;
     slag::CommandBuffer* commandBuffer = graphicsCard->newCommandBuffer(slag::QueueType::GRAPHICS);
-    slag::Texture* depthBuffer = graphicsCard->newTexture2D(300,300,slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET);
+    slag::Texture* depthTarget = graphicsCard->newTexture2D(300,300,slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET);
 
     auto sampler = graphicsCard->newSampler();
     auto texture = loadTexture("resources/examples/textures/gradient.jpg",graphicsCard);
-    auto globals = graphicsCard->newBuffer(192,slag::BufferCPUAccess::WRITE_ONLY, slag::BufferMemoryType::UNIFORM);
-    auto transform = graphicsCard->newBuffer(64,slag::BufferCPUAccess::WRITE_ONLY, slag::BufferMemoryType::UNIFORM);
-    auto proj = glm::perspective(95.0f,(float)depthBuffer->width()/(float)depthBuffer->height(),.01f,100.0f);
+    auto globals = graphicsCard->newBuffer(256,slag::BufferCPUAccess::WRITE_ONLY, slag::BufferMemoryType::UNIFORM);
+    auto transform = graphicsCard->newBuffer(256,slag::BufferCPUAccess::WRITE_ONLY, slag::BufferMemoryType::UNIFORM);
+    auto proj = glm::perspective(95.0f,(float)depthTarget->width()/(float)depthTarget->height(),.01f,100.0f);
     glm::mat4 view = glm::mat4(1.0f);
     view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
     view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
@@ -297,8 +295,8 @@ int main()
     pipelineState.rasterizationState.culling = slag::RasterizationState::CullOptions::NONE;
     slag::FramebufferDescription framebufferDesc;
     framebufferDesc.colorFormats[0] = swapChain->parameters().imageFormat;
-    framebufferDesc.depthFormat = depthBuffer->format();
-    auto shader = graphicsCard->newShaderPipeline(vertexDescription,vertexModule.details,fragmentModule.details,pipelineState,framebufferDesc);
+    framebufferDesc.depthFormat = depthTarget->format();
+    auto pipeline = graphicsCard->newShaderPipeline(vertexDescription,vertexModule.details,fragmentModule.details,pipelineState,framebufferDesc);
 
     bool keepOpen = true;
     uint32_t last_tick_time = 0;
@@ -330,65 +328,66 @@ int main()
                 delete commandsFinished;
             }
             commandsFinished = graphicsCard->newSemaphore();
-            auto backBuffer = frame->renderBuffer();
-            if (depthBuffer->width() != backBuffer->width() || depthBuffer->height() != backBuffer->height())
+            auto colorTarget = frame->renderBuffer();
+            if (depthTarget->width() != colorTarget->width() || depthTarget->height() != colorTarget->height())
             {
-                delete depthBuffer;
-                depthBuffer = graphicsCard->newTexture2D(backBuffer->width(),backBuffer->height(),slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET);
+                delete depthTarget;
+                depthTarget = graphicsCard->newTexture2D(colorTarget->width(),colorTarget->height(),slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET);
             }
 
+
             commandBuffer->begin();
+
             commandBuffer->bindDescriptorHeaps(resourceHeap,samplerHeap);
-            slag::TextureBarrier barrier
+            commandBuffer->setViewPort(0,0,colorTarget->width(),colorTarget->height(),0.0f,1.0f);
+            commandBuffer->setScissors(slag::Rectangle{0,0,colorTarget->width(),colorTarget->height()});
+            Attachment colorAttachment(colorTarget,true,ClearValue{.5,.2,.1,1});
+            Attachment depthAttachment(depthTarget,true,ClearValue{1,0});
+
+            TextureBarrier barriers[]
             {
-                .texture = backBuffer,
-                .baseLayer = 0,
-                .layerCount = 1,
-                .baseMipLevel = 0,
-                .mipCount = 1,
-                .syncBefore = slag::SyncStages::ALL,
-                .syncAfter = slag::SyncStages::ALL,
-                .flush = slag::MemoryCaches::NONE,
-                .invalidate = slag::MemoryCaches::NONE,
-                .layoutBefore = slag::TextureLayout::UNKNOWN,
-                .layoutAfter = slag::TextureLayout::COLOR_TARGET,
+                TextureBarrier
+                {
+                    colorTarget,
+                    0,
+                    1,
+                    0,
+                    1,
+                    SyncStages::ALL,
+                    SyncStages::ALL_GRAPHICS,
+                    MemoryCaches::NONE,
+                    MemoryCaches::NONE,
+                    TextureLayout::UNKNOWN,
+                    TextureLayout::COLOR_TARGET
+                },
+                TextureBarrier
+                {
+                    depthTarget,
+                    0,
+                    1,
+                    0,
+                    1,
+                    SyncStages::ALL,
+                    SyncStages::ALL_GRAPHICS,
+                    MemoryCaches::NONE,
+                    MemoryCaches::NONE,
+                    TextureLayout::UNKNOWN,
+                    TextureLayout::DEPTH_STENCIL_TARGET
+                },
             };
-            slag::TextureBarrier depthBarrier
-            {
-                .texture = depthBuffer,
-                .baseLayer = 0,
-                .layerCount = 1,
-                .baseMipLevel = 0,
-                .mipCount = 1,
-                .syncBefore = slag::SyncStages::ALL,
-                .syncAfter = slag::SyncStages::ALL,
-                .flush = slag::MemoryCaches::NONE,
-                .invalidate = slag::MemoryCaches::NONE,
-                .layoutBefore = slag::TextureLayout::UNKNOWN,
-                .layoutAfter = slag::TextureLayout::DEPTH_STENCIL_TARGET,
-            };
-            commandBuffer->insertBarriers(&barrier,1);
-            commandBuffer->insertBarriers(&depthBarrier,1);
-            commandBuffer->setViewPort(0,0,backBuffer->width(),backBuffer->height(),0,1);
-            commandBuffer->setScissors(slag::Rectangle{{0,0},{backBuffer->width(),backBuffer->height()}});
+            commandBuffer->insertBarriers(barriers,2);
 
+            commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{0,0,colorTarget->width(),colorTarget->height()});
 
-            slag::Attachment colorAttachment{.texture = backBuffer,.autoClear = true, .clearValue = slag::ClearColor{.floats = {0,.2,1,1} }};
-            slag::Attachment depthAttachment{.texture = depthBuffer,.autoClear = true };
-            depthAttachment.clearValue.depthStencil = {1,0};
-
-            commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{{0,0},{backBuffer->width(),backBuffer->height()}});
-
-            commandBuffer->bindGraphicsPipeline(shader);
-
-            slag::Buffer* buffers[] = {cubeVerts,cubeUVs};
+            Buffer* buffers[] = {cubeVerts, cubeUVs};
             uint64_t offsets[] = {0,0};
             uint64_t strides[] = {sizeof(glm::vec3),sizeof(glm::vec2)};
             commandBuffer->bindVertexBuffers(0,buffers,offsets,strides,2);
-            commandBuffer->bindIndexBuffer(cubeIndices,slag::IndexBufferType::UINT_16,0);
+            commandBuffer->bindIndexBuffer(cubeIndices,IndexBufferType::UINT_16,0);
+            commandBuffer->bindGraphicsPipeline(pipeline);
 
-            resourceHeap->setUniformStructuredBuffer(0,globals,0,1, globals->size());
-            resourceHeap->setUniformStructuredBuffer(1,transform,0,1,transform->size());
+            resourceHeap->setUniformStructuredBuffer(0,globals,0,globals->size());
+            resourceHeap->setUniformStructuredBuffer(1,transform,0,transform->size());
             resourceHeap->setUniformTexture(2,texture,0,1,0,1);
             samplerHeap->setSampler(0,sampler);
 
@@ -396,17 +395,27 @@ int main()
             uint32_t instanceIndex = 1;
             uint32_t textureIndex = 2;
             uint32_t samplerIndex = 0;
+            //FIXME: There's a difference between how slangc lays out descriptor handles. spirv seems to be uint32, dxil seems to be vec2<uint32> (with the second uint32 being unused)
+            //the documentation indicates that both should be using the vec2<uint32>, but... See https://shader-slang.org/slang/user-guide/convenience-features "DescriptorHandle for Bindless Descriptor Access"
+            ///vulkan offsets: 0/4/8/12
+            ///dx12 offsets: 0/8/16/24
             commandBuffer->setGraphicsShaderParameters(0,&globalIndex,sizeof(uint32_t));
             commandBuffer->setGraphicsShaderParameters(4,&instanceIndex,sizeof(uint32_t));
             commandBuffer->setGraphicsShaderParameters(8,&textureIndex,sizeof(uint32_t));
             commandBuffer->setGraphicsShaderParameters(12,&samplerIndex,sizeof(uint32_t));
 
             commandBuffer->drawIndexed(cindexes.size(),1,0,0,0);
+
             commandBuffer->endRendering();
 
-            barrier.layoutBefore = slag::TextureLayout::COLOR_TARGET;
-            barrier.layoutAfter = slag::TextureLayout::PRESENT;
-            commandBuffer->insertBarriers(&barrier,1);
+            barriers[0].layoutBefore = TextureLayout::COLOR_TARGET;
+            barriers[0].layoutAfter = TextureLayout::PRESENT;
+            barriers[0].syncBefore = SyncStages::ALL_GRAPHICS;
+            barriers[0].syncAfter = SyncStages::ALL;
+            barriers[0].flush = MemoryCaches::COLOR_TARGET;
+            barriers[0].invalidate = MemoryCaches::NONE;
+            commandBuffer->insertBarriers(barriers,1);
+
             commandBuffer->end();
 
             slag::SemaphoreValue signal{.semaphore = commandsFinished, .value = 1};
@@ -431,8 +440,8 @@ int main()
     delete swapChain;
     delete sampler;
     delete texture;
-    delete depthBuffer;
-    delete shader;
+    delete depthTarget;
+    delete pipeline;
     delete cubeVerts;
     delete cubeUVs;
     delete cubeIndices;

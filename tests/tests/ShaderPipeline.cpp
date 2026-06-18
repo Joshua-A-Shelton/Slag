@@ -35,8 +35,8 @@ TEST(ShaderPipeline, Sandbox)
     auto colorTarget = std::unique_ptr<Texture>(card->newTexture2D(250,250,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
     auto depthTarget = std::unique_ptr<Texture>(card->newTexture2D(250,250,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
 
-    auto globals = std::unique_ptr<Buffer>(card->newBuffer(192,BufferCPUAccess::WRITE_ONLY, BufferMemoryType::UNIFORM));
-    auto transform = std::unique_ptr<Buffer>(card->newBuffer(64,BufferCPUAccess::WRITE_ONLY, BufferMemoryType::UNIFORM));
+    auto globals = std::unique_ptr<Buffer>(card->newBuffer(256,BufferCPUAccess::WRITE_ONLY, BufferMemoryType::UNIFORM));
+    auto transform = std::unique_ptr<Buffer>(card->newBuffer(256,BufferCPUAccess::WRITE_ONLY, BufferMemoryType::UNIFORM));
     auto proj = glm::perspective(95.0f,(float)colorTarget->width()/(float)colorTarget->height(),.01f,100.0f);
     glm::mat4 view = glm::mat4(1.0f);
     view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
@@ -128,8 +128,8 @@ TEST(ShaderPipeline, Sandbox)
     commandBuffer->bindIndexBuffer(triangleIndices.get(),IndexBufferType::UINT_16,0);
     commandBuffer->bindGraphicsPipeline(pipeline.get());
 
-    resourceHeap->setUniformStructuredBuffer(0,globals.get(),0,1, globals->size());
-    resourceHeap->setUniformStructuredBuffer(1,transform.get(),0,1,transform->size());
+    resourceHeap->setUniformStructuredBuffer(0,globals.get(),0,globals->size());
+    resourceHeap->setUniformStructuredBuffer(1,transform.get(),0,transform->size());
     resourceHeap->setUniformTexture(2,texture.get(),0,1,0,1);
     samplerHeap->setSampler(0,sampler.get());
 
@@ -137,6 +137,10 @@ TEST(ShaderPipeline, Sandbox)
     uint32_t instanceIndex = 1;
     uint32_t textureIndex = 2;
     uint32_t samplerIndex = 0;
+    //FIXME: There's a difference between how slangc lays out descriptor handles. spirv seems to be uint32, dxil seems to be vec2<uint32> (with the second uint32 being unused)
+    //the documentation indicates that both should be using the vec2<uint32>, but... See https://shader-slang.org/slang/user-guide/convenience-features "DescriptorHandle for Bindless Descriptor Access"
+    ///vulkan offsets: 0/4/8/12
+    ///dx12 offsets: 0/8/16/24
     commandBuffer->setGraphicsShaderParameters(0,&globalIndex,sizeof(uint32_t));
     commandBuffer->setGraphicsShaderParameters(4,&instanceIndex,sizeof(uint32_t));
     commandBuffer->setGraphicsShaderParameters(8,&textureIndex,sizeof(uint32_t));

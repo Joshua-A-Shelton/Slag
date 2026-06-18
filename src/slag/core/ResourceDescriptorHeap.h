@@ -22,7 +22,7 @@ namespace slag
          */
         virtual void setUniformTexture(uint32_t index, Texture* texture, uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount)=0;
         virtual void setUnorderedAccessTexture(uint32_t index, Texture* texture, uint32_t mip, uint32_t baseLayer, uint32_t layerCount)=0;
-        virtual void setUniformStructuredBuffer(uint32_t index, Buffer* buffer, uint64_t elementIndex, uint64_t elementCount, uint64_t elementStride)=0;
+        virtual void setUniformStructuredBuffer(uint32_t index, Buffer* buffer, uint32_t offset, uint32_t length)=0;
         virtual void setStorageStructuredBuffer(uint32_t index, Buffer* buffer, uint64_t elementIndex, uint64_t elementCount, uint64_t elementStride)=0;
         virtual void setUniformTexelBuffer(uint32_t index, Buffer* buffer, PixelFormat format, uint64_t offset, uint64_t length)=0;
         virtual void setStorageTexelBuffer(uint32_t index, Buffer* buffer, PixelFormat format, uint64_t offset, uint64_t length)=0;

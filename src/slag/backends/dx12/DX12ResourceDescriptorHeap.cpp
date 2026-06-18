@@ -166,21 +166,16 @@ namespace slag
             _graphicsCard->device()->CreateUnorderedAccessView(dxTexture->dx12Handle(),nullptr,&uavDesc,handle);
         }
 
-        void DX12ResourceDescriptorHeap::setUniformStructuredBuffer(uint32_t index, Buffer* buffer, uint64_t elementIndex,
-                                                          uint64_t elementCount, uint64_t elementStride)
+        void DX12ResourceDescriptorHeap::setUniformStructuredBuffer(uint32_t index, Buffer* buffer, uint32_t offset, uint32_t length)
         {
             auto dxBuffer = static_cast<DX12Buffer*>(buffer);
             CD3DX12_CPU_DESCRIPTOR_HANDLE handle(_heap->GetCPUDescriptorHandleForHeapStart());
             handle.Offset(index, _descriptorSize);
-            D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-            srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-            srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-            srvDesc.Buffer.FirstElement = elementIndex;
-            srvDesc.Buffer.NumElements = elementCount;
-            srvDesc.Buffer.StructureByteStride = elementStride;
+            D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+            cbvDesc.BufferLocation = dxBuffer->deviceAddress() + offset;
+            cbvDesc.SizeInBytes = length;
 
-            _graphicsCard->device()->CreateShaderResourceView(dxBuffer->dx12Handle(),&srvDesc,handle);
+            _graphicsCard->device()->CreateConstantBufferView(&cbvDesc,handle);
         }
 
         void DX12ResourceDescriptorHeap::setStorageStructuredBuffer(uint32_t index, Buffer* buffer,
