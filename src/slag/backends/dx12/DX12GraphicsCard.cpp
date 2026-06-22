@@ -12,6 +12,7 @@
 
 #include "DX12Sampler.h"
 #include "DX12SamplerDescriptorHeap.h"
+#include "DX12SwapChain.h"
 #include "slag/exceptions/NotImplemented.h"
 #undef ERROR
 #undef max
@@ -421,7 +422,7 @@ namespace slag
 
         SwapChain* DX12GraphicsCard::newSwapchain(const PlatformData& platformData, uint32_t width, uint32_t height, const SwapChainParameters& parameters)
         {
-            throw NotImplemented();
+            return new DX12SwapChain(this,platformData,width,height,parameters);
         }
 
         ShaderPipeline* DX12GraphicsCard::newShaderPipeline(
@@ -505,6 +506,11 @@ namespace slag
         Microsoft::WRL::ComPtr<ID3D12Device2>& DX12GraphicsCard::device()
         {
             return _device;
+        }
+
+        Microsoft::WRL::ComPtr<IDXGIFactory4>& DX12GraphicsCard::dxgiFactory()
+        {
+            return _dxgiFactory;
         }
 
         ID3D12RootSignature* DX12GraphicsCard::rootSignature()

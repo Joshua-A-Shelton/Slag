@@ -111,6 +111,7 @@ namespace slag
             [[nodiscard]] D3D12MA::Allocator* allocator() const;
             [[nodiscard]] D3D12MA::Pool* cpuReadablePool() const;
             Microsoft::WRL::ComPtr<ID3D12Device2>& device();
+            Microsoft::WRL::ComPtr<IDXGIFactory4>& dxgiFactory();
             ID3D12RootSignature* rootSignature();
 
         private:

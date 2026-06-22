@@ -47,6 +47,19 @@ namespace slag
                 uint32_t mipLevels,
                 uint32_t arrayDepth);
 
+            DX12Texture(
+                DX12GraphicsCard* card,
+                ID3D12Resource* texture,
+                TextureType type,
+                SampleCount sampleCount,
+                uint32_t width,
+                uint32_t height,
+                uint32_t depth,
+                PixelFormat format,
+                TextureUsageFlags usage,
+                uint32_t mipLevels,
+                uint32_t arrayDepth);
+
             DX12Texture(const DX12Texture&)=delete;
             DX12Texture& operator=(const DX12Texture&)=delete;
             DX12Texture(DX12Texture&& from) noexcept;

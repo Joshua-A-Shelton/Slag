@@ -100,6 +100,39 @@ namespace slag
             construct(D3D12_RESOURCE_DIMENSION_TEXTURE2D);
         }
 
+        DX12Texture::DX12Texture(DX12GraphicsCard* card, ID3D12Resource* texture, TextureType type,
+            SampleCount sampleCount, uint32_t width, uint32_t height, uint32_t depth, PixelFormat format,
+            TextureUsageFlags usage, uint32_t mipLevels, uint32_t arrayDepth)
+        {
+            _graphicsCard = card;
+            _texture = texture;
+            _type = type;
+            _sampleCount = sampleCount;
+            _width = width;
+            _height = height;
+            _depth = depth;
+            _format = format;
+            _usage = usage;
+            _mipLevels = mipLevels;
+            _layers = arrayDepth;
+
+            //create color or depth descriptor if nessecary
+            D3D12_DESCRIPTOR_HEAP_DESC desc = {};
+            desc.NumDescriptors = 1;
+            if((uint8_t)(_usage & TextureUsageFlags::COLOR_TARGET))
+            {
+                desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+                _graphicsCard->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_targetHeap));
+                _graphicsCard->device()->CreateRenderTargetView(_texture, nullptr,_targetHeap->GetCPUDescriptorHandleForHeapStart());
+            }
+            else if((uint8_t)(_usage & TextureUsageFlags::DEPTH_STENCIL_TARGET))
+            {
+                desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+                _graphicsCard->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_targetHeap));
+                _graphicsCard->device()->CreateDepthStencilView(_texture, nullptr,_targetHeap->GetCPUDescriptorHandleForHeapStart());
+            }
+        }
+
         DX12Texture::DX12Texture(DX12Texture&& from) noexcept
         {
             move(from);
@@ -113,12 +146,9 @@ namespace slag
 
         DX12Texture::~DX12Texture()
         {
-            if (_texture)
-            {
-                _texture->Release();
-            }
             if (_allocation)
             {
+                _texture->Release();
                 _allocation->Release();
             }
             if (_targetHeap)

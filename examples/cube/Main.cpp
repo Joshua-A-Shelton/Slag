@@ -113,7 +113,7 @@ int main()
 {
      auto result = slag::Slag::initialize(slag::InitializationData
     {
-        .backend = slag::BackendAPI::VULKAN,
+        .backend = slag::BackendAPI::DX12,
         .customBackend = nullptr,
         .debugHandler = graphicsDebug
     });
@@ -135,7 +135,7 @@ int main()
              std::cout << "No graphics cards with required features found" << std::endl;
              break;
          }
-         std::this_thread::sleep_for(std::chrono::milliseconds(500));
+         std::this_thread::sleep_for(std::chrono::milliseconds(5000));
          return 1;
      }
 
@@ -281,8 +281,9 @@ int main()
     globalsPtr[1] = view;
     globalsPtr[2] = projectionView;
 
+    glm::mat4 objectTransform = glm::rotate(glm::mat4(1),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
     auto transformPtr = transform->as<glm::mat4>();
-    transformPtr[0] = glm::rotate(glm::mat4(1),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
+    transformPtr[0] = objectTransform;
 
     auto vertexModule = createShaderModule(graphicsCard, "resources/examples/shaders/compiled/TexturedDepthBindless.vertex");
     auto fragmentModule = createShaderModule(graphicsCard, "resources/examples/shaders/compiled/TexturedDepthBindless.fragment");
@@ -334,6 +335,10 @@ int main()
                 delete depthTarget;
                 depthTarget = graphicsCard->newTexture2D(colorTarget->width(),colorTarget->height(),slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET);
             }
+
+            objectTransform = glm::rotate(objectTransform,glm::radians(45.0f)*delta,glm::vec3(0.0f,1.0f,0.0f));
+            transformPtr[0] = objectTransform;
+
 
 
             commandBuffer->begin();
@@ -400,9 +405,9 @@ int main()
             ///vulkan offsets: 0/4/8/12
             ///dx12 offsets: 0/8/16/24
             commandBuffer->setGraphicsShaderParameters(0,&globalIndex,sizeof(uint32_t));
-            commandBuffer->setGraphicsShaderParameters(4,&instanceIndex,sizeof(uint32_t));
-            commandBuffer->setGraphicsShaderParameters(8,&textureIndex,sizeof(uint32_t));
-            commandBuffer->setGraphicsShaderParameters(12,&samplerIndex,sizeof(uint32_t));
+            commandBuffer->setGraphicsShaderParameters(8,&instanceIndex,sizeof(uint32_t));
+            commandBuffer->setGraphicsShaderParameters(16,&textureIndex,sizeof(uint32_t));
+            commandBuffer->setGraphicsShaderParameters(24,&samplerIndex,sizeof(uint32_t));
 
             commandBuffer->drawIndexed(cindexes.size(),1,0,0,0);
 

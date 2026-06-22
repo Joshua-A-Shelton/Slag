@@ -126,6 +126,7 @@ namespace slag
                 };
                 if (copyBarrier.layoutBefore == TextureLayout::UNKNOWN)
                 {
+                    bufferBarrier.AccessBefore = D3D12_BARRIER_ACCESS_NO_ACCESS;
                     bufferBarrier.Flags = D3D12_TEXTURE_BARRIER_FLAG_DISCARD;
                 }
             }

@@ -107,6 +107,10 @@ if(SLAG_DX12_BACKEND)
             src/slag/backends/dx12/DX12SamplerDescriptorHeap.cpp
             src/slag/backends/dx12/DX12SamplerDescriptorHeap.h
             src/slag/core/Frame.h
+            src/slag/backends/dx12/DX12SwapChain.cpp
+            src/slag/backends/dx12/DX12SwapChain.h
+            src/slag/backends/dx12/DX12Frame.cpp
+            src/slag/backends/dx12/DX12Frame.h
     )
 endif()
 
@@ -156,6 +160,7 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/SwapChain.h
         src/slag/core/Frame.h
         src/slag/core/PlatformData.h
+        src/slag/exceptions/InvalidSwapChainOperation.h
 
 
 )

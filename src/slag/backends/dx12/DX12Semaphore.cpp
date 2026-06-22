@@ -10,7 +10,8 @@ namespace slag
         DX12Semaphore::DX12Semaphore(DX12GraphicsCard* graphicsCard, uint64_t initialValue)
         {
             _graphicsCard = graphicsCard;
-            if (graphicsCard->device()->CreateFence(initialValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_fence))!= S_OK)
+            auto result = graphicsCard->device()->CreateFence(initialValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_fence));
+            if (result != S_OK)
             {
                 throw ResourceCreationError("Unable to create Semaphore");
             }

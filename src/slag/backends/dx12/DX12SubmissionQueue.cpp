@@ -89,6 +89,11 @@ namespace slag
             }
         }
 
+        ID3D12CommandQueue* DX12SubmissionQueue::dx12Handle() const
+        {
+            return _queue;
+        }
+
         void DX12SubmissionQueue::move(DX12SubmissionQueue& from)
         {
             std::swap(_graphicsCard,from._graphicsCard);
