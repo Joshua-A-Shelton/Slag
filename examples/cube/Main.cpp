@@ -113,7 +113,7 @@ int main()
 {
      auto result = slag::Slag::initialize(slag::InitializationData
     {
-        .backend = slag::BackendAPI::DX12,
+        .backend = slag::BackendAPI::VULKAN,
         .customBackend = nullptr,
         .debugHandler = graphicsDebug
     });
@@ -405,9 +405,9 @@ int main()
             ///vulkan offsets: 0/4/8/12
             ///dx12 offsets: 0/8/16/24
             commandBuffer->setGraphicsShaderParameters(0,&globalIndex,sizeof(uint32_t));
-            commandBuffer->setGraphicsShaderParameters(8,&instanceIndex,sizeof(uint32_t));
-            commandBuffer->setGraphicsShaderParameters(16,&textureIndex,sizeof(uint32_t));
-            commandBuffer->setGraphicsShaderParameters(24,&samplerIndex,sizeof(uint32_t));
+            commandBuffer->setGraphicsShaderParameters(4,&instanceIndex,sizeof(uint32_t));
+            commandBuffer->setGraphicsShaderParameters(8,&textureIndex,sizeof(uint32_t));
+            commandBuffer->setGraphicsShaderParameters(12,&samplerIndex,sizeof(uint32_t));
 
             commandBuffer->drawIndexed(cindexes.size(),1,0,0,0);
 
