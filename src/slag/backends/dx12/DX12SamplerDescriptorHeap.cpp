@@ -24,7 +24,6 @@ namespace slag
                 throw ResourceCreationError("Failed to create descriptor heap");
             }
 
-            _descriptorSize = _graphicsCard->device()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
         }
 
         DX12SamplerDescriptorHeap::DX12SamplerDescriptorHeap(DX12SamplerDescriptorHeap&& from) noexcept
@@ -46,11 +45,11 @@ namespace slag
             }
         }
 
-        void DX12SamplerDescriptorHeap::setSampler(uint32_t index, Sampler* sampler)
+        void DX12SamplerDescriptorHeap::setSampler(uint32_t heapOffset, Sampler* sampler)
         {
             auto dxSampler = static_cast<DX12Sampler*>(sampler);
             CD3DX12_CPU_DESCRIPTOR_HANDLE handle(_heap->GetCPUDescriptorHandleForHeapStart());
-            handle.Offset(index, _descriptorSize);
+            handle.Offset(heapOffset, 1);
 
             _graphicsCard->device()->CreateSampler(&dxSampler->dx12Desc(),handle);
         }
@@ -74,7 +73,6 @@ namespace slag
         {
             std::swap(_graphicsCard,from._graphicsCard);
             std::swap(_heap,from._heap);
-            _descriptorSize = from._descriptorSize;
         }
     } // dx12
 } // slag

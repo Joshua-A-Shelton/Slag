@@ -5,14 +5,14 @@
 namespace slag
 {
     class Sampler;
-
+    class GraphicsCard;
     class SamplerDescriptorHeap
     {
     public:
         virtual ~SamplerDescriptorHeap() = default;
         virtual GraphicsCard* graphicsCard()=0;
         virtual uint32_t descriptorCount()=0;
-        virtual void setSampler(uint32_t index, Sampler* sampler)=0;
+        virtual void setSampler(uint32_t heapOffset, Sampler* sampler)=0;
     };
 }
 #endif //SLAG_SAMPLERDESCRIPTORHEAP_H

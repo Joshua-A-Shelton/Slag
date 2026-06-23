@@ -129,8 +129,12 @@ namespace slag
             //descriptor heap details
             D3D12_FEATURE_DATA_D3D12_OPTIONS options = {};
             _device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options));
-            _descriptorHeapDetails.resourceDescriptorIncrementSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-            _descriptorHeapDetails.samplerDescriptorIncrementSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+            _descriptorHeapDetails.textureDescriptorSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            _descriptorHeapDetails.textureDescriptorAlignment = _descriptorHeapDetails.textureDescriptorSize;
+            _descriptorHeapDetails.bufferDescriptorSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            _descriptorHeapDetails.bufferDescriptorAlignment = _descriptorHeapDetails.bufferDescriptorSize;
+            _descriptorHeapDetails.samplerDescriptorSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+            _descriptorHeapDetails.samplerDescriptorAlignment = _descriptorHeapDetails.samplerDescriptorSize;
             //TODO: this is only true on max hardware tiers. I should query it and set it from the query
             _descriptorHeapDetails.maxResourceDescriptors = 1015808;
             _descriptorHeapDetails.maxSamplerDescriptors = 2048;

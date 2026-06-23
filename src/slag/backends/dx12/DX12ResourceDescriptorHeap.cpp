@@ -27,8 +27,6 @@ namespace slag
             {
                 throw ResourceCreationError("Failed to create descriptor heap");
             }
-
-            _descriptorSize = _graphicsCard->device()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
         }
 
         DX12ResourceDescriptorHeap::DX12ResourceDescriptorHeap(DX12ResourceDescriptorHeap&& from) noexcept
@@ -60,11 +58,11 @@ namespace slag
             return _heap->GetDesc().NumDescriptors;
         }
 
-        void DX12ResourceDescriptorHeap::setUniformTexture(uint32_t index, Texture* texture, uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount)
+        void DX12ResourceDescriptorHeap::setUniformTexture(uint32_t heapOffset, Texture* texture, uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount)
         {
             auto dxTexture = static_cast<DX12Texture*>(texture);
             CD3DX12_CPU_DESCRIPTOR_HANDLE handle(_heap->GetCPUDescriptorHandleForHeapStart());
-            handle.Offset(index, _descriptorSize);
+            handle.Offset(heapOffset, 1);
             D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
             srvDesc.Format = DX12Backend::nativeFormat(dxTexture->format());
             srvDesc.ViewDimension = DX12Backend::nativeSRVTextureDimension(dxTexture->type(),dxTexture->layers(),dxTexture->sampleCount());
@@ -123,12 +121,12 @@ namespace slag
             _graphicsCard->device()->CreateShaderResourceView(dxTexture->dx12Handle(),&srvDesc,handle);
         }
 
-        void DX12ResourceDescriptorHeap::setUnorderedAccessTexture(uint32_t index, Texture* texture, uint32_t mip, uint32_t baseLayer, uint32_t layerCount)
+        void DX12ResourceDescriptorHeap::setUnorderedAccessTexture(uint32_t heapOffset, Texture* texture, uint32_t mip, uint32_t baseLayer, uint32_t layerCount)
         {
             SLAG_ASSERT(texture->type() != TextureType::CUBE_MAP && "Unordered access textures cannot be cube maps");
             auto dxTexture = static_cast<DX12Texture*>(texture);
             CD3DX12_CPU_DESCRIPTOR_HANDLE handle(_heap->GetCPUDescriptorHandleForHeapStart());
-            handle.Offset(index, _descriptorSize);
+            handle.Offset(heapOffset, 1);
             D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
             uavDesc.Format = DX12Backend::nativeFormat(dxTexture->format());
             uavDesc.ViewDimension = DX12Backend::nativeUAVTextureDimension(dxTexture->type(),dxTexture->layers(),dxTexture->sampleCount());
@@ -166,11 +164,11 @@ namespace slag
             _graphicsCard->device()->CreateUnorderedAccessView(dxTexture->dx12Handle(),nullptr,&uavDesc,handle);
         }
 
-        void DX12ResourceDescriptorHeap::setUniformStructuredBuffer(uint32_t index, Buffer* buffer, uint32_t offset, uint32_t length)
+        void DX12ResourceDescriptorHeap::setUniformStructuredBuffer(uint32_t heapOffset, Buffer* buffer, uint32_t offset, uint32_t length)
         {
             auto dxBuffer = static_cast<DX12Buffer*>(buffer);
             CD3DX12_CPU_DESCRIPTOR_HANDLE handle(_heap->GetCPUDescriptorHandleForHeapStart());
-            handle.Offset(index, _descriptorSize);
+            handle.Offset(heapOffset, 1);
             D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
             cbvDesc.BufferLocation = dxBuffer->deviceAddress() + offset;
             cbvDesc.SizeInBytes = length;
@@ -178,12 +176,12 @@ namespace slag
             _graphicsCard->device()->CreateConstantBufferView(&cbvDesc,handle);
         }
 
-        void DX12ResourceDescriptorHeap::setStorageStructuredBuffer(uint32_t index, Buffer* buffer,
-            uint64_t elementIndex, uint64_t elementCount, uint64_t elementStride)
+        void DX12ResourceDescriptorHeap::setStorageStructuredBuffer(uint32_t heapOffset, Buffer* buffer,
+                                                                    uint64_t elementIndex, uint64_t elementCount, uint64_t elementStride)
         {
             auto dxBuffer = static_cast<DX12Buffer*>(buffer);
             CD3DX12_CPU_DESCRIPTOR_HANDLE handle(_heap->GetCPUDescriptorHandleForHeapStart());
-            handle.Offset(index, _descriptorSize);
+            handle.Offset(heapOffset, 1);
             D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
             uavDesc.Format = DXGI_FORMAT_UNKNOWN;
             uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
@@ -193,14 +191,14 @@ namespace slag
             _graphicsCard->device()->CreateUnorderedAccessView(dxBuffer->dx12Handle(),nullptr,&uavDesc,handle);
         }
 
-        void DX12ResourceDescriptorHeap::setUniformTexelBuffer(uint32_t index, Buffer* buffer, PixelFormat format,
-            uint64_t offset, uint64_t length)
+        void DX12ResourceDescriptorHeap::setUniformTexelBuffer(uint32_t heapOffset, Buffer* buffer, PixelFormat format,
+                                                               uint64_t offset, uint64_t length)
         {
             throw NotImplemented();
         }
 
-        void DX12ResourceDescriptorHeap::setStorageTexelBuffer(uint32_t index, Buffer* buffer, PixelFormat format,
-            uint64_t offset, uint64_t length)
+        void DX12ResourceDescriptorHeap::setStorageTexelBuffer(uint32_t heapOffset, Buffer* buffer, PixelFormat format,
+                                                               uint64_t offset, uint64_t length)
         {
             throw NotImplemented();
         }
@@ -214,7 +212,6 @@ namespace slag
         {
             std::swap(_graphicsCard,from._graphicsCard);
             std::swap(_heap,from._heap);
-            _descriptorSize = from._descriptorSize;
         }
     } // dx12
 } // slag

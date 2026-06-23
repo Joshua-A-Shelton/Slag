@@ -38,10 +38,18 @@ namespace slag
 
     struct DescriptorHeapDetails
     {
-        ///Size to increment when writing descriptors to a resource descriptor heap
-        uint32_t resourceDescriptorIncrementSize=0;
+        ///Size to increment when writing texture descriptors to a resource descriptor heap
+        uint32_t textureDescriptorSize=0;
+        ///Size to increment when writing buffer descriptors to a resource descriptor heap
+        uint32_t bufferDescriptorSize=0;
         ///Size to increment when writing samplers to a sampler descriptor heap
-        uint32_t samplerDescriptorIncrementSize=0;
+        uint32_t samplerDescriptorSize=0;
+        ///Alignment requirements for writing texture descriptors to a resource descriptor heap
+        uint32_t textureDescriptorAlignment=0;
+        ///Alignment requirements for writing buffer descriptors to a resource descriptor heap
+        uint32_t bufferDescriptorAlignment=0;
+        ///Alignment requirements for writing samplers to a sampler descriptor heap
+        uint32_t samplerDescriptorAlignment=0;
         ///Maximum number of descriptors that can be stored in a resource descriptor heap
         uint32_t maxResourceDescriptors=0;
         ///Maximum number of descriptors that can be stored in a sampler descriptor heap

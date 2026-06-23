@@ -299,6 +299,8 @@ int main()
     framebufferDesc.depthFormat = depthTarget->format();
     auto pipeline = graphicsCard->newShaderPipeline(vertexDescription,vertexModule.details,fragmentModule.details,pipelineState,framebufferDesc);
 
+    auto descriptorDetails = graphicsCard->descriptorHeapDetails();
+
     bool keepOpen = true;
     uint32_t last_tick_time = 0;
     float delta = 0;
@@ -392,8 +394,8 @@ int main()
             commandBuffer->bindGraphicsPipeline(pipeline);
 
             resourceHeap->setUniformStructuredBuffer(0,globals,0,globals->size());
-            resourceHeap->setUniformStructuredBuffer(1,transform,0,transform->size());
-            resourceHeap->setUniformTexture(2,texture,0,1,0,1);
+            resourceHeap->setUniformStructuredBuffer(descriptorDetails.bufferDescriptorSize,transform,0,transform->size());
+            resourceHeap->setUniformTexture(2 * descriptorDetails.textureDescriptorSize,texture,0,1,0,1);
             samplerHeap->setSampler(0,sampler);
 
             uint32_t globalIndex = 0;

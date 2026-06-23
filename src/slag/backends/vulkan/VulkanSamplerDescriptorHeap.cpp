@@ -14,7 +14,7 @@ namespace slag
             _card = card;
             auto heapDetails = _card->descriptorHeapDetails();
             _descriptorCount = descriptorCount;
-            _descriptorSize = heapDetails.samplerDescriptorIncrementSize;
+            _descriptorSize = heapDetails.samplerDescriptorSize;
             SLAG_ASSERT(descriptorCount > 0 && "Descriptor count must be greater than 0");
             SLAG_ASSERT(descriptorCount <= heapDetails.maxSamplerDescriptors && "Exceeded max heap size");
 
@@ -25,7 +25,7 @@ namespace slag
 
             VkBufferCreateInfo bufferCreateInfo{};
             bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-            bufferCreateInfo.size = (descriptorCount * heapDetails.samplerDescriptorIncrementSize) + heapDetails.samplerReservedRangeSize;
+            bufferCreateInfo.size = (descriptorCount * heapDetails.samplerDescriptorSize) + heapDetails.samplerReservedRangeSize;
             bufferCreateInfo.usage = VK_BUFFER_USAGE_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
             _reserved = heapDetails.samplerReservedRangeSize;
 
@@ -74,11 +74,11 @@ namespace slag
             return _descriptorCount;
         }
 
-        void VulkanSamplerDescriptorHeap::setSampler(uint32_t index, Sampler* sampler)
+        void VulkanSamplerDescriptorHeap::setSampler(uint32_t heapOffset, Sampler* sampler)
         {
             auto vulkanSampler = static_cast<VulkanSampler*>(sampler);
             auto vulkanHandle = vulkanSampler->vulkanHandle();
-            VkHostAddressRangeEXT hostAddressRange{.address = ((unsigned char*)_data) + (index * _descriptorSize), .size = _descriptorSize};
+            VkHostAddressRangeEXT hostAddressRange{.address = ((unsigned char*)_data) + heapOffset, .size = _descriptorSize};
             _card->vkWriteSamplerDescriptors(_card->device(),1,&vulkanHandle,&hostAddressRange);
         }
 

@@ -143,8 +143,12 @@ namespace slag
             _capabilities.raytracing =  rtProps.shaderGroupHandleSize > 0;
 
             //establish descriptor heap details
-            _descriptorHeapDetails.resourceDescriptorIncrementSize = dhProps.imageDescriptorSize;
-            _descriptorHeapDetails.samplerDescriptorIncrementSize = dhProps.samplerDescriptorSize;
+            _descriptorHeapDetails.textureDescriptorSize = dhProps.imageDescriptorSize;
+            _descriptorHeapDetails.textureDescriptorAlignment = dhProps.imageDescriptorAlignment;
+            _descriptorHeapDetails.bufferDescriptorSize = dhProps.bufferDescriptorSize;
+            _descriptorHeapDetails.bufferDescriptorAlignment = dhProps.bufferDescriptorAlignment;
+            _descriptorHeapDetails.samplerDescriptorSize = dhProps.samplerDescriptorSize;
+            _descriptorHeapDetails.samplerDescriptorAlignment = dhProps.samplerDescriptorAlignment;
             _descriptorHeapDetails.maxResourceDescriptors=(dhProps.maxResourceHeapSize-dhProps.minResourceHeapReservedRange) / dhProps.imageDescriptorSize;
             _descriptorHeapDetails.maxSamplerDescriptors=(dhProps.maxSamplerHeapSize-dhProps.minSamplerHeapReservedRange) / dhProps.samplerDescriptorSize;
             _descriptorHeapDetails.resourceReservedRangeSize=dhProps.minResourceHeapReservedRange;
