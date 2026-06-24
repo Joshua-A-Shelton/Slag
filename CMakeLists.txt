@@ -393,8 +393,9 @@ if(SLAG_BUILD_CUBE)
                     DEPENDS ${SHADER}
                     COMMENT "Compiling ${FILENAME} to dxil fragment"
             )
+            list(APPEND COMPILED_EXAMPLE_SHADER_FILES ${OUTPUT_FILE_RAW}.vertex.dxil ${OUTPUT_FILE_RAW}.fragment.dxil)
         endif ()
-        list(APPEND COMPILED_EXAMPLE_SHADER_FILES ${OUTPUT_FILE_RAW}.vertex.spv ${OUTPUT_FILE_RAW}.fragment.spv ${OUTPUT_FILE_RAW}.vertex.dxil ${OUTPUT_FILE_RAW}.fragment.dxil)
+        list(APPEND COMPILED_EXAMPLE_SHADER_FILES ${OUTPUT_FILE_RAW}.vertex.spv ${OUTPUT_FILE_RAW}.fragment.spv)
     endforeach ()
 
     add_custom_target(CompileExampleShaders ALL DEPENDS ${COMPILED_EXAMPLE_SHADER_FILES})
