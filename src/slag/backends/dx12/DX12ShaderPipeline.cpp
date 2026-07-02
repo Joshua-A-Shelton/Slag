@@ -113,14 +113,16 @@ namespace slag
                 {
                     auto& attr = binding[j];
 
+                    auto stepRate = binding.inputRate() == InputRate::PER_INSTANCE ? 1u : 0u;
+
                     inputElements.push_back(D3D12_INPUT_ELEMENT_DESC{
                         .SemanticName = attr.name().c_str(),
                         .SemanticIndex = 0,
                         .Format = DX12Backend::nativeFormat(attr.loadAs()),
                         .InputSlot = binding.bindingIndex(),
                         .AlignedByteOffset = attr.offset(),
-                        .InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,
-                        .InstanceDataStepRate = 0,
+                        .InputSlotClass = DX12Backend::nativeVertexInputRate(binding.inputRate()),
+                        .InstanceDataStepRate = stepRate,
                     });
                 }
             }

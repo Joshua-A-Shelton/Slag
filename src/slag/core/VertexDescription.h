@@ -27,6 +27,12 @@ namespace slag
         PixelFormat _loadAs = PixelFormat::UNDEFINED;
         uint32_t _offset = 0u;
     };
+
+    enum class InputRate
+    {
+        PER_VRETEX,
+        PER_INSTANCE,
+    };
     ///Represents a buffer layout that is bound for inputting data into vertex shaders at a given index
     class VertexBinding
     {
@@ -35,19 +41,16 @@ namespace slag
          *
          * @param index Binding index
          * @param stride Size of each "vertex" in this binding
+         * @param inputRate How often to acquire the next vertex in this binding
          * @param attributes Attributes this binding contains
          */
-        VertexBinding(uint32_t index, uint32_t stride, const std::vector<VertexAttribute>& attributes);
-        /**
-         *
-         * @param index Binding index
-         * @param attributes Attributes this binding contains
-         */
-        VertexBinding(uint32_t index, std::vector<VertexAttribute>&& attributes);
+        VertexBinding(uint32_t index, uint32_t stride, InputRate inputRate, const std::vector<VertexAttribute>& attributes);
         ///The binding index
         [[nodiscard]] uint32_t bindingIndex()const;
         ///Size of each "vertex" in this binding
         [[nodiscard]] uint32_t stride()const;
+        ///How often to acquire the next vertex in this binding
+        [[nodiscard]] InputRate inputRate()const;
         ///Number of attributes this binding holds
         [[nodiscard]] uint32_t attributeCount()const;
         ///Get an attribute at a given index
@@ -55,6 +58,7 @@ namespace slag
     private:
         uint32_t _index = 0u;
         uint32_t _stride = 0u;
+        InputRate _inputRate = InputRate::PER_VRETEX;
         std::vector<VertexAttribute> _attributes;
     };
     ///Describes how a vertex is input into vertex shaders

@@ -155,7 +155,7 @@ namespace slag
             for (auto i=0u; i< vertexDescription.bindingCount(); ++i)
             {
                 auto& binding = vertexDescription[i];
-                bindingDescriptions.emplace_back(binding.bindingIndex(),binding.stride(),VK_VERTEX_INPUT_RATE_VERTEX);
+                bindingDescriptions.emplace_back(binding.bindingIndex(),binding.stride(),VulkanBackend::nativeVertexInputRate(binding.inputRate()));
                 for (auto j=0u; j< binding.attributeCount(); ++j)
                 {
                     auto& attribute = binding[j];

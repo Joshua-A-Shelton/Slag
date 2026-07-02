@@ -798,6 +798,19 @@ namespace slag
             return VULKAN_IMAGE_LAYOUTS[static_cast<uint32_t>(layout)];
         }
 
+        VkVertexInputRate VulkanBackend::nativeVertexInputRate(InputRate inputRate)
+        {
+            switch (inputRate)
+            {
+            case InputRate::PER_VRETEX:
+                    return VK_VERTEX_INPUT_RATE_VERTEX;
+            case InputRate::PER_INSTANCE:
+                    return VK_VERTEX_INPUT_RATE_INSTANCE;
+                default:
+                    return VK_VERTEX_INPUT_RATE_VERTEX;
+            }
+        }
+
         SlagInitializationResult VulkanBackend::initializeBackend(const InitializationData& initializationData)
         {
             if (initializationData.debugHandler)

@@ -53,6 +53,7 @@ namespace slag
             static VkPresentModeKHR nativePresentMode(PresentMode presentMode);
             static PresentMode crossPlatformPresentMode(VkPresentModeKHR presentMode);
             static VkImageLayout nativeImageLayout(TextureLayout layout);
+            static VkVertexInputRate nativeVertexInputRate(InputRate inputRate);
         private:
             SlagInitializationResult initializeBackend(const InitializationData& initializationData)override;
             std::vector<VulkanGraphicsCard> _graphicsCards;

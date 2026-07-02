@@ -555,6 +555,19 @@ namespace slag
             return DX12_NATIVE_LAYOUTS[static_cast<uint32_t>(layout)];
         }
 
+        D3D12_INPUT_CLASSIFICATION DX12Backend::nativeVertexInputRate(InputRate inputRate)
+        {
+            switch (inputRate)
+            {
+            case InputRate::PER_VRETEX:
+                    return D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+                case InputRate::PER_INSTANCE:
+                    return D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
+            }
+
+            return D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+        }
+
         SlagInitializationResult DX12Backend::initializeBackend(const InitializationData& initializationData)
         {
             Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory;

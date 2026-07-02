@@ -113,7 +113,7 @@ int main()
 {
      auto result = slag::Slag::initialize(slag::InitializationData
     {
-        .backend = slag::BackendAPI::VULKAN,
+        .backend = slag::BackendAPI::DX12,
         .customBackend = nullptr,
         .debugHandler = graphicsDebug
     });
@@ -288,8 +288,8 @@ int main()
     auto vertexModule = createShaderModule(graphicsCard, "resources/examples/shaders/compiled/TexturedDepthBindless.vertex");
     auto fragmentModule = createShaderModule(graphicsCard, "resources/examples/shaders/compiled/TexturedDepthBindless.fragment");
     std::vector<slag::VertexBinding> vertexBindings = {
-        slag::VertexBinding(0,sizeof(float)*3,std::vector<slag::VertexAttribute>{slag::VertexAttribute("POSITION",slag::PixelFormat::R32G32B32_FLOAT,0)}),
-        slag::VertexBinding(1,sizeof(float)*2,std::vector<slag::VertexAttribute>{slag::VertexAttribute("UV_COORDINATES",slag::PixelFormat::R32G32_FLOAT,0)}),
+        slag::VertexBinding(0,sizeof(float)*3,InputRate::PER_VRETEX,std::vector<slag::VertexAttribute>{slag::VertexAttribute("POSITION",slag::PixelFormat::R32G32B32_FLOAT,0)}),
+        slag::VertexBinding(1,sizeof(float)*2,InputRate::PER_VRETEX,std::vector<slag::VertexAttribute>{slag::VertexAttribute("UV_COORDINATES",slag::PixelFormat::R32G32_FLOAT,0)}),
     };
     slag::VertexDescription vertexDescription(vertexBindings);
     slag::PipelineState pipelineState{};
@@ -340,8 +340,6 @@ int main()
 
             objectTransform = glm::rotate(objectTransform,glm::radians(45.0f)*delta,glm::vec3(0.0f,1.0f,0.0f));
             transformPtr[0] = objectTransform;
-
-
 
             commandBuffer->begin();
 
@@ -402,10 +400,6 @@ int main()
             uint32_t instanceIndex = 1;
             uint32_t textureIndex = 2;
             uint32_t samplerIndex = 0;
-            //FIXME: There's a difference between how slangc lays out descriptor handles. spirv seems to be uint32, dxil seems to be vec2<uint32> (with the second uint32 being unused)
-            //the documentation indicates that both should be using the vec2<uint32>, but... See https://shader-slang.org/slang/user-guide/convenience-features "DescriptorHandle for Bindless Descriptor Access"
-            ///vulkan offsets: 0/4/8/12
-            ///dx12 offsets: 0/8/16/24
             commandBuffer->setGraphicsShaderParameters(0,&globalIndex,sizeof(uint32_t));
             commandBuffer->setGraphicsShaderParameters(8,&instanceIndex,sizeof(uint32_t));
             commandBuffer->setGraphicsShaderParameters(16,&textureIndex,sizeof(uint32_t));

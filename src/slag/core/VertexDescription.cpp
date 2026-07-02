@@ -26,17 +26,12 @@ namespace slag
         return _offset;
     }
 
-    VertexBinding::VertexBinding(uint32_t index, uint32_t stride, const std::vector<VertexAttribute>& attributes)
+    VertexBinding::VertexBinding(uint32_t index, uint32_t stride, InputRate inputRate, const std::vector<VertexAttribute>& attributes)
     {
         _index = index;
         _stride = stride;
+        _inputRate = inputRate;
         _attributes = attributes;
-    }
-
-    VertexBinding::VertexBinding(uint32_t index, std::vector<VertexAttribute>&& attributes)
-    {
-        _index = index;
-        _attributes = std::move(attributes);
     }
 
     uint32_t VertexBinding::bindingIndex() const
@@ -47,6 +42,11 @@ namespace slag
     uint32_t VertexBinding::stride() const
     {
         return _stride;
+    }
+
+    InputRate VertexBinding::inputRate() const
+    {
+        return _inputRate;
     }
 
     uint32_t VertexBinding::attributeCount() const
