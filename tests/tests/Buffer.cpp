@@ -24,13 +24,13 @@ TEST(Buffer, Create)
             GTEST_ASSERT_EQ(buffer->userData(),nullptr);
             if (cpu != BufferCPUAccess::NONE)
             {
-                auto ptr = buffer->data();
+                auto ptr = buffer->pointer();
                 GTEST_ASSERT_TRUE(ptr != nullptr);
             }
 #ifdef SLAG_DEBUG
             else
             {
-                EXPECT_DEBUG_DEATH(auto ptr = buffer->data(),"Attempted to access cpu handle of inaccessible buffer");
+                EXPECT_DEBUG_DEATH(auto ptr = buffer->pointer(),"Attempted to access cpu handle of inaccessible buffer");
             }
 #endif
         }

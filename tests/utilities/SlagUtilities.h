@@ -10,6 +10,14 @@ namespace slag
         std::unique_ptr<Texture> loadTexture(std::filesystem::path const& path, GraphicsCard* graphicsCard);
 
         void saveTexture(std::filesystem::path const& path, Texture* texture);
+
+        struct ImageSimilarity
+        {
+            float overallSimilarity = 0.0f;
+            float  maxPixelDifference = 0.0f;
+        };
+
+        ImageSimilarity compareTexture(Texture* texture, uint32_t layer, uint32_t mipLevel, std::filesystem::path const& againstPath);
     }
 } // slag
 

@@ -32,8 +32,8 @@ namespace slag
         Buffer()=default;
     public:
         virtual ~Buffer()=default;
-        ///Pointer to the beginning of the buffer, throws error if the CPU doesn't have access to the buffer if SLAG_DEBUG is defined
-        [[nodiscard]] virtual void* data()const=0;
+        ///Pointer to the beginning of the buffer, throws an error if the CPU doesn't have access to the buffer if SLAG_DEBUG is defined
+        [[nodiscard]] virtual void* pointer()const=0;
         ///Virtual address, useful for bindless shader access
         [[nodiscard]] virtual uint64_t deviceAddress()const=0;
         ///Read/Write permission for shader access to this buffer
@@ -59,7 +59,7 @@ namespace slag
          */
         template<class T> T* as()
         {
-            return static_cast<T*>(data());
+            return static_cast<T*>(pointer());
         }
 
         /**

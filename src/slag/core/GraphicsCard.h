@@ -147,14 +147,14 @@ namespace slag
 
         /**
          * Allocate a new resource descriptor heap
-         * @param descriptorCount number of descriptors in the heap
+         * @param minDescriptorCount Minium number of descriptors in the heap (heap size will be the size of the largest descriptor type * minDescriptorCount)
          * @return
          */
-        [[nodiscard]] virtual ResourceDescriptorHeap* newResourceDescriptorHeap(uint32_t descriptorCount)=0;
+        [[nodiscard]] virtual ResourceDescriptorHeap* newResourceDescriptorHeap(uint32_t minDescriptorCount)=0;
 
         /**
          * Allocate a new sampler descriptor heap
-         * @param descriptorCount number of descriptors in the heap
+         * @param descriptorCount Number of descriptors in the heap
          * @return
          */
         [[nodiscard]] virtual SamplerDescriptorHeap* newSamplerDescriptorHeap(uint32_t descriptorCount)=0;
@@ -236,6 +236,23 @@ namespace slag
             uint32_t arrayDepth = 1
             )=0;
 
+        /**
+         * Create a new Sampler
+         * @param min Filter to use when down sampling
+         * @param mag Filter to use when up sampling
+         * @param mip Filter to use across mip boundaries
+         * @param u Access pattern across the U axis
+         * @param v Access pattern across the V axis
+         * @param w Access pattern across the W axis
+         * @param mipLODBias Shift the default accessed mip level (eg: if a sampler would have sampled mip level 3, and mipLODBias is -1, it would sample mip level 2)
+         * @param anisotrophyEnabled Enable anisotropic filtering
+         * @param maxAnisotrophy Maximum anisotrophy level
+         * @param comparisonFunction Comparison function to use when comparing values
+         * @param borderColor Border color to use when sampling outside the texture boundaries (Only if SamplerAddressMode is CLAMP_TO_BORDER)
+         * @param minLOD Minimum mip level to use
+         * @param maxLOD Maximum mip level to use
+         * @return
+         */
         [[nodiscard]] virtual Sampler* newSampler(
                 SamplerFilter min = SamplerFilter::NEAREST,
                 SamplerFilter mag = SamplerFilter::NEAREST,

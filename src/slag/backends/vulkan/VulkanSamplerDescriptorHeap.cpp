@@ -69,12 +69,22 @@ namespace slag
             return _card;
         }
 
-        uint32_t VulkanSamplerDescriptorHeap::descriptorCount()
+        uint64_t VulkanSamplerDescriptorHeap::size()
         {
-            return _descriptorCount;
+            return _descriptorCount * _descriptorSize;
         }
 
-        void VulkanSamplerDescriptorHeap::setSampler(uint32_t heapOffset, Sampler* sampler)
+        void* VulkanSamplerDescriptorHeap::pointer()
+        {
+            return _data;
+        }
+
+        uint64_t VulkanSamplerDescriptorHeap::deviceAddress()
+        {
+            return _deviceAddress;
+        }
+
+        void VulkanSamplerDescriptorHeap::setSampler(uint64_t heapOffset, Sampler* sampler)
         {
             auto vulkanSampler = static_cast<VulkanSampler*>(sampler);
             auto vulkanHandle = vulkanSampler->vulkanHandle();
@@ -85,11 +95,6 @@ namespace slag
         VkDeviceAddress VulkanSamplerDescriptorHeap::deviceAddress() const
         {
             return _deviceAddress;
-        }
-
-        uint64_t VulkanSamplerDescriptorHeap::size() const
-        {
-            return _descriptorCount * _descriptorSize;
         }
 
         uint64_t VulkanSamplerDescriptorHeap::reserved() const

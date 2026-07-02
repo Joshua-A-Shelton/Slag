@@ -393,8 +393,8 @@ int main()
             commandBuffer->bindIndexBuffer(cubeIndices,IndexBufferType::UINT_16,0);
             commandBuffer->bindGraphicsPipeline(pipeline);
 
-            resourceHeap->setUniformStructuredBuffer(0,globals,0,globals->size());
-            resourceHeap->setUniformStructuredBuffer(descriptorDetails.bufferDescriptorSize,transform,0,transform->size());
+            resourceHeap->setUniformBuffer(0,globals,0,globals->size());
+            resourceHeap->setUniformBuffer(descriptorDetails.bufferDescriptorSize,transform,0,transform->size());
             resourceHeap->setUniformTexture(2 * descriptorDetails.textureDescriptorSize,texture,0,1,0,1);
             samplerHeap->setSampler(0,sampler);
 

@@ -475,9 +475,9 @@ namespace slag
             return new VulkanBuffer(this, size, cpuAccess, memoryType);
         }
 
-        ResourceDescriptorHeap* VulkanGraphicsCard::newResourceDescriptorHeap(uint32_t descriptorCount)
+        ResourceDescriptorHeap* VulkanGraphicsCard::newResourceDescriptorHeap(uint32_t minDescriptorCount)
         {
-            return new VulkanResourceDescriptorHeap(this,descriptorCount);
+            return new VulkanResourceDescriptorHeap(this,minDescriptorCount);
         }
 
         SamplerDescriptorHeap* VulkanGraphicsCard::newSamplerDescriptorHeap(uint32_t descriptorCount)

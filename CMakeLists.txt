@@ -300,7 +300,6 @@ if(SLAG_BUILD_TESTS)
             tests/tests/ShaderCode.cpp
             tests/utilities/PlatformUtilities.cpp
             tests/utilities/PlatformUtilities.h
-            tests/tests/ShaderPipeline.cpp
             tests/utilities/SlagUtilities.cpp
             tests/utilities/SlagUtilities.h
     )

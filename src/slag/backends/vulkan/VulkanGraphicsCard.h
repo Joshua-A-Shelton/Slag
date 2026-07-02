@@ -49,7 +49,7 @@ namespace slag
                 BufferCPUAccess cpuAccess,
                 BufferMemoryType memoryType)override;
 
-            [[nodiscard]] ResourceDescriptorHeap* newResourceDescriptorHeap(uint32_t descriptorCount)override;
+            [[nodiscard]] ResourceDescriptorHeap* newResourceDescriptorHeap(uint32_t minDescriptorCount)override;
 
             [[nodiscard]] SamplerDescriptorHeap* newSamplerDescriptorHeap(uint32_t descriptorCount)override;
 

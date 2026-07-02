@@ -20,9 +20,11 @@ namespace slag
             DX12SamplerDescriptorHeap& operator=(DX12SamplerDescriptorHeap&& from) noexcept;
             ~DX12SamplerDescriptorHeap()override;
 
-            void setSampler(uint32_t heapOffset, Sampler* sampler)override;
+            void setSampler(uint64_t heapOffset, Sampler* sampler)override;
             GraphicsCard* graphicsCard()override;
-            uint32_t descriptorCount()override;
+            uint64_t size()override;
+            void* pointer() override;
+            uint64_t deviceAddress() override;
             ID3D12DescriptorHeap* dx12Handle() const;
         private:
             void move(DX12SamplerDescriptorHeap& from);

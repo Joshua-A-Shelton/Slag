@@ -53,12 +53,22 @@ namespace slag
             return _graphicsCard;
         }
 
-        uint32_t DX12ResourceDescriptorHeap::descriptorCount()
+        uint64_t DX12ResourceDescriptorHeap::size()
         {
-            return _heap->GetDesc().NumDescriptors;
+            return _heap->GetDesc().NumDescriptors * _graphicsCard->descriptorHeapDetails().textureDescriptorSize;
         }
 
-        void DX12ResourceDescriptorHeap::setUniformTexture(uint32_t heapOffset, Texture* texture, uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount)
+        void* DX12ResourceDescriptorHeap::pointer()
+        {
+            return reinterpret_cast<void*>(_heap->GetCPUDescriptorHandleForHeapStart().ptr);
+        }
+
+        uint64_t DX12ResourceDescriptorHeap::deviceAddress()
+        {
+            return _heap->GetGPUDescriptorHandleForHeapStart().ptr;
+        }
+
+        void DX12ResourceDescriptorHeap::setUniformTexture(uint64_t heapOffset, Texture* texture, uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount)
         {
             auto dxTexture = static_cast<DX12Texture*>(texture);
             CD3DX12_CPU_DESCRIPTOR_HANDLE handle(_heap->GetCPUDescriptorHandleForHeapStart());
@@ -121,7 +131,7 @@ namespace slag
             _graphicsCard->device()->CreateShaderResourceView(dxTexture->dx12Handle(),&srvDesc,handle);
         }
 
-        void DX12ResourceDescriptorHeap::setUnorderedAccessTexture(uint32_t heapOffset, Texture* texture, uint32_t mip, uint32_t baseLayer, uint32_t layerCount)
+        void DX12ResourceDescriptorHeap::setUnorderedAccessTexture(uint64_t heapOffset, Texture* texture, uint32_t mip, uint32_t baseLayer, uint32_t layerCount)
         {
             SLAG_ASSERT(texture->type() != TextureType::CUBE_MAP && "Unordered access textures cannot be cube maps");
             auto dxTexture = static_cast<DX12Texture*>(texture);
@@ -164,7 +174,7 @@ namespace slag
             _graphicsCard->device()->CreateUnorderedAccessView(dxTexture->dx12Handle(),nullptr,&uavDesc,handle);
         }
 
-        void DX12ResourceDescriptorHeap::setUniformStructuredBuffer(uint32_t heapOffset, Buffer* buffer, uint32_t offset, uint32_t length)
+        void DX12ResourceDescriptorHeap::setUniformBuffer(uint64_t heapOffset, Buffer* buffer, uint32_t offset, uint32_t length)
         {
             auto dxBuffer = static_cast<DX12Buffer*>(buffer);
             CD3DX12_CPU_DESCRIPTOR_HANDLE handle(_heap->GetCPUDescriptorHandleForHeapStart());
@@ -176,7 +186,7 @@ namespace slag
             _graphicsCard->device()->CreateConstantBufferView(&cbvDesc,handle);
         }
 
-        void DX12ResourceDescriptorHeap::setStorageStructuredBuffer(uint32_t heapOffset, Buffer* buffer,
+        void DX12ResourceDescriptorHeap::setStorageBuffer(uint64_t heapOffset, Buffer* buffer,
                                                                     uint64_t elementIndex, uint64_t elementCount, uint64_t elementStride)
         {
             auto dxBuffer = static_cast<DX12Buffer*>(buffer);
@@ -191,13 +201,13 @@ namespace slag
             _graphicsCard->device()->CreateUnorderedAccessView(dxBuffer->dx12Handle(),nullptr,&uavDesc,handle);
         }
 
-        void DX12ResourceDescriptorHeap::setUniformTexelBuffer(uint32_t heapOffset, Buffer* buffer, PixelFormat format,
+        void DX12ResourceDescriptorHeap::setUniformTexelBuffer(uint64_t heapOffset, Buffer* buffer, PixelFormat format,
                                                                uint64_t offset, uint64_t length)
         {
             throw NotImplemented();
         }
 
-        void DX12ResourceDescriptorHeap::setStorageTexelBuffer(uint32_t heapOffset, Buffer* buffer, PixelFormat format,
+        void DX12ResourceDescriptorHeap::setStorageTexelBuffer(uint64_t heapOffset, Buffer* buffer, PixelFormat format,
                                                                uint64_t offset, uint64_t length)
         {
             throw NotImplemented();

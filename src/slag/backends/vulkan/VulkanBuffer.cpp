@@ -94,7 +94,7 @@ namespace slag
             return *this;
         }
 
-        void* VulkanBuffer::data() const
+        void* VulkanBuffer::pointer() const
         {
             SLAG_ASSERT(cpuAccess()!=BufferCPUAccess::NONE && "Attempted to access cpu handle of inaccessible buffer");
             return _data;

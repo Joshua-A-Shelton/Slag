@@ -34,7 +34,7 @@ namespace slag
             VulkanBuffer(VulkanBuffer&& from) noexcept;
             VulkanBuffer& operator=(VulkanBuffer&& from) noexcept;
 
-            [[nodiscard]] void* data()const override;
+            [[nodiscard]] void* pointer()const override;
             [[nodiscard]] uint64_t deviceAddress()const override;
             [[nodiscard]] BufferMemoryType memoryType()const override;
             [[nodiscard]] BufferCPUAccess cpuAccess()const override;

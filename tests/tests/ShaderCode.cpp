@@ -41,7 +41,7 @@ TEST(ShaderCode, VertexShader)
 {
     auto card = Slag::backend()->graphicsCard(0);
 
-    auto shaderModule = slagTestsCreateShaderModule(card, "resources/tests/shaders/compiled/TexturedDepth.vertex");
+    auto shaderModule = utilities::createShaderModule(card, "resources/tests/shaders/compiled/TexturedDepth.vertex");
     GTEST_FAIL();
 }
 
@@ -54,7 +54,7 @@ TEST(ShaderCode, FragmentShader)
 {
     auto card = Slag::backend()->graphicsCard(0);
 
-    auto shaderModule = slagTestsCreateShaderModule(card, "resources/tests/shaders/compiled/TexturedDepth.fragment");
+    auto shaderModule = utilities::createShaderModule(card, "resources/tests/shaders/compiled/TexturedDepth.fragment");
     GTEST_FAIL();
 }
 

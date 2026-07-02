@@ -45,7 +45,7 @@ namespace slag
             }
         }
 
-        void DX12SamplerDescriptorHeap::setSampler(uint32_t heapOffset, Sampler* sampler)
+        void DX12SamplerDescriptorHeap::setSampler(uint64_t heapOffset, Sampler* sampler)
         {
             auto dxSampler = static_cast<DX12Sampler*>(sampler);
             CD3DX12_CPU_DESCRIPTOR_HANDLE handle(_heap->GetCPUDescriptorHandleForHeapStart());
@@ -59,9 +59,19 @@ namespace slag
             return _graphicsCard;
         }
 
-        uint32_t DX12SamplerDescriptorHeap::descriptorCount()
+        uint64_t DX12SamplerDescriptorHeap::size()
         {
-            return _heap->GetDesc().NumDescriptors;
+            return _heap->GetDesc().NumDescriptors * _graphicsCard->descriptorHeapDetails().samplerDescriptorSize;
+        }
+
+        void* DX12SamplerDescriptorHeap::pointer()
+        {
+            return reinterpret_cast<void*>(_heap->GetCPUDescriptorHandleForHeapStart().ptr);
+        }
+
+        uint64_t DX12SamplerDescriptorHeap::deviceAddress()
+        {
+            return _heap->GetGPUDescriptorHandleForHeapStart().ptr;
         }
 
         ID3D12DescriptorHeap* DX12SamplerDescriptorHeap::dx12Handle() const
