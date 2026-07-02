@@ -221,7 +221,167 @@ TEST(CommandBuffer, CopyBufferToTextureToBuffer)
 
 TEST(CommandBuffer, Draw)
 {
-    GTEST_FAIL();
+    glm::vec2 positions[]
+    {
+        {-1,1},
+        {1,1},
+        {-1,-1},
+        {1,1},
+        {1,-1},
+        {-1,-1}
+    };
+    glm::vec2 uvs[]
+    {
+        {0,0},
+        {1,0},
+        {0,1},
+        {1,0},
+        {1,1},
+        {0,1}
+    };
+
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
+    auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
+    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
+    auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+
+    auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
+    auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
+
+    memcpy(positionBuffer->as<glm::vec2>(),positions,sizeof(positions));
+    memcpy(uvBuffer->as<glm::vec2>(),uvs,sizeof(uvs));
+
+    auto globalsBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
+    auto instanceBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
+    auto instanceTexture = utilities::loadTexture("resources/tests/textures/gradient.jpg", graphicsCard);
+    auto sampler = std::unique_ptr<Sampler>(graphicsCard->newSampler());
+
+    auto globalsPtr = globalsBuffer->as<glm::mat4>();
+    auto proj = glm::perspective(95.0f,(float)colorTexture->width()/(float)colorTexture->height(),.01f,100.0f);
+    glm::mat4 view = glm::mat4(1.0f);
+    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
+    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
+    view = glm::inverse(view);
+    glm::mat4 projectionView = proj*view;
+    globalsPtr[0] = proj;
+    globalsPtr[1] = view;
+    globalsPtr[2] = projectionView;
+
+    auto instancePtr = instanceBuffer->as<glm::mat4>();
+    glm::mat4 instanceTransform = glm::rotate(glm::mat4(1.0f),glm::radians(15.0f),glm::vec3(0.0f,1.0f,0.0f));
+    instancePtr[0] = instanceTransform;
+
+    PipelineState pipelineState{};
+    auto vertex = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.vertex");
+    auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
+    std::vector<VertexBinding> vertexBindings =
+    {
+        VertexBinding(0,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32_FLOAT,0)}),
+        VertexBinding(1,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+    };
+    VertexDescription vertexDescription(vertexBindings);
+    FramebufferDescription framebufferDesc{};
+    framebufferDesc.colorFormats[0] = colorTexture->format();
+    framebufferDesc.depthFormat = depthTexture->format();
+    auto shaderPipeline = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(vertexDescription,vertex.details,fragment.details,pipelineState,framebufferDesc));
+
+    auto resourceHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+
+    auto heapDetails = graphicsCard->descriptorHeapDetails();
+    resourceHeap->setUniformBuffer(0,globalsBuffer.get(),0,globalsBuffer->size());
+    resourceHeap->setUniformBuffer(heapDetails.bufferDescriptorSize,instanceBuffer.get(),0,instanceBuffer->size());
+    resourceHeap->setUniformTexture(heapDetails.textureDescriptorAlignment*2,instanceTexture.get(),0,1,0,1);
+
+    samplerHeap->setSampler(0,sampler.get());
+
+    commandBuffer->begin();
+
+
+    commandBuffer->bindDescriptorHeaps(resourceHeap.get(),samplerHeap.get());
+
+    uint32_t globalsIndex = 0;
+    uint32_t instanceIndex = 1;
+    uint32_t textureIndex = 2;
+    uint32_t samplerIndex = 0;
+    commandBuffer->setGraphicsShaderParameters(0,&globalsIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(8,&instanceIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(16,&textureIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(24,&samplerIndex,sizeof(uint32_t));
+
+    commandBuffer->bindGraphicsPipeline(shaderPipeline.get());
+    Buffer* vertexBuffers[] = {positionBuffer.get(),uvBuffer.get()};
+    uint64_t offsets[] = {0,0};
+    uint64_t strides[] = {sizeof(glm::vec2),sizeof(glm::vec2)};
+    commandBuffer->bindVertexBuffers(0,vertexBuffers,offsets,strides,2);
+
+    Attachment colorAttachment(colorTexture.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
+    Attachment depthAttachment(depthTexture.get(),true,{.depthStencil = ClearDepthStencilValue{.depth = 1.0f, .stencil = 0}});
+
+    TextureBarrier barriers[] =
+    {
+        TextureBarrier
+        {
+            .texture = colorTexture.get(),
+            .baseLayer = 0,
+            .layerCount = 1,
+            .baseMipLevel = 0,
+            .mipCount = 1,
+            .syncBefore = SyncStages::ALL,
+            .syncAfter = SyncStages::ALL_GRAPHICS,
+            .flush = MemoryCaches::NONE,
+            .invalidate = MemoryCaches::NONE,
+            .layoutBefore = TextureLayout::GENERAL,
+            .layoutAfter = TextureLayout::COLOR_TARGET,
+        },
+        TextureBarrier
+        {
+            .texture = depthTexture.get(),
+            .baseLayer = 0,
+            .layerCount = 1,
+            .baseMipLevel = 0,
+            .mipCount = 1,
+            .syncBefore = SyncStages::ALL,
+            .syncAfter = SyncStages::ALL_GRAPHICS,
+            .flush = MemoryCaches::NONE,
+            .invalidate = MemoryCaches::NONE,
+            .layoutBefore = TextureLayout::GENERAL,
+            .layoutAfter = TextureLayout::DEPTH_STENCIL_TARGET,
+        }
+    };
+    commandBuffer->insertBarriers(barriers,2);
+
+    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{0,0,colorTexture->width(),colorTexture->height()});
+    commandBuffer->setViewPort(0,0,colorTexture->width(),colorTexture->height(),.0f,1.0f);
+    commandBuffer->setScissors(slag::Rectangle{0,0,colorTexture->width(),colorTexture->height()});
+    commandBuffer->draw(6,1,0,0);
+    commandBuffer->endRendering();
+
+    barriers[0].layoutBefore = TextureLayout::COLOR_TARGET;
+    barriers[0].layoutAfter = TextureLayout::GENERAL;
+    barriers[0].syncAfter = SyncStages::ALL;
+    barriers[0].flush = MemoryCaches::COLOR_TARGET;
+    barriers[0].invalidate = MemoryCaches::COPY_READ;
+
+    commandBuffer->insertBarriers(barriers,1);
+
+    commandBuffer->end();
+    auto cmdBuffer = commandBuffer.get();
+    SemaphoreValue signal{.semaphore = finished.get(),.value = 1};
+    SubmissionBatch batch
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &cmdBuffer,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    graphicsCard->graphicsQueue()->submit(&batch,1);
+    finished->waitForValue(1);
+    auto result = utilities::compareTexture(colorTexture.get(),0,0,"resources/tests/textures/results/draw-test.png");
+    ASSERT_GE(result.overallSimilarity,.9999);
 }
 
 TEST(CommandBuffer, DrawIndexed)
@@ -388,7 +548,6 @@ TEST(CommandBuffer, DrawIndexed)
     };
     graphicsCard->graphicsQueue()->submit(&batch,1);
     finished->waitForValue(1);
-    utilities::saveTexture("C:/Users/jshelton/Desktop/results/draw-test.png",colorTexture.get());
     auto result = utilities::compareTexture(colorTexture.get(),0,0,"resources/tests/textures/results/draw-test.png");
     ASSERT_GE(result.overallSimilarity,.9999);
 }
