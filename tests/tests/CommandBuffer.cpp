@@ -249,7 +249,7 @@ TEST(CommandBuffer, Draw)
     auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
     auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
 
-    memcpy(positionBuffer->as<glm::vec2>(),positions,sizeof(positions));
+    memcpy(positionBuffer->as<glm::vec3>(),positions,sizeof(positions));
     memcpy(uvBuffer->as<glm::vec2>(),uvs,sizeof(uvs));
 
     auto globalsBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
@@ -292,7 +292,7 @@ TEST(CommandBuffer, Draw)
     auto heapDetails = graphicsCard->descriptorHeapDetails();
     resourceHeap->setUniformBuffer(0,globalsBuffer.get(),0,globalsBuffer->size());
     resourceHeap->setUniformBuffer(heapDetails.bufferDescriptorSize,instanceBuffer.get(),0,instanceBuffer->size());
-    resourceHeap->setUniformTexture(heapDetails.textureDescriptorAlignment*2,instanceTexture.get(),0,1,0,1);
+    resourceHeap->setUniformTexture(heapDetails.textureDescriptorSize*2,instanceTexture.get(),0,1,0,1);
 
     samplerHeap->setSampler(0,sampler.get());
 
@@ -415,9 +415,9 @@ TEST(CommandBuffer, DrawIndexed)
     auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
     auto indexBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(indices),BufferCPUAccess::WRITE_ONLY));
 
-    memcpy(positionBuffer->as<glm::vec2>(),positions,sizeof(positions));
+    memcpy(positionBuffer->as<glm::vec3>(),positions,sizeof(positions));
     memcpy(uvBuffer->as<glm::vec2>(),uvs,sizeof(uvs));
-    memcpy(indexBuffer->as<uint32_t>(),indices,sizeof(indices));
+    memcpy(indexBuffer->as<uint16_t>(),indices,sizeof(indices));
 
     auto globalsBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
     auto instanceBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
@@ -459,7 +459,7 @@ TEST(CommandBuffer, DrawIndexed)
     auto heapDetails = graphicsCard->descriptorHeapDetails();
     resourceHeap->setUniformBuffer(0,globalsBuffer.get(),0,globalsBuffer->size());
     resourceHeap->setUniformBuffer(heapDetails.bufferDescriptorSize,instanceBuffer.get(),0,instanceBuffer->size());
-    resourceHeap->setUniformTexture(heapDetails.textureDescriptorAlignment*2,instanceTexture.get(),0,1,0,1);
+    resourceHeap->setUniformTexture(heapDetails.textureDescriptorSize*2,instanceTexture.get(),0,1,0,1);
 
     samplerHeap->setSampler(0,sampler.get());
 
@@ -548,6 +548,7 @@ TEST(CommandBuffer, DrawIndexed)
     };
     graphicsCard->graphicsQueue()->submit(&batch,1);
     finished->waitForValue(1);
+    utilities::saveTexture("/home/josh/Pictures/draw-test.png",colorTexture.get());
     auto result = utilities::compareTexture(colorTexture.get(),0,0,"resources/tests/textures/results/draw-test.png");
     ASSERT_GE(result.overallSimilarity,.9999);
 }

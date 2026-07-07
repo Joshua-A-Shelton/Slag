@@ -293,7 +293,6 @@ int main()
     };
     slag::VertexDescription vertexDescription(vertexBindings);
     slag::PipelineState pipelineState{};
-    pipelineState.rasterizationState.culling = slag::RasterizationState::CullOptions::NONE;
     slag::FramebufferDescription framebufferDesc;
     framebufferDesc.colorFormats[0] = swapChain->parameters().imageFormat;
     framebufferDesc.depthFormat = depthTarget->format();
