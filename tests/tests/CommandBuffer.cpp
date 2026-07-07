@@ -548,7 +548,6 @@ TEST(CommandBuffer, DrawIndexed)
     };
     graphicsCard->graphicsQueue()->submit(&batch,1);
     finished->waitForValue(1);
-    utilities::saveTexture("/home/josh/Pictures/draw-test.png",colorTexture.get());
     auto result = utilities::compareTexture(colorTexture.get(),0,0,"resources/tests/textures/results/draw-test.png");
     ASSERT_GE(result.overallSimilarity,.9999);
 }
