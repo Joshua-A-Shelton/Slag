@@ -221,14 +221,14 @@ TEST(CommandBuffer, CopyBufferToTextureToBuffer)
 
 TEST(CommandBuffer, Draw)
 {
-    glm::vec2 positions[]
+    glm::vec3 positions[]
     {
-        {-1,1},
-        {1,1},
-        {-1,-1},
-        {1,1},
-        {1,-1},
-        {-1,-1}
+        {-1,1,0},
+        {1,1,0},
+        {-1,-1,0},
+        {1,1,0},
+        {1,-1,0},
+        {-1,-1,0}
     };
     glm::vec2 uvs[]
     {
@@ -277,8 +277,8 @@ TEST(CommandBuffer, Draw)
     auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
     std::vector<VertexBinding> vertexBindings =
     {
-        VertexBinding(0,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32_FLOAT,0)}),
-        VertexBinding(1,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
     };
     VertexDescription vertexDescription(vertexBindings);
     FramebufferDescription framebufferDesc{};
@@ -313,7 +313,7 @@ TEST(CommandBuffer, Draw)
     commandBuffer->bindGraphicsPipeline(shaderPipeline.get());
     Buffer* vertexBuffers[] = {positionBuffer.get(),uvBuffer.get()};
     uint64_t offsets[] = {0,0};
-    uint64_t strides[] = {sizeof(glm::vec2),sizeof(glm::vec2)};
+    uint64_t strides[] = {sizeof(glm::vec3),sizeof(glm::vec2)};
     commandBuffer->bindVertexBuffers(0,vertexBuffers,offsets,strides,2);
 
     Attachment colorAttachment(colorTexture.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
@@ -386,12 +386,12 @@ TEST(CommandBuffer, Draw)
 
 TEST(CommandBuffer, DrawIndexed)
 {
-    glm::vec2 positions[]
+    glm::vec3 positions[]
     {
-        {-1,1},
-        {1,1},
-        {-1,-1},
-        {1,-1}
+        {-1,1,0},
+        {1,1,0},
+        {-1,-1,0},
+        {1,-1,0}
     };
     glm::vec2 uvs[]
     {
@@ -444,8 +444,8 @@ TEST(CommandBuffer, DrawIndexed)
     auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
     std::vector<VertexBinding> vertexBindings =
     {
-        VertexBinding(0,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32_FLOAT,0)}),
-        VertexBinding(1,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
     };
     VertexDescription vertexDescription(vertexBindings);
     FramebufferDescription framebufferDesc{};
@@ -480,7 +480,7 @@ TEST(CommandBuffer, DrawIndexed)
     commandBuffer->bindGraphicsPipeline(shaderPipeline.get());
     Buffer* vertexBuffers[] = {positionBuffer.get(),uvBuffer.get()};
     uint64_t offsets[] = {0,0};
-    uint64_t strides[] = {sizeof(glm::vec2),sizeof(glm::vec2)};
+    uint64_t strides[] = {sizeof(glm::vec3),sizeof(glm::vec2)};
     commandBuffer->bindVertexBuffers(0,vertexBuffers,offsets,strides,2);
     commandBuffer->bindIndexBuffer(indexBuffer.get(),IndexBufferType::UINT_16,0);
 

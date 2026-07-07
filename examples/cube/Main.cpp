@@ -113,7 +113,7 @@ int main()
 {
      auto result = slag::Slag::initialize(slag::InitializationData
     {
-        .backend = slag::BackendAPI::DX12,
+        .backend = slag::BackendAPI::VULKAN,
         .customBackend = nullptr,
         .debugHandler = graphicsDebug
     });
