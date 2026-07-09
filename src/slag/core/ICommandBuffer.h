@@ -112,12 +112,20 @@ namespace slag
         virtual void bindDescriptorHeaps(ResourceDescriptorHeap* resourceHeap, SamplerDescriptorHeap* samplerHeap)=0;
 
         /**
-         * [GRAPHICS] Set shader parameter data
+         * [GRAPHICS] Set graphics shader parameter data
          * @param shaderDataOffset Offset into shader data to begin writing. Must be aligned to 4 bytes
          * @param data data to copy into graphics shader data
          * @param dataSize length of data to copy into shader data
          */
         virtual void setGraphicsShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)=0;
+
+        /**
+         * [COMPUTE] Set compute shader parameter data
+         * @param shaderDataOffset Offset into shader data to begin writing. Must be aligned to 4 bytes
+         * @param data data to copy into graphics shader data
+         * @param dataSize length of data to copy into shader data
+         */
+        virtual void setComputeShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)=0;
 
         /**
          * [TRANSFER | MemoryCaches::COPY_READ, MemoryCaches::COPY_WRITE] Copy data from one buffer to another
@@ -145,10 +153,10 @@ namespace slag
          */
         virtual void copyBufferToTexture(Buffer* source, Texture* destination, TextureBufferMapping* copyData, uint32_t mappingCount)=0;
         /**
-         * [GRAPHICS] Set a graphics pipeline as current
+         * [GRAPHICS] Set a shader pipeline as current
          * @param pipeline The pipeline to set as active
          */
-        virtual void bindGraphicsPipeline(ShaderPipeline* pipeline)=0;
+        virtual void bindShaderPipeline(ShaderPipeline* pipeline)=0;
         /**
          * [GRAPHICS] Start a renderpass with the given render targets
          * @param colorAttachments Color attachments that shaders will render to in this pa
@@ -207,6 +215,20 @@ namespace slag
          * @param firstInstance First instance ID (used in shaders)
          */
         virtual void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance)=0;
+
+        virtual void drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount, uint32_t stride)=0;
+
+        virtual void drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount, uint32_t stride)=0;
+
+        virtual void drawIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer, uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)=0;
+
+        virtual void drawIndexedIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer, uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)=0;
+
+        virtual void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)=0;
+
+        virtual void dispatchIndirect(Buffer* buffer, uint64_t offset)=0;
+
+        virtual void dispatchBase(uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)=0;
 
     };
 } // slag

@@ -291,7 +291,7 @@ TEST(CommandBuffer, Draw)
 
     auto heapDetails = graphicsCard->descriptorHeapDetails();
     resourceHeap->setUniformBuffer(0,globalsBuffer.get(),0,globalsBuffer->size());
-    resourceHeap->setUniformBuffer(heapDetails.bufferDescriptorSize,instanceBuffer.get(),0,instanceBuffer->size());
+    resourceHeap->setUniformBuffer(heapDetails.textureDescriptorSize,instanceBuffer.get(),0,instanceBuffer->size());
     resourceHeap->setUniformTexture(heapDetails.textureDescriptorSize*2,instanceTexture.get(),0,1,0,1);
 
     samplerHeap->setSampler(0,sampler.get());
@@ -310,7 +310,7 @@ TEST(CommandBuffer, Draw)
     commandBuffer->setGraphicsShaderParameters(16,&textureIndex,sizeof(uint32_t));
     commandBuffer->setGraphicsShaderParameters(24,&samplerIndex,sizeof(uint32_t));
 
-    commandBuffer->bindGraphicsPipeline(shaderPipeline.get());
+    commandBuffer->bindShaderPipeline(shaderPipeline.get());
     Buffer* vertexBuffers[] = {positionBuffer.get(),uvBuffer.get()};
     uint64_t offsets[] = {0,0};
     uint64_t strides[] = {sizeof(glm::vec3),sizeof(glm::vec2)};
@@ -458,7 +458,7 @@ TEST(CommandBuffer, DrawIndexed)
 
     auto heapDetails = graphicsCard->descriptorHeapDetails();
     resourceHeap->setUniformBuffer(0,globalsBuffer.get(),0,globalsBuffer->size());
-    resourceHeap->setUniformBuffer(heapDetails.bufferDescriptorSize,instanceBuffer.get(),0,instanceBuffer->size());
+    resourceHeap->setUniformBuffer(heapDetails.textureDescriptorSize,instanceBuffer.get(),0,instanceBuffer->size());
     resourceHeap->setUniformTexture(heapDetails.textureDescriptorSize*2,instanceTexture.get(),0,1,0,1);
 
     samplerHeap->setSampler(0,sampler.get());
@@ -477,7 +477,7 @@ TEST(CommandBuffer, DrawIndexed)
     commandBuffer->setGraphicsShaderParameters(16,&textureIndex,sizeof(uint32_t));
     commandBuffer->setGraphicsShaderParameters(24,&samplerIndex,sizeof(uint32_t));
 
-    commandBuffer->bindGraphicsPipeline(shaderPipeline.get());
+    commandBuffer->bindShaderPipeline(shaderPipeline.get());
     Buffer* vertexBuffers[] = {positionBuffer.get(),uvBuffer.get()};
     uint64_t offsets[] = {0,0};
     uint64_t strides[] = {sizeof(glm::vec3),sizeof(glm::vec2)};
@@ -552,6 +552,102 @@ TEST(CommandBuffer, DrawIndexed)
     ASSERT_GE(result.overallSimilarity,.9999);
 }
 
+TEST(CommandBuffer, DrawIndirect)
+{
+    GTEST_FAIL();
+}
+
+TEST(CommandBuffer, DrawIndexedIndirect)
+{
+    GTEST_FAIL();
+}
+
+TEST(CommandBuffer, DrawIndirectCount)
+{
+    GTEST_FAIL();
+}
+
+TEST(CommandBuffer, DrawIndexedIndirectCount)
+{
+    GTEST_FAIL();
+}
+
+TEST(CommandBuffer, Dispatch)
+{
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::COMPUTE));
+    auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
+
+    auto computeModule = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/ParallelAdd.compute");
+    auto parallelAdd = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(&computeModule.details));
+    auto resourceHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+    auto heapDetails = graphicsCard->descriptorHeapDetails();
+    auto descriptorSize = heapDetails.textureDescriptorSize;
+
+
+
+    auto buffer1 = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t)*100,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto buffer2 = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t)*100,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto results = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t)*100,BufferCPUAccess::READ_WRITE,BufferMemoryType::GENERAL));
+    auto buffer1Ptr = buffer1->as<uint32_t>();
+    auto buffer2Ptr = buffer2->as<uint32_t>();
+    auto resultsPtr = results->as<uint32_t>();
+    for(uint32_t i = 0;i < 100;i++)
+    {
+        buffer1Ptr[i] = i;
+        buffer2Ptr[i] = i*i;
+        resultsPtr[i] = 0.0f;
+    }
+
+    resourceHeap->setStorageBuffer(0,buffer1.get(),0,100,sizeof(uint32_t));
+    resourceHeap->setStorageBuffer(descriptorSize,buffer2.get(),0,100,sizeof(uint32_t));
+    resourceHeap->setStorageBuffer(descriptorSize*2,results.get(),0,100,sizeof(uint32_t));
+
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorHeaps(resourceHeap.get(),samplerHeap.get());
+    uint32_t b1index = 0;
+    uint32_t b2index = 1;
+    uint32_t resultsIndex = 2;
+    commandBuffer->setComputeShaderParameters(0,&b1index,sizeof(uint32_t));
+    commandBuffer->setComputeShaderParameters(8,&b2index,sizeof(uint32_t));
+    commandBuffer->setComputeShaderParameters(16,&resultsIndex,sizeof(uint32_t));
+    commandBuffer->bindShaderPipeline(parallelAdd.get());
+    commandBuffer->dispatch(100,1,1);
+
+    commandBuffer->end();
+    auto cmdBuffer = commandBuffer.get();
+    SemaphoreValue signal{.semaphore = finished.get(),.value = 1};
+    SubmissionBatch batch
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &cmdBuffer,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    graphicsCard->computeQueue()->submit(&batch,1);
+    finished->waitForValue(1);
+
+    for (uint32_t i = 0;i < 100;i++)
+    {
+        std::cout << resultsPtr[i] << std::endl;
+        //ASSERT_EQ(resultsPtr[i],i+(i*i));
+    }
+
+    GTEST_FAIL();
+}
+
+TEST(CommandBuffer, DispatchBase)
+{
+    GTEST_FAIL();
+}
+
+TEST(CommandBuffer, DispatchIndirect)
+{
+    GTEST_FAIL();
+}
 
 #ifdef SLAG_DEBUG
 TEST(CommandBuffer, TransferErrorComputeCommands)
@@ -563,6 +659,26 @@ TEST(CommandBuffer, TransferErrorGraphicsCommands)
     GTEST_FAIL();
 }
 TEST(CommandBuffer, ComputeErrorGraphicsCommands)
+{
+    GTEST_FAIL();
+}
+
+TEST(CommandBuffer,SetGraphicsShaderParametersOver128BytesError)
+{
+    GTEST_FAIL();
+}
+
+TEST(CommandBuffer,SetComputerShaderParametersOver128BytesError)
+{
+    GTEST_FAIL();
+}
+
+TEST(CommandBuffer, DrawCommandsWhenGraphicsBoundError)
+{
+    GTEST_FAIL();
+}
+
+TEST(CommandBuffer, GraphicsCommandsWhenGraphicsBoundError)
 {
     GTEST_FAIL();
 }

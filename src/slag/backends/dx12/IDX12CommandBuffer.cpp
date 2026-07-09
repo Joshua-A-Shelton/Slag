@@ -48,6 +48,11 @@ namespace slag
         void IDX12CommandBuffer::end()
         {
             _commandBuffer->Close();
+#ifdef SLAG_DEBUG
+            _setViewport = false;
+            _setScissor = false;
+            _boundPipelineType = BoundPipeLineType::NONE;
+#endif
         }
 
         void IDX12CommandBuffer::insertBarriers(GlobalBarrier* barriers, uint32_t barrierCount)
@@ -223,6 +228,13 @@ namespace slag
             _commandBuffer->SetGraphicsRoot32BitConstants(0,dataSize/4,data,shaderDataOffset/4);
         }
 
+        void IDX12CommandBuffer::setComputeShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
+        {
+            SLAG_ASSERT(shaderDataOffset % 4 == 0 && "shaderDataOffset must be aligned to 4");
+            SLAG_ASSERT(dataSize % 4 == 0 && "dataSize must be aligned to 4");
+            _commandBuffer->SetComputeRoot32BitConstants(0,dataSize/4,data,shaderDataOffset/4);
+        }
+
         void IDX12CommandBuffer::copyBufferToBuffer(
             Buffer* source,
             uint64_t sourceOffset,
@@ -342,14 +354,24 @@ namespace slag
             }
         }
 
-        void IDX12CommandBuffer::bindGraphicsPipeline(ShaderPipeline* pipeline)
+        void IDX12CommandBuffer::bindShaderPipeline(ShaderPipeline* pipeline)
         {
             DX12ShaderPipeline* dx12Pipeline = static_cast<DX12ShaderPipeline*>(pipeline);
             _commandBuffer->SetPipelineState(dx12Pipeline->dx12Handle());
+#ifdef SLAG_DEBUG
+            if (dx12Pipeline->type() == ShaderPipelineType::COMPUTE)
+            {
+                _boundPipelineType = BoundPipeLineType::COMPUTE;
+            }
+            else
+            {
+                _boundPipelineType = BoundPipeLineType::GRAPHICS;
+            }
+#endif
         }
 
         void IDX12CommandBuffer::beginRendering(Attachment* colorAttachments, uint32_t colorAttachmentCount,
-            Attachment* depthAttachment, const Rectangle& bounds)
+                                                Attachment* depthAttachment, const Rectangle& bounds)
         {
             std::vector<D3D12_RENDER_PASS_RENDER_TARGET_DESC> targets(colorAttachmentCount);
             for (auto i=0; i<colorAttachmentCount; i++)
@@ -399,12 +421,18 @@ namespace slag
 
                 _commandBuffer->BeginRenderPass(colorAttachmentCount, targets.data(), &depthTarget, D3D12_RENDER_PASS_FLAG_NONE);
             }
+#ifdef SLAG_DEBUG
+            _inRenderPass = true;
+#endif
 
         }
 
         void IDX12CommandBuffer::endRendering()
         {
             _commandBuffer->EndRenderPass();
+#ifdef SLAG_DEBUG
+            _inRenderPass = false;
+#endif
         }
 
         void IDX12CommandBuffer::setViewPort(float x, float y, float width, float height, float minDepth,
@@ -412,6 +440,9 @@ namespace slag
         {
             CD3DX12_VIEWPORT vp(x,y,width,height,minDepth,maxDepth);
             _commandBuffer->RSSetViewports(1, &vp);
+#if SLAG_DEBUG
+            _setViewport = true;
+#endif
         }
 
         void IDX12CommandBuffer::setScissors(const Rectangle& rect)
@@ -422,6 +453,9 @@ namespace slag
             scissorRect.right  = rect.offset.x + rect.extent.width;
             scissorRect.bottom = rect.offset.y + rect.extent.height;
             _commandBuffer->RSSetScissorRects(1, &scissorRect);
+#if SLAG_DEBUG
+            _setScissor = true;
+#endif
         }
 
         void IDX12CommandBuffer::bindIndexBuffer(Buffer* buffer, IndexBufferType indexType, uint64_t offset)
@@ -451,13 +485,97 @@ namespace slag
         void IDX12CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
                                       uint32_t firstInstance)
         {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+            SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
+#endif
             _commandBuffer->DrawInstanced(vertexCount, instanceCount, firstVertex, firstInstance);
         }
 
         void IDX12CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
             int32_t vertexOffset, uint32_t firstInstance)
         {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+            SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
+#endif
             _commandBuffer->DrawIndexedInstanced(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+        }
+
+        void IDX12CommandBuffer::drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount, uint32_t stride)
+        {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+            SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
+#endif
+            throw std::runtime_error("Not implemented");
+        }
+
+        void IDX12CommandBuffer::drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount,
+            uint32_t stride)
+        {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+            SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
+#endif
+            throw std::runtime_error("Not implemented");
+        }
+
+        void IDX12CommandBuffer::drawIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer,
+            uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
+        {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+            SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
+#endif
+            throw std::runtime_error("Not implemented");
+        }
+
+        void IDX12CommandBuffer::drawIndexedIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer,
+            uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
+        {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+            SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
+#endif
+            throw std::runtime_error("Not implemented");
+        }
+
+        void IDX12CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+        {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
+#endif
+            _commandBuffer->Dispatch(groupCountX, groupCountY, groupCountZ);
+        }
+
+        void IDX12CommandBuffer::dispatchIndirect(Buffer* buffer, uint64_t offset)
+        {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
+#endif
+            throw std::runtime_error("Not implemented");
+        }
+
+        void IDX12CommandBuffer::dispatchBase(uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ,
+            uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+        {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
+#endif
+            throw std::runtime_error("Not implemented");
         }
 
         ID3D12GraphicsCommandList7* IDX12CommandBuffer::dx12Handle() const

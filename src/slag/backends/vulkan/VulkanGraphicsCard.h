@@ -39,6 +39,8 @@ namespace slag
                 const PipelineState& pipelineState,
                 const FramebufferDescription& framebufferDescription)override;
 
+            [[nodiscard]] ShaderPipeline* newShaderPipeline(ShaderCode* computeShader)override;
+
             //Command Buffers
             [[nodiscard]] CommandBuffer* newCommandBuffer(QueueType type)override;
             //Semaphores

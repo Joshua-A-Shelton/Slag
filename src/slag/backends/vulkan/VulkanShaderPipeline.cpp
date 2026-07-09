@@ -132,6 +132,7 @@ namespace slag
             SLAG_ASSERT(vertexShader.language == ShaderLanguage::SPIRV && "Shader code must be SPIRV for Vulkan");
             SLAG_ASSERT(fragmentShader.language == ShaderLanguage::SPIRV && "Shader code must be SPIRV for Vulkan");
             _graphicsCard = graphicsCard;
+            _type = ShaderPipelineType::GRAPHICS;
 
 
             VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo = {};
@@ -290,6 +291,60 @@ namespace slag
                 throw ResourceCreationError("Unable to create shader pipeline");
             }
 
+        }
+
+        VulkanShaderPipeline::VulkanShaderPipeline(VulkanGraphicsCard* graphicsCard, ShaderCode* computeShader)
+        {
+            SLAG_ASSERT(computeShader->language == ShaderLanguage::SPIRV && "Shader code must be SPIRV for Vulkan");
+            _graphicsCard = graphicsCard;
+            _type = ShaderPipelineType::COMPUTE;
+
+            VkShaderDescriptorSetAndBindingMappingInfoEXT mappings{.sType = VK_STRUCTURE_TYPE_SHADER_DESCRIPTOR_SET_AND_BINDING_MAPPING_INFO_EXT};
+            VkDescriptorSetAndBindingMappingEXT bindingMapping{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_AND_BINDING_MAPPING_EXT};
+            bindingMapping.descriptorSet = 0;
+            bindingMapping.firstBinding = 0;
+            bindingMapping.bindingCount = 1;
+            bindingMapping.resourceMask = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+            bindingMapping.source = VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_DATA_EXT;
+            bindingMapping.sourceData.pushDataOffset = 128;
+            mappings.mappingCount = 1;
+            mappings.pMappings = &bindingMapping;
+
+            VkShaderModuleCreateInfo shaderModuleInfo
+            {
+                .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+                .pNext = &mappings,
+                .flags = 0,
+                .codeSize = computeShader->codeLength,
+                .pCode = static_cast<uint32_t*>(computeShader->code)
+            };
+
+            VkPipelineShaderStageCreateInfo shaderStage
+           {
+               .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+               .pNext = &shaderModuleInfo,
+               .flags = 0,
+               .stage = VK_SHADER_STAGE_COMPUTE_BIT,
+               .module = nullptr,
+               .pName = "main",
+               .pSpecializationInfo = nullptr
+           };
+
+
+            VkComputePipelineCreateInfo pipelineInfo = {};
+            pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+            pipelineInfo.stage = shaderStage;
+            pipelineInfo.layout = nullptr;
+            pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+            VkPipelineCreateFlags2CreateInfo createFlags{.sType = VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO,.pNext = nullptr,.flags = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT};
+
+            pipelineInfo.pNext = &createFlags;
+
+            if (vkCreateComputePipelines(_graphicsCard->device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline) != VK_SUCCESS)
+            {
+                throw ResourceCreationError("Unable to create shader pipeline");
+            }
         }
 
         VulkanShaderPipeline::~VulkanShaderPipeline()

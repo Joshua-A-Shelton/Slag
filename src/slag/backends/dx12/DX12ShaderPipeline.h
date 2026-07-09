@@ -19,6 +19,11 @@ namespace slag
                const ShaderCode& fragmentShader,
                const PipelineState& pipelineState,
                const FramebufferDescription& framebufferDescription);
+
+            DX12ShaderPipeline(
+                DX12GraphicsCard* graphicsCard,
+                ShaderCode* computeShader);
+
             DX12ShaderPipeline(const DX12ShaderPipeline&) = delete;
             DX12ShaderPipeline& operator=(const DX12ShaderPipeline&) = delete;
             DX12ShaderPipeline(DX12ShaderPipeline&& from) noexcept;

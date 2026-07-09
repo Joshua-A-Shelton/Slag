@@ -28,7 +28,7 @@ namespace slag
         {
             if (_swapChain)
             {
-                _swapChain->Release();
+                _frames.clear();
             }
         }
 

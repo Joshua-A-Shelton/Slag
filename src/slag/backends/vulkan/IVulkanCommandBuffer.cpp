@@ -46,6 +46,7 @@ namespace slag
 #ifdef SLAG_DEBUG
             _setViewport = false;
             _setScissor = false;
+            _boundPipelineType = BoundPipeLineType::NONE;
 #endif
         }
 
@@ -233,6 +234,20 @@ namespace slag
             _graphicsCard->vkCmdPushData(_commandBuffer,&pushDataInfo);
         }
 
+        void IVulkanCommandBuffer::setComputeShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
+        {
+            SLAG_ASSERT(shaderDataOffset + dataSize < 128 && "Exceeded size of shader parameter data");
+            SLAG_ASSERT(shaderDataOffset %4 == 0 && "Shader data offset must be aligned to 4 bytes");
+            VkPushDataInfoEXT pushDataInfo
+            {
+                .sType = VK_STRUCTURE_TYPE_PUSH_DATA_INFO_EXT,
+                .pNext = nullptr,
+                .offset = shaderDataOffset + 128,
+                .data = {.address = data, .size = dataSize},
+            };
+            _graphicsCard->vkCmdPushData(_commandBuffer,&pushDataInfo);
+        }
+
 
         void IVulkanCommandBuffer::copyBufferToBuffer(
             Buffer* source,
@@ -327,14 +342,29 @@ namespace slag
             vkCmdCopyBufferToImage(_commandBuffer,buffer->vulkanHandle(),image->vulkanHandle(),VK_IMAGE_LAYOUT_GENERAL,mappingCount,regions.data());
         }
 
-        void IVulkanCommandBuffer::bindGraphicsPipeline(ShaderPipeline* pipeline)
+        void IVulkanCommandBuffer::bindShaderPipeline(ShaderPipeline* pipeline)
         {
             auto vulkanPipeline = static_cast<VulkanShaderPipeline*>(pipeline);
-            vkCmdBindPipeline(_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanPipeline->vulkanHandle());
+            switch (vulkanPipeline->type())
+            {
+            case ShaderPipelineType::COMPUTE:
+                vkCmdBindPipeline(_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, vulkanPipeline->vulkanHandle());
+#ifdef SLAG_DEBUG
+                _boundPipelineType = BoundPipeLineType::COMPUTE;
+#endif
+                break;
+            case ShaderPipelineType::GRAPHICS:
+                vkCmdBindPipeline(_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanPipeline->vulkanHandle());
+#ifdef SLAG_DEBUG
+                _boundPipelineType = BoundPipeLineType::GRAPHICS;
+#endif
+                break;
+            }
+
         }
 
         void IVulkanCommandBuffer::beginRendering(Attachment* colorAttachments, uint32_t colorAttachmentCount,
-            Attachment* depthAttachment, const Rectangle& bounds)
+                                                  Attachment* depthAttachment, const Rectangle& bounds)
         {
             std::vector<VkRenderingAttachmentInfo> descriptions(colorAttachmentCount);
             for(auto i=0; i< colorAttachmentCount; i++)
@@ -457,6 +487,7 @@ namespace slag
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
             SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
             SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
 #endif
             vkCmdDraw(_commandBuffer,vertexCount,instanceCount,firstVertex,firstInstance);
         }
@@ -468,8 +499,88 @@ namespace slag
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
             SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
             SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
 #endif
             vkCmdDrawIndexed(_commandBuffer,indexCount,instanceCount,firstIndex,vertexOffset,firstInstance);
+        }
+
+        void IVulkanCommandBuffer::drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount, uint32_t stride)
+        {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+            SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
+#endif
+            auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
+            vkCmdDrawIndirect(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,drawCount,stride);
+        }
+
+        void IVulkanCommandBuffer::drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount,
+            uint32_t stride)
+        {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+            SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
+#endif
+            auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
+            vkCmdDrawIndexedIndirect(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,drawCount,stride);
+        }
+
+        void IVulkanCommandBuffer::drawIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer,
+            uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
+        {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+            SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
+#endif
+            auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
+            auto vulkanCountBuffer = static_cast<VulkanBuffer*>(countBuffer);
+            vkCmdDrawIndirectCount(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,vulkanCountBuffer->vulkanHandle(),countBufferOffset,maxDrawCount,stride);
+        }
+
+        void IVulkanCommandBuffer::drawIndexedIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer,
+            uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
+        {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
+            SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
+            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
+#endif
+            auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
+            auto vulkanCountBuffer = static_cast<VulkanBuffer*>(countBuffer);
+            vkCmdDrawIndexedIndirectCount(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,vulkanCountBuffer->vulkanHandle(),countBufferOffset,maxDrawCount,stride);
+        }
+
+        void IVulkanCommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+        {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
+#endif
+            vkCmdDispatch(_commandBuffer,groupCountX,groupCountY,groupCountZ);
+        }
+
+        void IVulkanCommandBuffer::dispatchIndirect(Buffer* buffer, uint64_t offset)
+        {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
+#endif
+            auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
+            vkCmdDispatchIndirect(_commandBuffer,vulkanBuffer->vulkanHandle(),offset);
+        }
+
+        void IVulkanCommandBuffer::dispatchBase(uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ,
+            uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+        {
+#if SLAG_DEBUG
+            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
+#endif
+            vkCmdDispatchBase(_commandBuffer,baseGroupX,baseGroupY,baseGroupZ,groupCountX,groupCountY,groupCountZ);
         }
 
         VkCommandBuffer IVulkanCommandBuffer::vulkanHandle() const

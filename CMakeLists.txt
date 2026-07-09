@@ -314,13 +314,13 @@ if(SLAG_BUILD_TESTS)
         set(OUTPUT_FILE_RAW "${CMAKE_CURRENT_SOURCE_DIR}/resources/tests/shaders/compiled/${FILENAME}")
         add_custom_command(
                 OUTPUT "${OUTPUT_FILE_RAW}.vertex.spv"
-                COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.spv"
+                COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -spirv-unified-descriptor-heap-stride -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.spv"
                 DEPENDS ${SHADER}
                 COMMENT "Compiling ${FILENAME} to spirv vertex"
         )
         add_custom_command(
                 OUTPUT "${OUTPUT_FILE_RAW}.fragment.spv"
-                COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.spv"
+                COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -spirv-unified-descriptor-heap-stride -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.spv"
                 DEPENDS ${SHADER}
                 COMMENT "Compiling ${FILENAME} to spirv fragment"
         )
@@ -341,7 +341,29 @@ if(SLAG_BUILD_TESTS)
         list(APPEND COMPILED_TEST_SHADER_FILES ${OUTPUT_FILE_RAW}.vertex.spv ${OUTPUT_FILE_RAW}.fragment.spv ${OUTPUT_FILE_RAW}.vertex.dxil ${OUTPUT_FILE_RAW}.fragment.dxil)
     endforeach ()
 
-    add_custom_target(CompileTestShaders ALL DEPENDS ${COMPILED_TEST_SHADER_FILES})
+    file(GLOB TEST_COMPUTE_SHADERS "${CMAKE_CURRENT_SOURCE_DIR}/resources/tests/shaders/src/Compute/*.slang")
+
+    foreach (SHADER ${TEST_COMPUTE_SHADERS})
+        get_filename_component(FILENAME ${SHADER} NAME_WE)
+        set(OUTPUT_FILE_RAW "${CMAKE_CURRENT_SOURCE_DIR}/resources/tests/shaders/compiled/${FILENAME}")
+        add_custom_command(
+                OUTPUT "${OUTPUT_FILE_RAW}.compute.spv"
+                COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -spirv-unified-descriptor-heap-stride -entry computeMain -o "${OUTPUT_FILE_RAW}.compute.spv"
+                DEPENDS ${SHADER}
+                COMMENT "Compiling ${FILENAME} to spirv compute"
+        )
+        if(WIN32)
+            add_custom_command(
+                    OUTPUT "${OUTPUT_FILE_RAW}.compute.dxil"
+                    COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry computeMain -o "${OUTPUT_FILE_RAW}.compute.dxil"
+                    DEPENDS ${SHADER}
+                    COMMENT "Compiling ${FILENAME} to dxil compute"
+            )
+        endif ()
+        list(APPEND COMPILED_TEST_SHADER_FILES ${OUTPUT_FILE_RAW}.compute.spv ${OUTPUT_FILE_RAW}.compute.dxil)
+    endforeach ()
+
+    add_custom_target(CompileTestShaders ALL DEPENDS ${COMPILED_TEST_SHADER_FILES} ${TEST_COMPUTE_SHADERS})
 
     add_custom_command(
             TARGET SlagTests
@@ -369,13 +391,13 @@ if(SLAG_BUILD_CUBE)
         set(OUTPUT_FILE_RAW "${CMAKE_CURRENT_SOURCE_DIR}/resources/examples/shaders/compiled/${FILENAME}")
         add_custom_command(
                 OUTPUT "${OUTPUT_FILE_RAW}.vertex.spv"
-                COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.spv"
+                COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -spirv-unified-descriptor-heap-stride -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.spv"
                 DEPENDS ${SHADER}
                 COMMENT "Compiling ${FILENAME} to spirv vertex"
         )
         add_custom_command(
                 OUTPUT "${OUTPUT_FILE_RAW}.fragment.spv"
-                COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.spv"
+                COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -spirv-unified-descriptor-heap-stride -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.spv"
                 DEPENDS ${SHADER}
                 COMMENT "Compiling ${FILENAME} to spirv fragment"
         )

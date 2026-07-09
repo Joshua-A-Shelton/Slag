@@ -153,6 +153,24 @@ namespace slag
 
         }
 
+        DX12ShaderPipeline::DX12ShaderPipeline(DX12GraphicsCard* graphicsCard, ShaderCode* computeShader)
+        {
+            _graphicsCard = graphicsCard;
+            _type = ShaderPipelineType::COMPUTE;
+
+            D3D12_COMPUTE_PIPELINE_STATE_DESC pipelineDesc = {};
+            pipelineDesc.CS.pShaderBytecode = computeShader->code;
+            pipelineDesc.CS.BytecodeLength = computeShader->codeLength;
+
+            pipelineDesc.pRootSignature = _graphicsCard->rootSignature();
+
+            auto result = _graphicsCard->device()->CreateComputePipelineState(&pipelineDesc, IID_PPV_ARGS(&_pipelineState));
+            if (FAILED(result))
+            {
+                throw InvalidShaderCodeError("Unable to create shader pipeline");
+            }
+        }
+
         DX12ShaderPipeline::DX12ShaderPipeline(DX12ShaderPipeline&& from) noexcept
         {
             move(from);

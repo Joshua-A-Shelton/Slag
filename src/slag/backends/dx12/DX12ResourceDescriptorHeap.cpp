@@ -187,7 +187,7 @@ namespace slag
         }
 
         void DX12ResourceDescriptorHeap::setStorageBuffer(uint64_t heapOffset, Buffer* buffer,
-                                                                    uint64_t elementIndex, uint64_t elementCount, uint64_t elementStride)
+                                                          uint64_t firstElementIndex, uint64_t elementCount, uint64_t elementStride)
         {
             auto dxBuffer = static_cast<DX12Buffer*>(buffer);
             CD3DX12_CPU_DESCRIPTOR_HANDLE handle(_heap->GetCPUDescriptorHandleForHeapStart());
@@ -195,7 +195,7 @@ namespace slag
             D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
             uavDesc.Format = DXGI_FORMAT_UNKNOWN;
             uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-            uavDesc.Buffer.FirstElement = elementIndex;
+            uavDesc.Buffer.FirstElement = firstElementIndex;
             uavDesc.Buffer.NumElements = elementCount;
             uavDesc.Buffer.StructureByteStride = elementStride;
             _graphicsCard->device()->CreateUnorderedAccessView(dxBuffer->dx12Handle(),nullptr,&uavDesc,handle);

@@ -113,7 +113,7 @@ int main()
 {
      auto result = slag::Slag::initialize(slag::InitializationData
     {
-        .backend = slag::BackendAPI::VULKAN,
+        .backend = slag::BackendAPI::DX12,
         .customBackend = nullptr,
         .debugHandler = graphicsDebug
     });
@@ -388,10 +388,10 @@ int main()
             uint64_t strides[] = {sizeof(glm::vec3),sizeof(glm::vec2)};
             commandBuffer->bindVertexBuffers(0,buffers,offsets,strides,2);
             commandBuffer->bindIndexBuffer(cubeIndices,IndexBufferType::UINT_16,0);
-            commandBuffer->bindGraphicsPipeline(pipeline);
+            commandBuffer->bindShaderPipeline(pipeline);
 
             resourceHeap->setUniformBuffer(0,globals,0,globals->size());
-            resourceHeap->setUniformBuffer(descriptorDetails.bufferDescriptorSize,transform,0,transform->size());
+            resourceHeap->setUniformBuffer(descriptorDetails.textureDescriptorSize,transform,0,transform->size());
             resourceHeap->setUniformTexture(2 * descriptorDetails.textureDescriptorSize,texture,0,1,0,1);
             samplerHeap->setSampler(0,sampler);
 

@@ -106,12 +106,31 @@ namespace slag
         virtual SwapChain* newSwapchain(const PlatformData& platformData, uint32_t width, uint32_t height, const SwapChainParameters& parameters)=0;
 
         //Shaders
+        /**
+         * Create a new shader pipeline consisting of a vertex shader and a fragment shader
+         * @param vertexDescription The expected input vertex format
+         * @param vertexShader Shader that transforms vertices
+         * @param fragmentShader Shader that outputs fragments
+         * @param pipelineState Additional details about how rendering should be performed
+         * @param framebufferDescription Description of the framebuffer targets
+         * @return
+         */
         [[nodiscard]] virtual ShaderPipeline* newShaderPipeline(
             const VertexDescription& vertexDescription,
             const ShaderCode& vertexShader,
             const ShaderCode& fragmentShader,
             const PipelineState& pipelineState,
             const FramebufferDescription& framebufferDescription)=0;
+
+        /**
+         * Create a new compute shader pipeline
+         * @param computeShader code for the compute shader
+         * @return
+         */
+        [[nodiscard]] virtual ShaderPipeline* newShaderPipeline(
+            ShaderCode* computeShader
+            )=0;
+
 
         //Command Buffers
         /**

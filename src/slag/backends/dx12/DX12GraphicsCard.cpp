@@ -439,6 +439,11 @@ namespace slag
             return new DX12ShaderPipeline(this,vertexDescription,vertexShader,fragmentShader,pipelineState,framebufferDescription);
         }
 
+        ShaderPipeline* DX12GraphicsCard::newShaderPipeline(ShaderCode* computeShader)
+        {
+            return new DX12ShaderPipeline(this,computeShader);
+        }
+
         CommandBuffer* DX12GraphicsCard::newCommandBuffer(QueueType type)
         {
             return new DX12CommandBuffer(this,type);

@@ -164,8 +164,8 @@ namespace slag
             _card->vkWriteResourceDescriptors(_card->device(),1,&resourceDescriptorInfo,&hostAddressRange);
         }
 
-        void VulkanResourceDescriptorHeap::setStorageBuffer(uint64_t heapOffset, Buffer* buffer, uint64_t elementIndex,
-                                                                      uint64_t elementCount, uint64_t elementStride)
+        void VulkanResourceDescriptorHeap::setStorageBuffer(uint64_t heapOffset, Buffer* buffer, uint64_t firstElementIndex,
+                                                            uint64_t elementCount, uint64_t elementStride)
         {
             auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
             VkHostAddressRangeEXT hostAddressRange{.address = ((unsigned char*)_data) + heapOffset, .size = _bufferDescriptorSize};
@@ -177,7 +177,7 @@ namespace slag
             };
             VkDeviceAddressRangeEXT rangeInfo
             {
-                .address = vulkanBuffer->deviceAddress() + (elementIndex * elementStride),
+                .address = vulkanBuffer->deviceAddress() + (firstElementIndex * elementStride),
                 .size = elementCount*elementStride,
             };
             resourceDescriptorInfo.data.pAddressRange = &rangeInfo;

@@ -457,6 +457,11 @@ namespace slag
             return new VulkanShaderPipeline(this,vertexDescription,vertexShader,fragmentShader,pipelineState,framebufferDescription);
         }
 
+        ShaderPipeline* VulkanGraphicsCard::newShaderPipeline(ShaderCode* computeShader)
+        {
+            return new VulkanShaderPipeline(this,computeShader);
+        }
+
         CommandBuffer* VulkanGraphicsCard::newCommandBuffer(QueueType type)
         {
             return new VulkanCommandBuffer(this, type);

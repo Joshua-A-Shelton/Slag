@@ -18,6 +18,11 @@ namespace slag
                 const ShaderCode& fragmentShader,
                 const PipelineState& pipelineState,
                 const FramebufferDescription& framebufferDescription);
+
+            VulkanShaderPipeline(
+                VulkanGraphicsCard* graphicsCard,
+                ShaderCode* computeShader
+            );
             ~VulkanShaderPipeline()override;
             VulkanShaderPipeline(const VulkanShaderPipeline&)=delete;
             VulkanShaderPipeline& operator=(const VulkanShaderPipeline&)=delete;
