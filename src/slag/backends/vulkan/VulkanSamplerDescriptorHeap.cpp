@@ -74,7 +74,7 @@ namespace slag
             return _descriptorCount * _descriptorSize;
         }
 
-        void* VulkanSamplerDescriptorHeap::pointer()
+        void* VulkanSamplerDescriptorHeap::data()
         {
             return _data;
         }
@@ -82,14 +82,6 @@ namespace slag
         uint64_t VulkanSamplerDescriptorHeap::deviceAddress()
         {
             return _deviceAddress;
-        }
-
-        void VulkanSamplerDescriptorHeap::setSampler(uint64_t heapOffset, Sampler* sampler)
-        {
-            auto vulkanSampler = static_cast<VulkanSampler*>(sampler);
-            auto vulkanHandle = vulkanSampler->vulkanHandle();
-            VkHostAddressRangeEXT hostAddressRange{.address = ((unsigned char*)_data) + heapOffset, .size = _descriptorSize};
-            _card->vkWriteSamplerDescriptors(_card->device(),1,&vulkanHandle,&hostAddressRange);
         }
 
         VkDeviceAddress VulkanSamplerDescriptorHeap::deviceAddress() const

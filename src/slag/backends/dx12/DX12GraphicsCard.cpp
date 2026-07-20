@@ -14,6 +14,7 @@
 #include "DX12SamplerDescriptorHeap.h"
 #include "DX12SwapChain.h"
 #include "slag/exceptions/NotImplemented.h"
+#include "slag/utilities/SLAG_ASSERT.h"
 #undef ERROR
 #undef max
 
@@ -470,6 +471,178 @@ namespace slag
         SamplerDescriptorHeap* DX12GraphicsCard::newSamplerDescriptorHeap(uint32_t descriptorCount)
         {
             return new DX12SamplerDescriptorHeap(this,descriptorCount);
+        }
+
+        void DX12GraphicsCard::writeUniformBufferDescriptor(Buffer* buffer, uint64_t offset, uint64_t length,
+            void* destination)
+        {
+            SLAG_ASSERT(buffer->memoryType() == BufferMemoryType::UNIFORM && "Only uniform buffers can be bound for uniform buffer descriptors");
+            auto dxBuffer = static_cast<DX12Buffer*>(buffer);
+            D3D12_CPU_DESCRIPTOR_HANDLE handle((size_t)destination);
+
+            D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+            cbvDesc.BufferLocation = dxBuffer->deviceAddress() + offset;
+            cbvDesc.SizeInBytes = length;
+
+            _device->CreateConstantBufferView(&cbvDesc,handle);
+        }
+
+        void DX12GraphicsCard::writeReadWriteBufferDescriptor(Buffer* buffer, uint64_t firstElementIndex,
+            uint64_t elementCount, uint64_t elementStride, void* destination)
+        {
+            auto dxBuffer = static_cast<DX12Buffer*>(buffer);
+            D3D12_CPU_DESCRIPTOR_HANDLE handle((size_t)destination);
+            D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
+            uavDesc.Format = DXGI_FORMAT_UNKNOWN;
+            uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+            uavDesc.Buffer.FirstElement = firstElementIndex;
+            uavDesc.Buffer.NumElements = elementCount;
+            uavDesc.Buffer.StructureByteStride = elementStride;
+            _device->CreateUnorderedAccessView(dxBuffer->dx12Handle(),nullptr,&uavDesc,handle);
+        }
+
+        void DX12GraphicsCard::writeUniformTexelBuffer(Buffer* buffer, PixelFormat format, uint64_t firstElementIndex,
+                                                       uint64_t elementCount, void* destination)
+        {
+            SLAG_ASSERT(buffer->memoryType() == BufferMemoryType::UNIFORM && "Only uniform buffers can be bound for uniform buffer descriptors");
+            SLAG_ASSERT(Pixel::aspectFlags(format) == PixelAspectFlags::COLOR_FLAG && "Only color pixel formats can be used for texel buffer descriptors");
+            D3D12_CPU_DESCRIPTOR_HANDLE handle((size_t)destination);
+            D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+            srvDesc.Format = DX12Backend::nativeFormat(format);
+            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+            srvDesc.Buffer.FirstElement = firstElementIndex;
+            srvDesc.Buffer.NumElements = elementCount;
+            srvDesc.Buffer.StructureByteStride = 0;
+            srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        }
+
+        void DX12GraphicsCard::writeReadWriteTexelBuffer(Buffer* buffer, PixelFormat format, uint64_t firstElementIndex,
+                                                         uint64_t elementCount, void* destination)
+        {
+            SLAG_ASSERT(Pixel::aspectFlags(format) == PixelAspectFlags::COLOR_FLAG && "Only color pixel formats can be used for texel buffer descriptors");
+            auto dxBuffer = static_cast<DX12Buffer*>(buffer);
+            D3D12_CPU_DESCRIPTOR_HANDLE handle((size_t)destination);
+            D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
+            uavDesc.Format = DX12Backend::nativeFormat(format);
+            uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+            uavDesc.Buffer.FirstElement = firstElementIndex;
+            uavDesc.Buffer.NumElements = elementCount;
+            uavDesc.Buffer.StructureByteStride = 0;
+            _device->CreateUnorderedAccessView(dxBuffer->dx12Handle(),nullptr,&uavDesc,handle);
+        }
+
+        void DX12GraphicsCard::writeUniformTextureDescriptor(Texture* texture, uint32_t baseMip, uint32_t mipCount,
+            uint32_t baseLayer, uint32_t layerCount, void* destination)
+        {
+            auto dxTexture = static_cast<DX12Texture*>(texture);
+            D3D12_CPU_DESCRIPTOR_HANDLE handle((size_t)destination);
+            D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+            srvDesc.Format = DX12Backend::nativeFormat(dxTexture->format());
+            srvDesc.ViewDimension = DX12Backend::nativeSRVTextureDimension(dxTexture->type(),dxTexture->layers(),dxTexture->sampleCount());
+            srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            switch (srvDesc.ViewDimension)
+            {
+            case D3D12_SRV_DIMENSION_TEXTURE1D:
+                srvDesc.Texture1D.MostDetailedMip = baseMip;
+                srvDesc.Texture1D.MipLevels = mipCount;
+                srvDesc.Texture1D.ResourceMinLODClamp = 0;
+                break;
+            case D3D12_SRV_DIMENSION_TEXTURE1DARRAY:
+                srvDesc.Texture1DArray.MostDetailedMip = baseMip;
+                srvDesc.Texture1DArray.MipLevels = mipCount;
+                srvDesc.Texture1DArray.ResourceMinLODClamp = 0;
+                srvDesc.Texture1DArray.ArraySize = layerCount;
+                srvDesc.Texture1DArray.FirstArraySlice = baseLayer;
+                break;
+            case D3D12_SRV_DIMENSION_TEXTURE2D:
+                srvDesc.Texture2D.MostDetailedMip = baseMip;
+                srvDesc.Texture2D.MipLevels = mipCount;
+                srvDesc.Texture2D.ResourceMinLODClamp = 0;
+                srvDesc.Texture2D.PlaneSlice = 0;
+                break;
+            case D3D12_SRV_DIMENSION_TEXTURE2DARRAY:
+                srvDesc.Texture2DArray.MostDetailedMip = baseMip;
+                srvDesc.Texture2DArray.MipLevels = mipCount;
+                srvDesc.Texture2DArray.ResourceMinLODClamp = 0;
+                srvDesc.Texture2DArray.ArraySize = layerCount;
+                srvDesc.Texture2DArray.FirstArraySlice = baseLayer;
+                break;
+            case D3D12_SRV_DIMENSION_TEXTURE2DMS:
+                break;
+            case D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY:
+                srvDesc.Texture2DMSArray.ArraySize = layerCount;
+                srvDesc.Texture2DMSArray.FirstArraySlice = baseLayer;
+                break;
+            case D3D12_SRV_DIMENSION_TEXTURE3D:
+                srvDesc.Texture3D.MostDetailedMip = baseMip;
+                srvDesc.Texture3D.MipLevels = mipCount;
+                srvDesc.Texture3D.ResourceMinLODClamp = 0;
+                break;
+            case D3D12_SRV_DIMENSION_TEXTURECUBE:
+                srvDesc.TextureCube.MostDetailedMip = baseMip;
+                srvDesc.TextureCube.MipLevels = mipCount;
+                srvDesc.TextureCube.ResourceMinLODClamp = 0;
+                break;
+            case D3D12_SRV_DIMENSION_TEXTURECUBEARRAY:
+                srvDesc.TextureCubeArray.MostDetailedMip = baseMip;
+                srvDesc.TextureCubeArray.MipLevels = mipCount;
+                srvDesc.TextureCubeArray.ResourceMinLODClamp = 0;
+                srvDesc.TextureCubeArray.NumCubes = layerCount/6;
+                srvDesc.TextureCubeArray.First2DArrayFace = baseLayer;
+                break;
+            }
+            _device->CreateShaderResourceView(dxTexture->dx12Handle(),&srvDesc,handle);
+        }
+
+        void DX12GraphicsCard::writeReadWriteTextureDescriptor(Texture* texture, uint32_t mip, uint32_t baseLayer,
+            uint32_t layerCount, void* destination)
+        {
+            SLAG_ASSERT(texture->type() != TextureType::CUBE_MAP && "Unordered access textures cannot be cube maps");
+            auto dxTexture = static_cast<DX12Texture*>(texture);
+            D3D12_CPU_DESCRIPTOR_HANDLE handle((size_t)destination);
+            D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
+            uavDesc.Format = DX12Backend::nativeFormat(dxTexture->format());
+            uavDesc.ViewDimension = DX12Backend::nativeUAVTextureDimension(dxTexture->type(),dxTexture->layers(),dxTexture->sampleCount());
+            switch (uavDesc.ViewDimension)
+            {
+            case D3D12_UAV_DIMENSION_TEXTURE1D:
+                uavDesc.Texture1D.MipSlice = mip;
+                break;
+            case D3D12_UAV_DIMENSION_TEXTURE1DARRAY:
+                uavDesc.Texture1DArray.MipSlice = mip;
+                uavDesc.Texture1DArray.ArraySize = layerCount;
+                uavDesc.Texture1DArray.FirstArraySlice = baseLayer;
+                break;
+            case D3D12_UAV_DIMENSION_TEXTURE2D:
+                uavDesc.Texture2D.MipSlice = mip;
+                uavDesc.Texture2D.PlaneSlice = 0;
+                break;
+            case D3D12_UAV_DIMENSION_TEXTURE2DARRAY:
+                uavDesc.Texture2DArray.MipSlice = mip;
+                uavDesc.Texture2DArray.ArraySize = layerCount;
+                uavDesc.Texture2DArray.FirstArraySlice = baseLayer;
+                break;
+            case D3D12_UAV_DIMENSION_TEXTURE2DMS:
+                break;
+            case D3D12_UAV_DIMENSION_TEXTURE2DMSARRAY:
+                uavDesc.Texture2DMSArray.ArraySize = layerCount;
+                uavDesc.Texture2DMSArray.FirstArraySlice = baseLayer;
+                break;
+            case D3D12_UAV_DIMENSION_TEXTURE3D:
+                uavDesc.Texture3D.MipSlice = mip;
+                uavDesc.Texture3D.FirstWSlice = baseLayer;
+                uavDesc.Texture3D.WSize = layerCount;
+                break;
+            }
+            _device->CreateUnorderedAccessView(dxTexture->dx12Handle(),nullptr,&uavDesc,handle);
+        }
+
+        void DX12GraphicsCard::writeSamplerDescriptor(Sampler* sampler, void* destination)
+        {
+            auto dxSampler = static_cast<DX12Sampler*>(sampler);
+            D3D12_CPU_DESCRIPTOR_HANDLE handle((size_t)destination);
+
+            _device->CreateSampler(&dxSampler->dx12Desc(),handle);
         }
 
         Texture* DX12GraphicsCard::newTexture1D(uint32_t width, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels,uint32_t arrayDepth)

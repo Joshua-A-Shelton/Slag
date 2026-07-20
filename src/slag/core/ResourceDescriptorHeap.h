@@ -15,23 +15,7 @@ namespace slag
         virtual GraphicsCard* graphicsCard()=0;
         virtual uint64_t size()=0;
 
-        /**
-         * Set a descriptor in the heap for a uniform texture
-         * @param heapOffset Byte offset into the heap to set the texture descriptor
-         * @param texture The texture to set
-         * @param baseMip Lowest accessible mip that can be sampled (useful for streaming in higher resolution texture mips)
-         * @param mipCount Number of mip levels of the texture that are accessible
-         * @param baseLayer Lowest accessible layer that can be sampled
-         * @param layerCount Number of layers of the texture that are accessible
-         */
-        virtual void setUniformTexture(uint64_t heapOffset, Texture* texture, uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount)=0;
-        virtual void setUnorderedAccessTexture(uint64_t heapOffset, Texture* texture, uint32_t mip, uint32_t baseLayer, uint32_t layerCount)=0;
-        virtual void setUniformBuffer(uint64_t heapOffset, Buffer* buffer, uint32_t offset, uint32_t length)=0;
-        virtual void setStorageBuffer(uint64_t heapOffset, Buffer* buffer, uint64_t firstElementIndex, uint64_t elementCount, uint64_t elementStride)=0;
-        virtual void setUniformTexelBuffer(uint64_t heapOffset, Buffer* buffer, PixelFormat format, uint64_t offset, uint64_t length)=0;
-        virtual void setStorageTexelBuffer(uint64_t heapOffset, Buffer* buffer, PixelFormat format, uint64_t offset, uint64_t length)=0;
-
-        virtual void* pointer()=0;
+        virtual void* data()=0;
         virtual uint64_t deviceAddress()=0;
     };
 }

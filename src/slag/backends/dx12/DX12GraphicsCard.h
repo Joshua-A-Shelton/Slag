@@ -61,6 +61,14 @@ namespace slag
 
             [[nodiscard]] SamplerDescriptorHeap* newSamplerDescriptorHeap(uint32_t descriptorCount)override;
 
+            void writeUniformBufferDescriptor(Buffer* buffer, uint64_t offset, uint64_t length, void* destination)override;
+            void writeReadWriteBufferDescriptor(Buffer* buffer, uint64_t firstElementIndex,uint64_t elementCount, uint64_t elementStride, void* destination)override;
+            void writeUniformTexelBuffer(Buffer* buffer, PixelFormat format, uint64_t firstElementIndex, uint64_t elementCount, void* destination)override;
+            void writeReadWriteTexelBuffer(Buffer* buffer, PixelFormat format, uint64_t firstElementIndex, uint64_t elementCount, void* destination)override;
+            void writeUniformTextureDescriptor(Texture* texture, uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount, void* destination)override;
+            void writeReadWriteTextureDescriptor(Texture* texture, uint32_t mip, uint32_t baseLayer, uint32_t layerCount, void* destination)override;
+            void writeSamplerDescriptor(Sampler* sampler, void* destination)override;
+
             //Textures
             [[nodiscard]] Texture* newTexture1D(
             uint32_t width,

@@ -20,14 +20,8 @@ namespace slag
             
             GraphicsCard* graphicsCard()override;
             uint64_t size()override;
-            void* pointer() override;
+            void* data() override;
             uint64_t deviceAddress() override;
-            void setUniformTexture(uint64_t heapOffset, Texture* texture, uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount)override;
-            void setUnorderedAccessTexture(uint64_t heapOffset, Texture* texture, uint32_t mip, uint32_t baseLayer, uint32_t layerCount)override;
-            void setUniformBuffer(uint64_t heapOffset, Buffer* buffer, uint32_t offset, uint32_t length)override;
-            void setStorageBuffer(uint64_t heapOffset, Buffer* buffer, uint64_t firstElementIndex, uint64_t elementCount, uint64_t elementStride)override;
-            void setUniformTexelBuffer(uint64_t heapOffset, Buffer* buffer, PixelFormat format, uint64_t offset, uint64_t length)override;
-            void setStorageTexelBuffer(uint64_t heapOffset, Buffer* buffer, PixelFormat format, uint64_t offset, uint64_t length)override;
 
             ID3D12DescriptorHeap* dx12Handle() const;
         private:

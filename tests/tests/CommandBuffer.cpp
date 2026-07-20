@@ -289,12 +289,15 @@ TEST(CommandBuffer, Draw)
     auto resourceHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
     auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
 
-    auto heapDetails = graphicsCard->descriptorHeapDetails();
-    resourceHeap->setUniformBuffer(0,globalsBuffer.get(),0,globalsBuffer->size());
-    resourceHeap->setUniformBuffer(heapDetails.textureDescriptorSize,instanceBuffer.get(),0,instanceBuffer->size());
-    resourceHeap->setUniformTexture(heapDetails.textureDescriptorSize*2,instanceTexture.get(),0,1,0,1);
+    auto resourceHeapPtr = (unsigned char*)resourceHeap->data();
+    auto samplerHeapPtr = (unsigned char*)samplerHeap->data();
 
-    samplerHeap->setSampler(0,sampler.get());
+    auto heapDetails = graphicsCard->descriptorHeapDetails();
+
+    graphicsCard->writeUniformBufferDescriptor(globalsBuffer.get(),0,globalsBuffer->size(),resourceHeapPtr);
+    graphicsCard->writeUniformBufferDescriptor(instanceBuffer.get(),0,instanceBuffer->size(),resourceHeapPtr+heapDetails.textureDescriptorSize);
+    graphicsCard->writeUniformTextureDescriptor(instanceTexture.get(),0,1,0,1,resourceHeapPtr+heapDetails.textureDescriptorSize*2);
+    graphicsCard->writeSamplerDescriptor(sampler.get(),samplerHeapPtr);
 
     commandBuffer->begin();
 
@@ -456,12 +459,15 @@ TEST(CommandBuffer, DrawIndexed)
     auto resourceHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
     auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
 
-    auto heapDetails = graphicsCard->descriptorHeapDetails();
-    resourceHeap->setUniformBuffer(0,globalsBuffer.get(),0,globalsBuffer->size());
-    resourceHeap->setUniformBuffer(heapDetails.textureDescriptorSize,instanceBuffer.get(),0,instanceBuffer->size());
-    resourceHeap->setUniformTexture(heapDetails.textureDescriptorSize*2,instanceTexture.get(),0,1,0,1);
+    auto resourceHeapPtr = (unsigned char*)resourceHeap->data();
+    auto samplerHeapPtr = (unsigned char*)samplerHeap->data();
 
-    samplerHeap->setSampler(0,sampler.get());
+    auto heapDetails = graphicsCard->descriptorHeapDetails();
+
+    graphicsCard->writeUniformBufferDescriptor(globalsBuffer.get(),0,globalsBuffer->size(),resourceHeapPtr);
+    graphicsCard->writeUniformBufferDescriptor(instanceBuffer.get(),0,instanceBuffer->size(),resourceHeapPtr+heapDetails.textureDescriptorSize);
+    graphicsCard->writeUniformTextureDescriptor(instanceTexture.get(),0,1,0,1,resourceHeapPtr+heapDetails.textureDescriptorSize*2);
+    graphicsCard->writeSamplerDescriptor(sampler.get(),samplerHeapPtr);
 
     commandBuffer->begin();
 
@@ -582,8 +588,10 @@ TEST(CommandBuffer, Dispatch)
     auto parallelAdd = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(&computeModule.details));
     auto resourceHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
     auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+    auto resourceHeapPtr = (unsigned char*)resourceHeap->data();
+    auto samplerHeapPtr = (unsigned char*)samplerHeap->data();
     auto heapDetails = graphicsCard->descriptorHeapDetails();
-    auto descriptorSize = heapDetails.textureDescriptorSize;
+    auto descriptorSize = std::max(heapDetails.textureDescriptorSize,heapDetails.bufferDescriptorSize);
 
 
 
@@ -600,9 +608,9 @@ TEST(CommandBuffer, Dispatch)
         resultsPtr[i] = 0.0f;
     }
 
-    resourceHeap->setStorageBuffer(0,buffer1.get(),0,100,sizeof(uint32_t));
-    resourceHeap->setStorageBuffer(descriptorSize,buffer2.get(),0,100,sizeof(uint32_t));
-    resourceHeap->setStorageBuffer(descriptorSize*2,results.get(),0,100,sizeof(uint32_t));
+    graphicsCard->writeReadWriteBufferDescriptor(buffer1.get(),0,100,sizeof(uint32_t),resourceHeapPtr);
+    graphicsCard->writeReadWriteBufferDescriptor(buffer2.get(),0,100,sizeof(uint32_t),resourceHeapPtr+descriptorSize);
+    graphicsCard->writeReadWriteBufferDescriptor(results.get(),0,100,sizeof(uint32_t),resourceHeapPtr+descriptorSize*2);
 
     commandBuffer->begin();
     commandBuffer->bindDescriptorHeaps(resourceHeap.get(),samplerHeap.get());
@@ -632,11 +640,8 @@ TEST(CommandBuffer, Dispatch)
 
     for (uint32_t i = 0;i < 100;i++)
     {
-        std::cout << resultsPtr[i] << std::endl;
-        //ASSERT_EQ(resultsPtr[i],i+(i*i));
+        ASSERT_EQ(resultsPtr[i],i+(i*i));
     }
-
-    GTEST_FAIL();
 }
 
 TEST(CommandBuffer, DispatchBase)

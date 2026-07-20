@@ -19,9 +19,8 @@ namespace slag
             VulkanSamplerDescriptorHeap& operator=(VulkanSamplerDescriptorHeap&& from) noexcept;
             GraphicsCard* graphicsCard() override;
             [[nodiscard]] uint64_t size()override;
-            void* pointer() override;
+            void* data() override;
             uint64_t deviceAddress() override;
-            void setSampler(uint64_t heapOffset, Sampler* sampler) override;
             [[nodiscard]] VkDeviceAddress deviceAddress() const;
 
             [[nodiscard]] uint64_t reserved() const;

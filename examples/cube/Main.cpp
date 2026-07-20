@@ -113,7 +113,7 @@ int main()
 {
      auto result = slag::Slag::initialize(slag::InitializationData
     {
-        .backend = slag::BackendAPI::DX12,
+        .backend = slag::BackendAPI::VULKAN,
         .customBackend = nullptr,
         .debugHandler = graphicsDebug
     });
@@ -261,6 +261,9 @@ int main()
     auto resourceHeap = graphicsCard->newResourceDescriptorHeap(100000);
     auto samplerHeap = graphicsCard->newSamplerDescriptorHeap(100);
 
+    auto resourceHeapPtr = (unsigned char*) resourceHeap->data();
+    auto samplerHeapPtr = (unsigned char*) samplerHeap->data();
+
 
     slag::Semaphore* commandsFinished = nullptr;
     slag::CommandBuffer* commandBuffer = graphicsCard->newCommandBuffer(slag::QueueType::GRAPHICS);
@@ -390,10 +393,11 @@ int main()
             commandBuffer->bindIndexBuffer(cubeIndices,IndexBufferType::UINT_16,0);
             commandBuffer->bindShaderPipeline(pipeline);
 
-            resourceHeap->setUniformBuffer(0,globals,0,globals->size());
-            resourceHeap->setUniformBuffer(descriptorDetails.textureDescriptorSize,transform,0,transform->size());
-            resourceHeap->setUniformTexture(2 * descriptorDetails.textureDescriptorSize,texture,0,1,0,1);
-            samplerHeap->setSampler(0,sampler);
+
+            graphicsCard->writeUniformBufferDescriptor(globals,0,globals->size(),resourceHeapPtr);
+            graphicsCard->writeUniformBufferDescriptor(transform,0,transform->size(),resourceHeapPtr+descriptorDetails.textureDescriptorSize);
+            graphicsCard->writeUniformTextureDescriptor(texture,0,1,0,1,resourceHeapPtr+(descriptorDetails.textureDescriptorSize*2));
+            graphicsCard->writeSamplerDescriptor(sampler,samplerHeapPtr);
 
             uint32_t globalIndex = 0;
             uint32_t instanceIndex = 1;

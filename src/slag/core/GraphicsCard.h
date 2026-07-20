@@ -178,6 +178,69 @@ namespace slag
          */
         [[nodiscard]] virtual SamplerDescriptorHeap* newSamplerDescriptorHeap(uint32_t descriptorCount)=0;
 
+
+        /**
+         * Write a read-write buffer descriptor to a location
+         * @param buffer The buffer to write the descriptor for
+         * @param offset Offset into the buffer that is accessible from the GPU
+         * @param length Length of the buffer that is accessible from the GPU
+         * @param destination Location to write the descriptor to
+         */
+        virtual void writeUniformBufferDescriptor(Buffer* buffer, uint64_t offset, uint64_t length, void* destination)=0;
+        /**
+        * Write a uniform buffer descriptor to a location
+        * @param buffer The buffer to write the descriptor for
+        * @param firstElementIndex Index of the first element in the buffer
+        * @param elementCount Number of elements accessible in the buffer
+        * @param elementStride Size of each element in the buffer
+        * @param destination Location to write the descriptor to
+        */
+        virtual void writeReadWriteBufferDescriptor(Buffer* buffer, uint64_t firstElementIndex,uint64_t elementCount, uint64_t elementStride, void* destination)=0;
+        /**
+         * Write a uniform texel buffer descriptor to a location
+         * @param buffer The buffer to write the descriptor for
+         * @param format Format of the texel buffer
+         * @param firstElementIndex Offset into the buffer that is accessible from the GPU
+         * @param elementCount Length of the buffer that is accessible from the GPU
+         * @param destination Location to write the descriptor to
+         */
+        virtual void writeUniformTexelBuffer(Buffer* buffer, PixelFormat format, uint64_t firstElementIndex, uint64_t elementCount, void* destination)=0;
+        /**
+         * Write a read-write texel buffer descriptor to a location
+         * @param buffer The buffer to write the descriptor for
+         * @param format Format of the texel buffer
+         * @param firstElementIndex Offset into the buffer that is accessible from the GPU
+         * @param elementCount Length of the buffer that is accessible from the GPU
+         * @param destination Location to write the descriptor to
+         */
+        virtual void writeReadWriteTexelBuffer(Buffer* buffer, PixelFormat format, uint64_t firstElementIndex, uint64_t elementCount, void* destination)=0;
+        /**
+         * Write a uniform texture descriptor to a location
+         * @param texture The texture to write the descriptor for
+         * @param baseMip Base mip level of the texture to write the descriptor for
+         * @param mipCount Number of mip levels to write the descriptor for
+         * @param baseLayer Base layer of the texture to write the descriptor for
+         * @param layerCount Number of layers to write the descriptor for
+         * @param destination Location to write the descriptor to
+         */
+        virtual void writeUniformTextureDescriptor(Texture* texture, uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount, void* destination)=0;
+        /**
+         * Write a read-write texture descriptor to a location
+         * @param texture The texture to write the descriptor for
+         * @param mip Mip level of the texture to write the descriptor for
+         * @param baseLayer Base layer of the texture to write the descriptor for
+         * @param layerCount Number of layers to write the descriptor for
+         * @param destination Location to write the descriptor to
+         */
+        virtual void writeReadWriteTextureDescriptor(Texture* texture, uint32_t mip, uint32_t baseLayer, uint32_t layerCount, void* destination)=0;
+        /**
+         * Write a sampler descriptor to a location
+         * @param sampler The sampler to write the descriptor for
+         * @param destination Location to write the descriptor to
+         */
+        virtual void writeSamplerDescriptor(Sampler* sampler, void* destination)=0;
+
+
         //Textures
 
         /**

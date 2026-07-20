@@ -490,6 +490,175 @@ namespace slag
             return new VulkanSamplerDescriptorHeap(this,descriptorCount);
         }
 
+        void VulkanGraphicsCard::writeUniformBufferDescriptor(Buffer* buffer, uint64_t offset, uint64_t length,
+            void* destination)
+        {
+            SLAG_ASSERT(buffer->memoryType() == BufferMemoryType::UNIFORM && "Only uniform buffers can be bound for uniform buffer descriptors");
+            auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
+            VkHostAddressRangeEXT hostAddressRange{.address = destination, .size = _descriptorHeapDetails.bufferDescriptorSize};
+
+            VkResourceDescriptorInfoEXT resourceDescriptorInfo{
+                .sType = VK_STRUCTURE_TYPE_RESOURCE_DESCRIPTOR_INFO_EXT,
+                .pNext = nullptr,
+                .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            };
+            VkDeviceAddressRangeEXT rangeInfo
+            {
+                .address = vulkanBuffer->deviceAddress() + offset,
+                .size = length,
+            };
+            resourceDescriptorInfo.data.pAddressRange = &rangeInfo;
+
+            vkWriteResourceDescriptors(_device,1,&resourceDescriptorInfo,&hostAddressRange);
+        }
+
+        void VulkanGraphicsCard::writeReadWriteBufferDescriptor(Buffer* buffer, uint64_t firstElementIndex,uint64_t elementCount, uint64_t elementStride, void* destination)
+        {
+            auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
+            VkHostAddressRangeEXT hostAddressRange{.address = destination, .size = _descriptorHeapDetails.bufferDescriptorSize};
+
+            VkResourceDescriptorInfoEXT resourceDescriptorInfo{
+                .sType = VK_STRUCTURE_TYPE_RESOURCE_DESCRIPTOR_INFO_EXT,
+                .pNext = nullptr,
+                .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            };
+            VkDeviceAddressRangeEXT rangeInfo
+            {
+                .address = vulkanBuffer->deviceAddress() + (firstElementIndex * elementStride),
+                .size = elementCount*elementStride,
+            };
+            resourceDescriptorInfo.data.pAddressRange = &rangeInfo;
+
+            vkWriteResourceDescriptors(_device,1,&resourceDescriptorInfo,&hostAddressRange);
+        }
+
+        void VulkanGraphicsCard::writeUniformTexelBuffer(Buffer* buffer, PixelFormat format, uint64_t firstElementIndex,
+                                                         uint64_t elementCount, void* destination)
+        {
+            SLAG_ASSERT(buffer->memoryType() == BufferMemoryType::UNIFORM && "Only uniform buffers can be bound for uniform texel buffer descriptors");
+            SLAG_ASSERT(Pixel::aspectFlags(format) == PixelAspectFlags::COLOR_FLAG && "Only color pixel formats can be used for texel buffer descriptors");
+            auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
+            VkHostAddressRangeEXT hostAddressRange{.address = destination, .size = _descriptorHeapDetails.bufferDescriptorSize};
+            auto pixelSize = Pixel::aspectSize(format,PixelAspect::COLOR);
+
+            VkResourceDescriptorInfoEXT resourceDescriptorInfo{
+                .sType = VK_STRUCTURE_TYPE_RESOURCE_DESCRIPTOR_INFO_EXT,
+                .pNext = nullptr,
+                .type = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
+            };
+            VkTexelBufferDescriptorInfoEXT texelBufferInfo
+            {
+                .sType = VK_STRUCTURE_TYPE_TEXEL_BUFFER_DESCRIPTOR_INFO_EXT,
+                .pNext = nullptr,
+                .format = VulkanBackend::nativeFormat(format).format,
+                .addressRange =
+                {
+                    .address = vulkanBuffer->deviceAddress() + (firstElementIndex * pixelSize),
+                    .size = elementCount * pixelSize,
+                }
+            };
+
+            resourceDescriptorInfo.data.pTexelBuffer = &texelBufferInfo;
+
+            vkWriteResourceDescriptors(_device,1,&resourceDescriptorInfo,&hostAddressRange);
+        }
+
+        void VulkanGraphicsCard::writeReadWriteTexelBuffer(Buffer* buffer, PixelFormat format, uint64_t firstElementIndex,
+                                                           uint64_t elementCount, void* destination)
+        {
+            SLAG_ASSERT(Pixel::aspectFlags(format) == PixelAspectFlags::COLOR_FLAG && "Only color pixel formats can be used for texel buffer descriptors");
+            auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
+            VkHostAddressRangeEXT hostAddressRange{.address = destination, .size = _descriptorHeapDetails.bufferDescriptorSize};
+            auto pixelSize = Pixel::aspectSize(format,PixelAspect::COLOR);
+
+            VkResourceDescriptorInfoEXT resourceDescriptorInfo{
+                .sType = VK_STRUCTURE_TYPE_RESOURCE_DESCRIPTOR_INFO_EXT,
+                .pNext = nullptr,
+                .type = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
+            };
+            VkTexelBufferDescriptorInfoEXT texelBufferInfo
+            {
+                .sType = VK_STRUCTURE_TYPE_TEXEL_BUFFER_DESCRIPTOR_INFO_EXT,
+                .pNext = nullptr,
+                .format = VulkanBackend::nativeFormat(format).format,
+                .addressRange =
+                {
+                    .address = vulkanBuffer->deviceAddress() + (firstElementIndex * pixelSize),
+                    .size = elementCount * pixelSize,
+                }
+            };
+
+            resourceDescriptorInfo.data.pTexelBuffer = &texelBufferInfo;
+
+            vkWriteResourceDescriptors(_device,1,&resourceDescriptorInfo,&hostAddressRange);
+        }
+
+        void VulkanGraphicsCard::writeUniformTextureDescriptor(Texture* texture, uint32_t baseMip, uint32_t mipCount,
+            uint32_t baseLayer, uint32_t layerCount, void* destination)
+        {
+            auto vulkanTexture = static_cast<VulkanTexture*>(texture);
+            VkHostAddressRangeEXT hostAddressRange{.address = destination, .size = _descriptorHeapDetails.textureDescriptorSize};
+
+            VkResourceDescriptorInfoEXT resourceDescriptorInfo{
+                .sType = VK_STRUCTURE_TYPE_RESOURCE_DESCRIPTOR_INFO_EXT,
+                .pNext = nullptr,
+                .type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+            };
+
+
+            auto descriptorInfo = vulkanTexture->descriptorInfo();
+            descriptorInfo.subresourceRange.baseMipLevel = baseMip;
+            descriptorInfo.subresourceRange.levelCount = mipCount;
+            descriptorInfo.subresourceRange.baseArrayLayer = baseLayer;
+            descriptorInfo.subresourceRange.layerCount = layerCount;
+            VkImageDescriptorInfoEXT imageInfo
+            {
+                .sType = VK_STRUCTURE_TYPE_IMAGE_DESCRIPTOR_INFO_EXT,
+                .pNext = nullptr,
+                .pView = &descriptorInfo,
+                .layout = VK_IMAGE_LAYOUT_GENERAL,
+            };
+            resourceDescriptorInfo.data.pImage = &imageInfo;
+
+            vkWriteResourceDescriptors(_device,1,&resourceDescriptorInfo,&hostAddressRange);
+        }
+
+        void VulkanGraphicsCard::writeReadWriteTextureDescriptor(Texture* texture, uint32_t mip,
+            uint32_t baseLayer, uint32_t layerCount, void* destination)
+        {
+            auto vulkanTexture = static_cast<VulkanTexture*>(texture);
+            VkHostAddressRangeEXT hostAddressRange{.address = destination, .size = _descriptorHeapDetails.textureDescriptorSize};
+
+            VkResourceDescriptorInfoEXT resourceDescriptorInfo{
+                .sType = VK_STRUCTURE_TYPE_RESOURCE_DESCRIPTOR_INFO_EXT,
+                .pNext = nullptr,
+                .type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            };
+            auto descriptorInfo = vulkanTexture->descriptorInfo();
+            descriptorInfo.subresourceRange.baseMipLevel = mip;
+            descriptorInfo.subresourceRange.levelCount = 1;
+            descriptorInfo.subresourceRange.baseArrayLayer = baseLayer;
+            descriptorInfo.subresourceRange.layerCount = layerCount;
+            VkImageDescriptorInfoEXT imageInfo
+            {
+                .sType = VK_STRUCTURE_TYPE_IMAGE_DESCRIPTOR_INFO_EXT,
+                .pNext = nullptr,
+                .pView = &descriptorInfo,
+                .layout = VK_IMAGE_LAYOUT_GENERAL,
+            };
+            resourceDescriptorInfo.data.pImage = &imageInfo;
+
+            vkWriteResourceDescriptors(_device,1,&resourceDescriptorInfo,&hostAddressRange);
+        }
+
+        void VulkanGraphicsCard::writeSamplerDescriptor(Sampler* sampler, void* destination)
+        {
+            auto vulkanSampler = static_cast<VulkanSampler*>(sampler);
+            auto vulkanHandle = vulkanSampler->vulkanHandle();
+            VkHostAddressRangeEXT hostAddressRange{.address = destination, .size = _descriptorHeapDetails.samplerDescriptorSize};
+            vkWriteSamplerDescriptors(_device,1,&vulkanHandle,&hostAddressRange);
+        }
+
         Texture* VulkanGraphicsCard::newTexture1D(uint32_t width, PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels, uint32_t layers)
         {
             return new VulkanTexture(this,width,format,usage,mipLevels,layers);
