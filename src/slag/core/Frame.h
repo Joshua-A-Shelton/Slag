@@ -7,6 +7,7 @@ namespace slag
     {
     public:
         virtual ~Frame() = default;
+        ///The texture that is presented when SwapChain::present is called
         [[nodiscard]] virtual Texture* renderBuffer()=0;
 
     };

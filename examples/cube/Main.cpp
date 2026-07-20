@@ -111,9 +111,42 @@ slag::Texture* loadTexture(std::filesystem::path const& path, slag::GraphicsCard
 
 int main()
 {
+
+    BackendAPI backend = BackendAPI::VULKAN;
+
+#ifdef SLAG_DX12_BACKEND
+    backend = BackendAPI::DX12;
+#endif
+
+#ifdef SLAG_VULKAN_BACKEND
+#ifdef SLAG_DX12_BACKEND
+#endif
+    int number = -1;
+    while (number != 1 && number != 2)
+    {
+        std::cout << "Pick a backend:\n1) Vulkan\n2) DirectX 12" << std::endl;
+        if (std::cin >> number)
+        {
+            if (number == 1)
+            {
+                backend = BackendAPI::VULKAN;
+            }
+            else if (number == 2)
+            {
+                backend = BackendAPI::DX12;
+            }
+        }
+        else
+        {
+            std::cout << "Invalid input" << std::endl;
+            return 1;
+        }
+    }
+#endif
+
      auto result = slag::Slag::initialize(slag::InitializationData
     {
-        .backend = slag::BackendAPI::VULKAN,
+        .backend = backend,
         .customBackend = nullptr,
         .debugHandler = graphicsDebug
     });
@@ -433,6 +466,7 @@ int main()
             commandsFinished->waitForValue(1);
             swapChain->present();
         }
+        std::cout << "frame time: " << delta << "\n";
     }
     commandsFinished->waitForValue(1);
     delete commandsFinished;

@@ -109,7 +109,7 @@ namespace slag
             return *this;
         }
 
-        void* DX12Buffer::pointer() const
+        void* DX12Buffer::data() const
         {
             SLAG_ASSERT(cpuAccess()!=BufferCPUAccess::NONE && "Attempted to access cpu handle of inaccessible buffer");
             return _cpuHandle;

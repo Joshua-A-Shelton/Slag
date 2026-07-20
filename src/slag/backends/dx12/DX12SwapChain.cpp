@@ -49,6 +49,8 @@ namespace slag
             {
                 throw InvalidSwapChainOperation("Present must be called before calling next again");
             }
+            auto wait = _swapChain->GetFrameLatencyWaitableObject();
+            DWORD result = WaitForSingleObjectEx(wait,1000,true);
             _presentRequired = true;
             return &_frames[_swapChain->GetCurrentBackBufferIndex()];
         }
@@ -64,7 +66,7 @@ namespace slag
             {
                 throw InvalidSwapChainOperation("Next must be called before present");
             }
-            _swapChain->Present(1,0);
+            _swapChain->Present(0,0);
             _presentRequired = false;
         }
 
@@ -110,16 +112,35 @@ namespace slag
             swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
             swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-            //TODO: I should allow/ disallow tearing if vsync is enabled
-            swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+
+            if (_parameters.presentMode == PresentMode::IMMEDIATE)
+            {
+                swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+            }
+
+            swapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 
             Microsoft::WRL::ComPtr<IDXGISwapChain1> swapChain1;
-            //TODO: I apparently cant use sRGB formats for swapchain images, I think I need to force non sRGB as the image type, and use sRGB format as render target? see bottom of accepted answer on https://gamedev.stackexchange.com/questions/149822/direct3d-12-cant-create-a-swap-chain
+            //TODO: I apparently can't use sRGB formats for swapchain images, I think I need to force non sRGB as the image type, and use sRGB format as render target? see bottom of accepted answer on https://gamedev.stackexchange.com/questions/149822/direct3d-12-cant-create-a-swap-chain
             _graphicsCard->dxgiFactory()->CreateSwapChainForHwnd(static_cast<DX12SubmissionQueue*>(_graphicsCard->graphicsQueue())->dx12Handle(),_window,&swapChainDesc, nullptr, nullptr,&swapChain1);
             //this is the reason we have to wrap the swapchain in the ComPtr, I don't know how to do this without it
             swapChain1.As(&_swapChain);
 
-            _swapChain->SetMaximumFrameLatency(1);
+            if (_parameters.presentMode == PresentMode::QUEUE)
+            {
+                if (_parameters.imageCount > 1)
+                {
+                    _swapChain->SetMaximumFrameLatency(_parameters.imageCount-1);
+                }
+                else
+                {
+                    _swapChain->SetMaximumFrameLatency(1);
+                }
+            }
+            else
+            {
+                _swapChain->SetMaximumFrameLatency(1);
+            }
 
             _frames.clear();
             for(int i=0; i< _parameters.imageCount; i++)
