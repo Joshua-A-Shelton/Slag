@@ -3,40 +3,6 @@
 #include "../utilities/PlatformUtilities.h"
 using namespace slag;
 
-//Some compilers (like slangc) may treat matrices as structs of 4 vector4s, we'll allow it
-bool is4x4MatrixType(const StructMember& member)
-{
-    if (member.type()==GraphicsType::MATRIX_4X4)
-    {
-        return true;
-    }
-    else if (member.type()==GraphicsType::STRUCT)
-    {
-        if (member.childCount() == 1)
-        {
-            auto& child = member.child(0);
-            if (child.type() == GraphicsType::VECTOR4 && child.arrayLength()==4)
-            {
-                return true;
-            }
-        }
-        else if (member.childCount()==4)
-        {
-            bool uniformChildren = true;
-            for (auto i=0; i < member.childCount(); i++)
-            {
-                if (member.child(i).type() != GraphicsType::VECTOR4)
-                {
-                    uniformChildren = false;
-                }
-            }
-            return uniformChildren;
-        }
-    }
-    return false;
-}
-
-
 TEST(ShaderCode, VertexShader)
 {
     auto card = Slag::backend()->graphicsCard(0);
@@ -124,6 +90,11 @@ TEST(ShaderCode, SamplerReflection)
 }
 
 TEST(ShaderCode, AccelerationStructureReflection)
+{
+    GTEST_FAIL();
+}
+
+TEST(ShaderCode, DescriptorTypes)
 {
     GTEST_FAIL();
 }

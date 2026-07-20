@@ -351,7 +351,7 @@ namespace slag
 
         VkBufferUsageFlagBits2 VulkanBackend::nativeBufferUsage(BufferMemoryType access)
         {
-            VkBufferUsageFlagBits2 bufferUsage = VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_2_TRANSFER_DST_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR;
+            VkBufferUsageFlagBits2 bufferUsage = VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_2_TRANSFER_DST_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR | VK_BUFFER_USAGE_2_INDIRECT_BUFFER_BIT;
             switch (access)
             {
             case BufferMemoryType::GENERAL:

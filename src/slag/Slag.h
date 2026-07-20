@@ -7,7 +7,6 @@
 #include "core/Clear.h"
 #include "core/CommandBuffer.h"
 #include "core/Defragmentation.h"
-#include "core/Descriptors.h"
 #include "core/Dimensions.h"
 #include "core/Frame.h"
 #include "core/GraphicsCard.h"

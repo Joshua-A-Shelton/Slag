@@ -3,8 +3,6 @@
 #include <cstdint>
 #include <vector>
 
-#include "Descriptors.h"
-
 namespace slag
 {
     enum class ShaderLanguage

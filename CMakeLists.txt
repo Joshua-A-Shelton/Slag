@@ -140,8 +140,6 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/Barriers.h
         src/slag/core/ShaderPipeline.h
         src/slag/core/ShaderCode.h
-        src/slag/core/Descriptors.cpp
-        src/slag/core/Descriptors.h
         src/slag/core/GraphicsTypes.h
         src/slag/exceptions/InvalidShaderCodeError.h
         src/slag/core/Operations.h
