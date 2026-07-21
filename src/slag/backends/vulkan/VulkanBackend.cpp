@@ -761,7 +761,7 @@ namespace slag
                 return VK_PRESENT_MODE_IMMEDIATE_KHR;
                 break;
             case PresentMode::BUFFER:
-                return VK_PRESENT_MODE_FIFO_KHR;
+                return VK_PRESENT_MODE_MAILBOX_KHR;
                 break;
             case PresentMode::QUEUE:
                 return VK_PRESENT_MODE_FIFO_KHR;

@@ -66,7 +66,10 @@ namespace slag
             {
                 throw InvalidSwapChainOperation("Next must be called before present");
             }
-            _swapChain->Present(0,0);
+            int flags = _parameters.presentMode == PresentMode::IMMEDIATE ? DXGI_PRESENT_ALLOW_TEARING : 0;
+            //TODO: not sure if this is correct, (it's likely not, but vulkan and dx12 are vastly different in presentation, it's hard to know what property controls what effect)
+            int syncInterval = _parameters.presentMode != PresentMode::IMMEDIATE && _parameters.imageCount < 2 ? 1 : 0;
+            _swapChain->Present(syncInterval,flags);
             _presentRequired = false;
         }
 

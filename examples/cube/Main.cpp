@@ -466,7 +466,6 @@ int main()
             commandsFinished->waitForValue(1);
             swapChain->present();
         }
-        std::cout << "frame time: " << delta << "\n";
     }
     commandsFinished->waitForValue(1);
     delete commandsFinished;
