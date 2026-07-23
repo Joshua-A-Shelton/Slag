@@ -1338,12 +1338,68 @@ TEST(CommandBuffer, Dispatch)
     }
 }
 
-TEST(CommandBuffer, DispatchBase)
+TEST(CommandBuffer, DispatchIndirect)
 {
-    GTEST_FAIL();
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::COMPUTE));
+    auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
+
+    auto computeModule = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/SetFromBase.compute");
+    auto parallelAdd = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(&computeModule.details));
+    auto resourceHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+    auto resourceHeapPtr = (unsigned char*)resourceHeap->data();
+    auto samplerHeapPtr = (unsigned char*)samplerHeap->data();
+    auto heapDetails = graphicsCard->descriptorHeapDetails();
+    auto descriptorSize = std::max(heapDetails.textureDescriptorSize,heapDetails.bufferDescriptorSize);
+
+
+
+    auto buffer1 = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t)*100,BufferCPUAccess::READ_WRITE,BufferMemoryType::GENERAL));
+    auto buffer1Ptr = buffer1->as<uint32_t>();
+
+    auto indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDispatchCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto indirectPtr = indirectBuffer->as<IndirectDispatchCommand>();
+    indirectPtr[0].groupCountX = 100;
+    indirectPtr[0].groupCountY = 1;
+    indirectPtr[0].groupCountZ = 1;
+
+    for(uint32_t i = 0;i < 100;i++)
+    {
+        buffer1Ptr[i] = 0;
+    }
+
+    graphicsCard->writeReadWriteBufferDescriptor(buffer1.get(),0,100,sizeof(uint32_t),resourceHeapPtr);
+
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorHeaps(resourceHeap.get(),samplerHeap.get());
+    uint32_t b1index = 0;
+    commandBuffer->setComputeShaderParameters(0,&b1index,sizeof(uint32_t));
+    commandBuffer->bindShaderPipeline(parallelAdd.get());
+    commandBuffer->dispatchIndirect(indirectBuffer.get(),0);
+
+    commandBuffer->end();
+    auto cmdBuffer = commandBuffer.get();
+    SemaphoreValue signal{.semaphore = finished.get(),.value = 1};
+    SubmissionBatch batch
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &cmdBuffer,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    graphicsCard->computeQueue()->submit(&batch,1);
+    finished->waitForValue(1);
+
+    for (uint32_t i = 0;i < 100;i++)
+    {
+        ASSERT_EQ(buffer1Ptr[i],i);
+    }
 }
 
-TEST(CommandBuffer, DispatchIndirect)
+TEST(CommandBuffer, Resolve)
 {
     GTEST_FAIL();
 }
@@ -1351,7 +1407,26 @@ TEST(CommandBuffer, DispatchIndirect)
 #ifdef SLAG_DEBUG
 TEST(CommandBuffer, TransferErrorComputeCommands)
 {
-    GTEST_FAIL();
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::TRANSFER));
+    auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+    auto computeModule = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/ParallelAdd.compute");
+    auto parallelAdd = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(&computeModule.details));
+    auto indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDispatchCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto indirectPtr = indirectBuffer->as<IndirectDispatchCommand>();
+    indirectPtr[0].groupCountX = 100;
+    indirectPtr[0].groupCountY = 1;
+    indirectPtr[0].groupCountZ = 1;
+
+    commandBuffer->begin();
+
+    EXPECT_DEATH(commandBuffer->bindDescriptorHeaps(descriptorHeap.get(),samplerHeap.get()), "Command Buffer cannot record commands outside it's capabilities");
+    int32_t index = 3;
+    EXPECT_DEATH(commandBuffer->setComputeShaderParameters(0,&index,sizeof(int32_t)), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->bindShaderPipeline(parallelAdd.get()), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->dispatch(1,1,1), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->dispatchIndirect(indirectBuffer.get(),0), "Command Buffer cannot record commands outside it's capabilities");
 }
 TEST(CommandBuffer, TransferErrorGraphicsCommands)
 {

@@ -50,7 +50,6 @@ namespace slag
             void drawIndexedIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer, uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)override;
             void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)override;
             void dispatchIndirect(Buffer* buffer, uint64_t offset)override;
-            void dispatchBase(uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)override;
 
             [[nodiscard]] ID3D12GraphicsCommandList7* dx12Handle() const;
 

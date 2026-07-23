@@ -186,14 +186,6 @@ namespace slag
             {
                 flags |= D3D12_BARRIER_ACCESS_UNORDERED_ACCESS;
             }
-            if (static_cast<bool>(caches & MemoryCaches::BLIT_READ))
-            {
-                flags |= D3D12_BARRIER_ACCESS_UNORDERED_ACCESS;
-            }
-            if (static_cast<bool>(caches & MemoryCaches::BLIT_WRITE))
-            {
-                flags |= D3D12_BARRIER_ACCESS_UNORDERED_ACCESS;
-            }
             if (static_cast<bool>(caches & MemoryCaches::COPY_READ))
             {
                 flags |= D3D12_BARRIER_ACCESS_COPY_SOURCE;

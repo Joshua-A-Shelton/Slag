@@ -444,14 +444,6 @@ namespace slag
             {
                 flags |= VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
             }
-            if (static_cast<bool>(caches & MemoryCaches::BLIT_READ))
-            {
-                flags |= VK_ACCESS_2_TRANSFER_READ_BIT;
-            }
-            if (static_cast<bool>(caches & MemoryCaches::BLIT_WRITE))
-            {
-                flags |= VK_ACCESS_2_TRANSFER_WRITE_BIT;
-            }
             if (static_cast<bool>(caches & MemoryCaches::COPY_READ))
             {
                 flags |= VK_ACCESS_2_TRANSFER_READ_BIT;

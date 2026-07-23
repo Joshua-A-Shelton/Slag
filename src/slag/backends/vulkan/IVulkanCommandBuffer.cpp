@@ -192,6 +192,8 @@ namespace slag
 
         void IVulkanCommandBuffer::bindDescriptorHeaps(ResourceDescriptorHeap* resourceHeap, SamplerDescriptorHeap* samplerHeap)
         {
+            SLAG_ASSERT(_type != QueueType::TRANSFER && "Command Buffer cannot record commands outside it's capabilities");
+
             if (resourceHeap)
             {
                 auto rHeap = static_cast<VulkanResourceDescriptorHeap*>(resourceHeap);
@@ -222,6 +224,7 @@ namespace slag
 
         void IVulkanCommandBuffer::setGraphicsShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
         {
+            SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
             SLAG_ASSERT(shaderDataOffset + dataSize < 128 && "Exceeded size of shader parameter data");
             SLAG_ASSERT(shaderDataOffset %4 == 0 && "Shader data offset must be aligned to 4 bytes");
             VkPushDataInfoEXT pushDataInfo
@@ -236,6 +239,7 @@ namespace slag
 
         void IVulkanCommandBuffer::setComputeShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
         {
+            SLAG_ASSERT(_type != QueueType::TRANSFER && "Command Buffer cannot record commands outside it's capabilities");
             SLAG_ASSERT(shaderDataOffset + dataSize < 128 && "Exceeded size of shader parameter data");
             SLAG_ASSERT(shaderDataOffset %4 == 0 && "Shader data offset must be aligned to 4 bytes");
             VkPushDataInfoEXT pushDataInfo
@@ -344,6 +348,7 @@ namespace slag
 
         void IVulkanCommandBuffer::bindShaderPipeline(ShaderPipeline* pipeline)
         {
+            SLAG_ASSERT(_type != QueueType::TRANSFER && "Command Buffer cannot record commands outside it's capabilities");
             auto vulkanPipeline = static_cast<VulkanShaderPipeline*>(pipeline);
             switch (vulkanPipeline->type())
             {
@@ -354,6 +359,7 @@ namespace slag
 #endif
                 break;
             case ShaderPipelineType::GRAPHICS:
+                SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
                 vkCmdBindPipeline(_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanPipeline->vulkanHandle());
 #ifdef SLAG_DEBUG
                 _boundPipelineType = BoundPipeLineType::GRAPHICS;
@@ -366,6 +372,7 @@ namespace slag
         void IVulkanCommandBuffer::beginRendering(Attachment* colorAttachments, uint32_t colorAttachmentCount,
                                                   Attachment* depthAttachment, const Rectangle& bounds)
         {
+            SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
             std::vector<VkRenderingAttachmentInfo> descriptions(colorAttachmentCount);
             for(auto i=0; i< colorAttachmentCount; i++)
             {
@@ -433,6 +440,7 @@ namespace slag
 
         void IVulkanCommandBuffer::endRendering()
         {
+            SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
             vkCmdEndRendering(_commandBuffer);
 #ifdef SLAG_DEBUG
             _inRenderPass = false;
@@ -441,6 +449,7 @@ namespace slag
 
         void IVulkanCommandBuffer::setViewPort(float x, float y, float width, float height, float minDepth,float maxDepth)
         {
+            SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
             VkViewport viewport{};
             viewport.x = x;
             viewport.y = height+y;
@@ -457,6 +466,7 @@ namespace slag
 
         void IVulkanCommandBuffer::setScissors(const Rectangle& rect)
         {
+            SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
             VkRect2D rectangle{.offset{rect.offset.x,rect.offset.y},.extent{rect.extent.width,rect.extent.height}};
             vkCmdSetScissor(_commandBuffer,0,1,&rectangle);
 #if SLAG_DEBUG
@@ -466,12 +476,14 @@ namespace slag
 
         void IVulkanCommandBuffer::bindIndexBuffer(Buffer* buffer, IndexBufferType indexType, uint64_t offset)
         {
+            SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
             auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
             vkCmdBindIndexBuffer(_commandBuffer,vulkanBuffer->vulkanHandle(),offset, indexType == IndexBufferType::UINT_16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
         }
 
         void IVulkanCommandBuffer::bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, uint64_t* bufferOffsets, uint64_t* strides, uint32_t bufferCount)
         {
+            SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
             std::vector<VkBuffer> vulkanBuffers(bufferCount);
             for (auto i = 0; i < bufferCount; i++)
             {
@@ -483,6 +495,8 @@ namespace slag
         void IVulkanCommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
                                         uint32_t firstInstance)
         {
+            SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+
 #if SLAG_DEBUG
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
             SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
@@ -495,6 +509,7 @@ namespace slag
         void IVulkanCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
             int32_t vertexOffset, uint32_t firstInstance)
         {
+            SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 #if SLAG_DEBUG
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
             SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
@@ -506,6 +521,7 @@ namespace slag
 
         void IVulkanCommandBuffer::drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount, uint32_t stride)
         {
+            SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 #if SLAG_DEBUG
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
             SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
@@ -519,6 +535,8 @@ namespace slag
         void IVulkanCommandBuffer::drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount,
             uint32_t stride)
         {
+            SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+
 #if SLAG_DEBUG
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
             SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
@@ -532,6 +550,7 @@ namespace slag
         void IVulkanCommandBuffer::drawIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer,
             uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
         {
+            SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 #if SLAG_DEBUG
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
             SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
@@ -546,6 +565,7 @@ namespace slag
         void IVulkanCommandBuffer::drawIndexedIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer,
             uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
         {
+            SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 #if SLAG_DEBUG
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
             SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
@@ -559,6 +579,8 @@ namespace slag
 
         void IVulkanCommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
         {
+            SLAG_ASSERT(_type != QueueType::TRANSFER && "Command Buffer cannot record commands outside it's capabilities");
+
 #if SLAG_DEBUG
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
 #endif
@@ -567,20 +589,13 @@ namespace slag
 
         void IVulkanCommandBuffer::dispatchIndirect(Buffer* buffer, uint64_t offset)
         {
+            SLAG_ASSERT(_type != QueueType::TRANSFER && "Command Buffer cannot record commands outside it's capabilities");
+
 #if SLAG_DEBUG
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
 #endif
             auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
             vkCmdDispatchIndirect(_commandBuffer,vulkanBuffer->vulkanHandle(),offset);
-        }
-
-        void IVulkanCommandBuffer::dispatchBase(uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ,
-            uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
-        {
-#if SLAG_DEBUG
-            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
-#endif
-            vkCmdDispatchBase(_commandBuffer,baseGroupX,baseGroupY,baseGroupZ,groupCountX,groupCountY,groupCountZ);
         }
 
         VkCommandBuffer IVulkanCommandBuffer::vulkanHandle() const

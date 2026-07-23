@@ -69,31 +69,6 @@ TEST(ShaderCode, TaskShader)
     GTEST_FAIL();
 }
 
-TEST(ShaderCode, BufferLayoutReflection)
-{
-    GTEST_FAIL();
-}
-
-TEST(ShaderCode, TexelBufferReflection)
-{
-    GTEST_FAIL();
-}
-
-TEST(ShaderCode, TextureTypeReflection)
-{
-    GTEST_FAIL();
-}
-
-TEST(ShaderCode, SamplerReflection)
-{
-    GTEST_FAIL();
-}
-
-TEST(ShaderCode, AccelerationStructureReflection)
-{
-    GTEST_FAIL();
-}
-
 TEST(ShaderCode, DescriptorTypes)
 {
     GTEST_FAIL();

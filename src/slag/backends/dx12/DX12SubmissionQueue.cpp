@@ -64,7 +64,7 @@ namespace slag
         void DX12SubmissionQueue::submit(SubmissionBatch* batches, uint32_t batchCount)
         {
             SLAG_ASSERT(batchCount > 0 && "At least one batch must be submitted");
-            SLAG_ASSERT(batches != nullptr && "Parameter \"batches\" must not be nullptr");
+            SLAG_ASSERT(batches != nullptr && "Parameter 'batches' must not be nullptr");
             for (auto submissionIndex = 0; submissionIndex < batchCount; ++submissionIndex)
             {
                 auto& submission = batches[submissionIndex];

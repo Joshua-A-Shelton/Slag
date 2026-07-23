@@ -128,7 +128,7 @@ namespace slag
         virtual void setComputeShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)=0;
 
         /**
-         * [TRANSFER | MemoryCaches::COPY_READ, MemoryCaches::COPY_WRITE] Copy data from one buffer to another
+         * [TRANSFER] Copy data from one buffer to another
          * @param source Buffer to copy from
          * @param sourceOffset Byte offset to start the copy from
          * @param destination Buffer to copy to
@@ -137,7 +137,7 @@ namespace slag
          */
         virtual void copyBufferToBuffer(Buffer* source, uint64_t sourceOffset, Buffer* destination, uint64_t destinationOffset, uint64_t length)=0;
         /**
-         * [TRANSFER | MemoryCaches::COPY_READ, MemoryCaches::COPY_WRITE] Copy data from a texture to a buffer
+         * [TRANSFER] Copy data from a texture to a buffer
          * @param source Texture to copy from
          * @param destination Buffer to copy to
          * @param copyData Array of structures containing the parameters of the copy operation
@@ -145,7 +145,7 @@ namespace slag
          */
         virtual void copyTextureToBuffer(Texture* source, Buffer* destination, TextureBufferMapping* copyData, uint32_t mappingCount)=0;
         /**
-         * [TRANSFER | MemoryCaches::COPY_READ, MemoryCaches::COPY_WRITE] Copy data from a buffer to a texture
+         * [TRANSFER] Copy data from a buffer to a texture
          * @param source Buffer to copy data from
          * @param destination Texture to copy data to
          * @param copyData Array of structures containing the parameters of the copy operation
@@ -153,7 +153,7 @@ namespace slag
          */
         virtual void copyBufferToTexture(Buffer* source, Texture* destination, TextureBufferMapping* copyData, uint32_t mappingCount)=0;
         /**
-         * [GRAPHICS] Set a shader pipeline as current
+         * [GRAPHICS & COMPUTE] Set a shader pipeline as current
          * @param pipeline The pipeline to set as active
          */
         virtual void bindShaderPipeline(ShaderPipeline* pipeline)=0;
@@ -165,7 +165,7 @@ namespace slag
          * @param bounds Area that is affected in render pass
          */
         virtual void beginRendering(Attachment* colorAttachments, uint32_t colorAttachmentCount,Attachment* depthAttachment, const Rectangle& bounds)=0;
-        ///End renderpass
+        /// [GRAPHICS] End renderpass
         virtual void endRendering()=0;
         /**
         * [GRAPHICS] Sets the drawing area relative to the window, final image will be drawn scaled to the drawing area
@@ -215,20 +215,55 @@ namespace slag
          * @param firstInstance First instance ID (used in shaders)
          */
         virtual void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance)=0;
-
+        /**
+         * [GRAPHICS] Draw geometry with indirect parameters
+         * @param buffer Buffer that contains drawing parameters
+         * @param offset Byte offset into buffer where parameters begin
+         * @param drawCount Number of draws to exectute, can be zero
+         * @param stride Byte stride between successive sets of draw parameters
+         */
         virtual void drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount, uint32_t stride)=0;
-
+        /**
+         * [GRAPHICS] Draw geometry with indirect parameters
+         * @param buffer Buffer that contains drawing parameters
+         * @param offset Byte offset into buffer where parameters begin
+         * @param drawCount Number of draws to exectute, can be zero
+         * @param stride Byte stride between successive sets of draw parameters
+         */
         virtual void drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount, uint32_t stride)=0;
-
+        /**
+         * [GRAPHICS] Draw geometry with indirect parameters and draw count
+         * @param buffer Buffer that contains drawing parameters
+         * @param offset Byte offset into buffer where parameters begin
+         * @param countBuffer Buffer containing the draw count
+         * @param countBufferOffset Byte offset into countBuffer where the draw count begins
+         * @param maxDrawCount Maximum number of draws that will be executed
+         * @param stride Byte stride between successive sets of draw parameters
+         */
         virtual void drawIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer, uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)=0;
-
+        /**
+         * [GRAPHICS] Draw geometry with indirect parameters, indexed vertices and draw count
+         * @param buffer Buffer that contains drawing parameters
+         * @param offset Byte offset into buffer where parameters begin
+         * @param countBuffer Buffer containing the draw count
+         * @param countBufferOffset Byte offset into countBuffer where the draw count begins
+         * @param maxDrawCount Maximum number of draws that will be executed
+         * @param stride Byte stride between successive sets of draw parameters
+         */
         virtual void drawIndexedIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer, uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)=0;
-
+        /**
+         * [COMPUTE] Dispatch compute shader work
+         * @param groupCountX Local workgroups to dispatch in the X dimension
+         * @param groupCountY Local workgroups to dispatch in the Y dimension
+         * @param groupCountZ Local workgroups to dispatch in the Z dimension
+         */
         virtual void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)=0;
-
+        /**
+         * [COMPUTE] Dispatch compute shader work with indirect parameters
+         * @param buffer Buffer containing dispatch parameters
+         * @param offset Byte offset into buffer where parameters begin
+         */
         virtual void dispatchIndirect(Buffer* buffer, uint64_t offset)=0;
-
-        virtual void dispatchBase(uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)=0;
 
     };
 } // slag

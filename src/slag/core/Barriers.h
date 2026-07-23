@@ -19,13 +19,11 @@ namespace slag
         DEPTH_TARGET_WRITE          = 1 << 7,
         SHADER_SAMPLED_READ         = 1 << 8,
         SHADER_UNORDERED_ACCESS     = 1 << 9,
-        BLIT_READ                   = 1 << 10,
-        BLIT_WRITE                  = 1 << 11,
-        COPY_READ                   = 1 << 12,
-        COPY_WRITE                  = 1 << 13,
-        RESOLVE_READ                = 1 << 14,
-        RESOLVE_WRITE               = 1 << 15,
-        CLEAR                       = 1 << 16,
+        COPY_READ                   = 1 << 10,
+        COPY_WRITE                  = 1 << 11,
+        RESOLVE_READ                = 1 << 12,
+        RESOLVE_WRITE               = 1 << 13,
+        CLEAR                       = 1 << 14,
     };
     ///Represents different stages of a shader pipeline's execution
     enum class SyncStages: uint32_t

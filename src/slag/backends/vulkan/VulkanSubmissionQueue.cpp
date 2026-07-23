@@ -44,7 +44,7 @@ namespace slag
         void VulkanSubmissionQueue::submit(SubmissionBatch* batches, uint32_t batchCount)
         {
             SLAG_ASSERT(batchCount > 0 && "At least one batch must be submitted");
-            SLAG_ASSERT(batches != nullptr && "Parameter \"batches\" must not be nullptr");
+            SLAG_ASSERT(batches != nullptr && "Parameter 'batches' must not be nullptr");
 
             std::vector<VkSubmitInfo2> submit(batchCount,{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2});
             std::vector<std::unique_ptr<std::vector<VkSemaphoreSubmitInfo>>> waits(batchCount);

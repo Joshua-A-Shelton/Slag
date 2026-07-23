@@ -11,7 +11,7 @@ TEST(SubmissionQueue, ErrorOnZeroSubmit)
 TEST(SubmissionQueue, ErrorOnNullptrSubmit)
 {
     auto card = Slag::backend()->graphicsCard(0);
-    ASSERT_DEATH(card->transferQueue()->submit(nullptr,1),"Parameter \"batches\" must not be nullptr");
+    ASSERT_DEATH(card->transferQueue()->submit(nullptr,1),"Parameter 'batches' must not be nullptr");
 }
 TEST(SubmissionQueue, ErrorOnSubmitTransfer)
 {
@@ -42,7 +42,34 @@ TEST(SubmissionQueue, ErrorOnSubmitTransfer)
 }
 TEST(SubmissionQueue, ErrorOnSubmitFrameTransfer)
 {
-    GTEST_FAIL();
+    auto card = Slag::backend()->graphicsCard(0);
+    auto graphicsBuffer = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(QueueType::GRAPHICS));
+
+    auto dataBuffer = std::unique_ptr<Buffer>(card->newBuffer(256));
+    graphicsBuffer->begin();
+    graphicsBuffer->copyBufferToBuffer(dataBuffer.get(),0,dataBuffer.get(),128,128);
+    graphicsBuffer->end();
+
+    auto gb = graphicsBuffer.get();
+
+    SubmissionBatch graphicsBatch{};
+    graphicsBatch.commandBuffers = &gb;
+    graphicsBatch.commandBufferCount = 1;
+
+    EXPECT_DEATH(card->transferQueue()->submit(&graphicsBatch,1),"Queue cannot process command buffer outside it's capabilities");
+    EXPECT_DEATH(card->computeQueue()->submit(&graphicsBatch,1),"Queue cannot process command buffer outside it's capabilities");
+
+    auto computeBuffer = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(QueueType::COMPUTE));
+    graphicsBuffer->begin();
+    graphicsBuffer->copyBufferToBuffer(dataBuffer.get(),0,dataBuffer.get(),128,128);
+    graphicsBuffer->end();
+
+    auto cb = computeBuffer.get();
+    SubmissionBatch computeBatch{};
+    computeBatch.commandBuffers = &cb;
+    computeBatch.commandBufferCount = 1;
+    EXPECT_DEATH(card->transferQueue()->submit(&computeBatch,1),"Queue cannot process command buffer outside it's capabilities");
+
 }
 TEST(SubmissionQueue, ErrorOnSubmitCompute)
 {
@@ -62,18 +89,4 @@ TEST(SubmissionQueue, ErrorOnSubmitCompute)
 
     EXPECT_DEATH(card->computeQueue()->submit(&graphicsBatch,1),"Queue cannot process command buffer outside it's capabilities");
 }
-TEST(SubmissionQueue, ErrorOnSubmitFrameCompute)
-{
-    GTEST_FAIL();
-}
 #endif
-
-TEST(SubmissionQueue,Submit)
-{
-    GTEST_FAIL();
-}
-
-TEST(SubmissionQueue, SubmitFrame)
-{
-    GTEST_FAIL();
-}

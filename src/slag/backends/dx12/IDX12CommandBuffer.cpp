@@ -215,6 +215,8 @@ namespace slag
 
         void IDX12CommandBuffer::bindDescriptorHeaps(ResourceDescriptorHeap* resourceHeap, SamplerDescriptorHeap* samplerHeap)
         {
+            SLAG_ASSERT(_queueType != QueueType::TRANSFER && "Command Buffer cannot record commands outside it's capabilities");
+
             DX12ResourceDescriptorHeap* dx12ResourceHeap = static_cast<DX12ResourceDescriptorHeap*>(resourceHeap);
             DX12SamplerDescriptorHeap* dx12SamplerHeap = static_cast<DX12SamplerDescriptorHeap*>(samplerHeap);
             ID3D12DescriptorHeap* heaps[]{dx12ResourceHeap->dx12Handle(),dx12SamplerHeap->dx12Handle()};
@@ -223,6 +225,8 @@ namespace slag
 
         void IDX12CommandBuffer::setGraphicsShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
         {
+            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+
             SLAG_ASSERT(shaderDataOffset % 4 == 0 && "shaderDataOffset must be aligned to 4");
             SLAG_ASSERT(dataSize % 4 == 0 && "dataSize must be aligned to 4");
             _commandBuffer->SetGraphicsRoot32BitConstants(0,dataSize/4,data,shaderDataOffset/4);
@@ -230,6 +234,8 @@ namespace slag
 
         void IDX12CommandBuffer::setComputeShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
         {
+            SLAG_ASSERT(_queueType != QueueType::TRANSFER && "Command Buffer cannot record commands outside it's capabilities");
+
             SLAG_ASSERT(shaderDataOffset % 4 == 0 && "shaderDataOffset must be aligned to 4");
             SLAG_ASSERT(dataSize % 4 == 0 && "dataSize must be aligned to 4");
             _commandBuffer->SetComputeRoot32BitConstants(0,dataSize/4,data,shaderDataOffset/4);
@@ -356,6 +362,8 @@ namespace slag
 
         void IDX12CommandBuffer::bindShaderPipeline(ShaderPipeline* pipeline)
         {
+            SLAG_ASSERT(_queueType != QueueType::TRANSFER && "Command Buffer cannot record commands outside it's capabilities");
+
             DX12ShaderPipeline* dx12Pipeline = static_cast<DX12ShaderPipeline*>(pipeline);
             _commandBuffer->SetPipelineState(dx12Pipeline->dx12Handle());
 #ifdef SLAG_DEBUG
@@ -365,6 +373,8 @@ namespace slag
             }
             else
             {
+                SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+
                 _boundPipelineType = BoundPipeLineType::GRAPHICS;
             }
 #endif
@@ -373,6 +383,8 @@ namespace slag
         void IDX12CommandBuffer::beginRendering(Attachment* colorAttachments, uint32_t colorAttachmentCount,
                                                 Attachment* depthAttachment, const Rectangle& bounds)
         {
+            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+
             std::vector<D3D12_RENDER_PASS_RENDER_TARGET_DESC> targets(colorAttachmentCount);
             for (auto i=0; i<colorAttachmentCount; i++)
             {
@@ -429,6 +441,8 @@ namespace slag
 
         void IDX12CommandBuffer::endRendering()
         {
+            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+
             _commandBuffer->EndRenderPass();
 #ifdef SLAG_DEBUG
             _inRenderPass = false;
@@ -438,6 +452,8 @@ namespace slag
         void IDX12CommandBuffer::setViewPort(float x, float y, float width, float height, float minDepth,
             float maxDepth)
         {
+            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+
             CD3DX12_VIEWPORT vp(x,y,width,height,minDepth,maxDepth);
             _commandBuffer->RSSetViewports(1, &vp);
 #if SLAG_DEBUG
@@ -447,6 +463,8 @@ namespace slag
 
         void IDX12CommandBuffer::setScissors(const Rectangle& rect)
         {
+            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+
             D3D12_RECT scissorRect;
             scissorRect.left   = rect.offset.x;
             scissorRect.top    = rect.offset.y;
@@ -460,6 +478,8 @@ namespace slag
 
         void IDX12CommandBuffer::bindIndexBuffer(Buffer* buffer, IndexBufferType indexType, uint64_t offset)
         {
+            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+
             D3D12_INDEX_BUFFER_VIEW indexBufferView{};
             indexBufferView.BufferLocation = static_cast<DX12Buffer*>(buffer)->dx12Handle()->GetGPUVirtualAddress() + offset;
             indexBufferView.SizeInBytes = buffer->size() - offset;
@@ -469,6 +489,8 @@ namespace slag
 
         void IDX12CommandBuffer::bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, uint64_t* bufferOffsets, uint64_t* strides, uint32_t bufferCount)
         {
+            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+
             std::vector<D3D12_VERTEX_BUFFER_VIEW> vertexBufferViews(bufferCount);
             for (auto i=0; i<bufferCount; i++)
             {
@@ -485,6 +507,8 @@ namespace slag
         void IDX12CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
                                       uint32_t firstInstance)
         {
+            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+
 #if SLAG_DEBUG
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
             SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
@@ -497,6 +521,8 @@ namespace slag
         void IDX12CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
             int32_t vertexOffset, uint32_t firstInstance)
         {
+            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+
 #if SLAG_DEBUG
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
             SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
@@ -508,6 +534,8 @@ namespace slag
 
         void IDX12CommandBuffer::drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount, uint32_t stride)
         {
+            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+
 #if SLAG_DEBUG
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
             SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
@@ -520,6 +548,8 @@ namespace slag
         void IDX12CommandBuffer::drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount,
             uint32_t stride)
         {
+            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+
 #if SLAG_DEBUG
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
             SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
@@ -532,6 +562,8 @@ namespace slag
         void IDX12CommandBuffer::drawIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer,
             uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
         {
+            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+
 #if SLAG_DEBUG
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
             SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
@@ -544,6 +576,8 @@ namespace slag
         void IDX12CommandBuffer::drawIndexedIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer,
             uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
         {
+            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+
 #if SLAG_DEBUG
             SLAG_ASSERT(_inRenderPass && "Must be in render pass (between beginRendering() and endRendering()) to draw");
             SLAG_ASSERT(_setViewport && "Viewport must be set prior to issuing drawing commands");
@@ -555,6 +589,8 @@ namespace slag
 
         void IDX12CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
         {
+            SLAG_ASSERT(_queueType != QueueType::TRANSFER && "Command Buffer cannot record commands outside it's capabilities");
+
 #if SLAG_DEBUG
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
 #endif
@@ -563,15 +599,8 @@ namespace slag
 
         void IDX12CommandBuffer::dispatchIndirect(Buffer* buffer, uint64_t offset)
         {
-#if SLAG_DEBUG
-            SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
-#endif
-            throw std::runtime_error("Not implemented");
-        }
+            SLAG_ASSERT(_queueType != QueueType::TRANSFER && "Command Buffer cannot record commands outside it's capabilities");
 
-        void IDX12CommandBuffer::dispatchBase(uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ,
-            uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
-        {
 #if SLAG_DEBUG
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
 #endif
