@@ -300,7 +300,8 @@ int main()
 
     slag::Semaphore* commandsFinished = nullptr;
     slag::CommandBuffer* commandBuffer = graphicsCard->newCommandBuffer(slag::QueueType::GRAPHICS);
-    slag::Texture* depthTarget = graphicsCard->newTexture2D(300,300,slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET);
+    slag::Texture* colorTarget = graphicsCard->newTexture2D(300,300,slag::PixelFormat::B8G8R8A8_UNORM,slag::TextureUsageFlags::COLOR_TARGET,1,SampleCount::FOUR);
+    slag::Texture* depthTarget = graphicsCard->newTexture2D(300,300,slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET,1,SampleCount::FOUR);
 
     auto sampler = graphicsCard->newSampler();
     auto texture = loadTexture("resources/examples/textures/gradient.jpg",graphicsCard);
@@ -329,6 +330,7 @@ int main()
     };
     slag::VertexDescription vertexDescription(vertexBindings);
     slag::PipelineState pipelineState{};
+    pipelineState.multiSampleState.rasterizationSamples = SampleCount::FOUR;
     slag::FramebufferDescription framebufferDesc;
     framebufferDesc.colorFormats[0] = swapChain->parameters().imageFormat;
     framebufferDesc.depthFormat = depthTarget->format();
@@ -366,11 +368,14 @@ int main()
                 delete commandsFinished;
             }
             commandsFinished = graphicsCard->newSemaphore();
-            auto colorTarget = frame->renderBuffer();
+            auto backBuffer = frame->renderBuffer();
             if (depthTarget->width() != colorTarget->width() || depthTarget->height() != colorTarget->height())
             {
+                delete colorTarget;
                 delete depthTarget;
-                depthTarget = graphicsCard->newTexture2D(colorTarget->width(),colorTarget->height(),slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET);
+
+                colorTarget = graphicsCard->newTexture2D(backBuffer->width(),backBuffer->height(),slag::PixelFormat::R8G8B8A8_UNORM,slag::TextureUsageFlags::COLOR_TARGET,1,SampleCount::FOUR);
+                depthTarget = graphicsCard->newTexture2D(backBuffer->width(),backBuffer->height(),slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET,1,SampleCount::FOUR);
             }
 
             objectTransform = glm::rotate(objectTransform,glm::radians(45.0f)*delta,glm::vec3(0.0f,1.0f,0.0f));
@@ -446,12 +451,30 @@ int main()
             commandBuffer->endRendering();
 
             barriers[0].layoutBefore = TextureLayout::COLOR_TARGET;
-            barriers[0].layoutAfter = TextureLayout::PRESENT;
+            barriers[0].layoutAfter = TextureLayout::RESOLVE_SOURCE;
             barriers[0].syncBefore = SyncStages::ALL_GRAPHICS;
             barriers[0].syncAfter = SyncStages::ALL;
             barriers[0].flush = MemoryCaches::COLOR_TARGET;
-            barriers[0].invalidate = MemoryCaches::NONE;
-            commandBuffer->insertBarriers(barriers,1);
+            barriers[0].invalidate = MemoryCaches::RESOLVE_READ;
+
+            barriers[1].texture = backBuffer;
+            barriers[1].layoutBefore = TextureLayout::UNKNOWN;
+            barriers[1].layoutAfter = TextureLayout::RESOLVE_DESTINATION;
+            barriers[1].syncBefore = SyncStages::ALL_GRAPHICS;
+            barriers[1].syncAfter = SyncStages::ALL;
+            barriers[1].flush = MemoryCaches::NONE;
+            barriers[1].invalidate = MemoryCaches::NONE;
+            commandBuffer->insertBarriers(barriers,2);
+
+            commandBuffer->resolveTexture(colorTarget,0,0,slag::Rectangle{0,0,colorTarget->width(),colorTarget->height()},backBuffer,0,0,{0,0});
+
+            barriers[1].layoutBefore = TextureLayout::RESOLVE_DESTINATION;
+            barriers[1].layoutAfter = TextureLayout::PRESENT;
+            barriers[1].syncBefore = SyncStages::ALL;
+            barriers[1].syncAfter = SyncStages::ALL;
+            barriers[1].flush = MemoryCaches::RESOLVE_WRITE;
+            barriers[1].invalidate = MemoryCaches::NONE;
+            commandBuffer->insertBarriers(&barriers[1],1);
 
             commandBuffer->end();
 
@@ -477,6 +500,7 @@ int main()
     delete swapChain;
     delete sampler;
     delete texture;
+    delete colorTarget;
     delete depthTarget;
     delete pipeline;
     delete cubeVerts;

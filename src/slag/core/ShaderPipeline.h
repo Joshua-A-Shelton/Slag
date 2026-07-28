@@ -2,6 +2,7 @@
 #define SLAG_SHADERPIPELINE_H
 #include "Color.h"
 #include "Operations.h"
+#include "Texture.h"
 
 namespace slag
 {
@@ -66,11 +67,11 @@ namespace slag
     struct MultiSampleState
     {
         ///Number or rasterization samples (1/2/4/8/16)
-        uint8_t rasterizationSamples = 1;
+        SampleCount rasterizationSamples = SampleCount::ONE;
         ///Enable sample shading (require multiple samples to generate a fragment)
         bool sampleShadingEnable = false;
         ///Minimum number of samples (1/2/4/8/16) needed to generate a fragment is sampleShadingEnable is true
-        uint8_t minSampleShading = 1;
+        SampleCount minSampleShading = SampleCount::ONE;
         ///Controls if an alpha component of a fragment's first color is replaced in multisampling
         bool alphaToOneEnable = false;
     };

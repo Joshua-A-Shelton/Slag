@@ -121,7 +121,7 @@ namespace slag
                    {
                        .aspect = PixelAspect::COLOR,
                        .mipLevel = 0,
-                       .baseArrayLayer = 0,
+                       .baseArrayLayer = layer,
                        .layerCount = 1,
                   },
                   .offset = {0,0,0},

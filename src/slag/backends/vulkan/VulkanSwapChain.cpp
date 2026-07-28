@@ -121,7 +121,7 @@ namespace slag
                 .set_desired_extent(_width, _height)
                 .set_desired_min_image_count(_parameters.imageCount)
                 .set_old_swapchain(_swapChain)
-                .add_image_usage_flags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+                .add_image_usage_flags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
                 .set_composite_alpha_flags(VulkanBackend::nativeCompositeAlphaFlags(_parameters.alphaCompositing))
                 .set_desired_present_mode(VulkanBackend::nativePresentMode(_parameters.presentMode))
                 .build();

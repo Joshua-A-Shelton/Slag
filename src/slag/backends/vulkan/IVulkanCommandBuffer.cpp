@@ -598,6 +598,48 @@ namespace slag
             vkCmdDispatchIndirect(_commandBuffer,vulkanBuffer->vulkanHandle(),offset);
         }
 
+        void IVulkanCommandBuffer::resolveTexture(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Offset2D destinationOffset)
+        {
+            SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+            SLAG_ASSERT(source->sampleCount() != SampleCount::ONE && destination->sampleCount() == SampleCount::ONE && "Source texture must be multisampled and destination texture must not be multisampled");
+            SLAG_ASSERT(source->format() == destination->format() && "Source and destination textures must have the same format");
+            SLAG_ASSERT(source->mipWidth(sourceMip) == destination->mipWidth(destinationMip) && source->mipHeight(sourceMip) == destination->mipHeight(destinationMip) && "Source and destination mips must have the same dimensions");
+            auto vulkanSource = static_cast<VulkanTexture*>(source);
+            auto vulkanDestination = static_cast<VulkanTexture*>(destination);
+            VkImageResolve2 region
+            {
+                .sType = VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2,
+                .srcSubresource =
+                    {
+                        .aspectMask = VulkanBackend::nativeTextureAspect(Pixel::aspectFlags(source->format())),
+                        .mipLevel = sourceMip,
+                        .baseArrayLayer = sourceLayer,
+                        .layerCount = 1
+                    },
+                .srcOffset = {sourceRect.offset.x,sourceRect.offset.y,0},
+                .dstSubresource =
+                    {
+                        .aspectMask = VulkanBackend::nativeTextureAspect(Pixel::aspectFlags(source->format())),
+                        .mipLevel = destinationMip,
+                        .baseArrayLayer = destinationLayer,
+                        .layerCount = 1
+                    },
+                .dstOffset = {destinationOffset.x,destinationOffset.y,0},
+                .extent = {.width = sourceRect.extent.width,.height = sourceRect.extent.height,.depth = 1}
+            };
+            VkResolveImageInfo2 resolveInfo
+            {
+                .sType = VK_STRUCTURE_TYPE_RESOLVE_IMAGE_INFO_2,
+                .srcImage = vulkanSource->vulkanHandle(),
+                .srcImageLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .dstImage = vulkanDestination->vulkanHandle(),
+                .dstImageLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .regionCount = 1,
+                .pRegions = &region
+            };
+            vkCmdResolveImage2(_commandBuffer,&resolveInfo);
+        }
+
         VkCommandBuffer IVulkanCommandBuffer::vulkanHandle() const
         {
             return _commandBuffer;

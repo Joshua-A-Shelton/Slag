@@ -88,7 +88,7 @@ namespace slag
             if (pipelineState.multiSampleState.sampleShadingEnable)
             {
                 //TODO: not sure what this actually is, but setting it causes errors (currently hidden by D3D12_MESSAGE_CATEGORY_STATE_CREATION being a hidden category in graphics card creation)
-                rasterizerDesc.ForcedSampleCount = pipelineState.multiSampleState.minSampleShading;
+                rasterizerDesc.ForcedSampleCount = (uint8_t)pipelineState.multiSampleState.minSampleShading;
             }
 
             rasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;//Eh? nothing like this in vulkan
@@ -143,7 +143,7 @@ namespace slag
             pipelineDesc.DSVFormat = DX12Backend::nativeFormat(framebufferDescription.depthFormat);
 
             DXGI_SAMPLE_DESC& sampleDesc = pipelineDesc.SampleDesc;
-            sampleDesc.Count = pipelineState.multiSampleState.rasterizationSamples;
+            sampleDesc.Count = static_cast<uint8_t>(pipelineState.multiSampleState.rasterizationSamples);
 
             auto result = _graphicsCard->device()->CreateGraphicsPipelineState(&pipelineDesc, IID_PPV_ARGS(&_pipelineState));
             if (FAILED(result))

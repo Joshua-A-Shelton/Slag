@@ -277,7 +277,7 @@ namespace slag
                 uint32_t layerOffsetIndex = 0;
                 for (auto i=0; i<mapping.subresource.layerCount; ++i)
                 {
-                    auto subResourceIndex = D3D12CalcSubresource(mapping.subresource.mipLevel,mapping.subresource.baseArrayLayer+layerOffsetIndex,plane,tex->mipLevels(),tex->layers());
+                    auto subResourceIndex = D3D12CalcSubresource(mapping.subresource.mipLevel,mapping.subresource.baseArrayLayer+layerOffsetIndex,plane,1,1);
                     D3D12_TEXTURE_COPY_LOCATION sourceLocation
                     {
                         .pResource = tex->dx12Handle(),
@@ -605,6 +605,32 @@ namespace slag
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
 #endif
             throw std::runtime_error("Not implemented");
+        }
+
+        void IDX12CommandBuffer::resolveTexture(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Offset2D destinationOffset)
+        {
+            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+            SLAG_ASSERT(source->sampleCount() != SampleCount::ONE && destination->sampleCount() == SampleCount::ONE && "Source texture must be multisampled and destination texture must not be multisampled");
+            SLAG_ASSERT(source->format() == destination->format() && "Source and destination textures must have the same format");
+            SLAG_ASSERT(source->mipWidth(sourceMip) == destination->mipWidth(destinationMip) && source->mipHeight(sourceMip) == destination->mipHeight(destinationMip) && "Source and destination mips must have the same dimensions");
+
+            DX12Texture* dx12Source = static_cast<DX12Texture*>(source);
+            DX12Texture* dx12Destination = static_cast<DX12Texture*>(destination);
+            D3D12_RECT dx12SourceRect = {sourceRect.offset.x, sourceRect.offset.y, (long)(sourceRect.offset.x + sourceRect.extent.width), (long)(sourceRect.offset.y + sourceRect.extent.height)};
+
+            auto sourceSubResource = D3D12CalcSubresource(sourceMip,sourceLayer,0,1,1);
+            auto destinationSubResource = D3D12CalcSubresource(destinationMip,destinationLayer,0,1,1);
+
+            _commandBuffer->ResolveSubresourceRegion(
+                dx12Destination->dx12Handle(),
+                destinationSubResource,
+                destinationOffset.x,
+                destinationOffset.y,
+                dx12Source->dx12Handle(),
+                sourceSubResource,
+                &dx12SourceRect,
+                DX12Backend::nativeFormat(source->format()),
+                D3D12_RESOLVE_MODE::D3D12_RESOLVE_MODE_AVERAGE);
         }
 
         ID3D12GraphicsCommandList7* IDX12CommandBuffer::dx12Handle() const

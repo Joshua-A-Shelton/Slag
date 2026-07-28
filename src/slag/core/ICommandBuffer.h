@@ -265,6 +265,19 @@ namespace slag
          */
         virtual void dispatchIndirect(Buffer* buffer, uint64_t offset)=0;
 
+        /**
+         * Resolve a multisampled texture to a non-multisampled texture. The source texture must be multisampled and the destination texture must not be multisampled, and both must have the same format
+         * @param source Source texture
+         * @param sourceLayer Source texture layer
+         * @param sourceMip Source texture mip level
+         * @param sourceRect Source texture rectangle sampling area
+         * @param destination Destination texture
+         * @param destinationLayer Destination texture layer
+         * @param destinationMip Destination texture mip level
+         * @param destinationOffset Destination texture offset
+         */
+        virtual void resolveTexture(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Offset2D destinationOffset)=0;
+
     };
 } // slag
 

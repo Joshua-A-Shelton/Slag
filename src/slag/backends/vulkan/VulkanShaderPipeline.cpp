@@ -408,7 +408,7 @@ namespace slag
             outMultisampleStateInfo->flags = 0;
             outMultisampleStateInfo->rasterizationSamples = static_cast<VkSampleCountFlagBits>(multiSampleState.rasterizationSamples);
             outMultisampleStateInfo->sampleShadingEnable = multiSampleState.sampleShadingEnable;
-            outMultisampleStateInfo->minSampleShading = multiSampleState.minSampleShading == 0? 0: static_cast<float>(multiSampleState.minSampleShading) / static_cast<float>(multiSampleState.rasterizationSamples);
+            outMultisampleStateInfo->minSampleShading = static_cast<float>((uint8_t)multiSampleState.minSampleShading) / static_cast<float>((uint8_t)multiSampleState.rasterizationSamples);
             //outMultisampleStateInfo->pSampleMask = 0;
             outMultisampleStateInfo->alphaToCoverageEnable = false;
             outMultisampleStateInfo->alphaToOneEnable = multiSampleState.alphaToOneEnable;

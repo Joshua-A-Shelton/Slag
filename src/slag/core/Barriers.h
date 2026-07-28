@@ -58,6 +58,10 @@ namespace slag
         COLOR_TARGET,
         ///Layout required for an image to be a depth stencil target
         DEPTH_STENCIL_TARGET,
+        ///Layout required for an image to be the source of a resolve texture operation
+        RESOLVE_SOURCE,
+        ///Layout required for an image to be the destination of a resolve texture operation
+        RESOLVE_DESTINATION,
         ///Layout required to present an image to the screen
         PRESENT,
     };

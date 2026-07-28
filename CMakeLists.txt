@@ -18,6 +18,7 @@ OPTION(SLAG_WAYLAND_BACKEND "Use Wayland Windowing Backend" ON)
 
 OPTION(SLAG_BUILD_TESTS "Build Slag Tests" ON)
 OPTION(SLAG_BUILD_CUBE "Build Slag Example Cube" ON)
+OPTION(SLAG_BUILD_MS_CUBE "Build Multi Sample Example Cube" ON)
 
 if(WIN32)
     set(SLAG_X11_BACKEND OFF)
@@ -375,6 +376,53 @@ if(SLAG_BUILD_TESTS)
     add_dependencies(SlagTests CompileTestShaders)
 endif ()
 
+#Examples
+
+file(GLOB EXAMPLE_VERT_FRAG_SHADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/resources/examples/shaders/src/VertexAndFragment/*.slang")
+
+foreach (SHADER ${EXAMPLE_VERT_FRAG_SHADERS})
+    get_filename_component(FILENAME ${SHADER} NAME_WE)
+    set(OUTPUT_FILE_RAW "${CMAKE_CURRENT_SOURCE_DIR}/resources/examples/shaders/compiled/${FILENAME}")
+    add_custom_command(
+            OUTPUT "${OUTPUT_FILE_RAW}.vertex.spv"
+            COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -spirv-unified-descriptor-heap-stride -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.spv"
+            DEPENDS ${SHADER}
+            COMMENT "Compiling ${FILENAME} to spirv vertex"
+    )
+    add_custom_command(
+            OUTPUT "${OUTPUT_FILE_RAW}.fragment.spv"
+            COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -spirv-unified-descriptor-heap-stride -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.spv"
+            DEPENDS ${SHADER}
+            COMMENT "Compiling ${FILENAME} to spirv fragment"
+    )
+    if(WIN32)
+        add_custom_command(
+                OUTPUT "${OUTPUT_FILE_RAW}.vertex.dxil"
+                COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.dxil"
+                DEPENDS ${SHADER}
+                COMMENT "Compiling ${FILENAME} to dxil vertex"
+        )
+        add_custom_command(
+                OUTPUT "${OUTPUT_FILE_RAW}.fragment.dxil"
+                COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.dxil"
+                DEPENDS ${SHADER}
+                COMMENT "Compiling ${FILENAME} to dxil fragment"
+        )
+        list(APPEND COMPILED_EXAMPLE_SHADER_FILES ${OUTPUT_FILE_RAW}.vertex.dxil ${OUTPUT_FILE_RAW}.fragment.dxil)
+    endif ()
+    list(APPEND COMPILED_EXAMPLE_SHADER_FILES ${OUTPUT_FILE_RAW}.vertex.spv ${OUTPUT_FILE_RAW}.fragment.spv)
+endforeach ()
+
+add_custom_target(CompileExampleShaders ALL DEPENDS ${COMPILED_EXAMPLE_SHADER_FILES})
+add_custom_command(
+        TARGET CompileExampleShaders
+        POST_BUILD
+        COMMAND  ${CMAKE_COMMAND} -E copy_directory_if_different
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/examples/
+        ${CMAKE_CURRENT_BINARY_DIR}/resources/examples/
+        COMMENT "Copying test resource files"
+)
+
 if(SLAG_BUILD_CUBE)
     add_executable(SlagCube
             examples/cube/Main.cpp
@@ -382,51 +430,14 @@ if(SLAG_BUILD_CUBE)
     target_link_libraries(SlagCube SDL3::SDL3 glm::glm slag::Slag)
     target_include_directories(SlagCube PRIVATE ${stb_image_SOURCE_DIR})
 
-    file(GLOB EXAMPLE_VERT_FRAG_SHADERS "${CMAKE_CURRENT_SOURCE_DIR}/resources/examples/shaders/src/VertexAndFragment/*.slang")
-
-    foreach (SHADER ${EXAMPLE_VERT_FRAG_SHADERS})
-        get_filename_component(FILENAME ${SHADER} NAME_WE)
-        set(OUTPUT_FILE_RAW "${CMAKE_CURRENT_SOURCE_DIR}/resources/examples/shaders/compiled/${FILENAME}")
-        add_custom_command(
-                OUTPUT "${OUTPUT_FILE_RAW}.vertex.spv"
-                COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -spirv-unified-descriptor-heap-stride -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.spv"
-                DEPENDS ${SHADER}
-                COMMENT "Compiling ${FILENAME} to spirv vertex"
-        )
-        add_custom_command(
-                OUTPUT "${OUTPUT_FILE_RAW}.fragment.spv"
-                COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -spirv-unified-descriptor-heap-stride -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.spv"
-                DEPENDS ${SHADER}
-                COMMENT "Compiling ${FILENAME} to spirv fragment"
-        )
-        if(WIN32)
-            add_custom_command(
-                    OUTPUT "${OUTPUT_FILE_RAW}.vertex.dxil"
-                    COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.dxil"
-                    DEPENDS ${SHADER}
-                    COMMENT "Compiling ${FILENAME} to dxil vertex"
-            )
-            add_custom_command(
-                    OUTPUT "${OUTPUT_FILE_RAW}.fragment.dxil"
-                    COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.dxil"
-                    DEPENDS ${SHADER}
-                    COMMENT "Compiling ${FILENAME} to dxil fragment"
-            )
-            list(APPEND COMPILED_EXAMPLE_SHADER_FILES ${OUTPUT_FILE_RAW}.vertex.dxil ${OUTPUT_FILE_RAW}.fragment.dxil)
-        endif ()
-        list(APPEND COMPILED_EXAMPLE_SHADER_FILES ${OUTPUT_FILE_RAW}.vertex.spv ${OUTPUT_FILE_RAW}.fragment.spv)
-    endforeach ()
-
-    add_custom_target(CompileExampleShaders ALL DEPENDS ${COMPILED_EXAMPLE_SHADER_FILES})
-
-    add_custom_command(
-            TARGET SlagCube
-            POST_BUILD
-            COMMAND  ${CMAKE_COMMAND} -E copy_directory_if_different
-            ${CMAKE_CURRENT_SOURCE_DIR}/resources/examples/
-            ${CMAKE_CURRENT_BINARY_DIR}/resources/examples/
-            COMMENT "Copying test resource files"
-    )
-
     add_dependencies(SlagCube CompileExampleShaders)
 endif()
+if(SLAG_BUILD_MS_CUBE)
+    add_executable(SlagMSCube
+            "examples/multi-sample cube/Main.cpp"
+    )
+    target_link_libraries(SlagMSCube SDL3::SDL3 glm::glm slag::Slag)
+    target_include_directories(SlagMSCube PRIVATE ${stb_image_SOURCE_DIR})
+
+    add_dependencies(SlagMSCube CompileExampleShaders)
+endif ()

@@ -1,7 +1,6 @@
 #ifndef SLAG_TEXTURE_H
 #define SLAG_TEXTURE_H
 #include <cstdint>
-
 #include "Dimensions.h"
 #include "Pixels.h"
 

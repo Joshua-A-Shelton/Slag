@@ -349,6 +349,7 @@ namespace slag
                 desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
                 _graphicsCard->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_targetHeap));
                 _graphicsCard->device()->CreateRenderTargetView(_texture, nullptr,_targetHeap->GetCPUDescriptorHandleForHeapStart());
+                
             }
             else if((uint8_t)(_usage & TextureUsageFlags::DEPTH_STENCIL_TARGET))
             {
