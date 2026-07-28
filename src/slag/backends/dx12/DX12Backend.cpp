@@ -553,7 +553,7 @@ namespace slag
         {
             switch (inputRate)
             {
-            case InputRate::PER_VRETEX:
+            case InputRate::PER_VERTEX:
                     return D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
                 case InputRate::PER_INSTANCE:
                     return D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;

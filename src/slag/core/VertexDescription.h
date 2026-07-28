@@ -30,7 +30,7 @@ namespace slag
 
     enum class InputRate
     {
-        PER_VRETEX,
+        PER_VERTEX,
         PER_INSTANCE,
     };
     ///Represents a buffer layout that is bound for inputting data into vertex shaders at a given index
@@ -58,7 +58,7 @@ namespace slag
     private:
         uint32_t _index = 0u;
         uint32_t _stride = 0u;
-        InputRate _inputRate = InputRate::PER_VRETEX;
+        InputRate _inputRate = InputRate::PER_VERTEX;
         std::vector<VertexAttribute> _attributes;
     };
     ///Describes how a vertex is input into vertex shaders

@@ -277,8 +277,8 @@ TEST(CommandBuffer, Draw)
     auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
     std::vector<VertexBinding> vertexBindings =
     {
-        VertexBinding(0,sizeof(float)*3,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
-        VertexBinding(1,sizeof(float)*2,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
     };
     VertexDescription vertexDescription(vertexBindings);
     FramebufferDescription framebufferDesc{};
@@ -447,8 +447,8 @@ TEST(CommandBuffer, DrawIndexed)
     auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
     std::vector<VertexBinding> vertexBindings =
     {
-        VertexBinding(0,sizeof(float)*3,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
-        VertexBinding(1,sizeof(float)*2,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
     };
     VertexDescription vertexDescription(vertexBindings);
     FramebufferDescription framebufferDesc{};
@@ -618,8 +618,8 @@ TEST(CommandBuffer, DrawIndirect)
     auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
     std::vector<VertexBinding> vertexBindings =
     {
-        VertexBinding(0,sizeof(float)*3,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
-        VertexBinding(1,sizeof(float)*2,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
     };
     VertexDescription vertexDescription(vertexBindings);
     FramebufferDescription framebufferDesc{};
@@ -794,8 +794,8 @@ TEST(CommandBuffer, DrawIndexedIndirect)
     auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
     std::vector<VertexBinding> vertexBindings =
     {
-        VertexBinding(0,sizeof(float)*3,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
-        VertexBinding(1,sizeof(float)*2,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
     };
     VertexDescription vertexDescription(vertexBindings);
     FramebufferDescription framebufferDesc{};
@@ -972,8 +972,8 @@ TEST(CommandBuffer, DrawIndirectCount)
     auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
     std::vector<VertexBinding> vertexBindings =
     {
-        VertexBinding(0,sizeof(float)*3,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
-        VertexBinding(1,sizeof(float)*2,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
     };
     VertexDescription vertexDescription(vertexBindings);
     FramebufferDescription framebufferDesc{};
@@ -1151,8 +1151,8 @@ TEST(CommandBuffer, DrawIndexedIndirectCount)
     auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
     std::vector<VertexBinding> vertexBindings =
     {
-        VertexBinding(0,sizeof(float)*3,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
-        VertexBinding(1,sizeof(float)*2,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
     };
     VertexDescription vertexDescription(vertexBindings);
     FramebufferDescription framebufferDesc{};
@@ -1507,8 +1507,8 @@ TEST(CommandBuffer, Resolve)
     auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
     std::vector<VertexBinding> vertexBindings =
     {
-        VertexBinding(0,sizeof(float)*3,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
-        VertexBinding(1,sizeof(float)*2,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
     };
     VertexDescription vertexDescription(vertexBindings);
     FramebufferDescription framebufferDesc{};

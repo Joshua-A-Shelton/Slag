@@ -324,8 +324,8 @@ int main()
     auto vertexModule = createShaderModule(graphicsCard, "resources/examples/shaders/compiled/TexturedDepthBindless.vertex");
     auto fragmentModule = createShaderModule(graphicsCard, "resources/examples/shaders/compiled/TexturedDepthBindless.fragment");
     std::vector<slag::VertexBinding> vertexBindings = {
-        slag::VertexBinding(0,sizeof(float)*3,InputRate::PER_VRETEX,std::vector<slag::VertexAttribute>{slag::VertexAttribute("POSITION",slag::PixelFormat::R32G32B32_FLOAT,0)}),
-        slag::VertexBinding(1,sizeof(float)*2,InputRate::PER_VRETEX,std::vector<slag::VertexAttribute>{slag::VertexAttribute("UV_COORDINATES",slag::PixelFormat::R32G32_FLOAT,0)}),
+        slag::VertexBinding(0,sizeof(float)*3,InputRate::PER_VERTEX,std::vector<slag::VertexAttribute>{slag::VertexAttribute("POSITION",slag::PixelFormat::R32G32B32_FLOAT,0)}),
+        slag::VertexBinding(1,sizeof(float)*2,InputRate::PER_VERTEX,std::vector<slag::VertexAttribute>{slag::VertexAttribute("UV_COORDINATES",slag::PixelFormat::R32G32_FLOAT,0)}),
     };
     slag::VertexDescription vertexDescription(vertexBindings);
     slag::PipelineState pipelineState{};

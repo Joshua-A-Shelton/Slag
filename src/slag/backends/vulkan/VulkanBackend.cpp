@@ -796,7 +796,7 @@ namespace slag
         {
             switch (inputRate)
             {
-            case InputRate::PER_VRETEX:
+            case InputRate::PER_VERTEX:
                     return VK_VERTEX_INPUT_RATE_VERTEX;
             case InputRate::PER_INSTANCE:
                     return VK_VERTEX_INPUT_RATE_INSTANCE;
