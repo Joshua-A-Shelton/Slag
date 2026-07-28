@@ -1,103 +1,193 @@
-
 #include "Pixels.h"
-#include <array>
-
-#include "slag/backends/Backend.h"
-#include "slag/utilities/SLAG_ASSERT.h"
-
 
 namespace slag
 {
-    std::array<uint32_t,(uint32_t)Pixels::Format::PIXELS_FORMAT_MAX> PIXEL_SIZES
+    PixelAspectFlags SLAG_PIXEL_ASPECTS[]
     {
-#define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits,colorBits,depthBits,stencilBits, aspects) totalBits/8,
-        SLAG_TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
+        PixelAspectFlags::NONE_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::DEPTH_FLAG | PixelAspectFlags::STENCIL_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::DEPTH_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::DEPTH_FLAG | PixelAspectFlags::STENCIL_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::DEPTH_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG,
+        PixelAspectFlags::COLOR_FLAG
     };
 
-    std::array<Pixels::AspectFlags,(uint32_t)Pixels::Format::PIXELS_FORMAT_MAX> PIXEL_ASPECTS
+    PixelAspectFlags Pixel::aspectFlags(PixelFormat format)
     {
-#define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits,colorBits,depthBits,stencilBits, aspects) Pixels::AspectFlags::aspects,
-        SLAG_TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
+        return SLAG_PIXEL_ASPECTS[static_cast<uint32_t>(format)];
+    }
+
+    struct PixelAspectSizes
+    {
+        uint32_t color=0;
+        uint32_t depth=0;
+        uint32_t stencil=0;
     };
 
-    std::array<uint32_t,(uint32_t)Pixels::Format::PIXELS_FORMAT_MAX> PIXEL_COLOR_SIZES
+    PixelAspectSizes SLAG_PIXEL_ASPECT_SIZES[]
     {
-#define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits,colorBits,depthBits,stencilBits, aspects) colorBits/8,
-        SLAG_TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
+        {0,0,0},
+        {16,0,0},
+        {16,0,0},
+        {16,0,0},
+        {12,0,0},
+        {12,0,0},
+        {12,0,0},
+        {8,0,0},
+        {8,0,0},
+        {8,0,0},
+        {8,0,0},
+        {8,0,0},
+        {8,0,0},
+        {8,0,0},
+        {8,0,0},
+        {0,4,1},
+        {4,0,0},
+        {4,0,0},
+        {4,0,0},
+        {4,0,0},
+        {4,0,0},
+        {4,0,0},
+        {4,0,0},
+        {4,0,0},
+        {4,0,0},
+        {4,0,0},
+        {4,0,0},
+        {4,0,0},
+        {4,0,0},
+        {0,4,0},
+        {4,0,0},
+        {4,0,0},
+        {4,0,0},
+        {0,3,1},
+        {2,0,0},
+        {2,0,0},
+        {2,0,0},
+        {2,0,0},
+        {2,0,0},
+        {2,0,0},
+        {2,0,0},
+        {2,0,0},
+        {2,0,0},
+        {2,0,0},
+        {1,0,0},
+        {1,0,0},
+        {1,0,0},
+        {1,0,0},
+        {1,0,0},
+        {4,0,0},
+        {4,0,0},
+        {4,0,0},
+        {8,0,0},
+        {8,0,0},
+        {16,0,0},
+        {16,0,0},
+        {16,0,0},
+        {16,0,0},
+        {8,0,0},
+        {8,0,0},
+        {16,0,0},
+        {16,0,0},
+        {2,0,0},
+        {2,0,0},
+        {4,0,0},
+        {4,0,0},
+        {4,0,0},
+        {4,0,0},
+        {16,0,0},
+        {16,0,0},
+        {16,0,0},
+        {16,0,0},
+        {4,0,0},
+        {3,0,0},
+        {3,0,0},
+        {4,0,0},
+        {2,0,0}
     };
 
-    std::array<uint32_t,(uint32_t)Pixels::Format::PIXELS_FORMAT_MAX> PIXEL_DEPTH_SIZES
+    uint32_t Pixel::aspectSize(PixelFormat format, PixelAspect aspect)
     {
-#define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits,colorBits,depthBits,stencilBits, aspects) depthBits/8,
-    SLAG_TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-    };
-
-    std::array<uint32_t,(uint32_t)Pixels::Format::PIXELS_FORMAT_MAX> PIXEL_STENCIL_SIZES
-    {
-#define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits,colorBits,depthBits,stencilBits, aspects) stencilBits/8,
-        SLAG_TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-        };
-
-    uint32_t Pixels::size(Format format)
-    {
-        SLAG_ASSERT(format < Pixels::Format::PIXELS_FORMAT_MAX && (uint32_t)format >= 0);
-        return PIXEL_SIZES[(uint32_t)format];
-    }
-
-    uint32_t Pixels::size(Format format, AspectFlags aspects)
-    {
-        SLAG_ASSERT(format < Pixels::Format::PIXELS_FORMAT_MAX && (uint32_t)format >= 0);
-        SLAG_ASSERT(format < Pixels::Format::PIXELS_FORMAT_MAX && (uint32_t)format >= 0);
-        uint32_t totalBits = 0;
-        if ((uint8_t)(aspects & AspectFlags::COLOR))
+        auto pixelSize = SLAG_PIXEL_ASPECT_SIZES[static_cast<uint32_t>(format)];
+        switch (aspect)
         {
-            totalBits = PIXEL_COLOR_SIZES[(uint32_t)format];
+        case PixelAspect::COLOR:
+            return pixelSize.color;
+        case PixelAspect::DEPTH:
+            return pixelSize.depth;
+        case PixelAspect::STENCIL:
+            return pixelSize.stencil;
         }
-        if ((uint8_t)(aspects & AspectFlags::DEPTH))
-        {
-            totalBits = PIXEL_DEPTH_SIZES[(uint32_t)format];
-        }
-        if ((uint8_t)(aspects & AspectFlags::STENCIL))
-        {
-            totalBits = PIXEL_STENCIL_SIZES[(uint32_t)format];
-        }
-        return totalBits;
+        return 0;
     }
-
-    Pixels::AspectFlags Pixels::aspectFlags(Format format)
-    {
-        SLAG_ASSERT(format < Pixels::Format::PIXELS_FORMAT_MAX && (uint32_t)format >= 0);
-        return PIXEL_ASPECTS[(uint32_t)format];
-    }
-
-    bool Pixels::isValidAspectFlags(AspectFlags aspectFlags)
-    {
-        if ((bool)(aspectFlags & Pixels::AspectFlags::COLOR))
-        {
-            if ((bool)(aspectFlags & Pixels::AspectFlags::DEPTH) || (bool)(aspectFlags & Pixels::AspectFlags::STENCIL))
-            {
-                return false;
-            }
-            return true;
-        }
-        if ((bool)(aspectFlags & Pixels::AspectFlags::STENCIL))
-        {
-            if ((bool)(aspectFlags & Pixels::AspectFlags::DEPTH))
-            {
-                return true;
-            }
-            return false;
-        }
-        return true;
-    }
-
-    PixelFormatProperties Pixels::formatProperties(Format format)
-    {
-        return Backend::current()->pixelFormatProperties(format);
-    }
-}
+} // slag

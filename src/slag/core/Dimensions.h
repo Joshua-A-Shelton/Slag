@@ -1,54 +1,62 @@
 #ifndef SLAG_DIMENSIONS_H
 #define SLAG_DIMENSIONS_H
+#include <cstdint>
+
 #include "Pixels.h"
 namespace slag
 {
-    struct Offset
+    struct Offset2D
     {
-        int32_t x;
-        int32_t y;
+        int32_t x=0;
+        int32_t y=0;
     };
 
     struct Offset3D
     {
-        int32_t x;
-        int32_t y;
-        int32_t z;
+        int32_t x=0;
+        int32_t y=0;
+        int32_t z=0;
     };
 
-    struct Extent
+    struct Extent2D
     {
-        uint32_t width;
-        uint32_t height;
+        uint32_t width=0;
+        uint32_t height=0;
     };
 
     struct Extent3D
     {
-        uint32_t width;
-        uint32_t height;
-        uint32_t depth;
+        uint32_t width=0;
+        uint32_t height=0;
+        uint32_t depth=0;
     };
 
     struct Rectangle
     {
-        Offset offset;
-        Extent extent;
+        Offset2D offset{};
+        Extent2D extent{};
     };
 
     struct TextureSubresource
     {
-        Pixels::AspectFlags aspectFlags;
-        uint32_t mipLevel;
-        uint32_t baseArrayLayer;
-        uint32_t layerCount;
+        PixelAspect aspect = PixelAspect::COLOR;
+        uint32_t mipLevel = 0;
+        uint32_t baseArrayLayer = 0;
+        uint32_t layerCount = 1;
     };
 
     struct TextureBufferMapping
     {
-        uint64_t bufferOffset;
-        TextureSubresource textureSubresource;
-        Offset3D textureOffset;
-        Extent3D textureExtent;
+        uint64_t bufferOffset = 0;
+        TextureSubresource subresource{};
+        Offset3D offset{};
+        Extent3D extent{};
+    };
+
+    enum class IndexBufferType
+    {
+        UINT_16,
+        UINT_32,
     };
 
 }

@@ -1,19 +1,24 @@
 #include "VertexDescription.h"
+
 #include "slag/utilities/SLAG_ASSERT.h"
 
 namespace slag
 {
-    VertexAttribute::VertexAttribute(GraphicsType dataType, uint32_t offset)
+    VertexAttribute::VertexAttribute(const std::string& name, PixelFormat loadAs, uint32_t offset)
     {
-        SLAG_ASSERT(dataType != GraphicsType::STRUCT && "dataType cannot be struct for vertex attribute");
-        _dataType = dataType;
+        _name = name;
+        _loadAs = loadAs;
         _offset = offset;
     }
 
-
-    GraphicsType VertexAttribute::dataType() const
+    const std::string& VertexAttribute::name() const
     {
-        return _dataType;
+        return _name;
+    }
+
+    PixelFormat VertexAttribute::loadAs() const
+    {
+        return _loadAs;
     }
 
     uint32_t VertexAttribute::offset() const
@@ -21,45 +26,68 @@ namespace slag
         return _offset;
     }
 
-    VertexDescription::VertexDescription(size_t attributeChannels)
+    VertexBinding::VertexBinding(uint32_t index, uint32_t stride, InputRate inputRate, const std::vector<VertexAttribute>& attributes)
     {
-        _attributes.resize(attributeChannels);
+        _index = index;
+        _stride = stride;
+        _inputRate = inputRate;
+        _attributes = attributes;
     }
 
-    VertexDescription& VertexDescription::add(const VertexAttribute& attribute, size_t attributeChannel)
+    uint32_t VertexBinding::bindingIndex() const
     {
-        _attributes.at(attributeChannel).push_back(attribute);
-        return *this;
+        return _index;
     }
 
-    VertexDescription& VertexDescription::add(GraphicsType dataType, uint32_t offset, size_t attributeChannel)
+    uint32_t VertexBinding::stride() const
     {
-        _attributes.at(attributeChannel).emplace_back(dataType,offset);
-        return *this;
+        return _stride;
     }
 
-    size_t VertexDescription::attributeCount() const
+    InputRate VertexBinding::inputRate() const
     {
-        size_t count = 0;
-        for(auto& channel: _attributes)
-        {
-            count += channel.size();
-        }
-        return count;
+        return _inputRate;
     }
 
-    size_t VertexDescription::attributeCount(size_t channel) const
-    {
-        return _attributes.at(channel).size();
-    }
-
-    size_t VertexDescription::attributeChannels() const
+    uint32_t VertexBinding::attributeCount() const
     {
         return _attributes.size();
     }
 
-    VertexAttribute& VertexDescription::attribute(size_t channel,size_t index)
+    const VertexAttribute& VertexBinding::operator[](uint32_t index) const
     {
-        return _attributes.at(channel).at(index);
+        SLAG_ASSERT(index < _attributes.size() && "Index out of bounds");
+        return _attributes[index];
+    }
+
+    VertexDescription::VertexDescription(std::vector<VertexBinding> bindings)
+    {
+        _bindings = bindings;
+    }
+
+    VertexDescription::VertexDescription(std::vector<VertexBinding>&& bindings)
+    {
+        _bindings = std::move(bindings);
+    }
+
+    uint32_t VertexDescription::bindingCount() const
+    {
+        return _bindings.size();
+    }
+
+    const VertexBinding& VertexDescription::operator[](uint32_t index) const
+    {
+        SLAG_ASSERT(index < _bindings.size() && "Index out of bounds");
+        return _bindings[index];
+    }
+
+    uint32_t VertexDescription::attributeCount() const
+    {
+        uint32_t attributes = 0;
+        for (auto& binding : _bindings)
+        {
+            attributes += binding.attributeCount();
+        }
+        return attributes;
     }
 } // slag

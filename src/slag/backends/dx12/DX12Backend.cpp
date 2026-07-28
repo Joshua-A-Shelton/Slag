@@ -1,307 +1,475 @@
 #include "DX12Backend.h"
-#include <wrl.h>
-#include <dxgi1_4.h>
-#include <dxgi1_6.h>
-#include <dxgidebug.h>
 
-#include "core/DX12Buffer.h"
-#include "core/DX12CommandBuffer.h"
-#include "core/DX12DescriptorPool.h"
-#include "core/DX12GraphicsCard.h"
-#include "core/DX12Sampler.h"
-#include "core/DX12Semaphore.h"
-#include "core/DX12ShaderPipeline.h"
-#include "core/DX12Texture.h"
-#include "slag/core/Pixels.h"
+#include "slag/exceptions/NotImplemented.h"
 
 namespace slag
 {
     namespace dx12
     {
-        std::vector<DXGI_FORMAT> DXGI_FORMATS
+        DXGI_FORMAT DX12_FORMATS[]
         {
-#define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits,colorBits,depthBits,stencilBits, aspects) DxName,
-            SLAG_TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
+            DXGI_FORMAT_UNKNOWN,
+            DXGI_FORMAT_R32G32B32A32_FLOAT,
+            DXGI_FORMAT_R32G32B32A32_UINT,
+            DXGI_FORMAT_R32G32B32A32_SINT,
+            DXGI_FORMAT_R32G32B32_FLOAT,
+            DXGI_FORMAT_R32G32B32_UINT,
+            DXGI_FORMAT_R32G32B32_SINT,
+            DXGI_FORMAT_R16G16B16A16_FLOAT,
+            DXGI_FORMAT_R16G16B16A16_UNORM,
+            DXGI_FORMAT_R16G16B16A16_UINT,
+            DXGI_FORMAT_R16G16B16A16_SNORM,
+            DXGI_FORMAT_R16G16B16A16_SINT,
+            DXGI_FORMAT_R32G32_FLOAT,
+            DXGI_FORMAT_R32G32_UINT,
+            DXGI_FORMAT_R32G32_SINT,
+            DXGI_FORMAT_D32_FLOAT_S8X24_UINT,
+            DXGI_FORMAT_R10G10B10A2_UNORM,
+            DXGI_FORMAT_R10G10B10A2_UINT,
+            DXGI_FORMAT_R11G11B10_FLOAT,
+            DXGI_FORMAT_R8G8B8A8_UNORM,
+            DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+            DXGI_FORMAT_R8G8B8A8_UINT,
+            DXGI_FORMAT_R8G8B8A8_SNORM,
+            DXGI_FORMAT_R8G8B8A8_SINT,
+            DXGI_FORMAT_R16G16_FLOAT,
+            DXGI_FORMAT_R16G16_UNORM,
+            DXGI_FORMAT_R16G16_UINT,
+            DXGI_FORMAT_R16G16_SNORM,
+            DXGI_FORMAT_R16G16_SINT,
+            DXGI_FORMAT_D32_FLOAT,
+            DXGI_FORMAT_R32_FLOAT,
+            DXGI_FORMAT_R32_UINT,
+            DXGI_FORMAT_R32_SINT,
+            DXGI_FORMAT_D24_UNORM_S8_UINT,
+            DXGI_FORMAT_R8G8_UNORM,
+            DXGI_FORMAT_R8G8_UINT,
+            DXGI_FORMAT_R8G8_SNORM,
+            DXGI_FORMAT_R8G8_SINT,
+            DXGI_FORMAT_R16_FLOAT,
+            DXGI_FORMAT_D16_UNORM,
+            DXGI_FORMAT_R16_UNORM,
+            DXGI_FORMAT_R16_UINT,
+            DXGI_FORMAT_R16_SNORM,
+            DXGI_FORMAT_R16_SINT,
+            DXGI_FORMAT_R8_UNORM,
+            DXGI_FORMAT_R8_UINT,
+            DXGI_FORMAT_R8_SNORM,
+            DXGI_FORMAT_R8_SINT,
+            DXGI_FORMAT_A8_UNORM,
+            DXGI_FORMAT_R9G9B9E5_SHAREDEXP,
+            DXGI_FORMAT_R8G8_B8G8_UNORM,
+            DXGI_FORMAT_G8R8_G8B8_UNORM,
+            DXGI_FORMAT_BC1_UNORM,
+            DXGI_FORMAT_BC1_UNORM_SRGB,
+            DXGI_FORMAT_BC2_UNORM,
+            DXGI_FORMAT_BC2_UNORM_SRGB,
+            DXGI_FORMAT_BC3_UNORM,
+            DXGI_FORMAT_BC3_UNORM_SRGB,
+            DXGI_FORMAT_BC4_UNORM,
+            DXGI_FORMAT_BC4_SNORM,
+            DXGI_FORMAT_BC5_UNORM,
+            DXGI_FORMAT_BC5_SNORM,
+            DXGI_FORMAT_B5G6R5_UNORM,
+            DXGI_FORMAT_B5G5R5A1_UNORM,
+            DXGI_FORMAT_B8G8R8A8_UNORM,
+            DXGI_FORMAT_B8G8R8X8_UNORM,
+            DXGI_FORMAT_B8G8R8A8_UNORM_SRGB,
+            DXGI_FORMAT_B8G8R8X8_UNORM_SRGB,
+            DXGI_FORMAT_BC6H_UF16,
+            DXGI_FORMAT_BC6H_SF16,
+            DXGI_FORMAT_BC7_UNORM,
+            DXGI_FORMAT_BC7_UNORM_SRGB,
+            DXGI_FORMAT_AYUV,
+            DXGI_FORMAT_NV12,
+            DXGI_FORMAT_420_OPAQUE,
+            DXGI_FORMAT_YUY2,
+            DXGI_FORMAT_B4G4R4A4_UNORM
         };
 
-        DXGI_FORMAT DX12Backend::dx12Format(Pixels::Format format)
+
+        DX12Backend::DX12Backend()
         {
-            return(DXGI_FORMATS[static_cast<uint32_t>(format)]);
         }
 
-        D3D12_RESOURCE_DIMENSION DX12Backend::dx12Dimension(Texture::Type type)
+        BackendAPI DX12Backend::api()const
         {
-            switch (type)
-            {
-            case Texture::Type::TEXTURE_1D:
-                return D3D12_RESOURCE_DIMENSION_TEXTURE1D;
-            case Texture::Type::TEXTURE_2D:
-                return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-            case Texture::Type::TEXTURE_3D:
-                return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
-            case Texture::Type::TEXTURE_CUBE:
-                return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-            }
-            return D3D12_RESOURCE_DIMENSION_UNKNOWN;
+            return BackendAPI::DX12;
         }
 
-        D3D12_RESOURCE_FLAGS DX12Backend::dx12UsageFlags(Texture::UsageFlags usage)
+        uint32_t DX12Backend::graphicsCardCount()const
+        {
+            return _graphicsCards.size();
+        }
+
+        GraphicsCard* DX12Backend::graphicsCard(uint32_t index)
+        {
+            return &_graphicsCards[index];
+        }
+
+        uint32_t DX12Backend::supportedShaderLanguageCount() const
+        {
+            return 1;
+        }
+
+        ShaderLanguage DX12Backend::supportedShaderLanguage(uint32_t index) const
+        {
+            return ShaderLanguage::DXIL;
+        }
+
+        SlagDebugHandlerPtr DX12Backend::getDebugHandler() const
+        {
+            return _debugHandler;
+        }
+
+        DXGI_FORMAT DX12Backend::nativeFormat(PixelFormat format)
+        {
+            return DX12_FORMATS[(uint32_t)format];
+        }
+
+        D3D12_RESOURCE_FLAGS DX12Backend::nativeTextureUsageFlags(TextureUsageFlags usage)
         {
             D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
-            if ((uint8_t)(usage & Texture::UsageFlags::SAMPLED_IMAGE) == 0)
-            {
-                //flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
-            }
-            if((uint8_t)(usage & Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT))
+            if(static_cast<uint8_t>(usage & TextureUsageFlags::DEPTH_STENCIL_TARGET))
             {
                 flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
             }
-            if((uint8_t)(usage & Texture::UsageFlags::RENDER_TARGET_ATTACHMENT))
+            if(static_cast<uint8_t>(usage & TextureUsageFlags::COLOR_TARGET))
             {
                 flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
             }
-            if ((uint8_t)(usage & Texture::UsageFlags::STORAGE))
+            if (static_cast<uint8_t>(usage & TextureUsageFlags::UNORDERED_ACCESS))
             {
                 flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
             }
             return flags;
         }
 
-        std::vector<D3D12_BLEND> DX12_BLEND_FACTORS
+        D3D12_BARRIER_ACCESS DX12Backend::nativeMemoryCaches(MemoryCaches caches)
         {
-#define DEFINITION(SlagName, VulkanName, DXName) DXName,
-            BLEND_FACTOR_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-        };
 
-        D3D12_BLEND DX12Backend::dx12blendFactor(Operations::BlendFactor blendFactor)
-        {
-            return DX12_BLEND_FACTORS[static_cast<uint8_t>(blendFactor)];
+            D3D12_BARRIER_ACCESS flags = D3D12_BARRIER_ACCESS_COMMON;
+
+            if (static_cast<bool>(caches & MemoryCaches::INDIRECT_COMMAND_READ))
+            {
+                flags |= D3D12_BARRIER_ACCESS_INDIRECT_ARGUMENT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::INDEX_READ))
+            {
+                flags |= D3D12_BARRIER_ACCESS_INDEX_BUFFER;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::VERTEX_ATTRIBUTE_READ))
+            {
+                flags |= D3D12_BARRIER_ACCESS_VERTEX_BUFFER;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::UNIFORM_READ))
+            {
+                flags |= D3D12_BARRIER_ACCESS_CONSTANT_BUFFER;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::COLOR_TARGET))
+            {
+                flags |= D3D12_BARRIER_ACCESS_RENDER_TARGET;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::DEPTH_TARGET_READ))
+            {
+                flags |= D3D12_BARRIER_ACCESS_DEPTH_STENCIL_READ;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::DEPTH_TARGET_WRITE))
+            {
+                flags |= D3D12_BARRIER_ACCESS_DEPTH_STENCIL_WRITE;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::SHADER_SAMPLED_READ))
+            {
+                flags |= D3D12_BARRIER_ACCESS_SHADER_RESOURCE;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::SHADER_UNORDERED_ACCESS))
+            {
+                flags |= D3D12_BARRIER_ACCESS_UNORDERED_ACCESS;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::COPY_READ))
+            {
+                flags |= D3D12_BARRIER_ACCESS_COPY_SOURCE;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::COPY_WRITE))
+            {
+                flags |= D3D12_BARRIER_ACCESS_COPY_DEST;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::RESOLVE_READ))
+            {
+                flags |= D3D12_BARRIER_ACCESS_RESOLVE_SOURCE;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::RESOLVE_WRITE))
+            {
+                flags |= D3D12_BARRIER_ACCESS_RESOLVE_DEST;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::CLEAR))
+            {
+                flags |= D3D12_BARRIER_ACCESS_UNORDERED_ACCESS;
+            }
+            return flags;
         }
 
-        std::vector<D3D12_BLEND_OP> DX12_BLEND_OPS
+        D3D12_BARRIER_SYNC DX12Backend::nativePipelineStages(SyncStages stages)
         {
-#define DEFINITION(SlagName, VulkanName, DXName) DXName,
-            BLEND_OP_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-        };
+            D3D12_BARRIER_SYNC flags = D3D12_BARRIER_SYNC_NONE;
 
-        D3D12_BLEND_OP DX12Backend::dx12BlendOp(Operations::BlendOperation blendOperation)
-        {
-            return DX12_BLEND_OPS[static_cast<uint8_t>(blendOperation)];
+            if (static_cast<bool>(stages & SyncStages::ALL))
+            {
+                flags |= D3D12_BARRIER_SYNC_ALL;
+            }
+            if (static_cast<bool>(stages & SyncStages::ALL_GRAPHICS))
+            {
+                flags |= D3D12_BARRIER_SYNC_DRAW;
+            }
+            if (static_cast<bool>(stages & SyncStages::INDEX_INPUT))
+            {
+                flags |= D3D12_BARRIER_SYNC_INDEX_INPUT;
+            }
+            if (static_cast<bool>(stages & SyncStages::VERTEX_SHADER))
+            {
+                flags |= D3D12_BARRIER_SYNC_VERTEX_SHADING;
+            }
+            if (static_cast<bool>(stages & SyncStages::FRAGMENT_SHADER))
+            {
+                flags |= D3D12_BARRIER_SYNC_PIXEL_SHADING;
+            }
+            if (static_cast<bool>(stages & SyncStages::DEPTH_STENCIL_TARGET_OUTPUT))
+            {
+                flags |= D3D12_BARRIER_SYNC_DEPTH_STENCIL;
+            }
+            if (static_cast<bool>(stages & SyncStages::COLOR_TARGET_OUTPUT))
+            {
+                flags |= D3D12_BARRIER_SYNC_RENDER_TARGET;
+            }
+            if (static_cast<bool>(stages & SyncStages::COMPUTE_SHADER))
+            {
+                flags |= D3D12_BARRIER_SYNC_COMPUTE_SHADING;
+            }
+            if (static_cast<bool>(stages & SyncStages::RAYTRACING_SHADER))
+            {
+                flags |= D3D12_BARRIER_SYNC_RAYTRACING;
+            }
+            if (static_cast<bool>(stages & SyncStages::COPY))
+            {
+                flags |= D3D12_BARRIER_SYNC_COPY;
+            }
+            if (static_cast<bool>(stages & SyncStages::RESOLVE))
+            {
+                flags |= D3D12_BARRIER_SYNC_RESOLVE;
+            }
+            if (static_cast<bool>(stages & SyncStages::EXECUTE_INDIRECT))
+            {
+                flags |= D3D12_BARRIER_SYNC_EXECUTE_INDIRECT;
+            }
+            if (static_cast<bool>(stages & SyncStages::CLEAR))
+            {
+                flags |= D3D12_BARRIER_SYNC_RENDER_TARGET | D3D12_BARRIER_SYNC_DEPTH_STENCIL;
+            }
+            if (static_cast<bool>(stages & SyncStages::VIDEO_DECODE))
+            {
+                flags |= D3D12_BARRIER_SYNC_VIDEO_DECODE;
+            }
+            if (static_cast<bool>(stages & SyncStages::VIDEO_ENCODE))
+            {
+                flags |= D3D12_BARRIER_SYNC_VIDEO_ENCODE;
+            }
+            if (static_cast<bool>(stages & SyncStages::BUILD_ACCELERATION_STRUCTURE))
+            {
+                flags |= D3D12_BARRIER_SYNC_BUILD_RAYTRACING_ACCELERATION_STRUCTURE;
+            }
+            if (static_cast<bool>(stages & SyncStages::COPY_ACCELERATION_STRUCTURE))
+            {
+                flags |= D3D12_BARRIER_SYNC_COPY_RAYTRACING_ACCELERATION_STRUCTURE;
+            }
+            return flags;
         }
 
-        std::vector<D3D12_LOGIC_OP> DX12_LOGIC_OPS
+        D3D12_BLEND D3D12_NATIVE_BLEND_FACTORS[]
         {
-#define DEFINITION(SlagName,VulkanName,DX12Name) DX12Name,
-            FRAMEBUFFER_LOGICAL_OP_DEFINITIONS(DEFINITION)
-#undef DEFINITION
+            D3D12_BLEND_ZERO,
+            D3D12_BLEND_ONE,
+            D3D12_BLEND_SRC_COLOR,
+            D3D12_BLEND_INV_SRC_COLOR,
+            D3D12_BLEND_DEST_COLOR,
+            D3D12_BLEND_INV_DEST_COLOR,
+            D3D12_BLEND_SRC_ALPHA,
+            D3D12_BLEND_INV_SRC_ALPHA,
+            D3D12_BLEND_DEST_ALPHA,
+            D3D12_BLEND_INV_DEST_ALPHA,
+            D3D12_BLEND_BLEND_FACTOR,
+            D3D12_BLEND_INV_BLEND_FACTOR,
+            D3D12_BLEND_ALPHA_FACTOR,
+            D3D12_BLEND_INV_ALPHA_FACTOR,
+            D3D12_BLEND_SRC_ALPHA_SAT,
+            D3D12_BLEND_SRC1_COLOR,
+            D3D12_BLEND_INV_SRC1_COLOR,
+            D3D12_BLEND_SRC1_ALPHA,
+            D3D12_BLEND_INV_SRC1_ALPHA
         };
-
-        D3D12_LOGIC_OP DX12Backend::dx12LogicOp(Operations::LogicalOperation operation)
+        D3D12_BLEND DX12Backend::nativeBlendFactor(BlendFactor factor)
         {
-            return DX12_LOGIC_OPS[static_cast<uint8_t>(operation)];
+            return D3D12_NATIVE_BLEND_FACTORS[(uint32_t)factor];
         }
 
-        std::vector<D3D12_FILL_MODE> DX12_FILL_MODES =
-        {
-            D3D12_FILL_MODE_SOLID,
-            D3D12_FILL_MODE_WIREFRAME,//TODO: DX12 has no vertex fill mode, it's pretty pointless anyway, possibly remove it from slag api
-            D3D12_FILL_MODE_WIREFRAME
-        };
 
-        D3D12_FILL_MODE DX12Backend::dx12FillMode(RasterizationState::DrawMode drawMode)
+        D3D12_BLEND_OP D3D12_NATIVE_BLEND_OPS[]
         {
-            return DX12_FILL_MODES[static_cast<uint8_t>(drawMode)];
+            D3D12_BLEND_OP_ADD,
+            D3D12_BLEND_OP_SUBTRACT,
+            D3D12_BLEND_OP_REV_SUBTRACT,
+            D3D12_BLEND_OP_MIN,
+            D3D12_BLEND_OP_MAX
+        };
+        D3D12_BLEND_OP DX12Backend::nativeBlendOp(BlendOperation op)
+        {
+            return D3D12_NATIVE_BLEND_OPS[(uint32_t)op];
         }
 
-        std::vector<D3D12_CULL_MODE> DX12_CULL_FLAGS
+        D3D12_LOGIC_OP D3D12_NATIVE_LOGIC_OPS[]
         {
-            D3D12_CULL_MODE_NONE,
-            D3D12_CULL_MODE_FRONT,
-            D3D12_CULL_MODE_BACK,
+            D3D12_LOGIC_OP_CLEAR,
+            D3D12_LOGIC_OP_AND,
+            D3D12_LOGIC_OP_AND_REVERSE,
+            D3D12_LOGIC_OP_COPY,
+            D3D12_LOGIC_OP_AND_INVERTED,
+            D3D12_LOGIC_OP_NOOP,
+            D3D12_LOGIC_OP_XOR,
+            D3D12_LOGIC_OP_OR,
+            D3D12_LOGIC_OP_NOR,
+            D3D12_LOGIC_OP_EQUIV,
+            D3D12_LOGIC_OP_INVERT,
+            D3D12_LOGIC_OP_AND_REVERSE,
+            D3D12_LOGIC_OP_COPY_INVERTED,
+            D3D12_LOGIC_OP_OR_INVERTED,
+            D3D12_LOGIC_OP_NAND,
+            D3D12_LOGIC_OP_SET
         };
-
-        D3D12_CULL_MODE DX12Backend::dx12CullMode(RasterizationState::CullOptions cullOptions)
+        D3D12_LOGIC_OP DX12Backend::nativeLogicOp(LogicOperation op)
         {
-            return DX12_CULL_FLAGS[static_cast<uint8_t>(cullOptions)];
+            return D3D12_NATIVE_LOGIC_OPS[(uint32_t)op];
         }
 
-        std::vector<D3D12_COMPARISON_FUNC> DX12_COMPARE_OPS
+        D3D12_FILL_MODE DX12Backend::nativeFillMode(RasterizationState::DrawMode mode)
         {
-#define DEFINITION(slagName, vulkanName, dx12Name) dx12Name,
-            COMPARISON_FUNCTION(DEFINITION)
-#undef DEFINITION
-        };
-
-        D3D12_COMPARISON_FUNC DX12Backend::dx12ComparisonFunction(Operations::ComparisonFunction comparisonFunction)
-        {
-            return DX12_COMPARE_OPS[static_cast<uint8_t>(comparisonFunction)];
+            switch(mode)
+            {
+            case RasterizationState::DrawMode::FACE:
+                return D3D12_FILL_MODE_SOLID;
+            case RasterizationState::DrawMode::EDGE:
+            case RasterizationState::DrawMode::VERTEX:
+                return D3D12_FILL_MODE_WIREFRAME;
+            }
+            return D3D12_FILL_MODE_SOLID;
         }
 
-        D3D12_DEPTH_STENCILOP_DESC DX12Backend::dx12StencilOpDesc(StencilOpState state)
+        D3D12_CULL_MODE DX12Backend::nativeCullMode(RasterizationState::CullOptions mode)
+        {
+            switch(mode)
+            {
+            case RasterizationState::CullOptions::NONE:
+                return D3D12_CULL_MODE_NONE;
+                break;
+            case RasterizationState::CullOptions::FRONT_FACING:
+                return D3D12_CULL_MODE_FRONT;
+                break;
+            case RasterizationState::CullOptions::BACK_FACING:
+                return D3D12_CULL_MODE_BACK;
+                break;
+            }
+            return D3D12_CULL_MODE_NONE;
+
+        }
+
+        D3D12_COMPARISON_FUNC D3D12_NATIVE_COMPARISON_FUNCS[]
+        {
+            D3D12_COMPARISON_FUNC_NEVER,
+            D3D12_COMPARISON_FUNC_LESS,
+            D3D12_COMPARISON_FUNC_LESS_EQUAL,
+            D3D12_COMPARISON_FUNC_GREATER,
+            D3D12_COMPARISON_FUNC_GREATER_EQUAL,
+            D3D12_COMPARISON_FUNC_EQUAL,
+            D3D12_COMPARISON_FUNC_NOT_EQUAL,
+            D3D12_COMPARISON_FUNC_ALWAYS
+        };
+        D3D12_COMPARISON_FUNC DX12Backend::nativeCompareFunc(ComparisonFunction func)
+        {
+            return D3D12_NATIVE_COMPARISON_FUNCS[(uint32_t)func];
+        }
+
+        D3D12_STENCIL_OP D3D12_NATIVE_STENCIL_OPS[]
+        {
+            D3D12_STENCIL_OP_KEEP,
+            D3D12_STENCIL_OP_ZERO,
+            D3D12_STENCIL_OP_REPLACE,
+            D3D12_STENCIL_OP_INCR_SAT,
+            D3D12_STENCIL_OP_DECR_SAT,
+            D3D12_STENCIL_OP_INVERT,
+            D3D12_STENCIL_OP_INCR,
+            D3D12_STENCIL_OP_DECR
+        };
+
+        D3D12_DEPTH_STENCILOP_DESC DX12Backend::nativeDepthStencilOpDesc(StencilOpState state)
         {
             D3D12_DEPTH_STENCILOP_DESC desc{};
-            desc.StencilFailOp = dx12StencilOp(state.failOp);
-            desc.StencilDepthFailOp = dx12StencilOp(state.depthFailOp);
-            desc.StencilPassOp = dx12StencilOp(state.passOp);
-            desc.StencilFunc = dx12ComparisonFunction(state.compareOp);
+            desc.StencilFailOp = D3D12_NATIVE_STENCIL_OPS[(uint32_t)state.failOp];
+            desc.StencilDepthFailOp = D3D12_NATIVE_STENCIL_OPS[(uint32_t)state.depthFailOp];
+            desc.StencilPassOp = D3D12_NATIVE_STENCIL_OPS[(uint32_t)state.passOp];
+            desc.StencilFunc = nativeCompareFunc(state.compareOp);
             return desc;
         }
 
-        std::vector<D3D12_STENCIL_OP> DX12_STENCIL_OPS
+        D3D12_FILTER DX12Backend::nativeFilter(SamplerFilter min, SamplerFilter mag, SamplerFilter mip,
+            bool anisotrophyEnabled)
         {
-#define DEFINITION(SlagName,VulkanName, DX12Name) DX12Name,
-            STENCIL_OP_DEFINITIONS(DEFINITION)
-#undef DEFINITION
-        };
-
-        D3D12_STENCIL_OP DX12Backend::dx12StencilOp(Operations::StencilOperation operation)
-        {
-            return DX12_STENCIL_OPS[static_cast<uint8_t>(operation)];
-        }
-
-        std::vector<DXGI_FORMAT> DX12Backend::dx12GraphicsType(GraphicsType type)
-        {
-            std::vector<DXGI_FORMAT> formats;
-            switch(type)
-            {
-                case GraphicsType::UNKNOWN:
-                    formats.push_back(DXGI_FORMAT_UNKNOWN);
-                    break;
-                case GraphicsType::BOOLEAN:
-                    formats.push_back(DXGI_FORMAT_R8_UINT);
-                    break;
-                case GraphicsType::INTEGER:
-                    formats.push_back(DXGI_FORMAT_R32_SINT);
-                    break;
-                case GraphicsType::UNSIGNED_INTEGER:
-                    formats.push_back(DXGI_FORMAT_R32_UINT);
-                    break;
-                case GraphicsType::FLOAT:
-                    formats.push_back(DXGI_FORMAT_R32_FLOAT);
-                    break;
-                case GraphicsType::DOUBLE:
-                    formats.push_back(DXGI_FORMAT_R32G32_UINT);//notice we have to pass in as two components, each with 32 bits
-                    break;
-                case GraphicsType::VECTOR2:
-                    formats.push_back(DXGI_FORMAT_R32G32_FLOAT);
-                    break;
-                case GraphicsType::VECTOR3:
-                    formats.push_back(DXGI_FORMAT_R32G32B32_FLOAT);
-                    break;
-                case GraphicsType::VECTOR4:
-                    formats.push_back(DXGI_FORMAT_R32G32B32A32_FLOAT);
-                    break;
-                case GraphicsType::BOOLEAN_VECTOR2:
-                    formats.push_back(DXGI_FORMAT_R8G8_UINT);
-                    break;
-                case GraphicsType::BOOLEAN_VECTOR3:
-                    formats.push_back(DXGI_FORMAT_R8_UINT);
-                    formats.push_back(DXGI_FORMAT_R8_UINT);
-                    formats.push_back(DXGI_FORMAT_R8_UINT);
-                    break;
-                case GraphicsType::BOOLEAN_VECTOR4:
-                    formats.push_back(DXGI_FORMAT_R8G8B8A8_UINT);
-                    break;
-                case GraphicsType::INTEGER_VECTOR2:
-                    formats.push_back(DXGI_FORMAT_R32G32_SINT);
-                    break;
-                case GraphicsType::INTEGER_VECTOR3:
-                    formats.push_back(DXGI_FORMAT_R32G32B32_SINT);
-                    break;
-                case GraphicsType::INTEGER_VECTOR4:
-                    formats.push_back(DXGI_FORMAT_R32G32B32A32_SINT);
-                    break;
-                case GraphicsType::UNSIGNED_INTEGER_VECTOR2:
-                    formats.push_back(DXGI_FORMAT_R32G32_UINT);
-                    break;
-                case GraphicsType::UNSIGNED_INTEGER_VECTOR3:
-                    formats.push_back(DXGI_FORMAT_R32G32B32_UINT);
-                    break;
-                case GraphicsType::UNSIGNED_INTEGER_VECTOR4:
-                    formats.push_back(DXGI_FORMAT_R32G32B32A32_UINT);
-                    break;
-                case GraphicsType::DOUBLE_VECTOR2:
-                    formats.push_back(DXGI_FORMAT_R32G32B32A32_UINT);//notice we have to pass in as two components, each with 32 bits for each component
-                    break;
-                case GraphicsType::DOUBLE_VECTOR3:
-                    formats.push_back(DXGI_FORMAT_R32G32_UINT);//notice we have to pass in as two components, each with 32 bits for each component
-                    formats.push_back(DXGI_FORMAT_R32G32_UINT);
-                    formats.push_back(DXGI_FORMAT_R32G32_UINT);
-                    break;
-                case GraphicsType::DOUBLE_VECTOR4:
-                    formats.push_back(DXGI_FORMAT_R32G32B32A32_UINT);//notice we have to pass in as two components, each with 32 bits for each component
-                    formats.push_back(DXGI_FORMAT_R32G32B32A32_UINT);
-                    break;
-            }
-            return formats;
-        }
-
-        uint32_t DX12Backend::dx12FormatSize(DXGI_FORMAT format)
-        {
-            switch (format)
-            {
-#define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits, colorBits, depthBits, stencilBits, aspectFlags) case DxName: return totalBits/8;
-                SLAG_TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-            }
-            return 0;
-        }
-
-        //TODO: this whole function is... a best guess, there's a lot of difference between how DX handles this and Vulkan handles it
-        D3D12_FILTER DX12Backend::dx12Filter(Sampler::Filter minFilter, Sampler::Filter magFilter,Sampler::Filter mipMapFilter, bool ansitrophyEnabled)
-        {
-            if(ansitrophyEnabled)
+            if(anisotrophyEnabled)
             {
                 return D3D12_FILTER_ANISOTROPIC;
             }
-            if(minFilter == Sampler::Filter::LINEAR)
+            if(min == SamplerFilter::LINEAR)
             {
-                if(magFilter == Sampler::Filter::LINEAR)
+                if(mag == SamplerFilter::LINEAR)
                 {
-                    if(mipMapFilter == Sampler::Filter::LINEAR)
+                    if(mip == SamplerFilter::LINEAR)
                     {
                         return D3D12_FILTER_MIN_MAG_MIP_LINEAR;
                     }
-                    else if(mipMapFilter == Sampler::Filter::NEAREST)
+                    else if(mip == SamplerFilter::NEAREST)
                     {
                         return D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
                     }
                 }
-                else if(magFilter == Sampler::Filter::NEAREST)
+                else if(mag == SamplerFilter::NEAREST)
                 {
-                    if(mipMapFilter == Sampler::Filter::LINEAR)
+                    if(mip == SamplerFilter::LINEAR)
                     {
                         return D3D12_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
                     }
-                    else if(mipMapFilter == Sampler::Filter::NEAREST)
+                    else if(mip == SamplerFilter::NEAREST)
                     {
                         return D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT;
                     }
                 }
             }
-            else if(minFilter == Sampler::Filter::NEAREST)
+            else if(min == SamplerFilter::NEAREST)
             {
-                if(magFilter == Sampler::Filter::LINEAR)
+                if(mag == SamplerFilter::LINEAR)
                 {
-                    if(mipMapFilter == Sampler::Filter::LINEAR)
+                    if(mip == SamplerFilter::LINEAR)
                     {
                         return D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR;
                     }
-                    else if(mipMapFilter == Sampler::Filter::NEAREST)
+                    else if(mip == SamplerFilter::NEAREST)
                     {
                         return D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;
                     }
                 }
-                else if(magFilter == Sampler::Filter::NEAREST)
+                else if(mag == SamplerFilter::NEAREST)
                 {
-                    if(mipMapFilter == Sampler::Filter::LINEAR)
+                    if(mip == SamplerFilter::LINEAR)
                     {
                         return D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR;
                     }
-                    else if(mipMapFilter == Sampler::Filter::NEAREST)
+                    else if(mip == SamplerFilter::NEAREST)
                     {
                         return D3D12_FILTER_MIN_MAG_MIP_POINT;
                     }
@@ -310,30 +478,109 @@ namespace slag
             return D3D12_FILTER_ANISOTROPIC;
         }
 
-        D3D12_TEXTURE_ADDRESS_MODE DX12Backend::dx12AddressMode(Sampler::AddressMode mode)
+        D3D12_TEXTURE_ADDRESS_MODE DX12Backend::nativeAddressMode(SamplerAddressMode mode)
         {
-            switch(mode)
+            switch (mode)
             {
-#define DEFINITION(slagName, vulkanName, dx12Name) case Sampler::AddressMode::slagName: return dx12Name;
-                SAMPLER_ADDRESS_MODES_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
+            case SamplerAddressMode::REPEAT:
+                return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+            case SamplerAddressMode::MIRRORED_REPEAT:
+                return D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+            case SamplerAddressMode::CLAMP_TO_EDGE:
+                return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+            case SamplerAddressMode::CLAMP_TO_BORDER:
+                return D3D12_TEXTURE_ADDRESS_MODE_BORDER;
             }
             return D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
         }
 
+        D3D12_SRV_DIMENSION DX12Backend::nativeSRVTextureDimension(TextureType type, uint32_t arraySize, SampleCount sampleCount)
+        {
+            switch (type)
+            {
+            case TextureType::ONE_DIMENSIONAL:
+                return arraySize == 1 ? D3D12_SRV_DIMENSION_TEXTURE1D : D3D12_SRV_DIMENSION_TEXTURE1DARRAY;
+            case TextureType::TWO_DIMENSIONAL:
+                if (sampleCount == SampleCount::ONE)
+                {
+                    return arraySize == 1 ? D3D12_SRV_DIMENSION_TEXTURE2D : D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+                }
+                return arraySize == 1 ? D3D12_SRV_DIMENSION_TEXTURE2DMS : D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY;
+            case TextureType::THREE_DIMENSIONAL:
+                return D3D12_SRV_DIMENSION_TEXTURE3D;
+            case TextureType::CUBE_MAP:
+                return arraySize == 6 ? D3D12_SRV_DIMENSION_TEXTURECUBE : D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
+            }
+            return D3D12_SRV_DIMENSION_UNKNOWN;
+        }
 
+        D3D12_UAV_DIMENSION DX12Backend::nativeUAVTextureDimension(TextureType type, uint32_t arraySize,
+            SampleCount sampleCount)
+        {
+            switch (type)
+            {
+            case TextureType::ONE_DIMENSIONAL:
+                return arraySize == 1 ? D3D12_UAV_DIMENSION_TEXTURE1D : D3D12_UAV_DIMENSION_TEXTURE1DARRAY;
+            case TextureType::TWO_DIMENSIONAL:
+                if (sampleCount == SampleCount::ONE)
+                {
+                    return arraySize == 1 ? D3D12_UAV_DIMENSION_TEXTURE2D : D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+                }
+                return arraySize == 1 ? D3D12_UAV_DIMENSION_TEXTURE2DMS : D3D12_UAV_DIMENSION_TEXTURE2DMSARRAY;
+            case TextureType::THREE_DIMENSIONAL:
+                return D3D12_UAV_DIMENSION_TEXTURE3D;
+            }
+            return D3D12_UAV_DIMENSION_UNKNOWN;
+        }
 
-        DX12Backend::DX12Backend(SlagInitInfo initInfo)
+        D3D12_BARRIER_LAYOUT DX12_NATIVE_LAYOUTS[]
+        {
+            D3D12_BARRIER_LAYOUT_UNDEFINED,
+            D3D12_BARRIER_LAYOUT_COMMON,
+            D3D12_BARRIER_LAYOUT_RENDER_TARGET,
+            D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_WRITE,
+            D3D12_BARRIER_LAYOUT_RESOLVE_SOURCE,
+            D3D12_BARRIER_LAYOUT_RESOLVE_DEST,
+            D3D12_BARRIER_LAYOUT_PRESENT
+        };
+
+        D3D12_BARRIER_LAYOUT DX12Backend::nativeImageLayout(TextureLayout layout)
+        {
+            return DX12_NATIVE_LAYOUTS[static_cast<uint32_t>(layout)];
+        }
+
+        D3D12_INPUT_CLASSIFICATION DX12Backend::nativeVertexInputRate(InputRate inputRate)
+        {
+            switch (inputRate)
+            {
+            case InputRate::PER_VRETEX:
+                    return D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+                case InputRate::PER_INSTANCE:
+                    return D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
+            }
+
+            return D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+        }
+
+        SlagInitializationResult DX12Backend::initializeBackend(const InitializationData& initializationData)
         {
             Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory;
             UINT createFactoryFlags = 0;
-            if(initInfo.slagDebugHandler)
+            if(initializationData.debugHandler)
             {
-                _dx12DebugHandler = initInfo.slagDebugHandler;
+                _debugHandler = initializationData.debugHandler;
                 Microsoft::WRL::ComPtr<ID3D12Debug> debugInterface = nullptr;
-                D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface));
+                auto result = D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface));
+                if (result != S_OK)
+                {
+                    return SlagInitializationResult::INSUFFICIENT_CAPABILITIES;
+                }
                 Microsoft::WRL::ComPtr<ID3D12Debug1> debugController;
-                debugInterface->QueryInterface(IID_PPV_ARGS(&debugController));
+                result = debugInterface->QueryInterface(IID_PPV_ARGS(&debugController));
+                if (result != S_OK)
+                {
+                    return SlagInitializationResult::INSUFFICIENT_CAPABILITIES;
+                }
                 debugController->EnableDebugLayer();
                 debugController->SetEnableGPUBasedValidation(true);
 
@@ -342,42 +589,11 @@ namespace slag
 
             CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&dxgiFactory));
 
-
-            if(!dxgiFactory)
+            if (!dxgiFactory)
             {
-                _valid = false;
+                return SlagInitializationResult::INSUFFICIENT_CAPABILITIES;
             }
-            else
-            {
-                _dxgiFactory = dxgiFactory;
-                _valid = true;
-            }
-
-
-        }
-
-        DX12Backend::~DX12Backend()
-        {
-        }
-
-        void DX12Backend::postGraphicsCardChosenSetup()
-        {
-        }
-
-        void DX12Backend::preGraphicsCardDestroyCleanup()
-        {
-        }
-
-        bool DX12Backend::valid()
-        {
-            return _valid;
-        }
-
-        std::vector<std::unique_ptr<GraphicsCard>> DX12Backend::getGraphicsCards()
-        {
-            std::vector<std::unique_ptr<GraphicsCard>> cards;
-
-
+            _dxgiFactory = dxgiFactory;
 
             Microsoft::WRL::ComPtr<IDXGIAdapter1> dxgiAdapter1;
 
@@ -394,224 +610,41 @@ namespace slag
                     SUCCEEDED(D3D12CreateDevice(dxgiAdapter1.Get(),D3D_FEATURE_LEVEL_12_2, __uuidof(ID3D12Device), nullptr)))
                 {
                     dxgiAdapter1.As(&dxgiAdapter4);
-                    auto card = std::make_unique<DX12GraphicsCard>(dxgiAdapter4,_dxgiFactory);
-                    if (card->isValidGraphicsCard())
+                    Microsoft::WRL::ComPtr<ID3D12Device2> device;
+                    D3D12CreateDevice(dxgiAdapter4.Get(), D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&device));
+
+                    D3D12_FEATURE_DATA_D3D12_OPTIONS12 features{};
+                    auto res = device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS12,&features,sizeof(features));
+                    if (!features.EnhancedBarriersSupported)
                     {
-                        cards.push_back(std::move(card));
+                        continue;
                     }
+                    D3D12_FEATURE_DATA_D3D12_OPTIONS13 features13{};
+                    res = device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS13,&features13,sizeof(features13));
+                    if (!features13.UnrestrictedBufferTextureCopyPitchSupported)
+                    {
+                        continue;
+                    }
+                    D3D12_FEATURE_DATA_SHADER_MODEL shaderModel{};
+                    shaderModel.HighestShaderModel = D3D_SHADER_MODEL_6_6;
+                    res = device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL,&shaderModel,sizeof(shaderModel));
+                    if (FAILED(res))
+                    {
+                        continue;
+                    }
+                    if (shaderModel.HighestShaderModel < D3D_SHADER_MODEL_6_6)
+                    {
+                        continue;
+                    }
+                    _graphicsCards.emplace_back(device,dxgiFactory,dxgiAdapter4,initializationData.debugHandler!=nullptr);
                 }
             }
-
-            return cards;
-        }
-
-        GraphicsBackend DX12Backend::backendAPI()
-        {
-            return GraphicsBackend::DX12_GRAPHICS_BACKEND;
-        }
-
-        CommandBuffer* DX12Backend::newCommandBuffer(GPUQueue::QueueType acceptsCommands)
-        {
-            return new DX12CommandBuffer(acceptsCommands);
-        }
-
-        CommandBuffer* DX12Backend::newSubCommandBuffer(CommandBuffer* parentBuffer)
-        {
-            throw std::runtime_error("DX12Backend::newSubCommandBuffer() not implemented");
-        }
-
-        Semaphore* DX12Backend::newSemaphore(uint64_t initialValue)
-        {
-            return new DX12Semaphore(initialValue);
-        }
-
-        void DX12Backend::waitFor(SemaphoreValue* values, size_t count)
-        {
-            DX12Semaphore::waitFor(values, count);
-        }
-
-        Texture* DX12Backend::newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags,uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers,Texture::SampleCount sampleCount)
-        {
-            return new DX12Texture(texelFormat,type,usageFlags,width,height,depth,mipLevels,layers,sampleCount);
-        }
-
-        Texture* DX12Backend::newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags,uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers,Texture::SampleCount sampleCount, void* texelData, uint64_t texelDataLength, TextureBufferMapping* mappings,uint32_t mappingCount)
-        {
-            return new DX12Texture(texelFormat,type,usageFlags,width,height,depth,mipLevels,layers,sampleCount,texelData,texelDataLength,mappings,mappingCount);
-        }
-
-        Buffer* DX12Backend::newBuffer(size_t size, Buffer::Accessibility accessibility, Buffer::UsageFlags usage)
-        {
-            return new DX12Buffer(size,accessibility,usage);
-        }
-
-        Buffer* DX12Backend::newBuffer(void* data, size_t dataSize, Buffer::Accessibility accessibility,Buffer::UsageFlags usage)
-        {
-            return new DX12Buffer(data,dataSize,accessibility,usage);
-        }
-
-        BufferView* DX12Backend::newBufferView(Buffer* buffer, Pixels::Format format, uint64_t offset, uint64_t size)
-        {
-            throw std::runtime_error("DX12Backend::newBufferView() not implemented");
-        }
-
-        SwapChain* DX12Backend::newSwapChain(PlatformData platformData, uint32_t width, uint32_t height,const SwapChainDetails& details)
-        {
-            throw std::runtime_error("DX12Backend::newSwapChain() not implemented");
-        }
-
-        Sampler* DX12Backend::newSampler(SamplerParameters parameters)
-        {
-            return new DX12Sampler(parameters);
-        }
-
-        std::vector<ShaderCode::CodeLanguage> DX12Backend::acceptedLanuages()
-        {
-            std::vector<ShaderCode::CodeLanguage> result{ShaderCode::CodeLanguage::DXIL};
-            return result;
-        }
-
-        ShaderPipeline* DX12Backend::newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription,std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
-        {
-            return new DX12ShaderPipeline(shaders, shaderCount, properties, vertexDescription, framebufferDescription,rename,renameData);
-        }
-
-        ShaderPipeline* DX12Backend::newShaderPipeline(const ShaderCode& computeShader,std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
-        {
-            throw std::runtime_error("DX12Backend::newShaderPipeline() not implemented");
-        }
-
-        DescriptorPool* DX12Backend::newDescriptorPool()
-        {
-            return new DX12DescriptorPool(1000000);
-        }
-
-        DescriptorPool* DX12Backend::newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)
-        {
-            uint64_t poolSize = 0;
-
-            poolSize += pageInfo.samplers;
-            poolSize += pageInfo. sampledTextures;
-            poolSize += pageInfo. storageTextures;
-            poolSize += pageInfo. uniformTexelBuffers;
-            poolSize += pageInfo. storageTexelBuffers;
-            poolSize += pageInfo. uniformBuffers;
-            poolSize += pageInfo. storageBuffers;
-            poolSize += pageInfo. inputAttachments;
-            poolSize += pageInfo. accelerationStructures;
-            poolSize += pageInfo. descriptorBundles;
-            return new DX12DescriptorPool(poolSize);
-        }
-
-        void DX12Backend::setDescriptorBundleSampler(DescriptorBundle& descriptor, DescriptorIndex* index,
-            uint32_t arrayElement, Sampler* sampler)
-        {
-            throw std::runtime_error("DX12Backend::setDescriptorBundleSampler() not implemented");
-        }
-
-        void DX12Backend::setDescriptorBundleSampledTexture(DescriptorBundle& descriptor, DescriptorIndex* index,
-            uint32_t arrayElement, Texture* texture)
-        {
-            throw std::runtime_error("DX12Backend::setDescriptorBundleSampledTexture() not implemented");
-        }
-
-        void DX12Backend::setDescriptorBundleStorageTexture(DescriptorBundle& descriptor, DescriptorIndex* index,
-            uint32_t arrayElement, Texture* texture)
-        {
-            throw std::runtime_error("DX12Backend::setDescriptorBundleStorageTexture() not implemented");
-        }
-
-        void DX12Backend::setDescriptorBundleUniformTexelBuffer(DescriptorBundle& descriptor, DescriptorIndex* index,uint32_t arrayElement, BufferView* bufferView)
-        {
-            throw std::runtime_error("DX12Backend::setDescriptorBundleUniformTexelBuffer() not implemented");
-        }
-
-
-        void DX12Backend::setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, DescriptorIndex* index,uint32_t arrayElement, BufferView* bufferView)
-        {
-            throw std::runtime_error("DX12Backend::setDescriptorBundleStorageTexelBuffer() not implemented");
-        }
-
-        void DX12Backend::setDescriptorBundleUniformBuffer(DescriptorBundle& descriptor, DescriptorIndex* index,
-                                                           uint32_t arrayElement, Buffer* buffer, uint64_t offset, uint64_t length)
-        {
-            throw std::runtime_error("DX12Backend::setDescriptorBundleUniformBuffer() not implemented");
-        }
-
-        void DX12Backend::setDescriptorBundleStorageBuffer(DescriptorBundle& descriptor, DescriptorIndex* index,
-                                                           uint32_t arrayElement, Buffer* buffer, uint64_t offset, uint64_t length)
-        {
-            throw std::runtime_error("DX12Backend::setDescriptorBundleStorageBuffer() not implemented");
-        }
-
-        PixelFormatProperties DX12Backend::pixelFormatProperties(Pixels::Format format)
-        {
-            PixelFormatProperties properties{};
-            if (format == Pixels::Format::UNDEFINED)
+            if (_graphicsCards.size() == 0)
             {
-                properties.tiling = PixelFormatProperties::Tiling::UNSUPPORTED;
-                return properties;
+                return SlagInitializationResult::NO_GRAPHICS_CARDS;
             }
-
-            auto dxformat = DX12Backend::dx12Format(format);
-            D3D12_FEATURE_DATA_FORMAT_SUPPORT formatSupport{dxformat};
-            DX12GraphicsCard::selected()->device()->CheckFeatureSupport(D3D12_FEATURE_FORMAT_INFO,&formatSupport,sizeof(formatSupport));
-            if (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_NONE )
-            {
-                return properties;
-            }
-
-            if (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE)
-            {
-                properties.validUsageFlags |= Texture::UsageFlags::SAMPLED_IMAGE;
-            }
-
-            if (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_RENDER_TARGET)
-            {
-                properties.validUsageFlags |= Texture::UsageFlags::RENDER_TARGET_ATTACHMENT;
-            }
-            if (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_DEPTH_STENCIL)
-            {
-                properties.validUsageFlags |= Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT;
-            }
-            if (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_TYPED_UNORDERED_ACCESS_VIEW)
-            {
-                properties.validUsageFlags |= Texture::UsageFlags::STORAGE;
-            }
-
-            //TODO: not sure if this is right or not.... but there's not great documentation on which allow linear or not
-            //https://learn.microsoft.com/en-us/windows/win32/direct3ddxgi/checking-hardware-feature-support
-            if (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE)
-            {
-                properties.linearFilteringCapable = true;
-            }
-            else
-            {
-                properties.linearFilteringCapable = false;
-            }
-
-            if (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE)
-            {
-                properties.blitSource = true;
-            }
-            if (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_RENDER_TARGET)
-            {
-                properties.blitDestination = true;
-            }
-
-            //TODO: not sure about this... I think it's right, but could easily be wrong
-            if (formatSupport.Support2 & D3D12_FORMAT_SUPPORT2_TILED)
-            {
-                properties.tiling = PixelFormatProperties::Tiling::OPTIMIZED;
-            }
-            else
-            {
-                properties.tiling = PixelFormatProperties::Tiling::LINEAR;
-            }
-
-            return properties;
+            return SlagInitializationResult::SUCCESS;
         }
-
 
     } // dx12
 } // slag

@@ -1,70 +1,60 @@
 #ifndef SLAG_SLAG_H
 #define SLAG_SLAG_H
 
+#include "core/Attachment.h"
+#include "core/Barriers.h"
 #include "core/Buffer.h"
-#include "core/BufferView.h"
 #include "core/Clear.h"
 #include "core/CommandBuffer.h"
-#include "core/Descriptor.h"
-#include "core/DescriptorBundle.h"
-#include "core/DescriptorGroup.h"
-#include "core/DescriptorPool.h"
+#include "core/Defragmentation.h"
 #include "core/Dimensions.h"
 #include "core/Frame.h"
-#include "core/FrameResources.h"
-#include "core/GPUBarriers.h"
-#include "core/GPUQueue.h"
 #include "core/GraphicsCard.h"
-#include "core/GraphicsTypes.h"
+#include "core/IBackend.h"
+#include "core/IBackend.h"
 #include "core/ICommandBuffer.h"
-#include "core/Operations.h"
 #include "core/PixelFormatProperties.h"
 #include "core/Pixels.h"
 #include "core/PlatformData.h"
+#include "core/ResourceDescriptorHeap.h"
 #include "core/Sampler.h"
+#include "core/SamplerDescriptorHeap.h"
 #include "core/Semaphore.h"
+#include "core/ShaderCode.h"
 #include "core/ShaderPipeline.h"
+#include "core/SubmissionQueue.h"
 #include "core/SwapChain.h"
 #include "core/Texture.h"
 #include "core/VertexDescription.h"
 
+
 namespace slag
 {
-    enum class GraphicsBackend
+    enum class DebugLevel
     {
-        DEFAULT_GRAPHICS_BACKEND = 0,
-        VULKAN_GRAPHICS_BACKEND,
-        DX12_GRAPHICS_BACKEND,
-        CUSTOM_GRAPHICS_BACKEND
-    };
-    enum class SlagDebugLevel
-    {
-        SLAG_ERROR,
-        SLAG_WARNING,
-        SLAG_INFO
-    };
-    struct SlagInitInfo
-    {
-        GraphicsBackend graphicsBackend = GraphicsBackend::DEFAULT_GRAPHICS_BACKEND;
-        ///Pointer to object that implements slag::Backend if you need to provide your own instead of one of the provided ones
-        void* customBackend = nullptr;
-        ///Function pointer that forwards error messages from the underlying API, nullptr disables error handling
-        void(* slagDebugHandler)(const std::string& message, SlagDebugLevel debugLevel, int32_t messageID)=nullptr;
-        ///Function pointer that evaluates graphics cards when deciding which one to pick, returning true means we should pick a over b, nullptr uses default sorting
-        bool(* graphicsCardEvaluationHandler)(const GraphicsCard* a, const GraphicsCard* b)=nullptr;
-
+        ERROR,
+        WARNING,
+        INFO
     };
 
-    enum SlagInitializationResult
+    struct InitializationData
     {
-        SLAG_INITIALIZATION_SUCCESS,
-        SLAG_BACKEND_NOT_AVAILABLE,
-        SLAG_NO_GRAPHICS_CARDS
+        ///Graphics backend to use, or unknown to use the platform default
+        BackendAPI backend = BackendAPI::UNKNOWN;
+        ///Pointer to custom backend to use if backend was set to custom
+        IBackend* customBackend = nullptr;
+        ///Function pointer that will receive debug messages from the underlying API, nullptr disables debug messages
+        void(*debugHandler)(const std::string& message,DebugLevel debugLevel, int32_t messageID)=nullptr;
     };
 
-    SlagInitializationResult initialize(const SlagInitInfo& initInfo={});
-    void cleanup();
-    GraphicsCard* slagGraphicsCard();
-}
+
+    class Slag
+    {
+    public:
+        static SlagInitializationResult initialize(const InitializationData& initData);
+        static void cleanup();
+        static IBackend* backend();
+    };
+} // slag
 
 #endif //SLAG_SLAG_H

@@ -1,464 +1,181 @@
-#include "slag/core/Texture.h"
-#include "slag/core/Texture.h"
-
 #include <gtest/gtest.h>
 #include <slag/Slag.h>
-
-#include "slag/core/PixelFormatProperties.h"
-#include "slag/core/Pixels.h"
-#include "slag/core/Pixels.h"
-
+#include "../utilities/GeneralUtilities.h"
+#include "slag/exceptions/ResourceCreationError.h"
 using namespace slag;
 
-TEST(Texture, TextureSize2D)
+TEST(Texture, Create)
 {
-    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::STORAGE,128,64,1,3,2));
-    uint64_t mip0Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*128*64;
-    uint64_t mip1Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*(128>>1)*(64>>1);
-    uint64_t mip2Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*(128>>2)*(64>>2);
-    GTEST_ASSERT_EQ(texture->byteSize(),(mip0Size+mip1Size+mip2Size)*2);
-    GTEST_ASSERT_EQ(texture->byteSize(0),mip0Size);
-    GTEST_ASSERT_EQ(texture->byteSize(1),mip1Size);
-    GTEST_ASSERT_EQ(texture->byteSize(2),mip2Size);
+    auto card = Slag::backend()->graphicsCard(0);
+    auto tex1d = std::unique_ptr<Texture>(card->newTexture1D(256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::NONE,3));
+    auto tex2d = std::unique_ptr<Texture>(card->newTexture2D(100,250,PixelFormat::R32_FLOAT,TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::UNORDERED_ACCESS,2,SampleCount::ONE));
+    auto tex2dDepth = std::unique_ptr<Texture>(card->newTexture2D(1920,1080,PixelFormat::D32_FLOAT_S8X24_UINT,TextureUsageFlags::DEPTH_STENCIL_TARGET,1,SampleCount::EIGHT));
+    auto tex2dDepthMultiMip = std::unique_ptr<Texture>(card->newTexture2D(1920,1080,PixelFormat::D32_FLOAT_S8X24_UINT,TextureUsageFlags::DEPTH_STENCIL_TARGET,3,SampleCount::ONE));
+    auto tex2dArray = std::unique_ptr<Texture>(card->newTexture2D(50,50,PixelFormat::BC7_UNORM_SRGB,TextureUsageFlags::SAMPLED,2,SampleCount::ONE,5));
+    auto tex3d = std::unique_ptr<Texture>(card->newTexture3D(25,25,25,PixelFormat::R32G32B32A32_FLOAT,TextureUsageFlags::SAMPLED | TextureUsageFlags::UNORDERED_ACCESS,3));
+    auto cube = std::unique_ptr<Texture>(card->newTextureCube(500,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,3,2));
+
+    GTEST_ASSERT_EQ(tex1d->width(),256);
+    GTEST_ASSERT_EQ(tex1d->height(),1);
+    GTEST_ASSERT_EQ(tex1d->depth(),1);
+    GTEST_ASSERT_EQ(tex1d->layers(),1);
+    GTEST_ASSERT_EQ(tex1d->format(),PixelFormat::R8G8B8A8_UNORM);
+    GTEST_ASSERT_EQ(tex1d->usage(),TextureUsageFlags::NONE);
+    GTEST_ASSERT_EQ(tex1d->mipLevels(),3);
+    GTEST_ASSERT_EQ(tex1d->sampleCount(),SampleCount::ONE);
+    GTEST_ASSERT_EQ(tex1d->type(), TextureType::ONE_DIMENSIONAL);
+    GTEST_ASSERT_EQ(tex1d->graphicsCard(),card);
+
+    GTEST_ASSERT_EQ(tex2d->width(),100);
+    GTEST_ASSERT_EQ(tex2d->height(),250);
+    GTEST_ASSERT_EQ(tex2d->depth(),1);
+    GTEST_ASSERT_EQ(tex2d->layers(),1);
+    GTEST_ASSERT_EQ(tex2d->format(),PixelFormat::R32_FLOAT);
+    GTEST_ASSERT_EQ(tex2d->usage(),TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::UNORDERED_ACCESS);
+    GTEST_ASSERT_EQ(tex2d->mipLevels(),2);
+    GTEST_ASSERT_EQ(tex2d->sampleCount(),SampleCount::ONE);
+    GTEST_ASSERT_EQ(tex2d->type(), TextureType::TWO_DIMENSIONAL);
+    GTEST_ASSERT_EQ(tex2d->graphicsCard(),card);
+
+    GTEST_ASSERT_EQ(tex2dDepth->width(),1920);
+    GTEST_ASSERT_EQ(tex2dDepth->height(),1080);
+    GTEST_ASSERT_EQ(tex2dDepth->depth(),1);
+    GTEST_ASSERT_EQ(tex2dDepth->layers(),1);
+    GTEST_ASSERT_EQ(tex2dDepth->format(),PixelFormat::D32_FLOAT_S8X24_UINT);
+    GTEST_ASSERT_EQ(tex2dDepth->usage(),TextureUsageFlags::DEPTH_STENCIL_TARGET);
+    GTEST_ASSERT_EQ(tex2dDepth->mipLevels(),1);
+    GTEST_ASSERT_EQ(tex2dDepth->sampleCount(),SampleCount::EIGHT);
+    GTEST_ASSERT_EQ(tex2dDepth->type(), TextureType::TWO_DIMENSIONAL);
+    GTEST_ASSERT_EQ(tex2dDepth->graphicsCard(),card);
+
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->width(),1920);
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->height(),1080);
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->depth(),1);
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->layers(),1);
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->format(),PixelFormat::D32_FLOAT_S8X24_UINT);
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->usage(),TextureUsageFlags::DEPTH_STENCIL_TARGET);
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->mipLevels(),3);
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->sampleCount(),SampleCount::ONE);
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->type(), TextureType::TWO_DIMENSIONAL);
+    GTEST_ASSERT_EQ(tex2dDepthMultiMip->graphicsCard(),card);
+
+    GTEST_ASSERT_EQ(tex2dArray->width(),50);
+    GTEST_ASSERT_EQ(tex2dArray->height(),50);
+    GTEST_ASSERT_EQ(tex2dArray->depth(),1);
+    GTEST_ASSERT_EQ(tex2dArray->layers(),5);
+    GTEST_ASSERT_EQ(tex2dArray->format(),PixelFormat::BC7_UNORM_SRGB);
+    GTEST_ASSERT_EQ(tex2dArray->usage(),TextureUsageFlags::SAMPLED);
+    GTEST_ASSERT_EQ(tex2dArray->mipLevels(),2);
+    GTEST_ASSERT_EQ(tex2dArray->sampleCount(),SampleCount::ONE);
+    GTEST_ASSERT_EQ(tex2dArray->type(), TextureType::TWO_DIMENSIONAL);
+    GTEST_ASSERT_EQ(tex2dArray->graphicsCard(),card);
+
+    GTEST_ASSERT_EQ(tex3d->width(),25);
+    GTEST_ASSERT_EQ(tex3d->height(),25);
+    GTEST_ASSERT_EQ(tex3d->depth(),25);
+    GTEST_ASSERT_EQ(tex3d->layers(),1);
+    GTEST_ASSERT_EQ(tex3d->format(),PixelFormat::R32G32B32A32_FLOAT);
+    GTEST_ASSERT_EQ(tex3d->usage(),TextureUsageFlags::SAMPLED | TextureUsageFlags::UNORDERED_ACCESS);
+    GTEST_ASSERT_EQ(tex3d->mipLevels(),3);
+    GTEST_ASSERT_EQ(tex3d->sampleCount(),SampleCount::ONE);
+    GTEST_ASSERT_EQ(tex3d->type(), TextureType::THREE_DIMENSIONAL);
+    GTEST_ASSERT_EQ(tex3d->graphicsCard(),card);
+
+    GTEST_ASSERT_EQ(cube->width(),500);
+    GTEST_ASSERT_EQ(cube->height(),500);
+    GTEST_ASSERT_EQ(cube->depth(),1);
+    GTEST_ASSERT_EQ(cube->layers(),12);
+    GTEST_ASSERT_EQ(cube->format(),PixelFormat::R8G8B8A8_UNORM);
+    GTEST_ASSERT_EQ(cube->usage(),TextureUsageFlags::SAMPLED);
+    GTEST_ASSERT_EQ(cube->mipLevels(),3);
+    GTEST_ASSERT_EQ(cube->sampleCount(),SampleCount::ONE);
+    GTEST_ASSERT_EQ(cube->type(), TextureType::CUBE_MAP);
+    GTEST_ASSERT_EQ(cube->graphicsCard(),card);
 }
 
-TEST(Texture, TextureSize1D)
+#if SLAG_DEBUG
+TEST(Texture, InvalidWidth)
 {
-    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_1D,Texture::UsageFlags::STORAGE,128,1,1,3,2));
-    uint64_t mip0Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*128;
-    uint64_t mip1Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*(128>>1);
-    uint64_t mip2Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*(128>>2);
-    GTEST_ASSERT_EQ(texture->byteSize(),(mip0Size+mip1Size+mip2Size)*2);
-    GTEST_ASSERT_EQ(texture->byteSize(0),mip0Size);
-    GTEST_ASSERT_EQ(texture->byteSize(1),mip1Size);
-    GTEST_ASSERT_EQ(texture->byteSize(2),mip2Size);
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    auto card = Slag::backend()->graphicsCard(0);
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture1D(0,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED)),"Texture must have a width of at least 1");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture2D(0,50,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED)),"Texture must have a width of at least 1");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture3D(0,50,50,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED)),"Texture must have a width of at least 1");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTextureCube(0,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED)),"Texture must have a dimension of at least 1");
 }
 
-TEST(Texture, TextureSize3D)
+TEST(Texture, InvalidHeight)
 {
-    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_3D,Texture::UsageFlags::STORAGE,128,64,4,3,1));
-    uint64_t mip0Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*128*64*4;
-    uint64_t mip1Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*(128>>1)*(64>>1)*(4>>1);
-    uint64_t mip2Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*(128>>2)*(64>>2)*(4>>2);
-    GTEST_ASSERT_EQ(texture->byteSize(),(mip0Size+mip1Size+mip2Size));
-    GTEST_ASSERT_EQ(texture->byteSize(0),mip0Size);
-    GTEST_ASSERT_EQ(texture->byteSize(1),mip1Size);
-    GTEST_ASSERT_EQ(texture->byteSize(2),mip2Size);
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    auto card = Slag::backend()->graphicsCard(0);
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture2D(50,0,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED)),"Texture must have a height of at least 1");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture3D(50,0,50,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED)),"Texture must have a height of at least 1");
 }
 
-TEST(Texture, TextureSizeCubeMap)
-{
-    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_CUBE,Texture::UsageFlags::STORAGE,128,128,1,3,6));
-    uint64_t mip0Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*128*128;
-    uint64_t mip1Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*(128>>1)*(128>>1);
-    uint64_t mip2Size = Pixels::size(Pixels::Format::R32G32B32A32_FLOAT)*(128>>2)*(128>>2);
-    GTEST_ASSERT_EQ(texture->byteSize(),(mip0Size+mip1Size+mip2Size)*6);
-    GTEST_ASSERT_EQ(texture->byteSize(0),mip0Size);
-    GTEST_ASSERT_EQ(texture->byteSize(1),mip1Size);
-    GTEST_ASSERT_EQ(texture->byteSize(2),mip2Size);
-}
-#ifdef SLAG_DEBUG
-TEST(Texture, ErrorWithDepth1D)
+TEST(Texture, InvalidDepth)
 {
     GTEST_FLAG_SET(death_test_style, "threadsafe");
-    EXPECT_DEATH([this]{std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_1D,Texture::UsageFlags::STORAGE,128,1,2,3,1));}(),"Non 3D textures must only have a depth of 1");
+    auto card = Slag::backend()->graphicsCard(0);
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture3D(50,50,0,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED)),"Texture must have a depth of at least 1");
 }
 
-TEST(Texture, ErrorWithDepth2D)
+TEST(Texture, InvalidLayers)
 {
     GTEST_FLAG_SET(death_test_style, "threadsafe");
-    EXPECT_DEATH([this]{std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::STORAGE,128,128,2,3,1));}(),"Non 3D textures must only have a depth of 1");
+    auto card = Slag::backend()->graphicsCard(0);
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture2D(50,50,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,1,SampleCount::ONE,0)),"Texture must have a layer count of at least 1");
 }
 
-TEST(Texture, ErrorWithDepthCube)
+TEST(Texture, InvalidMips)
 {
     GTEST_FLAG_SET(death_test_style, "threadsafe");
-    EXPECT_DEATH([this]{std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_CUBE,Texture::UsageFlags::STORAGE,128,128,2,3,6));}(),"Non 3D textures must only have a depth of 1");
+    auto card = Slag::backend()->graphicsCard(0);
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture1D(50,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,0)),"Texture must have a mip level count of at least 1");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture2D(50,50,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,0)),"Texture must have a mip level count of at least 1");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture3D(50,50,50,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,0)),"Texture must have a mip level count of at least 1");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTextureCube(50,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,0)),"Texture must have a mip level count of at least 1");
 }
 
-TEST(Texture, ErrorWithArray3D)
+TEST(Texture, InvalidColorAndDepthUsage)
 {
     GTEST_FLAG_SET(death_test_style, "threadsafe");
-    EXPECT_DEATH([this]{std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_3D,Texture::UsageFlags::STORAGE,128,128,2,1,2));}(),"3D textures must only have one layer");
+    auto card = Slag::backend()->graphicsCard(0);
+
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture2D(25,25,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::DEPTH_STENCIL_TARGET)),"Texture cannot be both a color target and a depth/stencil target");
 }
 
-TEST(Texture, ErrorWithHeight1D)
+TEST(Texture, InvalidUnDefinedFormat)
 {
-    GTEST_FLAG_SET(death_test_style, "threadsafe");
-    EXPECT_DEATH([this]{std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_1D,Texture::UsageFlags::STORAGE,128,128,1,1,1));}(),"1D textures must have a height of 1");
-}
-TEST(Texture, ErrorWithNoWidth)
-{
-    GTEST_FLAG_SET(death_test_style, "threadsafe");
-    EXPECT_DEATH([this]{std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::STORAGE,0,1,1,1,1));}(),"Width, height, depth, mipLevels and layers must be at least 1");
+    auto card = Slag::backend()->graphicsCard(0);
+    EXPECT_THROW(auto tex = std::unique_ptr<Texture>(card->newTexture2D(25,25,PixelFormat::UNDEFINED,TextureUsageFlags::NONE)),ResourceCreationError);
 }
 
-TEST(Texture, ErrorWithNoHeight)
+TEST(Texture, InvalidColorUsageFormat)
 {
     GTEST_FLAG_SET(death_test_style, "threadsafe");
-    EXPECT_DEATH([this]{std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::STORAGE,128,0,1,1,1));}(),"Width, height, depth, mipLevels and layers must be at least 1");
+    auto card = Slag::backend()->graphicsCard(0);
+    auto texelFormats = sequentialEnumRange(PixelFormat::UNDEFINED, PixelFormat::B4G4R4A4_UNORM);
+    bool performedTest = false;
+    for (auto format : texelFormats)
+    {
+        PixelFormatProperties properties = card->formatProperties(format);
+        if (properties.tiling == TextureTiling::UNSUPPORTED && format != PixelFormat::UNDEFINED)
+        {
+            EXPECT_THROW(auto tex = std::unique_ptr<Texture>(card->newTexture2D(25,25,format,TextureUsageFlags::NONE)),ResourceCreationError);
+            performedTest = true;
+        }
+    }
+    if (!performedTest)
+    {
+        GTEST_SKIP();
+    }
 }
-TEST(Texture, ErrorWithNoDepth)
-{
-    GTEST_FLAG_SET(death_test_style, "threadsafe");
-    EXPECT_DEATH([this]{std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_3D,Texture::UsageFlags::STORAGE,128,128,0,1,1));}(),"Width, height, depth, mipLevels and layers must be at least 1");
-}
-TEST(Texture, ErrorWithNoMip)
-{
-    GTEST_FLAG_SET(death_test_style, "threadsafe");
-    EXPECT_DEATH([this]{std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_3D,Texture::UsageFlags::STORAGE,128,128,2,0,1));}(),"Width, height, depth, mipLevels and layers must be at least 1");
-}
-TEST(Texture, ErrorWithNoLayer)
-{
-    GTEST_FLAG_SET(death_test_style, "threadsafe");
-    EXPECT_DEATH([this]{std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::STORAGE,128,128,1,1,0));}(),"Width, height, depth, mipLevels and layers must be at least 1");
 
+TEST(Texture,MipSampleCounts)
+{
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    auto card = Slag::backend()->graphicsCard(0);
+
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture2D(100,100,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,2,SampleCount::TWO)),"Texture cannot have both multiple mip levels and have a sample count greater than one");
 }
 #endif
-
-TEST(Texture, CreateWithData)
-{
-    struct Uint8Pixel
-    {
-        uint8_t r, g, b, a;
-    };
-    struct FloatPixel
-    {
-        float r, g, b, a;
-    };
-    std::vector<Uint8Pixel> uint8Data((64 * 64 + 32 * 32) * 2);
-    std::vector<FloatPixel> floatData((64 * 64 + 32 * 32) * 2);
-    size_t index = 0;
-    for (; index < 64 * 64; index++)
-    {
-        uint8Data[index] = {255, 0, 0, 255};
-        floatData[index] = {0.5f, 0, 0, 1.0f};
-    }
-    size_t start = 64 * 64;
-    for (; index < start + 32 * 32; index++)
-    {
-        uint8Data[index] = {255, 120, 0, 255};
-        floatData[index] = {0.5f, .3f, 0, 1.0f};
-    }
-    start += 32 * 32;
-    for (; index < start + 64 * 64; index++)
-    {
-        uint8Data[index] = {0, 0, 255, 255};
-        floatData[index] = {0, 0, 1.0f, 1.0f};
-    }
-    start += 64 * 64;
-    for (; index < start + 32 * 32; index++)
-    {
-        uint8Data[index] = {0, 13, 255, 255};
-        floatData[index] = {.7, 0, 1.0f, 1.0f};
-    }
-
-    TextureBufferMapping copyDataUint8[] =
-    {
-        {
-            .bufferOffset = 0,
-            .textureSubresource =
-            {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 0,
-                .baseArrayLayer = 0,
-                .layerCount = 1
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {64,64,1}
-        },
-        {
-            .bufferOffset = 64 * 64 * sizeof(Uint8Pixel),
-            .textureSubresource =
-            {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 1,
-                .baseArrayLayer = 0,
-                .layerCount = 1
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {32,32,1}
-        },
-        {
-            .bufferOffset = (64 * 64 + 32 * 32) * sizeof(Uint8Pixel),
-            .textureSubresource =
-            {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 0,
-                .baseArrayLayer = 1,
-                .layerCount = 1
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {64,64,1}
-        },
-        {
-            .bufferOffset = ((64 * 64) * 2 + 32 * 32) * sizeof(Uint8Pixel),
-            .textureSubresource =
-            {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 1,
-                .baseArrayLayer = 1,
-                .layerCount = 1
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {32,32,1}
-        },
-    };
-
-    TextureBufferMapping copyDataFloat[] =
-    {
-        {
-            .bufferOffset = 0,
-            .textureSubresource =
-            {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 0,
-                .baseArrayLayer = 0,
-                .layerCount = 1
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {64,64,1}
-        },
-        {
-            .bufferOffset = 64 * 64 * sizeof(FloatPixel),
-            .textureSubresource =
-            {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 1,
-                .baseArrayLayer = 0,
-                .layerCount = 1
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {32,32,1}
-        },
-        {
-            .bufferOffset = (64 * 64 + 32 * 32) * sizeof(FloatPixel),
-            .textureSubresource =
-            {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 0,
-                .baseArrayLayer = 1,
-                .layerCount = 1
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {64,64,1}
-        },
-        {
-            .bufferOffset = ((64 * 64) * 2 + 32 * 32) * sizeof(FloatPixel),
-            .textureSubresource =
-            {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 1,
-                .baseArrayLayer = 1,
-                .layerCount = 1
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {32,32,1}
-        },
-    };
-
-
-    auto uintTex = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UINT,
-                                                                Texture::Type::TEXTURE_2D,
-                                                                Texture::UsageFlags::SAMPLED_IMAGE, 64, 64, 1, 2, 2,
-                                                                Texture::SampleCount::ONE, uint8Data.data(), uint8Data.size()*sizeof(Uint8Pixel), copyDataUint8, 4));
-    auto floatTex = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,
-                                                                 Texture::Type::TEXTURE_2D,
-                                                                 Texture::UsageFlags::SAMPLED_IMAGE, 64, 64, 1, 2, 2,
-                                                                 Texture::SampleCount::ONE, floatData.data(), floatData.size()*sizeof(FloatPixel), copyDataFloat, 4));
-
-    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::TRANSFER));
-    auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-
-    auto uintDownload = std::unique_ptr<Buffer>(
-        Buffer::newBuffer(uintTex->byteSize(), Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
-    auto floatDownload = std::unique_ptr<Buffer>(
-        Buffer::newBuffer(floatTex->byteSize(), Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
-
-
-    commandBuffer->begin();
-
-
-    commandBuffer->copyTextureToBuffer(uintTex.get(), uintDownload.get(), copyDataUint8, 4);
-    commandBuffer->copyTextureToBuffer(floatTex.get(), floatDownload.get(), copyDataFloat, 4);
-
-    commandBuffer->end();
-
-    auto cmdPtr = commandBuffer.get();
-
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-
-    QueueSubmissionBatch batch
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = &cmdPtr,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-    slagGraphicsCard()->transferQueue()->submit(&batch, 1);
-    finished->waitForValue(1);
-
-    Uint8Pixel* uintPtr = uintDownload->as<Uint8Pixel>();
-    FloatPixel* floatPtr = floatDownload->as<FloatPixel>();
-    for (size_t i = 0; i < uint8Data.size(); i++)
-    {
-        auto uint8DownloadPixel = uintPtr[i];
-        auto floatDownloadPixel = floatPtr[i];
-        auto uint8OriginalPixel = uint8Data[i];
-        auto floatOriginalPixel = floatData[i];
-
-        GTEST_ASSERT_EQ(uint8DownloadPixel.r, uint8OriginalPixel.r);
-        GTEST_ASSERT_EQ(uint8DownloadPixel.g, uint8OriginalPixel.g);
-        GTEST_ASSERT_EQ(uint8DownloadPixel.b, uint8OriginalPixel.b);
-        GTEST_ASSERT_EQ(uint8DownloadPixel.a, uint8OriginalPixel.a);
-
-        GTEST_ASSERT_EQ(floatDownloadPixel.r, floatOriginalPixel.r);
-        GTEST_ASSERT_EQ(floatDownloadPixel.g, floatOriginalPixel.g);
-        GTEST_ASSERT_EQ(floatDownloadPixel.b, floatOriginalPixel.b);
-        GTEST_ASSERT_EQ(floatDownloadPixel.a, floatOriginalPixel.a);
-    }
-}
-
-#define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits,colorBits,depthBits,stencilBits, Aspects)\
-    TEST(Texture, SlagName)\
-    {\
-        auto properties = Pixels::formatProperties(Pixels::Format::SlagName);\
-        if(properties.tiling == PixelFormatProperties::Tiling::UNSUPPORTED)\
-        {\
-            GTEST_SKIP();\
-        }\
-        auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::SlagName,Texture::Type::TEXTURE_2D,properties.validUsageFlags,64,64,1,1,1));\
-    }
-SLAG_TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-
-#ifdef SLAG_DEBUG
-TEST(Texture, CopyMultiAspect)
-{
-    GTEST_FLAG_SET(death_test_style, "threadsafe");
-    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    auto depthTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1,1));
-    auto result = std::unique_ptr<Buffer>(Buffer::newBuffer(depthTexture->byteSize(),Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
-
-
-    commandBuffer->begin();
-    commandBuffer->clearTexture(depthTexture.get(),ClearDepthStencilValue{.depth = .5f,.stencil = 1});
-    commandBuffer->insertBarrier(
-        TextureBarrier
-        {
-            depthTexture.get(),
-            0,
-            1,
-            0,
-            1,
-            BarrierAccessFlags::CLEAR,
-            BarrierAccessFlags::TRANSFER_READ,
-            PipelineStageFlags::CLEAR_DEPTH,
-            PipelineStageFlags::TRANSFER
-        });
-    TextureBufferMapping copyData
-    {
-        .bufferOffset = 0,
-        .textureSubresource =
-     {
-            .aspectFlags = Pixels::AspectFlags::DEPTH_STENCIL,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1
-        },
-        .textureOffset = {0,0,0},
-        .textureExtent = {.width = depthTexture->width(),.height = depthTexture->height(),.depth = 1},
-    };
-    EXPECT_DEATH(commandBuffer->copyTextureToBuffer(depthTexture.get(),result.get(),&copyData,1),"Only a single aspect may be specified per subresource");
-}
-#endif
-
-TEST(Texture, CopyPartialAspects)
-{
-    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    auto depthTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1,1));
-    auto depthResult = std::unique_ptr<Buffer>(Buffer::newBuffer(depthTexture->byteSize()*32*32,Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
-    auto stencilResult = std::unique_ptr<Buffer>(Buffer::newBuffer(Pixels::size(depthTexture->format(),Pixels::AspectFlags::STENCIL)*32*32,Buffer::Accessibility::CPU_AND_GPU, Buffer::UsageFlags::DATA_BUFFER));
-
-
-    commandBuffer->begin();
-    commandBuffer->clearTexture(depthTexture.get(),ClearDepthStencilValue{.depth = 0.2f,.stencil = 1});
-    commandBuffer->insertBarrier(
-        TextureBarrier
-        {
-            depthTexture.get(),
-            0,
-            1,
-            0,
-            1,
-            BarrierAccessFlags::CLEAR,
-            BarrierAccessFlags::TRANSFER_READ,
-            PipelineStageFlags::CLEAR_DEPTH,
-            PipelineStageFlags::TRANSFER
-        });
-
-    TextureBufferMapping copyDepth
-    {
-        .bufferOffset = 0,
-        .textureSubresource =
-        {
-            .aspectFlags = Pixels::AspectFlags::DEPTH,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1
-        },
-        .textureOffset = {0,0,0},
-        .textureExtent = {.width = depthTexture->width(),.height = depthTexture->height(),.depth = 1},
-    };
-
-    TextureBufferMapping copyStencil{
-        .bufferOffset = 0,
-        .textureSubresource =
-        {
-            .aspectFlags = Pixels::AspectFlags::STENCIL,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1
-        },
-        .textureOffset = {0,0,0},
-        .textureExtent = {.width = depthTexture->width(),.height = depthTexture->height(),.depth = 1},
-    };
-    commandBuffer->copyTextureToBuffer(depthTexture.get(),depthResult.get(),&copyDepth,1);
-    commandBuffer->copyTextureToBuffer(depthTexture.get(),stencilResult.get(),&copyStencil,1);
-
-    commandBuffer->end();
-
-    auto bufferPtr = commandBuffer.get();
-
-    SemaphoreValue signal
-    {
-        .semaphore = finished.get(),
-        .value = 1
-    };
-    QueueSubmissionBatch batch
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = &bufferPtr,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-    slagGraphicsCard()->graphicsQueue()->submit(&batch,1);
-    finished->waitForValue(1);
-
-    auto depthData = depthResult->as<float>();
-    auto stencilData = stencilResult->as<unsigned char>();
-
-    for (auto i=0; i<32*32;i++)
-    {
-        auto depthVal = depthData[i];
-        auto stencilVal = stencilData[i];
-        GTEST_ASSERT_EQ(depthVal, 0.2f);
-        GTEST_ASSERT_EQ(stencilVal, 1);
-    }
-}

@@ -1,11 +1,13 @@
-#ifndef SLAG_PLATFORMDATA_H
-#define SLAG_PLATFORMDATA_H
+#ifndef SLAG_SLAG_PLATFORMDATA_H
+#define SLAG_SLAG_PLATFORMDATA_H
+
 
 #ifdef SLAG_WIN32_BACKEND
 #ifndef NOMINMAX
 #define NOMINMAX 1
 #endif
 #include <windows.h>
+#undef ERROR
 #define SLAG_WINDOWS_HWND HWND
 #define SLAG_WINDOWS_HINSTANCE HINSTANCE
 #else
@@ -35,6 +37,13 @@
 
 namespace slag
 {
+    enum class Platform
+    {
+        WIN_32,
+        X11,
+        WAYLAND
+    };
+
     struct Win32PlatformData
     {
         ///Window Handle
@@ -52,32 +61,20 @@ namespace slag
         SLAG_WAYLAND_SURFACE surface{};
         SLAG_WAYLAND_DISPLAY display{};
     };
-    struct CustomPlatformData
-    {
-        void* data=nullptr;
-    };
 
     union PlatformDetails
     {
         Win32PlatformData win32;
         X11PlatformData x11;
         WaylandPlatformData wayland;
-        CustomPlatformData custom;
     };
-    enum class Platform
-    {
-        WIN_32,
-        X11,
-        WAYLAND,
-        CUSTOM
-    };
-    ///Platform specific data required for creating a swapchain
+
     struct PlatformData
     {
         Platform platform = Platform::WIN_32;
         PlatformDetails details{};
     };
 
-} // slag
 
-#endif //SLAG_PLATFORMDATA_H
+}
+#endif //SLAG_SLAG_PLATFORMDATA_H

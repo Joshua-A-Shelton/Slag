@@ -1,64 +1,178 @@
-#define SDL_MAIN_HANDLED
+#include <filesystem>
+#include <fstream>
 #include <iostream>
-#include <SDL2/SDL.h>
-#include <slag/Slag.h>
-#include <glm/glm.hpp>
-
-#include "SDL_syswm.h"
-#include "glm/ext/matrix_clip_space.hpp"
-
+#include <ostream>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#include <slag/Slag.h>
+#include <SDL3/SDL.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <thread>
+#include <chrono>
 
-#include "glm/ext/matrix_transform.hpp"
+using namespace slag;
 
-class DefaultResources: public slag::FrameResources
-{
-public:
-    slag::CommandBuffer* commandBuffer=nullptr;
-    slag::Semaphore* commandsFinished=nullptr;
-    slag::DescriptorPool* descriptorPool=nullptr;
-    slag::Buffer* globalsBuffer = nullptr;
-    slag::Buffer* instanceBuffer = nullptr;
-
-    DefaultResources():slag::FrameResources()
-    {
-        commandBuffer = slag::CommandBuffer::newCommandBuffer(slag::GPUQueue::QueueType::GRAPHICS);
-        commandsFinished = slag::Semaphore::newSemaphore();
-        descriptorPool = slag::DescriptorPool::newDescriptorPool();
-        globalsBuffer = slag::Buffer::newBuffer(sizeof(glm::mat4)*3,slag::Buffer::Accessibility::CPU_AND_GPU,slag::Buffer::UsageFlags::UNIFORM_BUFFER);
-        instanceBuffer = slag::Buffer::newBuffer(sizeof(glm::mat4),slag::Buffer::Accessibility::CPU_AND_GPU,slag::Buffer::UsageFlags::UNIFORM_BUFFER);
-    }
-    ~DefaultResources()override
-    {
-        delete commandBuffer;
-        delete commandsFinished;
-        delete descriptorPool;
-        delete globalsBuffer;
-        delete instanceBuffer;
-    }
-};
-
-
-slag::FrameResources* createResource(uint8_t frameIndex, slag::SwapChain* swapChain)
-{
-    return new DefaultResources();
-}
-slag::Texture* depthTexture = nullptr;
-void swapChainRebuilt(slag::SwapChain* swapChain)
-{
-    delete depthTexture;
-    depthTexture = slag::Texture::newTexture(slag::Pixels::Format::D32_FLOAT,slag::Texture::Type::TEXTURE_2D,slag::Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,swapChain->backBufferWidth(),swapChain->backBufferHeight(),1,1,1);
-}
-
-void backEndMessage(const std::string& message, slag::SlagDebugLevel level, int32_t messageID)
+void graphicsDebug(const std::string& message, slag::DebugLevel level, int32_t id)
 {
     std::cout << message << std::endl;
+}
+struct ShaderModule
+{
+    slag::ShaderCode details;
+    std::vector<std::byte> loadedCode;
+};
+ShaderModule createShaderModule(slag::GraphicsCard* card, const std::string& shaderIdentifier)
+{
+    auto api = slag::Slag::backend()->api();
+    std::filesystem::path shaderPath = shaderIdentifier;
+    auto language =  slag::ShaderLanguage::CUSTOM;
+    switch (api)
+    {
+    case slag::BackendAPI::VULKAN:
+        shaderPath += ".spv";
+        language = slag::ShaderLanguage::SPIRV;
+        break;
+    case slag::BackendAPI::DX12:
+        shaderPath += ".dxil";
+        language = slag::ShaderLanguage::DXIL;
+        break;
+    default:
+        throw std::runtime_error("Invalid backend API");
+    }
+    std::ifstream file(shaderPath, std::ios::binary | std::ios::ate);
+    if (!file.is_open()) {
+        throw std::runtime_error("Failed to open file");
+    }
+
+    ShaderModule shaderModule{};
+
+    const std::size_t fileSize = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    shaderModule.loadedCode.resize(fileSize);
+    file.read(reinterpret_cast<char*>(shaderModule.loadedCode.data()), fileSize);
+    file.close();
+
+    shaderModule.details.code = shaderModule.loadedCode.data();
+    shaderModule.details.codeLength = fileSize;
+    shaderModule.details.language = language;
+    return shaderModule;
+}
+template<typename T>
+using unique_ptr_custom = std::unique_ptr<T,std::function<void(T*)>>;
+slag::Texture* loadTexture(std::filesystem::path const& path, slag::GraphicsCard* graphicsCard)
+{
+    if (!std::filesystem::exists(path))
+    {
+        throw std::runtime_error("Texture does not exist");
+    }
+    int width, height, channels;
+    unique_ptr_custom<stbi_uc> data(stbi_load(path.string().c_str(), &width, &height,&channels,4),[](stbi_uc* uc){stbi_image_free(uc);});
+    slag::TextureBufferMapping mapping
+    {
+        .bufferOffset = 0,
+        .subresource =
+        {
+             .aspect = slag::PixelAspect::COLOR,
+             .mipLevel = 0,
+             .baseArrayLayer = 0,
+             .layerCount = 1,
+        },
+        .offset = {0,0,0},
+        .extent = {(uint32_t)width,(uint32_t)height,1}
+    };
+    auto texture = graphicsCard->newTexture2D((uint32_t)width, (uint32_t)height,slag::PixelFormat::R8G8B8A8_UNORM,slag::TextureUsageFlags::SAMPLED,1);
+    auto pixels = std::unique_ptr<slag::Buffer>(graphicsCard->newBuffer(width*height*4,slag::BufferCPUAccess::WRITE_ONLY));
+    auto pixelsPtr = pixels->as<uint8_t>();
+    memcpy(pixelsPtr,data.get(),width*height*4);
+    auto commandBuffer = std::unique_ptr<slag::CommandBuffer>(graphicsCard->newCommandBuffer(slag::QueueType::TRANSFER));
+    auto finished = std::unique_ptr<slag::Semaphore>(graphicsCard->newSemaphore());
+
+    commandBuffer->begin();
+    commandBuffer->copyBufferToTexture(pixels.get(),texture,&mapping,1);
+    commandBuffer->end();
+
+    auto cmdBuffer = commandBuffer.get();
+    slag::SemaphoreValue signal{.semaphore = finished.get(),.value =1};
+    slag::SubmissionBatch batch
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &cmdBuffer,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    graphicsCard->transferQueue()->submit(&batch,1);
+    finished->waitForValue(1);
+    return texture;
 }
 
 int main()
 {
-    slag::initialize(slag::SlagInitInfo{.graphicsBackend = slag::GraphicsBackend::VULKAN_GRAPHICS_BACKEND, .slagDebugHandler = backEndMessage});
+
+    BackendAPI backend = BackendAPI::VULKAN;
+
+#ifdef SLAG_DX12_BACKEND
+    backend = BackendAPI::DX12;
+#endif
+
+#ifdef SLAG_VULKAN_BACKEND
+#ifdef SLAG_DX12_BACKEND
+#endif
+    int number = -1;
+    while (number != 1 && number != 2)
+    {
+        std::cout << "Pick a backend:\n1) Vulkan\n2) DirectX 12" << std::endl;
+        if (std::cin >> number)
+        {
+            if (number == 1)
+            {
+                backend = BackendAPI::VULKAN;
+            }
+            else if (number == 2)
+            {
+                backend = BackendAPI::DX12;
+            }
+        }
+        else
+        {
+            std::cout << "Invalid input" << std::endl;
+            return 1;
+        }
+    }
+#endif
+
+     auto result = slag::Slag::initialize(slag::InitializationData
+    {
+        .backend = backend,
+        .customBackend = nullptr,
+        .debugHandler = graphicsDebug
+    });
+
+     if (result != slag::SlagInitializationResult::SUCCESS)
+     {
+         std::cout << "Failed to initialize slag" << std::endl;
+         switch (result)
+         {
+         case slag::SlagInitializationResult::SUCCESS:
+             break;
+         case slag::SlagInitializationResult::BACKEND_UNSUPPORTED:
+             std::cout << "Backend not supported" << std::endl;
+             break;
+         case slag::SlagInitializationResult::INSUFFICIENT_CAPABILITIES:
+             std::cout << "Backend api version does not support required features" << std::endl;
+             break;
+         case slag::SlagInitializationResult::NO_GRAPHICS_CARDS:
+             std::cout << "No graphics cards with required features found" << std::endl;
+             break;
+         }
+         std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+         return 1;
+     }
+
+    auto graphicsCard = slag::Slag::backend()->graphicsCard(0);
 
     std::vector<float> cverts =
     {
@@ -134,78 +248,93 @@ int main()
          22, 23, 20
     };
 
-    slag::Buffer* cubeVerts = slag::Buffer::newBuffer(cverts.data(),cverts.size()*sizeof(float),slag::Buffer::Accessibility::GPU,slag::Buffer::UsageFlags::VERTEX_BUFFER);
-    slag::Buffer* cubeUVs = slag::Buffer::newBuffer(cuvs.data(),cuvs.size()*sizeof(float),slag::Buffer::Accessibility::GPU,slag::Buffer::UsageFlags::VERTEX_BUFFER);
-    slag::Buffer* cubeIndices = slag::Buffer::newBuffer(cindexes.data(),cindexes.size()*sizeof(uint16_t),slag::Buffer::Accessibility::GPU,slag::Buffer::UsageFlags::INDEX_BUFFER);
+    auto cubeVerts = graphicsCard->newBuffer(cverts.size()*sizeof(float),slag::BufferCPUAccess::WRITE_ONLY);
+    auto cubeUVs = graphicsCard->newBuffer(cuvs.size()*sizeof(float),slag::BufferCPUAccess::WRITE_ONLY);
+    auto cubeIndices = graphicsCard->newBuffer(cindexes.size()*sizeof(uint16_t),slag::BufferCPUAccess::WRITE_ONLY);
+    auto cvertsPtr = cubeVerts->as<float>();
+    memcpy(cvertsPtr,cverts.data(),cverts.size()*sizeof(float));
+    auto cuvsPtr = cubeUVs->as<float>();
+    memcpy(cuvsPtr,cuvs.data(),cuvs.size()*sizeof(float));
+    auto cindexesPtr = cubeIndices->as<uint16_t>();
+    memcpy(cindexesPtr,cindexes.data(),cindexes.size()*sizeof(uint16_t));
 
-
-
-    slag::VertexDescription vertexPosUVDescription(2);
-    vertexPosUVDescription.add(slag::GraphicsType::VECTOR3,0,0).add(slag::GraphicsType::VECTOR2,0,1);
-
-    slag::ShaderCode vertexShader(slag::ShaderStageFlags::VERTEX,slag::ShaderCode::CodeLanguage::SPIRV,"resources/shaders/TexturedDepth.vertex.spv");
-    slag::ShaderCode fragmentShader(slag::ShaderStageFlags::FRAGMENT,slag::ShaderCode::CodeLanguage::SPIRV,"resources/shaders/TexturedDepth.fragment.spv");
-    slag::ShaderCode* code[]{&vertexShader,&fragmentShader};
-    slag::ShaderProperties properties{};
-    slag::FrameBufferDescription frameBufferDescription{};
-    frameBufferDescription.colorTargets[0] = slag::Pixels::Format::B8G8R8A8_UNORM;
-    frameBufferDescription.depthTarget = slag::Pixels::Format::D32_FLOAT;
-
-    slag::ShaderPipeline* texturedDepthPipeline = slag::ShaderPipeline::newShaderPipeline(code,2,properties,vertexPosUVDescription,frameBufferDescription);
-    auto GlobalsIndex = texturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
-    auto InstanceIndex = texturedDepthPipeline->descriptorGroup(1)->indexOf("Instance");
-    auto InstanceTextureIndex = texturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampledTexture");
-    auto InstanceSamplerIndex = texturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampler");
-    int width, height, channels;
-    auto pixels = stbi_load("resources/textures/gradient.jpg", &width, &height,&channels,4);
-    slag::TextureBufferMapping mapping
-    {
-        .bufferOffset = 0,
-        .textureSubresource =
-     {
-            .aspectFlags = slag::Pixels::AspectFlags::COLOR,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-        .textureOffset = {0,0,0},
-        .textureExtent = {static_cast<uint32_t>(width),static_cast<uint32_t>(height),1}
-    };
-    auto texture = slag::Texture::newTexture(slag::Pixels::Format::R8G8B8A8_UNORM,slag::Texture::Type::TEXTURE_2D,slag::Texture::UsageFlags::SAMPLED_IMAGE,width,height,1,1,1, slag::Texture::SampleCount::ONE,pixels,width*height*4,&mapping,1);
-    stbi_image_free(pixels);
-    slag::Sampler* defaultSampler = slag::Sampler::newSampler(slag::SamplerParameters{});
-
-
-    int WINDOW_WIDTH = 300;
-    int WINDOW_HEIGHT = 300;
-
-    auto window = SDL_CreateWindow("Slag Cube",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,WINDOW_WIDTH,WINDOW_HEIGHT,SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
     slag::PlatformData pd{};
 
-    SDL_SysWMinfo wmInfo;
-    SDL_VERSION(&wmInfo.version);
-    SDL_GetWindowWMInfo(window, &wmInfo);
+    SDL_Init(SDL_INIT_VIDEO);
+    float main_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
+    SDL_WindowFlags window_flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
+    SDL_Window* window = SDL_CreateWindow("Slag Cube Example", (int)(300 * main_scale), (int)(300 * main_scale), window_flags);
+
+
+
+    auto properties = SDL_GetWindowProperties(window);
 #ifdef _WIN32
     pd.platform = slag::Platform::WIN_32;
-    pd.details.win32.hwnd = wmInfo.info.win.window;
-    pd.details.win32.hinstance = wmInfo.info.win.hinstance;
-#elif __linux
-    pd.platform = slag::Platform::X11;
-    pd.details.x11.window = wmInfo.info.x11.window;
-    pd.details.x11.display = wmInfo.info.x11.display;
+    pd.details.win32.hwnd = (HWND)SDL_GetPointerProperty(properties,SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
+    pd.details.win32.hinstance = (HINSTANCE)SDL_GetPointerProperty(properties,SDL_PROP_WINDOW_WIN32_INSTANCE_POINTER, nullptr);
+#else
+    const char* driverName = SDL_GetCurrentVideoDriver();
+    if (strcmp(driverName, "wayland") == 0)
+    {
+        pd.platform = slag::Platform::WAYLAND;
+        pd.details.wayland.surface = static_cast<wl_surface*>(SDL_GetPointerProperty(properties,SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr));
+        pd.details.wayland.display = static_cast<wl_display*>(SDL_GetPointerProperty(properties,SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, nullptr));
+    }
+    else
+    {
+        pd.platform = slag::Platform::X11;
+        pd.details.x11.display = static_cast<Display*>(SDL_GetPointerProperty(properties,SDL_PROP_WINDOW_X11_DISPLAY_POINTER, nullptr));
+        pd.details.x11.window = SDL_GetNumberProperty(properties,SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
+    }
 #endif
 
-    slag::SwapChainDetails swapchainDetails{};
-    swapchainDetails.createResourceFunction = createResource;
-    swapchainDetails.swapchainRebuiltFunction = swapChainRebuilt;
-    auto swapChain = slag::SwapChain::newSwapChain(pd,WINDOW_WIDTH,WINDOW_HEIGHT,swapchainDetails);
-    auto queue = slag::slagGraphicsCard()->graphicsQueue();
+    slag::SwapChainParameters swapchainParameters{};
+    auto swapChain = graphicsCard->newSwapchain(pd,300,300,swapchainParameters);
+    auto queue = graphicsCard->graphicsQueue();
+    auto resourceHeap = graphicsCard->newResourceDescriptorHeap(100000);
+    auto samplerHeap = graphicsCard->newSamplerDescriptorHeap(100);
 
-    slag::Buffer* vertexBuffers[]={cubeVerts,cubeUVs};
-    uint64_t vertexOffsets[]={0,0};
-    uint64_t vertexStrides[]{sizeof(glm::vec3),sizeof(glm::vec2)};
+    auto resourceHeapPtr = (unsigned char*) resourceHeap->data();
+    auto samplerHeapPtr = (unsigned char*) samplerHeap->data();
 
-    glm::mat4 instanceMatrix(1);
+
+    slag::Semaphore* commandsFinished = nullptr;
+    slag::CommandBuffer* commandBuffer = graphicsCard->newCommandBuffer(slag::QueueType::GRAPHICS);
+    slag::Texture* depthTarget = graphicsCard->newTexture2D(300,300,slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET);
+
+    auto sampler = graphicsCard->newSampler();
+    auto texture = loadTexture("resources/examples/textures/gradient.jpg",graphicsCard);
+    auto globals = graphicsCard->newBuffer(256,slag::BufferCPUAccess::WRITE_ONLY, slag::BufferMemoryType::UNIFORM);
+    auto transform = graphicsCard->newBuffer(256,slag::BufferCPUAccess::WRITE_ONLY, slag::BufferMemoryType::UNIFORM);
+    auto proj = glm::perspective(95.0f,(float)depthTarget->width()/(float)depthTarget->height(),.01f,100.0f);
+    glm::mat4 view = glm::mat4(1.0f);
+    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
+    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
+    view = glm::inverse(view);
+    glm::mat4 projectionView = proj*view;
+    auto globalsPtr = globals->as<glm::mat4>();
+    globalsPtr[0] = proj;
+    globalsPtr[1] = view;
+    globalsPtr[2] = projectionView;
+
+    glm::mat4 objectTransform = glm::rotate(glm::mat4(1),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
+    auto transformPtr = transform->as<glm::mat4>();
+    transformPtr[0] = objectTransform;
+
+    auto vertexModule = createShaderModule(graphicsCard, "resources/examples/shaders/compiled/TexturedDepthBindless.vertex");
+    auto fragmentModule = createShaderModule(graphicsCard, "resources/examples/shaders/compiled/TexturedDepthBindless.fragment");
+    std::vector<slag::VertexBinding> vertexBindings = {
+        slag::VertexBinding(0,sizeof(float)*3,InputRate::PER_VRETEX,std::vector<slag::VertexAttribute>{slag::VertexAttribute("POSITION",slag::PixelFormat::R32G32B32_FLOAT,0)}),
+        slag::VertexBinding(1,sizeof(float)*2,InputRate::PER_VRETEX,std::vector<slag::VertexAttribute>{slag::VertexAttribute("UV_COORDINATES",slag::PixelFormat::R32G32_FLOAT,0)}),
+    };
+    slag::VertexDescription vertexDescription(vertexBindings);
+    slag::PipelineState pipelineState{};
+    slag::FramebufferDescription framebufferDesc;
+    framebufferDesc.colorFormats[0] = swapChain->parameters().imageFormat;
+    framebufferDesc.depthFormat = depthTarget->format();
+    auto pipeline = graphicsCard->newShaderPipeline(vertexDescription,vertexModule.details,fragmentModule.details,pipelineState,framebufferDesc);
+
+    auto descriptorDetails = graphicsCard->descriptorHeapDetails();
 
     bool keepOpen = true;
     uint32_t last_tick_time = 0;
@@ -218,97 +347,141 @@ int main()
         last_tick_time = tick_time;
 
         SDL_Event event;
-        while(SDL_PollEvent(&event))
+        while (SDL_PollEvent(&event))
         {
-            switch(event.type)
+            if (event.type == SDL_EVENT_QUIT)
             {
-                case SDL_WINDOWEVENT:
-                    if(event.window.event == SDL_WINDOWEVENT_CLOSE)
-                    {
-                        keepOpen = false;
-                    }
-                    else if(event.window.event == SDL_WINDOWEVENT_RESIZED)
-                    {
-                        int w,h;
-                        SDL_GetWindowSize(window,&w,&h);
-                        swapChain->backBufferSize(w,h);
-                    }
-                    break;
-                default:
-                    break;
+                keepOpen = false;
+            }
+            if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID == SDL_GetWindowID(window))
+            {
+                keepOpen = false;
             }
         }
 
         if (auto frame = swapChain->next())
         {
-            auto resources = frame->frameResources<DefaultResources>();
-            auto commandBuffer = resources->commandBuffer;
-            auto descriptorPool = resources->descriptorPool;
-            auto globalsBuffer = resources->globalsBuffer;
-            auto instanceBuffer = resources->instanceBuffer;
-            auto backBuffer = frame->backBuffer();
+            if (commandsFinished)
+            {
+                delete commandsFinished;
+            }
+            commandsFinished = graphicsCard->newSemaphore();
+            auto colorTarget = frame->renderBuffer();
+            if (depthTarget->width() != colorTarget->width() || depthTarget->height() != colorTarget->height())
+            {
+                delete depthTarget;
+                depthTarget = graphicsCard->newTexture2D(colorTarget->width(),colorTarget->height(),slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET);
+            }
 
-            descriptorPool->reset();
+            objectTransform = glm::rotate(objectTransform,glm::radians(45.0f)*delta,glm::vec3(0.0f,1.0f,0.0f));
+            transformPtr[0] = objectTransform;
 
             commandBuffer->begin();
-            commandBuffer->bindDescriptorPool(descriptorPool);
-            commandBuffer->setViewPort(0,0,backBuffer->width(),backBuffer->height(),0,1);
-            commandBuffer->setScissors(slag::Rectangle{{0,0},{backBuffer->width(),backBuffer->height()}});
 
-            slag::Attachment colorAttachment{.texture = backBuffer,.autoClear = true, .clearValue = slag::ClearColor{.floats = {0,.2,1,1} }};
-            slag::Attachment depthAttachment{.texture = depthTexture,.autoClear = true };
-            depthAttachment.clearValue.depthStencil = {1,0};
+            commandBuffer->bindDescriptorHeaps(resourceHeap,samplerHeap);
+            commandBuffer->setViewPort(0,0,colorTarget->width(),colorTarget->height(),0.0f,1.0f);
+            commandBuffer->setScissors(slag::Rectangle{0,0,colorTarget->width(),colorTarget->height()});
+            Attachment colorAttachment(colorTarget,true,ClearValue{.5,.2,.1,1});
+            Attachment depthAttachment(depthTarget,true,ClearValue{1,0});
 
-            commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{{0,0},{backBuffer->width(),backBuffer->height()}});
-            commandBuffer->bindGraphicsShaderPipeline(texturedDepthPipeline);
+            TextureBarrier barriers[]
+            {
+                TextureBarrier
+                {
+                    colorTarget,
+                    0,
+                    1,
+                    0,
+                    1,
+                    SyncStages::ALL,
+                    SyncStages::ALL_GRAPHICS,
+                    MemoryCaches::NONE,
+                    MemoryCaches::NONE,
+                    TextureLayout::UNKNOWN,
+                    TextureLayout::COLOR_TARGET
+                },
+                TextureBarrier
+                {
+                    depthTarget,
+                    0,
+                    1,
+                    0,
+                    1,
+                    SyncStages::ALL,
+                    SyncStages::ALL_GRAPHICS,
+                    MemoryCaches::NONE,
+                    MemoryCaches::NONE,
+                    TextureLayout::UNKNOWN,
+                    TextureLayout::DEPTH_STENCIL_TARGET
+                },
+            };
+            commandBuffer->insertBarriers(barriers,2);
 
-            glm::mat4 projection = glm::perspective(95.0f,(float)backBuffer->width()/(float)backBuffer->height(),.01f,100.0f);
-            glm::mat4 view(1.0f);
-            view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
-            view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
-            view = glm::inverse(view);
-            glm::mat4 projectionView = projection * view;
-            auto globalHandle = globalsBuffer->as<glm::mat4>();
-            globalHandle[0] = projection;
-            globalHandle[1] = view;
-            globalHandle[2] = projectionView;
+            commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{0,0,colorTarget->width(),colorTarget->height()});
 
-            auto instanceHandle = instanceBuffer->as<glm::mat4>();
-            instanceHandle[0] = instanceMatrix;
-            instanceMatrix = glm::rotate(instanceMatrix,glm::radians(45.0f * delta),glm::vec3(0.0f,1.0f,0.0f));
-
-            auto globals = descriptorPool->makeBundle(texturedDepthPipeline->descriptorGroup(0));
-            globals.setUniformBuffer(GlobalsIndex,0,globalsBuffer,0,globalsBuffer->size());
-            auto instance = descriptorPool->makeBundle(texturedDepthPipeline->descriptorGroup(1));
-            instance.setUniformBuffer(InstanceIndex,0,instanceBuffer,0,instanceBuffer->size());
-            instance.setSampledTexture(InstanceTextureIndex,0,texture);
-            instance.setSampler(InstanceSamplerIndex,0,defaultSampler);
-
-            commandBuffer->bindGraphicsDescriptorBundle(0,globals);
-            commandBuffer->bindGraphicsDescriptorBundle(1,instance);
-            commandBuffer->bindIndexBuffer(cubeIndices,slag::Buffer::IndexSize::UINT16,0);
+            Buffer* buffers[] = {cubeVerts, cubeUVs};
+            uint64_t offsets[] = {0,0};
+            uint64_t strides[] = {sizeof(glm::vec3),sizeof(glm::vec2)};
+            commandBuffer->bindVertexBuffers(0,buffers,offsets,strides,2);
+            commandBuffer->bindIndexBuffer(cubeIndices,IndexBufferType::UINT_16,0);
+            commandBuffer->bindShaderPipeline(pipeline);
 
 
-            commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,vertexStrides,2);
-            commandBuffer->setBlendConstants(1,.5,0,1);
+            graphicsCard->writeUniformBufferDescriptor(globals,0,globals->size(),resourceHeapPtr);
+            graphicsCard->writeUniformBufferDescriptor(transform,0,transform->size(),resourceHeapPtr+descriptorDetails.textureDescriptorSize);
+            graphicsCard->writeUniformTextureDescriptor(texture,0,1,0,1,resourceHeapPtr+(descriptorDetails.textureDescriptorSize*2));
+            graphicsCard->writeSamplerDescriptor(sampler,samplerHeapPtr);
+
+            uint32_t globalIndex = 0;
+            uint32_t instanceIndex = 1;
+            uint32_t textureIndex = 2;
+            uint32_t samplerIndex = 0;
+            commandBuffer->setGraphicsShaderParameters(0,&globalIndex,sizeof(uint32_t));
+            commandBuffer->setGraphicsShaderParameters(8,&instanceIndex,sizeof(uint32_t));
+            commandBuffer->setGraphicsShaderParameters(16,&textureIndex,sizeof(uint32_t));
+            commandBuffer->setGraphicsShaderParameters(24,&samplerIndex,sizeof(uint32_t));
+
             commandBuffer->drawIndexed(cindexes.size(),1,0,0,0);
+
             commandBuffer->endRendering();
+
+            barriers[0].layoutBefore = TextureLayout::COLOR_TARGET;
+            barriers[0].layoutAfter = TextureLayout::PRESENT;
+            barriers[0].syncBefore = SyncStages::ALL_GRAPHICS;
+            barriers[0].syncAfter = SyncStages::ALL;
+            barriers[0].flush = MemoryCaches::COLOR_TARGET;
+            barriers[0].invalidate = MemoryCaches::NONE;
+            commandBuffer->insertBarriers(barriers,1);
+
             commandBuffer->end();
 
-            slag::QueueSubmissionBatch submissionBatch;
+            slag::SemaphoreValue signal{.semaphore = commandsFinished, .value = 1};
+
+            slag::SubmissionBatch submissionBatch;
             submissionBatch.commandBuffers = &commandBuffer;
             submissionBatch.commandBufferCount = 1;
-            queue->submit(&submissionBatch,1,frame);
+            submissionBatch.signalSemaphores = &signal;
+            submissionBatch.signalSemaphoreCount = 1;
+            queue->submit(&submissionBatch,1);
+            commandsFinished->waitForValue(1);
+            swapChain->present();
         }
     }
+    commandsFinished->waitForValue(1);
+    delete commandsFinished;
+    delete commandBuffer;
+    delete resourceHeap;
+    delete samplerHeap;
+    delete globals;
+    delete transform;
     delete swapChain;
+    delete sampler;
     delete texture;
-    delete defaultSampler;
-    delete depthTexture;
-    delete texturedDepthPipeline;
+    delete depthTarget;
+    delete pipeline;
     delete cubeVerts;
     delete cubeUVs;
     delete cubeIndices;
     SDL_DestroyWindow(window);
-    slag::cleanup();
+    slag::Slag::cleanup();
 }

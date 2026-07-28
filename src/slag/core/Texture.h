@@ -1,142 +1,156 @@
 #ifndef SLAG_TEXTURE_H
 #define SLAG_TEXTURE_H
 #include <cstdint>
-
+#include "Dimensions.h"
 #include "Pixels.h"
 
 namespace slag
 {
-    struct TextureBufferMapping;
-}
-
-namespace slag
-{
-    ///Holds texel data for many different kinds of uses, such as color data, depth, cubemaps, etc.
-    class Texture
+    class GraphicsCard;
+    ///What the layout of a texture is
+    enum class TextureType: uint8_t
     {
-    public:
-        enum class Type
-        {
-            TEXTURE_1D,
-            TEXTURE_2D,
-            TEXTURE_3D,
-            TEXTURE_CUBE,
-        };
-
-        enum class UsageFlags: uint8_t
-        {
-            ///Texture can be sampled from
-            SAMPLED_IMAGE=0b00000001,
-            ///Texture can have read and writes in the same shader
-            STORAGE=0b00000010,
-            ///Texture can be written to as a color texture in rasterization shaders
-            RENDER_TARGET_ATTACHMENT=0b00000100,
-            ///Texture can be written to as a depth texture in rasterization shaders
-            DEPTH_STENCIL_ATTACHMENT=0b00001000,
-        };
-
-        enum class SampleCount
-        {
-            ONE = 1,
-            TWO = 2,
-            FOUR = 4,
-            EIGHT = 8,
-            SIXTEEN = 16,
-            THIRTY_TWO = 32,
-            SIXTY_FOUR = 64,
-        };
-
-        virtual ~Texture()=default;
-        ///What kind of type this texture is
-        virtual Type type()=0;
-        ///What kind of usage does this texture support
-        virtual UsageFlags usageFlags()=0;
-        ///Samples used in multisampling
-        virtual SampleCount sampleCount()=0;
-        ///Width in texels
-        virtual uint32_t width()=0;
-
-        /**
-         * Width in texels at a given mip level
-         * @param mipLevel mip to calculate the pixel width for
-         * @return
-         */
-        uint32_t width(uint32_t mipLevel);
-        ///Height in pixels
-        virtual uint32_t height()=0;
-
-        /**
-         * Height in texels at a given mip level
-         * @param mipLevel mip to calculate the pixel height for
-         * @return
-         */
-        uint32_t height(uint32_t mipLevel);
-        ///Number of depth slices in 3D textures, 1 in everything else
-        virtual uint32_t depth()=0;
-        /**
-         * Depth in texels at a given mip level
-         * @param mipLevel
-         * @return
-         */
-        uint32_t depth(uint32_t mipLevel);
-        ///Number of elements in the array (1D or 2D textures), (or 6 in cubemaps, one for each face of the cube), must be 1 in 3d Textures
-        virtual uint32_t layers()=0;
-        ///Number of mip levels (lower LOD images used in shader sampling)
-        virtual uint32_t mipLevels()=0;
-        ///The type of texel format backing the image
-        virtual Pixels::Format format()=0;
-        ///Get the size of the entire texture (assuming tightly packed, may be actually stored differently on hardware) in bytes
-        uint64_t byteSize();
-
-        /**
-         * Get the size of a mip level in bytes (assuming tightly packed, may be actually stored differently on hardware) in bytes
-         * @param mipLevel
-         * @return
-         */
-        uint64_t byteSize(uint32_t mipLevel);
-
-        static Texture* newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount = SampleCount::ONE);
-        static Texture* newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData, uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount);
+        ///Texture has a width
+        ONE_DIMENSIONAL,
+        ///Texture has a width and height
+        TWO_DIMENSIONAL,
+        ///Texture has a width, height, and depth
+        THREE_DIMENSIONAL,
+        ///Texture has six TWO_DIMENSIONAL images, arranged into a cube, accessed by raycast from the center of that cube
+        CUBE_MAP
+    };
+    ///What the texture is being used for, multiple flags can be chained together
+    enum class TextureUsageFlags: uint8_t
+    {
+        NONE = 0,
+        ///Texture data is capable of being accessed by a sampler in shaders
+        SAMPLED                 = 0b00000001,
+        ///Texture supports arbitrary read/write operations in shaders
+        UNORDERED_ACCESS        = 0b00000010,
+        ///Texture can be set as a color target of graphics shaders
+        COLOR_TARGET            = 0b00000100,
+        ///Texture can be set as a depth/stencil target of graphics shaders
+        DEPTH_STENCIL_TARGET    = 0b00001000,
     };
 
-    inline Texture::UsageFlags operator|(const Texture::UsageFlags& a, const Texture::UsageFlags& b)
+    ///How many samples are stored at each texel
+    enum class SampleCount: uint8_t
     {
-        return static_cast<Texture::UsageFlags>(static_cast<uint8_t>(a) | static_cast<uint8_t>(b));
+        ONE = 1,
+        TWO = 2,
+        FOUR = 4,
+        EIGHT = 8,
+        SIXTEEN = 16,
+    };
+    ///Structured data for Color or Depth information on the GPU
+    class Texture
+    {
+    protected:
+        Texture()=default;
+    public:
+        virtual ~Texture()=default;
+        ///Width in texels
+        [[nodiscard]] virtual uint32_t width()const=0;
+        ///Height in texels (1 for 1D textures)
+        [[nodiscard]] virtual uint32_t height()const=0;
+        ///Depth in texels (1 for non-THREE_DIMENSIONAL textures)
+        [[nodiscard]] virtual uint32_t depth()const=0;
+        ///Array count (1 for non TWO_DIMENSIONAL_ARRAY textures)
+        [[nodiscard]] virtual uint32_t layers()const=0;
+        ///Number of downsized LOD levels
+        [[nodiscard]] virtual uint32_t mipLevels()const=0;
+        ///Structure of texels in this texture
+        [[nodiscard]] virtual PixelFormat format()const=0;
+        ///Number of samples at a given texel
+        [[nodiscard]] virtual SampleCount sampleCount()const=0;
+        ///The kind of texture this is
+        [[nodiscard]] virtual TextureType type()const=0;
+        ///What kind of functionality this texture has
+        [[nodiscard]] virtual TextureUsageFlags usage()const=0;
+        ///Which graphics card this texture is allocated on
+        [[nodiscard]] virtual GraphicsCard* graphicsCard()=0;
+        ///Pointer to user supplied data (The texture does not own this data, just keeps a reference to it)
+        [[nodiscard]] virtual void* userData()=0;
+        /**
+         * Provide additional data associated to this texture (The texture will not own this data, and it must be managed separately)
+         * @param userData Pointer to data to associate with this texture
+         */
+        virtual void setUserData(void* userData)=0;
+
+        /**
+        * Width in texels of a mip level
+        * @param mipLevel
+        * @return
+        */
+        [[nodiscard]] uint32_t mipWidth(uint32_t mipLevel)const;
+        /**
+         * Height in texels of a mip level
+         * @return
+         */
+        [[nodiscard]] uint32_t mipHeight(uint32_t mipLevel)const;
+        /**
+         * Depth in texels of a mip level
+         * @return
+         */
+        [[nodiscard]] uint32_t mipDepth(uint32_t mipLevel)const;
+        /**
+         * Get the required size of a buffer needed to contain the data for this texture
+         * @param aspect The aspect of the texture to get the size of the buffer for
+         * @return
+         */
+        [[nodiscard]] uint64_t bufferSize(PixelAspect aspect)const;
+    };
+
+    inline TextureUsageFlags operator|(TextureUsageFlags lhs, TextureUsageFlags rhs)
+    {
+        uint8_t l = static_cast<uint8_t>(lhs);
+        uint8_t r = static_cast<uint8_t>(rhs);
+        return static_cast<TextureUsageFlags>(l | r);
     }
 
-    inline Texture::UsageFlags operator&(const Texture::UsageFlags& a, const Texture::UsageFlags& b)
+    inline TextureUsageFlags operator&(TextureUsageFlags lhs, TextureUsageFlags rhs)
     {
-        return static_cast<Texture::UsageFlags>(static_cast<uint8_t>(a) & static_cast<uint8_t>(b));
+        uint8_t l = static_cast<uint8_t>(lhs);
+        uint8_t r = static_cast<uint8_t>(rhs);
+        return static_cast<TextureUsageFlags>(l & r);
     }
 
-    inline Texture::UsageFlags operator~(const Texture::UsageFlags& a)
+    inline TextureUsageFlags operator^(TextureUsageFlags lhs, TextureUsageFlags rhs)
     {
-        return static_cast<Texture::UsageFlags>(~static_cast<uint8_t>(a));
+        uint8_t l = static_cast<uint8_t>(lhs);
+        uint8_t r = static_cast<uint8_t>(rhs);
+        return static_cast<TextureUsageFlags>(l ^ r);
     }
 
-    inline Texture::UsageFlags operator^(const Texture::UsageFlags& a, const Texture::UsageFlags& b)
+    inline TextureUsageFlags operator~(TextureUsageFlags lhs)
     {
-        return static_cast<Texture::UsageFlags>(static_cast<uint8_t>(a) ^ static_cast<uint8_t>(b));
+        uint8_t l = static_cast<uint8_t>(lhs);
+        return static_cast<TextureUsageFlags>(~l);
     }
 
-    inline Texture::UsageFlags operator|=(Texture::UsageFlags& a, const Texture::UsageFlags& b)
+    inline TextureUsageFlags operator!(TextureUsageFlags lhs)
     {
-        a = a | b;
-        return a;
+        uint8_t l = static_cast<uint8_t>(lhs);
+        return static_cast<TextureUsageFlags>(!l);
     }
 
-    inline Texture::UsageFlags operator&=(Texture::UsageFlags& a, const Texture::UsageFlags& b)
+    inline TextureUsageFlags operator|=(TextureUsageFlags lhs, TextureUsageFlags rhs)
     {
-        a = a & b;
-        return a;
+        lhs = lhs | rhs;
+        return lhs;
     }
 
-    inline Texture::UsageFlags operator^=(Texture::UsageFlags& a, const Texture::UsageFlags& b)
+    inline TextureUsageFlags operator&=(TextureUsageFlags lhs, TextureUsageFlags rhs)
     {
-        a = a ^ b;
-        return a;
+        lhs = lhs & rhs;
+        return lhs;
     }
 
+    inline TextureUsageFlags operator^=(TextureUsageFlags lhs, TextureUsageFlags rhs)
+    {
+        lhs = lhs ^ rhs;
+        return lhs;
+    }
 } // slag
 
 #endif //SLAG_TEXTURE_H

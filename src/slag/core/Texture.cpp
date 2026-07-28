@@ -1,56 +1,39 @@
 #include "Texture.h"
-#include <slag/backends/Backend.h>
-#include <slag/utilities/SLAG_ASSERT.h>
-#include <stdexcept>
+
+#include <algorithm>
+
+#include "slag/utilities/SLAG_ASSERT.h"
 
 namespace slag
 {
-    uint32_t Texture::width(uint32_t mipLevel)
+    uint32_t Texture::mipWidth(uint32_t mipLevel) const
     {
-        return std::max(width() >> mipLevel,static_cast<uint32_t>(1));
+        return this->width() >> mipLevel;
     }
 
-    uint32_t Texture::height(uint32_t mipLevel)
+    uint32_t Texture::mipHeight(uint32_t mipLevel) const
     {
-        return std::max(height() >> mipLevel,static_cast<uint32_t>(1));
+        return this->height() >> mipLevel;
     }
 
-    uint32_t Texture::depth(uint32_t mipLevel)
+    uint32_t Texture::mipDepth(uint32_t mipLevel) const
     {
-        return std::max(depth() >> mipLevel,static_cast<uint32_t>(1));
+        return this->depth() >> mipLevel;
     }
 
-    uint64_t Texture::byteSize()
+    uint64_t Texture::bufferSize(PixelAspect aspect) const
     {
-
-        auto mipLevels = this->mipLevels();
-        uint64_t bytes = 0;
-        for (uint32_t i = 0; i < mipLevels; i++)
+        uint64_t totalSize = 0;
+        auto aspectSize = Pixel::aspectSize(this->format(),aspect);
+        for (uint32_t layers = 0; layers < this->layers(); layers++)
         {
-            bytes += byteSize(i);
+            for (uint32_t mipLevel=0; mipLevel< this->mipLevels(); mipLevel++)
+            {
+                totalSize += static_cast<uint64_t>(aspectSize) * mipWidth(mipLevel) * std::max(mipHeight(mipLevel),1u) * std::max(mipDepth(mipLevel), 1u);
+            }
         }
-        bytes*=layers();
-        return bytes;
-    }
 
-    uint64_t Texture::byteSize(uint32_t mipLevel)
-    {
-        auto format = this->format();
-        auto formatSize = Pixels::size(format);
-        return formatSize * width(mipLevel) * height(mipLevel) * depth(mipLevel);
+        return totalSize;
     }
-
-    Texture* Texture::newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount)
-    {
-        SLAG_ASSERT(Backend::current()!=nullptr);
-        return Backend::current()->newTexture(texelFormat,type,usageFlags,width,height,depth,mipLevels,layers,sampleCount);
-    }
-
-    Texture* Texture::newTexture(Pixels::Format texelFormat, Type type, UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData, uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount)
-    {
-        SLAG_ASSERT(Backend::current()!=nullptr);
-        return Backend::current()->newTexture(texelFormat,type,usageFlags,width,height,depth,mipLevels,layers,sampleCount,texelData,texelDataLength,mappings,mappingCount);
-    }
-
 
 } // slag

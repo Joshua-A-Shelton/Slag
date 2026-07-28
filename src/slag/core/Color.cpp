@@ -1,53 +1,48 @@
-#include <ios>
-#include <sstream>
 #include "Color.h"
+
+#include <format>
+#include <sstream>
 
 namespace slag
 {
-    Color::Color()
+    Color::Color(float red, float green, float blue, float alpha)
     {
-        red = 0;
-        green = 0;
-        blue = 0;
-        alpha = 0;
-    }
-    Color::Color(float r, float g, float b, float a)
-    {
-        red = r;
-        green = g;
-        blue = b;
-        alpha = a;
+        this->red = red;
+        this->green = green;
+        this->blue = blue;
+        this->alpha = alpha;
     }
 
-    Color::Color(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+    Color::Color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha)
     {
-        red = ((float)r)/255.0f;
-        green = ((float)g)/255.0f;
-        blue = ((float)b)/255.0f;
-        alpha = ((float)a)/255.0f;
+        this->red = ((float)red)/255.0f;
+        this->green = ((float)green)/255.0f;
+        this->blue = ((float)blue)/255.0f;
+        this->alpha = ((float)alpha)/255.0f;
     }
 
-    Color::Color(std::string hex)
+    Color::Color(const std::string& hex)
     {
-        if(hex[0] == '#')
+        auto hexString = hex;
+        if(hexString[0] == '#')
         {
-            hex.erase(0,1);
+            hexString.erase(0,1);
         }
-        if(hex.size()!=6 && hex.size()!=8)
+        if(hexString.size()!=6 && hexString.size()!=8)
         {
-            throw std::runtime_error("color string incorrectly formatted");
+            throw std::format_error("color string incorrectly formatted");
         }
-        for(int i=0; i< hex.size(); i++)
+        for(int i=0; i< hexString.size(); i++)
         {
-            auto digit = hex[i];
+            auto digit = hexString[i];
             if((digit< '0' || digit > '9') && (digit < 'A' || digit > 'F') && (digit < 'a' || digit>'f'))
             {
-                throw std::runtime_error("color string incorrectly formatted");
+                throw std::format_error("color string incorrectly formatted");
             }
         }
-        if(hex.size() == 6)
+        if(hexString.size() == 6)
         {
-            unsigned long value = stoul(hex, nullptr,16);
+            unsigned long value = stoul(hexString, nullptr,16);
             red = ((value >>16) & 0xff)/255.0f;
             green = ((value >>8) & 0xff)/255.0f;
             blue = ((value >>0) & 0xff)/255.0f;
@@ -55,7 +50,7 @@ namespace slag
         }
         else
         {
-            unsigned long value = stoul(hex, nullptr,16);
+            unsigned long value = stoul(hexString, nullptr,16);
             red = ((value >>24) & 0xff)/255.0f;
             green = ((value >>16) & 0xff)/255.0f;
             blue = ((value >>8) & 0xff)/255.0f;
@@ -63,27 +58,27 @@ namespace slag
         }
     }
 
-    unsigned char Color::redByte()
+    uint8_t Color::redByte() const
     {
         return red*255;
     }
 
-    unsigned char Color::greenByte()
+    uint8_t Color::greenByte() const
     {
         return green*255;
     }
 
-    unsigned char Color::blueByte()
+    uint8_t Color::blueByte() const
     {
         return blue*255;
     }
 
-    unsigned char Color::alphaByte()
+    uint8_t Color::alphaByte() const
     {
         return alpha*255;
     }
 
-    std::string Color::hexCode()
+    std::string Color::hexCode() const
     {
         std::stringstream ss;
         int r = redByte();
@@ -92,5 +87,15 @@ namespace slag
         int a = alphaByte();
         ss << "#" <<std::hex<< (r<<24 | g<<16 | b << 8 | a);
         return ss.str();
+    }
+
+    bool Color::operator==(const Color& color) const
+    {
+        return red == color.red && green == color.green && blue == color.blue && alpha == color.alpha;
+    }
+
+    bool Color::operator!=(const Color& color) const
+    {
+        return red != color.red || green != color.green || blue != color.blue || alpha != color.alpha;
     }
 } // slag

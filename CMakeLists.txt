@@ -16,7 +16,9 @@ OPTION(SLAG_WIN32_BACKEND "Use Win32 Windowing Backend" ON)
 OPTION(SLAG_X11_BACKEND "Use X11 Windowing Backend" ON)
 OPTION(SLAG_WAYLAND_BACKEND "Use Wayland Windowing Backend" ON)
 
-SET(USE_SPIRV_REFLECTION ON)
+OPTION(SLAG_BUILD_TESTS "Build Slag Tests" ON)
+OPTION(SLAG_BUILD_CUBE "Build Slag Example Cube" ON)
+OPTION(SLAG_BUILD_MS_CUBE "Build Multi Sample Example Cube" ON)
 
 if(WIN32)
     set(SLAG_X11_BACKEND OFF)
@@ -43,195 +45,153 @@ if(SLAG_WAYLAND_BACKEND)
 endif()
 
 if(SLAG_VULKAN_BACKEND)
-    find_package(Vulkan REQUIRED)
+    find_package(Vulkan 1.4.341 REQUIRED)
     add_definitions(-DSLAG_VULKAN_BACKEND=1)
-    SET(USE_SPIRV_REFLECTION ON)
     message("adding vulkan backend")
     SET(SLAG_VULKAN_SOURCES
             src/slag/backends/vulkan/VulkanBackend.cpp
             src/slag/backends/vulkan/VulkanBackend.h
-            src/slag/backends/vulkan/core/VulkanCommandBuffer.cpp
-            src/slag/backends/vulkan/core/VulkanCommandBuffer.h
-            src/slag/backends/vulkan/core/VulkanTexture.cpp
-            src/slag/backends/vulkan/core/VulkanTexture.h
-            src/slag/backends/vulkan/core/VulkanBuffer.cpp
-            src/slag/backends/vulkan/core/VulkanBuffer.h
-            src/slag/backends/vulkan/core/IVulkanCommandBuffer.cpp
-            src/slag/backends/vulkan/core/IVulkanCommandBuffer.h
-            src/slag/backends/vulkan/core/VulkanGPUMemoryReference.h
-            src/slag/backends/vulkan/core/VulkanGraphicsCard.cpp
-            src/slag/backends/vulkan/core/VulkanGraphicsCard.h
-            src/slag/backends/vulkan/core/VulkanQueue.cpp
-            src/slag/backends/vulkan/core/VulkanQueue.h
-            src/slag/backends/vulkan/core/VulkanSemaphore.cpp
-            src/slag/backends/vulkan/core/VulkanSemaphore.h
-            src/slag/backends/vulkan/core/VulkanDescriptorPool.cpp
-            src/slag/backends/vulkan/core/VulkanDescriptorPool.h
-            src/slag/backends/vulkan/core/VulkanShaderPipeline.cpp
-            src/slag/backends/vulkan/core/VulkanShaderPipeline.h
-            src/slag/backends/vulkan/core/VulkanDescriptorGroup.cpp
-            src/slag/backends/vulkan/core/VulkanDescriptorGroup.h
-            src/slag/backends/vulkan/core/VulkanDescriptorGroupCache.cpp
-            src/slag/backends/vulkan/core/VulkanDescriptorGroupCache.h
-            src/slag/backends/vulkan/core/VulkanSampler.cpp
-            src/slag/backends/vulkan/core/VulkanSampler.h
-            src/slag/backends/vulkan/core/VulkanSwapChain.cpp
-            src/slag/backends/vulkan/core/VulkanSwapChain.h
-            src/slag/backends/vulkan/core/VulkanFrame.cpp
-            src/slag/backends/vulkan/core/VulkanFrame.h
-            src/slag/backends/vulkan/core/VulkanBufferView.cpp
-            src/slag/backends/vulkan/core/VulkanBufferView.h
-            src/slag/backends/vulkan/core/VulkanDescriptorIndex.h)
+            src/slag/backends/vulkan/VulkanGraphicsCard.cpp
+            src/slag/backends/vulkan/VulkanGraphicsCard.h
+            src/slag/backends/vulkan/VulkanBuffer.cpp
+            src/slag/backends/vulkan/VulkanBuffer.h
+            src/slag/backends/vulkan/VulkanSemaphore.cpp
+            src/slag/backends/vulkan/VulkanSemaphore.h
+            src/slag/backends/vulkan/VulkanCommandBuffer.cpp
+            src/slag/backends/vulkan/VulkanCommandBuffer.h
+            src/slag/backends/vulkan/IVulkanCommandBuffer.cpp
+            src/slag/backends/vulkan/IVulkanCommandBuffer.h
+            src/slag/backends/vulkan/VulkanSubmissionQueue.cpp
+            src/slag/backends/vulkan/VulkanSubmissionQueue.h
+            src/slag/backends/vulkan/VulkanTexture.cpp
+            src/slag/backends/vulkan/VulkanTexture.h
+            src/slag/backends/vulkan/VulkanShaderPipeline.cpp
+            src/slag/backends/vulkan/VulkanShaderPipeline.h
+            src/slag/backends/vulkan/VulkanSampler.cpp
+            src/slag/backends/vulkan/VulkanSampler.h
+            src/slag/backends/vulkan/VulkanSamplerDescriptorHeap.cpp
+            src/slag/backends/vulkan/VulkanSamplerDescriptorHeap.h
+            src/slag/backends/vulkan/VulkanResourceDescriptorHeap.cpp
+            src/slag/backends/vulkan/VulkanResourceDescriptorHeap.h
+            src/slag/backends/vulkan/VulkanSwapChain.cpp
+            src/slag/backends/vulkan/VulkanSwapChain.h
+            src/slag/backends/vulkan/VulkanFrame.cpp
+            src/slag/backends/vulkan/VulkanFrame.h
+    )
 endif()
 if(SLAG_DX12_BACKEND)
     add_definitions(-DSLAG_DX12_BACKEND=1)
-    SET(USE_DXIL_12_REFLECTION ON)
     message("adding direct x 12 backend")
     SET(SLAG_DX12_SOURCES
             src/slag/backends/dx12/DX12Backend.cpp
             src/slag/backends/dx12/DX12Backend.h
-            src/slag/backends/dx12/core/DX12GraphicsCard.cpp
-            src/slag/backends/dx12/core/DX12GraphicsCard.h
-            src/slag/backends/dx12/core/DX12Queue.cpp
-            src/slag/backends/dx12/core/DX12Queue.h
-            src/slag/backends/dx12/core/IDX12CommandBuffer.cpp
-            src/slag/backends/dx12/core/IDX12CommandBuffer.h
-            src/slag/backends/dx12/core/DX12Buffer.cpp
-            src/slag/backends/dx12/core/DX12Buffer.h
-            src/slag/backends/dx12/core/DX12CommandBuffer.cpp
-            src/slag/backends/dx12/core/DX12CommandBuffer.h
-            src/slag/backends/dx12/core/DX12Semaphore.cpp
-            src/slag/backends/dx12/core/DX12Semaphore.h
-            src/slag/backends/dx12/core/DX12DescriptorPool.cpp
-            src/slag/backends/dx12/core/DX12DescriptorPool.h
-            src/slag/backends/dx12/core/DX12Texture.cpp
-            src/slag/backends/dx12/core/DX12Texture.h
-            src/slag/backends/dx12/core/DX12ShaderPipeline.cpp
-            src/slag/backends/dx12/core/DX12ShaderPipeline.h
-            src/slag/backends/dx12/core/DX12DescriptorGroup.cpp
-            src/slag/backends/dx12/core/DX12DescriptorGroup.h
-            src/slag/backends/dx12/core/DX12Sampler.cpp
-            src/slag/backends/dx12/core/DX12Sampler.h
-    )
-endif()
-
-if(USE_SPIRV_REFLECTION)
-    add_definitions(-DUSE_SLAG_SPIRV_REFLECTION)
-    SET(SLAG_SPIRV_REFLECT_SOURCES
-            src/slag/spirv/SPIRVReflection.cpp
-            src/slag/spirv/SPIRVReflection.h
-            )
-endif()
-
-if(USE_DXIL_12_REFLECTION)
-    add_definitions(-DUSE_SLAG_DXIL_12_REFLECTION)
-    SET(SLAG_DXIL_12_REFLECT_SOURCES
-            src/slag/dxil_12/DXIL12Reflection.cpp
-            src/slag/dxil_12/DXIL12Reflection.h
+            src/slag/backends/dx12/DX12GraphicsCard.cpp
+            src/slag/backends/dx12/DX12GraphicsCard.h
+            src/slag/backends/dx12/DX12Buffer.cpp
+            src/slag/backends/dx12/DX12Buffer.h
+            src/slag/backends/dx12/DX12Semaphore.cpp
+            src/slag/backends/dx12/DX12Semaphore.h
+            src/slag/backends/dx12/DX12SubmissionQueue.cpp
+            src/slag/backends/dx12/DX12SubmissionQueue.h
+            src/slag/backends/dx12/IDX12CommandBuffer.cpp
+            src/slag/backends/dx12/IDX12CommandBuffer.h
+            src/slag/backends/dx12/DX12CommandBuffer.cpp
+            src/slag/backends/dx12/DX12CommandBuffer.h
+            src/slag/backends/dx12/DX12Texture.cpp
+            src/slag/backends/dx12/DX12Texture.h
+            src/slag/backends/dx12/DX12ShaderPipeline.cpp
+            src/slag/backends/dx12/DX12ShaderPipeline.h
+            src/slag/backends/dx12/DX12Sampler.cpp
+            src/slag/backends/dx12/DX12Sampler.h
+            src/slag/backends/dx12/DX12ResourceDescriptorHeap.cpp
+            src/slag/backends/dx12/DX12ResourceDescriptorHeap.h
+            src/slag/backends/dx12/DX12SamplerDescriptorHeap.cpp
+            src/slag/backends/dx12/DX12SamplerDescriptorHeap.h
+            src/slag/core/Frame.h
+            src/slag/backends/dx12/DX12SwapChain.cpp
+            src/slag/backends/dx12/DX12SwapChain.h
+            src/slag/backends/dx12/DX12Frame.cpp
+            src/slag/backends/dx12/DX12Frame.h
     )
 endif()
 
 add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLECT_SOURCES} ${SLAG_DXIL_12_REFLECT_SOURCES}
         src/slag/Slag.cpp
         src/slag/Slag.h
+        src/slag/core/GraphicsCard.cpp
         src/slag/core/GraphicsCard.h
-        src/slag/core/GPUQueue.h
-        src/slag/core/CommandBuffer.cpp
-        src/slag/core/CommandBuffer.h
-        src/slag/core/Semaphore.cpp
-        src/slag/core/Semaphore.h
-        src/slag/core/Texture.cpp
-        src/slag/core/Texture.h
-        src/slag/core/Pixels.h
-        src/slag/core/Pixels.cpp
-        src/slag/utilities/SLAG_ASSERT.h
-        src/slag/backends/Backend.h
-        src/slag/core/ICommandBuffer.h
-        src/slag/core/SwapChain.cpp
-        src/slag/core/SwapChain.h
-        src/slag/core/Frame.cpp
-        src/slag/core/Frame.h
-        src/slag/core/FrameResources.h
-        src/slag/core/PlatformData.h
-        src/slag/core/GPUBarriers.cpp
-        src/slag/core/GPUBarriers.h
         src/slag/core/Buffer.cpp
         src/slag/core/Buffer.h
-        src/slag/core/Clear.h
+        src/slag/core/IBackend.cpp
+        src/slag/core/IBackend.h
+        src/slag/exceptions/NotImplemented.h
+        src/slag/core/Texture.cpp
+        src/slag/core/Texture.h
+        src/slag/core/Pixels.cpp
+        src/slag/core/Pixels.h
+        src/slag/core/ICommandBuffer.h
+        src/slag/core/CommandBuffer.h
         src/slag/core/Dimensions.h
-        src/slag/core/Sampler.cpp
-        src/slag/core/Sampler.h
+        src/slag/core/SubmissionQueue.h
+        src/slag/core/Semaphore.h
+        src/slag/utilities/SLAG_ASSERT.h
+        src/slag/exceptions/ResourceCreationError.h
+        src/slag/core/PixelFormatProperties.h
+        src/slag/core/Defragmentation.h
+        src/slag/core/Barriers.h
+        src/slag/core/ShaderPipeline.h
+        src/slag/core/ShaderCode.h
+        src/slag/core/GraphicsTypes.h
+        src/slag/exceptions/InvalidShaderCodeError.h
+        src/slag/core/Operations.h
         src/slag/core/Color.cpp
         src/slag/core/Color.h
-        src/slag/core/Operations.h
-        src/slag/core/Attachment.h
-        src/slag/core/DescriptorBundle.cpp
-        src/slag/core/DescriptorBundle.h
-        src/slag/core/ShaderPipeline.cpp
-        src/slag/core/ShaderPipeline.h
-        src/slag/core/DescriptorGroup.h
-        src/slag/core/Descriptor.cpp
-        src/slag/core/Descriptor.h
-        src/slag/core/GraphicsTypes.h
-        src/slag/core/DescriptorPool.cpp
-        src/slag/core/DescriptorPool.h
         src/slag/core/VertexDescription.cpp
         src/slag/core/VertexDescription.h
-        src/slag/core/BufferView.cpp
-        src/slag/core/BufferView.h
-        src/slag/core/PixelFormatProperties.h
+        src/slag/exceptions/InvalidShaderVertexBindingError.h
+        src/slag/exceptions/IncompatibleShaderBindGroupsError.h
+        src/slag/core/Clear.h
+        src/slag/core/Attachment.h
+        src/slag/core/Sampler.h
+        src/slag/exceptions/PipelineInputMappingSizeExceeded.h
+        src/slag/core/SamplerDescriptorHeap.h
+        src/slag/core/ResourceDescriptorHeap.h
+        src/slag/core/SwapChain.h
+        src/slag/core/Frame.h
+        src/slag/core/PlatformData.h
+        src/slag/exceptions/InvalidSwapChainOperation.h
+
 
 )
-#link spirv if we need to
-if(USE_SPIRV_REFLECTION)
-    OPTION(SPIRV_REFLECT_EXECUTABLE "build spirv reflect executable" OFF)
-    OPTION(SPIRV_REFLECT_EXAMPLES "build spirv reflect examples" OFF)
-    OPTION(SPIRV_REFLECT_STATIC_LIB "build spirv reflect library" ON)
-    FetchContent_Declare(
-            SPIRV_REFLECT
-            GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Reflect
-            #TODO: update this to vulkan 1.4, it's currently causing issues building on systems where the sdk isn't up to 1.4 yet, so we're waiting until it's widely available
-            GIT_TAG vulkan-sdk-1.3.296.0
-            GIT_SHALLOW TRUE
-            OVERRIDE_FIND_PACKAGE
-    )
-    FetchContent_MakeAvailable(SPIRV_REFLECT)
-    target_link_libraries(Slag PRIVATE spirv-reflect-static)
-endif ()
-
-if(USE_DXIL_12_REFLECTION)
-    target_include_directories(Slag PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/DXC/inc)
-
-    find_library(DXCompiler_LIB NAMES dxcompiler PATHS ${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/DXC/lib/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID})
-    find_library(DXIL_LIB NAMES dxil PATHS ${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/DXC/lib/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID})
-
-    target_link_libraries(Slag PRIVATE ${DXCompiler_LIB} ${DXIL_LIB})
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/DXC/bin/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}/dxcompiler.dll ${CMAKE_BINARY_DIR}/dxcompiler.dll COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin-libs/DXC/bin/${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}/dxil.dll ${CMAKE_BINARY_DIR}/dxil.dll COPYONLY)
-endif ()
 
 if(SLAG_VULKAN_BACKEND)
     message("vulkan directory: ${Vulkan_INCLUDE_DIR}")
-    FetchContent_Declare(
-            VMA
-            GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
-            GIT_TAG v3.3.0
-            GIT_SHALLOW TRUE
-            OVERRIDE_FIND_PACKAGE
-    )
-    FetchContent_MakeAvailable(VMA)
-    find_package(VMA REQUIRED)
-    FetchContent_Declare(
-            VKBOOTSTRAP
-            GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
-            #TODO: update this to vulkan 1.4, it's currently causing issues building on systems where the sdk isn't up to 1.4 yet, so we're waiting until it's widely available
-            GIT_TAG v1.3.302
-            GIT_SHALLOW TRUE
-            OVERRIDE_FIND_PACKAGE
-    )
-    FetchContent_MakeAvailable(VKBOOTSTRAP)
+    find_package(VulkanMemoryAllocator QUIET)
+    if(NOT VulkanMemoryAllocator_FOUND)
+        FetchContent_Declare(
+                VulkanMemoryAllocator
+                GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+                GIT_TAG v3.3.0
+                GIT_SHALLOW TRUE
+                OVERRIDE_FIND_PACKAGE
+        )
+        FetchContent_MakeAvailable(VulkanMemoryAllocator)
+    endif ()
+    find_package(VulkanMemoryAllocator REQUIRED)
 
-    target_include_directories(Slag PRIVATE ${Vulkan_INCLUDE_DIR} ${vma_SOURCE_DIR})
+    find_package(vk-bootstrap QUIET)
+    if(NOT vk-bootstrap_FOUND)
+        FetchContent_Declare(
+                vk-bootstrap
+                GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
+                GIT_TAG v1.4.341
+                GIT_SHALLOW TRUE
+                OVERRIDE_FIND_PACKAGE
+        )
+        FetchContent_MakeAvailable(vk-bootstrap)
+    endif ()
+
+    target_include_directories(Slag PRIVATE ${Vulkan_INCLUDE_DIR})
     target_link_libraries(Slag PRIVATE ${Vulkan_LIBRARIES} GPUOpen::VulkanMemoryAllocator vk-bootstrap)
 endif()
 
@@ -270,24 +230,35 @@ if(SLAG_DX12_BACKEND)
 endif()
 
 target_include_directories(Slag PUBLIC src)
+add_library(slag::Slag ALIAS Slag)
 
-if(PROJECT_IS_TOP_LEVEL)
-    fetchcontent_declare(
-            SDL2
-            GIT_REPOSITORY https://github.com/libsdl-org/SDL
-            GIT_TAG release-2.32.8
-            GIT_SHALLOW TRUE
-            OVERRIDE_FIND_PACKAGE
-    )
-    fetchcontent_makeavailable(SDL2)
-    fetchcontent_declare(
-            GLM
-            GIT_REPOSITORY https://github.com/g-truc/glm
-            GIT_TAG 1.0.1
-            GIT_SHALLOW TRUE
-            OVERRIDE_FIND_PACKAGE
-    )
-    fetchcontent_makeavailable(GLM)
+if(SLAG_BUILD_TESTS OR SLAG_BUILD_CUBE)
+    find_package(SDL3 QUIET)
+    if(NOT SDL3_FOUND)
+        fetchcontent_declare(
+                SDL3
+                GIT_REPOSITORY https://github.com/libsdl-org/SDL
+                GIT_TAG release-3.4.0
+                GIT_SHALLOW TRUE
+                OVERRIDE_FIND_PACKAGE
+        )
+        FetchContent_MakeAvailable(SDL3)
+        find_package(SDL3 REQUIRED)
+    endif ()
+
+    find_package(glm)
+    if(NOT glm_FOUND)
+        fetchcontent_declare(
+                GLM
+                GIT_REPOSITORY https://github.com/g-truc/glm
+                GIT_TAG 1.0.1
+                GIT_SHALLOW TRUE
+                OVERRIDE_FIND_PACKAGE
+        )
+        FetchContent_MakeAvailable(glm)
+        find_package(glm REQUIRED)
+    endif ()
+
     fetchcontent_declare(
             STB_IMAGE
             GIT_REPOSITORY https://github.com/nothings/stb
@@ -297,8 +268,10 @@ if(PROJECT_IS_TOP_LEVEL)
     )
     FetchContent_MakeAvailable(STB_IMAGE)
     find_package(STB_IMAGE)
-    message("building tests")
 
+endif ()
+
+if(SLAG_BUILD_TESTS)
     FetchContent_Declare(
             googletest
             GIT_REPOSITORY https://github.com/google/googletest
@@ -313,79 +286,158 @@ if(PROJECT_IS_TOP_LEVEL)
     enable_testing()
 
     add_executable(SlagTests
-            tests/SlagTestsMain.cpp
-            tests/GraphicsAPIEnvironment.cpp
-            tests/GraphicsAPIEnvironment.h
-            tests/VulkanEnvironment.cpp
-            tests/VulkanEnvironment.h
-            tests/tests/CommandBuffer.cpp
-            tests/Utilities.cpp
-            tests/Utilities.h
-            tests/tests/ShaderPipeline.cpp
-            tests/tests/UniformBufferDescriptorLayout.cpp
             tests/third-party/LodePNG/lodepng.cpp
             tests/third-party/LodePNG/lodepng.h
-            tests/tests/SwapChain.cpp
-            tests/tests/Buffer.cpp
-            tests/tests/Texture.cpp
-            tests/tests/DescriptorPool.cpp
-            tests/tests/DescriptorBundle.cpp
-            tests/DX12Environment.cpp
-            tests/DX12Environment.h
+            tests/SlagTestsMain.cpp
             tests/tests/GraphicsCard.cpp
+            tests/tests/Buffer.cpp
+            tests/utilities/GeneralUtilities.h
+            tests/tests/Semaphore.cpp
+            tests/tests/CommandBuffer.cpp
+            tests/tests/SubmissionQueue.cpp
+            tests/tests/Texture.cpp
+            tests/tests/ShaderCode.cpp
+            tests/utilities/PlatformUtilities.cpp
+            tests/utilities/PlatformUtilities.h
+            tests/utilities/SlagUtilities.cpp
+            tests/utilities/SlagUtilities.h
     )
 
-    target_link_libraries(SlagTests GTest::gtest SDL2::SDL2 glm::glm Slag)
-    target_include_directories(SlagTests PRIVATE src ${SDL2_LIBRARIES} ${stb_image_SOURCE_DIR})
-    include(GoogleTest)
-    gtest_discover_tests(SlagTests)
+    target_link_libraries(SlagTests GTest::gtest SDL3::SDL3 glm::glm slag::Slag)
+    target_include_directories(SlagTests PRIVATE ${stb_image_SOURCE_DIR})
 
-    add_custom_command(TARGET SlagTests POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tests/resources ${CMAKE_BINARY_DIR}/resources)
+    file(GLOB TEST_VERT_FRAG_SHADERS "${CMAKE_CURRENT_SOURCE_DIR}/resources/tests/shaders/src/VertexAndFragment/*.slang")
 
-    # SHADERS------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    set(SLAG_TESTS_SHADER_SOURCE_DIR tests/resources/shaders)
-    set(SLAG_TESTS_SHADER_BINARY_DIR ${CMAKE_BINARY_DIR}/resources/shaders)
+    foreach (SHADER ${TEST_VERT_FRAG_SHADERS})
+        get_filename_component(FILENAME ${SHADER} NAME_WE)
+        set(OUTPUT_FILE_RAW "${CMAKE_CURRENT_SOURCE_DIR}/resources/tests/shaders/compiled/${FILENAME}")
+        add_custom_command(
+                OUTPUT "${OUTPUT_FILE_RAW}.vertex.spv"
+                COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -spirv-unified-descriptor-heap-stride -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.spv"
+                DEPENDS ${SHADER}
+                COMMENT "Compiling ${FILENAME} to spirv vertex"
+        )
+        add_custom_command(
+                OUTPUT "${OUTPUT_FILE_RAW}.fragment.spv"
+                COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -spirv-unified-descriptor-heap-stride -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.spv"
+                DEPENDS ${SHADER}
+                COMMENT "Compiling ${FILENAME} to spirv fragment"
+        )
+        if(WIN32)
+            add_custom_command(
+                    OUTPUT "${OUTPUT_FILE_RAW}.vertex.dxil"
+                    COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.dxil"
+                    DEPENDS ${SHADER}
+                    COMMENT "Compiling ${FILENAME} to dxil vertex"
+            )
+            add_custom_command(
+                    OUTPUT "${OUTPUT_FILE_RAW}.fragment.dxil"
+                    COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.dxil"
+                    DEPENDS ${SHADER}
+                    COMMENT "Compiling ${FILENAME} to dxil fragment"
+            )
+        endif ()
+        list(APPEND COMPILED_TEST_SHADER_FILES ${OUTPUT_FILE_RAW}.vertex.spv ${OUTPUT_FILE_RAW}.fragment.spv ${OUTPUT_FILE_RAW}.vertex.dxil ${OUTPUT_FILE_RAW}.fragment.dxil)
+    endforeach ()
 
-    file(GLOB SHADERS
-            ${SLAG_TESTS_SHADER_SOURCE_DIR}/*.vert
-            ${SLAG_TESTS_SHADER_SOURCE_DIR}/*.frag
-            ${SLAG_TESTS_SHADER_SOURCE_DIR}/*.comp)
+    file(GLOB TEST_COMPUTE_SHADERS "${CMAKE_CURRENT_SOURCE_DIR}/resources/tests/shaders/src/Compute/*.slang")
+
+    foreach (SHADER ${TEST_COMPUTE_SHADERS})
+        get_filename_component(FILENAME ${SHADER} NAME_WE)
+        set(OUTPUT_FILE_RAW "${CMAKE_CURRENT_SOURCE_DIR}/resources/tests/shaders/compiled/${FILENAME}")
+        add_custom_command(
+                OUTPUT "${OUTPUT_FILE_RAW}.compute.spv"
+                COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -spirv-unified-descriptor-heap-stride -entry computeMain -o "${OUTPUT_FILE_RAW}.compute.spv"
+                DEPENDS ${SHADER}
+                COMMENT "Compiling ${FILENAME} to spirv compute"
+        )
+        if(WIN32)
+            add_custom_command(
+                    OUTPUT "${OUTPUT_FILE_RAW}.compute.dxil"
+                    COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry computeMain -o "${OUTPUT_FILE_RAW}.compute.dxil"
+                    DEPENDS ${SHADER}
+                    COMMENT "Compiling ${FILENAME} to dxil compute"
+            )
+        endif ()
+        list(APPEND COMPILED_TEST_SHADER_FILES ${OUTPUT_FILE_RAW}.compute.spv ${OUTPUT_FILE_RAW}.compute.dxil)
+    endforeach ()
+
+    add_custom_target(CompileTestShaders ALL DEPENDS ${COMPILED_TEST_SHADER_FILES} ${TEST_COMPUTE_SHADERS})
 
     add_custom_command(
-            COMMAND
-            ${CMAKE_COMMAND} -E make_directory ${SLAG_TESTS_SHADER_BINARY_DIR}
-            OUTPUT ${SLAG_TESTS_SHADER_BINARY_DIR}
-            COMMENT "Creating ${SLAG_TESTS_SHADER_BINARY_DIR}"
+            TARGET SlagTests
+            POST_BUILD
+            COMMAND  ${CMAKE_COMMAND} -E copy_directory_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/resources/tests
+            ${CMAKE_CURRENT_BINARY_DIR}/resources/tests
+            COMMENT "Copying test resource files"
     )
 
-    foreach(source IN LISTS SHADERS)
-        get_filename_component(FILENAME ${source} NAME)
+    add_dependencies(SlagTests CompileTestShaders)
+endif ()
+
+#Examples
+
+file(GLOB EXAMPLE_VERT_FRAG_SHADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/resources/examples/shaders/src/VertexAndFragment/*.slang")
+
+foreach (SHADER ${EXAMPLE_VERT_FRAG_SHADERS})
+    get_filename_component(FILENAME ${SHADER} NAME_WE)
+    set(OUTPUT_FILE_RAW "${CMAKE_CURRENT_SOURCE_DIR}/resources/examples/shaders/compiled/${FILENAME}")
+    add_custom_command(
+            OUTPUT "${OUTPUT_FILE_RAW}.vertex.spv"
+            COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -spirv-unified-descriptor-heap-stride -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.spv"
+            DEPENDS ${SHADER}
+            COMMENT "Compiling ${FILENAME} to spirv vertex"
+    )
+    add_custom_command(
+            OUTPUT "${OUTPUT_FILE_RAW}.fragment.spv"
+            COMMAND slangc ${SHADER} -target spirv -capability spvDescriptorHeapEXT -spirv-unified-descriptor-heap-stride -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.spv"
+            DEPENDS ${SHADER}
+            COMMENT "Compiling ${FILENAME} to spirv fragment"
+    )
+    if(WIN32)
         add_custom_command(
-                COMMAND
-                glslc
-                #      -MD -MF ${SHADER_BINARY_DIR}/${FILENAME}.d
-                -o ${SLAG_TESTS_SHADER_BINARY_DIR}/${FILENAME}.spv
-                ${source}
-                OUTPUT ${SLAG_TESTS_SHADER_BINARY_DIR}/${FILENAME}.spv
-                DEPENDS ${source} ${SLAG_TESTS_SHADER_BINARY_DIR}
-                COMMENT "Compiling ${FILENAME}"
+                OUTPUT "${OUTPUT_FILE_RAW}.vertex.dxil"
+                COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry vertexMain -o "${OUTPUT_FILE_RAW}.vertex.dxil"
+                DEPENDS ${SHADER}
+                COMMENT "Compiling ${FILENAME} to dxil vertex"
         )
-        list(APPEND SLAG_TESTS_SPV_SHADERS ${SLAG_TESTS_SHADER_BINARY_DIR}/${FILENAME}.spv)
-    endforeach()
+        add_custom_command(
+                OUTPUT "${OUTPUT_FILE_RAW}.fragment.dxil"
+                COMMAND slangc ${SHADER} -target dxil -profile sm_6_6 -entry fragmentMain -o "${OUTPUT_FILE_RAW}.fragment.dxil"
+                DEPENDS ${SHADER}
+                COMMENT "Compiling ${FILENAME} to dxil fragment"
+        )
+        list(APPEND COMPILED_EXAMPLE_SHADER_FILES ${OUTPUT_FILE_RAW}.vertex.dxil ${OUTPUT_FILE_RAW}.fragment.dxil)
+    endif ()
+    list(APPEND COMPILED_EXAMPLE_SHADER_FILES ${OUTPUT_FILE_RAW}.vertex.spv ${OUTPUT_FILE_RAW}.fragment.spv)
+endforeach ()
 
-    add_custom_target(slagTestShaders ALL DEPENDS ${SLAG_TESTS_SPV_SHADERS})
+add_custom_target(CompileExampleShaders ALL DEPENDS ${COMPILED_EXAMPLE_SHADER_FILES})
+add_custom_command(
+        TARGET CompileExampleShaders
+        POST_BUILD
+        COMMAND  ${CMAKE_COMMAND} -E copy_directory_if_different
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/examples/
+        ${CMAKE_CURRENT_BINARY_DIR}/resources/examples/
+        COMMENT "Copying test resource files"
+)
 
-    add_dependencies(SlagTests slagTestShaders)
-
-
+if(SLAG_BUILD_CUBE)
     add_executable(SlagCube
             examples/cube/Main.cpp
     )
-    target_link_libraries(SlagCube SDL2::SDL2 glm::glm Slag)
-    target_include_directories(SlagCube PRIVATE src ${SDL2_LIBRARIES} ${stb_image_SOURCE_DIR})
+    target_link_libraries(SlagCube SDL3::SDL3 glm::glm slag::Slag)
+    target_include_directories(SlagCube PRIVATE ${stb_image_SOURCE_DIR})
 
-    add_dependencies(SlagCube slagTestShaders)
-
-else()
-    message("Skipping tests")
+    add_dependencies(SlagCube CompileExampleShaders)
 endif()
+if(SLAG_BUILD_MS_CUBE)
+    add_executable(SlagMSCube
+            "examples/multi-sample cube/Main.cpp"
+    )
+    target_link_libraries(SlagMSCube SDL3::SDL3 glm::glm slag::Slag)
+    target_include_directories(SlagMSCube PRIVATE ${stb_image_SOURCE_DIR})
+
+    add_dependencies(SlagMSCube CompileExampleShaders)
+endif ()

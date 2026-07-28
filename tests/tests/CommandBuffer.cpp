@@ -1,2285 +1,1702 @@
-#include "../GraphicsAPIEnvironment.h"
-#include "slag/core/DescriptorBundle.h"
-#include "slag/core/DescriptorPool.h"
 #include <gtest/gtest.h>
 #include <slag/Slag.h>
-#include <memory>
+#include "../utilities/GeneralUtilities.h"
+#include "../utilities/SlagUtilities.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "../Utilities.h"
-#include "../third-party/LodePNG/lodepng.h"
+
+#include "../utilities/PlatformUtilities.h"
+
 using namespace slag;
 
-struct GlobalSet0Group
+TEST(CommandBuffer, Create)
 {
-    glm::mat4 projection;
-    glm::mat4 view;
-    glm::mat4 projectionView;
-};
-struct TexturedDepthSet1Group
-{
-    glm::mat4 position;
-};
-
-class CommandBufferTest: public ::testing::Test
-{
-protected:
-    std::unique_ptr<Buffer> TriangleVerts;
-    std::unique_ptr<Buffer> TriangleUVs;
-    std::unique_ptr<Buffer> TriangleNormals;
-    std::unique_ptr<Buffer> TriangleIndices;
-    std::unique_ptr<Buffer> CubeVerts;
-    std::unique_ptr<Buffer> CubeUVs;
-    std::unique_ptr<Buffer> CubeIndices;
-
-    std::unique_ptr<Buffer> CubeVertsRaw;
-    std::unique_ptr<Buffer> CubeUVsRaw;
-
-    VertexDescription VertexPosDescription = VertexDescription(1);
-    VertexDescription VertexPosUVDescription = VertexDescription(2);
-
-    std::unique_ptr<ShaderPipeline> TexturedDepthPipeline;
-    std::unique_ptr<ShaderPipeline> TexturedDepthMultiSamplePipeline;
-    std::unique_ptr<Sampler> DefaultSampler;
-
-    CommandBufferTest()
+    auto card = Slag::backend()->graphicsCard(0);
+    auto queueType = sequentialEnumRange(QueueType::GRAPHICS,QueueType::TRANSFER);
+    for (int i=0; i < queueType.size(); i++)
     {
-        std::vector<glm::vec3> tverts = {{ -1.f, -1.f, 0.0f},{0.f,1.f, 0.0f},{1.f, -1.f, 0.0f}};
-        std::vector<glm::vec2> tuvs = {{0,1},{.5,0},{1,1}};
-        std::vector<glm::vec3> tnormals = {{0,0,1},{0,0,1},{0,0,1}};
-        std::vector<uint16_t> tindexes = {0,1,2};
-
-        TriangleVerts = std::unique_ptr<Buffer>(Buffer::newBuffer(tverts.data(),tverts.size()*sizeof(glm::vec3),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
-        TriangleUVs = std::unique_ptr<Buffer>(Buffer::newBuffer(tuvs.data(),tuvs.size()*sizeof(glm::vec2),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
-        TriangleNormals = std::unique_ptr<Buffer>(Buffer::newBuffer(tnormals.data(),tnormals.size()*sizeof(glm::vec3),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
-        TriangleIndices = std::unique_ptr<Buffer>(Buffer::newBuffer(tindexes.data(),tindexes.size()*sizeof(uint16_t),Buffer::Accessibility::GPU,Buffer::UsageFlags::INDEX_BUFFER));
-
-        std::vector<float> cverts =
-        {
-            -0.5f, 0.5f, -0.5f,  // A 0
-            0.5f, 0.5f, -0.5f,   // B 1
-            0.5f,  -0.5f, -0.5f,   // C 2
-            -0.5f,  -0.5f, -0.5f,  // D 3
-            -0.5f, 0.5f,  0.5f,  // E 4
-            0.5f, 0.5f,  0.5f,   // F 5
-            0.5f,  -0.5f,  0.5f,   // G 6
-            -0.5f,  -0.5f,  0.5f,   // H 7
-
-            -0.5f,  -0.5f, -0.5f,  // D 8
-            -0.5f, 0.5f, -0.5f,  // A 9
-            -0.5f, 0.5f,  0.5f,  // E 10
-            -0.5f,  -0.5f,  0.5f,   // H 11
-            0.5f, 0.5f, -0.5f,   // B 12
-            0.5f,  -0.5f, -0.5f,   // C 13
-            0.5f,  -0.5f,  0.5f,   // G 14
-            0.5f, 0.5f,  0.5f,   // F 15
-
-            -0.5f, 0.5f, -0.5f,   // A 16
-            0.5f, 0.5f, -0.5f,    // B 17
-            0.5f, 0.5f,  0.5f,    // F 18
-            -0.5f, 0.5f,  0.5f,   // E 19
-            0.5f,  -0.5f, -0.5f,   // C 20
-            -0.5f,  -0.5f, -0.5f, // D 21
-            -0.5f,  -0.5f,  0.5f,  // H 22
-            0.5f,  -0.5f,  0.5f,   // G 23
-        };
-        std::vector<float> cuvs =
-        {
-            0.0f, 0.0f,
-            1.0f, 0.0f,
-            1.0f, 1.0f,
-            0.0f, 1.0f,
-            0.0f, 0.0f,
-            1.0f, 0.0f,
-            1.0f, 1.0f,
-            0.0f, 1.0f,
-            0.0f, 0.0f,
-            1.0f, 0.0f,
-            1.0f, 1.0f,
-            0.0f, 1.0f,
-            0.0f, 0.0f,
-            1.0f, 0.0f,
-            1.0f, 1.0f,
-            0.0f, 1.0f,
-            0.0f, 0.0f,
-            1.0f, 0.0f,
-            1.0f, 1.0f,
-            0.0f, 1.0f,
-            0.0f, 0.0f,
-            1.0f, 0.0f,
-            1.0f, 1.0f,
-            0.0f, 1.0f,
-        };
-
-        std::vector<uint16_t> cindexes =
-        {
-            0, 3, 2,
-             2, 1, 0,
-             4, 5, 6,
-             6, 7 ,4,
-             // left and right
-             11, 8, 9,
-             9, 10, 11,
-             12, 13, 14,
-             14, 15, 12,
-             // bottom and top
-             16, 17, 18,
-             18, 19, 16,
-             20, 21, 22,
-             22, 23, 20
-        };
-
-        std::vector<float> cvertsRaw(cindexes.size()*3);
-        std::vector<float> cuvsRaw(cindexes.size()*2);
-        for (auto i=0, j=0, k=0; i<cindexes.size(); i++, j+=3, k+=2)
-        {
-            cvertsRaw[j] = cverts[cindexes[i]];
-            cvertsRaw[j+1] = cverts[cindexes[i]+1];
-            cvertsRaw[j+2] = cverts[cindexes[i]+2];
-
-            cuvsRaw[k] = cuvs[cindexes[i]];
-            cuvsRaw[k+1] = cuvs[cindexes[i]+1];
-        }
-
-        CubeVerts = std::unique_ptr<Buffer>(Buffer::newBuffer(cverts.data(),cverts.size()*sizeof(float),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
-        CubeUVs = std::unique_ptr<Buffer>(Buffer::newBuffer(cuvs.data(),cuvs.size()*sizeof(float),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
-
-        CubeVertsRaw = std::unique_ptr<Buffer>(Buffer::newBuffer(cvertsRaw.data(),cvertsRaw.size()*sizeof(float),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
-        CubeUVsRaw = std::unique_ptr<Buffer>(Buffer::newBuffer(cuvsRaw.data(),cuvsRaw.size()*sizeof(float),Buffer::Accessibility::GPU,Buffer::UsageFlags::VERTEX_BUFFER));
-
-        CubeIndices = std::unique_ptr<Buffer>(Buffer::newBuffer(cindexes.data(),cindexes.size()*sizeof(uint16_t),Buffer::Accessibility::GPU,Buffer::UsageFlags::INDEX_BUFFER));
-
-        VertexPosDescription.add(GraphicsType::VECTOR3,0,0);
-        VertexPosUVDescription.add(GraphicsType::VECTOR3,0,0).add(GraphicsType::VECTOR2,0,1);
-
-        std::vector<ShaderFile> shaderFiles =
-        {
-            ShaderFile("resources/shaders/TexturedDepth.vertex",ShaderStageFlags::VERTEX),
-            ShaderFile("resources/shaders/TexturedDepth.fragment",ShaderStageFlags::FRAGMENT)
-        };
-        ShaderProperties properties;
-        FrameBufferDescription framebufferDescription;
-        framebufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
-        framebufferDescription.depthTarget = Pixels::Format::D32_FLOAT_S8X24_UINT;
-        TexturedDepthPipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(shaderFiles.data(),shaderFiles.size(),properties,VertexPosUVDescription,framebufferDescription);
-        properties.multiSampleState.rasterizationSamples = 4;
-        TexturedDepthMultiSamplePipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(shaderFiles.data(),shaderFiles.size(),properties,VertexPosUVDescription,framebufferDescription);
-        DefaultSampler = std::unique_ptr<Sampler>(Sampler::newSampler(SamplerParameters()));
+        auto cb = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(queueType[i]));
+        GTEST_ASSERT_EQ(cb->graphicsCard(),card);
+        GTEST_ASSERT_EQ(cb->type(),queueType[i]);
     }
-
-};
-
-TEST_F(CommandBufferTest, ClearColor)
+}
+//This test is really a "Trust me bro". There's no real way to check the barriers work, only that they don't work, so this really just checks for thrown errors
+TEST(CommandBuffer, InsertBarriers)
 {
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore());
-    std::unique_ptr<Texture> renderTarget = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1,1));
-    std::unique_ptr<Texture> sampled = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,4,1));
-    std::unique_ptr<Buffer> rtBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(renderTarget->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<Buffer> sampledBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sampled->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
-
-    commandBuffer->begin();
-
-    commandBuffer->clearTexture(renderTarget.get(),ClearColor{.floats = {1.0f,0.0f,0.0f,1.0f}});
-    commandBuffer->clearTexture(sampled.get(),ClearColor{.floats = {0.0f,1.0f,0.0f,1.0f}});
-
-
-    TextureBarrier barriers[2]
+    auto card = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(QueueType::GRAPHICS));
+    auto finished = std::unique_ptr<Semaphore>(card->newSemaphore());
+    auto sourceBuffer = std::unique_ptr<Buffer>(card->newBuffer(256,BufferCPUAccess::WRITE_ONLY));
+    auto destinationBuffer = std::unique_ptr<Buffer>(card->newBuffer(256,BufferCPUAccess::READ_WRITE));
+    auto destinationTexture = std::unique_ptr<Texture>(card->newTexture2D(32,32,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+    auto srcBufferPtr = sourceBuffer->as<uint8_t>();
+    for (auto i=0; i< sourceBuffer->size(); i++)
     {
-        {
-                .texture = renderTarget.get(),
-                .accessBefore = BarrierAccessFlags::CLEAR,
-                .accessAfter = BarrierAccessFlags::TRANSFER_READ,
-                .syncBefore = PipelineStageFlags::ALL_COMMANDS,
-                .syncAfter = PipelineStageFlags::TRANSFER,
-            },
-        {
-                .texture = sampled.get(),
-                .accessBefore = BarrierAccessFlags::CLEAR,
-                .accessAfter = BarrierAccessFlags::TRANSFER_READ,
-                .syncBefore = PipelineStageFlags::ALL_COMMANDS,
-                .syncAfter = PipelineStageFlags::TRANSFER,
-        },
-
+        srcBufferPtr[i] = i;
+    }
+    commandBuffer->begin();
+    commandBuffer->copyBufferToBuffer(sourceBuffer.get(),0,destinationBuffer.get(),0,128);
+    BufferBarrier bufferBarrier
+    {
+        .buffer = destinationBuffer.get(),
+        .offset = 0,
+        .length = 256,
+        .syncBefore = SyncStages::COPY,
+        .syncAfter = SyncStages::COPY,
+        .flush = MemoryCaches::COPY_WRITE,
+        .invalidate = MemoryCaches::NONE
     };
-    commandBuffer->insertBarriers(barriers,2,nullptr,0,nullptr,0);
-    TextureBufferMapping rtCopyData
-   {
-       .bufferOffset = 0,
-       .textureSubresource =
+    commandBuffer->insertBarriers(&bufferBarrier,1);
+    TextureBufferMapping mapping
+    {
+        .bufferOffset = 0,
+        .subresource =
         {
-            .aspectFlags = Pixels::AspectFlags::COLOR,
+            .aspect = PixelAspect::COLOR,
             .mipLevel = 0,
             .baseArrayLayer = 0,
-            .layerCount = 1
+            .layerCount = 1,
         },
-       .textureOffset = {0,0,0},
-       .textureExtent = {renderTarget->width(),renderTarget->height(),renderTarget->depth()}
-   };
-    commandBuffer->copyTextureToBuffer(renderTarget.get(),rtBuffer.get(),&rtCopyData,1);
-
-    TextureBufferMapping sampledCopyData[4]
-    {
-        {
-            .bufferOffset = 0,
-            .textureSubresource =
-            {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 0,
-                .baseArrayLayer = 0,
-                .layerCount = 1
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {sampled->width(),sampled->height(),1}
-        },
-        {
-            .bufferOffset = sampled->byteSize(0),
-            .textureSubresource =
-            {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 1,
-                .baseArrayLayer = 0,
-                .layerCount = 1
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {sampled->width(1),sampled->height(1),1}
-        },
-        {
-            .bufferOffset = sampled->byteSize(0)+sampled->byteSize(1),
-            .textureSubresource =
-         {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 2,
-                .baseArrayLayer = 0,
-                .layerCount = 1
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {sampled->width(2),sampled->height(2),1}
-        },
-        {
-            .bufferOffset = sampled->byteSize(0)+sampled->byteSize(1)+sampled->byteSize(2),
-            .textureSubresource =
-        {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 3,
-                .baseArrayLayer = 0,
-                .layerCount = 1
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {sampled->width(3),sampled->height(3),1}
-        }
+        .offset = {0,0,0},
+        .extent = {32,1,1}
     };
-    commandBuffer->copyTextureToBuffer(sampled.get(),sampledBuffer.get(),sampledCopyData,4);
-
+    commandBuffer->copyBufferToTexture(sourceBuffer.get(),destinationTexture.get(),&mapping,1);
+    TextureBarrier textureBarrier
+    {
+        .texture = destinationTexture.get(),
+        .syncBefore = SyncStages::COPY,
+        .syncAfter = SyncStages::COPY,
+        .flush = MemoryCaches::COPY_WRITE,
+        .invalidate = MemoryCaches::NONE,
+    };
+    commandBuffer->insertBarriers(&textureBarrier,1);
+    commandBuffer->copyBufferToBuffer(sourceBuffer.get(),0,destinationBuffer.get(),128,128);
+    mapping.offset.y = 1;
+    commandBuffer->copyBufferToTexture(sourceBuffer.get(),destinationTexture.get(),&mapping,1);
+    GlobalBarrier globalBarrier
+    {
+        .syncBefore = SyncStages::COPY,
+        .syncAfter = SyncStages::COPY,
+        .flush = MemoryCaches::COPY_WRITE,
+        .invalidate = MemoryCaches::COPY_READ,
+    };
+    commandBuffer->insertBarriers(&globalBarrier,1);
+    mapping.offset.y = 2;
+    commandBuffer->copyBufferToTexture(sourceBuffer.get(),destinationTexture.get(),&mapping,1);
+    commandBuffer->insertBarriers(nullptr,0,nullptr,0,&textureBarrier,1);
     commandBuffer->end();
 
-    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
     SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
+    auto cb = commandBuffer.get();
+    SubmissionBatch submissionBatch{};
+    submissionBatch.commandBuffers = &cb;
+    submissionBatch.commandBufferCount = 1;
+    submissionBatch.signalSemaphores = &signal;
+    submissionBatch.signalSemaphoreCount = 1;
+    card->graphicsQueue()->submit(&submissionBatch,1);
+    finished->waitForValue(1);
+
+}
+
+TEST(CommandBuffer, CopyBufferToBuffer)
+{
+    auto card = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(QueueType::TRANSFER));
+    auto srcBuffer = std::unique_ptr<Buffer>(card->newBuffer(128,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto dstBuffer = std::unique_ptr<Buffer>(card->newBuffer(128,BufferCPUAccess::READ_WRITE,BufferMemoryType::GENERAL));
+    auto finished = std::unique_ptr<Semaphore>(card->newSemaphore());
+
+    auto srcPtr = srcBuffer->as<uint8_t>();
+    auto dstPtr = dstBuffer->as<uint8_t>();
+
+    for (uint8_t i = 0; i < 128; i++)
+    {
+        srcPtr[i] = i;
+    }
+
+    commandBuffer->begin();
+    commandBuffer->copyBufferToBuffer(srcBuffer.get(),0,dstBuffer.get(),64,64);
+    commandBuffer->copyBufferToBuffer(srcBuffer.get(),64,dstBuffer.get(),0,64);
+    commandBuffer->end();
+
+    auto cmdBufferPtr = commandBuffer.get();
+    SemaphoreValue signal
+    {
+        .semaphore = finished.get(),
+        .value = 1
+    };
+    SubmissionBatch batch
     {
         .waitSemaphores = nullptr,
         .waitSemaphoreCount = 0,
-        .commandBuffers = submitBuffers,
+        .commandBuffers = &cmdBufferPtr,
         .commandBufferCount = 1,
         .signalSemaphores = &signal,
         .signalSemaphoreCount = 1,
     };
-    slag::slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
+
+    card->transferQueue()->submit(&batch,1);
+    finished->waitForValue(1);
+    for (uint8_t i=0; i < 128; i++)
+    {
+        if (i<64)
+        {
+            GTEST_ASSERT_EQ(dstPtr[i+64],i);
+        }
+        else
+        {
+            GTEST_ASSERT_EQ(dstPtr[i-64],i);
+        }
+    }
+}
+
+TEST(CommandBuffer, CopyBufferToTextureToBuffer)
+{
+    auto card = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(QueueType::TRANSFER));
+    auto texture = std::unique_ptr<Texture>(card->newTexture2D(64,64,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,3));
+    auto finished = std::unique_ptr<Semaphore>(card->newSemaphore());
+    auto srcBuffer = std::unique_ptr<Buffer>(card->newBuffer((32*32*4)+32,BufferCPUAccess::WRITE_ONLY));
+    auto dstBuffer = std::unique_ptr<Buffer>(card->newBuffer(srcBuffer->size(),BufferCPUAccess::READ_WRITE));
+    auto srcBufferPtr = srcBuffer->as<uint8_t>();
+    for (auto i=16; i<srcBuffer->size()-16; i++)
+    {
+        srcBufferPtr[i] = 172;
+    }
+    auto dstPtr = dstBuffer->as<uint8_t>();
+    for (auto i=0; i<dstBuffer->size(); i++)
+    {
+        dstPtr[i] = 0;
+    }
+
+    commandBuffer->begin();
+    TextureBufferMapping mapping
+    {
+        .bufferOffset = 16,
+        .subresource =
+        {
+            .aspect = PixelAspect::COLOR,
+            .mipLevel = 1,
+            .baseArrayLayer = 0,
+            .layerCount = 1
+        },
+        .offset = {0,0,0},
+        .extent = {32,32,1}
+    };
+    commandBuffer->copyBufferToTexture(srcBuffer.get(),texture.get(),&mapping,1);
+    TextureBarrier textureBarrier
+    {
+        .texture = texture.get(),
+        .syncBefore = SyncStages::COPY,
+        .syncAfter = SyncStages::COPY,
+        .flush = MemoryCaches::COPY_WRITE,
+        .invalidate = MemoryCaches::COPY_READ,
+    };
+    commandBuffer->insertBarriers(&textureBarrier,1);
+    commandBuffer->copyTextureToBuffer(texture.get(),dstBuffer.get(),&mapping,1);
+    commandBuffer->end();
+
+    auto cb = commandBuffer.get();
+    SemaphoreValue signal{.semaphore = finished.get(),.value = 1};
+    SubmissionBatch batch{};
+    batch.commandBuffers = &cb;
+    batch.commandBufferCount = 1;
+    batch.signalSemaphores = &signal;
+    batch.signalSemaphoreCount = 1;
+    card->transferQueue()->submit(&batch,1);
     finished->waitForValue(1);
 
-    auto rtPtr = rtBuffer->as<unsigned char>();
-    for (auto i=0; i< rtBuffer->size(); i+=4)
+    for (int i=0; i< dstBuffer->size(); i++)
     {
-        unsigned char red = rtPtr[i];
-        unsigned char green = rtPtr[i+1];
-        unsigned char blue = rtPtr[i+2];
-        unsigned char alpha = rtPtr[i+3];
-        GTEST_ASSERT_EQ(red,255);
-        GTEST_ASSERT_EQ(green,0);
-        GTEST_ASSERT_EQ(blue,0);
-        GTEST_ASSERT_EQ(alpha,255);
-    }
-    auto sampledPtr = sampledBuffer->as<unsigned char>();
-    for (auto i=0; i< sampledBuffer->size(); i+=4)
-    {
-        unsigned char red = sampledPtr[i];
-        unsigned char green = sampledPtr[i+1];
-        unsigned char blue = sampledPtr[i+2];
-        unsigned char alpha = sampledPtr[i+3];
-        GTEST_ASSERT_EQ(red,0);
-        GTEST_ASSERT_EQ(green,255);
-        GTEST_ASSERT_EQ(blue,0);
-        GTEST_ASSERT_EQ(alpha,255);
+        if (i<16 || i>= dstBuffer->size()-16)
+        {
+            GTEST_ASSERT_EQ(dstPtr[i],0);
+        }
+        else
+        {
+            GTEST_ASSERT_EQ(dstPtr[i],172);
+        }
     }
 }
-#ifdef SLAG_DEBUG
-TEST_F(CommandBufferTest, ClearColorFailInRenderPass)
-{
-    GTEST_FLAG_SET(death_test_style, "threadsafe");
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    std::unique_ptr<Texture> texture1 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1,1));
-    std::unique_ptr<Texture> texture2 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1,1));
-    commandBuffer->begin();
 
-    Attachment colorAttachment
+TEST(CommandBuffer, Draw)
+{
+    glm::vec3 positions[]
     {
-        .texture = texture1.get(),
-        .autoClear = false,
+        {-1,1,0},
+        {1,1,0},
+        {-1,-1,0},
+        {1,1,0},
+        {1,-1,0},
+        {-1,-1,0}
     };
-    commandBuffer->beginRendering(&colorAttachment,1,nullptr,slag::Rectangle{.offset = {0,0},.extent = {texture1->width(),texture1->height()}});
-    EXPECT_DEATH(commandBuffer->clearTexture(texture1.get(),ClearColor{.floats = {1.0f,0.0f,0.0f,1.0f}}),"Cleared texture in renderpass");
-    EXPECT_DEATH(commandBuffer->clearTexture(texture2.get(),ClearColor{.floats = {1.0f,0.0f,0.0f,1.0f}}),"Cleared texture in renderpass");
-}
-#endif
+    glm::vec2 uvs[]
+    {
+        {0,0},
+        {1,0},
+        {0,1},
+        {1,0},
+        {1,1},
+        {0,1}
+    };
 
-TEST_F(CommandBufferTest, ClearDepth)
-{
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    std::unique_ptr<Texture> depthTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1,1));
-    std::unique_ptr<Buffer> depthBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(depthTexture->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
+    auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
+    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
+    auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
 
+    auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
+    auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
+
+    memcpy(positionBuffer->as<glm::vec3>(),positions,sizeof(positions));
+    memcpy(uvBuffer->as<glm::vec2>(),uvs,sizeof(uvs));
+
+    auto globalsBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
+    auto instanceBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
+    auto instanceTexture = utilities::loadTexture("resources/tests/textures/gradient.jpg", graphicsCard);
+    auto sampler = std::unique_ptr<Sampler>(graphicsCard->newSampler());
+
+    auto globalsPtr = globalsBuffer->as<glm::mat4>();
+    auto proj = glm::perspective(95.0f,(float)colorTexture->width()/(float)colorTexture->height(),.01f,100.0f);
+    glm::mat4 view = glm::mat4(1.0f);
+    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
+    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
+    view = glm::inverse(view);
+    glm::mat4 projectionView = proj*view;
+    globalsPtr[0] = proj;
+    globalsPtr[1] = view;
+    globalsPtr[2] = projectionView;
+
+    auto instancePtr = instanceBuffer->as<glm::mat4>();
+    glm::mat4 instanceTransform = glm::rotate(glm::mat4(1.0f),glm::radians(15.0f),glm::vec3(0.0f,1.0f,0.0f));
+    instancePtr[0] = instanceTransform;
+
+    PipelineState pipelineState{};
+    auto vertex = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.vertex");
+    auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
+    std::vector<VertexBinding> vertexBindings =
+    {
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+    };
+    VertexDescription vertexDescription(vertexBindings);
+    FramebufferDescription framebufferDesc{};
+    framebufferDesc.colorFormats[0] = colorTexture->format();
+    framebufferDesc.depthFormat = depthTexture->format();
+    auto shaderPipeline = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(vertexDescription,vertex.details,fragment.details,pipelineState,framebufferDesc));
+
+    auto resourceHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+
+    auto resourceHeapPtr = (unsigned char*)resourceHeap->data();
+    auto samplerHeapPtr = (unsigned char*)samplerHeap->data();
+
+    auto heapDetails = graphicsCard->descriptorHeapDetails();
+
+    graphicsCard->writeUniformBufferDescriptor(globalsBuffer.get(),0,globalsBuffer->size(),resourceHeapPtr);
+    graphicsCard->writeUniformBufferDescriptor(instanceBuffer.get(),0,instanceBuffer->size(),resourceHeapPtr+heapDetails.textureDescriptorSize);
+    graphicsCard->writeUniformTextureDescriptor(instanceTexture.get(),0,1,0,1,resourceHeapPtr+heapDetails.textureDescriptorSize*2);
+    graphicsCard->writeSamplerDescriptor(sampler.get(),samplerHeapPtr);
 
     commandBuffer->begin();
-    commandBuffer->clearTexture(depthTexture.get(),ClearDepthStencilValue{.depth = 1,.stencil = 0});
-    commandBuffer->insertBarrier(
+
+
+    commandBuffer->bindDescriptorHeaps(resourceHeap.get(),samplerHeap.get());
+
+    uint32_t globalsIndex = 0;
+    uint32_t instanceIndex = 1;
+    uint32_t textureIndex = 2;
+    uint32_t samplerIndex = 0;
+    commandBuffer->setGraphicsShaderParameters(0,&globalsIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(8,&instanceIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(16,&textureIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(24,&samplerIndex,sizeof(uint32_t));
+
+    commandBuffer->bindShaderPipeline(shaderPipeline.get());
+    Buffer* vertexBuffers[] = {positionBuffer.get(),uvBuffer.get()};
+    uint64_t offsets[] = {0,0};
+    uint64_t strides[] = {sizeof(glm::vec3),sizeof(glm::vec2)};
+    commandBuffer->bindVertexBuffers(0,vertexBuffers,offsets,strides,2);
+
+    Attachment colorAttachment(colorTexture.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
+    Attachment depthAttachment(depthTexture.get(),true,{.depthStencil = ClearDepthStencilValue{.depth = 1.0f, .stencil = 0}});
+
+    TextureBarrier barriers[] =
+    {
+        TextureBarrier
+        {
+            .texture = colorTexture.get(),
+            .baseLayer = 0,
+            .layerCount = 1,
+            .baseMipLevel = 0,
+            .mipCount = 1,
+            .syncBefore = SyncStages::ALL,
+            .syncAfter = SyncStages::ALL_GRAPHICS,
+            .flush = MemoryCaches::NONE,
+            .invalidate = MemoryCaches::NONE,
+            .layoutBefore = TextureLayout::GENERAL,
+            .layoutAfter = TextureLayout::COLOR_TARGET,
+        },
         TextureBarrier
         {
             .texture = depthTexture.get(),
-            .accessBefore = BarrierAccessFlags::CLEAR,
-            .accessAfter = BarrierAccessFlags::TRANSFER_READ,
-            .syncBefore = PipelineStageFlags::ALL_COMMANDS,
-            .syncAfter = PipelineStageFlags::TRANSFER
-        });
-    TextureBufferMapping copyData
-    {
-        .bufferOffset = 0,
-        .textureSubresource =
-     {
-            .aspectFlags = Pixels::AspectFlags::DEPTH,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
+            .baseLayer = 0,
             .layerCount = 1,
-        },
-         .textureOffset = {0,0,0},
-         .textureExtent = {depthTexture->width(),depthTexture->height(),1}
-    };
-    commandBuffer->copyTextureToBuffer(depthTexture.get(),depthBuffer.get(),&copyData,1);
-    commandBuffer->end();
-
-    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = submitBuffers,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-    slag::slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
-    finished->waitForValue(1);
-
-    auto depthPtr = depthBuffer->as<float>();
-    for (auto i=0; i< depthBuffer->countAsArray<float>(); i++)
-    {
-        GTEST_ASSERT_EQ(depthPtr[i],1.0f);
-    }
-}
-
-#ifdef SLAG_DEBUG
-TEST_F(CommandBufferTest, ClearDepthFailInRenderPass)
-{
-    GTEST_FLAG_SET(death_test_style, "threadsafe");
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    std::unique_ptr<Texture> color = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1,1));
-    std::unique_ptr<Texture> texture1 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1,1));
-    std::unique_ptr<Texture> texture2 = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,32,32,1,1,1));
-    commandBuffer->begin();
-
-    Attachment colorAttachment
-    {
-        .texture = color.get(),
-        .autoClear = false,
-    };
-    Attachment depthAttachment
-    {
-        .texture = texture1.get(),
-        .autoClear = false,
-    };
-    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.offset = {0,0},.extent = {texture1->width(),texture1->height()}});
-    ASSERT_DEATH(commandBuffer->clearTexture(texture1.get(),ClearDepthStencilValue{.depth=1.0f,.stencil=0}),"Cleared texture in renderpass");
-    ASSERT_DEATH(commandBuffer->clearTexture(texture2.get(),ClearDepthStencilValue{.depth=1.0f,.stencil=0}),"Cleared texture in renderpass");
-}
-#endif
-
-TEST_F(CommandBufferTest, UpdateMip)
-{
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    struct byteColor
-    {
-        unsigned char r;
-        unsigned char g;
-        unsigned char b;
-        unsigned char a;
-    };
-    std::vector<byteColor> texels(32*32,byteColor{255,127,50,25});
-    TextureBufferMapping mappings[]
-    {
-    {
-            .bufferOffset = 0,
-            .textureSubresource =
-         {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 0,
-                .baseArrayLayer = 0,
-                .layerCount = 1,
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {32,32,1}
-        },
-    {
-            .bufferOffset = 32*32,
-            .textureSubresource =
-        {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 1,
-                .baseArrayLayer = 0,
-                .layerCount = 1,
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {16,16,1}
+            .baseMipLevel = 0,
+            .mipCount = 1,
+            .syncBefore = SyncStages::ALL,
+            .syncAfter = SyncStages::ALL_GRAPHICS,
+            .flush = MemoryCaches::NONE,
+            .invalidate = MemoryCaches::NONE,
+            .layoutBefore = TextureLayout::GENERAL,
+            .layoutAfter = TextureLayout::DEPTH_STENCIL_TARGET,
         }
     };
+    commandBuffer->insertBarriers(barriers,2);
 
-    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,2,1,Texture::SampleCount::ONE,texels.data(),texels.size()*Pixels::size(Pixels::Format::R8G8B8A8_UNORM),mappings,2));
-    std::unique_ptr<Buffer> textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(texture->byteSize(1),Buffer::Accessibility::CPU_AND_GPU));
-    commandBuffer->begin();
-
-    commandBuffer->updateMip(texture.get(),0,0,1);
-    commandBuffer->insertBarrier(
-        TextureBarrier
-        {
-            .texture = texture.get(),
-            .accessBefore = BarrierAccessFlags::BLIT_READ | BarrierAccessFlags::BLIT_WRITE,
-            .accessAfter = BarrierAccessFlags::TRANSFER_READ,
-            .syncBefore = PipelineStageFlags::BLIT,
-            .syncAfter = PipelineStageFlags::TRANSFER
-        });
-    TextureBufferMapping copyData
-    {
-        .bufferOffset = 0,
-        .textureSubresource =
-        {
-            .aspectFlags = Pixels::AspectFlags::COLOR,
-            .mipLevel = 1,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-         .textureOffset = {0,0,0},
-         .textureExtent = {texture->width(1),texture->height(1),1}
-    };
-    commandBuffer->copyTextureToBuffer(texture.get(),textureBuffer.get(),&copyData,1);
-
-    commandBuffer->end();
-
-    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = submitBuffers,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
-    finished->waitForValue(1);
-
-    byteColor* dataPtr = textureBuffer->as<byteColor>();
-    for (auto i=0; i< textureBuffer->countAsArray<byteColor>(); i++)
-    {
-        byteColor color = dataPtr[i];
-        GTEST_ASSERT_EQ(color.r,255);
-        GTEST_ASSERT_EQ(color.g,127);
-        GTEST_ASSERT_EQ(color.b,50);
-        GTEST_ASSERT_EQ(color.a,25);
-    }
-}
-
-#ifdef SLAG_DEBUG
-TEST_F(CommandBufferTest, UpdateMipFailInRenderPass)
-{
-    GTEST_FLAG_SET(death_test_style, "threadsafe");
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    struct byteColor
-    {
-        unsigned char r;
-        unsigned char g;
-        unsigned char b;
-        unsigned char a;
-    };
-    std::vector<byteColor> texels(32*32,byteColor{255,127,50,25});
-    TextureBufferMapping mappings[]
-    {
-        {
-            .bufferOffset = 0,
-            .textureSubresource =
-         {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 0,
-                .baseArrayLayer = 0,
-                .layerCount = 1,
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {32,32,1}
-        },
-    {
-        .bufferOffset = 32*32,
-        .textureSubresource =
-    {
-            .aspectFlags = Pixels::AspectFlags::COLOR,
-            .mipLevel = 1,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-        .textureOffset = {0,0,0},
-        .textureExtent = {16,16,1}
-    }
-    };
-    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,2,1,Texture::SampleCount::ONE,texels.data(),texels.size()*sizeof(byteColor),mappings,2));
-    std::unique_ptr<Texture> frameBuffer = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,32,32,1,1,1));
-
-    commandBuffer->begin();
-
-    Attachment attachment{.texture = frameBuffer.get(),.autoClear = true};
-    commandBuffer->beginRendering(&attachment,1,nullptr,slag::Rectangle{.offset = {0,0},.extent = {frameBuffer->width(),frameBuffer->height()}});
-    ASSERT_DEATH(commandBuffer->updateMip(texture.get(),0,0,1),"Updated mip in renderpass");
-}
-#endif
-
-TEST_F(CommandBufferTest, CopyBufferToBuffer )
-{
-    std::vector<unsigned char> rawData(100);
-    for (int i=0; i < 100; i++)
-    {
-        rawData[i] = i;
-    }
-    std::vector<unsigned char> fixed(100,255);
-    std::unique_ptr<Buffer> buffer1 = std::unique_ptr<Buffer>(Buffer::newBuffer(rawData.data(),rawData.size(),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<Buffer> buffer2 = std::unique_ptr<Buffer>(Buffer::newBuffer(rawData.size(),Buffer::Accessibility::GPU));
-    std::unique_ptr<Buffer> buffer3 = std::unique_ptr<Buffer>(Buffer::newBuffer(fixed.data(),fixed.size(),Buffer::Accessibility::CPU_AND_GPU));
-
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-
-    commandBuffer->begin();
-
-    commandBuffer->copyBufferToBuffer(buffer1.get(),0,50,buffer2.get(),50);
-    commandBuffer->insertBarrier(BufferBarrier
-    {
-        .buffer = buffer2.get(),
-        .accessBefore = BarrierAccessFlags::TRANSFER_WRITE,
-        .accessAfter = BarrierAccessFlags::TRANSFER_READ,
-        .syncBefore = PipelineStageFlags::TRANSFER,
-        .syncAfter = PipelineStageFlags::TRANSFER
-    });
-    commandBuffer->copyBufferToBuffer(buffer2.get(),50,50,buffer3.get(),25);
-
-    commandBuffer->end();
-
-    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = submitBuffers,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
-    finished->waitForValue(1);
-
-    unsigned char* dataPtr = buffer3->as<unsigned char>();
-    for (auto i=0; i<50; i++)
-    {
-        GTEST_ASSERT_EQ(dataPtr[25+i],i);
-    }
-}
-
-TEST_F(CommandBufferTest, CopyTextureToBuffer)
-{
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    struct byteColor
-    {
-        unsigned char r;
-        unsigned char g;
-        unsigned char b;
-        unsigned char a;
-    };
-    std::vector<byteColor> texels((32*32)*2+(16*16)*2,byteColor{255,0,255,255});
-    for (int i=(32*32)+(16*16); i<texels.size(); i++)
-    {
-        texels[i] = byteColor{122,36,15,100};
-    }
-    TextureBufferMapping mappings[]
-    {
-    {
-            .bufferOffset = 0,
-            .textureSubresource =
-         {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 0,
-                .baseArrayLayer = 0,
-                .layerCount = 1,
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {32,32,1}
-        },
-    {
-            .bufferOffset = 32*32*sizeof(byteColor),
-            .textureSubresource =
-        {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 1,
-                .baseArrayLayer = 0,
-                .layerCount = 1,
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {16,16,1}
-        },
-    {
-            .bufferOffset = (32*32+16*16)*sizeof(byteColor),
-            .textureSubresource =
-         {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 0,
-                .baseArrayLayer = 1,
-                .layerCount = 1,
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {32,32,1}
-        },
-        {
-            .bufferOffset = ((32*32)*2+16*16)*sizeof(byteColor),
-            .textureSubresource =
-        {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 1,
-                .baseArrayLayer = 1,
-                .layerCount = 1,
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {16,16,1}
-        }
-    };
-    std::unique_ptr<Texture> texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,2,2,Texture::SampleCount::ONE,texels.data(),texels.size()*sizeof(byteColor),mappings,4));
-    std::unique_ptr<Buffer> textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(texture->byteSize(0)+texture->byteSize(1)+32,Buffer::Accessibility::CPU_AND_GPU));
-
-    commandBuffer->begin();
-
-    TextureBufferMapping copyData[]
-    {
-        {
-            .bufferOffset = 16,
-            .textureSubresource =
-        {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 0,
-                .baseArrayLayer = 0,
-                .layerCount = 1,
-            },
-             .textureOffset = {0,0,0},
-             .textureExtent = {texture->width(),texture->height(),1}
-        },
-        {
-            .bufferOffset = texture->byteSize(0)+16,
-            .textureSubresource =
-            {
-                .aspectFlags = Pixels::AspectFlags::COLOR,
-                .mipLevel = 1,
-                .baseArrayLayer = 1,
-                .layerCount = 1,
-            },
-            .textureOffset = {0,0,0},
-            .textureExtent = {texture->width(1),texture->height(1),1}
-        }
-    };
-    commandBuffer->copyTextureToBuffer(texture.get(),textureBuffer.get(),copyData,2);
-
-    commandBuffer->end();
-
-    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = submitBuffers,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
-    finished->waitForValue(1);
-
-    uint8_t* colorPtr = textureBuffer->as<uint8_t>();
-    for (auto i=16; i < texture->byteSize(0)+16; i+=4)
-    {
-        auto color = *reinterpret_cast<byteColor*>(&colorPtr[i]);
-        GTEST_ASSERT_EQ(color.r,255);
-        GTEST_ASSERT_EQ(color.g,0);
-        GTEST_ASSERT_EQ(color.b,255);
-        GTEST_ASSERT_EQ(color.a,255);
-    }
-
-    for (auto i=16+texture->byteSize(0); i < 16+texture->byteSize(0)+texture->byteSize(1); i+=4)
-    {
-        auto color = *reinterpret_cast<byteColor*>(&colorPtr[i]);
-        GTEST_ASSERT_EQ(color.r,122);
-        GTEST_ASSERT_EQ(color.g,36);
-        GTEST_ASSERT_EQ(color.b,15);
-        GTEST_ASSERT_EQ(color.a,100);
-    }
-
-}
-
-TEST_F(CommandBufferTest, Blit)
-{
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    struct byteColor
-    {
-        unsigned char r;
-        unsigned char g;
-        unsigned char b;
-        unsigned char a;
-    };
-
-    struct floatColor
-    {
-        float r;
-        float g;
-        float b;
-        float a;
-    };
-    std::vector<floatColor> floatTexels(32*32,{1.0f,0,0,.5f});
-    for (auto height=0; height < 32; height++)
-    {
-        for (auto width=0; width < 32; width++)
-        {
-            auto& texel = floatTexels[32*height+width];
-            texel.g = ((float)height)/((float)32);
-            texel.b = ((float)width)/((float)32);
-        }
-    }
-    std::vector<byteColor> byteTexels(32*32,{0,255,0,255});
-
-    TextureBufferMapping mapping
-    {
-        .bufferOffset = 0,
-        .textureSubresource =
-     {
-            .aspectFlags = Pixels::AspectFlags::COLOR,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-        .textureOffset = {0,0,0},
-        .textureExtent = {32,32,1}
-    };
-    std::unique_ptr<Texture> floatTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R32G32B32A32_FLOAT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,1,1,Texture::SampleCount::ONE,floatTexels.data(),floatTexels.size()*sizeof(floatColor),&mapping,1));
-    std::unique_ptr<Texture> byteTexture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::SAMPLED_IMAGE,32,32,1,1,1,Texture::SampleCount::ONE, byteTexels.data(),byteTexels.size()*sizeof(byteColor),&mapping,1));
-    std::unique_ptr<Buffer> textureBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(byteTexture->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
-
-    commandBuffer->begin();
-
-    commandBuffer->blit(floatTexture.get(),0,0,slag::Rectangle{.offset = {16,16},.extent = {16,16}},byteTexture.get(),0,0,slag::Rectangle{.offset ={1,1},.extent = {30,30}});
-    commandBuffer->insertBarrier(TextureBarrier
-        {
-            .texture = byteTexture.get(),
-            .accessBefore = BarrierAccessFlags::BLIT_WRITE,
-            .accessAfter = BarrierAccessFlags::TRANSFER_READ,
-            .syncBefore = PipelineStageFlags::BLIT,
-            .syncAfter = PipelineStageFlags::TRANSFER,
-        });
-    TextureBufferMapping copyData
-    {
-        .bufferOffset = 0,
-        .textureSubresource =
-     {
-            .aspectFlags = Pixels::AspectFlags::COLOR,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-     },
-         .textureOffset = {0,0,0},
-         .textureExtent = {byteTexture->width(0),byteTexture->height(0),1}
-    };
-    commandBuffer->copyTextureToBuffer(byteTexture.get(),textureBuffer.get(),&copyData,1);
-
-    commandBuffer->end();
-
-    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = submitBuffers,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
-    finished->waitForValue(1);
-
-    unsigned char* colorPtr = textureBuffer->as<unsigned char>();
-    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/blit-test-result.png");
-    GTEST_ASSERT_EQ(textureBuffer->countAsArray<unsigned char>(),groundTruth.size());
-
-    for (auto i=0; i< textureBuffer->countAsArray<unsigned char>(); i++)
-    {
-        //allow for less than 5% variation, hardware will vary slightly
-        GTEST_ASSERT_TRUE(std::abs((int)colorPtr[i] - (int)groundTruth[i]) < 10);
-    }
-}
-
-TEST_F(CommandBufferTest, Resolve)
-{
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    std::unique_ptr<Texture> multiSampled = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1,Texture::SampleCount::FOUR));
-    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
-    std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> output = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(output->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
-
-
-
-    commandBuffer->begin();
-
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
-    Attachment attachment = {.texture = multiSampled.get(),.autoClear = true,.clearValue = {.color = {.floats = {1,0,.5,1}}}};
-
-    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
-
-    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance");
-    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampledTexture");
-    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampler");
-
-    auto globalBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(0));
-    auto objectBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(1));
-    auto globals = globalsBuffer->as<GlobalSet0Group>();
-    auto proj = glm::perspective(95.0f,(float)multiSampled->width()/(float)multiSampled->height(),.01f,100.0f);
-    glm::mat4 view = glm::mat4(1.0f);
-    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
-    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
-    view = glm::inverse(view);//does nothing in this case, but is good practice if we ever do have a camera not at the default location
-    glm::mat4 projectionView = proj*view;
-    globals->projection = proj;
-    globals->view = view;
-    globals->projectionView = projectionView;
-    auto object = objectBuffer->as<TexturedDepthSet1Group>();
-    object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    globalBundle.setUniformBuffer(globalsIndex,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
-    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthMultiSamplePipeline.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    objectBundle.setUniformBuffer(instanceTransformIndex,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setSampledTexture(instanceTextureIndex,0,objectTexture.get());
-    objectBundle.setSampler(instanceSamplerIndex,0,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
-    Attachment colorAttachment{.texture = multiSampled.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
-    Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
-    commandBuffer->beginRendering(&attachment,1,nullptr,slag::Rectangle{.offset = {0,0},.extent = {multiSampled->width(),multiSampled->height()}});
-
-    Buffer* vertexBuffers[]
-    {
-        CubeVerts.get(),
-        CubeUVs.get()
-    };
-    uint64_t vertexOffsets[]{0,0};
-    uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
-    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
-    commandBuffer->bindIndexBuffer(CubeIndices.get(),Buffer::IndexSize::UINT16,0);
-    commandBuffer->setViewPort(0,0,multiSampled->width(),multiSampled->height(),1,0);
-    commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {multiSampled->width(),multiSampled->height()}});
-    commandBuffer->drawIndexed(CubeIndices->countAsArray<uint16_t>(),1,0,0,0);
-
-    commandBuffer->endRendering();
-    commandBuffer->insertBarrier(
-        TextureBarrier
-        {
-            .texture = multiSampled.get(),
-            .accessBefore = BarrierAccessFlags::SHADER_WRITE,
-            .accessAfter = BarrierAccessFlags::BLIT_READ,
-            .syncBefore = PipelineStageFlags::ALL_GRAPHICS,
-            .syncAfter = PipelineStageFlags::BLIT,
-        });
-    commandBuffer->resolve(multiSampled.get(),0,0,Offset{30,30},output.get(),0,0,Offset{75,75}, Extent{75,75});
-    commandBuffer->insertBarrier(
-        TextureBarrier
-        {
-            .texture = output.get(),
-            .accessBefore = BarrierAccessFlags::BLIT_WRITE,
-            .accessAfter = BarrierAccessFlags::TRANSFER_READ,
-            .syncBefore = PipelineStageFlags::BLIT,
-            .syncAfter = PipelineStageFlags::TRANSFER,
-        });
-    TextureBufferMapping copyData
-    {
-        .bufferOffset = 0,
-        .textureSubresource =
-        {
-            .aspectFlags = Pixels::AspectFlags::COLOR,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-         .textureOffset = {0,0,0},
-         .textureExtent = {output->width(0),output->height(0),1}
-    };
-    commandBuffer->copyTextureToBuffer(output.get(),outputBuffer.get(),&copyData,1);
-    commandBuffer->end();
-
-    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = submitBuffers,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
-    finished->waitForValue(1);
-    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(outputBuffer.get(),"resources/textures/resolve-test-result.png",.99f,.5f));
-}
-
-TEST_F(CommandBufferTest, FillBuffer)
-{
-    std::unique_ptr<Buffer> buffer = std::unique_ptr<Buffer>(Buffer::newBuffer(100*sizeof(uint32_t),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-
-    commandBuffer->begin();
-
-    commandBuffer->fillBuffer(buffer.get(),0,buffer->size()/2,15);
-    commandBuffer->fillBuffer(buffer.get(),buffer->size()/2,buffer->size()/2,255);
-
-    commandBuffer->end();
-
-    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = submitBuffers,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
-    finished->waitForValue(1);
-
-    uint32_t* uintPtr = buffer->as<uint32_t>();
-    for (auto i = 0; i < buffer->countAsArray<uint32_t>()/2; ++i)
-    {
-        GTEST_ASSERT_EQ(uintPtr[i],15);
-    }
-    for (auto i =  buffer->countAsArray<uint32_t>()/2; i < buffer->countAsArray<uint32_t>(); ++i)
-    {
-        GTEST_ASSERT_EQ(uintPtr[i],255);
-    }
-}
-
-TEST_F(CommandBufferTest, SetViewport)
-{
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
-
-    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
-
-    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance");
-    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampledTexture");
-    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampler");
-
-    commandBuffer->begin();
-    descriptorPool->reset();
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
-    auto globalBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(0));
-    auto objectBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(1));
-    auto globals = globalsBuffer->as<GlobalSet0Group>();
-    auto proj = glm::perspective(95.0f,(float)target->width()/(float)target->height(),.01f,100.0f);
-    glm::mat4 view = glm::mat4(1.0f);
-    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
-    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
-    view = glm::inverse(view);//does nothing in this case, but is good practice if we ever do have a camera not at the default location
-    glm::mat4 projectionView = proj*view;
-    globals->projection = proj;
-    globals->view = view;
-    globals->projectionView = projectionView;
-    auto object = objectBuffer->as<TexturedDepthSet1Group>();
-    object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    globalBundle.setUniformBuffer(globalsIndex,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
-    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    objectBundle.setUniformBuffer(instanceTransformIndex,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setSampledTexture(instanceTextureIndex,0,objectTexture.get());
-    objectBundle.setSampler(instanceSamplerIndex,0,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
-    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
-    Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
-    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
-
-    Buffer* vertexBuffers[]
-    {
-        TriangleVerts.get(),
-        TriangleUVs.get()
-    };
-    uint64_t vertexOffsets[]{0,0};
-    uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
-    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
-    commandBuffer->setViewPort(target->width()/5,target->width()/5,target->width()/2,target->height()/2,0,1);
-    commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
-    commandBuffer->draw(3,1,0,0);
-
+    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{0,0,colorTexture->width(),colorTexture->height()});
+    commandBuffer->setViewPort(0,0,colorTexture->width(),colorTexture->height(),.0f,1.0f);
+    commandBuffer->setScissors(slag::Rectangle{0,0,colorTexture->width(),colorTexture->height()});
+    commandBuffer->draw(6,1,0,0);
     commandBuffer->endRendering();
 
+    barriers[0].layoutBefore = TextureLayout::COLOR_TARGET;
+    barriers[0].layoutAfter = TextureLayout::GENERAL;
+    barriers[0].syncAfter = SyncStages::ALL;
+    barriers[0].flush = MemoryCaches::COLOR_TARGET;
+    barriers[0].invalidate = MemoryCaches::COPY_READ;
 
-
-    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
-    TextureBufferMapping copyData
-    {
-        .bufferOffset = 0,
-        .textureSubresource =
-        {
-            .aspectFlags = Pixels::AspectFlags::COLOR,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-         .textureOffset = {0,0,0},
-         .textureExtent = {target->width(0),target->height(0),1}
-    };
-    commandBuffer->copyTextureToBuffer(target.get(),outputBuffer.get(),&copyData,1);
+    commandBuffer->insertBarriers(barriers,1);
 
     commandBuffer->end();
-
-    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = submitBuffers,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
-    finished->waitForValue(1);
-
-    unsigned char* colorPtr = outputBuffer->as<unsigned char>();
-
-    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/set-viewport-test-result.png");
-    GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
-
-    for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
-    {
-        GTEST_ASSERT_EQ(colorPtr[i],groundTruth[i]);
-    }
-
-}
-
-TEST_F(CommandBufferTest, SetScissor)
-{
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
-
-    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
-
-    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance");
-    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampledTexture");
-    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampler");
-
-    commandBuffer->begin();
-    descriptorPool->reset();
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
-    auto globalBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(0));
-    auto objectBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(1));
-    auto globals = globalsBuffer->as<GlobalSet0Group>();
-    auto proj = glm::perspective(95.0f,(float)target->width()/(float)target->height(),.01f,100.0f);
-    glm::mat4 view = glm::mat4(1.0f);
-    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
-    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
-    view = glm::inverse(view);//does nothing in this case, but is good practice if we ever do have a camera not at the default location
-    glm::mat4 projectionView = proj*view;
-    globals->projection = proj;
-    globals->view = view;
-    globals->projectionView = projectionView;
-    auto object = objectBuffer->as<TexturedDepthSet1Group>();
-    object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    globalBundle.setUniformBuffer(globalsIndex,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
-    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    objectBundle.setUniformBuffer(instanceTransformIndex,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setSampledTexture(instanceTextureIndex,0,objectTexture.get());
-    objectBundle.setSampler(instanceSamplerIndex,0,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
-    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
-    Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
-    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
-
-    Buffer* vertexBuffers[]
-    {
-        TriangleVerts.get(),
-        TriangleUVs.get()
-    };
-    uint64_t vertexOffsets[]{0,0};
-    uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
-    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
-    commandBuffer->setViewPort(0,0,target->width(),target->height(),0,1);
-    commandBuffer->setScissors(slag::Rectangle{.offset = {60,60},.extent = {target->width()/4,target->height()/4}});
-    commandBuffer->draw(3,1,0,0);
-
-    commandBuffer->endRendering();
-
-
-
-    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
-    TextureBufferMapping copyData
-    {
-        .bufferOffset = 0,
-        .textureSubresource =
-        {
-            .aspectFlags = Pixels::AspectFlags::COLOR,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-         .textureOffset = {0,0,0},
-         .textureExtent = {target->width(0),target->height(0),1}
-    };
-    commandBuffer->copyTextureToBuffer(target.get(),outputBuffer.get(),&copyData,1);
-
-    commandBuffer->end();
-
-    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = submitBuffers,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
-    finished->waitForValue(1);
-
-    unsigned char* colorPtr = outputBuffer->as<unsigned char>();
-
-    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/set-scissor-test-result.png");
-    GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
-
-    for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
-    {
-        GTEST_ASSERT_EQ(colorPtr[i],groundTruth[i]);
-    }
-}
-
-TEST_F(CommandBufferTest, SetBlendConstants)
-{
-    //Skip, as we don't have a great way to test this
-    GTEST_SKIP();
-}
-
-TEST_F(CommandBufferTest, SetStencilReference)
-{
-    //Skip, as we don't have a great way to test this
-    GTEST_SKIP();
-}
-
-TEST_F(CommandBufferTest, PushGraphicsConstants)
-{
-    ShaderFile stages[] =
-    {
-        {
-            .pathIndicator = "resources/shaders/PushConstants.vertex",
-            .stage = ShaderStageFlags::VERTEX,
-        },
-     {
-         .pathIndicator = "resources/shaders/PushConstants.fragment",
-         .stage = ShaderStageFlags::FRAGMENT,
-         }
-    };
-    ShaderProperties properties{};
-    VertexDescription vertexDescription(1);
-    vertexDescription.add(GraphicsType::VECTOR3,0,0);
-    FrameBufferDescription frameBufferDescription;
-    frameBufferDescription.colorTargets[0] = Pixels::Format::R8G8B8A8_UNORM;
-
-    auto pipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(stages,2,properties,vertexDescription,frameBufferDescription);
-    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    auto renderTarget = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,50,50,1,1,1));
-    auto descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
-    auto uniformBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(glm::mat4),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    auto uniformPtr = uniformBuffer->as<glm::mat4>();
-    auto uniformIndex = pipeline->descriptorGroup(0)->indexOf("globals");
-    auto targetBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(renderTarget->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
-
-    commandBuffer->begin();
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
-
-    commandBuffer->bindGraphicsShaderPipeline(pipeline.get());
-    Attachment colorAttachment{.texture = renderTarget.get(),.autoClear = true,.clearValue = {.color = {.floats = {.2,.2,.2,1.0}}}};
-    commandBuffer->beginRendering(&colorAttachment,1,nullptr,{.offset = {0,0},.extent = {renderTarget->width(),renderTarget->height()}});
-    auto bundle = descriptorPool->makeBundle(pipeline->descriptorGroup(0));
-    glm::mat4 matrix(1);// = glm::perspective(95.0f,(float)renderTarget->width()/(float)renderTarget->height(),.01f,100.0f);
-    *uniformPtr = matrix;
-    bundle.setUniformBuffer(uniformIndex,0,uniformBuffer.get(),0,uniformBuffer->size());
-    commandBuffer->bindGraphicsDescriptorBundle(0,bundle);
-    struct pushConstants
-    {
-        glm::vec2 position = {0,0};
-        glm::vec2 scale = {1,1};
-        glm::vec4 color{1.0f,1.0f,1.0f,1.0f};
-    };
-
-
-    Buffer* vertexBuffers[]
-    {
-        TriangleVerts.get(),
-    };
-    uint64_t vertexOffsets=0;
-    uint64_t bufferStrides=sizeof(glm::vec3);
-
-    commandBuffer->bindVertexBuffers(0,vertexBuffers,&vertexOffsets,&bufferStrides,1);
-    commandBuffer->setViewPort(0,0,renderTarget->width(),renderTarget->height(),1,0);
-    commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {renderTarget->width(),renderTarget->height()}});
-
-    pushConstants constants;
-    commandBuffer->pushGraphicsConstants(0,sizeof(pushConstants),&constants);
-    commandBuffer->draw(3,1,0,0);
-    constants.position.x+=.3;
-    constants.color.y = 0;
-    commandBuffer->pushGraphicsConstants(0,sizeof(pushConstants),&constants);
-    commandBuffer->draw(3,1,0,0);
-    constants.position.x = -.3;
-    constants.position.y+=.3;
-    constants.color.z = 0;
-    commandBuffer->pushGraphicsConstants(0,sizeof(pushConstants),&constants);
-    commandBuffer->draw(3,1,0,0);
-
-    commandBuffer->endRendering();
-    commandBuffer->insertBarrier
-    (
-        TextureBarrier
-        {
-            .texture = renderTarget.get(),
-            .accessBefore = BarrierAccessFlags::SHADER_WRITE,
-            .accessAfter = BarrierAccessFlags::TRANSFER_READ,
-            .syncBefore = PipelineStageFlags::ALL_GRAPHICS,
-            .syncAfter = PipelineStageFlags::TRANSFER,
-        }
-    );
-    TextureBufferMapping mapping
-    {
-        .bufferOffset = 0,
-        .textureSubresource =
-     {
-            .aspectFlags = Pixels::AspectFlags::COLOR,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1
-        },
-        .textureOffset = {0,0,0},
-        .textureExtent = {renderTarget->width(),renderTarget->height(),1},
-    };
-    commandBuffer->copyTextureToBuffer(renderTarget.get(),targetBuffer.get(),&mapping,1);
-
-    commandBuffer->end();
-
-    auto cmdPtr = commandBuffer.get();
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = &cmdPtr,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
-    finished->waitForValue(1);
-
-    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(targetBuffer.get(),"resources/textures/push-graphics-constants.png",.9f,.1f));
-
-}
-#ifdef SLAG_DEBUG
-TEST_F(CommandBufferTest, PushGraphicsContantsUnboundFail)
-{
-    GTEST_FLAG_SET(death_test_style, "threadsafe");
-    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-
-    commandBuffer->begin();
-    struct pushConstants
-    {
-        glm::vec2 position = {0,0};
-        glm::vec2 scale = {1,1};
-        glm::vec4 color{1.0f,1.0f,1.0f,1.0f};
-    };
-    pushConstants constants;
-    ASSERT_DEATH(commandBuffer->pushGraphicsConstants(0,sizeof(pushConstants),&constants),"No graphics shader is bound, unable to push constants");
-}
-#endif
-
-TEST_F(CommandBufferTest, PushComputeConstants)
-{
-
-    ShaderFile computeFile{
-        .pathIndicator = "resources/shaders/ComputeDrawPush",
-        .stage = ShaderStageFlags::COMPUTE,
-    };
-    auto pipeline = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(computeFile);
-    auto textureIndex = pipeline->descriptorGroup(0)->indexOf("target");
-    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::COMPUTE));
-    auto descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
-    auto texture = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::STORAGE,256,256,1,1,1));
-    auto buffer = std::unique_ptr<Buffer>(Buffer::newBuffer(texture->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
-    auto finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    commandBuffer->begin();
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
-    commandBuffer->bindComputeShaderPipeline(pipeline.get());
-    auto bundle = descriptorPool->makeBundle(pipeline->descriptorGroup(0));
-    bundle.setStorageTexture(textureIndex,0,texture.get());
-    commandBuffer->bindComputeDescriptorBundle(0,bundle);
-    glm::vec4 color{1.0f,.1f,.1f,1.0f};
-    commandBuffer->pushComputeConstants(0,sizeof(color),&color);
-    commandBuffer->dispatch(texture->width()/pipeline->xComputeThreads(),texture->height()/pipeline->yComputeThreads(),1);
-    commandBuffer->insertBarrier(TextureBarrier{.texture = texture.get(),.accessBefore = BarrierAccessFlags::SHADER_READ | BarrierAccessFlags::SHADER_WRITE, .accessAfter = BarrierAccessFlags::TRANSFER_READ, .syncBefore = PipelineStageFlags::COMPUTE_SHADER, .syncAfter = PipelineStageFlags::TRANSFER});
-    TextureBufferMapping mapping
-    {
-        .bufferOffset = 0,
-        .textureSubresource = {.aspectFlags = Pixels::AspectFlags::COLOR,.mipLevel = 0,.baseArrayLayer = 0,.layerCount = 1},
-        .textureOffset = {0,0,0},
-        .textureExtent = {texture->width(),texture->height(),1}
-    };
-    commandBuffer->copyTextureToBuffer(texture.get(),buffer.get(),&mapping,1);
-
-    commandBuffer->end();
+    auto cmdBuffer = commandBuffer.get();
     SemaphoreValue signal{.semaphore = finished.get(),.value = 1};
-    auto cmdPtr = commandBuffer.get();
-    QueueSubmissionBatch submissionData
+    SubmissionBatch batch
     {
         .waitSemaphores = nullptr,
         .waitSemaphoreCount = 0,
-        .commandBuffers = &cmdPtr,
+        .commandBuffers = &cmdBuffer,
         .commandBufferCount = 1,
         .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    graphicsCard->graphicsQueue()->submit(&batch,1);
+    finished->waitForValue(1);
+    auto result = utilities::compareTexture(colorTexture.get(),0,0,"resources/tests/textures/results/draw-test.png");
+    ASSERT_GE(result.overallSimilarity,.9999);
+}
+
+TEST(CommandBuffer, DrawIndexed)
+{
+    glm::vec3 positions[]
+    {
+        {-1,1,0},
+        {1,1,0},
+        {-1,-1,0},
+        {1,-1,0}
+    };
+    glm::vec2 uvs[]
+    {
+        {0,0},
+        {1,0},
+        {0,1},
+        {1,1}
+    };
+    uint16_t indices[]
+    {
+        0,1,2,
+        1,3,2
+    };
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
+    auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
+    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
+    auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+
+    auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
+    auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
+    auto indexBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(indices),BufferCPUAccess::WRITE_ONLY));
+
+    memcpy(positionBuffer->as<glm::vec3>(),positions,sizeof(positions));
+    memcpy(uvBuffer->as<glm::vec2>(),uvs,sizeof(uvs));
+    memcpy(indexBuffer->as<uint16_t>(),indices,sizeof(indices));
+
+    auto globalsBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
+    auto instanceBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
+    auto instanceTexture = utilities::loadTexture("resources/tests/textures/gradient.jpg", graphicsCard);
+    auto sampler = std::unique_ptr<Sampler>(graphicsCard->newSampler());
+
+    auto globalsPtr = globalsBuffer->as<glm::mat4>();
+    auto proj = glm::perspective(95.0f,(float)colorTexture->width()/(float)colorTexture->height(),.01f,100.0f);
+    glm::mat4 view = glm::mat4(1.0f);
+    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
+    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
+    view = glm::inverse(view);
+    glm::mat4 projectionView = proj*view;
+    globalsPtr[0] = proj;
+    globalsPtr[1] = view;
+    globalsPtr[2] = projectionView;
+
+    auto instancePtr = instanceBuffer->as<glm::mat4>();
+    glm::mat4 instanceTransform = glm::rotate(glm::mat4(1.0f),glm::radians(15.0f),glm::vec3(0.0f,1.0f,0.0f));
+    instancePtr[0] = instanceTransform;
+
+    PipelineState pipelineState{};
+    auto vertex = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.vertex");
+    auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
+    std::vector<VertexBinding> vertexBindings =
+    {
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+    };
+    VertexDescription vertexDescription(vertexBindings);
+    FramebufferDescription framebufferDesc{};
+    framebufferDesc.colorFormats[0] = colorTexture->format();
+    framebufferDesc.depthFormat = depthTexture->format();
+    auto shaderPipeline = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(vertexDescription,vertex.details,fragment.details,pipelineState,framebufferDesc));
+
+    auto resourceHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+
+    auto resourceHeapPtr = (unsigned char*)resourceHeap->data();
+    auto samplerHeapPtr = (unsigned char*)samplerHeap->data();
+
+    auto heapDetails = graphicsCard->descriptorHeapDetails();
+
+    graphicsCard->writeUniformBufferDescriptor(globalsBuffer.get(),0,globalsBuffer->size(),resourceHeapPtr);
+    graphicsCard->writeUniformBufferDescriptor(instanceBuffer.get(),0,instanceBuffer->size(),resourceHeapPtr+heapDetails.textureDescriptorSize);
+    graphicsCard->writeUniformTextureDescriptor(instanceTexture.get(),0,1,0,1,resourceHeapPtr+heapDetails.textureDescriptorSize*2);
+    graphicsCard->writeSamplerDescriptor(sampler.get(),samplerHeapPtr);
+
+    commandBuffer->begin();
+
+
+    commandBuffer->bindDescriptorHeaps(resourceHeap.get(),samplerHeap.get());
+
+    uint32_t globalsIndex = 0;
+    uint32_t instanceIndex = 1;
+    uint32_t textureIndex = 2;
+    uint32_t samplerIndex = 0;
+    commandBuffer->setGraphicsShaderParameters(0,&globalsIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(8,&instanceIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(16,&textureIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(24,&samplerIndex,sizeof(uint32_t));
+
+    commandBuffer->bindShaderPipeline(shaderPipeline.get());
+    Buffer* vertexBuffers[] = {positionBuffer.get(),uvBuffer.get()};
+    uint64_t offsets[] = {0,0};
+    uint64_t strides[] = {sizeof(glm::vec3),sizeof(glm::vec2)};
+    commandBuffer->bindVertexBuffers(0,vertexBuffers,offsets,strides,2);
+    commandBuffer->bindIndexBuffer(indexBuffer.get(),IndexBufferType::UINT_16,0);
+
+    Attachment colorAttachment(colorTexture.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
+    Attachment depthAttachment(depthTexture.get(),true,{.depthStencil = ClearDepthStencilValue{.depth = 1.0f, .stencil = 0}});
+
+    TextureBarrier barriers[] =
+    {
+        TextureBarrier
+        {
+            .texture = colorTexture.get(),
+            .baseLayer = 0,
+            .layerCount = 1,
+            .baseMipLevel = 0,
+            .mipCount = 1,
+            .syncBefore = SyncStages::ALL,
+            .syncAfter = SyncStages::ALL,
+            .flush = MemoryCaches::NONE,
+            .invalidate = MemoryCaches::NONE,
+            .layoutBefore = TextureLayout::UNKNOWN,
+            .layoutAfter = TextureLayout::COLOR_TARGET,
+        },
+        TextureBarrier
+        {
+            .texture = depthTexture.get(),
+            .baseLayer = 0,
+            .layerCount = 1,
+            .baseMipLevel = 0,
+            .mipCount = 1,
+            .syncBefore = SyncStages::ALL,
+            .syncAfter = SyncStages::ALL,
+            .flush = MemoryCaches::NONE,
+            .invalidate = MemoryCaches::NONE,
+            .layoutBefore = TextureLayout::UNKNOWN,
+            .layoutAfter = TextureLayout::DEPTH_STENCIL_TARGET,
+        }
+    };
+    commandBuffer->insertBarriers(barriers,2);
+
+    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{0,0,colorTexture->width(),colorTexture->height()});
+    commandBuffer->setViewPort(0,0,colorTexture->width(),colorTexture->height(),.0f,1.0f);
+    commandBuffer->setScissors(slag::Rectangle{0,0,colorTexture->width(),colorTexture->height()});
+    commandBuffer->drawIndexed(6,1,0,0,0);
+    commandBuffer->endRendering();
+
+    barriers[0].layoutBefore = TextureLayout::COLOR_TARGET;
+    barriers[0].layoutAfter = TextureLayout::GENERAL;
+    barriers[0].syncBefore = SyncStages::ALL;
+    barriers[0].syncAfter = SyncStages::ALL;
+    barriers[0].flush = MemoryCaches::COLOR_TARGET;
+    barriers[0].invalidate = MemoryCaches::COPY_READ;
+
+    commandBuffer->insertBarriers(barriers,1);
+
+    commandBuffer->end();
+    auto cmdBuffer = commandBuffer.get();
+    SemaphoreValue signal{.semaphore = finished.get(),.value = 1};
+    SubmissionBatch batch
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &cmdBuffer,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    graphicsCard->graphicsQueue()->submit(&batch,1);
+    finished->waitForValue(1);
+    utilities::saveTexture("C:/Users/jshelton/Desktop/results/draw-indexed.png",colorTexture.get());
+    auto result = utilities::compareTexture(colorTexture.get(),0,0,"resources/tests/textures/results/draw-test.png");
+    ASSERT_GE(result.overallSimilarity,.9999);
+}
+
+TEST(CommandBuffer, DrawIndirect)
+{
+    glm::vec3 positions[]
+    {
+        {-1,1,0},
+        {1,1,0},
+        {-1,-1,0},
+        {1,1,0},
+        {1,-1,0},
+        {-1,-1,0}
+    };
+    glm::vec2 uvs[]
+    {
+        {0,0},
+        {1,0},
+        {0,1},
+        {1,0},
+        {1,1},
+        {0,1}
+    };
+
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
+    auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
+    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
+    auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+
+    auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
+    auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
+
+    memcpy(positionBuffer->as<glm::vec3>(),positions,sizeof(positions));
+    memcpy(uvBuffer->as<glm::vec2>(),uvs,sizeof(uvs));
+
+    auto globalsBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
+    auto instanceBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
+    auto instanceTexture = utilities::loadTexture("resources/tests/textures/gradient.jpg", graphicsCard);
+    auto sampler = std::unique_ptr<Sampler>(graphicsCard->newSampler());
+
+    auto globalsPtr = globalsBuffer->as<glm::mat4>();
+    auto proj = glm::perspective(95.0f,(float)colorTexture->width()/(float)colorTexture->height(),.01f,100.0f);
+    glm::mat4 view = glm::mat4(1.0f);
+    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
+    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
+    view = glm::inverse(view);
+    glm::mat4 projectionView = proj*view;
+    globalsPtr[0] = proj;
+    globalsPtr[1] = view;
+    globalsPtr[2] = projectionView;
+
+    auto instancePtr = instanceBuffer->as<glm::mat4>();
+    glm::mat4 instanceTransform = glm::rotate(glm::mat4(1.0f),glm::radians(15.0f),glm::vec3(0.0f,1.0f,0.0f));
+    instancePtr[0] = instanceTransform;
+
+    PipelineState pipelineState{};
+    auto vertex = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.vertex");
+    auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
+    std::vector<VertexBinding> vertexBindings =
+    {
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+    };
+    VertexDescription vertexDescription(vertexBindings);
+    FramebufferDescription framebufferDesc{};
+    framebufferDesc.colorFormats[0] = colorTexture->format();
+    framebufferDesc.depthFormat = depthTexture->format();
+    auto shaderPipeline = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(vertexDescription,vertex.details,fragment.details,pipelineState,framebufferDesc));
+
+    auto resourceHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+
+    auto resourceHeapPtr = (unsigned char*)resourceHeap->data();
+    auto samplerHeapPtr = (unsigned char*)samplerHeap->data();
+
+    auto heapDetails = graphicsCard->descriptorHeapDetails();
+
+    graphicsCard->writeUniformBufferDescriptor(globalsBuffer.get(),0,globalsBuffer->size(),resourceHeapPtr);
+    graphicsCard->writeUniformBufferDescriptor(instanceBuffer.get(),0,instanceBuffer->size(),resourceHeapPtr+heapDetails.textureDescriptorSize);
+    graphicsCard->writeUniformTextureDescriptor(instanceTexture.get(),0,1,0,1,resourceHeapPtr+heapDetails.textureDescriptorSize*2);
+    graphicsCard->writeSamplerDescriptor(sampler.get(),samplerHeapPtr);
+
+    commandBuffer->begin();
+
+
+    commandBuffer->bindDescriptorHeaps(resourceHeap.get(),samplerHeap.get());
+
+    uint32_t globalsIndex = 0;
+    uint32_t instanceIndex = 1;
+    uint32_t textureIndex = 2;
+    uint32_t samplerIndex = 0;
+    commandBuffer->setGraphicsShaderParameters(0,&globalsIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(8,&instanceIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(16,&textureIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(24,&samplerIndex,sizeof(uint32_t));
+
+    commandBuffer->bindShaderPipeline(shaderPipeline.get());
+    Buffer* vertexBuffers[] = {positionBuffer.get(),uvBuffer.get()};
+    uint64_t offsets[] = {0,0};
+    uint64_t strides[] = {sizeof(glm::vec3),sizeof(glm::vec2)};
+    commandBuffer->bindVertexBuffers(0,vertexBuffers,offsets,strides,2);
+
+    Attachment colorAttachment(colorTexture.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
+    Attachment depthAttachment(depthTexture.get(),true,{.depthStencil = ClearDepthStencilValue{.depth = 1.0f, .stencil = 0}});
+
+    TextureBarrier barriers[] =
+    {
+        TextureBarrier
+        {
+            .texture = colorTexture.get(),
+            .baseLayer = 0,
+            .layerCount = 1,
+            .baseMipLevel = 0,
+            .mipCount = 1,
+            .syncBefore = SyncStages::ALL,
+            .syncAfter = SyncStages::ALL_GRAPHICS,
+            .flush = MemoryCaches::NONE,
+            .invalidate = MemoryCaches::NONE,
+            .layoutBefore = TextureLayout::GENERAL,
+            .layoutAfter = TextureLayout::COLOR_TARGET,
+        },
+        TextureBarrier
+        {
+            .texture = depthTexture.get(),
+            .baseLayer = 0,
+            .layerCount = 1,
+            .baseMipLevel = 0,
+            .mipCount = 1,
+            .syncBefore = SyncStages::ALL,
+            .syncAfter = SyncStages::ALL_GRAPHICS,
+            .flush = MemoryCaches::NONE,
+            .invalidate = MemoryCaches::NONE,
+            .layoutBefore = TextureLayout::GENERAL,
+            .layoutAfter = TextureLayout::DEPTH_STENCIL_TARGET,
+        }
+    };
+    commandBuffer->insertBarriers(barriers,2);
+
+    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{0,0,colorTexture->width(),colorTexture->height()});
+    commandBuffer->setViewPort(0,0,colorTexture->width(),colorTexture->height(),.0f,1.0f);
+    commandBuffer->setScissors(slag::Rectangle{0,0,colorTexture->width(),colorTexture->height()});
+    std::unique_ptr<Buffer> indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawCommand),BufferCPUAccess::WRITE_ONLY));
+    auto indirectPtr = indirectBuffer->as<IndirectDrawCommand>();
+    indirectPtr[0].vertexCount = 6;
+    indirectPtr[0].instanceCount = 1;
+    indirectPtr[0].firstVertex = 0;
+    indirectPtr[0].firstInstance = 0;
+    commandBuffer->drawIndirect(indirectBuffer.get(),0,1,sizeof(IndirectDrawCommand));
+    commandBuffer->endRendering();
+
+    barriers[0].layoutBefore = TextureLayout::COLOR_TARGET;
+    barriers[0].layoutAfter = TextureLayout::GENERAL;
+    barriers[0].syncAfter = SyncStages::ALL;
+    barriers[0].flush = MemoryCaches::COLOR_TARGET;
+    barriers[0].invalidate = MemoryCaches::COPY_READ;
+
+    commandBuffer->insertBarriers(barriers,1);
+
+    commandBuffer->end();
+    auto cmdBuffer = commandBuffer.get();
+    SemaphoreValue signal{.semaphore = finished.get(),.value = 1};
+    SubmissionBatch batch
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &cmdBuffer,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    graphicsCard->graphicsQueue()->submit(&batch,1);
+    finished->waitForValue(1);
+    auto result = utilities::compareTexture(colorTexture.get(),0,0,"resources/tests/textures/results/draw-test.png");
+    ASSERT_GE(result.overallSimilarity,.9999);
+}
+
+TEST(CommandBuffer, DrawIndexedIndirect)
+{
+    glm::vec3 positions[]
+    {
+        {-1,1,0},
+        {1,1,0},
+        {-1,-1,0},
+        {1,-1,0}
+    };
+    glm::vec2 uvs[]
+    {
+        {0,0},
+        {1,0},
+        {0,1},
+        {1,1}
+    };
+    uint16_t indices[]
+    {
+        0,1,2,
+        1,3,2
+    };
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
+    auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
+    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
+    auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+
+    auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
+    auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
+    auto indexBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(indices),BufferCPUAccess::WRITE_ONLY));
+
+    memcpy(positionBuffer->as<glm::vec3>(),positions,sizeof(positions));
+    memcpy(uvBuffer->as<glm::vec2>(),uvs,sizeof(uvs));
+    memcpy(indexBuffer->as<uint16_t>(),indices,sizeof(indices));
+
+    auto globalsBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
+    auto instanceBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
+    auto instanceTexture = utilities::loadTexture("resources/tests/textures/gradient.jpg", graphicsCard);
+    auto sampler = std::unique_ptr<Sampler>(graphicsCard->newSampler());
+
+    auto globalsPtr = globalsBuffer->as<glm::mat4>();
+    auto proj = glm::perspective(95.0f,(float)colorTexture->width()/(float)colorTexture->height(),.01f,100.0f);
+    glm::mat4 view = glm::mat4(1.0f);
+    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
+    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
+    view = glm::inverse(view);
+    glm::mat4 projectionView = proj*view;
+    globalsPtr[0] = proj;
+    globalsPtr[1] = view;
+    globalsPtr[2] = projectionView;
+
+    auto instancePtr = instanceBuffer->as<glm::mat4>();
+    glm::mat4 instanceTransform = glm::rotate(glm::mat4(1.0f),glm::radians(15.0f),glm::vec3(0.0f,1.0f,0.0f));
+    instancePtr[0] = instanceTransform;
+
+    PipelineState pipelineState{};
+    auto vertex = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.vertex");
+    auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
+    std::vector<VertexBinding> vertexBindings =
+    {
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+    };
+    VertexDescription vertexDescription(vertexBindings);
+    FramebufferDescription framebufferDesc{};
+    framebufferDesc.colorFormats[0] = colorTexture->format();
+    framebufferDesc.depthFormat = depthTexture->format();
+    auto shaderPipeline = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(vertexDescription,vertex.details,fragment.details,pipelineState,framebufferDesc));
+
+    auto resourceHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+
+    auto resourceHeapPtr = (unsigned char*)resourceHeap->data();
+    auto samplerHeapPtr = (unsigned char*)samplerHeap->data();
+
+    auto heapDetails = graphicsCard->descriptorHeapDetails();
+
+    graphicsCard->writeUniformBufferDescriptor(globalsBuffer.get(),0,globalsBuffer->size(),resourceHeapPtr);
+    graphicsCard->writeUniformBufferDescriptor(instanceBuffer.get(),0,instanceBuffer->size(),resourceHeapPtr+heapDetails.textureDescriptorSize);
+    graphicsCard->writeUniformTextureDescriptor(instanceTexture.get(),0,1,0,1,resourceHeapPtr+heapDetails.textureDescriptorSize*2);
+    graphicsCard->writeSamplerDescriptor(sampler.get(),samplerHeapPtr);
+
+    commandBuffer->begin();
+
+
+    commandBuffer->bindDescriptorHeaps(resourceHeap.get(),samplerHeap.get());
+
+    uint32_t globalsIndex = 0;
+    uint32_t instanceIndex = 1;
+    uint32_t textureIndex = 2;
+    uint32_t samplerIndex = 0;
+    commandBuffer->setGraphicsShaderParameters(0,&globalsIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(8,&instanceIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(16,&textureIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(24,&samplerIndex,sizeof(uint32_t));
+
+    commandBuffer->bindShaderPipeline(shaderPipeline.get());
+    Buffer* vertexBuffers[] = {positionBuffer.get(),uvBuffer.get()};
+    uint64_t offsets[] = {0,0};
+    uint64_t strides[] = {sizeof(glm::vec3),sizeof(glm::vec2)};
+    commandBuffer->bindVertexBuffers(0,vertexBuffers,offsets,strides,2);
+    commandBuffer->bindIndexBuffer(indexBuffer.get(),IndexBufferType::UINT_16,0);
+
+    Attachment colorAttachment(colorTexture.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
+    Attachment depthAttachment(depthTexture.get(),true,{.depthStencil = ClearDepthStencilValue{.depth = 1.0f, .stencil = 0}});
+
+    TextureBarrier barriers[] =
+    {
+        TextureBarrier
+        {
+            .texture = colorTexture.get(),
+            .baseLayer = 0,
+            .layerCount = 1,
+            .baseMipLevel = 0,
+            .mipCount = 1,
+            .syncBefore = SyncStages::ALL,
+            .syncAfter = SyncStages::ALL_GRAPHICS,
+            .flush = MemoryCaches::NONE,
+            .invalidate = MemoryCaches::NONE,
+            .layoutBefore = TextureLayout::GENERAL,
+            .layoutAfter = TextureLayout::COLOR_TARGET,
+        },
+        TextureBarrier
+        {
+            .texture = depthTexture.get(),
+            .baseLayer = 0,
+            .layerCount = 1,
+            .baseMipLevel = 0,
+            .mipCount = 1,
+            .syncBefore = SyncStages::ALL,
+            .syncAfter = SyncStages::ALL_GRAPHICS,
+            .flush = MemoryCaches::NONE,
+            .invalidate = MemoryCaches::NONE,
+            .layoutBefore = TextureLayout::GENERAL,
+            .layoutAfter = TextureLayout::DEPTH_STENCIL_TARGET,
+        }
+    };
+    commandBuffer->insertBarriers(barriers,2);
+
+    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{0,0,colorTexture->width(),colorTexture->height()});
+    commandBuffer->setViewPort(0,0,colorTexture->width(),colorTexture->height(),.0f,1.0f);
+    commandBuffer->setScissors(slag::Rectangle{0,0,colorTexture->width(),colorTexture->height()});
+
+    std::unique_ptr<Buffer> indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawIndexedCommand),BufferCPUAccess::WRITE_ONLY));
+    auto indirectPtr = indirectBuffer->as<IndirectDrawIndexedCommand>();
+    indirectPtr[0].indexCount = 6;
+    indirectPtr[0].instanceCount = 1;
+    indirectPtr[0].firstIndex = 0;
+    indirectPtr[0].vertexOffset = 0;
+    indirectPtr[0].firstInstance = 0;
+
+    commandBuffer->drawIndexedIndirect(indirectBuffer.get(),0,1,sizeof(IndirectDrawCommand));
+    commandBuffer->endRendering();
+
+    barriers[0].layoutBefore = TextureLayout::COLOR_TARGET;
+    barriers[0].layoutAfter = TextureLayout::GENERAL;
+    barriers[0].syncAfter = SyncStages::ALL;
+    barriers[0].flush = MemoryCaches::COLOR_TARGET;
+    barriers[0].invalidate = MemoryCaches::COPY_READ;
+
+    commandBuffer->insertBarriers(barriers,1);
+
+    commandBuffer->end();
+    auto cmdBuffer = commandBuffer.get();
+    SemaphoreValue signal{.semaphore = finished.get(),.value = 1};
+    SubmissionBatch batch
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &cmdBuffer,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    graphicsCard->graphicsQueue()->submit(&batch,1);
+    finished->waitForValue(1);
+    auto result = utilities::compareTexture(colorTexture.get(),0,0,"resources/tests/textures/results/draw-test.png");
+    ASSERT_GE(result.overallSimilarity,.9999);
+}
+
+TEST(CommandBuffer, DrawIndirectCount)
+{
+    glm::vec3 positions[]
+    {
+        {-1,1,0},
+        {1,1,0},
+        {-1,-1,0},
+        {1,1,0},
+        {1,-1,0},
+        {-1,-1,0}
+    };
+    glm::vec2 uvs[]
+    {
+        {0,0},
+        {1,0},
+        {0,1},
+        {1,0},
+        {1,1},
+        {0,1}
+    };
+
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
+    auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
+    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
+    auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+
+    auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
+    auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
+
+    memcpy(positionBuffer->as<glm::vec3>(),positions,sizeof(positions));
+    memcpy(uvBuffer->as<glm::vec2>(),uvs,sizeof(uvs));
+
+    auto globalsBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
+    auto instanceBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
+    auto instanceTexture = utilities::loadTexture("resources/tests/textures/gradient.jpg", graphicsCard);
+    auto sampler = std::unique_ptr<Sampler>(graphicsCard->newSampler());
+
+    auto globalsPtr = globalsBuffer->as<glm::mat4>();
+    auto proj = glm::perspective(95.0f,(float)colorTexture->width()/(float)colorTexture->height(),.01f,100.0f);
+    glm::mat4 view = glm::mat4(1.0f);
+    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
+    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
+    view = glm::inverse(view);
+    glm::mat4 projectionView = proj*view;
+    globalsPtr[0] = proj;
+    globalsPtr[1] = view;
+    globalsPtr[2] = projectionView;
+
+    auto instancePtr = instanceBuffer->as<glm::mat4>();
+    glm::mat4 instanceTransform = glm::rotate(glm::mat4(1.0f),glm::radians(15.0f),glm::vec3(0.0f,1.0f,0.0f));
+    instancePtr[0] = instanceTransform;
+
+    PipelineState pipelineState{};
+    auto vertex = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.vertex");
+    auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
+    std::vector<VertexBinding> vertexBindings =
+    {
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+    };
+    VertexDescription vertexDescription(vertexBindings);
+    FramebufferDescription framebufferDesc{};
+    framebufferDesc.colorFormats[0] = colorTexture->format();
+    framebufferDesc.depthFormat = depthTexture->format();
+    auto shaderPipeline = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(vertexDescription,vertex.details,fragment.details,pipelineState,framebufferDesc));
+
+    auto resourceHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+
+    auto resourceHeapPtr = (unsigned char*)resourceHeap->data();
+    auto samplerHeapPtr = (unsigned char*)samplerHeap->data();
+
+    auto heapDetails = graphicsCard->descriptorHeapDetails();
+
+    graphicsCard->writeUniformBufferDescriptor(globalsBuffer.get(),0,globalsBuffer->size(),resourceHeapPtr);
+    graphicsCard->writeUniformBufferDescriptor(instanceBuffer.get(),0,instanceBuffer->size(),resourceHeapPtr+heapDetails.textureDescriptorSize);
+    graphicsCard->writeUniformTextureDescriptor(instanceTexture.get(),0,1,0,1,resourceHeapPtr+heapDetails.textureDescriptorSize*2);
+    graphicsCard->writeSamplerDescriptor(sampler.get(),samplerHeapPtr);
+
+    commandBuffer->begin();
+
+
+    commandBuffer->bindDescriptorHeaps(resourceHeap.get(),samplerHeap.get());
+
+    uint32_t globalsIndex = 0;
+    uint32_t instanceIndex = 1;
+    uint32_t textureIndex = 2;
+    uint32_t samplerIndex = 0;
+    commandBuffer->setGraphicsShaderParameters(0,&globalsIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(8,&instanceIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(16,&textureIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(24,&samplerIndex,sizeof(uint32_t));
+
+    commandBuffer->bindShaderPipeline(shaderPipeline.get());
+    Buffer* vertexBuffers[] = {positionBuffer.get(),uvBuffer.get()};
+    uint64_t offsets[] = {0,0};
+    uint64_t strides[] = {sizeof(glm::vec3),sizeof(glm::vec2)};
+    commandBuffer->bindVertexBuffers(0,vertexBuffers,offsets,strides,2);
+
+    Attachment colorAttachment(colorTexture.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
+    Attachment depthAttachment(depthTexture.get(),true,{.depthStencil = ClearDepthStencilValue{.depth = 1.0f, .stencil = 0}});
+
+    TextureBarrier barriers[] =
+    {
+        TextureBarrier
+        {
+            .texture = colorTexture.get(),
+            .baseLayer = 0,
+            .layerCount = 1,
+            .baseMipLevel = 0,
+            .mipCount = 1,
+            .syncBefore = SyncStages::ALL,
+            .syncAfter = SyncStages::ALL_GRAPHICS,
+            .flush = MemoryCaches::NONE,
+            .invalidate = MemoryCaches::NONE,
+            .layoutBefore = TextureLayout::GENERAL,
+            .layoutAfter = TextureLayout::COLOR_TARGET,
+        },
+        TextureBarrier
+        {
+            .texture = depthTexture.get(),
+            .baseLayer = 0,
+            .layerCount = 1,
+            .baseMipLevel = 0,
+            .mipCount = 1,
+            .syncBefore = SyncStages::ALL,
+            .syncAfter = SyncStages::ALL_GRAPHICS,
+            .flush = MemoryCaches::NONE,
+            .invalidate = MemoryCaches::NONE,
+            .layoutBefore = TextureLayout::GENERAL,
+            .layoutAfter = TextureLayout::DEPTH_STENCIL_TARGET,
+        }
+    };
+    commandBuffer->insertBarriers(barriers,2);
+
+    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{0,0,colorTexture->width(),colorTexture->height()});
+    commandBuffer->setViewPort(0,0,colorTexture->width(),colorTexture->height(),.0f,1.0f);
+    commandBuffer->setScissors(slag::Rectangle{0,0,colorTexture->width(),colorTexture->height()});
+    std::unique_ptr<Buffer> indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawCommand),BufferCPUAccess::WRITE_ONLY));
+    auto indirectPtr = indirectBuffer->as<IndirectDrawCommand>();
+    indirectPtr[0].vertexCount = 6;
+    indirectPtr[0].instanceCount = 1;
+    indirectPtr[0].firstVertex = 0;
+    indirectPtr[0].firstInstance = 0;
+    std::unique_ptr<Buffer> indirectCountBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t),BufferCPUAccess::WRITE_ONLY));
+    auto indirectCountPtr = indirectCountBuffer->as<uint32_t>();
+    indirectCountPtr[0] = 1;
+    commandBuffer->drawIndirectCount(indirectBuffer.get(),0,indirectCountBuffer.get(),0,1,sizeof(IndirectDrawCommand));
+    commandBuffer->endRendering();
+
+    barriers[0].layoutBefore = TextureLayout::COLOR_TARGET;
+    barriers[0].layoutAfter = TextureLayout::GENERAL;
+    barriers[0].syncAfter = SyncStages::ALL;
+    barriers[0].flush = MemoryCaches::COLOR_TARGET;
+    barriers[0].invalidate = MemoryCaches::COPY_READ;
+
+    commandBuffer->insertBarriers(barriers,1);
+
+    commandBuffer->end();
+    auto cmdBuffer = commandBuffer.get();
+    SemaphoreValue signal{.semaphore = finished.get(),.value = 1};
+    SubmissionBatch batch
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &cmdBuffer,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    graphicsCard->graphicsQueue()->submit(&batch,1);
+    finished->waitForValue(1);
+    auto result = utilities::compareTexture(colorTexture.get(),0,0,"resources/tests/textures/results/draw-test.png");
+    ASSERT_GE(result.overallSimilarity,.9999);
+}
+
+TEST(CommandBuffer, DrawIndexedIndirectCount)
+{
+    glm::vec3 positions[]
+    {
+        {-1,1,0},
+        {1,1,0},
+        {-1,-1,0},
+        {1,-1,0}
+    };
+    glm::vec2 uvs[]
+    {
+        {0,0},
+        {1,0},
+        {0,1},
+        {1,1}
+    };
+    uint16_t indices[]
+    {
+        0,1,2,
+        1,3,2
+    };
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
+    auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
+    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
+    auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+
+    auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
+    auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
+    auto indexBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(indices),BufferCPUAccess::WRITE_ONLY));
+
+    memcpy(positionBuffer->as<glm::vec3>(),positions,sizeof(positions));
+    memcpy(uvBuffer->as<glm::vec2>(),uvs,sizeof(uvs));
+    memcpy(indexBuffer->as<uint16_t>(),indices,sizeof(indices));
+
+    auto globalsBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
+    auto instanceBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
+    auto instanceTexture = utilities::loadTexture("resources/tests/textures/gradient.jpg", graphicsCard);
+    auto sampler = std::unique_ptr<Sampler>(graphicsCard->newSampler());
+
+    auto globalsPtr = globalsBuffer->as<glm::mat4>();
+    auto proj = glm::perspective(95.0f,(float)colorTexture->width()/(float)colorTexture->height(),.01f,100.0f);
+    glm::mat4 view = glm::mat4(1.0f);
+    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
+    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
+    view = glm::inverse(view);
+    glm::mat4 projectionView = proj*view;
+    globalsPtr[0] = proj;
+    globalsPtr[1] = view;
+    globalsPtr[2] = projectionView;
+
+    auto instancePtr = instanceBuffer->as<glm::mat4>();
+    glm::mat4 instanceTransform = glm::rotate(glm::mat4(1.0f),glm::radians(15.0f),glm::vec3(0.0f,1.0f,0.0f));
+    instancePtr[0] = instanceTransform;
+
+    PipelineState pipelineState{};
+    auto vertex = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.vertex");
+    auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
+    std::vector<VertexBinding> vertexBindings =
+    {
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+    };
+    VertexDescription vertexDescription(vertexBindings);
+    FramebufferDescription framebufferDesc{};
+    framebufferDesc.colorFormats[0] = colorTexture->format();
+    framebufferDesc.depthFormat = depthTexture->format();
+    auto shaderPipeline = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(vertexDescription,vertex.details,fragment.details,pipelineState,framebufferDesc));
+
+    auto resourceHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+
+    auto resourceHeapPtr = (unsigned char*)resourceHeap->data();
+    auto samplerHeapPtr = (unsigned char*)samplerHeap->data();
+
+    auto heapDetails = graphicsCard->descriptorHeapDetails();
+
+    graphicsCard->writeUniformBufferDescriptor(globalsBuffer.get(),0,globalsBuffer->size(),resourceHeapPtr);
+    graphicsCard->writeUniformBufferDescriptor(instanceBuffer.get(),0,instanceBuffer->size(),resourceHeapPtr+heapDetails.textureDescriptorSize);
+    graphicsCard->writeUniformTextureDescriptor(instanceTexture.get(),0,1,0,1,resourceHeapPtr+heapDetails.textureDescriptorSize*2);
+    graphicsCard->writeSamplerDescriptor(sampler.get(),samplerHeapPtr);
+
+    commandBuffer->begin();
+
+
+    commandBuffer->bindDescriptorHeaps(resourceHeap.get(),samplerHeap.get());
+
+    uint32_t globalsIndex = 0;
+    uint32_t instanceIndex = 1;
+    uint32_t textureIndex = 2;
+    uint32_t samplerIndex = 0;
+    commandBuffer->setGraphicsShaderParameters(0,&globalsIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(8,&instanceIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(16,&textureIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(24,&samplerIndex,sizeof(uint32_t));
+
+    commandBuffer->bindShaderPipeline(shaderPipeline.get());
+    Buffer* vertexBuffers[] = {positionBuffer.get(),uvBuffer.get()};
+    uint64_t offsets[] = {0,0};
+    uint64_t strides[] = {sizeof(glm::vec3),sizeof(glm::vec2)};
+    commandBuffer->bindVertexBuffers(0,vertexBuffers,offsets,strides,2);
+    commandBuffer->bindIndexBuffer(indexBuffer.get(),IndexBufferType::UINT_16,0);
+
+    Attachment colorAttachment(colorTexture.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
+    Attachment depthAttachment(depthTexture.get(),true,{.depthStencil = ClearDepthStencilValue{.depth = 1.0f, .stencil = 0}});
+
+    TextureBarrier barriers[] =
+    {
+        TextureBarrier
+        {
+            .texture = colorTexture.get(),
+            .baseLayer = 0,
+            .layerCount = 1,
+            .baseMipLevel = 0,
+            .mipCount = 1,
+            .syncBefore = SyncStages::ALL,
+            .syncAfter = SyncStages::ALL_GRAPHICS,
+            .flush = MemoryCaches::NONE,
+            .invalidate = MemoryCaches::NONE,
+            .layoutBefore = TextureLayout::GENERAL,
+            .layoutAfter = TextureLayout::COLOR_TARGET,
+        },
+        TextureBarrier
+        {
+            .texture = depthTexture.get(),
+            .baseLayer = 0,
+            .layerCount = 1,
+            .baseMipLevel = 0,
+            .mipCount = 1,
+            .syncBefore = SyncStages::ALL,
+            .syncAfter = SyncStages::ALL_GRAPHICS,
+            .flush = MemoryCaches::NONE,
+            .invalidate = MemoryCaches::NONE,
+            .layoutBefore = TextureLayout::GENERAL,
+            .layoutAfter = TextureLayout::DEPTH_STENCIL_TARGET,
+        }
+    };
+    commandBuffer->insertBarriers(barriers,2);
+
+    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{0,0,colorTexture->width(),colorTexture->height()});
+    commandBuffer->setViewPort(0,0,colorTexture->width(),colorTexture->height(),.0f,1.0f);
+    commandBuffer->setScissors(slag::Rectangle{0,0,colorTexture->width(),colorTexture->height()});
+
+    std::unique_ptr<Buffer> indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawIndexedCommand),BufferCPUAccess::WRITE_ONLY));
+    auto indirectPtr = indirectBuffer->as<IndirectDrawIndexedCommand>();
+    indirectPtr[0].indexCount = 6;
+    indirectPtr[0].instanceCount = 1;
+    indirectPtr[0].firstIndex = 0;
+    indirectPtr[0].vertexOffset = 0;
+    indirectPtr[0].firstInstance = 0;
+
+    std::unique_ptr<Buffer> indirectCountBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t),BufferCPUAccess::WRITE_ONLY));
+    auto indirectCountPtr = indirectCountBuffer->as<uint32_t>();
+    indirectCountPtr[0] = 1;
+    commandBuffer->drawIndexedIndirectCount(indirectBuffer.get(),0,indirectCountBuffer.get(),0,1,sizeof(IndirectDrawIndexedCommand));
+    commandBuffer->endRendering();
+
+    barriers[0].layoutBefore = TextureLayout::COLOR_TARGET;
+    barriers[0].layoutAfter = TextureLayout::GENERAL;
+    barriers[0].syncAfter = SyncStages::ALL;
+    barriers[0].flush = MemoryCaches::COLOR_TARGET;
+    barriers[0].invalidate = MemoryCaches::COPY_READ;
+
+    commandBuffer->insertBarriers(barriers,1);
+
+    commandBuffer->end();
+    auto cmdBuffer = commandBuffer.get();
+    SemaphoreValue signal{.semaphore = finished.get(),.value = 1};
+    SubmissionBatch batch
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &cmdBuffer,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    graphicsCard->graphicsQueue()->submit(&batch,1);
+    finished->waitForValue(1);
+    auto result = utilities::compareTexture(colorTexture.get(),0,0,"resources/tests/textures/results/draw-test.png");
+    ASSERT_GE(result.overallSimilarity,.9999);
+}
+
+TEST(CommandBuffer, Dispatch)
+{
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::COMPUTE));
+    auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
+
+    auto computeModule = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/ParallelAdd.compute");
+    auto parallelAdd = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(&computeModule.details));
+    auto resourceHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+    auto resourceHeapPtr = (unsigned char*)resourceHeap->data();
+    auto samplerHeapPtr = (unsigned char*)samplerHeap->data();
+    auto heapDetails = graphicsCard->descriptorHeapDetails();
+    auto descriptorSize = std::max(heapDetails.textureDescriptorSize,heapDetails.bufferDescriptorSize);
+
+
+
+    auto buffer1 = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t)*100,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto buffer2 = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t)*100,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto results = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t)*100,BufferCPUAccess::READ_WRITE,BufferMemoryType::GENERAL));
+    auto buffer1Ptr = buffer1->as<uint32_t>();
+    auto buffer2Ptr = buffer2->as<uint32_t>();
+    auto resultsPtr = results->as<uint32_t>();
+    for(uint32_t i = 0;i < 100;i++)
+    {
+        buffer1Ptr[i] = i;
+        buffer2Ptr[i] = i*i;
+        resultsPtr[i] = 0.0f;
+    }
+
+    graphicsCard->writeReadWriteBufferDescriptor(buffer1.get(),0,100,sizeof(uint32_t),resourceHeapPtr);
+    graphicsCard->writeReadWriteBufferDescriptor(buffer2.get(),0,100,sizeof(uint32_t),resourceHeapPtr+descriptorSize);
+    graphicsCard->writeReadWriteBufferDescriptor(results.get(),0,100,sizeof(uint32_t),resourceHeapPtr+descriptorSize*2);
+
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorHeaps(resourceHeap.get(),samplerHeap.get());
+    uint32_t b1index = 0;
+    uint32_t b2index = 1;
+    uint32_t resultsIndex = 2;
+    commandBuffer->setComputeShaderParameters(0,&b1index,sizeof(uint32_t));
+    commandBuffer->setComputeShaderParameters(8,&b2index,sizeof(uint32_t));
+    commandBuffer->setComputeShaderParameters(16,&resultsIndex,sizeof(uint32_t));
+    commandBuffer->bindShaderPipeline(parallelAdd.get());
+    commandBuffer->dispatch(100,1,1);
+
+    commandBuffer->end();
+    auto cmdBuffer = commandBuffer.get();
+    SemaphoreValue signal{.semaphore = finished.get(),.value = 1};
+    SubmissionBatch batch
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &cmdBuffer,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    graphicsCard->computeQueue()->submit(&batch,1);
+    finished->waitForValue(1);
+
+    for (uint32_t i = 0;i < 100;i++)
+    {
+        ASSERT_EQ(resultsPtr[i],i+(i*i));
+    }
+}
+
+TEST(CommandBuffer, DispatchIndirect)
+{
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::COMPUTE));
+    auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
+
+    auto computeModule = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/SetFromBase.compute");
+    auto parallelAdd = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(&computeModule.details));
+    auto resourceHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+    auto resourceHeapPtr = (unsigned char*)resourceHeap->data();
+    auto samplerHeapPtr = (unsigned char*)samplerHeap->data();
+    auto heapDetails = graphicsCard->descriptorHeapDetails();
+    auto descriptorSize = std::max(heapDetails.textureDescriptorSize,heapDetails.bufferDescriptorSize);
+
+
+
+    auto buffer1 = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t)*100,BufferCPUAccess::READ_WRITE,BufferMemoryType::GENERAL));
+    auto buffer1Ptr = buffer1->as<uint32_t>();
+
+    auto indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDispatchCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto indirectPtr = indirectBuffer->as<IndirectDispatchCommand>();
+    indirectPtr[0].groupCountX = 100;
+    indirectPtr[0].groupCountY = 1;
+    indirectPtr[0].groupCountZ = 1;
+
+    for(uint32_t i = 0;i < 100;i++)
+    {
+        buffer1Ptr[i] = 0;
+    }
+
+    graphicsCard->writeReadWriteBufferDescriptor(buffer1.get(),0,100,sizeof(uint32_t),resourceHeapPtr);
+
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorHeaps(resourceHeap.get(),samplerHeap.get());
+    uint32_t b1index = 0;
+    commandBuffer->setComputeShaderParameters(0,&b1index,sizeof(uint32_t));
+    commandBuffer->bindShaderPipeline(parallelAdd.get());
+    commandBuffer->dispatchIndirect(indirectBuffer.get(),0);
+
+    commandBuffer->end();
+    auto cmdBuffer = commandBuffer.get();
+    SemaphoreValue signal{.semaphore = finished.get(),.value = 1};
+    SubmissionBatch batch
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &cmdBuffer,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    graphicsCard->computeQueue()->submit(&batch,1);
+    finished->waitForValue(1);
+
+    for (uint32_t i = 0;i < 100;i++)
+    {
+        ASSERT_EQ(buffer1Ptr[i],i);
+    }
+}
+
+TEST(CommandBuffer, Resolve)
+{
+    glm::vec3 positions[]
+    {
+        {-1,1,0},
+        {1,1,0},
+        {-1,-1,0},
+        {1,-1,0}
+    };
+    glm::vec2 uvs[]
+    {
+        {0,0},
+        {1,0},
+        {0,1},
+        {1,1}
+    };
+    uint16_t indices[]
+    {
+        0,1,2,
+        1,3,2
+    };
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
+    auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
+
+    auto colorTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,1,SampleCount::FOUR));
+    auto finalTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,1));
+    auto depthTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,1,SampleCount::FOUR));
+
+    auto transferBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::TRANSFER));
+    auto transferFinished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
+    auto nonData = std::unique_ptr<Buffer>(graphicsCard->newBuffer(finalTexture->bufferSize(PixelAspect::COLOR),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto nonDataPtr = nonData->as<uint8_t>();
+    memset(nonDataPtr,0,finalTexture->bufferSize(PixelAspect::COLOR));
+    TextureBufferMapping mapping
+    {
+        .bufferOffset = 0,
+        .subresource =
+            {
+                .aspect = PixelAspect::COLOR,
+                .mipLevel = 0,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+        .offset = {0,0,0},
+        .extent = {256,256,1}
+    };
+    transferBuffer->begin();
+    transferBuffer->copyBufferToTexture(nonData.get(),finalTexture.get(),&mapping,1);
+    transferBuffer->end();
+
+    SemaphoreValue signalTransfer{.semaphore = transferFinished.get(),.value = 1};
+    auto tb = transferBuffer.get();
+
+    SubmissionBatch submissionBatch
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &tb,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signalTransfer,
         .signalSemaphoreCount = 1
     };
-    slagGraphicsCard()->computeQueue()->submit(&submissionData,1);
-    finished->waitForValue(1);
-    GTEST_ASSERT_TRUE(utilities::matchesSimilarity(buffer.get(),"resources/textures/compute-draw-push.png",.9f,.1f));
 
-}
-#ifdef SLAG_DEBUG
-TEST_F(CommandBufferTest, PushComputeContantsUnboundFail)
-{
-    GTEST_FLAG_SET(death_test_style, "threadsafe");
-    auto commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
+    graphicsCard->transferQueue()->submit(&submissionBatch,1);
+    transferFinished->waitForValue(1);
+
+    auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
+    auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
+    auto indexBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(indices),BufferCPUAccess::WRITE_ONLY));
+
+    memcpy(positionBuffer->as<glm::vec3>(),positions,sizeof(positions));
+    memcpy(uvBuffer->as<glm::vec2>(),uvs,sizeof(uvs));
+    memcpy(indexBuffer->as<uint16_t>(),indices,sizeof(indices));
+
+    auto globalsBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
+    auto instanceBuffer1 = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
+    auto instanceBuffer2 = std::unique_ptr<Buffer>(graphicsCard->newBuffer(256,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::UNIFORM));
+    auto instanceTexture = utilities::loadTexture("resources/tests/textures/gradient.jpg", graphicsCard);
+    auto sampler = std::unique_ptr<Sampler>(graphicsCard->newSampler());
+
+    auto globalsPtr = globalsBuffer->as<glm::mat4>();
+    auto proj = glm::perspective(95.0f,(float)colorTarget->width()/(float)colorTarget->height(),.01f,100.0f);
+    glm::mat4 view = glm::mat4(1.0f);
+    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
+    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
+    view = glm::inverse(view);
+    glm::mat4 projectionView = proj*view;
+    globalsPtr[0] = proj;
+    globalsPtr[1] = view;
+    globalsPtr[2] = projectionView;
+
+    auto instance1Ptr = instanceBuffer1->as<glm::mat4>();
+    glm::mat4 instanceTransform = glm::rotate(glm::mat4(1.0f),glm::radians(15.0f),glm::vec3(0.0f,1.0f,0.0f));
+    instance1Ptr[0] = instanceTransform;
+
+    auto instance2Ptr = instanceBuffer2->as<glm::mat4>();
+    instanceTransform = glm::rotate(glm::mat4(1.0f),glm::radians(-15.0f),glm::vec3(0.0f,1.0f,0.0f));
+    instance2Ptr[0] = instanceTransform;
+
+    PipelineState pipelineState{};
+    pipelineState.multiSampleState.rasterizationSamples = SampleCount::FOUR;
+    auto vertex = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.vertex");
+    auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
+    std::vector<VertexBinding> vertexBindings =
+    {
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VRETEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+    };
+    VertexDescription vertexDescription(vertexBindings);
+    FramebufferDescription framebufferDesc{};
+    framebufferDesc.colorFormats[0] = colorTarget->format();
+    framebufferDesc.depthFormat = depthTarget->format();
+    auto shaderPipeline = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(vertexDescription,vertex.details,fragment.details,pipelineState,framebufferDesc));
+
+    auto resourceHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+    auto resourceHeapPtr = (unsigned char*)resourceHeap->data();
+    auto samplerHeapPtr = (unsigned char*)samplerHeap->data();
+    auto heapDetails = graphicsCard->descriptorHeapDetails();
+    auto descriptorSize = std::max(heapDetails.textureDescriptorSize,heapDetails.bufferDescriptorSize);
+
+
 
     commandBuffer->begin();
-    struct pushConstants
+    commandBuffer->bindDescriptorHeaps(resourceHeap.get(),samplerHeap.get());
+    commandBuffer->setScissors(slag::Rectangle{0,0,colorTarget->width(),colorTarget->height()});
+    commandBuffer->setViewPort(0,0,colorTarget->width(),colorTarget->height(),.0f,1.0f);
+    Attachment colorAttachment(colorTarget.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
+    Attachment depthAttachment(depthTarget.get(),true,ClearValue{1,0});
+
+    TextureBarrier textureBarriers[]
     {
-        glm::vec2 position = {0,0};
-        glm::vec2 scale = {1,1};
-        glm::vec4 color{1.0f,1.0f,1.0f,1.0f};
+        {
+            .texture = colorTarget.get(),
+            .baseLayer = 0,
+            .layerCount = 1,
+            .baseMipLevel = 0,
+            .mipCount = 1,
+            .syncBefore = SyncStages::ALL,
+            .syncAfter = SyncStages::ALL_GRAPHICS,
+            .flush = MemoryCaches::NONE,
+            .invalidate = MemoryCaches::NONE,
+            .layoutBefore = TextureLayout::UNKNOWN,
+            .layoutAfter = TextureLayout::COLOR_TARGET
+        },
+        {
+            .texture = depthTarget.get(),
+            .baseLayer = 0,
+            .layerCount = 1,
+            .baseMipLevel = 0,
+            .mipCount = 1,
+            .syncBefore = SyncStages::ALL,
+            .syncAfter = SyncStages::ALL_GRAPHICS,
+            .flush = MemoryCaches::NONE,
+            .invalidate = MemoryCaches::NONE,
+            .layoutBefore = TextureLayout::UNKNOWN,
+            .layoutAfter = TextureLayout::DEPTH_STENCIL_TARGET
+        }
     };
-    pushConstants constants;
-    ASSERT_DEATH(commandBuffer->pushComputeConstants(0,sizeof(pushConstants),&constants),"No compute shader is bound, unable to push constants");
+    commandBuffer->insertBarriers(textureBarriers,2);
+
+
+    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{0,0,colorTarget->width(),colorTarget->height()});
+    Buffer* vertexBuffers[] = {positionBuffer.get(),uvBuffer.get()};
+    uint64_t vertexOffsets[] = {0,0};
+    uint64_t strides[] = {sizeof(float)*3,sizeof(float)*2};
+    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,strides,2);
+    commandBuffer->bindIndexBuffer(indexBuffer.get(),IndexBufferType::UINT_16,0);
+    commandBuffer->bindShaderPipeline(shaderPipeline.get());
+
+    graphicsCard->writeUniformBufferDescriptor(globalsBuffer.get(),0,globalsBuffer->size(),resourceHeapPtr);
+    graphicsCard->writeUniformBufferDescriptor(instanceBuffer1.get(),0, instanceBuffer1->size(),resourceHeapPtr+descriptorSize);
+    graphicsCard->writeUniformBufferDescriptor(instanceBuffer2.get(),0, instanceBuffer2->size(),resourceHeapPtr+(descriptorSize*2));
+    graphicsCard->writeUniformTextureDescriptor(instanceTexture.get(),0,1,0,1,resourceHeapPtr+descriptorSize*3);
+    graphicsCard->writeSamplerDescriptor(sampler.get(),samplerHeapPtr);
+
+    auto globalsIndex = 0u;
+    auto uniform1Index = 1u;
+    auto uniform2Index = 2u;
+    auto textureIndex = 3u;
+    auto samplerIndex = 0u;
+
+
+    commandBuffer->setGraphicsShaderParameters(0,&globalsIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(8,&uniform1Index,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(16,&textureIndex,sizeof(uint32_t));
+    commandBuffer->setGraphicsShaderParameters(24,&samplerIndex,sizeof(uint32_t));
+
+    commandBuffer->drawIndexed(6,1,0,0,0);
+    commandBuffer->setGraphicsShaderParameters(8,&uniform2Index,sizeof(uint32_t));
+    commandBuffer->drawIndexed(6,1,0,0,0);
+
+    commandBuffer->endRendering();
+
+    textureBarriers[0].syncBefore = SyncStages::ALL_GRAPHICS;
+    textureBarriers[0].syncAfter = SyncStages::ALL;
+    textureBarriers[0].flush = MemoryCaches::COLOR_TARGET;
+    textureBarriers[0].invalidate = MemoryCaches::RESOLVE_READ;
+    textureBarriers[0].layoutBefore = TextureLayout::COLOR_TARGET;
+    textureBarriers[0].layoutAfter = TextureLayout::RESOLVE_SOURCE;
+
+    textureBarriers[1].texture = finalTexture.get();
+    textureBarriers[1].syncBefore = SyncStages::ALL_GRAPHICS;
+    textureBarriers[1].syncAfter = SyncStages::ALL;
+    textureBarriers[1].flush = MemoryCaches::NONE;
+    textureBarriers[1].invalidate = MemoryCaches::NONE;
+    textureBarriers[1].layoutBefore = TextureLayout::UNKNOWN;
+    textureBarriers[1].layoutAfter = TextureLayout::RESOLVE_DESTINATION;
+
+    commandBuffer->insertBarriers(textureBarriers,2);
+
+    commandBuffer->resolveTexture(colorTarget.get(),0,0,slag::Rectangle{.offset = {0,0},.extent = {colorTarget->width(),colorTarget->height()}},finalTexture.get(),0,0,{0,0});
+
+    textureBarriers[1].syncBefore = SyncStages::ALL;
+    textureBarriers[1].syncAfter = SyncStages::ALL;
+    textureBarriers[1].flush = MemoryCaches::RESOLVE_WRITE;
+    textureBarriers[1].invalidate = MemoryCaches::NONE;
+    textureBarriers[1].layoutBefore = TextureLayout::RESOLVE_DESTINATION;
+    textureBarriers[1].layoutAfter = TextureLayout::GENERAL;
+
+    commandBuffer->insertBarriers(&textureBarriers[1],1);
+
+    auto tempBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(finalTexture->bufferSize(PixelAspect::COLOR),BufferCPUAccess::READ_WRITE,BufferMemoryType::GENERAL));
+    commandBuffer->copyTextureToBuffer(finalTexture.get(),tempBuffer.get(),&mapping,1);
+    commandBuffer->end();
+
+    auto cmdBuffer = commandBuffer.get();
+    SemaphoreValue signal{.semaphore = finished.get(),.value = 1};
+    SubmissionBatch batch
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &cmdBuffer,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    graphicsCard->graphicsQueue()->submit(&batch,1);
+    finished->waitForValue(1);
+
+    utilities::saveTexture("C:/Users/jshelton/Desktop/results/resolve.png",finalTexture.get());
+
+    GTEST_FAIL();
+}
+
+#ifdef SLAG_DEBUG
+TEST(CommandBuffer, TransferErrorComputeCommands)
+{
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::TRANSFER));
+    auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+    auto computeModule = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/ParallelAdd.compute");
+    auto parallelAdd = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(&computeModule.details));
+    auto indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDispatchCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto indirectPtr = indirectBuffer->as<IndirectDispatchCommand>();
+    indirectPtr[0].groupCountX = 100;
+    indirectPtr[0].groupCountY = 1;
+    indirectPtr[0].groupCountZ = 1;
+
+    commandBuffer->begin();
+
+    EXPECT_DEATH(commandBuffer->bindDescriptorHeaps(descriptorHeap.get(),samplerHeap.get()), "Command Buffer cannot record commands outside it's capabilities");
+    int32_t index = 3;
+    EXPECT_DEATH(commandBuffer->setComputeShaderParameters(0,&index,sizeof(int32_t)), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->bindShaderPipeline(parallelAdd.get()), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->dispatch(1,1,1), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->dispatchIndirect(indirectBuffer.get(),0), "Command Buffer cannot record commands outside it's capabilities");
+}
+TEST(CommandBuffer, TransferErrorGraphicsCommands)
+{
+    GTEST_FAIL();
+}
+TEST(CommandBuffer, ComputeErrorGraphicsCommands)
+{
+    GTEST_FAIL();
+}
+
+TEST(CommandBuffer,SetGraphicsShaderParametersOver128BytesError)
+{
+    GTEST_FAIL();
+}
+
+TEST(CommandBuffer,SetComputerShaderParametersOver128BytesError)
+{
+    GTEST_FAIL();
+}
+
+TEST(CommandBuffer, DrawCommandsWhenGraphicsBoundError)
+{
+    GTEST_FAIL();
+}
+
+TEST(CommandBuffer, GraphicsCommandsWhenGraphicsBoundError)
+{
+    GTEST_FAIL();
 }
 #endif
-
-TEST_F(CommandBufferTest, Draw)
-{
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
-
-    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
-
-    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance");
-    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampledTexture");
-    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampler");
-
-    commandBuffer->begin();
-    descriptorPool->reset();
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
-    auto globalBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(0));
-    auto objectBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(1));
-    auto globals = globalsBuffer->as<GlobalSet0Group>();
-    auto proj = glm::perspective(95.0f,(float)target->width()/(float)target->height(),.01f,100.0f);
-    glm::mat4 view = glm::mat4(1.0f);
-    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
-    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
-    view = glm::inverse(view);//does nothing in this case, but is good practice if we ever do have a camera not at the default location
-    glm::mat4 projectionView = proj*view;
-    globals->projection = proj;
-    globals->view = view;
-    globals->projectionView = projectionView;
-    auto object = objectBuffer->as<TexturedDepthSet1Group>();
-    object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    globalBundle.setUniformBuffer(globalsIndex,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
-    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    objectBundle.setUniformBuffer(instanceTransformIndex,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setSampledTexture(instanceTextureIndex,0,objectTexture.get());
-    objectBundle.setSampler(instanceSamplerIndex,0,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
-    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
-    Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
-    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
-
-    Buffer* vertexBuffers[]
-    {
-        TriangleVerts.get(),
-        TriangleUVs.get()
-    };
-    uint64_t vertexOffsets[]{0,0};
-    uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
-    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
-    commandBuffer->setViewPort(0,0,target->width(),target->height(),1,0);
-    commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
-    commandBuffer->draw(3,1,0,0);
-
-    commandBuffer->endRendering();
-
-
-
-    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
-    TextureBufferMapping copyData
-    {
-        .bufferOffset = 0,
-        .textureSubresource =
-        {
-            .aspectFlags = Pixels::AspectFlags::COLOR,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-         .textureOffset = {0,0,0},
-         .textureExtent = {target->width(0),target->height(0),1}
-    };
-    commandBuffer->copyTextureToBuffer(target.get(),outputBuffer.get(),&copyData,1);
-
-    commandBuffer->end();
-
-    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = submitBuffers,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
-    finished->waitForValue(1);
-
-    unsigned char* colorPtr = outputBuffer->as<unsigned char>();
-
-    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/draw-triangle-test-result.png");
-    GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
-
-    for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
-    {
-        GTEST_ASSERT_EQ(colorPtr[i],groundTruth[i]);
-    }
-
-}
-
-TEST_F(CommandBufferTest, DrawIndexed)
-{
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
-
-    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
-
-    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance");
-    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampledTexture");
-    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampler");
-
-    commandBuffer->begin();
-    descriptorPool->reset();
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
-    auto globalBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(0));
-    auto objectBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(1));
-    auto globals = globalsBuffer->as<GlobalSet0Group>();
-    auto proj = glm::perspective(95.0f,(float)target->width()/(float)target->height(),.01f,100.0f);
-    glm::mat4 view = glm::mat4(1.0f);
-    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
-    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
-    view = glm::inverse(view);//does nothing in this case, but is good practice if we ever do have a camera not at the default location
-    glm::mat4 projectionView = proj*view;
-    globals->projection = proj;
-    globals->view = view;
-    globals->projectionView = projectionView;
-    auto object = objectBuffer->as<TexturedDepthSet1Group>();
-    object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    globalBundle.setUniformBuffer(globalsIndex,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
-    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    objectBundle.setUniformBuffer(instanceTransformIndex,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setSampledTexture(instanceTextureIndex,0,objectTexture.get());
-    objectBundle.setSampler(instanceSamplerIndex,0,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
-    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
-    Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
-    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
-
-    Buffer* vertexBuffers[]
-    {
-        CubeVerts.get(),
-        CubeUVs.get()
-    };
-    uint64_t vertexOffsets[]{0,0};
-    uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
-    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
-    commandBuffer->bindIndexBuffer(CubeIndices.get(),Buffer::IndexSize::UINT16,0);
-    commandBuffer->setViewPort(0,0,target->width(),target->height(),1,0);
-    commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
-    commandBuffer->drawIndexed(CubeIndices->countAsArray<uint16_t>(),1,0,0,0);
-
-    commandBuffer->endRendering();
-
-    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
-    TextureBufferMapping copyData
-    {
-        .bufferOffset = 0,
-        .textureSubresource =
-        {
-            .aspectFlags = Pixels::AspectFlags::COLOR,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-         .textureOffset = {0,0,0},
-         .textureExtent = {target->width(0),target->height(0),1}
-    };
-    commandBuffer->copyTextureToBuffer(target.get(),outputBuffer.get(),&copyData,1);
-
-    commandBuffer->end();
-
-    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = submitBuffers,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
-    finished->waitForValue(1);
-
-    unsigned char* colorPtr = outputBuffer->as<unsigned char>();
-    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/draw-test-result.png");
-    GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
-
-    for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
-    {
-        GTEST_ASSERT_EQ(colorPtr[i],groundTruth[i]);
-    }
-}
-
-TEST_F(CommandBufferTest, DrawIndexedIndirect)
-{
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
-
-    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
-
-    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance");
-    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampledTexture");
-    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampler");
-
-    commandBuffer->begin();
-    descriptorPool->reset();
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
-    auto globalBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(0));
-    auto objectBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(1));
-    auto globals = globalsBuffer->as<GlobalSet0Group>();
-    auto proj = glm::perspective(95.0f,(float)target->width()/(float)target->height(),.01f,100.0f);
-    glm::mat4 view = glm::mat4(1.0f);
-    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
-    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
-    view = glm::inverse(view);//does nothing in this case, but is good practice if we ever do have a camera not at the default location
-    glm::mat4 projectionView = proj*view;
-    globals->projection = proj;
-    globals->view = view;
-    globals->projectionView = projectionView;
-    auto object = objectBuffer->as<TexturedDepthSet1Group>();
-    object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    globalBundle.setUniformBuffer(globalsIndex,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
-    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    objectBundle.setUniformBuffer(instanceTransformIndex,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setSampledTexture(instanceTextureIndex,0,objectTexture.get());
-    objectBundle.setSampler(instanceSamplerIndex,0,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
-    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
-    Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
-    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
-
-    Buffer* vertexBuffers[]
-    {
-        CubeVerts.get(),
-        CubeUVs.get()
-    };
-    uint64_t vertexOffsets[]{0,0};
-    uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
-    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
-    commandBuffer->bindIndexBuffer(CubeIndices.get(),Buffer::IndexSize::UINT16,0);
-    std::unique_ptr<Buffer> drawParams = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(IndirectDrawIndexedCommand),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::INDIRECT_BUFFER));
-    auto drawParamPtr = drawParams->as<IndirectDrawIndexedCommand>();
-
-    drawParamPtr->indexCount = CubeIndices->countAsArray<uint16_t>();
-    drawParamPtr->instanceCount = 1;
-    drawParamPtr->firstIndex = 0;
-    drawParamPtr->vertexOffset = 0;
-    drawParamPtr->firstInstance = 0;
-
-    commandBuffer->setViewPort(0,0,target->width(),target->height(),1,0);
-    commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
-    commandBuffer->drawIndexedIndirect(drawParams.get(),0,1,sizeof(IndirectDrawIndexedCommand));
-
-    commandBuffer->endRendering();
-
-    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
-    TextureBufferMapping copyData
-    {
-        .bufferOffset = 0,
-        .textureSubresource =
-        {
-            .aspectFlags = Pixels::AspectFlags::COLOR,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-         .textureOffset = {0,0,0},
-         .textureExtent = {target->width(0),target->height(0),1}
-    };
-    commandBuffer->copyTextureToBuffer(target.get(),outputBuffer.get(),&copyData,1);
-    commandBuffer->end();
-
-    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = submitBuffers,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
-    finished->waitForValue(1);
-
-    unsigned char* colorPtr = outputBuffer->as<unsigned char>();
-    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/draw-test-result.png");
-    GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
-
-    for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
-    {
-        GTEST_ASSERT_EQ(colorPtr[i],groundTruth[i]);
-    }
-}
-
-TEST_F(CommandBufferTest, DrawIndexedIndirectCount)
-{
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
-
-    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
-
-    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance");
-    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampledTexture");
-    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampler");
-
-    commandBuffer->begin();
-    descriptorPool->reset();
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
-    auto globalBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(0));
-    auto objectBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(1));
-    auto globals = globalsBuffer->as<GlobalSet0Group>();
-    auto proj = glm::perspective(95.0f,(float)target->width()/(float)target->height(),.01f,100.0f);
-    glm::mat4 view = glm::mat4(1.0f);
-    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
-    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
-    view = glm::inverse(view);//does nothing in this case, but is good practice if we ever do have a camera not at the default location
-    glm::mat4 projectionView = proj*view;
-    globals->projection = proj;
-    globals->view = view;
-    globals->projectionView = projectionView;
-    auto object = objectBuffer->as<TexturedDepthSet1Group>();
-    object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    globalBundle.setUniformBuffer(globalsIndex,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
-    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    objectBundle.setUniformBuffer(instanceTransformIndex,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setSampledTexture(instanceTextureIndex,0,objectTexture.get());
-    objectBundle.setSampler(instanceSamplerIndex,0,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
-    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
-    Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
-    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
-
-    Buffer* vertexBuffers[]
-    {
-        CubeVerts.get(),
-        CubeUVs.get()
-    };
-    uint64_t vertexOffsets[]{0,0};
-    uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
-    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
-    commandBuffer->bindIndexBuffer(CubeIndices.get(),Buffer::IndexSize::UINT16,0);
-    std::unique_ptr<Buffer> drawParams = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(IndirectDrawIndexedCommand),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::INDIRECT_BUFFER));
-    auto drawParamPtr = drawParams->as<IndirectDrawIndexedCommand>();
-
-    drawParamPtr->indexCount = CubeIndices->countAsArray<uint16_t>();
-    drawParamPtr->instanceCount = 1;
-    drawParamPtr->firstIndex = 0;
-    drawParamPtr->vertexOffset = 0;
-    drawParamPtr->firstInstance = 0;
-
-    uint32_t drawCount = 1;
-    std::unique_ptr<Buffer> drawCountParams = std::unique_ptr<Buffer>(Buffer::newBuffer(&drawCount,sizeof(uint32_t),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::INDIRECT_BUFFER));
-    commandBuffer->setViewPort(0,0,target->width(),target->height(),1,0);
-    commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
-    commandBuffer->drawIndexedIndirectCount(drawParams.get(),0,drawCountParams.get(),0,1,sizeof(IndirectDrawIndexedCommand));
-
-    commandBuffer->endRendering();
-
-    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
-    TextureBufferMapping copyData
-    {
-        .bufferOffset = 0,
-        .textureSubresource =
-        {
-            .aspectFlags = Pixels::AspectFlags::COLOR,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-         .textureOffset = {0,0,0},
-         .textureExtent = {target->width(0),target->height(0),1}
-    };
-    commandBuffer->copyTextureToBuffer(target.get(),outputBuffer.get(),&copyData,1);
-
-    commandBuffer->end();
-
-    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = submitBuffers,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
-    finished->waitForValue(1);
-
-    unsigned char* colorPtr = outputBuffer->as<unsigned char>();
-    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/draw-test-result.png");
-    GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
-
-    for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
-    {
-        GTEST_ASSERT_EQ(colorPtr[i],groundTruth[i]);
-    }
-}
-
-TEST_F(CommandBufferTest, DrawIndirect)
-{
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
-
-    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
-
-    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance");
-    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampledTexture");
-    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampler");
-
-    commandBuffer->begin();
-    descriptorPool->reset();
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
-    auto globalBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(0));
-    auto objectBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(1));
-    auto globals = globalsBuffer->as<GlobalSet0Group>();
-    auto proj = glm::perspective(95.0f,(float)target->width()/(float)target->height(),.01f,100.0f);
-    glm::mat4 view = glm::mat4(1.0f);
-    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
-    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
-    view = glm::inverse(view);//does nothing in this case, but is good practice if we ever do have a camera not at the default location
-    glm::mat4 projectionView = proj*view;
-    globals->projection = proj;
-    globals->view = view;
-    globals->projectionView = projectionView;
-    auto object = objectBuffer->as<TexturedDepthSet1Group>();
-    object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    globalBundle.setUniformBuffer(globalsIndex,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
-    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    objectBundle.setUniformBuffer(instanceTransformIndex,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setSampledTexture(instanceTextureIndex,0,objectTexture.get());
-    objectBundle.setSampler(instanceSamplerIndex,0,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
-    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
-    Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
-    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
-
-    Buffer* vertexBuffers[]
-    {
-        TriangleVerts.get(),
-        TriangleUVs.get()
-    };
-    uint64_t vertexOffsets[]{0,0};
-    uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
-    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
-
-    std::unique_ptr<Buffer> drawCommands = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(IndirectDrawCommand),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::INDIRECT_BUFFER));
-    auto drawCommandPtr = drawCommands->as<IndirectDrawCommand>();
-    drawCommandPtr->vertexCount = 3;
-    drawCommandPtr->instanceCount = 1;
-    drawCommandPtr->firstVertex = 0;
-    drawCommandPtr->firstInstance = 0;
-    commandBuffer->setViewPort(0,0,target->width(),target->height(),1,0);
-    commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
-    commandBuffer->drawIndirect(drawCommands.get(),0,1,sizeof(IndirectDrawCommand));
-    commandBuffer->endRendering();
-    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
-    TextureBufferMapping copyData
-    {
-        .bufferOffset = 0,
-        .textureSubresource =
-        {
-            .aspectFlags = Pixels::AspectFlags::COLOR,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-         .textureOffset = {0,0,0},
-         .textureExtent = {target->width(0),target->height(0),1}
-    };
-    commandBuffer->copyTextureToBuffer(target.get(),outputBuffer.get(),&copyData,1);
-
-
-    commandBuffer->end();
-
-    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = submitBuffers,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
-    finished->waitForValue(1);
-
-    unsigned char* colorPtr = outputBuffer->as<unsigned char>();
-    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/draw-triangle-test-result.png");
-    GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
-
-    for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
-    {
-        GTEST_ASSERT_EQ(colorPtr[i],groundTruth[i]);
-    }
-}
-
-TEST_F(CommandBufferTest, DrawIndirectCount)
-{
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::GRAPHICS));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-    std::unique_ptr<Buffer> globalsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(GlobalSet0Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    std::unique_ptr<Buffer> objectBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(TexturedDepthSet1Group),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::UNIFORM_BUFFER));
-    std::unique_ptr<Texture> objectTexture = utilities::loadTextureFromFile("resources/textures/gradient.jpg");
-    std::unique_ptr<Texture> target = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::R8G8B8A8_UNORM,Texture::Type::TEXTURE_2D,Texture::UsageFlags::RENDER_TARGET_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Texture> depth = std::unique_ptr<Texture>(Texture::newTexture(Pixels::Format::D32_FLOAT_S8X24_UINT,Texture::Type::TEXTURE_2D,Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT,150,150,1,1,1));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(target->byteSize(),Buffer::Accessibility::CPU_AND_GPU));
-    std::unique_ptr<DescriptorPool> descriptorPool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
-
-    auto globalsIndex = TexturedDepthPipeline->descriptorGroup(0)->indexOf("Globals");
-
-    auto instanceTransformIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance");
-    auto instanceTextureIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampledTexture");
-    auto instanceSamplerIndex = TexturedDepthPipeline->descriptorGroup(1)->indexOf("Instance.sampler");
-
-    commandBuffer->begin();
-    descriptorPool->reset();
-    commandBuffer->bindDescriptorPool(descriptorPool.get());
-    auto globalBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(0));
-    auto objectBundle = descriptorPool->makeBundle(TexturedDepthPipeline->descriptorGroup(1));
-    auto globals = globalsBuffer->as<GlobalSet0Group>();
-    auto proj = glm::perspective(95.0f,(float)target->width()/(float)target->height(),.01f,100.0f);
-    glm::mat4 view = glm::mat4(1.0f);
-    view = glm::translate(view,glm::vec3(0.0f,2.0f,5.0f));
-    view = glm::rotate(view,glm::radians(-20.0f),glm::vec3(1.0f,0.0f,0.0f));
-    view = glm::inverse(view);//does nothing in this case, but is good practice if we ever do have a camera not at the default location
-    glm::mat4 projectionView = proj*view;
-    globals->projection = proj;
-    globals->view = view;
-    globals->projectionView = projectionView;
-    auto object = objectBuffer->as<TexturedDepthSet1Group>();
-    object->position = glm::rotate(glm::mat4(1.0f),glm::radians(45.0f),glm::vec3(0.0f,1.0f,0.0f));
-    globalBundle.setUniformBuffer(globalsIndex,0,globalsBuffer.get(),0,sizeof(GlobalSet0Group));
-    commandBuffer->bindGraphicsShaderPipeline(TexturedDepthPipeline.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    objectBundle.setUniformBuffer(instanceTransformIndex,0,objectBuffer.get(),0,sizeof(TexturedDepthSet1Group));
-    objectBundle.setSampledTexture(instanceTextureIndex,0,objectTexture.get());
-    objectBundle.setSampler(instanceSamplerIndex,0,DefaultSampler.get());
-    commandBuffer->bindGraphicsDescriptorBundle(0,globalBundle);
-    commandBuffer->bindGraphicsDescriptorBundle(1,objectBundle);
-    Attachment colorAttachment{.texture = target.get(),.autoClear = true,.clearValue = ClearValue{.color = {.floats = {0,0,0,1}}}};
-    Attachment depthAttachment{.texture = depth.get(),.autoClear = true,.clearValue = ClearValue{.depthStencil = {.depth = 1, .stencil = 0}}};
-    commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{.extent = {target->width(),target->height()}});
-
-    Buffer* vertexBuffers[]
-    {
-        TriangleVerts.get(),
-        TriangleUVs.get()
-    };
-    uint64_t vertexOffsets[]{0,0};
-    uint64_t bufferStrides[2] = {sizeof(glm::vec3),sizeof(glm::vec2)};
-    commandBuffer->bindVertexBuffers(0,vertexBuffers,vertexOffsets,bufferStrides,2);
-
-    std::unique_ptr<Buffer> drawCommands = std::unique_ptr<Buffer>(Buffer::newBuffer(sizeof(IndirectDrawCommand),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::INDIRECT_BUFFER));
-    auto drawCommandPtr = drawCommands->as<IndirectDrawCommand>();
-    drawCommandPtr->vertexCount = 3;
-    drawCommandPtr->instanceCount = 1;
-    drawCommandPtr->firstVertex = 0;
-    drawCommandPtr->firstInstance = 0;
-
-    uint32_t drawCount = 1;
-    std::unique_ptr<Buffer> drawCountParams = std::unique_ptr<Buffer>(Buffer::newBuffer(&drawCount,sizeof(uint32_t),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::INDIRECT_BUFFER));
-    commandBuffer->setViewPort(0,0,target->width(),target->height(),1,0);
-    commandBuffer->setScissors(slag::Rectangle{.offset = {0,0},.extent = {target->width(),target->height()}});
-    commandBuffer->drawIndirectCount(drawCommands.get(),0,drawCountParams.get(),0,1,sizeof(IndirectDrawCommand));
-
-    commandBuffer->endRendering();
-
-    commandBuffer->insertBarrier(TextureBarrier{.texture = target.get(), .accessBefore = BarrierAccessFlags::COLOR_ATTACHMENT_WRITE,.accessAfter = BarrierAccessFlags::TRANSFER_READ,.syncBefore = PipelineStageFlags::ALL_GRAPHICS, .syncAfter = PipelineStageFlags::TRANSFER});
-    TextureBufferMapping copyData
-    {
-        .bufferOffset = 0,
-        .textureSubresource =
-        {
-            .aspectFlags = Pixels::AspectFlags::COLOR,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-         .textureOffset = {0,0,0},
-         .textureExtent = {target->width(0),target->height(0),1}
-    };
-    commandBuffer->copyTextureToBuffer(target.get(),outputBuffer.get(),&copyData,1);
-
-    commandBuffer->end();
-
-    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = submitBuffers,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-    slagGraphicsCard()->graphicsQueue()->submit(&submissionData,1);
-    finished->waitForValue(1);
-
-    unsigned char* colorPtr = outputBuffer->as<unsigned char>();
-    auto groundTruth = utilities::loadTexelsFromFile("resources/textures/draw-triangle-test-result.png");
-    GTEST_ASSERT_EQ(outputBuffer->countAsArray<unsigned char>(),groundTruth.size());
-
-    for (auto i=0; i< outputBuffer->countAsArray<unsigned char>(); i++)
-    {
-        GTEST_ASSERT_EQ(colorPtr[i],groundTruth[i]);
-    }
-}
-
-TEST_F(CommandBufferTest, Dispatch)
-{
-    ShaderFile file{.pathIndicator = "resources/shaders/ParallelAdd", .stage = ShaderStageFlags::COMPUTE};
-    auto compute = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(file);
-    std::unique_ptr<DescriptorPool> pool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
-    std::vector<float>inputs(128);
-    for (int i=0; i<128; i++)
-    {
-        inputs[i] = i;
-    }
-    std::unique_ptr<Buffer> inputsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(inputs.data(),128*sizeof(float),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_BUFFER));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(64*sizeof(float),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_BUFFER));
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::COMPUTE));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-
-    auto buffer0Index = compute->descriptorGroup(0)->indexOf("buffer0");
-    auto buffer1Index = compute->descriptorGroup(0)->indexOf("buffer1");
-    auto resultIndex = compute->descriptorGroup(0)->indexOf("result");
-
-    commandBuffer->begin();
-    commandBuffer->bindDescriptorPool(pool.get());
-    auto parameters = pool->makeBundle(compute->descriptorGroup(0));
-    parameters.setStorageBuffer(buffer0Index,0,inputsBuffer.get(),0,64*sizeof(float));
-    parameters.setStorageBuffer(buffer1Index,0,inputsBuffer.get(),64*sizeof(float),64*sizeof(float));
-    parameters.setStorageBuffer(resultIndex,0,outputBuffer.get(),0,64*sizeof(float));
-    commandBuffer->bindComputeShaderPipeline(compute.get());
-    commandBuffer->bindComputeDescriptorBundle(0,parameters);
-
-    commandBuffer->dispatch(64,1,1);
-
-    commandBuffer->end();
-
-    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = submitBuffers,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-
-    slagGraphicsCard()->computeQueue()->submit(&submissionData,1);
-
-    finished->waitForValue(1);
-
-    auto results = outputBuffer->as<float>();
-
-    auto inputsData = inputsBuffer->as<float>();
-
-    for (int i=0; i<64; i++)
-    {
-        GTEST_ASSERT_EQ(inputsData[i]+inputsData[i+64]+i,results[i]);
-    }
-}
-
-TEST_F(CommandBufferTest, DispatchBase)
-{
-    ShaderFile file{.pathIndicator = "resources/shaders/ParallelAdd", .stage = ShaderStageFlags::COMPUTE};
-    auto compute = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(file);
-    std::unique_ptr<DescriptorPool> pool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
-    std::vector<float>inputs(128);
-    for (int i=0; i<128; i++)
-    {
-        inputs[i] = i;
-    }
-    std::vector<float>outputs(64,0.0f);
-    std::unique_ptr<Buffer> inputsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(inputs.data(),128*sizeof(float),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_BUFFER));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(outputs.data(),64*sizeof(float),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_BUFFER));
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::COMPUTE));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-
-    auto buffer0Index = compute->descriptorGroup(0)->indexOf("buffer0");
-    auto buffer1Index = compute->descriptorGroup(0)->indexOf("buffer1");
-    auto resultIndex = compute->descriptorGroup(0)->indexOf("result");
-
-    commandBuffer->begin();
-    commandBuffer->bindDescriptorPool(pool.get());
-    auto parameters = pool->makeBundle(compute->descriptorGroup(0));
-    parameters.setStorageBuffer(buffer0Index,0,inputsBuffer.get(),0,64*sizeof(float));
-    parameters.setStorageBuffer(buffer1Index,0,inputsBuffer.get(),64*sizeof(float),64*sizeof(float));
-    parameters.setStorageBuffer(resultIndex,0,outputBuffer.get(),0,64*sizeof(float));
-    commandBuffer->bindComputeShaderPipeline(compute.get());
-    commandBuffer->bindComputeDescriptorBundle(0,parameters);
-
-    commandBuffer->dispatchBase(32,0,0,64,1,1);
-
-    commandBuffer->end();
-
-    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = submitBuffers,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-
-    slagGraphicsCard()->computeQueue()->submit(&submissionData,1);
-
-    finished->waitForValue(1);
-
-    auto results = outputBuffer->as<float>();
-    std::vector<float> floats(64);
-    memcpy(floats.data(),results,floats.size()*sizeof(float));
-
-    auto inputsData = inputsBuffer->as<float>();
-    std::vector<float> floats2(128);
-    memcpy(floats2.data(),inputsData,128*sizeof(float));
-
-
-    for (int i=0; i<32; i++)
-    {
-        GTEST_ASSERT_EQ(0.0f,results[i]);
-    }
-    for (int i=32; i<64; i++)
-    {
-        GTEST_ASSERT_EQ(inputsData[i]+inputsData[i+64]+i,results[i]);
-    }
-}
-
-TEST_F(CommandBufferTest, DispatchIndirect)
-{
-    ShaderFile file{.pathIndicator = "resources/shaders/ParallelAdd", .stage = ShaderStageFlags::COMPUTE};
-    auto compute = GraphicsAPIEnvironment::graphicsAPIEnvironment()->loadPipelineFromFiles(file);
-    std::unique_ptr<DescriptorPool> pool = std::unique_ptr<DescriptorPool>(DescriptorPool::newDescriptorPool());
-    std::vector<float>inputs(128);
-    for (int i=0; i<128; i++)
-    {
-        inputs[i] = i;
-    }
-    std::unique_ptr<Buffer> inputsBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(inputs.data(),128*sizeof(float),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_BUFFER));
-    std::unique_ptr<Buffer> outputBuffer = std::unique_ptr<Buffer>(Buffer::newBuffer(64*sizeof(float),Buffer::Accessibility::CPU_AND_GPU,Buffer::UsageFlags::STORAGE_BUFFER));
-    IndirectDispatchCommand indirectDispatchCommand = {.groupCountX = 64,.groupCountY = 1,.groupCountZ = 1};
-    std::unique_ptr<Buffer> indirectParameters = std::unique_ptr<Buffer>(Buffer::newBuffer(&indirectDispatchCommand,sizeof(IndirectDispatchCommand),Buffer::Accessibility::GPU,Buffer::UsageFlags::INDIRECT_BUFFER));
-    std::unique_ptr<CommandBuffer> commandBuffer = std::unique_ptr<CommandBuffer>(CommandBuffer::newCommandBuffer(GPUQueue::QueueType::COMPUTE));
-    std::unique_ptr<Semaphore> finished = std::unique_ptr<Semaphore>(Semaphore::newSemaphore(0));
-
-    auto buffer0Index = compute->descriptorGroup(0)->indexOf("buffer0");
-    auto buffer1Index = compute->descriptorGroup(0)->indexOf("buffer1");
-    auto resultIndex = compute->descriptorGroup(0)->indexOf("result");
-
-    commandBuffer->begin();
-    commandBuffer->bindDescriptorPool(pool.get());
-    auto parameters = pool->makeBundle(compute->descriptorGroup(0));
-    parameters.setStorageBuffer(buffer0Index,0,inputsBuffer.get(),0,64*sizeof(float));
-    parameters.setStorageBuffer(buffer1Index,0,inputsBuffer.get(),64*sizeof(float),64*sizeof(float));
-    parameters.setStorageBuffer(resultIndex,0,outputBuffer.get(),0,64*sizeof(float));
-    commandBuffer->bindComputeShaderPipeline(compute.get());
-    commandBuffer->bindComputeDescriptorBundle(0,parameters);
-
-    commandBuffer->dispatchIndirect(indirectParameters.get(),0);
-
-    commandBuffer->end();
-
-    CommandBuffer* submitBuffers[1] = {commandBuffer.get()};
-    SemaphoreValue signal{.semaphore = finished.get(), .value = 1};
-    QueueSubmissionBatch submissionData
-    {
-        .waitSemaphores = nullptr,
-        .waitSemaphoreCount = 0,
-        .commandBuffers = submitBuffers,
-        .commandBufferCount = 1,
-        .signalSemaphores = &signal,
-        .signalSemaphoreCount = 1,
-    };
-
-    slagGraphicsCard()->computeQueue()->submit(&submissionData,1);
-
-    finished->waitForValue(1);
-
-    auto results = outputBuffer->as<float>();
-
-    auto inputsData = inputsBuffer->as<float>();
-
-    for (int i=0; i<64; i++)
-    {
-        GTEST_ASSERT_EQ(inputsData[i]+inputsData[i+64]+i,results[i]);
-    }
-}

@@ -1,76 +1,80 @@
 #ifndef SLAG_VERTEXDESCRIPTION_H
 #define SLAG_VERTEXDESCRIPTION_H
-
-#include "GraphicsTypes.h"
+#include <string>
 #include <vector>
-
+#include <slag/core/GraphicsTypes.h>
 namespace slag
 {
-    ///Describes member of vertex
+    ///Describes an input into a vertex shader
     class VertexAttribute
     {
     public:
-        ///What data type this member of the vertex is
-        GraphicsType dataType()const;
-        ///The offset in bytes from the start of the buffer this member is
-        uint32_t offset()const;
         /**
-         * Create a vertex attribute
-         * @param dataType What data type this member of the vertex is
-         * @param offset The offset in bytes from the start of the vertex this member is
+         *
+         * @param name Name to match on when making a shader pipeline
+         * @param loadAs Format to load the data from the buffer as
+         * @param offset Offset into the vertex binding buffer this attribute is
          */
-        VertexAttribute(GraphicsType dataType, uint32_t offset);
-
+        VertexAttribute(const std::string& name, PixelFormat loadAs, uint32_t offset);
+        ///Name to match on when making a shader pipeline
+        [[nodiscard]] const std::string& name()const;
+        ///Graphics Type of the vertex attribute
+        [[nodiscard]] PixelFormat loadAs()const;
+        ///Offset into the vertex binding buffer this attribute is
+        [[nodiscard]] uint32_t offset()const;
     private:
-        GraphicsType _dataType = GraphicsType::STRUCT;
-        uint32_t _offset = 0;
-
+        std::string _name;
+        PixelFormat _loadAs = PixelFormat::UNDEFINED;
+        uint32_t _offset = 0u;
     };
-    ///Describes how a vertex will be read from a shader
-    class VertexDescription
+
+    enum class InputRate
+    {
+        PER_VRETEX,
+        PER_INSTANCE,
+    };
+    ///Represents a buffer layout that is bound for inputting data into vertex shaders at a given index
+    class VertexBinding
     {
     public:
         /**
-         * Create a new description of a vertex
-         * @param attributeChannels Number of different buffers vertex data can be sourced from
+         *
+         * @param index Binding index
+         * @param stride Size of each "vertex" in this binding
+         * @param inputRate How often to acquire the next vertex in this binding
+         * @param attributes Attributes this binding contains
          */
-        VertexDescription(size_t attributeChannels);
-        /**
-         * Add a new attribute to the description of a vertex
-         * @param attribute Data member of a vertex
-         * @param attributeChannel Index of the buffer the attribute will be in
-         * @return
-         */
-        VertexDescription& add(const VertexAttribute& attribute, size_t attributeChannel);
-        /**
-         * Add a new attribute to the description of a vertex
-         * @param dataType What data type this member of the vertex is
-         * @param offset The offset in bytes from the start of the vertex this member is
-         * @param attributeChannel Index of the buffer the attribute will be in
-         * @return
-         */
-        VertexDescription& add(GraphicsType dataType, uint32_t offset, size_t attributeChannel);
-        ///Number of attributes across all channels
-        size_t attributeCount()const;
-        /**
-         * Number of attributes in a given channel
-         * @param channel Index of the channel
-         * @return
-         */
-        size_t attributeCount(size_t channel)const;
-        ///Number of different buffers vertex data can be sourced from
-        size_t attributeChannels()const;
-        /**
-         * Retrieve the attribute in a given channel
-         * @param channel The channel to retrieve from
-         * @param index The index of the attribute to retrieve
-         * @return
-         */
-        VertexAttribute& attribute(size_t channel, size_t index);
+        VertexBinding(uint32_t index, uint32_t stride, InputRate inputRate, const std::vector<VertexAttribute>& attributes);
+        ///The binding index
+        [[nodiscard]] uint32_t bindingIndex()const;
+        ///Size of each "vertex" in this binding
+        [[nodiscard]] uint32_t stride()const;
+        ///How often to acquire the next vertex in this binding
+        [[nodiscard]] InputRate inputRate()const;
+        ///Number of attributes this binding holds
+        [[nodiscard]] uint32_t attributeCount()const;
+        ///Get an attribute at a given index
+        [[nodiscard]] const VertexAttribute& operator[](uint32_t index)const;
     private:
-        std::vector<std::vector<VertexAttribute>> _attributes;
+        uint32_t _index = 0u;
+        uint32_t _stride = 0u;
+        InputRate _inputRate = InputRate::PER_VRETEX;
+        std::vector<VertexAttribute> _attributes;
     };
-
+    ///Describes how a vertex is input into vertex shaders
+    class VertexDescription
+    {
+    public:
+        VertexDescription(std::vector<VertexBinding> bindings);
+        VertexDescription(std::vector<VertexBinding>&& bindings);
+        ///Number of vertex bindings
+        [[nodiscard]] uint32_t bindingCount()const;
+        ///Retrieve binding at an index (not the *binding* index of the given vertex binding)
+        const VertexBinding& operator[](uint32_t index)const;
+        uint32_t attributeCount()const;
+    private:
+        std::vector<VertexBinding> _bindings;
+    };
 } // slag
 
 #endif //SLAG_VERTEXDESCRIPTION_H

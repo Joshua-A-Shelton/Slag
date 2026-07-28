@@ -1,77 +1,75 @@
 #ifndef SLAG_COLOR_H
 #define SLAG_COLOR_H
-
+#include <cstdint>
 #include <string>
+
 namespace slag
 {
-    ///Represents a color, stored as 4 floating point components
-    class Color
+    enum class ColorComponents : uint8_t
     {
-    public:
-        ///Used Internally
-        enum class ComponentFlags
-        {
-            RED_COMPONENT = 0b00000001,
-            GREEN_COMPONENT = 0b00000010,
-            BLUE_COMPONENT = 0b00000100,
-            ALPHA_COMPONENT = 0b00001000
-        };
-        float red,green,blue,alpha;
-        Color();
-        Color(float r, float g, float b, float a);
-        Color(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
-        /**
-         * Create color from hex code string
-         * @param hex hex string of color to use
-         */
-        Color(std::string hex);
-        ///red represented as byte from 0-255
-        unsigned char redByte();
-        ///green represented as byte from 0-255
-        unsigned char greenByte();
-        ///blue represented as byte from 0-255
-        unsigned char blueByte();
-        ///alpha represented as byte from 0-255
-        unsigned char alphaByte();
-        ///color hex code representation
-        std::string hexCode();
-        bool operator==(const Color& comp) const
-        {
-            return red == comp.red && green == comp.green && blue == comp.blue && alpha == comp.alpha;
-        }
-        bool operator!=(const Color& comp) const
-        {
-            return red != comp.red || green != comp.green || blue != comp.blue || alpha != comp.alpha;
-        }
+        NONE = 0,
+        RED = 1,
+        GREEN = 1<<1,
+        BLUE = 1<<2,
+        ALPHA = 1<<3,
     };
-
-    inline Color::ComponentFlags operator|(Color::ComponentFlags a, Color::ComponentFlags b)
+    
+    inline ColorComponents operator|(ColorComponents a, ColorComponents b)
     {
-        return static_cast<Color::ComponentFlags>(static_cast<int>(a) | static_cast<int>(b));
+        return static_cast<ColorComponents>(static_cast<uint8_t>(a) | static_cast<uint8_t>(b));
     }
 
-    inline Color::ComponentFlags operator|=(Color::ComponentFlags a, Color::ComponentFlags b)
+    inline ColorComponents operator&(ColorComponents a, ColorComponents b)
     {
-        a = (a|b);
+        return static_cast<ColorComponents>(static_cast<uint8_t>(a) & static_cast<uint8_t>(b));
+    }
+
+    inline ColorComponents operator^(ColorComponents a, ColorComponents b)
+    {
+        return static_cast<ColorComponents>(static_cast<uint8_t>(a) ^ static_cast<uint8_t>(b));
+    }
+    
+    inline ColorComponents operator~(ColorComponents a)
+    {
+        return static_cast<ColorComponents>(~static_cast<uint8_t>(a));
+    }
+
+    inline ColorComponents operator|=(ColorComponents a, ColorComponents b)
+    {
+        a = a|b;
         return a;
     }
 
-    inline Color::ComponentFlags operator&(Color::ComponentFlags a, Color::ComponentFlags b)
-    {
-        return static_cast<Color::ComponentFlags>(static_cast<int>(a) & static_cast<int>(b));
-    }
-
-    inline Color::ComponentFlags operator&=(Color::ComponentFlags a, Color::ComponentFlags b)
+    inline ColorComponents operator&=(ColorComponents a, ColorComponents b)
     {
         a = a&b;
         return a;
     }
 
-    inline Color::ComponentFlags operator~(Color::ComponentFlags a)
+    inline ColorComponents operator^=(ColorComponents a, ColorComponents b)
     {
-        return static_cast<Color::ComponentFlags>(~static_cast<int>(a));
+        a = a^b;
+        return a;
     }
 
+    struct Color
+    {
+    public:
+        float red = 0, green = 0, blue = 0, alpha = 1;
+        Color()=default;
+        Color(float red, float green, float blue, float alpha=1.0f);
+        Color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha=255);
+        explicit Color(const std::string& hex);
+
+        [[nodiscard]] uint8_t redByte() const;
+        [[nodiscard]] uint8_t greenByte() const;
+        [[nodiscard]] uint8_t blueByte() const;
+        [[nodiscard]] uint8_t alphaByte() const;
+        [[nodiscard]] std::string hexCode() const;
+        bool operator==(const Color& color) const;
+        bool operator!=(const Color& color) const;
+
+    };
 } // slag
 
 #endif //SLAG_COLOR_H

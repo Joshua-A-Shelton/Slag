@@ -1,133 +1,52 @@
-#ifndef SLAG_SWAPCHAIN_H
-#define SLAG_SWAPCHAIN_H
-//SlagValue, VulkanValue, DX12Value, AllowTearing, FrameLatency
-#define SLAG_PRESENT_MODE_DEFINTITIONS(DEFINITION) \
-DEFINITION(IMMEDIATE,VK_PRESENT_MODE_IMMEDIATE_KHR,DXGI_SWAP_EFFECT_FLIP_DISCARD,true,1)\
-DEFINITION(BUFFER,VK_PRESENT_MODE_MAILBOX_KHR,DXGI_SWAP_EFFECT_FLIP_DISCARD,false,1)\
-DEFINITION(QUEUE,VK_PRESENT_MODE_FIFO_KHR,DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,false,1)\
-
-#define SLAG_SWAPCHAIN_ALPHA_MODE(DEFINITION)\
-DEFINITION(IGNORE_ALPHA, VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,DXGI_ALPHA_MODE_IGNORE)\
-DEFINITION(PRE_MULTIPLY, VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,DXGI_ALPHA_MODE_PREMULTIPLIED)\
-DEFINITION(POST_MULTIPLY, VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR,DXGI_ALPHA_MODE_STRAIGHT)\
-
-
-
-#include "Pixels.h"
-#include "PlatformData.h"
+#ifndef SLAG_SLAG_SWAPCHAIN_H
+#define SLAG_SLAG_SWAPCHAIN_H
 
 namespace slag
 {
     class Frame;
-    class FrameResources;
-    struct SwapChainDetails;
-    ///Links platform window to rendering, and how to swap between back buffers if they're present
+    class GraphicsCard;
+    ///Controls how the back buffer is presented to the screen.
+    enum class PresentMode
+    {
+        ///When the frame is presented, show immediately, regardless of vertical blank (No VSYNC)
+        IMMEDIATE,
+        ///When the frame is presented, replace the last frame presented and show the most current frame at VSYNC
+        BUFFER,
+        ///When the frame is presented, append the frame to a queue and show the first frame in the queue at VSYNC
+        QUEUE
+    };
+    ///How to integrate alpha values in the final frame with the rest of the display environment
+    enum class AlphaCompositing
+    {
+        ///Alpha values in the final frame are treated as opaque
+        IGNORE_ALPHA,
+        ///RGB channels are multiplied by alpha value before compositing
+        PREMULTIPLIED,
+        ///RGB channels are multiplied by alpha value after compositing
+        POSTMULTIPLIED
+    };
+    ///Parameters that control the details of a swapchain
+    struct SwapChainParameters
+    {
+        ///Controls how the back buffer is presented to the screen.
+        PresentMode presentMode = PresentMode::BUFFER;
+        ///Number of images in the swapchain
+        uint32_t imageCount = 2;
+        ///Format of the images in the swapchain
+        PixelFormat imageFormat = PixelFormat::B8G8R8A8_UNORM;
+        ///How to integrate alpha values in the final frame with the rest of the display environment
+        AlphaCompositing alphaCompositing = AlphaCompositing::IGNORE_ALPHA;
+    };
+    ///Mechanism that deals with acquiring and presenting images to the screen
     class SwapChain
     {
     public:
-        enum class PresentMode
-        {
-#define DEFINITION(SlagValue, VulkanValue, DX12Value, AllowTearing, FrameLatency) SlagValue,
-            SLAG_PRESENT_MODE_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-        };
-        enum class AlphaCompositing
-        {
-#define DEFINITION(SlagValue, VulkanValue, DX12Value) SlagValue,
-            SLAG_SWAPCHAIN_ALPHA_MODE(DEFINITION)
-#undef DEFINITION
-        };
-        virtual ~SwapChain()=default;
-        ///Acquire the next frame, blocks until the frame is ready, or null if there's none to acquire (usually minimized window)
-        [[nodiscard]]virtual Frame* next()=0;
-        ///Acquire the next frame if the next frame is finished with its operations, or null if it's still performing operations or there's none to acquire (usually minimized window)
-        [[nodiscard]]virtual Frame* nextIfReady()=0;
-        ///The current frame
-        virtual Frame* currentFrame()=0;
-        ///The index of the current frame
-        virtual uint8_t currentFrameIndex()=0;
-
-        ///Texel format of the backbuffers
-        virtual Pixels::Format backBufferFormat()=0;
-
-        /**
-         * Set the Texel format of the backbuffers
-         * @param newFormat New desired format for the swapchain backbuffers
-         */
-        virtual void backBufferFormat(Pixels::Format newFormat)=0;
-        ///Width in texels of the backbuffers
-        virtual uint32_t backBufferWidth()=0;
-        ///Height in texels of the backbuffers
-        virtual uint32_t backBufferHeight()=0;
-
-        /**
-         * Resize the backbuffers
-         * @param newWidth Desired width of the backbuffers
-         * @param newHeight Desired height of the backbuffers
-         */
-        virtual void backBufferSize(uint32_t newWidth, uint32_t newHeight)=0;
-        ///Present mode the backbuffer is using
-        virtual PresentMode presentMode()=0;
-        ///number of frames the chain has
-        virtual uint8_t frameCount()=0;
-
-        /**
-         * Set the present mode
-         * @param newMode Desired present mode
-         * @param frameCount Desired frame count
-         */
-        virtual void presentMode(PresentMode newMode, uint8_t frameCount)=0;
-        ///Compositing mode for blending the backbuffer images into the host environment
-        virtual AlphaCompositing alphaCompositing()=0;
-        /**
-         * Set the compositing mode
-         * @param newCompositing Desired compositing rule
-         */
-        virtual void alphaComposition(AlphaCompositing newCompositing)=0;
-
-        /**
-         * Set all swapchain properties at once, prevents rebuilding the swapchain for each individual parameter
-         * @param newFormat New pixel format
-         * @param newWidth New backbuffer width
-         * @param newHeight New backbuffer height
-         * @param newMode New chain presentation mode
-         * @param frames New frame count
-         * @param compositing New compositing rule
-         */
-        virtual void setProperties(uint32_t newWidth, uint32_t newHeight, uint8_t frames,PresentMode newMode, Pixels::Format newFormat, AlphaCompositing compositing)=0;
-
-        /**
-         * Creates a new swapchain
-         * @param platformData Platform dependent windowing information
-         * @param width Width in pixels of backbuffers in chain
-         * @param height Height in pixels of backbuffers in chain
-         * @param presentMode Swap Operation of chain
-         * @param compositing How the images of this swapchain are blended into the native environment
-         * @param frameCount Number of backbuffers in chain
-         * @param format Texture format for backbuffers in chain
-         * @param createResourceFunction Optional function to provide extra data to each frame
-         * @return 
-         */
-        static SwapChain* newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, const SwapChainDetails& details);
-
+        virtual ~SwapChain() = default;
+        virtual Frame* next()=0;
+        [[nodiscard]] virtual Frame* currentFrame()=0;
+        virtual void present()=0;
+        [[nodiscard]] virtual const SwapChainParameters& parameters()const=0;
+        virtual GraphicsCard* graphicsCard()=0;
     };
-
-    struct SwapChainDetails
-    {
-    public:
-        ///How to handle a finished frame
-        SwapChain::PresentMode presentMode = SwapChain::PresentMode::BUFFER;
-        ///How many frames are in a swapchain
-        uint8_t frameCount = 2;
-        ///Format of the backbuffers in the swapchain
-        Pixels::Format backBufferFormat = Pixels::Format::B8G8R8A8_UNORM;
-        ///How the images of the swapchain are blended into the native environment
-        SwapChain::AlphaCompositing alphaCompositing = SwapChain::AlphaCompositing::IGNORE_ALPHA;
-        ///Optional function to provide arbitrary resources associated with each frame;
-        FrameResources* (*createResourceFunction)(uint8_t frameIndex, SwapChain* inChain)=nullptr;
-        ///Optional function that is called whenever the swapchain is rebuilt due to changes in it's parameters
-        void (*swapchainRebuiltFunction)(SwapChain* swapChain)=nullptr;
-    };
-} // slag
-
-#endif //SLAG_SWAPCHAIN_H
+}
+#endif //SLAG_SLAG_SWAPCHAIN_H

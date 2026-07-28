@@ -1,465 +1,29 @@
 #define VMA_IMPLEMENTATION
 #include "VulkanBackend.h"
-#include "VkBootstrap.h"
-#include "core/VulkanBuffer.h"
-#include "core/VulkanBufferView.h"
-#include "core/VulkanCommandBuffer.h"
-#include "core/VulkanDescriptorPool.h"
-#include "core/VulkanGraphicsCard.h"
-#include "core/VulkanSampler.h"
-#include "core/VulkanSemaphore.h"
-#include "core/VulkanShaderPipeline.h"
-#include "core/VulkanSwapChain.h"
-#include "core/VulkanTexture.h"
-#include "slag/core/PixelFormatProperties.h"
-#include "slag/core/SwapChain.h"
+
 #include "slag/utilities/SLAG_ASSERT.h"
 
 namespace slag
 {
     namespace vulkan
     {
-        std::vector<VulkanizedFormat> VULKAN_PIXEL_FORMATS
-        {
-#define DEFINITION(SlagName, DxName, VulkanName, VkImageAspectFlags, VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a, totalBits,colorBits,depthBits,stencilBits, aspects) VulkanizedFormat(VulkanName,VkComponentSwizzle_r, VkComponentSwizzle_g, VkComponentSwizzle_b, VkComponentSwizzle_a),
-            SLAG_TEXTURE_FORMAT_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-        };
+        void(*SLAG_VULKAN_DEBUG_HANDLER)(const std::string& message, DebugLevel level, int32_t messageID)=nullptr;
 
-        std::vector<VkImageAspectFlags> VULKAN_IMAGE_ASPECTS
-        {
-            VK_IMAGE_ASPECT_NONE, //0
-            VK_IMAGE_ASPECT_COLOR_BIT, //1
-            VK_IMAGE_ASPECT_DEPTH_BIT, //2
-            VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT, //3
-            VK_IMAGE_ASPECT_STENCIL_BIT, //4
-            VK_IMAGE_ASPECT_STENCIL_BIT | VK_IMAGE_ASPECT_COLOR_BIT, //5
-            VK_IMAGE_ASPECT_STENCIL_BIT | VK_IMAGE_ASPECT_DEPTH_BIT, //6
-            VK_IMAGE_ASPECT_STENCIL_BIT | VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT //7
-        };
-
-        VulkanizedFormat VulkanBackend::vulkanizedFormat(Pixels::Format format)
-        {
-            return VULKAN_PIXEL_FORMATS[static_cast<uint32_t>(format)];
-        }
-
-        VkImageUsageFlags VulkanBackend::vulkanizedUsage(Texture::UsageFlags flags)
-        {
-            SLAG_ASSERT((!(bool)(flags & Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT & Texture::UsageFlags::RENDER_TARGET_ATTACHMENT)) && (!(bool)(flags & Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT & Texture::UsageFlags::SAMPLED_IMAGE)) && "Texture cannot be used as both depth and color simultaneously");
-            VkImageUsageFlags result = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-            if (static_cast<bool>(flags & Texture::UsageFlags::SAMPLED_IMAGE))
-            {
-                result |= VK_IMAGE_USAGE_SAMPLED_BIT;
-            }
-            if (static_cast<bool>(flags & Texture::UsageFlags::STORAGE))
-            {
-                result |= VK_IMAGE_USAGE_STORAGE_BIT;
-            }
-            if (static_cast<bool>(flags & Texture::UsageFlags::RENDER_TARGET_ATTACHMENT))
-            {
-                result |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-            }
-            if (static_cast<bool>(flags & Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT))
-            {
-                result |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-            }
-            return result;
-        }
-
-        VkImageType VulkanBackend::vulkanizedImageType(Texture::Type type)
-        {
-            switch (type)
-            {
-                case Texture::Type::TEXTURE_1D:
-                    return VK_IMAGE_TYPE_1D;
-                case Texture::Type::TEXTURE_2D:
-                    return VK_IMAGE_TYPE_2D;
-                case Texture::Type::TEXTURE_3D:
-                    return VK_IMAGE_TYPE_3D;
-                case Texture::Type::TEXTURE_CUBE:
-                    return VK_IMAGE_TYPE_2D;
-                default:
-                    return VK_IMAGE_TYPE_2D;
-            }
-            return VK_IMAGE_TYPE_2D;
-        }
-
-        VkImageViewType VulkanBackend::vulkanizedImageViewType(Texture::Type type, uint32_t layers)
-        {
-            switch (type)
-            {
-            case Texture::Type::TEXTURE_1D:
-                if (layers > 1)
-                {
-                    return VK_IMAGE_VIEW_TYPE_1D_ARRAY;
-                }
-                return VK_IMAGE_VIEW_TYPE_1D;
-            case Texture::Type::TEXTURE_2D:
-                if (layers > 1)
-                {
-                    return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-                }
-                return VK_IMAGE_VIEW_TYPE_2D;
-            case Texture::Type::TEXTURE_3D:
-                return VK_IMAGE_VIEW_TYPE_3D;
-            case Texture::Type::TEXTURE_CUBE:
-                SLAG_ASSERT(layers%6==0);
-                if (layers > 6)
-                {
-                    return VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
-                }
-                return VK_IMAGE_VIEW_TYPE_CUBE;
-            default:
-                return VK_IMAGE_VIEW_TYPE_2D;
-            }
-            return VK_IMAGE_VIEW_TYPE_2D;
-        }
-
-        VkImageAspectFlags VulkanBackend::vulkanizedAspectFlags(Pixels::AspectFlags aspectFlags)
-        {
-            auto index = static_cast<uint8_t>(aspectFlags);
-            return VULKAN_IMAGE_ASPECTS[static_cast<uint8_t>(aspectFlags)];
-        }
-
-        VkBufferUsageFlags VulkanBackend::vulkanizedBufferUsage(Buffer::UsageFlags usageFlags)
-        {
-            //all buffers should support copy operations
-            VkBufferUsageFlags flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-            if ((bool)(usageFlags & Buffer::UsageFlags::VERTEX_BUFFER))
-            {
-                flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-            }
-            if ((bool)(usageFlags & Buffer::UsageFlags::INDEX_BUFFER))
-            {
-                flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-            }
-            if ((bool)(usageFlags & Buffer::UsageFlags::UNIFORM_BUFFER))
-            {
-                flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-            }
-            if ((bool)(usageFlags & Buffer::UsageFlags::STORAGE_BUFFER))
-            {
-                flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-            }
-            if ((bool)(usageFlags & Buffer::UsageFlags::UNIFORM_TEXEL_BUFFER))
-            {
-                flags |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
-            }
-            if ((bool)(usageFlags & Buffer::UsageFlags::STORAGE_TEXEL_BUFFER))
-            {
-                flags |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
-            }
-            if ((bool)(usageFlags & Buffer::UsageFlags::INDIRECT_BUFFER))
-            {
-                flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-            }
-            return flags;
-        }
-
-        VkAccessFlagBits2 VulkanBackend::vulkanizedBarrierAccessMask(BarrierAccessFlags accessFlags)
-        {
-            VkAccessFlagBits2 bits = 0;
-#define DEFINITION(slagName, slagValue, vulkanName, directXName) if((bool)(accessFlags & BarrierAccessFlags::slagName)){ bits |= vulkanName;}
-            SLAG_MEMORY_BARRIER_ACCESS_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-            return bits;
-        }
-
-        VkPipelineStageFlags2 VulkanBackend::vulkanizedStageMask(PipelineStageFlags stageFlags)
-        {
-            VkPipelineStageFlags2 bits = 0;
-#define DEFINITION(slagName, slagValue, vulkanName, directXName) if((bool)(stageFlags & PipelineStageFlags::slagName)){ bits |= vulkanName;}
-            SLAG_MEMORY_PIPELINE_STAGE_DEFINITIONS(DEFINITION)
-    #undef DEFINITION
-            return bits;
-        }
-
-        VkIndexType VulkanBackend::vulkanizedIndexType(Buffer::IndexSize indexSize)
-        {
-            switch (indexSize)
-            {
-            case Buffer::IndexSize::UINT16:
-                return VK_INDEX_TYPE_UINT16;
-            case Buffer::IndexSize::UINT32:
-                return VK_INDEX_TYPE_UINT32;
-            }
-            return VK_INDEX_TYPE_UINT16;
-        }
-
-        std::vector<VkPolygonMode> VULKAN_POLYGON_MODES =
-        {
-            VK_POLYGON_MODE_FILL,
-            VK_POLYGON_MODE_LINE,
-            VK_POLYGON_MODE_POINT
-        };
-
-        VkPolygonMode VulkanBackend::vulkanizedPolygonMode(RasterizationState::DrawMode drawMode)
-        {
-            return VULKAN_POLYGON_MODES[static_cast<uint8_t>(drawMode)];
-        }
-
-        std::vector<VkCullModeFlags> VULKAN_CULL_FLAGS
-        {
-            VK_CULL_MODE_NONE,
-            VK_CULL_MODE_FRONT_BIT,
-            VK_CULL_MODE_BACK_BIT,
-        };
-        VkCullModeFlags VulkanBackend::vulkanizedCullMode(RasterizationState::CullOptions cullOptions)
-        {
-            return VULKAN_CULL_FLAGS[static_cast<uint8_t>(cullOptions)];
-        }
-
-        std::vector<VkFrontFace> VULKAN_FRONT_FACES
-        {
-            VK_FRONT_FACE_CLOCKWISE,
-            VK_FRONT_FACE_COUNTER_CLOCKWISE
-        };
-        VkFrontFace VulkanBackend::vulkanizedFrontFace(RasterizationState::FrontFacing frontFace)
-        {
-            return VULKAN_FRONT_FACES[static_cast<uint8_t>(frontFace)];
-        }
-
-        std::vector<VkBlendFactor> VULKAN_BLEND_FACTORS
-        {
-#define DEFINITION(SlagName, VulkanName, DXName) VulkanName,
-            BLEND_FACTOR_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-        };
-        VkBlendFactor VulkanBackend::vulkanizedBlendFactor(Operations::BlendFactor blendFactor)
-        {
-            return VULKAN_BLEND_FACTORS[static_cast<uint8_t>(blendFactor)];
-        }
-
-        std::vector<VkBlendOp> VULKAN_BLEND_OPS
-        {
-#define DEFINITION(SlagName, VulkanName, DXName) VulkanName,
-            BLEND_OP_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-        };
-        VkBlendOp VulkanBackend::vulkanizedBlendOp(Operations::BlendOperation blendOperation)
-        {
-            return VULKAN_BLEND_OPS[static_cast<uint8_t>(blendOperation)];
-        }
-
-        VkColorComponentFlags VulkanBackend::vulkanizedColorComponentFlags(Color::ComponentFlags colorComponentFlags)
-        {
-            VkColorComponentFlags flags = 0;
-            if (static_cast<bool>(colorComponentFlags & Color::ComponentFlags::RED_COMPONENT))
-            {
-                flags |= VK_COLOR_COMPONENT_R_BIT;
-            }
-            if (static_cast<bool>(colorComponentFlags & Color::ComponentFlags::GREEN_COMPONENT))
-            {
-                flags |= VK_COLOR_COMPONENT_G_BIT;
-            }
-            if (static_cast<bool>(colorComponentFlags & Color::ComponentFlags::BLUE_COMPONENT))
-            {
-                flags |= VK_COLOR_COMPONENT_B_BIT;
-            }
-            if (static_cast<bool>(colorComponentFlags & Color::ComponentFlags::ALPHA_COMPONENT))
-            {
-                flags |= VK_COLOR_COMPONENT_A_BIT;
-            }
-            return flags;
-        }
-
-        std::vector<VkLogicOp> VULKAN_LOGIC_OPS
-        {
-#define DEFINITION(SlagName,VulkanName,DX12Name) VulkanName,
-            FRAMEBUFFER_LOGICAL_OP_DEFINITIONS(DEFINITION)
-#undef DEFINITION
-        };
-        VkLogicOp VulkanBackend::vulkanizedLogicOp(Operations::LogicalOperation operation)
-        {
-            return VULKAN_LOGIC_OPS[static_cast<uint8_t>(operation)];
-        }
-
-        std::vector<VkCompareOp> VULKAN_COMPARE_OPS
-        {
-#define DEFINITION(slagName, vulkanName, dx12Name) vulkanName,
-            COMPARISON_FUNCTION(DEFINITION)
-#undef DEFINITION
-        };
-        VkCompareOp VulkanBackend::vulkanizedCompareOp(Operations::ComparisonFunction comparisonFunction)
-        {
-            return VULKAN_COMPARE_OPS[static_cast<uint8_t>(comparisonFunction)];
-        }
-
-        std::vector<VkStencilOp> VULKAN_STENCIL_OPS
-        {
-#define DEFINITION(SlagName,VulkanName, DX12Name) VulkanName,
-            STENCIL_OP_DEFINITIONS(DEFINITION)
-#undef DEFINITION
-        };
-        VkStencilOp VulkanBackend::vulkanizedStencilOp(Operations::StencilOperation stencilOperation)
-        {
-            return VULKAN_STENCIL_OPS[static_cast<uint8_t>(stencilOperation)];
-        }
-
-        VkFormat VulkanBackend::vulkanizedGraphicsType(GraphicsType graphicsType)
-        {
-            switch(graphicsType)
-            {
-                case GraphicsType::UNKNOWN:
-                    return VK_FORMAT_UNDEFINED;
-                case GraphicsType::BOOLEAN:
-                    return VK_FORMAT_R8_UINT;
-                case GraphicsType::INTEGER:
-                    return VK_FORMAT_R32_SINT;
-                case GraphicsType::UNSIGNED_INTEGER:
-                    return VK_FORMAT_R32_UINT;
-                case GraphicsType::FLOAT:
-                    return VK_FORMAT_R32_SFLOAT;
-                case GraphicsType::DOUBLE:
-                    return VK_FORMAT_R64_SFLOAT;
-                case GraphicsType::VECTOR2:
-                    return VK_FORMAT_R32G32_SFLOAT;
-                case GraphicsType::VECTOR3:
-                    return VK_FORMAT_R32G32B32_SFLOAT;
-                case GraphicsType::VECTOR4:
-                    return VK_FORMAT_R32G32B32A32_SFLOAT;
-                case GraphicsType::BOOLEAN_VECTOR2:
-                    return VK_FORMAT_R8G8_UINT;
-                case GraphicsType::BOOLEAN_VECTOR3:
-                    return VK_FORMAT_R8G8B8_UINT;
-                case GraphicsType::BOOLEAN_VECTOR4:
-                    return VK_FORMAT_R8G8B8A8_UINT;
-                case GraphicsType::INTEGER_VECTOR2:
-                    return VK_FORMAT_R32G32_SINT;
-                case GraphicsType::INTEGER_VECTOR3:
-                    return VK_FORMAT_R32G32B32_SINT;
-                case GraphicsType::INTEGER_VECTOR4:
-                    return VK_FORMAT_R32G32B32A32_SINT;
-                case GraphicsType::UNSIGNED_INTEGER_VECTOR2:
-                    return VK_FORMAT_R32G32_UINT;
-                case GraphicsType::UNSIGNED_INTEGER_VECTOR3:
-                    return VK_FORMAT_R32G32B32_UINT;
-                case GraphicsType::UNSIGNED_INTEGER_VECTOR4:
-                    return VK_FORMAT_R32G32B32A32_UINT;
-                case GraphicsType::DOUBLE_VECTOR2:
-                    return VK_FORMAT_R64G64_SFLOAT;
-                case GraphicsType::DOUBLE_VECTOR3:
-                    return VK_FORMAT_R64G64B64_SFLOAT;
-                case GraphicsType::DOUBLE_VECTOR4:
-                    return VK_FORMAT_R64G64B64A64_SFLOAT;
-            }
-            return VK_FORMAT_UNDEFINED;
-        }
-
-        VkShaderStageFlagBits VulkanBackend::vulkanizedShaderStage(ShaderStageFlags stageFlags)
-        {
-            switch (stageFlags)
-            {
-#define DEFINITION(SlagName, SlagValue, VulkanName, DXName) case ShaderStageFlags::SlagName: return VulkanName;
-                SHADER_STAGE_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-            }
-            throw std::invalid_argument("Invalid shader stage");
-        }
-
-        VkShaderStageFlags VulkanBackend::vulkanizedShaderFlags(ShaderStageFlags stageFlags)
-        {
-            VkShaderStageFlags flags = 0;
-#define DEFINITION(SlagName, SlagValue, VulkanName, DXName) if((bool)(stageFlags & ShaderStageFlags::SlagName)) {flags |= VulkanName;}
-            SHADER_STAGE_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-            return flags;
-        }
-
-        VkFilter VulkanBackend::vulkanizedFilter(Sampler::Filter filter)
-        {
-            switch(filter)
-            {
-#define DEFINITION(slagName, vulkanName) case Sampler::Filter::slagName: return vulkanName;
-                SAMPLER_FILTER_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-            }
-            return VK_FILTER_NEAREST;
-        }
-
-        VkSamplerMipmapMode VulkanBackend::vulkanizedMipMapMode(Sampler::Filter mipmapFilter)
-        {
-            switch (mipmapFilter)
-            {
-                case Sampler::Filter::NEAREST: return VK_SAMPLER_MIPMAP_MODE_NEAREST;
-                case Sampler::Filter::LINEAR: return VK_SAMPLER_MIPMAP_MODE_LINEAR;
-            }
-            return VK_SAMPLER_MIPMAP_MODE_NEAREST;
-        }
-
-        VkSamplerAddressMode VulkanBackend::vulkanizedAddressMode(Sampler::AddressMode addressMode)
-        {
-            switch (addressMode)
-            {
-#define DEFINITION(slagName, vulkanName, dx12Name) case Sampler::AddressMode::slagName: return vulkanName;
-                SAMPLER_ADDRESS_MODES_DEFINTITIONS(DEFINITION)
-#undef DEFINITION
-            }
-            return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
-        }
-
-        VkPresentModeKHR VulkanBackend::vulkanizedPresentMode(SwapChain::PresentMode presentMode)
-        {
-            switch (presentMode)
-            {
-#define DEFINITION(SlagValue, VulkanValue, DX12Value, AllowTearing, FrameLatency) case SwapChain::PresentMode::SlagValue: return VulkanValue;
-                SLAG_PRESENT_MODE_DEFINTITIONS(DEFINITION)
-    #undef DEFINITION
-            }
-            return VK_PRESENT_MODE_MAILBOX_KHR;
-        }
-
-        VkCompositeAlphaFlagBitsKHR VulkanBackend::vulkanizedCompositeAlphaFlags(SwapChain::AlphaCompositing composite)
-        {
-            switch (composite)
-            {
-#define DEFINITION(SlagValue, VulkanValue, DX12Value) case SwapChain::AlphaCompositing::SlagValue: return VulkanValue;
-                SLAG_SWAPCHAIN_ALPHA_MODE(DEFINITION)
-    #undef DEFINITION
-            }
-            return VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        }
-
-        VkDescriptorType VulkanBackend::vulkanizedDescriptorType(Descriptor::Type descriptorType)
-        {
-            switch (descriptorType)
-            {
-            case slag::Descriptor::Type::SAMPLER:
-                return  VK_DESCRIPTOR_TYPE_SAMPLER;
-            case slag::Descriptor::Type::SAMPLED_TEXTURE:
-                return  VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-            case slag::Descriptor::Type::STORAGE_TEXTURE:
-                return  VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-            case slag::Descriptor::Type::UNIFORM_TEXEL_BUFFER:
-                return  VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-            case slag::Descriptor::Type::STORAGE_TEXEL_BUFFER:
-                return  VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
-            case slag::Descriptor::Type::UNIFORM_BUFFER:
-                return  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            case slag::Descriptor::Type::STORAGE_BUFFER:
-                return  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            case slag::Descriptor::Type::ACCELERATION_STRUCTURE:
-                return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
-            }
-            throw std::runtime_error("unable to convert descriptorType");
-        }
-
-        void(* SLAG_VULKAN_DEBUG_HANDLER)(const std::string& message, SlagDebugLevel level, int32_t messageID)=nullptr;
         VkBool32 VULKAN_DEBUG_MESSENGER_CALLBACK(VkDebugUtilsMessageSeverityFlagBitsEXT           messageSeverity,
-                                                 VkDebugUtilsMessageTypeFlagsEXT                  messageTypes,
-                                                 const VkDebugUtilsMessengerCallbackDataEXT*      pCallbackData,
-                                                 void*                                            pUserData)
+                                                VkDebugUtilsMessageTypeFlagsEXT                  messageTypes,
+                                                const VkDebugUtilsMessengerCallbackDataEXT*      pCallbackData,
+                                                void*                                            pUserData)
         {
             if(SLAG_VULKAN_DEBUG_HANDLER!= nullptr)
             {
-                SlagDebugLevel level = SlagDebugLevel::SLAG_INFO;
+                DebugLevel level = DebugLevel::INFO;
                 if(messageSeverity & VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
                 {
-                    level = SlagDebugLevel::SLAG_ERROR;
+                    level = DebugLevel::ERROR;
                 }
                 else if(messageSeverity & VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
                 {
-                    level = SlagDebugLevel::SLAG_WARNING;
+                    level = DebugLevel::WARNING;
                 }
                 std::string message = pCallbackData->pMessage;
                 SLAG_VULKAN_DEBUG_HANDLER(message,level,pCallbackData->messageIdNumber);
@@ -467,62 +31,837 @@ namespace slag
             return VK_FALSE;
         }
 
-        VulkanBackend::VulkanBackend(const SlagInitInfo& initInfo)
+        NativeFormat VULKAN_NATIVE_FORMATS[]
         {
-            if (initInfo.slagDebugHandler)
-            {
-                SLAG_VULKAN_DEBUG_HANDLER = initInfo.slagDebugHandler;
-            }
-            vkb::InstanceBuilder builder;
-            auto inst = builder.set_app_name("Slag Application")
-                              .request_validation_layers(initInfo.slagDebugHandler)
-                              .set_debug_callback(VULKAN_DEBUG_MESSENGER_CALLBACK)
-                              .require_api_version(1,3,0)
-                               .enable_extension("VK_KHR_get_surface_capabilities2")
-                                .enable_extension("VK_EXT_surface_maintenance1")
-                              .build();
+            {VK_FORMAT_UNDEFINED, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R32G32B32A32_SFLOAT,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R32G32B32A32_UINT,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R32G32B32A32_SINT, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R32G32B32_SFLOAT,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R32G32B32_UINT,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R32G32B32_SINT,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R16G16B16A16_SFLOAT,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R16G16B16A16_UNORM,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R16G16B16A16_UINT,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R16G16B16A16_SNORM,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R16G16B16A16_SINT,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R32G32_SFLOAT,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R32G32_UINT,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R32G32_SINT,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_A2B10G10R10_UNORM_PACK32, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_A2B10G10R10_UINT_PACK32, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_B10G11R11_UFLOAT_PACK32, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R8G8B8A8_UNORM,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R8G8B8A8_SRGB, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R8G8B8A8_UINT, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R8G8B8A8_SNORM, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R8G8B8A8_SINT, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R16G16_SFLOAT, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R16G16_UNORM, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R16G16_UINT, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R16G16_SNORM, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R16G16_SINT, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_D32_SFLOAT, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R32_SFLOAT, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R32_UINT, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R32_SINT, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_D24_UNORM_S8_UINT,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R8G8_UNORM, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R8G8_UINT, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R8G8_SNORM, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R8G8_SINT, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R16_SFLOAT, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_D16_UNORM, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R16_UNORM, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R16_UINT, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R16_SNORM, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R16_SINT, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R8_UNORM, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R8_UINT, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R8_SNORM, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R8_SINT, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R8_UNORM, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_R},
+            {VK_FORMAT_E5B9G9R9_UFLOAT_PACK32, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_B8G8R8G8_422_UNORM, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_G8B8G8R8_422_UNORM, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_BC1_RGBA_UNORM_BLOCK, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_BC1_RGBA_SRGB_BLOCK, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_BC2_UNORM_BLOCK, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_BC2_SRGB_BLOCK, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_BC3_UNORM_BLOCK, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_BC3_SRGB_BLOCK, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_BC4_UNORM_BLOCK, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_BC4_SNORM_BLOCK, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_BC5_UNORM_BLOCK, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_BC5_SNORM_BLOCK, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R5G6B5_UNORM_PACK16, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_A1R5G5B5_UNORM_PACK16, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_B8G8R8A8_UNORM, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_B8G8R8A8_UNORM, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_ONE},
+            {VK_FORMAT_B8G8R8A8_SRGB, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_B8G8R8A8_SRGB, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_ONE},
+            {VK_FORMAT_BC6H_UFLOAT_BLOCK, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_BC6H_SFLOAT_BLOCK, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_BC7_UNORM_BLOCK, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_BC7_SRGB_BLOCK, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_R8G8B8A8_UNORM, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_A},
+            {VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_G8B8G8R8_422_UNORM,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_FORMAT_A4R4G4B4_UNORM_PACK16,  VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY}
+        };
 
-            if(!inst.has_value())
-            {
-                return;
-            }
-            _debugMessenger = inst->debug_messenger;
-            _instance = inst.value();
-            _isValid = true;
+        PixelFormat VULKAN_CROSS_PLATFORM_FORMATS[]
+        {
+            PixelFormat::UNDEFINED, //VK_FORMAT_UNDEFINED = 0,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R4G4_UNORM_PACK8 = 1,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R4G4B4A4_UNORM_PACK16 = 2,
+            PixelFormat::B4G4R4A4_UNORM,// VK_FORMAT_B4G4R4A4_UNORM_PACK16 = 3,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R5G6B5_UNORM_PACK16 = 4,
+            PixelFormat::B5G6R5_UNORM,// VK_FORMAT_B5G6R5_UNORM_PACK16 = 5,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R5G5B5A1_UNORM_PACK16 = 6,
+            PixelFormat::B5G5R5A1_UNORM,// VK_FORMAT_B5G5R5A1_UNORM_PACK16 = 7,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A1R5G5B5_UNORM_PACK16 = 8,
+            PixelFormat::R8_UNORM,// VK_FORMAT_R8_UNORM = 9,
+            PixelFormat::R8_SNORM,// VK_FORMAT_R8_SNORM = 10,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8_USCALED = 11,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8_SSCALED = 12,
+            PixelFormat::R8_UINT,// VK_FORMAT_R8_UINT = 13,
+            PixelFormat::R8_SINT,// VK_FORMAT_R8_SINT = 14,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8_SRGB = 15,
+            PixelFormat::R8G8_UNORM,// VK_FORMAT_R8G8_UNORM = 16,
+            PixelFormat::R8G8_SNORM,// VK_FORMAT_R8G8_SNORM = 17,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8_USCALED = 18,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8_SSCALED = 19,
+            PixelFormat::R8G8_UINT,// VK_FORMAT_R8G8_UINT = 20,
+            PixelFormat::R8G8_SINT,// VK_FORMAT_R8G8_SINT = 21,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8_SRGB = 22,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8B8_UNORM = 23,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8B8_SNORM = 24,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8B8_USCALED = 25,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8B8_SSCALED = 26,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8B8_UINT = 27,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8B8_SINT = 28,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8B8_SRGB = 29,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8_UNORM = 30,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8_SNORM = 31,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8_USCALED = 32,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8_SSCALED = 33,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8_UINT = 34,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8_SINT = 35,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8_SRGB = 36,
+            PixelFormat::R8G8B8A8_UNORM,// VK_FORMAT_R8G8B8A8_UNORM = 37,
+            PixelFormat::R8G8B8A8_SNORM,// VK_FORMAT_R8G8B8A8_SNORM = 38,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8B8A8_USCALED = 39,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R8G8B8A8_SSCALED = 40,
+            PixelFormat::R8G8B8A8_UINT,// VK_FORMAT_R8G8B8A8_UINT = 41,
+            PixelFormat::R8G8B8A8_SINT,// VK_FORMAT_R8G8B8A8_SINT = 42,
+            PixelFormat::R8G8B8A8_UNORM_SRGB,// VK_FORMAT_R8G8B8A8_SRGB = 43,
+            PixelFormat::B8G8R8A8_UNORM,// VK_FORMAT_B8G8R8A8_UNORM = 44,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8A8_SNORM = 45,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8A8_USCALED = 46,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8A8_SSCALED = 47,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8A8_UINT = 48,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B8G8R8A8_SINT = 49,
+            PixelFormat::B8G8R8A8_UNORM_SRGB,// VK_FORMAT_B8G8R8A8_SRGB = 50,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A8B8G8R8_UNORM_PACK32 = 51,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A8B8G8R8_SNORM_PACK32 = 52,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A8B8G8R8_USCALED_PACK32 = 53,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A8B8G8R8_SSCALED_PACK32 = 54,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A8B8G8R8_UINT_PACK32 = 55,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A8B8G8R8_SINT_PACK32 = 56,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A8B8G8R8_SRGB_PACK32 = 57,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2R10G10B10_UNORM_PACK32 = 58,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2R10G10B10_SNORM_PACK32 = 59,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2R10G10B10_USCALED_PACK32 = 60,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2R10G10B10_SSCALED_PACK32 = 61,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2R10G10B10_UINT_PACK32 = 62,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2R10G10B10_SINT_PACK32 = 63,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2B10G10R10_UNORM_PACK32 = 64,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2B10G10R10_SNORM_PACK32 = 65,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2B10G10R10_USCALED_PACK32 = 66,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2B10G10R10_SSCALED_PACK32 = 67,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2B10G10R10_UINT_PACK32 = 68,
+            PixelFormat::UNDEFINED,// VK_FORMAT_A2B10G10R10_SINT_PACK32 = 69,
+            PixelFormat::R16_UNORM,// VK_FORMAT_R16_UNORM = 70,
+            PixelFormat::R16_SNORM,// VK_FORMAT_R16_SNORM = 71,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16_USCALED = 72,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16_SSCALED = 73,
+            PixelFormat::R16_UINT,// VK_FORMAT_R16_UINT = 74,
+            PixelFormat::R16_SINT,// VK_FORMAT_R16_SINT = 75,
+            PixelFormat::R16_FLOAT,// VK_FORMAT_R16_SFLOAT = 76,
+            PixelFormat::R16G16_UNORM,// VK_FORMAT_R16G16_UNORM = 77,
+            PixelFormat::R16G16_SNORM,// VK_FORMAT_R16G16_SNORM = 78,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16_USCALED = 79,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16_SSCALED = 80,
+            PixelFormat::R16G16_UINT,// VK_FORMAT_R16G16_UINT = 81,
+            PixelFormat::R16G16_SINT,// VK_FORMAT_R16G16_SINT = 82,
+            PixelFormat::R16G16_FLOAT,// VK_FORMAT_R16G16_SFLOAT = 83,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16B16_UNORM = 84,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16B16_SNORM = 85,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16B16_USCALED = 86,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16B16_SSCALED = 87,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16B16_UINT = 88,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16B16_SINT = 89,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16B16_SFLOAT = 90,
+            PixelFormat::R16G16B16A16_UNORM,// VK_FORMAT_R16G16B16A16_UNORM = 91,
+            PixelFormat::R16G16B16A16_SNORM,// VK_FORMAT_R16G16B16A16_SNORM = 92,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16B16A16_USCALED = 93,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R16G16B16A16_SSCALED = 94,
+            PixelFormat::R16G16B16A16_UINT,// VK_FORMAT_R16G16B16A16_UINT = 95,
+            PixelFormat::R16G16B16A16_SINT,// VK_FORMAT_R16G16B16A16_SINT = 96,
+            PixelFormat::R16G16B16A16_FLOAT,// VK_FORMAT_R16G16B16A16_SFLOAT = 97,
+            PixelFormat::R32_UINT,// VK_FORMAT_R32_UINT = 98,
+            PixelFormat::R32_SINT,// VK_FORMAT_R32_SINT = 99,
+            PixelFormat::R32_FLOAT,// VK_FORMAT_R32_SFLOAT = 100,
+            PixelFormat::R32G32_UINT,// VK_FORMAT_R32G32_UINT = 101,
+            PixelFormat::R32G32_SINT,// VK_FORMAT_R32G32_SINT = 102,
+            PixelFormat::R32G32_FLOAT,// VK_FORMAT_R32G32_SFLOAT = 103,
+            PixelFormat::R32G32B32_UINT,// VK_FORMAT_R32G32B32_UINT = 104,
+            PixelFormat::R32G32B32_SINT,// VK_FORMAT_R32G32B32_SINT = 105,
+            PixelFormat::R32G32B32_FLOAT,// VK_FORMAT_R32G32B32_SFLOAT = 106,
+            PixelFormat::R32G32B32A32_UINT,// VK_FORMAT_R32G32B32A32_UINT = 107,
+            PixelFormat::R32G32B32A32_SINT,// VK_FORMAT_R32G32B32A32_SINT = 108,
+            PixelFormat::R32G32B32A32_FLOAT,// VK_FORMAT_R32G32B32A32_SFLOAT = 109,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64_UINT = 110,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64_SINT = 111,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64_SFLOAT = 112,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64G64_UINT = 113,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64G64_SINT = 114,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64G64_SFLOAT = 115,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64G64B64_UINT = 116,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64G64B64_SINT = 117,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64G64B64_SFLOAT = 118,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64G64B64A64_UINT = 119,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64G64B64A64_SINT = 120,
+            PixelFormat::UNDEFINED,// VK_FORMAT_R64G64B64A64_SFLOAT = 121,
+            PixelFormat::UNDEFINED,// VK_FORMAT_B10G11R11_UFLOAT_PACK32 = 122,
+            PixelFormat::UNDEFINED,// VK_FORMAT_E5B9G9R9_UFLOAT_PACK32 = 123,
+            PixelFormat::D16_UNORM,// VK_FORMAT_D16_UNORM = 124,
+            PixelFormat::UNDEFINED,// VK_FORMAT_X8_D24_UNORM_PACK32 = 125,
+            PixelFormat::D32_FLOAT,// VK_FORMAT_D32_SFLOAT = 126,
+            PixelFormat::UNDEFINED,// VK_FORMAT_S8_UINT = 127,
+            PixelFormat::UNDEFINED,// VK_FORMAT_D16_UNORM_S8_UINT = 128,
+            PixelFormat::D24_UNORM_S8_UINT,// VK_FORMAT_D24_UNORM_S8_UINT = 129,
+            PixelFormat::D32_FLOAT_S8X24_UINT,// VK_FORMAT_D32_SFLOAT_S8_UINT = 130,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC1_RGB_UNORM_BLOCK = 131,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC1_RGB_SRGB_BLOCK = 132,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC1_RGBA_UNORM_BLOCK = 133,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC1_RGBA_SRGB_BLOCK = 134,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC2_UNORM_BLOCK = 135,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC2_SRGB_BLOCK = 136,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC3_UNORM_BLOCK = 137,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC3_SRGB_BLOCK = 138,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC4_UNORM_BLOCK = 139,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC4_SNORM_BLOCK = 140,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC5_UNORM_BLOCK = 141,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC5_SNORM_BLOCK = 142,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC6H_UFLOAT_BLOCK = 143,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC6H_SFLOAT_BLOCK = 144,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC7_UNORM_BLOCK = 145,
+            PixelFormat::UNDEFINED,// VK_FORMAT_BC7_SRGB_BLOCK = 146,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK = 147,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK = 148,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK = 149,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK = 150,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK = 151,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK = 152,
+            PixelFormat::UNDEFINED,// VK_FORMAT_EAC_R11_UNORM_BLOCK = 153,
+            PixelFormat::UNDEFINED,// VK_FORMAT_EAC_R11_SNORM_BLOCK = 154,
+            PixelFormat::UNDEFINED,// VK_FORMAT_EAC_R11G11_UNORM_BLOCK = 155,
+            PixelFormat::UNDEFINED,// VK_FORMAT_EAC_R11G11_SNORM_BLOCK = 156,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_4x4_UNORM_BLOCK = 157,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_4x4_SRGB_BLOCK = 158,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_5x4_UNORM_BLOCK = 159,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_5x4_SRGB_BLOCK = 160,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_5x5_UNORM_BLOCK = 161,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_5x5_SRGB_BLOCK = 162,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_6x5_UNORM_BLOCK = 163,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_6x5_SRGB_BLOCK = 164,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_6x6_UNORM_BLOCK = 165,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_6x6_SRGB_BLOCK = 166,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_8x5_UNORM_BLOCK = 167,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_8x5_SRGB_BLOCK = 168,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_8x6_UNORM_BLOCK = 169,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_8x6_SRGB_BLOCK = 170,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_8x8_UNORM_BLOCK = 171,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_8x8_SRGB_BLOCK = 172,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_10x5_UNORM_BLOCK = 173,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_10x5_SRGB_BLOCK = 174,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_10x6_UNORM_BLOCK = 175,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_10x6_SRGB_BLOCK = 176,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_10x8_UNORM_BLOCK = 177,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_10x8_SRGB_BLOCK = 178,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_10x10_UNORM_BLOCK = 179,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_10x10_SRGB_BLOCK = 180,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_12x10_UNORM_BLOCK = 181,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_12x10_SRGB_BLOCK = 182,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_12x12_UNORM_BLOCK = 183,
+            PixelFormat::UNDEFINED,// VK_FORMAT_ASTC_12x12_SRGB_BLOCK = 184,
+        };
+
+        VulkanBackend::VulkanBackend()
+        {
         }
 
         VulkanBackend::~VulkanBackend()
         {
+            _graphicsCards.clear();
             if (_debugMessenger != nullptr)
             {
                 vkb::destroy_debug_utils_messenger(_instance,_debugMessenger);
             }
-            vkDestroyInstance(_instance, nullptr);
+            if (_instance.instance)
+            {
+                vkDestroyInstance(_instance.instance, nullptr);
+            }
             SLAG_VULKAN_DEBUG_HANDLER = nullptr;
         }
 
-        void VulkanBackend::postGraphicsCardChosenSetup()
+        BackendAPI VulkanBackend::api()const
         {
-            VulkanTexture::initializeChromaConverters();
+            return BackendAPI::VULKAN;
         }
 
-        void VulkanBackend::preGraphicsCardDestroyCleanup()
+        uint32_t VulkanBackend::graphicsCardCount()const
         {
-            VulkanTexture::cleanupChromaConverters();
+            return _graphicsCards.size();
         }
 
-        bool VulkanBackend::valid()
+        GraphicsCard* VulkanBackend::graphicsCard(uint32_t index)
         {
-            return _isValid;
+            return &_graphicsCards[index];
         }
 
-        std::vector<std::unique_ptr<GraphicsCard>> VulkanBackend::getGraphicsCards()
+        uint32_t VulkanBackend::supportedShaderLanguageCount() const
         {
+            return 1;
+        }
 
-            VkPhysicalDeviceVulkan13Features features1_3{.sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
-            features1_3.dynamicRendering = true;
-            features1_3.synchronization2 = true;
+        ShaderLanguage VulkanBackend::supportedShaderLanguage(uint32_t index) const
+        {
+            return ShaderLanguage::SPIRV;
+        }
 
+        vkb::Instance& VulkanBackend::instance()
+        {
+            return _instance;
+        }
+
+        VkBufferUsageFlagBits2 VulkanBackend::nativeBufferUsage(BufferMemoryType access)
+        {
+            VkBufferUsageFlagBits2 bufferUsage = VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_2_TRANSFER_DST_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR | VK_BUFFER_USAGE_2_INDIRECT_BUFFER_BIT;
+            switch (access)
+            {
+            case BufferMemoryType::GENERAL:
+                bufferUsage |= VK_BUFFER_USAGE_2_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_2_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_2_STORAGE_TEXEL_BUFFER_BIT;
+               break;
+            case BufferMemoryType::UNIFORM:
+                bufferUsage |= VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_2_UNIFORM_TEXEL_BUFFER_BIT;
+                break;
+            }
+
+            return bufferUsage;
+        }
+
+        NativeFormat VulkanBackend::nativeFormat(PixelFormat format)
+        {
+            return VULKAN_NATIVE_FORMATS[uint32_t(format)];
+        }
+
+        PixelFormat VulkanBackend::crossPlatformFormat(VkFormat format)
+        {
+            uint32_t index = format;
+            if (format >= sizeof(VULKAN_CROSS_PLATFORM_FORMATS) / sizeof(PixelFormat))
+            {
+                return PixelFormat::UNDEFINED;
+            }
+            return VULKAN_CROSS_PLATFORM_FORMATS[index];
+        }
+
+        VkImageUsageFlags VulkanBackend::nativeTextureUsage(TextureUsageFlags flags)
+        {
+            VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT ;
+
+            if (static_cast<bool>(flags & TextureUsageFlags::SAMPLED))
+            {
+                usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+            }
+            if (static_cast<bool>(flags & TextureUsageFlags::UNORDERED_ACCESS))
+            {
+                usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+            }
+            if (static_cast<bool>(flags & TextureUsageFlags::COLOR_TARGET))
+            {
+                usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            }
+            if (static_cast<bool>(flags & TextureUsageFlags::DEPTH_STENCIL_TARGET))
+            {
+                usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+            }
+            return usage;
+        }
+
+
+        VkAccessFlags2 VulkanBackend::nativeMemoryCaches(MemoryCaches caches)
+        {
+            VkAccessFlags2 flags = VK_ACCESS_2_NONE;
+
+            if (static_cast<bool>(caches & MemoryCaches::INDIRECT_COMMAND_READ))
+            {
+                flags |= VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::INDEX_READ))
+            {
+                flags |= VK_ACCESS_2_INDEX_READ_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::VERTEX_ATTRIBUTE_READ))
+            {
+                flags |= VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::UNIFORM_READ))
+            {
+                flags |= VK_ACCESS_2_UNIFORM_READ_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::COLOR_TARGET))
+            {
+                flags |= VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::DEPTH_TARGET_READ))
+            {
+                flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::DEPTH_TARGET_WRITE))
+            {
+                flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::SHADER_SAMPLED_READ))
+            {
+                flags |= VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::SHADER_UNORDERED_ACCESS))
+            {
+                flags |= VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::COPY_READ))
+            {
+                flags |= VK_ACCESS_2_TRANSFER_READ_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::COPY_WRITE))
+            {
+                flags |= VK_ACCESS_2_TRANSFER_WRITE_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::RESOLVE_READ))
+            {
+                flags |= VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::RESOLVE_WRITE))
+            {
+                flags |= VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+            }
+            if (static_cast<bool>(caches & MemoryCaches::CLEAR))
+            {
+                flags |= VK_ACCESS_2_TRANSFER_WRITE_BIT;
+            }
+            return flags;
+        }
+
+        VkPipelineStageFlags2 VulkanBackend::nativePipelineStages(SyncStages stages)
+        {
+            VkPipelineStageFlags2 flags = VK_PIPELINE_STAGE_2_NONE;
+
+            if (static_cast<bool>(stages & SyncStages::ALL))
+            {
+                flags |= VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::ALL_GRAPHICS))
+            {
+                flags |= VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::INDEX_INPUT))
+            {
+                flags |= VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::VERTEX_SHADER))
+            {
+                flags |= VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::FRAGMENT_SHADER))
+            {
+                flags |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::DEPTH_STENCIL_TARGET_OUTPUT))
+            {
+                flags |= VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT_KHR | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT_KHR;
+            }
+            if (static_cast<bool>(stages & SyncStages::COLOR_TARGET_OUTPUT))
+            {
+                flags |= VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::COMPUTE_SHADER))
+            {
+                flags |= VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::RAYTRACING_SHADER))
+            {
+                flags |= VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
+            }
+            if (static_cast<bool>(stages & SyncStages::COPY))
+            {
+                flags |= VK_PIPELINE_STAGE_2_COPY_BIT_KHR;
+            }
+            if (static_cast<bool>(stages & SyncStages::RESOLVE))
+            {
+                flags |= VK_PIPELINE_STAGE_2_RESOLVE_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::EXECUTE_INDIRECT))
+            {
+                flags |= VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::CLEAR))
+            {
+                flags |= VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+            }
+            if (static_cast<bool>(stages & SyncStages::VIDEO_DECODE))
+            {
+                flags |= VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR;
+            }
+            if (static_cast<bool>(stages & SyncStages::VIDEO_ENCODE))
+            {
+                flags |= VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR;
+            }
+            if (static_cast<bool>(stages & SyncStages::BUILD_ACCELERATION_STRUCTURE))
+            {
+                flags |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+            }
+            if (static_cast<bool>(stages & SyncStages::COPY_ACCELERATION_STRUCTURE))
+            {
+                flags |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_COPY_BIT_KHR;
+            }
+            return flags;
+        }
+
+        VkPolygonMode VULKAN_POLYGON_MODES[]
+        {
+            VK_POLYGON_MODE_FILL,
+            VK_POLYGON_MODE_LINE,
+            VK_POLYGON_MODE_POINT
+        };
+
+        VkPolygonMode VulkanBackend::nativePolygonMode(RasterizationState::DrawMode mode)
+        {
+            return VULKAN_POLYGON_MODES[static_cast<uint8_t>(mode)];
+        }
+
+        VkCullModeFlags VULKAN_CULL_FLAGS[]
+        {
+            VK_CULL_MODE_NONE,
+            VK_CULL_MODE_FRONT_BIT,
+            VK_CULL_MODE_BACK_BIT,
+        };
+
+        VkCullModeFlags VulkanBackend::nativeCullMode(RasterizationState::CullOptions mode)
+        {
+            return VULKAN_CULL_FLAGS[static_cast<uint8_t>(mode)];
+        }
+
+        VkFrontFace VULKAN_FRONT_FACES[]
+        {
+            VK_FRONT_FACE_CLOCKWISE,
+            VK_FRONT_FACE_COUNTER_CLOCKWISE
+        };
+
+        VkFrontFace VulkanBackend::nativeFrontFace(RasterizationState::FrontFacing frontFace)
+        {
+            return VULKAN_FRONT_FACES[static_cast<uint8_t>(frontFace)];
+        }
+
+        VkBlendFactor VULKAN_BLEND_FACTORS[]
+        {
+            VK_BLEND_FACTOR_ZERO,
+            VK_BLEND_FACTOR_ONE,
+            VK_BLEND_FACTOR_SRC_COLOR,
+            VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR,
+            VK_BLEND_FACTOR_DST_COLOR,
+            VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR,
+            VK_BLEND_FACTOR_SRC_ALPHA,
+            VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+            VK_BLEND_FACTOR_DST_ALPHA,
+            VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,
+            VK_BLEND_FACTOR_CONSTANT_COLOR,
+            VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR,
+            VK_BLEND_FACTOR_CONSTANT_ALPHA,
+            VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA,
+            VK_BLEND_FACTOR_SRC_ALPHA_SATURATE,
+            VK_BLEND_FACTOR_SRC1_COLOR,
+            VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR,
+            VK_BLEND_FACTOR_SRC1_ALPHA,
+            VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA
+        };
+
+        VkBlendFactor VulkanBackend::nativeBlendFactor(BlendFactor blendFactor)
+        {
+            return VULKAN_BLEND_FACTORS[static_cast<uint8_t>(blendFactor)];
+        }
+
+        VkBlendOp VULKAN_BLEND_OPS[]
+        {
+            VK_BLEND_OP_ADD,
+            VK_BLEND_OP_SUBTRACT,
+            VK_BLEND_OP_REVERSE_SUBTRACT,
+            VK_BLEND_OP_MIN,
+            VK_BLEND_OP_MAX
+        };
+
+        VkBlendOp VulkanBackend::nativeBlendOp(BlendOperation blendOp)
+        {
+            return VULKAN_BLEND_OPS[static_cast<uint8_t>(blendOp)];
+        }
+
+        VkLogicOp VULKAN_LOGIC_OPS[]
+        {
+            VK_LOGIC_OP_CLEAR,
+            VK_LOGIC_OP_AND,
+            VK_LOGIC_OP_AND_REVERSE,
+            VK_LOGIC_OP_COPY,
+            VK_LOGIC_OP_AND_INVERTED,
+            VK_LOGIC_OP_NO_OP,
+            VK_LOGIC_OP_XOR,
+            VK_LOGIC_OP_OR,
+            VK_LOGIC_OP_NOR,
+            VK_LOGIC_OP_EQUIVALENT,
+            VK_LOGIC_OP_INVERT,
+            VK_LOGIC_OP_OR_REVERSE,
+            VK_LOGIC_OP_COPY_INVERTED,
+            VK_LOGIC_OP_OR_INVERTED,
+            VK_LOGIC_OP_NAND,
+            VK_LOGIC_OP_SET
+        };
+
+        VkLogicOp VulkanBackend::nativeLogicOp(LogicOperation logicOp)
+        {
+            return VULKAN_LOGIC_OPS[static_cast<uint8_t>(logicOp)];
+        }
+
+        VkStencilOp VULKAN_STENCIL_OPS[]
+        {
+            VK_STENCIL_OP_KEEP,
+            VK_STENCIL_OP_ZERO,
+            VK_STENCIL_OP_REPLACE,
+            VK_STENCIL_OP_INCREMENT_AND_CLAMP,
+            VK_STENCIL_OP_DECREMENT_AND_CLAMP,
+            VK_STENCIL_OP_INVERT,
+            VK_STENCIL_OP_INCREMENT_AND_WRAP,
+            VK_STENCIL_OP_DECREMENT_AND_WRAP
+        };
+
+        VkStencilOp VulkanBackend::nativeStencilOp(StencilOperation stencilOp)
+        {
+            return VULKAN_STENCIL_OPS[static_cast<uint8_t>(stencilOp)];
+        }
+
+        VkColorComponentFlags VulkanBackend::nativeColorComponentFlags(ColorComponents colorComponentFlags)
+        {
+            VkColorComponentFlags nativeColorComponentFlags = 0;
+            if (static_cast<bool>(colorComponentFlags & ColorComponents::RED))
+            {
+                nativeColorComponentFlags |= VK_COLOR_COMPONENT_R_BIT;
+            }
+            if (static_cast<bool>(colorComponentFlags & ColorComponents::GREEN))
+            {
+                nativeColorComponentFlags |= VK_COLOR_COMPONENT_G_BIT;
+            }
+            if (static_cast<bool>(colorComponentFlags & ColorComponents::BLUE))
+            {
+                nativeColorComponentFlags |= VK_COLOR_COMPONENT_B_BIT;
+            }
+            if (static_cast<bool>(colorComponentFlags & ColorComponents::ALPHA))
+            {
+                nativeColorComponentFlags |= VK_COLOR_COMPONENT_A_BIT;
+            }
+            return nativeColorComponentFlags;
+        }
+
+        VkCompareOp VULKAN_COMPARE_OPS[]
+        {
+            VK_COMPARE_OP_NEVER,
+            VK_COMPARE_OP_LESS,
+            VK_COMPARE_OP_LESS_OR_EQUAL,
+            VK_COMPARE_OP_GREATER,
+            VK_COMPARE_OP_GREATER_OR_EQUAL,
+            VK_COMPARE_OP_EQUAL,
+            VK_COMPARE_OP_NOT_EQUAL,
+            VK_COMPARE_OP_ALWAYS
+        };
+
+        VkCompareOp VulkanBackend::nativeCompareOp(ComparisonFunction compareOp)
+        {
+            return VULKAN_COMPARE_OPS[static_cast<uint8_t>(compareOp)];
+        }
+
+        VkFilter VulkanBackend::nativeFilter(SamplerFilter filter)
+        {
+            switch (filter)
+            {
+            case SamplerFilter::LINEAR:
+                return VK_FILTER_LINEAR;
+            case SamplerFilter::NEAREST:
+                return VK_FILTER_NEAREST;
+            }
+            return VK_FILTER_NEAREST;
+        }
+
+        VkSamplerAddressMode VulkanBackend::nativeSamplerAddressMode(SamplerAddressMode mode)
+        {
+            switch (mode)
+            {
+            case SamplerAddressMode::REPEAT:
+                return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            case SamplerAddressMode::MIRRORED_REPEAT:
+                return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+            case SamplerAddressMode::CLAMP_TO_EDGE:
+                return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            case SamplerAddressMode::CLAMP_TO_BORDER:
+                return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+            }
+            return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        }
+
+        VkCompositeAlphaFlagBitsKHR VulkanBackend::nativeCompositeAlphaFlags(AlphaCompositing alphaCompositing)
+        {
+            switch (alphaCompositing)
+            {
+            case AlphaCompositing::IGNORE_ALPHA:
+                return VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+                break;
+            case AlphaCompositing::PREMULTIPLIED:
+                return VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
+                break;
+            case AlphaCompositing::POSTMULTIPLIED:
+                return VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
+                break;
+            }
+            return VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        }
+
+        VkPresentModeKHR VulkanBackend::nativePresentMode(PresentMode presentMode)
+        {
+            switch (presentMode)
+            {
+            case PresentMode::IMMEDIATE:
+                return VK_PRESENT_MODE_IMMEDIATE_KHR;
+                break;
+            case PresentMode::BUFFER:
+                return VK_PRESENT_MODE_MAILBOX_KHR;
+                break;
+            case PresentMode::QUEUE:
+                return VK_PRESENT_MODE_FIFO_KHR;
+                break;
+            }
+            return VK_PRESENT_MODE_MAILBOX_KHR;
+        }
+
+        PresentMode VulkanBackend::crossPlatformPresentMode(VkPresentModeKHR presentMode)
+        {
+            switch (presentMode)
+            {
+            case VK_PRESENT_MODE_IMMEDIATE_KHR:
+                return PresentMode::IMMEDIATE;
+            case VK_PRESENT_MODE_MAILBOX_KHR:
+                return PresentMode::BUFFER;
+            case VK_PRESENT_MODE_FIFO_KHR:
+                return PresentMode::QUEUE;
+            }
+            return PresentMode::BUFFER;
+        }
+
+        VkImageLayout VULKAN_IMAGE_LAYOUTS[]
+        {
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_GENERAL,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_GENERAL,
+            VK_IMAGE_LAYOUT_GENERAL,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+        };
+
+        VkImageLayout VulkanBackend::nativeImageLayout(TextureLayout layout)
+        {
+            return VULKAN_IMAGE_LAYOUTS[static_cast<uint32_t>(layout)];
+        }
+
+        VkVertexInputRate VulkanBackend::nativeVertexInputRate(InputRate inputRate)
+        {
+            switch (inputRate)
+            {
+            case InputRate::PER_VRETEX:
+                    return VK_VERTEX_INPUT_RATE_VERTEX;
+            case InputRate::PER_INSTANCE:
+                    return VK_VERTEX_INPUT_RATE_INSTANCE;
+                default:
+                    return VK_VERTEX_INPUT_RATE_VERTEX;
+            }
+        }
+
+        SlagInitializationResult VulkanBackend::initializeBackend(const InitializationData& initializationData)
+        {
+            if (initializationData.debugHandler)
+            {
+                SLAG_VULKAN_DEBUG_HANDLER = initializationData.debugHandler;
+            }
+
+            vkb::InstanceBuilder builder;
+            auto inst = builder.set_app_name("Slag Application")
+                .request_validation_layers(initializationData.debugHandler)
+                .set_debug_callback(VULKAN_DEBUG_MESSENGER_CALLBACK)
+                .require_api_version(1,4,341)
+                .enable_extension("VK_KHR_get_surface_capabilities2")
+                .enable_extension("VK_EXT_surface_maintenance1")
+                .build();
+            if (!inst.has_value())
+            {
+                return SlagInitializationResult::INSUFFICIENT_CAPABILITIES;
+            }
+            _debugMessenger = inst->debug_messenger;
+            _instance = inst.value();
+
+
+            VkPhysicalDeviceMaintenance5Features maintenance5Features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES};
+            maintenance5Features.maintenance5 = true;
+
+            VkPhysicalDeviceShaderUntypedPointersFeaturesKHR untypedPointersFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_UNTYPED_POINTERS_FEATURES_KHR};
+            untypedPointersFeatures.shaderUntypedPointers = true;
+
+            VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR shaderDerivativesFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_KHR};
+            shaderDerivativesFeatures.computeDerivativeGroupLinear = true;
+            shaderDerivativesFeatures.computeDerivativeGroupQuads = true;
+
+            VkPhysicalDeviceDescriptorHeapFeaturesEXT descriptorHeapFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_HEAP_FEATURES_EXT};
+            descriptorHeapFeatures.descriptorHeap = true;
+            descriptorHeapFeatures.descriptorHeapCaptureReplay = true;
+
+            VkPhysicalDeviceCustomBorderColorFeaturesEXT customBorderFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT};
+            customBorderFeatures.customBorderColors = true;
+            customBorderFeatures.customBorderColorWithoutFormat = true;
+
+            /*VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcrFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES};
+            ycbcrFeatures.samplerYcbcrConversion = true;
+
+            VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT};
+            swapchainFeatures.swapchainMaintenance1 = true;*/
+
+
+            VkPhysicalDeviceFeatures basicFeatures{};
+            basicFeatures.fillModeNonSolid = true;
+            basicFeatures.wideLines = true;
+            basicFeatures.depthClamp = true;
+            basicFeatures.sampleRateShading = true;
+            basicFeatures.alphaToOne = true;
+            basicFeatures.logicOp = true;
+            basicFeatures.fragmentStoresAndAtomics = true;
+            basicFeatures.shaderStorageImageMultisample = true;
 
             VkPhysicalDeviceVulkan12Features features1_2{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
             features1_2.bufferDeviceAddress = true;
@@ -532,372 +871,52 @@ namespace slag
             features1_2.shaderInt8 = true;
             features1_2.shaderFloat16 = true;
 
-            VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcrFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES};
-            ycbcrFeatures.samplerYcbcrConversion = true;
 
+            VkPhysicalDeviceVulkan13Features features1_3{.sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
+            features1_3.dynamicRendering = true;
+            features1_3.synchronization2 = true;
 
-            VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR shaderDerivativesFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_KHR};
-            shaderDerivativesFeatures.pNext = &ycbcrFeatures;
-            shaderDerivativesFeatures.computeDerivativeGroupLinear = true;
-            shaderDerivativesFeatures.computeDerivativeGroupQuads = true;
-
-
-            VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT};
-            swapchainFeatures.pNext = &shaderDerivativesFeatures;
-
-            VkPhysicalDeviceFeatures2 features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
-            features.pNext = &swapchainFeatures;
-
-            features1_2.pNext = &swapchainFeatures;
-
-            VkPhysicalDeviceFeatures basicFeatures{};
-            basicFeatures.fillModeNonSolid = true;
-            basicFeatures.wideLines = true;
-            basicFeatures.largePoints = true;
-            basicFeatures.depthClamp = true;
-            basicFeatures.sampleRateShading = true;
-            basicFeatures.alphaToOne = true;
-            basicFeatures.logicOp = true;
-            basicFeatures.fragmentStoresAndAtomics = true;
-            basicFeatures.shaderStorageImageMultisample = true;
-
-
+            VkPhysicalDeviceVulkan14Features features1_4{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES };
+            features1_4.maintenance5 = true;
 
             vkb::PhysicalDeviceSelector selector{_instance};
-            auto physicalDevices = selector.set_minimum_version(1,3)
-                                            .set_required_features_13(features1_3)
-                                            .set_required_features_12(features1_2)
-                                            .set_required_features(basicFeatures)
-                                            .add_required_extension("VK_EXT_swapchain_maintenance1")
-                                            .add_required_extension("VK_EXT_custom_border_color")
-                                            .add_required_extension("VK_KHR_compute_shader_derivatives")
-                                            .defer_surface_initialization()
-                                            .select_devices();
+            auto physicalDevices = selector.set_minimum_version(1,4)
+                .set_required_features_13(features1_3)
+                .set_required_features_12(features1_2)
+                .set_required_features(basicFeatures)
+            .add_required_extension("VK_KHR_maintenance5")
+            .add_required_extension_features(maintenance5Features)
+            .add_required_extension("VK_KHR_shader_untyped_pointers")
+            .add_required_extension_features(untypedPointersFeatures)
+            .add_required_extension("VK_KHR_compute_shader_derivatives")
+            .add_required_extension_features(shaderDerivativesFeatures)
+            .add_required_extension("VK_EXT_descriptor_heap")
+            .add_required_extension_features(descriptorHeapFeatures)
+            .add_required_extension("VK_EXT_custom_border_color")
+            .add_required_extension_features(customBorderFeatures)
+                .defer_surface_initialization()
+                .select_devices();
 
-            std::vector<std::unique_ptr<GraphicsCard>> graphicsCards;
-            if (physicalDevices.has_value())
+            if (!physicalDevices.has_value())
             {
-                for (auto& physicalDevice : physicalDevices.value())
+                return SlagInitializationResult::NO_GRAPHICS_CARDS;
+            }
+            _graphicsCards.reserve(physicalDevices.value().size());
+            for (auto& physicalDevice : physicalDevices.value())
+            {
+                vkb::DeviceBuilder deviceBuilder{physicalDevice};
+                auto device = deviceBuilder.build();
+                if (device.has_value())
                 {
-                    vkb::DeviceBuilder deviceBuilder{physicalDevice};
-                    auto device = deviceBuilder.build();
-                    if(device.has_value())
-                    {
-                        graphicsCards.emplace_back(std::make_unique<VulkanGraphicsCard>(_instance.instance, device.value()));
-                    }
+                    _graphicsCards.emplace_back(_instance.instance,device.value());
                 }
             }
-            return graphicsCards;
-        }
-
-        GraphicsBackend VulkanBackend::backendAPI()
-        {
-            return GraphicsBackend::VULKAN_GRAPHICS_BACKEND;
-        }
-
-        CommandBuffer* VulkanBackend::newCommandBuffer(GPUQueue::QueueType acceptsCommands)
-        {
-            return new VulkanCommandBuffer(acceptsCommands);
-        }
-
-        CommandBuffer* VulkanBackend::newSubCommandBuffer(CommandBuffer* parentBuffer)
-        {
-            throw std::runtime_error("Not implemented");
-        }
-
-        Semaphore* VulkanBackend::newSemaphore(uint64_t initialValue)
-        {
-            return new VulkanSemaphore(initialValue);
-        }
-
-        void VulkanBackend::waitFor(SemaphoreValue* values, size_t count)
-        {
-            VulkanSemaphore::waitFor(values, count);
-        }
-
-        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount)
-        {
-            return new VulkanTexture(texelFormat, type, usageFlags, width, height, depth,mipLevels, layers, sampleCount);
-        }
-
-
-        Texture* VulkanBackend::newTexture(Pixels::Format texelFormat, Texture::Type type, Texture::UsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t layers, Texture::SampleCount sampleCount, void* texelData, uint64_t texelDataLength, TextureBufferMapping* mappings, uint32_t mappingCount)
-        {
-            return new VulkanTexture(texelFormat, type,usageFlags,width,height, depth,mipLevels,layers,sampleCount,texelData, texelDataLength,mappings,mappingCount);
-        }
-
-        Buffer* VulkanBackend::newBuffer(size_t dataSize, Buffer::Accessibility accessibility, Buffer::UsageFlags usage)
-        {
-            return new VulkanBuffer(dataSize, accessibility, usage);
-        }
-
-        Buffer* VulkanBackend::newBuffer(void* data, size_t dataSize, Buffer::Accessibility accessibility, Buffer::UsageFlags usage)
-        {
-            return new VulkanBuffer(data, dataSize, accessibility, usage);
-        }
-
-        BufferView* VulkanBackend::newBufferView(Buffer* buffer, Pixels::Format format, uint64_t offset, uint64_t size)
-        {
-            return new VulkanBufferView(buffer, format, offset, size);
-        }
-
-        SwapChain* VulkanBackend::newSwapChain(PlatformData platformData, uint32_t width, uint32_t height, const SwapChainDetails& details)
-        {
-            return new VulkanSwapChain(platformData, width, height, details);
-        }
-
-        Sampler* VulkanBackend::newSampler(SamplerParameters parameters)
-        {
-            return new VulkanSampler(parameters);
-        }
-
-        std::vector<ShaderCode::CodeLanguage> VulkanBackend::acceptedLanuages()
-        {
-            return std::vector<ShaderCode::CodeLanguage>
+            if (_graphicsCards.size()==0)
             {
-                ShaderCode::CodeLanguage::SPIRV
-            };
-        }
-
-        ShaderPipeline* VulkanBackend::newShaderPipeline(ShaderCode** shaders, uint32_t shaderCount, ShaderProperties& properties, VertexDescription& vertexDescription, FrameBufferDescription& framebufferDescription, std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
-        {
-            return new VulkanShaderPipeline(shaders, shaderCount, properties, vertexDescription, framebufferDescription, rename, renameData);
-        }
-
-        ShaderPipeline* VulkanBackend::newShaderPipeline(const ShaderCode& computeShader, std::string(*rename)(const DescriptorRenameParameters&,void*), void* renameData)
-        {
-            return new VulkanShaderPipeline(computeShader, rename, renameData);
-        }
-
-        DescriptorPool* VulkanBackend::newDescriptorPool()
-        {
-            return new VulkanDescriptorPool(DescriptorPoolPageInfo{});
-        }
-
-        DescriptorPool* VulkanBackend::newDescriptorPool(const DescriptorPoolPageInfo& pageInfo)
-        {
-            return new VulkanDescriptorPool(pageInfo);
-        }
-
-        void VulkanBackend::setDescriptorBundleSampler(DescriptorBundle& descriptor, DescriptorIndex* index,uint32_t arrayElement, Sampler* sampler)
-        {
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
-            auto vIndex = static_cast<VulkanDescriptorIndex*>(index);
-            auto s = static_cast<VulkanSampler*>(sampler);
-
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.sampler = s->vulkanHandle();
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet = descriptorSet;
-            write.dstBinding = vIndex->binding;
-            write.dstArrayElement = arrayElement;
-            write.descriptorCount = 1;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-            write.pImageInfo = &imageInfo;
-
-            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
-        }
-        void VulkanBackend::setDescriptorBundleSampledTexture(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Texture* texture)
-        {
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
-            auto vIndex = static_cast<VulkanDescriptorIndex*>(index);
-            auto tex = static_cast<VulkanTexture*>(texture);
-
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-            imageInfo.imageView = tex->vulkanViewHandle();
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet = descriptorSet;
-            write.dstBinding = vIndex->binding;
-            write.dstArrayElement = arrayElement;
-            write.descriptorCount = 1;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-            write.pImageInfo = &imageInfo;
-
-            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
-        }
-
-        void VulkanBackend::setDescriptorBundleStorageTexture(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Texture* texture)
-        {
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
-            auto vIndex = static_cast<VulkanDescriptorIndex*>(index);
-            auto tex = static_cast<VulkanTexture*>(texture);
-
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-            imageInfo.imageView = tex->vulkanViewHandle();
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet = descriptorSet;
-            write.dstBinding = vIndex->binding;
-            write.dstArrayElement = arrayElement;
-            write.descriptorCount = 1;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-            write.pImageInfo = &imageInfo;
-
-            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
-        }
-        void VulkanBackend::setDescriptorBundleUniformTexelBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, BufferView* bufferView)
-        {
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
-            auto vIndex = static_cast<VulkanDescriptorIndex*>(index);
-            auto buf = static_cast<VulkanBufferView*>(bufferView);
-
-            auto handle = buf->vulkanHandle();
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet = descriptorSet;
-            write.dstBinding = vIndex->binding;
-            write.dstArrayElement = arrayElement;
-            write.descriptorCount = 1;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-            write.pTexelBufferView = &handle;
-
-            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
-
-        }
-        void VulkanBackend::setDescriptorBundleStorageTexelBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, BufferView* bufferView)
-        {
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
-            auto vIndex = static_cast<VulkanDescriptorIndex*>(index);
-            auto buf = static_cast<VulkanBufferView*>(bufferView);
-
-            auto handle = buf->vulkanHandle();
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet = descriptorSet;
-            write.dstBinding = vIndex->binding;
-            write.dstArrayElement = arrayElement;
-            write.descriptorCount = 1;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
-            write.pTexelBufferView = &handle;
-
-            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
-        }
-        void VulkanBackend::setDescriptorBundleUniformBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Buffer* buffer, uint64_t offset, uint64_t length)
-        {
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
-            auto vIndex = static_cast<VulkanDescriptorIndex*>(index);
-            auto buf = static_cast<VulkanBuffer*>(buffer);
-
-            VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = buf->vulkanHandle();
-            bufferInfo.offset = offset;
-            bufferInfo.range = length;
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet = descriptorSet;
-            write.dstBinding = vIndex->binding;
-            write.dstArrayElement = arrayElement;
-            write.descriptorCount = 1;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            write.pBufferInfo = &bufferInfo;
-
-            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
-        }
-        void VulkanBackend::setDescriptorBundleStorageBuffer(DescriptorBundle& descriptor, DescriptorIndex* index, uint32_t arrayElement, Buffer* buffer, uint64_t offset, uint64_t length)
-        {
-            VkDescriptorSet descriptorSet = static_cast<VkDescriptorSet>(descriptor.gpuHandle());
-            auto vIndex = static_cast<VulkanDescriptorIndex*>(index);
-            auto buf = static_cast<VulkanBuffer*>(buffer);
-
-            VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = buf->vulkanHandle();
-            bufferInfo.offset = offset;
-            bufferInfo.range = length;
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet = descriptorSet;
-            write.dstBinding = vIndex->binding;
-            write.dstArrayElement = arrayElement;
-            write.descriptorCount = 1;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            write.pBufferInfo = &bufferInfo;
-
-            vkUpdateDescriptorSets(VulkanGraphicsCard::selected()->device(),1,&write,0, nullptr);
-        }
-
-        PixelFormatProperties VulkanBackend::pixelFormatProperties(Pixels::Format format)
-        {
-            auto nativeFormat = VulkanBackend::vulkanizedFormat(format);
-            VkFormatProperties2 formatProperties{.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2};
-            vkGetPhysicalDeviceFormatProperties2(VulkanGraphicsCard::selected()->physicalDevice(),nativeFormat.format,&formatProperties);
-            PixelFormatProperties properties{};
-            VkFormatFeatureFlags2 features = 0;
-            Texture::UsageFlags usage =static_cast<Texture::UsageFlags>(0);
-
-            if (formatProperties.formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT && formatProperties.formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT)
-            {
-                properties.tiling = PixelFormatProperties::Tiling::OPTIMIZED;
-                features = formatProperties.formatProperties.optimalTilingFeatures;
+                return SlagInitializationResult::NO_GRAPHICS_CARDS;
             }
-            else if (formatProperties.formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT && formatProperties.formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT)
-            {
-                properties.tiling = PixelFormatProperties::Tiling::LINEAR;
-                features = formatProperties.formatProperties.optimalTilingFeatures;
-            }
-            else
-            {
-                properties.tiling = PixelFormatProperties::Tiling::UNSUPPORTED;
-                return properties;
-            }
-            bool hasUsage = false;
-            if (features & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT)
-            {
-                usage |= Texture::UsageFlags::SAMPLED_IMAGE;
-                hasUsage = true;
-            }
-            if (features & VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT )
-            {
-                usage |= Texture::UsageFlags::STORAGE;
-                hasUsage = true;
-            }
-            if (features & VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT)
-            {
-                usage |= Texture::UsageFlags::RENDER_TARGET_ATTACHMENT;
-                hasUsage = true;
-            }
-            if (features & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
-            {
-                usage |= Texture::UsageFlags::DEPTH_STENCIL_ATTACHMENT;
-                hasUsage = true;
-            }
-            properties.validUsageFlags = usage;
-            if (!hasUsage)
-            {
-                properties.tiling = PixelFormatProperties::Tiling::UNSUPPORTED;
-                return properties;
-            }
-            if (features & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT)
-            {
-                properties.linearFilteringCapable = true;
-            }
-            if (features & VK_FORMAT_FEATURE_2_BLIT_SRC_BIT )
-            {
-                properties.blitSource = true;
-            }
-            if (features & VK_FORMAT_FEATURE_2_BLIT_DST_BIT )
-            {
-                properties.blitDestination = true;
-            }
+            return SlagInitializationResult::SUCCESS;
 
-
-            return properties;
-        }
-
-        vkb::Instance VulkanBackend::vulkanInstance()
-        {
-            return _instance;
         }
     } // vulkan
 } // slag

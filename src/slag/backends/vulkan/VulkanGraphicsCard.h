@@ -1,0 +1,152 @@
+#ifndef SLAG_VULKANGRAPHICSCARD_H
+#define SLAG_VULKANGRAPHICSCARD_H
+#include <slag/Slag.h>
+#include <vulkan/vulkan.h>
+#include <vk_mem_alloc.h>
+#include <VkBootstrap.h>
+
+namespace slag
+{
+    namespace vulkan
+    {
+        class VulkanSubmissionQueue;
+
+        class VulkanGraphicsCard: public GraphicsCard
+        {
+        public:
+            VulkanGraphicsCard(VkInstance instance, const vkb::Device& device);
+            ~VulkanGraphicsCard()override;
+            VulkanGraphicsCard(const VulkanGraphicsCard&) = delete;
+            VulkanGraphicsCard& operator=(const VulkanGraphicsCard&) = delete;
+            VulkanGraphicsCard(VulkanGraphicsCard&& from) noexcept ;
+            VulkanGraphicsCard& operator=(VulkanGraphicsCard&& from) noexcept ;
+            [[nodiscard]] std::string name()const override;
+            [[nodiscard]] const GraphicsCardMemoryProperties& memoryProperties()const override;
+            [[nodiscard]] const GraphicsCardCapabilities& capabilities()const override;
+            [[nodiscard]] const DescriptorHeapDetails& descriptorHeapDetails()const override;
+            [[nodiscard]] PixelFormatProperties formatProperties(PixelFormat format)const override;
+            [[nodiscard]] SubmissionQueue* graphicsQueue()override;
+            [[nodiscard]] SubmissionQueue* computeQueue()override;
+            [[nodiscard]] SubmissionQueue* transferQueue()override;
+            uint64_t defragmentMemory(uint64_t targetBytes, std::function<void(MemoryReference*)> memoryMoved)override;
+
+            SwapChain* newSwapchain(const PlatformData& platformData, uint32_t width, uint32_t height, const SwapChainParameters& parameters)override;
+            //Shaders
+            [[nodiscard]] ShaderPipeline* newShaderPipeline(
+                const VertexDescription& vertexDescription,
+                const ShaderCode& vertexShader,
+                const ShaderCode& fragmentShader,
+                const PipelineState& pipelineState,
+                const FramebufferDescription& framebufferDescription)override;
+
+            [[nodiscard]] ShaderPipeline* newShaderPipeline(ShaderCode* computeShader)override;
+
+            //Command Buffers
+            [[nodiscard]] CommandBuffer* newCommandBuffer(QueueType type)override;
+            //Semaphores
+            [[nodiscard]] Semaphore* newSemaphore(uint64_t initialValue)override;
+            //Buffers
+            [[nodiscard]] Buffer* newBuffer(
+                uint64_t size,
+                BufferCPUAccess cpuAccess,
+                BufferMemoryType memoryType)override;
+
+            [[nodiscard]] ResourceDescriptorHeap* newResourceDescriptorHeap(uint32_t minDescriptorCount)override;
+
+            [[nodiscard]] SamplerDescriptorHeap* newSamplerDescriptorHeap(uint32_t descriptorCount)override;
+
+            void writeUniformBufferDescriptor(Buffer* buffer, uint64_t offset, uint64_t length, void* destination)override;
+            void writeReadWriteBufferDescriptor(Buffer* buffer, uint64_t firstElementIndex,uint64_t elementCount, uint64_t elementStride, void* destination)override;
+            void writeUniformTexelBuffer(Buffer* buffer, PixelFormat format, uint64_t firstElementIndex, uint64_t elementCount, void* destination)override;
+            void writeReadWriteTexelBuffer(Buffer* buffer, PixelFormat format, uint64_t firstElementIndex, uint64_t elementCount, void* destination)override;
+            void writeUniformTextureDescriptor(Texture* texture, uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer, uint32_t layerCount, void* destination)override;
+            void writeReadWriteTextureDescriptor(Texture* texture, uint32_t mip, uint32_t baseLayer, uint32_t layerCount, void* destination)override;
+            void writeSamplerDescriptor(Sampler* sampler, void* destination)override;
+
+            //Textures
+            [[nodiscard]] virtual Texture* newTexture1D(
+            uint32_t width,
+            PixelFormat format,
+            TextureUsageFlags usage,
+            uint32_t mipLevels,
+            uint32_t layers)override;
+
+            [[nodiscard]] virtual Texture* newTexture2D(
+                uint32_t width,
+                uint32_t height,
+                PixelFormat format,
+                TextureUsageFlags usage,
+                uint32_t mipLevels,
+                SampleCount sampleCount,
+                uint32_t layers)override;
+
+            [[nodiscard]] virtual Texture* newTexture3D(
+                uint32_t width,
+                uint32_t height,
+                uint32_t depth,
+                PixelFormat format,
+                TextureUsageFlags usage,
+                uint32_t mipLevels)override;
+
+            [[nodiscard]] virtual Texture* newTextureCube(
+                uint32_t dimension,
+                PixelFormat format,
+                TextureUsageFlags usage,
+                uint32_t mipLevels,
+                uint32_t arrayDepth
+                )override;
+
+            [[nodiscard]] Sampler* newSampler(
+                SamplerFilter min,
+                SamplerFilter mag,
+                SamplerFilter mip,
+                SamplerAddressMode u,
+                SamplerAddressMode v,
+                SamplerAddressMode w,
+                float mipLODBias,
+                bool anisotrophyEnabled,
+                uint8_t  maxAnisotrophy,
+                ComparisonFunction comparisonFunction,
+                Color borderColor,
+                float minLOD,
+                float maxLOD
+                )override;
+
+            //Vulkan specific
+            [[nodiscard]] VkDevice device() const;
+            [[nodiscard]] VkPhysicalDevice physicalDevice() const;
+            [[nodiscard]] VmaAllocator allocator() const;
+            [[nodiscard]] uint32_t graphicsFamilyIndex()const;
+            [[nodiscard]] uint32_t computeFamilyIndex()const;
+            [[nodiscard]] uint32_t transferFamilyIndex()const;
+
+            PFN_vkCmdBindSamplerHeapEXT vkCmdBindSamplerHeap=nullptr;
+            PFN_vkCmdBindResourceHeapEXT vkCmdBindResourceHeap=nullptr;
+            PFN_vkWriteSamplerDescriptorsEXT vkWriteSamplerDescriptors=nullptr;
+            PFN_vkWriteResourceDescriptorsEXT vkWriteResourceDescriptors=nullptr;
+            PFN_vkRegisterCustomBorderColorEXT vkRegisterCustomBorderColor=nullptr;
+            PFN_vkUnregisterCustomBorderColorEXT vkUnregisterCustomBorderColor=nullptr;
+            PFN_vkCmdPushDataEXT vkCmdPushData=nullptr;
+            //samplers have a hard limit to how many can be assigned, so let samplers manage that number
+            friend class VulkanSampler;
+        private:
+
+            void move(VulkanGraphicsCard& from);
+            std::string _name;
+            GraphicsCardMemoryProperties _memoryProperties{};
+            GraphicsCardCapabilities _capabilities{};
+            DescriptorHeapDetails _descriptorHeapDetails{};
+            VkPhysicalDevice _physicalDevice=nullptr;
+            VkDevice _device=nullptr;
+            VmaAllocator _allocator = nullptr;
+            VulkanSubmissionQueue* _graphicsQueue=nullptr;
+            VulkanSubmissionQueue* _computeQueue=nullptr;
+            VulkanSubmissionQueue* _transferQueue=nullptr;
+            uint32_t _graphicsQueueFamily=0;
+            uint32_t _computeQueueFamily=0;
+            uint32_t _transferQueueFamily=0;
+        };
+    } // vulkan
+} // slag
+
+#endif //SLAG_VULKANGRAPHICSCARD_H
