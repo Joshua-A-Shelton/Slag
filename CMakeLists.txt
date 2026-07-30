@@ -4,8 +4,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include(FetchContent)
 
+add_library(Slag)
+
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_definitions(-DSLAG_DEBUG=1)
+    target_compile_definitions(Slag INTERFACE SLAG_DEBUG=1)
     set(SLAG_DEBUG_BUILD ON)
 endif()
 
@@ -32,20 +34,24 @@ if(NOT WIN32)
 endif()
 #enable backend macros
 if(SLAG_WIN32_BACKEND)
+    target_compile_definitions(Slag INTERFACE SLAG_WIN32_BACKEND=1)
     add_definitions(-DSLAG_WIN32_BACKEND=1)
     message("added win32 backend")
 endif()
 if(SLAG_X11_BACKEND)
+    target_compile_definitions(Slag INTERFACE SLAG_X11_BACKEND=1)
     add_definitions(-DSLAG_X11_BACKEND=1)
     message("added x11 backend")
 endif()
 if(SLAG_WAYLAND_BACKEND)
+    target_compile_definitions(Slag INTERFACE SLAG_WAYLAND_BACKEND=1)
     add_definitions(-DSLAG_WAYLAND_BACKEND=1)
     message("added wayland backend")
 endif()
 
 if(SLAG_VULKAN_BACKEND)
     find_package(Vulkan 1.4.341 REQUIRED)
+    target_compile_definitions(Slag INTERFACE SLAG_VULKAN_BACKEND=1)
     add_definitions(-DSLAG_VULKAN_BACKEND=1)
     message("adding vulkan backend")
     SET(SLAG_VULKAN_SOURCES
@@ -80,6 +86,7 @@ if(SLAG_VULKAN_BACKEND)
     )
 endif()
 if(SLAG_DX12_BACKEND)
+    target_compile_definitions(Slag INTERFACE SLAG_DX12_BACKEND=1)
     add_definitions(-DSLAG_DX12_BACKEND=1)
     message("adding direct x 12 backend")
     SET(SLAG_DX12_SOURCES
@@ -115,7 +122,7 @@ if(SLAG_DX12_BACKEND)
     )
 endif()
 
-add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLECT_SOURCES} ${SLAG_DXIL_12_REFLECT_SOURCES}
+SET(SLAG_SOURCES ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLECT_SOURCES} ${SLAG_DXIL_12_REFLECT_SOURCES}
         src/slag/Slag.cpp
         src/slag/Slag.h
         src/slag/core/GraphicsCard.cpp
@@ -160,9 +167,9 @@ add_library(Slag ${SLAG_VULKAN_SOURCES} ${SLAG_DX12_SOURCES} ${SLAG_SPIRV_REFLEC
         src/slag/core/Frame.h
         src/slag/core/PlatformData.h
         src/slag/exceptions/InvalidSwapChainOperation.h
-
-
 )
+
+target_sources(Slag PRIVATE ${SLAG_SOURCES})
 
 if(SLAG_VULKAN_BACKEND)
     message("vulkan directory: ${Vulkan_INCLUDE_DIR}")
