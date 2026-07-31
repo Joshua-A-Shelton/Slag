@@ -136,11 +136,28 @@ namespace slag
             _descriptorHeapDetails.bufferDescriptorAlignment = _descriptorHeapDetails.bufferDescriptorSize;
             _descriptorHeapDetails.samplerDescriptorSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
             _descriptorHeapDetails.samplerDescriptorAlignment = _descriptorHeapDetails.samplerDescriptorSize;
-            //TODO: this is only true on max hardware tiers. I should query it and set it from the query
-            _descriptorHeapDetails.maxResourceDescriptors = 1015808;
-            _descriptorHeapDetails.maxSamplerDescriptors = 2048;
-            _descriptorHeapDetails.resourceReservedRangeSize = 0;
-            _descriptorHeapDetails.samplerReservedRangeSize = 0;
+
+            if (options.ResourceHeapTier == D3D12_RESOURCE_HEAP_TIER_1)
+            {
+                _descriptorHeapDetails.maxResourceDescriptors = 1000000;
+                _descriptorHeapDetails.maxSamplerDescriptors = 16;
+                _descriptorHeapDetails.resourceReservedRangeSize = 0;
+                _descriptorHeapDetails.samplerReservedRangeSize = 0;
+            }
+            else if (options.ResourceHeapTier == D3D12_RESOURCE_HEAP_TIER_2)
+            {
+                _descriptorHeapDetails.maxResourceDescriptors = 1000000;
+                _descriptorHeapDetails.maxSamplerDescriptors = 2048;
+                _descriptorHeapDetails.resourceReservedRangeSize = 0;
+                _descriptorHeapDetails.samplerReservedRangeSize = 0;
+            }
+            else
+            {
+                _descriptorHeapDetails.maxResourceDescriptors = 1000000;
+                _descriptorHeapDetails.maxSamplerDescriptors = 2048;
+                _descriptorHeapDetails.resourceReservedRangeSize = 0;
+                _descriptorHeapDetails.samplerReservedRangeSize = 0;
+            }
 
             //root signature
             D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
