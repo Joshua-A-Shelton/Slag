@@ -388,7 +388,7 @@ namespace slag
             {
                 usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
             }
-            if (static_cast<bool>(flags & TextureUsageFlags::UNORDERED_ACCESS))
+            if (static_cast<bool>(flags & TextureUsageFlags::READ_WRITE))
             {
                 usage |= VK_IMAGE_USAGE_STORAGE_BIT;
             }
@@ -440,7 +440,7 @@ namespace slag
             {
                 flags |= VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
             }
-            if (static_cast<bool>(caches & MemoryCaches::SHADER_UNORDERED_ACCESS))
+            if (static_cast<bool>(caches & MemoryCaches::SHADER_READ_WRITE_ACCESS))
             {
                 flags |= VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
             }

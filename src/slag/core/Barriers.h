@@ -18,7 +18,7 @@ namespace slag
         DEPTH_TARGET_READ           = 1 << 6,
         DEPTH_TARGET_WRITE          = 1 << 7,
         SHADER_SAMPLED_READ         = 1 << 8,
-        SHADER_UNORDERED_ACCESS     = 1 << 9,
+        SHADER_READ_WRITE_ACCESS    = 1 << 9,
         COPY_READ                   = 1 << 10,
         COPY_WRITE                  = 1 << 11,
         RESOLVE_READ                = 1 << 12,

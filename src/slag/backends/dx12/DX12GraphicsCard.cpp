@@ -280,7 +280,7 @@ namespace slag
             }
             if (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_TYPED_UNORDERED_ACCESS_VIEW)
             {
-                properties.validUsageFlags |= TextureUsageFlags::UNORDERED_ACCESS;
+                properties.validUsageFlags |= TextureUsageFlags::READ_WRITE;
             }
 
             //TODO: not sure if this is right or not.... but there's not great documentation on which allow linear or not
@@ -614,6 +614,7 @@ namespace slag
         void DX12GraphicsCard::writeReadWriteTextureDescriptor(Texture* texture, uint32_t mip, uint32_t baseLayer,
             uint32_t layerCount, void* destination)
         {
+            SLAG_ASSERT((bool)(texture->usage() & TextureUsageFlags::READ_WRITE) && "Only unordered access textures can be bound for read-write texture descriptors");
             SLAG_ASSERT(texture->type() != TextureType::CUBE_MAP && "Unordered access textures cannot be cube maps");
             auto dxTexture = static_cast<DX12Texture*>(texture);
             D3D12_CPU_DESCRIPTOR_HANDLE handle((size_t)destination);

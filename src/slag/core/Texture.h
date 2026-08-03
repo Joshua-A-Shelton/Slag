@@ -26,7 +26,7 @@ namespace slag
         ///Texture data is capable of being accessed by a sampler in shaders
         SAMPLED                 = 0b00000001,
         ///Texture supports arbitrary read/write operations in shaders
-        UNORDERED_ACCESS        = 0b00000010,
+        READ_WRITE        = 0b00000010,
         ///Texture can be set as a color target of graphics shaders
         COLOR_TARGET            = 0b00000100,
         ///Texture can be set as a depth/stencil target of graphics shaders
