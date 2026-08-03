@@ -84,6 +84,7 @@ namespace slag
         private:
             void move(VulkanTexture& from);
             void construct(VkImageType imageType,PixelFormatProperties, VkImageCreateFlags flags);
+            void populateDescriptorInfo();
             VkImageViewCreateInfo _descriptorInfo{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
             MemoryReference _selfReference{.type = MemoryObjectType::TEXTURE, .memory = {.texture = this}};
             VulkanGraphicsCard* _graphicsCard = nullptr;
