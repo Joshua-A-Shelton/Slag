@@ -640,6 +640,45 @@ namespace slag
             vkCmdResolveImage2(_commandBuffer,&resolveInfo);
         }
 
+        void IVulkanCommandBuffer::copyTextureRegion(PixelAspect aspect, Texture* source, uint32_t sourceLayer, uint32_t sourceMip,
+            Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip,
+            Offset2D destinationOffset)
+        {
+            SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+            VkImageCopy2 copyRegion
+            {
+                .sType = VK_STRUCTURE_TYPE_IMAGE_COPY_2,
+                .srcSubresource =
+                {
+                    .aspectMask = VulkanBackend::nativeTextureAspect((PixelAspectFlags)aspect),
+                    .mipLevel = sourceMip,
+                    .baseArrayLayer = sourceLayer,
+                    .layerCount = 1
+                },
+                .srcOffset = {sourceRect.offset.x,sourceRect.offset.y,0},
+                .dstSubresource =
+                {
+                    .aspectMask = VulkanBackend::nativeTextureAspect((PixelAspectFlags)aspect),
+                    .mipLevel = destinationMip,
+                    .baseArrayLayer = destinationLayer,
+                    .layerCount = 1
+                },
+                .dstOffset = {destinationOffset.x,destinationOffset.y,0},
+                .extent = {.width = sourceRect.extent.width,.height = sourceRect.extent.height,.depth = 1}
+            };
+            VkCopyImageInfo2 copyData
+            {
+                .sType = VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2,
+                .srcImage = static_cast<VulkanTexture*>(source)->vulkanHandle(),
+                .srcImageLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .dstImage = static_cast<VulkanTexture*>(destination)->vulkanHandle(),
+                .dstImageLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .regionCount = 1,
+                .pRegions = &copyRegion
+            };
+            vkCmdCopyImage2(_commandBuffer,&copyData);
+        }
+
         VkCommandBuffer IVulkanCommandBuffer::vulkanHandle() const
         {
             return _commandBuffer;

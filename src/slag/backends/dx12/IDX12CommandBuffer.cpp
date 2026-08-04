@@ -277,7 +277,7 @@ namespace slag
                 uint32_t layerOffsetIndex = 0;
                 for (auto i=0; i<mapping.subresource.layerCount; ++i)
                 {
-                    auto subResourceIndex = D3D12CalcSubresource(mapping.subresource.mipLevel,mapping.subresource.baseArrayLayer+layerOffsetIndex,plane,1,1);
+                    auto subResourceIndex = D3D12CalcSubresource(mapping.subresource.mipLevel,mapping.subresource.baseArrayLayer+layerOffsetIndex,plane,source->mipLevels(),source->layers());
                     D3D12_TEXTURE_COPY_LOCATION sourceLocation
                     {
                         .pResource = tex->dx12Handle(),
@@ -618,8 +618,8 @@ namespace slag
             DX12Texture* dx12Destination = static_cast<DX12Texture*>(destination);
             D3D12_RECT dx12SourceRect = {sourceRect.offset.x, sourceRect.offset.y, (long)(sourceRect.offset.x + sourceRect.extent.width), (long)(sourceRect.offset.y + sourceRect.extent.height)};
 
-            auto sourceSubResource = D3D12CalcSubresource(sourceMip,sourceLayer,0,1,1);
-            auto destinationSubResource = D3D12CalcSubresource(destinationMip,destinationLayer,0,1,1);
+            auto sourceSubResource = D3D12CalcSubresource(sourceMip,sourceLayer,0,source->mipLevels(),source->layers());
+            auto destinationSubResource = D3D12CalcSubresource(destinationMip,destinationLayer,0,destination->mipLevels(),destination->layers());
 
             _commandBuffer->ResolveSubresourceRegion(
                 dx12Destination->dx12Handle(),
@@ -631,6 +631,46 @@ namespace slag
                 &dx12SourceRect,
                 DX12Backend::nativeFormat(source->format()),
                 D3D12_RESOLVE_MODE::D3D12_RESOLVE_MODE_AVERAGE);
+        }
+
+        void IDX12CommandBuffer::copyTextureRegion(PixelAspect aspect, Texture* source, uint32_t sourceLayer, uint32_t sourceMip,
+            Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip,
+            Offset2D destinationOffset)
+        {
+            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+            auto src = static_cast<DX12Texture*>(source);
+            auto dst = static_cast<DX12Texture*>(destination);
+
+            auto planeSlice = 0;
+            if (aspect == PixelAspect::STENCIL)
+            {
+                planeSlice = 1;
+            }
+
+            D3D12_TEXTURE_COPY_LOCATION copyLocation
+            {
+                .pResource = src->dx12Handle(),
+                .Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+                .SubresourceIndex = D3D12CalcSubresource(sourceMip,sourceLayer,planeSlice,source->mipLevels(),source->layers()),
+            };
+
+            D3D12_TEXTURE_COPY_LOCATION dstCopyLocation
+            {
+                .pResource = dst->dx12Handle(),
+                .Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+                .SubresourceIndex = D3D12CalcSubresource(destinationMip,destinationLayer,planeSlice,destination->mipLevels(),destination->layers()),
+            };
+
+            D3D12_BOX copyRegion =
+            {
+                .left = static_cast<UINT>(sourceRect.offset.x),
+                .top = static_cast<UINT>(sourceRect.offset.y),
+                .front = 0,
+                .right = sourceRect.offset.x + sourceRect.extent.width,
+                .bottom = sourceRect.offset.y + sourceRect.extent.height,
+                .back = 1,
+            };
+            _commandBuffer->CopyTextureRegion(&dstCopyLocation,destinationOffset.x,destinationOffset.y,0, &copyLocation,&copyRegion);
         }
 
         ID3D12GraphicsCommandList7* IDX12CommandBuffer::dx12Handle() const

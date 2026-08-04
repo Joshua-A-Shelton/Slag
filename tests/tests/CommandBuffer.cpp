@@ -1647,6 +1647,56 @@ TEST(CommandBuffer, Resolve)
     GTEST_FAIL();
 }
 
+TEST(CommandBuffer, CopyTextureRegion)
+{
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
+    auto sourceTexture = utilities::loadTexture("resources/tests/textures/TestImg.png", graphicsCard);
+    auto immediateTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(300,300,sourceTexture->format(),TextureUsageFlags::NONE,3,SampleCount::ONE,2));
+    auto destinationTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(150,150,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::NONE));
+    auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
+
+    commandBuffer->begin();
+    commandBuffer->copyTextureRegion(PixelAspect::COLOR, sourceTexture.get(),0,0,slag::Rectangle{{75,0},{75,150}},immediateTexture.get(),0,1,{0,0});
+    commandBuffer->copyTextureRegion(PixelAspect::COLOR, sourceTexture.get(),0,0,slag::Rectangle{{0,0},{75,150}},immediateTexture.get(),1,1,{75,0});
+    TextureBarrier barrier
+    {
+        .texture = immediateTexture.get(),
+        .baseLayer = 0,
+        .layerCount = immediateTexture->layers(),
+        .baseMipLevel = 0,
+        .mipCount = immediateTexture->mipLevels(),
+        .syncBefore = SyncStages::COPY,
+        .syncAfter = SyncStages::COPY,
+        .flush = MemoryCaches::COPY_WRITE,
+        .invalidate = MemoryCaches::COPY_READ,
+        .layoutBefore = TextureLayout::GENERAL,
+        .layoutAfter = TextureLayout::GENERAL
+    };
+    commandBuffer->insertBarriers(&barrier,1);
+    commandBuffer->copyTextureRegion(PixelAspect::COLOR, immediateTexture.get(),0,1,slag::Rectangle{{10,15},{70,75}},destinationTexture.get(),0,0,{5,10});
+    commandBuffer->copyTextureRegion(PixelAspect::COLOR, immediateTexture.get(),1,1,slag::Rectangle{{85,0},{45,30}},destinationTexture.get(),0,0,{90,90});
+
+    commandBuffer->end();
+
+    slag::SemaphoreValue signal{.semaphore = finished.get(),.value = 1};
+    auto cb = commandBuffer.get();
+    SubmissionBatch batch
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &cb,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signal,
+        .signalSemaphoreCount = 1,
+    };
+    graphicsCard->graphicsQueue()->submit(&batch,1);
+    finished->waitForValue(1);
+
+    auto similarity = utilities::compareTexture(destinationTexture.get(),0,0,"resources/tests/textures/results/CopyTextureRegion.png");
+    GTEST_ASSERT_GE(similarity.overallSimilarity,0.9999f);
+}
+
 #ifdef SLAG_DEBUG
 TEST(CommandBuffer, TransferErrorComputeCommands)
 {
