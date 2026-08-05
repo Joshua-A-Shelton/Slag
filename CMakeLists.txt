@@ -8,6 +8,7 @@ add_library(Slag)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_definitions(Slag INTERFACE SLAG_DEBUG=1)
+    add_definitions(-DSLAG_DEBUG=1)
     set(SLAG_DEBUG_BUILD ON)
 endif()
 
