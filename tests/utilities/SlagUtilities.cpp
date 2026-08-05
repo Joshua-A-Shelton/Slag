@@ -39,6 +39,21 @@ namespace slag
 
             commandBuffer->begin();
             commandBuffer->copyBufferToTexture(pixels.get(),texture.get(),&mapping,1);
+            TextureBarrier barrier
+            {
+                .texture = texture.get(),
+                .baseLayer = 0,
+                .layerCount = 1,
+                .baseMipLevel = 0,
+                .mipCount = 1,
+                .syncBefore = SyncStages::ALL,
+                .syncAfter = SyncStages::ALL,
+                .flush = MemoryCaches::COPY_WRITE,
+                .invalidate = MemoryCaches::NONE,
+                .layoutBefore = TextureLayout::GENERAL,
+                .layoutAfter = TextureLayout::GENERAL,
+            };
+            commandBuffer->insertBarriers(&barrier,1);
             commandBuffer->end();
 
             auto cmdBuffer = commandBuffer.get();
@@ -77,6 +92,17 @@ namespace slag
             };
             commandBuffer->begin();
             commandBuffer->copyTextureToBuffer(texture,pixels.get(),&mapping,1);
+            BufferBarrier barrier
+            {
+                .buffer = pixels.get(),
+                .offset = 0,
+                .length = pixels->size(),
+                .syncBefore = SyncStages::ALL,
+                .syncAfter = SyncStages::ALL,
+                .flush = MemoryCaches::COPY_WRITE,
+                .invalidate = MemoryCaches::NONE,
+            };
+            commandBuffer->insertBarriers(&barrier,1);
             commandBuffer->end();
             auto cmdBuffer = commandBuffer.get();
             SemaphoreValue signal{.semaphore = finished.get(),.value =1};

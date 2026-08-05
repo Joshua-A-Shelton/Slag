@@ -33,14 +33,8 @@ namespace slag
             _commandBuffer->Reset(_commandPool,nullptr);
             if (_queueType == QueueType::GRAPHICS)
             {
-                _commandBuffer->SetGraphicsRootSignature(_graphicsCard->rootSignature());
                 //TODO: I don't know if this is the right place for this, I don't know why it has to be set at all because the shader pipeline also has this information
                 _commandBuffer->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-                _commandBuffer->SetComputeRootSignature(_graphicsCard->rootSignature());
-            }
-            else if (_queueType == QueueType::COMPUTE)
-            {
-                _commandBuffer->SetComputeRootSignature(_graphicsCard->rootSignature());
             }
 
         }
@@ -52,6 +46,7 @@ namespace slag
             _setViewport = false;
             _setScissor = false;
             _boundPipelineType = BoundPipeLineType::NONE;
+            _heapsBound = false;
 #endif
         }
 
@@ -181,7 +176,6 @@ namespace slag
                 bufferBarrier.SyncBefore = DX12Backend::nativePipelineStages(copyBarrier.syncBefore);
                 bufferBarrier.SyncAfter = DX12Backend::nativePipelineStages(copyBarrier.syncAfter);
                 bufferBarrier.pResource = static_cast<DX12Texture*>(copyBarrier.texture)->dx12Handle();
-                //bufferBarrier.Flags = ;
                 bufferBarrier.LayoutBefore = D3D12_BARRIER_LAYOUT_COMMON;
                 bufferBarrier.LayoutAfter = D3D12_BARRIER_LAYOUT_COMMON;
                 bufferBarrier.Subresources = D3D12_BARRIER_SUBRESOURCE_RANGE
@@ -193,6 +187,11 @@ namespace slag
                     .FirstPlane = 0,
                     .NumPlanes = static_cast<UINT>(std::popcount(static_cast<uint8_t>(Pixel::aspectFlags(copyBarrier.texture->format()))))
                 };
+                if (copyBarrier.layoutBefore == TextureLayout::UNKNOWN)
+                {
+                    bufferBarrier.AccessBefore = D3D12_BARRIER_ACCESS_NO_ACCESS;
+                    bufferBarrier.Flags = D3D12_TEXTURE_BARRIER_FLAG_DISCARD;
+                }
             }
             D3D12_BARRIER_GROUP barrierGroups[3]{};
             auto globalGroup = barrierGroups[0];
@@ -221,10 +220,24 @@ namespace slag
             DX12SamplerDescriptorHeap* dx12SamplerHeap = static_cast<DX12SamplerDescriptorHeap*>(samplerHeap);
             ID3D12DescriptorHeap* heaps[]{dx12ResourceHeap->dx12Handle(),dx12SamplerHeap->dx12Handle()};
             _commandBuffer->SetDescriptorHeaps(2,heaps);
+
+            if (_queueType == QueueType::GRAPHICS)
+            {
+                _commandBuffer->SetGraphicsRootSignature(_graphicsCard->rootSignature());
+            }
+            _commandBuffer->SetComputeRootSignature(_graphicsCard->rootSignature());
+#ifdef SLAG_DEBUG
+            _heapsBound = true;
+#endif
+
         }
 
         void IDX12CommandBuffer::setGraphicsShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
         {
+#ifdef SLAG_DEBUG
+            SLAG_ASSERT(_heapsBound && "Heaps must be bound before setting shader parameters");
+#endif
+
             SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 
             SLAG_ASSERT(shaderDataOffset % 4 == 0 && "shaderDataOffset must be aligned to 4");
@@ -234,6 +247,9 @@ namespace slag
 
         void IDX12CommandBuffer::setComputeShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
         {
+#ifdef SLAG_DEBUG
+            SLAG_ASSERT(_heapsBound && "Heaps must be bound before setting shader parameters");
+#endif
             SLAG_ASSERT(_queueType != QueueType::TRANSFER && "Command Buffer cannot record commands outside it's capabilities");
 
             SLAG_ASSERT(shaderDataOffset % 4 == 0 && "shaderDataOffset must be aligned to 4");

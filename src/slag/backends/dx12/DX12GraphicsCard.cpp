@@ -63,16 +63,43 @@ namespace slag
                     pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_INFO,FALSE);
                     pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_MESSAGE,FALSE);
 
-                    D3D12_MESSAGE_CATEGORY hide[] =
+
+                    D3D12_MESSAGE_ID hideIds[] =
                     {
-                        D3D12_MESSAGE_CATEGORY_STATE_CREATION,
+                        D3D12_MESSAGE_ID_CREATE_COMMANDQUEUE,
+                        D3D12_MESSAGE_ID_CREATE_COMMANDALLOCATOR,
+                        D3D12_MESSAGE_ID_CREATE_PIPELINESTATE,
+                        D3D12_MESSAGE_ID_CREATE_COMMANDLIST12,
+                        D3D12_MESSAGE_ID_CREATE_RESOURCE,
+                        D3D12_MESSAGE_ID_CREATE_DESCRIPTORHEAP,
+                        D3D12_MESSAGE_ID_CREATE_ROOTSIGNATURE,
+                        D3D12_MESSAGE_ID_CREATE_LIBRARY,
+                        D3D12_MESSAGE_ID_CREATE_HEAP,
+                        D3D12_MESSAGE_ID_CREATE_MONITOREDFENCE,
+                        D3D12_MESSAGE_ID_CREATE_QUERYHEAP,
+                        D3D12_MESSAGE_ID_CREATE_COMMANDSIGNATURE,
+                        
+                        D3D12_MESSAGE_ID_DESTROY_COMMANDQUEUE,
+                        D3D12_MESSAGE_ID_DESTROY_COMMANDALLOCATOR,
+                        D3D12_MESSAGE_ID_DESTROY_PIPELINESTATE,
+                        D3D12_MESSAGE_ID_DESTROY_COMMANDLIST12,
+                        D3D12_MESSAGE_ID_DESTROY_RESOURCE,
+                        D3D12_MESSAGE_ID_DESTROY_DESCRIPTORHEAP,
+                        D3D12_MESSAGE_ID_DESTROY_ROOTSIGNATURE,
+                        D3D12_MESSAGE_ID_DESTROY_LIBRARY,
+                        D3D12_MESSAGE_ID_DESTROY_HEAP,
+                        D3D12_MESSAGE_ID_DESTROY_MONITOREDFENCE,
+                        D3D12_MESSAGE_ID_DESTROY_QUERYHEAP,
+                        D3D12_MESSAGE_ID_DESTROY_COMMANDSIGNATURE,
                     };
 
                     D3D12_INFO_QUEUE_FILTER NewFilter = {};
                     NewFilter.DenyList.NumSeverities = 0;
                     NewFilter.DenyList.pSeverityList = nullptr;
-                    NewFilter.DenyList.NumCategories = std::size(hide);
-                    NewFilter.DenyList.pCategoryList = hide;
+                    NewFilter.DenyList.NumCategories = 0;
+                    NewFilter.DenyList.pCategoryList = nullptr;
+                    NewFilter.DenyList.pIDList = hideIds;
+                    NewFilter.DenyList.NumIDs = std::size(hideIds);
 
                     pInfoQueue->PushStorageFilter(&NewFilter);
                 }

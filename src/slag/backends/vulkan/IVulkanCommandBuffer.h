@@ -71,6 +71,7 @@ namespace slag
                 COMPUTE
             };
             BoundPipeLineType _boundPipelineType = BoundPipeLineType::NONE;
+            bool _heapsBound = false;
 #endif
 
         };

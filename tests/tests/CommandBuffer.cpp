@@ -555,8 +555,8 @@ TEST(CommandBuffer, DrawIndexed)
     };
     graphicsCard->graphicsQueue()->submit(&batch,1);
     finished->waitForValue(1);
-    utilities::saveTexture("C:/Users/jshelton/Desktop/results/draw-indexed.png",colorTexture.get());
     auto result = utilities::compareTexture(colorTexture.get(),0,0,"resources/tests/textures/results/draw-test.png");
+    utilities::saveTexture("C:/Users/jshelton/Desktop/results/draw-indexed.png",colorTexture.get());
     ASSERT_GE(result.overallSimilarity,.9999);
 }
 
@@ -1642,9 +1642,8 @@ TEST(CommandBuffer, Resolve)
     graphicsCard->graphicsQueue()->submit(&batch,1);
     finished->waitForValue(1);
 
-    utilities::saveTexture("C:/Users/jshelton/Desktop/results/resolve.png",finalTexture.get());
-
-    GTEST_FAIL();
+    auto result = utilities::compareTexture(finalTexture.get(),0,0,"resources/tests/textures/results/resolve.png");
+    GTEST_ASSERT_GE(result.overallSimilarity,0.9999f);
 }
 
 TEST(CommandBuffer, CopyTextureRegion)
@@ -1655,6 +1654,97 @@ TEST(CommandBuffer, CopyTextureRegion)
     auto immediateTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(300,300,sourceTexture->format(),TextureUsageFlags::NONE,3,SampleCount::ONE,2));
     auto destinationTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(150,150,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::NONE));
     auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
+
+    auto fillBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(immediateTexture->bufferSize(PixelAspect::COLOR),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto fillPtr = fillBuffer->as<uint8_t>();
+
+    for(uint32_t i = 0;i < fillBuffer->size();i++)
+    {
+        fillPtr[i] = 125;
+    }
+
+    auto fillCommandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::TRANSFER));
+    auto fillFinished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
+    fillCommandBuffer->begin();
+    TextureBufferMapping immediateMapping
+    {
+        .bufferOffset = 0,
+        .subresource =
+            {
+                .aspect = PixelAspect::COLOR,
+                .mipLevel = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+        .offset = {0,0,0},
+        .extent = {immediateTexture->mipWidth(1),immediateTexture->mipWidth(1),1}
+    };
+    fillCommandBuffer->copyBufferToTexture(fillBuffer.get(),immediateTexture.get(),&immediateMapping,1);
+    immediateMapping.subresource.baseArrayLayer = 1;
+    fillCommandBuffer->copyBufferToTexture(fillBuffer.get(),immediateTexture.get(),&immediateMapping,1);
+    TextureBufferMapping destinationMapping
+       {
+           .bufferOffset = 0,
+           .subresource =
+               {
+                   .aspect = PixelAspect::COLOR,
+                   .mipLevel = 0,
+                   .baseArrayLayer = 0,
+                   .layerCount = 1,
+               },
+           .offset = {0,0,0},
+           .extent = {destinationTexture->width(),destinationTexture->height(),1}
+       };
+    fillCommandBuffer->copyBufferToTexture(fillBuffer.get(),destinationTexture.get(),&destinationMapping,1);
+
+    TextureBarrier textureBarriers[]
+    {
+      TextureBarrier
+        {
+            .texture = immediateTexture.get(),
+            .baseLayer = 0,
+            .layerCount = 2,
+            .baseMipLevel = 0,
+            .mipCount = 3,
+            .syncBefore = SyncStages::ALL,
+            .syncAfter = SyncStages::ALL,
+            .flush = MemoryCaches::COPY_WRITE,
+            .invalidate = MemoryCaches::COPY_READ,
+            .layoutBefore = TextureLayout::GENERAL,
+            .layoutAfter = TextureLayout::GENERAL,
+        },
+        TextureBarrier
+        {
+            .texture = destinationTexture.get(),
+            .baseLayer = 0,
+            .layerCount = 1,
+            .baseMipLevel = 0,
+            .mipCount = 1,
+            .syncBefore = SyncStages::ALL,
+            .syncAfter = SyncStages::ALL,
+            .flush = MemoryCaches::COPY_WRITE,
+            .invalidate = MemoryCaches::COPY_READ,
+            .layoutBefore = TextureLayout::GENERAL,
+            .layoutAfter = TextureLayout::GENERAL,
+        }
+    };
+    fillCommandBuffer->insertBarriers(textureBarriers,2);
+
+
+    fillCommandBuffer->end();
+    SemaphoreValue signalFilled{.semaphore = fillFinished.get(),.value = 1};
+    auto fb = fillCommandBuffer.get();
+    SubmissionBatch fillBatch
+    {
+        .waitSemaphores = nullptr,
+        .waitSemaphoreCount = 0,
+        .commandBuffers = &fb,
+        .commandBufferCount = 1,
+        .signalSemaphores = &signalFilled,
+        .signalSemaphoreCount = 1,
+    };
+    graphicsCard->transferQueue()->submit(&fillBatch,1);
+    fillFinished->waitForValue(1);
 
     commandBuffer->begin();
     commandBuffer->copyTextureRegion(PixelAspect::COLOR, sourceTexture.get(),0,0,slag::Rectangle{{75,0},{75,150}},immediateTexture.get(),0,1,{0,0});
@@ -1694,6 +1784,7 @@ TEST(CommandBuffer, CopyTextureRegion)
     finished->waitForValue(1);
 
     auto similarity = utilities::compareTexture(destinationTexture.get(),0,0,"resources/tests/textures/results/CopyTextureRegion.png");
+    utilities::saveTexture("C:/Users/jshelton/Desktop/results/CopyTextureRegion2.png",destinationTexture.get());
     GTEST_ASSERT_GE(similarity.overallSimilarity,0.9999f);
 }
 
@@ -1746,6 +1837,16 @@ TEST(CommandBuffer, DrawCommandsWhenGraphicsBoundError)
 }
 
 TEST(CommandBuffer, GraphicsCommandsWhenGraphicsBoundError)
+{
+    GTEST_FAIL();
+}
+
+TEST(CommandBuffer, SetGraphicsShaderParametersFailIfNoHeapsBound)
+{
+    GTEST_FAIL();
+}
+
+TEST(CommandBuffer,SetComputeShaderParametersFailIfNoHeapsBound)
 {
     GTEST_FAIL();
 }

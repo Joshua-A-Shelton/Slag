@@ -47,6 +47,7 @@ namespace slag
             _setViewport = false;
             _setScissor = false;
             _boundPipelineType = BoundPipeLineType::NONE;
+            _heapsBound = false;
 #endif
         }
 
@@ -220,10 +221,17 @@ namespace slag
                };
                 _graphicsCard->vkCmdBindSamplerHeap(_commandBuffer,&bindHeapInfo);
             }
+#ifdef SLAG_DEBUG
+            _heapsBound = true;
+#endif
+
         }
 
         void IVulkanCommandBuffer::setGraphicsShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
         {
+#ifdef SLAG_DEBUG
+            SLAG_ASSERT(_heapsBound && "Heaps must be bound before setting shader parameters");
+#endif
             SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
             SLAG_ASSERT(shaderDataOffset + dataSize < 128 && "Exceeded size of shader parameter data");
             SLAG_ASSERT(shaderDataOffset %4 == 0 && "Shader data offset must be aligned to 4 bytes");
@@ -239,6 +247,9 @@ namespace slag
 
         void IVulkanCommandBuffer::setComputeShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
         {
+#ifdef SLAG_DEBUG
+            SLAG_ASSERT(_heapsBound && "Heaps must be bound before setting shader parameters");
+#endif
             SLAG_ASSERT(_type != QueueType::TRANSFER && "Command Buffer cannot record commands outside it's capabilities");
             SLAG_ASSERT(shaderDataOffset + dataSize < 128 && "Exceeded size of shader parameter data");
             SLAG_ASSERT(shaderDataOffset %4 == 0 && "Shader data offset must be aligned to 4 bytes");

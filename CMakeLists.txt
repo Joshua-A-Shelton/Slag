@@ -313,7 +313,7 @@ if(SLAG_BUILD_TESTS)
     target_link_libraries(SlagTests GTest::gtest SDL3::SDL3 glm::glm slag::Slag)
     target_include_directories(SlagTests PRIVATE ${stb_image_SOURCE_DIR})
 
-    file(GLOB TEST_VERT_FRAG_SHADERS "${CMAKE_CURRENT_SOURCE_DIR}/resources/tests/shaders/src/VertexAndFragment/*.slang")
+    file(GLOB TEST_VERT_FRAG_SHADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/resources/tests/shaders/src/VertexAndFragment/*.slang")
 
     foreach (SHADER ${TEST_VERT_FRAG_SHADERS})
         get_filename_component(FILENAME ${SHADER} NAME_WE)
@@ -347,7 +347,7 @@ if(SLAG_BUILD_TESTS)
         list(APPEND COMPILED_TEST_SHADER_FILES ${OUTPUT_FILE_RAW}.vertex.spv ${OUTPUT_FILE_RAW}.fragment.spv ${OUTPUT_FILE_RAW}.vertex.dxil ${OUTPUT_FILE_RAW}.fragment.dxil)
     endforeach ()
 
-    file(GLOB TEST_COMPUTE_SHADERS "${CMAKE_CURRENT_SOURCE_DIR}/resources/tests/shaders/src/Compute/*.slang")
+    file(GLOB TEST_COMPUTE_SHADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/resources/tests/shaders/src/Compute/*.slang")
 
     foreach (SHADER ${TEST_COMPUTE_SHADERS})
         get_filename_component(FILENAME ${SHADER} NAME_WE)

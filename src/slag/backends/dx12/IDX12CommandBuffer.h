@@ -65,6 +65,7 @@ namespace slag
             bool _inRenderPass = false;
             bool _setViewport = false;
             bool _setScissor = false;
+            bool _heapsBound = false;
             enum class BoundPipeLineType
             {
                 NONE,
