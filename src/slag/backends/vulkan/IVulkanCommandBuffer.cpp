@@ -530,7 +530,7 @@ namespace slag
             vkCmdDrawIndexed(_commandBuffer,indexCount,instanceCount,firstIndex,vertexOffset,firstInstance);
         }
 
-        void IVulkanCommandBuffer::drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount, uint32_t stride)
+        void IVulkanCommandBuffer::drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount)
         {
             SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 #if SLAG_DEBUG
@@ -540,11 +540,10 @@ namespace slag
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
 #endif
             auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
-            vkCmdDrawIndirect(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,drawCount,stride);
+            vkCmdDrawIndirect(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,drawCount,sizeof(IndirectDrawCommand));
         }
 
-        void IVulkanCommandBuffer::drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount,
-            uint32_t stride)
+        void IVulkanCommandBuffer::drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount)
         {
             SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 
@@ -555,11 +554,11 @@ namespace slag
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
 #endif
             auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
-            vkCmdDrawIndexedIndirect(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,drawCount,stride);
+            vkCmdDrawIndexedIndirect(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,drawCount,sizeof(IndirectDrawIndexedCommand));
         }
 
         void IVulkanCommandBuffer::drawIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer,
-            uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
+                                                     uint64_t countBufferOffset, uint32_t maxDrawCount)
         {
             SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 #if SLAG_DEBUG
@@ -570,11 +569,11 @@ namespace slag
 #endif
             auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
             auto vulkanCountBuffer = static_cast<VulkanBuffer*>(countBuffer);
-            vkCmdDrawIndirectCount(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,vulkanCountBuffer->vulkanHandle(),countBufferOffset,maxDrawCount,stride);
+            vkCmdDrawIndirectCount(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,vulkanCountBuffer->vulkanHandle(),countBufferOffset,maxDrawCount,sizeof(IndirectDrawCommand));
         }
 
         void IVulkanCommandBuffer::drawIndexedIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer,
-            uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
+                                                            uint64_t countBufferOffset, uint32_t maxDrawCount)
         {
             SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 #if SLAG_DEBUG
@@ -585,7 +584,7 @@ namespace slag
 #endif
             auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
             auto vulkanCountBuffer = static_cast<VulkanBuffer*>(countBuffer);
-            vkCmdDrawIndexedIndirectCount(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,vulkanCountBuffer->vulkanHandle(),countBufferOffset,maxDrawCount,stride);
+            vkCmdDrawIndexedIndirectCount(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,vulkanCountBuffer->vulkanHandle(),countBufferOffset,maxDrawCount,sizeof(IndirectDrawIndexedCommand));
         }
 
         void IVulkanCommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)

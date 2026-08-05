@@ -220,17 +220,15 @@ namespace slag
          * @param buffer Buffer that contains drawing parameters
          * @param offset Byte offset into buffer where parameters begin
          * @param drawCount Number of draws to exectute, can be zero
-         * @param stride Byte stride between successive sets of draw parameters
          */
-        virtual void drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount, uint32_t stride)=0;
+        virtual void drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount)=0;
         /**
          * [GRAPHICS] Draw geometry with indirect parameters
          * @param buffer Buffer that contains drawing parameters
          * @param offset Byte offset into buffer where parameters begin
          * @param drawCount Number of draws to exectute, can be zero
-         * @param stride Byte stride between successive sets of draw parameters
          */
-        virtual void drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount, uint32_t stride)=0;
+        virtual void drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount)=0;
         /**
          * [GRAPHICS] Draw geometry with indirect parameters and draw count
          * @param buffer Buffer that contains drawing parameters
@@ -238,9 +236,8 @@ namespace slag
          * @param countBuffer Buffer containing the draw count
          * @param countBufferOffset Byte offset into countBuffer where the draw count begins
          * @param maxDrawCount Maximum number of draws that will be executed
-         * @param stride Byte stride between successive sets of draw parameters
          */
-        virtual void drawIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer, uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)=0;
+        virtual void drawIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer, uint64_t countBufferOffset, uint32_t maxDrawCount)=0;
         /**
          * [GRAPHICS] Draw geometry with indirect parameters, indexed vertices and draw count
          * @param buffer Buffer that contains drawing parameters
@@ -248,9 +245,8 @@ namespace slag
          * @param countBuffer Buffer containing the draw count
          * @param countBufferOffset Byte offset into countBuffer where the draw count begins
          * @param maxDrawCount Maximum number of draws that will be executed
-         * @param stride Byte stride between successive sets of draw parameters
          */
-        virtual void drawIndexedIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer, uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)=0;
+        virtual void drawIndexedIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer, uint64_t countBufferOffset, uint32_t maxDrawCount)=0;
         /**
          * [COMPUTE] Dispatch compute shader work
          * @param groupCountX Local workgroups to dispatch in the X dimension

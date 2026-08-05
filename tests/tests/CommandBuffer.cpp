@@ -705,7 +705,7 @@ TEST(CommandBuffer, DrawIndirect)
     indirectPtr[0].instanceCount = 1;
     indirectPtr[0].firstVertex = 0;
     indirectPtr[0].firstInstance = 0;
-    commandBuffer->drawIndirect(indirectBuffer.get(),0,1,sizeof(IndirectDrawCommand));
+    commandBuffer->drawIndirect(indirectBuffer.get(),0,1);
     commandBuffer->endRendering();
 
     barriers[0].layoutBefore = TextureLayout::COLOR_TARGET;
@@ -885,7 +885,7 @@ TEST(CommandBuffer, DrawIndexedIndirect)
     indirectPtr[0].vertexOffset = 0;
     indirectPtr[0].firstInstance = 0;
 
-    commandBuffer->drawIndexedIndirect(indirectBuffer.get(),0,1,sizeof(IndirectDrawCommand));
+    commandBuffer->drawIndexedIndirect(indirectBuffer.get(),0,1);
     commandBuffer->endRendering();
 
     barriers[0].layoutBefore = TextureLayout::COLOR_TARGET;
@@ -1062,7 +1062,7 @@ TEST(CommandBuffer, DrawIndirectCount)
     std::unique_ptr<Buffer> indirectCountBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t),BufferCPUAccess::WRITE_ONLY));
     auto indirectCountPtr = indirectCountBuffer->as<uint32_t>();
     indirectCountPtr[0] = 1;
-    commandBuffer->drawIndirectCount(indirectBuffer.get(),0,indirectCountBuffer.get(),0,1,sizeof(IndirectDrawCommand));
+    commandBuffer->drawIndirectCount(indirectBuffer.get(),0,indirectCountBuffer.get(),0,1);
     commandBuffer->endRendering();
 
     barriers[0].layoutBefore = TextureLayout::COLOR_TARGET;
@@ -1245,7 +1245,7 @@ TEST(CommandBuffer, DrawIndexedIndirectCount)
     std::unique_ptr<Buffer> indirectCountBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t),BufferCPUAccess::WRITE_ONLY));
     auto indirectCountPtr = indirectCountBuffer->as<uint32_t>();
     indirectCountPtr[0] = 1;
-    commandBuffer->drawIndexedIndirectCount(indirectBuffer.get(),0,indirectCountBuffer.get(),0,1,sizeof(IndirectDrawIndexedCommand));
+    commandBuffer->drawIndexedIndirectCount(indirectBuffer.get(),0,indirectCountBuffer.get(),0,1);
     commandBuffer->endRendering();
 
     barriers[0].layoutBefore = TextureLayout::COLOR_TARGET;

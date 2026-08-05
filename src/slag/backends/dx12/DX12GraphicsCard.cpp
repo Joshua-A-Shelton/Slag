@@ -220,6 +220,31 @@ namespace slag
 
             device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&_rootSignature));
 
+            //create indirect command signatures
+
+            D3D12_INDIRECT_ARGUMENT_DESC indirectArgumentDesc
+            {
+                .Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW
+            };
+
+            D3D12_COMMAND_SIGNATURE_DESC indirectCommandSignatureDesc
+            {
+                .ByteStride = sizeof(slag::IndirectDrawCommand),
+                .NumArgumentDescs = 1,
+                .pArgumentDescs = &indirectArgumentDesc,
+                .NodeMask = 0
+            };
+            _device->CreateCommandSignature(&indirectCommandSignatureDesc,nullptr, IID_PPV_ARGS(&_drawIndirectCommandSignature));
+
+
+            indirectArgumentDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
+            indirectCommandSignatureDesc.ByteStride = sizeof(slag::IndirectDrawIndexedCommand);
+            _device->CreateCommandSignature(&indirectCommandSignatureDesc,nullptr, IID_PPV_ARGS(&_drawIndexedIndirectCommandSignature));
+
+            indirectArgumentDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
+            indirectCommandSignatureDesc.ByteStride = sizeof(slag::IndirectDispatchCommand);
+            _device->CreateCommandSignature(&indirectCommandSignatureDesc,nullptr, IID_PPV_ARGS(&_dispatchIndirectCommandSignature));
+
         }
 
         DX12GraphicsCard::~DX12GraphicsCard()
@@ -231,6 +256,9 @@ namespace slag
                 delete _transferQueue;
                 _cpuReadablePool->Release();
                 _rootSignature->Release();
+                _drawIndirectCommandSignature->Release();
+                _drawIndexedIndirectCommandSignature->Release();
+                _dispatchIndirectCommandSignature->Release();
             }
         }
 
@@ -742,9 +770,24 @@ namespace slag
             return _dxgiFactory;
         }
 
-        ID3D12RootSignature* DX12GraphicsCard::rootSignature()
+        ID3D12RootSignature* DX12GraphicsCard::rootSignature() const
         {
             return _rootSignature;
+        }
+
+        ID3D12CommandSignature* DX12GraphicsCard::drawIndirectCommandSignature() const
+        {
+            return _drawIndirectCommandSignature;
+        }
+
+        ID3D12CommandSignature* DX12GraphicsCard::drawIndexedIndirectCommandSignature() const
+        {
+            return _drawIndexedIndirectCommandSignature;
+        }
+
+        ID3D12CommandSignature* DX12GraphicsCard::dispatchIndirectCommandSignature() const
+        {
+            return _dispatchIndirectCommandSignature;
         }
 
         void DX12GraphicsCard::move(DX12GraphicsCard& from)
@@ -761,6 +804,9 @@ namespace slag
             std::swap(_transferQueue,from._transferQueue);
             std::swap(_cpuReadablePool,from._cpuReadablePool);
             std::swap(_rootSignature,from._rootSignature);
+            std::swap(_drawIndirectCommandSignature, from._drawIndirectCommandSignature);
+            std::swap(_drawIndexedIndirectCommandSignature, from._drawIndexedIndirectCommandSignature);
+            std::swap(_dispatchIndirectCommandSignature, from._dispatchIndirectCommandSignature);
         }
     } // dx12
 } // slag

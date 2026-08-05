@@ -548,7 +548,7 @@ namespace slag
             _commandBuffer->DrawIndexedInstanced(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
         }
 
-        void IDX12CommandBuffer::drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount, uint32_t stride)
+        void IDX12CommandBuffer::drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount)
         {
             SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 
@@ -558,11 +558,11 @@ namespace slag
             SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
 #endif
-            throw std::runtime_error("Not implemented");
+            auto dx12Buffer = static_cast<DX12Buffer*>(buffer);
+            _commandBuffer->ExecuteIndirect(_graphicsCard->drawIndirectCommandSignature(), drawCount, dx12Buffer->dx12Handle(), offset,nullptr,0);
         }
 
-        void IDX12CommandBuffer::drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount,
-            uint32_t stride)
+        void IDX12CommandBuffer::drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount)
         {
             SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 
@@ -572,11 +572,13 @@ namespace slag
             SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
 #endif
-            throw std::runtime_error("Not implemented");
+            auto dx12Buffer = static_cast<DX12Buffer*>(buffer);
+            _commandBuffer->ExecuteIndirect(_graphicsCard->drawIndexedIndirectCommandSignature(), drawCount, dx12Buffer->dx12Handle(), offset,nullptr,0);
+
         }
 
         void IDX12CommandBuffer::drawIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer,
-            uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
+                                                   uint64_t countBufferOffset, uint32_t maxDrawCount)
         {
             SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 
@@ -586,11 +588,13 @@ namespace slag
             SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
 #endif
-            throw std::runtime_error("Not implemented");
+            auto dx12Buffer = static_cast<DX12Buffer*>(buffer);
+            auto countBufferDX12 = static_cast<DX12Buffer*>(countBuffer);
+            _commandBuffer->ExecuteIndirect(_graphicsCard->drawIndirectCommandSignature(), maxDrawCount, dx12Buffer->dx12Handle(), offset,countBufferDX12->dx12Handle(),countBufferOffset);
         }
 
         void IDX12CommandBuffer::drawIndexedIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer,
-            uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
+                                                          uint64_t countBufferOffset, uint32_t maxDrawCount)
         {
             SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 
@@ -600,7 +604,9 @@ namespace slag
             SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
 #endif
-            throw std::runtime_error("Not implemented");
+            auto dx12Buffer = static_cast<DX12Buffer*>(buffer);
+            auto countBufferDX12 = static_cast<DX12Buffer*>(countBuffer);
+            _commandBuffer->ExecuteIndirect(_graphicsCard->drawIndexedIndirectCommandSignature(), maxDrawCount, dx12Buffer->dx12Handle(), offset,countBufferDX12->dx12Handle(),countBufferOffset);
         }
 
         void IDX12CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
@@ -620,7 +626,9 @@ namespace slag
 #if SLAG_DEBUG
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
 #endif
-            throw std::runtime_error("Not implemented");
+            auto dx12Buffer = static_cast<DX12Buffer*>(buffer);
+            _commandBuffer->ExecuteIndirect(_graphicsCard->dispatchIndirectCommandSignature(), 1, dx12Buffer->dx12Handle(), offset,nullptr,0);
+
         }
 
         void IDX12CommandBuffer::resolveTexture(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Offset2D destinationOffset)
