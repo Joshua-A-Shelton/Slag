@@ -78,6 +78,7 @@ namespace slag
                         D3D12_MESSAGE_ID_CREATE_MONITOREDFENCE,
                         D3D12_MESSAGE_ID_CREATE_QUERYHEAP,
                         D3D12_MESSAGE_ID_CREATE_COMMANDSIGNATURE,
+                        D3D12_MESSAGE_ID_CREATE_LIFETIMETRACKER,
                         
                         D3D12_MESSAGE_ID_DESTROY_COMMANDQUEUE,
                         D3D12_MESSAGE_ID_DESTROY_COMMANDALLOCATOR,
@@ -91,6 +92,7 @@ namespace slag
                         D3D12_MESSAGE_ID_DESTROY_MONITOREDFENCE,
                         D3D12_MESSAGE_ID_DESTROY_QUERYHEAP,
                         D3D12_MESSAGE_ID_DESTROY_COMMANDSIGNATURE,
+                        D3D12_MESSAGE_ID_DESTROY_LIFETIMETRACKER
                     };
 
                     D3D12_INFO_QUEUE_FILTER NewFilter = {};
