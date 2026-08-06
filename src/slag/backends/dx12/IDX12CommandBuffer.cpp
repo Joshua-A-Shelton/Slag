@@ -234,26 +234,27 @@ namespace slag
 
         void IDX12CommandBuffer::setGraphicsShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
         {
+
+            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+            SLAG_ASSERT(shaderDataOffset + dataSize < 128 && "Exceeded size of shader parameter data");
+            SLAG_ASSERT(shaderDataOffset %4 == 0 && "Shader data offset must be aligned to 4 bytes");
+            SLAG_ASSERT(dataSize % 4 == 0 && "dataSize must be multiple of 4");
 #ifdef SLAG_DEBUG
             SLAG_ASSERT(_heapsBound && "Heaps must be bound before setting shader parameters");
 #endif
-
-            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
-
-            SLAG_ASSERT(shaderDataOffset % 4 == 0 && "shaderDataOffset must be aligned to 4");
-            SLAG_ASSERT(dataSize % 4 == 0 && "dataSize must be aligned to 4");
             _commandBuffer->SetGraphicsRoot32BitConstants(0,dataSize/4,data,shaderDataOffset/4);
         }
 
         void IDX12CommandBuffer::setComputeShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
         {
+
+            SLAG_ASSERT(_queueType != QueueType::TRANSFER && "Command Buffer cannot record commands outside it's capabilities");
+            SLAG_ASSERT(shaderDataOffset + dataSize < 128 && "Exceeded size of shader parameter data");
+            SLAG_ASSERT(shaderDataOffset %4 == 0 && "Shader data offset must be aligned to 4 bytes");
+            SLAG_ASSERT(dataSize % 4 == 0 && "dataSize must be multiple of 4");
 #ifdef SLAG_DEBUG
             SLAG_ASSERT(_heapsBound && "Heaps must be bound before setting shader parameters");
 #endif
-            SLAG_ASSERT(_queueType != QueueType::TRANSFER && "Command Buffer cannot record commands outside it's capabilities");
-
-            SLAG_ASSERT(shaderDataOffset % 4 == 0 && "shaderDataOffset must be aligned to 4");
-            SLAG_ASSERT(dataSize % 4 == 0 && "dataSize must be aligned to 4");
             _commandBuffer->SetComputeRoot32BitConstants(0,dataSize/4,data,shaderDataOffset/4);
         }
 
@@ -615,6 +616,8 @@ namespace slag
 
 #if SLAG_DEBUG
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
+            SLAG_ASSERT(!_inRenderPass && "Cannot dispatch within render pass (between beginRendering() and endRendering())");
+
 #endif
             _commandBuffer->Dispatch(groupCountX, groupCountY, groupCountZ);
         }
@@ -625,6 +628,7 @@ namespace slag
 
 #if SLAG_DEBUG
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
+            SLAG_ASSERT(!_inRenderPass && "Cannot dispatch within render pass (between beginRendering() and endRendering())");
 #endif
             auto dx12Buffer = static_cast<DX12Buffer*>(buffer);
             _commandBuffer->ExecuteIndirect(_graphicsCard->dispatchIndirectCommandSignature(), 1, dx12Buffer->dx12Handle(), offset,nullptr,0);

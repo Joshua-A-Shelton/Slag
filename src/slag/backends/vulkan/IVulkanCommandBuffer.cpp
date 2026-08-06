@@ -229,12 +229,14 @@ namespace slag
 
         void IVulkanCommandBuffer::setGraphicsShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
         {
-#ifdef SLAG_DEBUG
-            SLAG_ASSERT(_heapsBound && "Heaps must be bound before setting shader parameters");
-#endif
+
             SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
             SLAG_ASSERT(shaderDataOffset + dataSize < 128 && "Exceeded size of shader parameter data");
             SLAG_ASSERT(shaderDataOffset %4 == 0 && "Shader data offset must be aligned to 4 bytes");
+            SLAG_ASSERT(dataSize % 4 == 0 && "dataSize must be multiple of 4");
+#ifdef SLAG_DEBUG
+            SLAG_ASSERT(_heapsBound && "Heaps must be bound before setting shader parameters");
+#endif
             VkPushDataInfoEXT pushDataInfo
             {
                 .sType = VK_STRUCTURE_TYPE_PUSH_DATA_INFO_EXT,
@@ -247,12 +249,14 @@ namespace slag
 
         void IVulkanCommandBuffer::setComputeShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
         {
-#ifdef SLAG_DEBUG
-            SLAG_ASSERT(_heapsBound && "Heaps must be bound before setting shader parameters");
-#endif
+
             SLAG_ASSERT(_type != QueueType::TRANSFER && "Command Buffer cannot record commands outside it's capabilities");
             SLAG_ASSERT(shaderDataOffset + dataSize < 128 && "Exceeded size of shader parameter data");
             SLAG_ASSERT(shaderDataOffset %4 == 0 && "Shader data offset must be aligned to 4 bytes");
+            SLAG_ASSERT(dataSize % 4 == 0 && "dataSize must be multiple of 4");
+#ifdef SLAG_DEBUG
+            SLAG_ASSERT(_heapsBound && "Heaps must be bound before setting shader parameters");
+#endif
             VkPushDataInfoEXT pushDataInfo
             {
                 .sType = VK_STRUCTURE_TYPE_PUSH_DATA_INFO_EXT,
@@ -593,6 +597,7 @@ namespace slag
 
 #if SLAG_DEBUG
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
+            SLAG_ASSERT(!_inRenderPass && "Cannot dispatch within render pass (between beginRendering() and endRendering())");
 #endif
             vkCmdDispatch(_commandBuffer,groupCountX,groupCountY,groupCountZ);
         }
@@ -603,6 +608,8 @@ namespace slag
 
 #if SLAG_DEBUG
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
+            SLAG_ASSERT(!_inRenderPass && "Cannot dispatch within render pass (between beginRendering() and endRendering())");
+
 #endif
             auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
             vkCmdDispatchIndirect(_commandBuffer,vulkanBuffer->vulkanHandle(),offset);

@@ -1814,40 +1814,408 @@ TEST(CommandBuffer, TransferErrorComputeCommands)
 }
 TEST(CommandBuffer, TransferErrorGraphicsCommands)
 {
-    GTEST_FAIL();
+    glm::vec3 positions[]
+    {
+        {-1,1,0},
+        {1,1,0},
+        {-1,-1,0},
+        {1,-1,0}
+    };
+    glm::vec2 uvs[]
+    {
+        {0,0},
+        {1,0},
+        {0,1},
+        {1,1}
+    };
+    uint16_t indices[]
+    {
+        0,1,2,
+        1,3,2
+    };
+
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::TRANSFER));
+    auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+    auto colorTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
+    auto depthTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+    auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto indexBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(indices),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    memcpy(positionBuffer->as<glm::vec3>(),positions,sizeof(positions));
+    memcpy(uvBuffer->as<glm::vec2>(),uvs,sizeof(uvs));
+    memcpy(indexBuffer->as<uint16_t>(),indices,sizeof(indices));
+
+
+    PipelineState pipelineState{};
+    auto vertex = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.vertex");
+    auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
+    std::vector<VertexBinding> vertexBindings =
+    {
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+    };
+    VertexDescription vertexDescription(vertexBindings);
+    FramebufferDescription framebufferDesc{};
+    framebufferDesc.colorFormats[0] = colorTarget->format();
+    framebufferDesc.depthFormat = depthTarget->format();
+    auto shaderPipeline = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(vertexDescription,vertex.details,fragment.details,pipelineState,framebufferDesc));
+
+    commandBuffer->begin();
+    int32_t index = 3;
+    EXPECT_DEATH(commandBuffer->setGraphicsShaderParameters(0,&index,sizeof(int32_t)), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->bindShaderPipeline(shaderPipeline.get()), "Command Buffer cannot record commands outside it's capabilities");
+    Attachment colorAttachment{colorTarget.get(),true,{1.0f,1.0f,1.0f,1.0f}};
+    Attachment depthAttachment{depthTarget.get(),true,{1.0f,0.0f}};
+    EXPECT_DEATH(commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{0,0,colorTarget->width(),colorTarget->height()}), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->endRendering(), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->setViewPort(0,0,50,50,1,0), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->setScissors({{0,0},{50,50}}), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->bindIndexBuffer(indexBuffer.get(),IndexBufferType::UINT_16,0), "Command Buffer cannot record commands outside it's capabilities");
+    Buffer* buffers[] = {positionBuffer.get(),uvBuffer.get()};
+    uint64_t offsets[] = {0,0};
+    uint64_t strides[] = {sizeof(glm::vec3),sizeof(glm::vec2)};
+    EXPECT_DEATH(commandBuffer->bindVertexBuffers(0,buffers,offsets,strides,2), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->draw(3,1,0,0), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->drawIndexed(6,1,0,0,0), "Command Buffer cannot record commands outside it's capabilities");
+    auto indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    EXPECT_DEATH(commandBuffer->drawIndirect(indirectBuffer.get(),0,1), "Command Buffer cannot record commands outside it's capabilities");
+    auto indirectIndexedBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawIndexedCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    EXPECT_DEATH(commandBuffer->drawIndexedIndirect(indirectIndexedBuffer.get(),0,1), "Command Buffer cannot record commands outside it's capabilities");
+    auto countBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    EXPECT_DEATH(commandBuffer->drawIndirectCount(indirectBuffer.get(),0,countBuffer.get(),0,1), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->drawIndexedIndirectCount(indirectIndexedBuffer.get(),0,countBuffer.get(),0,1), "Command Buffer cannot record commands outside it's capabilities");
+    auto resolveTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,1,SampleCount::FOUR));
+    EXPECT_DEATH(commandBuffer->resolveTexture(resolveTexture.get(),0,0,slag::Rectangle{{0,0},{1024,1024}},colorTarget.get(),0,0,{0,0}), "Command Buffer cannot record commands outside it's capabilities");
+    auto destTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+    EXPECT_DEATH(commandBuffer->copyTextureRegion(PixelAspect::COLOR,colorTarget.get(),0,0,slag::Rectangle{{0,0},{1024,1024}},destTexture.get(),0,0,{0,0}), "Command Buffer cannot record commands outside it's capabilities");
 }
 TEST(CommandBuffer, ComputeErrorGraphicsCommands)
 {
-    GTEST_FAIL();
+    glm::vec3 positions[]
+    {
+        {-1,1,0},
+        {1,1,0},
+        {-1,-1,0},
+        {1,-1,0}
+    };
+    glm::vec2 uvs[]
+    {
+        {0,0},
+        {1,0},
+        {0,1},
+        {1,1}
+    };
+    uint16_t indices[]
+    {
+        0,1,2,
+        1,3,2
+    };
+
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::COMPUTE));
+    auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+    auto colorTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
+    auto depthTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+    auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto indexBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(indices),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    memcpy(positionBuffer->as<glm::vec3>(),positions,sizeof(positions));
+    memcpy(uvBuffer->as<glm::vec2>(),uvs,sizeof(uvs));
+    memcpy(indexBuffer->as<uint16_t>(),indices,sizeof(indices));
+
+
+    PipelineState pipelineState{};
+    auto vertex = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.vertex");
+    auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
+    std::vector<VertexBinding> vertexBindings =
+    {
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+    };
+    VertexDescription vertexDescription(vertexBindings);
+    FramebufferDescription framebufferDesc{};
+    framebufferDesc.colorFormats[0] = colorTarget->format();
+    framebufferDesc.depthFormat = depthTarget->format();
+    auto shaderPipeline = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(vertexDescription,vertex.details,fragment.details,pipelineState,framebufferDesc));
+
+    commandBuffer->begin();
+    int32_t index = 3;
+    EXPECT_DEATH(commandBuffer->setGraphicsShaderParameters(0,&index,sizeof(int32_t)), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->bindShaderPipeline(shaderPipeline.get()), "Command Buffer cannot record commands outside it's capabilities");
+    Attachment colorAttachment{colorTarget.get(),true,{1.0f,1.0f,1.0f,1.0f}};
+    Attachment depthAttachment{depthTarget.get(),true,{1.0f,0.0f}};
+    EXPECT_DEATH(commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{0,0,colorTarget->width(),colorTarget->height()}), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->endRendering(), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->setViewPort(0,0,50,50,1,0), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->setScissors({{0,0},{50,50}}), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->bindIndexBuffer(indexBuffer.get(),IndexBufferType::UINT_16,0), "Command Buffer cannot record commands outside it's capabilities");
+    Buffer* buffers[] = {positionBuffer.get(),uvBuffer.get()};
+    uint64_t offsets[] = {0,0};
+    uint64_t strides[] = {sizeof(glm::vec3),sizeof(glm::vec2)};
+    EXPECT_DEATH(commandBuffer->bindVertexBuffers(0,buffers,offsets,strides,2), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->draw(3,1,0,0), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->drawIndexed(6,1,0,0,0), "Command Buffer cannot record commands outside it's capabilities");
+    auto indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    EXPECT_DEATH(commandBuffer->drawIndirect(indirectBuffer.get(),0,1), "Command Buffer cannot record commands outside it's capabilities");
+    auto indirectIndexedBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawIndexedCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    EXPECT_DEATH(commandBuffer->drawIndexedIndirect(indirectIndexedBuffer.get(),0,1), "Command Buffer cannot record commands outside it's capabilities");
+    auto countBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    EXPECT_DEATH(commandBuffer->drawIndirectCount(indirectBuffer.get(),0,countBuffer.get(),0,1), "Command Buffer cannot record commands outside it's capabilities");
+    EXPECT_DEATH(commandBuffer->drawIndexedIndirectCount(indirectIndexedBuffer.get(),0,countBuffer.get(),0,1), "Command Buffer cannot record commands outside it's capabilities");
+    auto resolveTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,1,SampleCount::FOUR));
+    EXPECT_DEATH(commandBuffer->resolveTexture(resolveTexture.get(),0,0,slag::Rectangle{{0,0},{1024,1024}},colorTarget.get(),0,0,{0,0}), "Command Buffer cannot record commands outside it's capabilities");
+    auto destTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+    EXPECT_DEATH(commandBuffer->copyTextureRegion(PixelAspect::COLOR,colorTarget.get(),0,0,slag::Rectangle{{0,0},{1024,1024}},destTexture.get(),0,0,{0,0}), "Command Buffer cannot record commands outside it's capabilities");
 }
 
 TEST(CommandBuffer,SetGraphicsShaderParametersOver128BytesError)
 {
-    GTEST_FAIL();
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
+    auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+
+    uint8_t data[132];
+
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorHeaps(descriptorHeap.get(),samplerHeap.get());
+    EXPECT_DEATH(commandBuffer->setGraphicsShaderParameters(0,data,132), "Exceeded size of shader parameter data");
+    EXPECT_DEATH(commandBuffer->setGraphicsShaderParameters(120,data,64), "Exceeded size of shader parameter data");
 }
 
-TEST(CommandBuffer,SetComputerShaderParametersOver128BytesError)
+TEST(CommandBuffer,SetComputeShaderParametersOver128BytesError)
 {
-    GTEST_FAIL();
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::COMPUTE));
+    auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+
+    uint8_t data[132];
+
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorHeaps(descriptorHeap.get(),samplerHeap.get());
+    EXPECT_DEATH(commandBuffer->setComputeShaderParameters(0,data,132), "Exceeded size of shader parameter data");
+    EXPECT_DEATH(commandBuffer->setComputeShaderParameters(120,data,64), "Exceeded size of shader parameter data");
 }
 
-TEST(CommandBuffer, DrawCommandsWhenGraphicsBoundError)
+TEST(CommandBuffer,SetGraphicsShaderParametersOnNon4ByteAlign)
 {
-    GTEST_FAIL();
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
+    auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+
+    uint8_t data[64];
+
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorHeaps(descriptorHeap.get(),samplerHeap.get());
+    EXPECT_DEATH(commandBuffer->setGraphicsShaderParameters(3,data,64), "Shader data offset must be aligned to 4 bytes");
 }
 
-TEST(CommandBuffer, GraphicsCommandsWhenGraphicsBoundError)
+TEST(CommandBuffer,SetComputeShaderParametersOnNon4ByteAlign)
 {
-    GTEST_FAIL();
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::COMPUTE));
+    auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+
+    uint8_t data[64];
+
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorHeaps(descriptorHeap.get(),samplerHeap.get());
+    EXPECT_DEATH(commandBuffer->setComputeShaderParameters(3,data,64), "Shader data offset must be aligned to 4 bytes");
+}
+
+TEST(CommandBuffer,SetGraphicsShaderParametersDataNot4ByteSizeMultiple)
+{
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
+    auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+
+    uint8_t data[63];
+
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorHeaps(descriptorHeap.get(),samplerHeap.get());
+    EXPECT_DEATH(commandBuffer->setGraphicsShaderParameters(0,data,63), "dataSize must be multiple of 4");
+}
+
+TEST(CommandBuffer,SetComputeShaderParametersDataNot4ByteSizeMultiple)
+{
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::COMPUTE));
+    auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+
+    uint8_t data[63];
+
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorHeaps(descriptorHeap.get(),samplerHeap.get());
+    EXPECT_DEATH(commandBuffer->setComputeShaderParameters(0,data,63), "dataSize must be multiple of 4");
+}
+
+TEST(CommandBuffer, DrawCommandsWhenGraphicsNotBoundError)
+{
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
+    auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+    auto computeModule = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/ParallelAdd.compute");
+    auto computePipeline = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(&computeModule.details));
+    auto drawTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
+    auto indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto indirectIndexedBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawIndexedCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorHeaps(descriptorHeap.get(),samplerHeap.get());
+    commandBuffer->setViewPort(0,0,drawTexture->width(),drawTexture->height(),1,0);
+    commandBuffer->setScissors({{0,0},{drawTexture->width(),drawTexture->height()}});
+
+    Attachment colorAttachment{drawTexture.get(),true,{1.0f,1.0f,1.0f,1.0f}};
+    commandBuffer->beginRendering(&colorAttachment,1,nullptr,slag::Rectangle{0,0,drawTexture->width(),drawTexture->height()});
+    EXPECT_DEATH(commandBuffer->draw(1,1,0,0), "Must bind graphics pipeline prior to drawing");
+    EXPECT_DEATH(commandBuffer->drawIndexed(1,1,0,0,0), "Must bind graphics pipeline prior to drawing");
+    EXPECT_DEATH(commandBuffer->drawIndirect(indirectBuffer.get(),0,1), "Must bind graphics pipeline prior to drawing");
+    EXPECT_DEATH(commandBuffer->drawIndirect(indirectIndexedBuffer.get(),0,1), "Must bind graphics pipeline prior to drawing");
+    EXPECT_DEATH(commandBuffer->drawIndirectCount(indirectBuffer.get(),0,indirectBuffer.get(),0,1), "Must bind graphics pipeline prior to drawing");
+    EXPECT_DEATH(commandBuffer->drawIndirectCount(indirectIndexedBuffer.get(),0,indirectBuffer.get(),0,1), "Must bind graphics pipeline prior to drawing");
+    commandBuffer->endRendering();
+
+    commandBuffer->bindShaderPipeline(computePipeline.get());
+    commandBuffer->beginRendering(&colorAttachment,1,nullptr,slag::Rectangle{0,0,drawTexture->width(),drawTexture->height()});
+    EXPECT_DEATH(commandBuffer->draw(1,1,0,0), "Must bind graphics pipeline prior to drawing");
+    EXPECT_DEATH(commandBuffer->drawIndexed(1,1,0,0,0), "Must bind graphics pipeline prior to drawing");
+    EXPECT_DEATH(commandBuffer->drawIndirect(indirectBuffer.get(),0,1), "Must bind graphics pipeline prior to drawing");
+    EXPECT_DEATH(commandBuffer->drawIndirect(indirectIndexedBuffer.get(),0,1), "Must bind graphics pipeline prior to drawing");
+    EXPECT_DEATH(commandBuffer->drawIndirectCount(indirectBuffer.get(),0,indirectBuffer.get(),0,1), "Must bind graphics pipeline prior to drawing");
+    EXPECT_DEATH(commandBuffer->drawIndirectCount(indirectIndexedBuffer.get(),0,indirectBuffer.get(),0,1), "Must bind graphics pipeline prior to drawing");
+    commandBuffer->endRendering();
+
+}
+
+TEST(CommandBuffer, GraphicsCommandsWhenGraphicsNotBoundError)
+{
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
+    auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+    auto colorTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
+    auto depthTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+
+
+    PipelineState pipelineState{};
+    auto vertex = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.vertex");
+    auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
+    std::vector<VertexBinding> vertexBindings =
+    {
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+    };
+    VertexDescription vertexDescription(vertexBindings);
+    FramebufferDescription framebufferDesc{};
+    framebufferDesc.colorFormats[0] = colorTarget->format();
+    framebufferDesc.depthFormat = depthTarget->format();
+    auto shaderPipeline = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(vertexDescription,vertex.details,fragment.details,pipelineState,framebufferDesc));
+    auto indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDispatchCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorHeaps(descriptorHeap.get(),samplerHeap.get());
+    EXPECT_DEATH(commandBuffer->dispatch(1,1,1), "Must bind compute pipeline prior to dispatching");
+    EXPECT_DEATH(commandBuffer->dispatchIndirect(indirectBuffer.get(),0), "Must bind compute pipeline prior to dispatching");
+    commandBuffer->bindShaderPipeline(shaderPipeline.get());
+    EXPECT_DEATH(commandBuffer->dispatch(1,1,1), "Must bind compute pipeline prior to dispatching");
+    EXPECT_DEATH(commandBuffer->dispatchIndirect(indirectBuffer.get(),0), "Must bind compute pipeline prior to dispatching");
+    commandBuffer->end();
+}
+
+TEST(CommandBuffer, DrawCommandsOutsideBeginEndRendering)
+{
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
+    auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+    auto colorTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
+    auto depthTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+    auto indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto indirectIndexedBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawIndexedCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+
+    PipelineState pipelineState{};
+    auto vertex = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.vertex");
+    auto fragment = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/TexturedDepthBindless.fragment");
+    std::vector<VertexBinding> vertexBindings =
+    {
+        VertexBinding(0,sizeof(float)*3,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("POSITION",PixelFormat::R32G32B32_FLOAT,0)}),
+        VertexBinding(1,sizeof(float)*2,InputRate::PER_VERTEX,std::vector<VertexAttribute>{VertexAttribute("UV_COORDINATES",PixelFormat::R32G32_FLOAT,0)}),
+    };
+    VertexDescription vertexDescription(vertexBindings);
+    FramebufferDescription framebufferDesc{};
+    framebufferDesc.colorFormats[0] = colorTarget->format();
+    framebufferDesc.depthFormat = depthTarget->format();
+    auto shaderPipeline = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(vertexDescription,vertex.details,fragment.details,pipelineState,framebufferDesc));
+
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorHeaps(descriptorHeap.get(),samplerHeap.get());
+    commandBuffer->setViewPort(0,0,colorTarget->width(),colorTarget->height(),1,0);
+    commandBuffer->setScissors({{0,0},{colorTarget->width(),colorTarget->height()}});
+
+    Attachment colorAttachment{colorTarget.get(),true,{1.0f,1.0f,1.0f,1.0f}};
+    Attachment depthAttachment{depthTarget.get(),true,{1.0f,1.0f,1.0f,1.0f}};
+    commandBuffer->bindShaderPipeline(shaderPipeline.get());
+    //commandBuffer->beginRendering(&colorAttachment,1,nullptr,slag::Rectangle{0,0,drawTexture->width(),drawTexture->height()});
+    EXPECT_DEATH(commandBuffer->draw(1,1,0,0), "Must be in render pass");
+    EXPECT_DEATH(commandBuffer->drawIndexed(1,1,0,0,0), "Must be in render pass");
+    EXPECT_DEATH(commandBuffer->drawIndirect(indirectBuffer.get(),0,1), "Must be in render pass");
+    EXPECT_DEATH(commandBuffer->drawIndirect(indirectIndexedBuffer.get(),0,1), "Must be in render pass");
+    EXPECT_DEATH(commandBuffer->drawIndirectCount(indirectBuffer.get(),0,indirectBuffer.get(),0,1), "Must be in render pass");
+    EXPECT_DEATH(commandBuffer->drawIndirectCount(indirectIndexedBuffer.get(),0,indirectBuffer.get(),0,1), "Must be in render pass");
+    //commandBuffer->endRendering();
+    commandBuffer->end();
+}
+TEST(CommandBuffer, DispatchCommandsInsideBeginEndRendering)
+{
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
+    auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
+    auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
+    auto computeModule = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/ParallelAdd.compute");
+    auto computePipeline = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(&computeModule.details));
+
+    auto colorTexture = graphicsCard->newTexture2D(512,512,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET);
+    auto indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDispatchCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+
+
+
+    commandBuffer->begin();
+    commandBuffer->bindDescriptorHeaps(descriptorHeap.get(),samplerHeap.get());
+    commandBuffer->bindShaderPipeline(computePipeline.get());
+    Attachment colorAttachment{.texture = colorTexture, .autoClear = true, .clearValue = {1.0f,1.0f,1.0f,1.0f}};
+    commandBuffer->beginRendering(&colorAttachment,1,nullptr,slag::Rectangle{0,0,colorTexture->width(),colorTexture->height()});
+    EXPECT_DEATH(commandBuffer->dispatch(1,1,1), "Cannot dispatch within render pass");
+    EXPECT_DEATH(commandBuffer->dispatchIndirect(indirectBuffer.get(),0), "Cannot dispatch within render pass");
+    commandBuffer->endRendering();
+    commandBuffer->end();
 }
 
 TEST(CommandBuffer, SetGraphicsShaderParametersFailIfNoHeapsBound)
 {
-    GTEST_FAIL();
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
+
+    commandBuffer->begin();
+    uint32_t index = 1;
+    EXPECT_DEATH(commandBuffer->setGraphicsShaderParameters(0,&index,sizeof(uint32_t)), "Heaps must be bound before setting shader parameters");
 }
 
 TEST(CommandBuffer,SetComputeShaderParametersFailIfNoHeapsBound)
 {
-    GTEST_FAIL();
+    auto graphicsCard = Slag::backend()->graphicsCard(0);
+    auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::COMPUTE));
+
+    commandBuffer->begin();
+    uint32_t index = 1;
+    EXPECT_DEATH(commandBuffer->setComputeShaderParameters(0,&index,sizeof(uint32_t)), "Heaps must be bound before setting shader parameters");
 }
 #endif
