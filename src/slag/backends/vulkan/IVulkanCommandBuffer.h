@@ -55,7 +55,33 @@ namespace slag
             [[nodiscard]] VkCommandBuffer vulkanHandle() const;
 
         protected:
+            struct MemoryBarriersMemory
+            {
+                VkImageMemoryBarrier2 textureBarriers[5];
+                VkBufferMemoryBarrier2 bufferBarriers[5];
+                VkMemoryBarrier2 globalBarriers[3];
+            };
+
+            struct BufferImageCopyMemory
+            {
+                VkBufferImageCopy bufferImageCopies[18];
+            };
+
+            struct VertexBufferMemory
+            {
+                VkBuffer vertexBuffers[16];
+            };
+
+            union ScratchMemory
+            {
+                MemoryBarriersMemory memoryBarriersMemory;
+                BufferImageCopyMemory bufferImageCopiesMemory;
+                VertexBufferMemory vertexBuffersMemory;
+            };
+
+
             void IVKCBMove(IVulkanCommandBuffer& from);
+            ScratchMemory _scratchMemory{};
             VkCommandBuffer _commandBuffer = nullptr;
             VkCommandPool _commandPool = nullptr;
             VulkanGraphicsCard* _graphicsCard = nullptr;
