@@ -19,10 +19,13 @@ namespace slag
             ~VulkanSubmissionQueue()override = default;
             [[nodiscard]] QueueType type()const override;
             [[nodiscard]] GraphicsCard* graphicsCard()override;
-            void submit(SubmissionBatch* batches, uint32_t batchCount)override;
+            void submit(const SubmissionBatch& batch)override;
             VkQueue vulkanHandle()const;
         private:
             void move(VulkanSubmissionQueue& from);
+            VkSemaphoreSubmitInfo _waits[5]{VkSemaphoreSubmitInfo{}};
+            VkSemaphoreSubmitInfo _signals[5]{VkSemaphoreSubmitInfo{}};
+            VkCommandBufferSubmitInfo _commandBuffers[5]{VkCommandBufferSubmitInfo{}};
             VkQueue _queue = nullptr;
             VulkanGraphicsCard* _graphicsCard = nullptr;
             QueueType _type = QueueType::TRANSFER;

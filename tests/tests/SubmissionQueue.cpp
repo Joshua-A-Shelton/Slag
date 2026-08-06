@@ -2,17 +2,6 @@
 #include <slag/Slag.h>
 using namespace slag;
 #ifdef SLAG_DEBUG
-TEST(SubmissionQueue, ErrorOnZeroSubmit)
-{
-    auto card = Slag::backend()->graphicsCard(0);
-    SubmissionBatch batch{};
-    ASSERT_DEATH(card->transferQueue()->submit(&batch,0),"At least one batch must be submitted");
-}
-TEST(SubmissionQueue, ErrorOnNullptrSubmit)
-{
-    auto card = Slag::backend()->graphicsCard(0);
-    ASSERT_DEATH(card->transferQueue()->submit(nullptr,1),"Parameter 'batches' must not be nullptr");
-}
 TEST(SubmissionQueue, ErrorOnSubmitTransfer)
 {
     auto card = Slag::backend()->graphicsCard(0);
@@ -37,8 +26,8 @@ TEST(SubmissionQueue, ErrorOnSubmitTransfer)
     SubmissionBatch computeBatch{};
     computeBatch.commandBuffers = &cb;
     computeBatch.commandBufferCount = 1;
-    EXPECT_DEATH(card->transferQueue()->submit(&graphicsBatch,1),"Queue cannot process command buffer outside it's capabilities");
-    EXPECT_DEATH(card->transferQueue()->submit(&computeBatch,1),"Queue cannot process command buffer outside it's capabilities");
+    EXPECT_DEATH(card->transferQueue()->submit(graphicsBatch),"Queue cannot process command buffer outside it's capabilities");
+    EXPECT_DEATH(card->transferQueue()->submit(computeBatch),"Queue cannot process command buffer outside it's capabilities");
 }
 TEST(SubmissionQueue, ErrorOnSubmitFrameTransfer)
 {
@@ -56,8 +45,8 @@ TEST(SubmissionQueue, ErrorOnSubmitFrameTransfer)
     graphicsBatch.commandBuffers = &gb;
     graphicsBatch.commandBufferCount = 1;
 
-    EXPECT_DEATH(card->transferQueue()->submit(&graphicsBatch,1),"Queue cannot process command buffer outside it's capabilities");
-    EXPECT_DEATH(card->computeQueue()->submit(&graphicsBatch,1),"Queue cannot process command buffer outside it's capabilities");
+    EXPECT_DEATH(card->transferQueue()->submit(graphicsBatch),"Queue cannot process command buffer outside it's capabilities");
+    EXPECT_DEATH(card->computeQueue()->submit(graphicsBatch),"Queue cannot process command buffer outside it's capabilities");
 
     auto computeBuffer = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(QueueType::COMPUTE));
     graphicsBuffer->begin();
@@ -68,7 +57,7 @@ TEST(SubmissionQueue, ErrorOnSubmitFrameTransfer)
     SubmissionBatch computeBatch{};
     computeBatch.commandBuffers = &cb;
     computeBatch.commandBufferCount = 1;
-    EXPECT_DEATH(card->transferQueue()->submit(&computeBatch,1),"Queue cannot process command buffer outside it's capabilities");
+    EXPECT_DEATH(card->transferQueue()->submit(computeBatch),"Queue cannot process command buffer outside it's capabilities");
 
 }
 TEST(SubmissionQueue, ErrorOnSubmitCompute)
@@ -87,6 +76,6 @@ TEST(SubmissionQueue, ErrorOnSubmitCompute)
     graphicsBatch.commandBuffers = &gb;
     graphicsBatch.commandBufferCount = 1;
 
-    EXPECT_DEATH(card->computeQueue()->submit(&graphicsBatch,1),"Queue cannot process command buffer outside it's capabilities");
+    EXPECT_DEATH(card->computeQueue()->submit(graphicsBatch),"Queue cannot process command buffer outside it's capabilities");
 }
 #endif

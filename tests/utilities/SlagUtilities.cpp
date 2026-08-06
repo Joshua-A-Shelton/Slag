@@ -67,7 +67,7 @@ namespace slag
                 .signalSemaphores = &signal,
                 .signalSemaphoreCount = 1,
             };
-            graphicsCard->transferQueue()->submit(&batch,1);
+            graphicsCard->transferQueue()->submit(batch);
             finished->waitForValue(1);
             return texture;
         }
@@ -115,7 +115,7 @@ namespace slag
                 .signalSemaphores = &signal,
                 .signalSemaphoreCount = 1,
             };
-            card->transferQueue()->submit(&batch,1);
+            card->transferQueue()->submit(batch);
             finished->waitForValue(1);
 
             auto data = pixels->as<uint8_t>();
@@ -168,7 +168,7 @@ namespace slag
                 .signalSemaphores = &signal,
                 .signalSemaphoreCount = 1,
             };
-            card->transferQueue()->submit(&batch,1);
+            card->transferQueue()->submit(batch);
             finished->waitForValue(1);
 
             ImageSimilarity similarity{};

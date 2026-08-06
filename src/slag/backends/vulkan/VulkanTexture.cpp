@@ -508,7 +508,7 @@ namespace slag
                 .signalSemaphores = &signal,
                 .signalSemaphoreCount = 1,
             };
-            _graphicsCard->transferQueue()->submit(&batch,1);
+            _graphicsCard->transferQueue()->submit(batch);
             finished.waitForValue(1);
 
         }

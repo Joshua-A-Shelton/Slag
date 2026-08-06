@@ -93,7 +93,7 @@ TEST(CommandBuffer, InsertBarriers)
     submissionBatch.commandBufferCount = 1;
     submissionBatch.signalSemaphores = &signal;
     submissionBatch.signalSemaphoreCount = 1;
-    card->graphicsQueue()->submit(&submissionBatch,1);
+    card->graphicsQueue()->submit(submissionBatch);
     finished->waitForValue(1);
 
 }
@@ -135,7 +135,7 @@ TEST(CommandBuffer, CopyBufferToBuffer)
         .signalSemaphoreCount = 1,
     };
 
-    card->transferQueue()->submit(&batch,1);
+    card->transferQueue()->submit(batch);
     finished->waitForValue(1);
     for (uint8_t i=0; i < 128; i++)
     {
@@ -203,7 +203,7 @@ TEST(CommandBuffer, CopyBufferToTextureToBuffer)
     batch.commandBufferCount = 1;
     batch.signalSemaphores = &signal;
     batch.signalSemaphoreCount = 1;
-    card->transferQueue()->submit(&batch,1);
+    card->transferQueue()->submit(batch);
     finished->waitForValue(1);
 
     for (int i=0; i< dstBuffer->size(); i++)
@@ -381,7 +381,7 @@ TEST(CommandBuffer, Draw)
         .signalSemaphores = &signal,
         .signalSemaphoreCount = 1,
     };
-    graphicsCard->graphicsQueue()->submit(&batch,1);
+    graphicsCard->graphicsQueue()->submit(batch);
     finished->waitForValue(1);
     auto result = utilities::compareTexture(colorTexture.get(),0,0,"resources/tests/textures/results/draw-test.png");
     ASSERT_GE(result.overallSimilarity,.9999);
@@ -553,7 +553,7 @@ TEST(CommandBuffer, DrawIndexed)
         .signalSemaphores = &signal,
         .signalSemaphoreCount = 1,
     };
-    graphicsCard->graphicsQueue()->submit(&batch,1);
+    graphicsCard->graphicsQueue()->submit(batch);
     finished->waitForValue(1);
     auto result = utilities::compareTexture(colorTexture.get(),0,0,"resources/tests/textures/results/draw-test.png");
     utilities::saveTexture("C:/Users/jshelton/Desktop/results/draw-indexed.png",colorTexture.get());
@@ -728,7 +728,7 @@ TEST(CommandBuffer, DrawIndirect)
         .signalSemaphores = &signal,
         .signalSemaphoreCount = 1,
     };
-    graphicsCard->graphicsQueue()->submit(&batch,1);
+    graphicsCard->graphicsQueue()->submit(batch);
     finished->waitForValue(1);
     auto result = utilities::compareTexture(colorTexture.get(),0,0,"resources/tests/textures/results/draw-test.png");
     ASSERT_GE(result.overallSimilarity,.9999);
@@ -908,7 +908,7 @@ TEST(CommandBuffer, DrawIndexedIndirect)
         .signalSemaphores = &signal,
         .signalSemaphoreCount = 1,
     };
-    graphicsCard->graphicsQueue()->submit(&batch,1);
+    graphicsCard->graphicsQueue()->submit(batch);
     finished->waitForValue(1);
     auto result = utilities::compareTexture(colorTexture.get(),0,0,"resources/tests/textures/results/draw-test.png");
     ASSERT_GE(result.overallSimilarity,.9999);
@@ -1085,7 +1085,7 @@ TEST(CommandBuffer, DrawIndirectCount)
         .signalSemaphores = &signal,
         .signalSemaphoreCount = 1,
     };
-    graphicsCard->graphicsQueue()->submit(&batch,1);
+    graphicsCard->graphicsQueue()->submit(batch);
     finished->waitForValue(1);
     auto result = utilities::compareTexture(colorTexture.get(),0,0,"resources/tests/textures/results/draw-test.png");
     ASSERT_GE(result.overallSimilarity,.9999);
@@ -1268,7 +1268,7 @@ TEST(CommandBuffer, DrawIndexedIndirectCount)
         .signalSemaphores = &signal,
         .signalSemaphoreCount = 1,
     };
-    graphicsCard->graphicsQueue()->submit(&batch,1);
+    graphicsCard->graphicsQueue()->submit(batch);
     finished->waitForValue(1);
     auto result = utilities::compareTexture(colorTexture.get(),0,0,"resources/tests/textures/results/draw-test.png");
     ASSERT_GE(result.overallSimilarity,.9999);
@@ -1331,7 +1331,7 @@ TEST(CommandBuffer, Dispatch)
         .signalSemaphores = &signal,
         .signalSemaphoreCount = 1,
     };
-    graphicsCard->computeQueue()->submit(&batch,1);
+    graphicsCard->computeQueue()->submit(batch);
     finished->waitForValue(1);
 
     for (uint32_t i = 0;i < 100;i++)
@@ -1392,7 +1392,7 @@ TEST(CommandBuffer, DispatchIndirect)
         .signalSemaphores = &signal,
         .signalSemaphoreCount = 1,
     };
-    graphicsCard->computeQueue()->submit(&batch,1);
+    graphicsCard->computeQueue()->submit(batch);
     finished->waitForValue(1);
 
     for (uint32_t i = 0;i < 100;i++)
@@ -1465,7 +1465,7 @@ TEST(CommandBuffer, Resolve)
         .signalSemaphoreCount = 1
     };
 
-    graphicsCard->transferQueue()->submit(&submissionBatch,1);
+    graphicsCard->transferQueue()->submit(submissionBatch);
     transferFinished->waitForValue(1);
 
     auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
@@ -1639,7 +1639,7 @@ TEST(CommandBuffer, Resolve)
         .signalSemaphores = &signal,
         .signalSemaphoreCount = 1,
     };
-    graphicsCard->graphicsQueue()->submit(&batch,1);
+    graphicsCard->graphicsQueue()->submit(batch);
     finished->waitForValue(1);
 
     auto result = utilities::compareTexture(finalTexture.get(),0,0,"resources/tests/textures/results/resolve.png");
@@ -1743,7 +1743,7 @@ TEST(CommandBuffer, CopyTextureRegion)
         .signalSemaphores = &signalFilled,
         .signalSemaphoreCount = 1,
     };
-    graphicsCard->transferQueue()->submit(&fillBatch,1);
+    graphicsCard->transferQueue()->submit(fillBatch);
     fillFinished->waitForValue(1);
 
     commandBuffer->begin();
@@ -1780,7 +1780,7 @@ TEST(CommandBuffer, CopyTextureRegion)
         .signalSemaphores = &signal,
         .signalSemaphoreCount = 1,
     };
-    graphicsCard->graphicsQueue()->submit(&batch,1);
+    graphicsCard->graphicsQueue()->submit(batch);
     finished->waitForValue(1);
 
     auto similarity = utilities::compareTexture(destinationTexture.get(),0,0,"resources/tests/textures/results/CopyTextureRegion.png");

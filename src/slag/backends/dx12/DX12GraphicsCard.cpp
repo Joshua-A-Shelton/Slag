@@ -460,7 +460,7 @@ namespace slag
                     .signalSemaphoreCount = 1,
                 };
 
-                _graphicsQueue->submit(&batch,1);
+                _graphicsQueue->submit(batch);
                 moved.waitForValue(1);
                 for (auto i=0; i< movedResources.size(); i++)
                 {

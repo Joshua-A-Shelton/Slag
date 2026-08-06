@@ -19,7 +19,7 @@ namespace slag
             ~DX12SubmissionQueue()override = default;
             [[nodiscard]] QueueType type()const override;
             [[nodiscard]] GraphicsCard* graphicsCard()override;
-            void submit(SubmissionBatch* batches, uint32_t batchCount)override;
+            void submit(const SubmissionBatch& batch)override;
             ID3D12CommandQueue* dx12Handle()const;
         private:
             void move(DX12SubmissionQueue& from);

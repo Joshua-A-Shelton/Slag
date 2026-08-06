@@ -75,7 +75,7 @@ TEST(Semaphore, WaitAndSignalFromGPU)
         .signalSemaphoreCount = 1,
     };
     auto start = std::chrono::steady_clock::now();
-    card->transferQueue()->submit(&batch,1);
+    card->transferQueue()->submit(batch);
     semaphore1->waitForValue(1);
     auto end = std::chrono::steady_clock::now();
 
@@ -103,7 +103,7 @@ TEST(Semaphore, WaitAndSignalFromGPU)
     batch.waitSemaphoreCount = 1;
 
     start = std::chrono::steady_clock::now();
-    card->transferQueue()->submit(&batch,1);
+    card->transferQueue()->submit(batch);
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
     semaphore1->signal(2);
     semaphore2->waitForValue(1);
@@ -112,7 +112,7 @@ TEST(Semaphore, WaitAndSignalFromGPU)
     auto secondTime = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     GTEST_ASSERT_EQ(semaphore1->value(), 2);
     GTEST_ASSERT_EQ(semaphore2->value(), 1);
-    GTEST_ASSERT_TRUE(secondTime > firstTime);
+    GTEST_ASSERT_GT(secondTime, firstTime);
     auto totalTime = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     GTEST_ASSERT_TRUE(totalTime <= std::chrono::milliseconds(220) && totalTime >= std::chrono::milliseconds(180) );
 }

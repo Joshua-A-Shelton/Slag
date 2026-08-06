@@ -104,7 +104,7 @@ slag::Texture* loadTexture(std::filesystem::path const& path, slag::GraphicsCard
         .signalSemaphores = &signal,
         .signalSemaphoreCount = 1,
     };
-    graphicsCard->transferQueue()->submit(&batch,1);
+    graphicsCard->transferQueue()->submit(batch);
     finished->waitForValue(1);
     return texture;
 }
@@ -485,7 +485,7 @@ int main()
             submissionBatch.commandBufferCount = 1;
             submissionBatch.signalSemaphores = &signal;
             submissionBatch.signalSemaphoreCount = 1;
-            queue->submit(&submissionBatch,1);
+            queue->submit(submissionBatch);
             commandsFinished->waitForValue(1);
             swapChain->present();
         }
