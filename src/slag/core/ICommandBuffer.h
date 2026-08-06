@@ -129,26 +129,26 @@ namespace slag
 
         /**
          * [TRANSFER] Copy data from one buffer to another
-         * @param source Buffer to copy from
+         * @param source [[COPY_READ]] Buffer to copy from
          * @param sourceOffset Byte offset to start the copy from
-         * @param destination Buffer to copy to
+         * @param destination [[COPY_WRITE]] Buffer to copy to
          * @param destinationOffset Byte offset to copy the data to
          * @param length Number of bytes to copy
          */
         virtual void copyBufferToBuffer(Buffer* source, uint64_t sourceOffset, Buffer* destination, uint64_t destinationOffset, uint64_t length)=0;
         /**
          * [TRANSFER] Copy data from a texture to a buffer
-         * @param source Texture to copy from
-         * @param destination Buffer to copy to
+         * @param source [[COPY_READ]] Texture to copy from
+         * @param destination [[COPY_WRITE]] Buffer to copy to
          * @param copyData Array of structures containing the parameters of the copy operation
          * @param mappingCount Number of items in copyData array
          */
         virtual void copyTextureToBuffer(Texture* source, Buffer* destination, TextureBufferMapping* copyData, uint32_t mappingCount)=0;
         /**
          * [TRANSFER] Copy data from a buffer to a texture
-         * @param source Buffer to copy data from
+         * @param source [[COPY_READ]] Buffer to copy data from
          * @param destination Texture to copy data to
-         * @param copyData Array of structures containing the parameters of the copy operation
+         * @param copyData [[COPY_WRITE]] Array of structures containing the parameters of the copy operation
          * @param mappingCount Number of items in copyData array
          */
         virtual void copyBufferToTexture(Buffer* source, Texture* destination, TextureBufferMapping* copyData, uint32_t mappingCount)=0;
@@ -159,9 +159,9 @@ namespace slag
         virtual void bindShaderPipeline(ShaderPipeline* pipeline)=0;
         /**
          * [GRAPHICS] Start a renderpass with the given render targets
-         * @param colorAttachments Color attachments that shaders will render to in this pa
+         * @param colorAttachments [[COLOR_TARGET]] Color attachments that shaders will render to in this pa
          * @param colorAttachmentCount Number of Color Attachments
-         * @param depthAttachment Depth attachment that shaders will use as depth target in render pass (or nullptr if no depth attachment is needed)
+         * @param depthAttachment [[DEPTH_TARGET_READ | DEPTH_TARGET_WRITE]] Depth attachment that shaders will use as depth target in render pass (or nullptr if no depth attachment is needed)
          * @param bounds Area that is affected in render pass
          */
         virtual void beginRendering(Attachment* colorAttachments, uint32_t colorAttachmentCount,Attachment* depthAttachment, const Rectangle& bounds)=0;
@@ -207,7 +207,7 @@ namespace slag
          */
         virtual void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)=0;
         /**
-         * [GRAPHICS] Draw geometry with currently bound vertex buffers, index buffer, and bound shader
+         * [GRAPHICS] [[VERTEX_ATTRIBUTE_READ | UNIFORM_READ | COLOR_TARGET | DEPTH_TARGET_READ | DEPTH_TARGET_WRITE | SHADER_SAMPLED_READ | SHADER_READ_WRITE_ACCESS]] Draw geometry with currently bound vertex buffers, index buffer, and bound shader
          * @param indexCount Number of indexes per instance
          * @param instanceCount Number of instances
          * @param firstIndex Offset into bound buffer to start drawing from
@@ -216,21 +216,21 @@ namespace slag
          */
         virtual void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance)=0;
         /**
-         * [GRAPHICS] Draw geometry with indirect parameters
+         * [GRAPHICS] [[INDEX_READ | VERTEX_ATTRIBUTE_READ | UNIFORM_READ | COLOR_TARGET | DEPTH_TARGET_READ | DEPTH_TARGET_WRITE | SHADER_SAMPLED_READ | SHADER_READ_WRITE_ACCESS]] Draw geometry with indirect parameters
          * @param buffer Buffer that contains drawing parameters
          * @param offset Byte offset into buffer where parameters begin
          * @param drawCount Number of draws to exectute, can be zero
          */
         virtual void drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount)=0;
         /**
-         * [GRAPHICS] Draw geometry with indirect parameters
+         * [GRAPHICS] [[INDIRECT_COMMAND_READ | VERTEX_ATTRIBUTE_READ | UNIFORM_READ | COLOR_TARGET | DEPTH_TARGET_READ | DEPTH_TARGET_WRITE | SHADER_SAMPLED_READ | SHADER_READ_WRITE_ACCESS]] Draw geometry with indirect parameters
          * @param buffer Buffer that contains drawing parameters
          * @param offset Byte offset into buffer where parameters begin
          * @param drawCount Number of draws to exectute, can be zero
          */
         virtual void drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount)=0;
         /**
-         * [GRAPHICS] Draw geometry with indirect parameters and draw count
+         * [GRAPHICS] [[INDIRECT_COMMAND_READ | INDEX_READ | VERTEX_ATTRIBUTE_READ | UNIFORM_READ | COLOR_TARGET | DEPTH_TARGET_READ | DEPTH_TARGET_WRITE | SHADER_SAMPLED_READ | SHADER_READ_WRITE_ACCESS]] Draw geometry with indirect parameters and draw count
          * @param buffer Buffer that contains drawing parameters
          * @param offset Byte offset into buffer where parameters begin
          * @param countBuffer Buffer containing the draw count
@@ -239,7 +239,7 @@ namespace slag
          */
         virtual void drawIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer, uint64_t countBufferOffset, uint32_t maxDrawCount)=0;
         /**
-         * [GRAPHICS] Draw geometry with indirect parameters, indexed vertices and draw count
+         * [GRAPHICS] [[INDIRECT_COMMAND_READ | INDEX_READ | VERTEX_ATTRIBUTE_READ | UNIFORM_READ | COLOR_TARGET | DEPTH_TARGET_READ | DEPTH_TARGET_WRITE | SHADER_SAMPLED_READ | SHADER_READ_WRITE_ACCESS]] Draw geometry with indirect parameters, indexed vertices and draw count
          * @param buffer Buffer that contains drawing parameters
          * @param offset Byte offset into buffer where parameters begin
          * @param countBuffer Buffer containing the draw count
@@ -248,14 +248,14 @@ namespace slag
          */
         virtual void drawIndexedIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer, uint64_t countBufferOffset, uint32_t maxDrawCount)=0;
         /**
-         * [COMPUTE] Dispatch compute shader work
+         * [COMPUTE] [[UNIFORM_READ | SHADER_SAMPLED_READ | SHADER_READ_WRITE_ACCESS]] Dispatch compute shader work
          * @param groupCountX Local workgroups to dispatch in the X dimension
          * @param groupCountY Local workgroups to dispatch in the Y dimension
          * @param groupCountZ Local workgroups to dispatch in the Z dimension
          */
         virtual void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)=0;
         /**
-         * [COMPUTE] Dispatch compute shader work with indirect parameters
+         * [COMPUTE] [[INDIRECT_COMMAND_READ | UNIFORM_READ | SHADER_SAMPLED_READ | SHADER_READ_WRITE_ACCESS] Dispatch compute shader work with indirect parameters
          * @param buffer Buffer containing dispatch parameters
          * @param offset Byte offset into buffer where parameters begin
          */
@@ -263,11 +263,11 @@ namespace slag
 
         /**
          * [GRAPHICS] Resolve a multisampled texture to a non-multisampled texture. The source texture must be multisampled and the destination texture must not be multisampled, and both must have the same format
-         * @param source Source texture
+         * @param source [[RESOLVE_READ]] Source texture
          * @param sourceLayer Source texture layer
          * @param sourceMip Source texture mip level
          * @param sourceRect Source texture rectangle sampling area
-         * @param destination Destination texture
+         * @param destination [[RESOLVE_WRITE]] Destination texture
          * @param destinationLayer Destination texture layer
          * @param destinationMip Destination texture mip level
          * @param destinationOffset Destination texture offset
@@ -277,11 +277,11 @@ namespace slag
         /**
          * [GRAPHICS] Copy a region of a texture to another texture
          * @param aspect The kind of data from the texture to copy
-         * @param source Source Texture
+         * @param source [[COPY_READ]] Source Texture
          * @param sourceLayer Source texture layer
          * @param sourceMip Source texture mip level
          * @param sourceRect Source texture rectangle sampling area
-         * @param destination Destination texture
+         * @param destination [[COPY_WRITE]] Destination texture
          * @param destinationLayer Destination texture layer
          * @param destinationMip Destination texture mip level
          * @param destinationOffset Destination texture offset
