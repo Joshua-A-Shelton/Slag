@@ -56,7 +56,24 @@ namespace slag
             [[nodiscard]] ID3D12GraphicsCommandList7* dx12Handle() const;
 
         protected:
+            struct BarrierMemory
+            {
+                D3D12_TEXTURE_BARRIER textureBarriers[5];
+                D3D12_BUFFER_BARRIER bufferBarriers[5];
+                D3D12_GLOBAL_BARRIER globalBarriers[5];
+            };
+            struct VertexBufferMemory
+            {
+                D3D12_VERTEX_BUFFER_VIEW vertexBufferView[16];
+            };
+            union ScratchMemory
+            {
+                BarrierMemory barrierMemory;
+                VertexBufferMemory vertexBufferMemory;
+            };
+
             void IDXCBMove(IDX12CommandBuffer& from);
+            ScratchMemory _scratchMemory{};
             ID3D12GraphicsCommandList7* _commandBuffer = nullptr;
             ID3D12CommandAllocator* _commandPool = nullptr;
             DX12GraphicsCard* _graphicsCard = nullptr;

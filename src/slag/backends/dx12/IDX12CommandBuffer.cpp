@@ -55,7 +55,14 @@ namespace slag
             SLAG_ASSERT(barriers != nullptr && "barriers cannot be nullptr");
             SLAG_ASSERT(barrierCount != 0 && "barriersCount cannot be 0");
 
-            std::vector<D3D12_GLOBAL_BARRIER> globalBarriers(barrierCount);
+            D3D12_GLOBAL_BARRIER* globalBarriers = _scratchMemory.barrierMemory.globalBarriers;
+            std::vector<D3D12_GLOBAL_BARRIER> globalBarriersDynamic(0);
+
+            if (barrierCount > _countof(_scratchMemory.barrierMemory.globalBarriers))
+            {
+                globalBarriersDynamic.resize(barrierCount);
+                globalBarriers = globalBarriersDynamic.data();
+            }
             for (int i=0; i<barrierCount; i++)
             {
                 auto& copyBarrier = barriers[i];
@@ -68,7 +75,7 @@ namespace slag
             D3D12_BARRIER_GROUP barrierGroup{};
             barrierGroup.NumBarriers = barrierCount;
             barrierGroup.Type = D3D12_BARRIER_TYPE_GLOBAL;
-            barrierGroup.pGlobalBarriers = globalBarriers.data();
+            barrierGroup.pGlobalBarriers = globalBarriers;
             _commandBuffer->Barrier(1, &barrierGroup);
         }
 
@@ -77,7 +84,14 @@ namespace slag
             SLAG_ASSERT(barriers != nullptr && "barriers cannot be nullptr");
             SLAG_ASSERT(barrierCount != 0 && "barriersCount cannot be 0");
 
-            std::vector<D3D12_BUFFER_BARRIER> bufferBarriers(barrierCount);
+            D3D12_BUFFER_BARRIER* bufferBarriers = _scratchMemory.barrierMemory.bufferBarriers;
+            std::vector<D3D12_BUFFER_BARRIER> bufferBarriersDynamic(0);
+            if (barrierCount > _countof(_scratchMemory.barrierMemory.bufferBarriers))
+            {
+                bufferBarriersDynamic.resize(barrierCount);
+                bufferBarriers = bufferBarriersDynamic.data();
+            }
+
             for (int i=0; i<barrierCount; i++)
             {
                 auto& copyBarrier = barriers[i];
@@ -93,7 +107,7 @@ namespace slag
             D3D12_BARRIER_GROUP barrierGroup{};
             barrierGroup.NumBarriers = barrierCount;
             barrierGroup.Type = D3D12_BARRIER_TYPE_BUFFER;
-            barrierGroup.pBufferBarriers = bufferBarriers.data();
+            barrierGroup.pBufferBarriers = bufferBarriers;
             _commandBuffer->Barrier(1, &barrierGroup);
         }
 
@@ -102,7 +116,14 @@ namespace slag
             SLAG_ASSERT(barriers != nullptr && "barriers cannot be nullptr");
             SLAG_ASSERT(barrierCount != 0 && "barriersCount cannot be 0");
 
-            std::vector<D3D12_TEXTURE_BARRIER> textureBarriers(barrierCount);
+            D3D12_TEXTURE_BARRIER* textureBarriers = _scratchMemory.barrierMemory.textureBarriers;
+            std::vector<D3D12_TEXTURE_BARRIER> textureBarriersDynamic(0);
+            if (barrierCount > _countof(_scratchMemory.barrierMemory.textureBarriers))
+            {
+                textureBarriersDynamic.resize(barrierCount);
+                textureBarriers = textureBarriersDynamic.data();
+            }
+
             for (int i=0; i<barrierCount; i++)
             {
                 auto& copyBarrier = barriers[i];
@@ -133,7 +154,7 @@ namespace slag
             D3D12_BARRIER_GROUP barrierGroup{};
             barrierGroup.NumBarriers = barrierCount;
             barrierGroup.Type = D3D12_BARRIER_TYPE_TEXTURE;
-            barrierGroup.pTextureBarriers = textureBarriers.data();
+            barrierGroup.pTextureBarriers = textureBarriers;
             _commandBuffer->Barrier(1, &barrierGroup);
         }
 
@@ -141,7 +162,14 @@ namespace slag
             BufferBarrier* bufferBarriers, uint32_t bufferBarrierCount, TextureBarrier* textureBarriers,
             uint32_t textureBarrierCount)
         {
-            std::vector<D3D12_GLOBAL_BARRIER> globalBarriersNative(globalBarrierCount);
+            D3D12_GLOBAL_BARRIER* globalBarriersNative = _scratchMemory.barrierMemory.globalBarriers;
+            std::vector<D3D12_GLOBAL_BARRIER> globalBarriersDynamic(0);
+            if (globalBarrierCount > _countof(_scratchMemory.barrierMemory.globalBarriers))
+            {
+                globalBarriersDynamic.resize(globalBarrierCount);
+                globalBarriersNative = globalBarriersDynamic.data();
+            }
+
             for (int i=0; i<globalBarrierCount; i++)
             {
                 auto& copyBarrier = globalBarriers[i];
@@ -152,7 +180,14 @@ namespace slag
                 globalBarrier.SyncAfter = DX12Backend::nativePipelineStages(copyBarrier.syncAfter);
             }
 
-            std::vector<D3D12_BUFFER_BARRIER> bufferBarriersNative(bufferBarrierCount);
+            D3D12_BUFFER_BARRIER* bufferBarriersNative = _scratchMemory.barrierMemory.bufferBarriers;
+            std::vector<D3D12_BUFFER_BARRIER> bufferBarriersDynamic(0);
+            if (bufferBarrierCount > _countof(_scratchMemory.barrierMemory.bufferBarriers))
+            {
+                bufferBarriersDynamic.resize(bufferBarrierCount);
+                bufferBarriersNative = bufferBarriersDynamic.data();
+            }
+
             for (int i=0; i<bufferBarrierCount; i++)
             {
                 auto& copyBarrier = bufferBarriers[i];
@@ -166,7 +201,15 @@ namespace slag
                 bufferBarrier.Size = copyBarrier.length == 0 ? copyBarrier.buffer->size()-copyBarrier.offset : copyBarrier.length;
             }
 
-            std::vector<D3D12_TEXTURE_BARRIER> textureBarriersNative(textureBarrierCount);
+            D3D12_TEXTURE_BARRIER* textureBarriersNative = _scratchMemory.barrierMemory.textureBarriers;
+            std::vector<D3D12_TEXTURE_BARRIER> textureBarriersDynamic(0);
+
+            if (textureBarrierCount > _countof(_scratchMemory.barrierMemory.textureBarriers))
+            {
+                textureBarriersDynamic.resize(textureBarrierCount);
+                textureBarriersNative = textureBarriersDynamic.data();
+            }
+
             for (int i=0; i<textureBarrierCount; i++)
             {
                 auto& copyBarrier = textureBarriers[i];
@@ -197,17 +240,17 @@ namespace slag
             auto globalGroup = barrierGroups[0];
             globalGroup.NumBarriers = globalBarrierCount;
             globalGroup.Type = D3D12_BARRIER_TYPE_GLOBAL;
-            globalGroup.pGlobalBarriers = globalBarriersNative.data();
+            globalGroup.pGlobalBarriers = globalBarriersNative;
 
             auto bufferGroup = barrierGroups[1];
             bufferGroup.NumBarriers = bufferBarrierCount;
             bufferGroup.Type = D3D12_BARRIER_TYPE_BUFFER;
-            globalGroup.pBufferBarriers = bufferBarriersNative.data();
+            globalGroup.pBufferBarriers = bufferBarriersNative;
 
             auto textureGroup = barrierGroups[2];
             textureGroup.NumBarriers = textureBarrierCount;
             textureGroup.Type = D3D12_BARRIER_TYPE_TEXTURE;
-            textureGroup.pTextureBarriers = textureBarriersNative.data();
+            textureGroup.pTextureBarriers = textureBarriersNative;
 
             _commandBuffer->Barrier(3, barrierGroups);
         }
@@ -401,8 +444,9 @@ namespace slag
                                                 Attachment* depthAttachment, const Rectangle& bounds)
         {
             SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+            SLAG_ASSERT(colorAttachmentCount <=8 && "Cannot have more than 8 color attachments");
 
-            std::vector<D3D12_RENDER_PASS_RENDER_TARGET_DESC> targets(colorAttachmentCount);
+            D3D12_RENDER_PASS_RENDER_TARGET_DESC targets[8];
             for (auto i=0; i<colorAttachmentCount; i++)
             {
                 SLAG_ASSERT((bool)(colorAttachments[i].texture->usage() & TextureUsageFlags::COLOR_TARGET) && "Not all color attachments are color target textures");
@@ -423,7 +467,7 @@ namespace slag
             }
             if (depthAttachment == nullptr)
             {
-                _commandBuffer->BeginRenderPass(colorAttachmentCount, targets.data(),nullptr,D3D12_RENDER_PASS_FLAG_NONE);
+                _commandBuffer->BeginRenderPass(colorAttachmentCount, targets,nullptr,D3D12_RENDER_PASS_FLAG_NONE);
             }
             else
             {
@@ -448,7 +492,7 @@ namespace slag
 
                 depthTarget.cpuDescriptor = static_cast<DX12Texture*>(depthAttachment->texture)->targetHandle();
 
-                _commandBuffer->BeginRenderPass(colorAttachmentCount, targets.data(), &depthTarget, D3D12_RENDER_PASS_FLAG_NONE);
+                _commandBuffer->BeginRenderPass(colorAttachmentCount, targets, &depthTarget, D3D12_RENDER_PASS_FLAG_NONE);
             }
 #ifdef SLAG_DEBUG
             _inRenderPass = true;
@@ -508,7 +552,14 @@ namespace slag
         {
             SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 
-            std::vector<D3D12_VERTEX_BUFFER_VIEW> vertexBufferViews(bufferCount);
+            D3D12_VERTEX_BUFFER_VIEW* vertexBufferViews = _scratchMemory.vertexBufferMemory.vertexBufferView;
+            std::vector<D3D12_VERTEX_BUFFER_VIEW> vertexBufferViewsDynamic(0);
+            if (bufferCount > _countof(_scratchMemory.vertexBufferMemory.vertexBufferView))
+            {
+                vertexBufferViewsDynamic.resize(bufferCount);
+                vertexBufferViews = vertexBufferViewsDynamic.data();
+            }
+
             for (auto i=0; i<bufferCount; i++)
             {
                 auto& buffer = buffers[i];
@@ -518,7 +569,7 @@ namespace slag
                 vertexBufferViews[i].SizeInBytes = buffer->size() - offset;
                 vertexBufferViews[i].StrideInBytes = stride;
             }
-            _commandBuffer->IASetVertexBuffers(firstBinding, bufferCount, vertexBufferViews.data());
+            _commandBuffer->IASetVertexBuffers(firstBinding, bufferCount, vertexBufferViews);
         }
 
         void IDX12CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
