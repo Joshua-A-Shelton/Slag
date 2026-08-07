@@ -40,55 +40,208 @@ namespace slag
             return _graphicsCard;
         }
 
-        //FIXME: there's a ton of allocations happening in this function, it really shouldn't be this bad
+        void VulkanSubmissionQueue::submit(const SubmissionBatch& batch)
+        {
+
+            VkSubmitInfo2 submitInfo {.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2};
+
+            VkSemaphoreSubmitInfo* waits = _waits;
+            std::vector<VkSemaphoreSubmitInfo> waitsDynamic(0);
+            if (batch.waitSemaphoreCount > _countof(_waits))
+            {
+                waitsDynamic.resize(batch.waitSemaphoreCount);
+                waits = waitsDynamic.data();
+            }
+            VkSemaphoreSubmitInfo* signals = _signals;
+            std::vector<VkSemaphoreSubmitInfo> signalsDynamic(0);
+            if (batch.signalSemaphoreCount > _countof(_signals))
+            {
+                signalsDynamic.resize(batch.signalSemaphoreCount);
+                signals = signalsDynamic.data();
+            }
+            VkCommandBufferSubmitInfo* commandBuffers = _commandBuffers;
+            std::vector<VkCommandBufferSubmitInfo> commandBuffersDynamic(0);
+            if (batch.commandBufferCount > _countof(_commandBuffers))
+            {
+                commandBuffersDynamic.resize(batch.commandBufferCount);
+                commandBuffers = commandBuffersDynamic.data();
+            }
+
+            for (auto i = 0u; i < batch.waitSemaphoreCount; i++)
+            {
+                auto& semaphore = batch.waitSemaphores[i];
+                auto& semaphoreInfo = waits[i];
+                semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+                semaphoreInfo.pNext = nullptr;
+                semaphoreInfo.semaphore = static_cast<VulkanSemaphore*>(semaphore.semaphore)->vulkanHandle();
+                semaphoreInfo.value = semaphore.value;
+                semaphoreInfo.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+            }
+
+            for (auto i = 0u; i < batch.commandBufferCount; i++)
+            {
+                auto& commandBuffer = batch.commandBuffers[i];
+                SLAG_ASSERT(QueueTypeSupportsCommands(_type,commandBuffer->type()) && "Queue cannot process command buffer outside it's capabilities");
+
+                auto& commandBufferInfo = commandBuffers[i];
+                commandBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+                commandBufferInfo.pNext = nullptr;
+                commandBufferInfo.commandBuffer = static_cast<VulkanCommandBuffer*>(commandBuffer)->vulkanHandle();
+                commandBufferInfo.deviceMask = 0;
+            }
+
+            for (auto i = 0u; i < batch.signalSemaphoreCount; i++)
+            {
+                auto& semaphore = batch.signalSemaphores[i];
+                auto& semaphoreInfo = signals[i];
+                semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+                semaphoreInfo.pNext = nullptr;
+                semaphoreInfo.semaphore = static_cast<VulkanSemaphore*>(semaphore.semaphore)->vulkanHandle();
+                semaphoreInfo.value = semaphore.value;
+                semaphoreInfo.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+            }
+
+            submitInfo.waitSemaphoreInfoCount = batch.waitSemaphoreCount;
+            submitInfo.pWaitSemaphoreInfos = waits;
+            submitInfo.commandBufferInfoCount = batch.commandBufferCount;
+            submitInfo.pCommandBufferInfos = commandBuffers;
+            submitInfo.signalSemaphoreInfoCount = batch.signalSemaphoreCount;
+            submitInfo.pSignalSemaphoreInfos = signals;
+
+            vkQueueSubmit2(_queue,1,&submitInfo,nullptr);
+        }
+
         void VulkanSubmissionQueue::submit(SubmissionBatch* batches, uint32_t batchCount)
         {
-            SLAG_ASSERT(batchCount > 0 && "At least one batch must be submitted");
-            SLAG_ASSERT(batches != nullptr && "Parameter 'batches' must not be nullptr");
-
-            std::vector<VkSubmitInfo2> submit(batchCount,{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2});
-            std::vector<std::unique_ptr<std::vector<VkSemaphoreSubmitInfo>>> waits(batchCount);
-            std::vector<std::unique_ptr<std::vector<VkSemaphoreSubmitInfo>>> signals(batchCount);
-            std::vector<std::unique_ptr<std::vector<VkCommandBufferSubmitInfo>>> commandBuffers(batchCount);
-            for (auto i = 0; i < batchCount; i++)
+            VkSubmitInfo2* submissions = _submits;
+            VkSemaphoreSubmitInfo** waitOffsets = _waitOffsets;
+            VkSemaphoreSubmitInfo** signalOffsets = _signalOffsets;
+            VkCommandBufferSubmitInfo** commandBufferOffsets = _commandBufferOffsets;
+            std::vector<VkSubmitInfo2> submissionsDynamic(0);
+            std::vector<VkSemaphoreSubmitInfo*> waitOffsetsDynamic(0);
+            std::vector<VkSemaphoreSubmitInfo*> signalOffsetsDynamic(0);
+            std::vector<VkCommandBufferSubmitInfo*> commandBufferOffsetsDynamic(0);
+            if (batchCount > _countof(_submits))
             {
-                auto& submitInfo = submit[i];
-                auto& submissionDatum = batches[i];
-                auto& wait = waits[i];
-                auto& signal = signals[i];
-                auto& buffers = commandBuffers[i];
-
-                wait = std::make_unique<std::vector<VkSemaphoreSubmitInfo>>(submissionDatum.waitSemaphoreCount);
-                for (auto j = 0; j < submissionDatum.waitSemaphoreCount; j++)
-                {
-                    auto& waitSemaphore = submissionDatum.waitSemaphores[j];
-                    auto semaphore = static_cast<VulkanSemaphore*>(waitSemaphore.semaphore);
-                    (*wait)[j] = VkSemaphoreSubmitInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,.semaphore = semaphore->vulkanHandle(),.value = waitSemaphore.value,.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT};
-                }
-                signal = std::make_unique<std::vector<VkSemaphoreSubmitInfo>>(submissionDatum.signalSemaphoreCount);
-                for (auto j = 0; j < submissionDatum.signalSemaphoreCount; j++)
-                {
-                    auto& signalSemaphore = submissionDatum.signalSemaphores[j];
-                    auto semaphore = static_cast<VulkanSemaphore*>(signalSemaphore.semaphore);
-                    (*signal)[j] = VkSemaphoreSubmitInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,.semaphore = semaphore->vulkanHandle(),.value = signalSemaphore.value,.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT};
-                }
-                buffers = std::make_unique<std::vector<VkCommandBufferSubmitInfo>>(submissionDatum.commandBufferCount);
-                for (auto j = 0; j < submissionDatum.commandBufferCount; j++)
-                {
-                    auto commandBuffer = static_cast<VulkanCommandBuffer*>(submissionDatum.commandBuffers[j]);
-                    SLAG_ASSERT(QueueTypeSupportsCommands(_type,commandBuffer->type()) && "Queue cannot process command buffer outside it's capabilities");
-                    (*buffers)[j] = VkCommandBufferSubmitInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO, .commandBuffer = commandBuffer->vulkanHandle()};
-                }
-
-
-                submitInfo.waitSemaphoreInfoCount = submissionDatum.waitSemaphoreCount;
-                submitInfo.pWaitSemaphoreInfos = wait->data();
-                submitInfo.commandBufferInfoCount = submissionDatum.commandBufferCount;
-                submitInfo.pCommandBufferInfos = buffers->data();
-                submitInfo.signalSemaphoreInfoCount = submissionDatum.signalSemaphoreCount;
-                submitInfo.pSignalSemaphoreInfos = signal->data();
+                submissionsDynamic.resize(batchCount);
+                submissions = submissionsDynamic.data();
+                waitOffsetsDynamic.resize(batchCount);
+                waitOffsets = waitOffsetsDynamic.data();
+                signalOffsetsDynamic.resize(batchCount);
+                signalOffsets = signalOffsetsDynamic.data();
+                commandBufferOffsetsDynamic.resize(batchCount);
+                commandBufferOffsets = commandBufferOffsetsDynamic.data();
             }
-            vkQueueSubmit2(_queue,batchCount,submit.data(),nullptr);
+
+            uint32_t totalWaitSemaphoreCount = 0;
+            uint32_t totalSignalSemaphoreCount = 0;
+            uint32_t totalCommandBufferCount = 0;
+            for (auto i = 0u; i < batchCount; i++)
+            {
+                if (batches[i].waitSemaphoreCount ==0)
+                {
+                    waitOffsets[i] = nullptr;
+                }
+                else
+                {
+                    waitOffsets[i] = _waits + totalWaitSemaphoreCount;
+                }
+                totalWaitSemaphoreCount += batches[i].waitSemaphoreCount;
+
+                if (batches[i].signalSemaphoreCount == 0)
+                {
+                    signalOffsets[i] = nullptr;
+                }
+                else
+                {
+                    signalOffsets[i] = _signals + totalSignalSemaphoreCount;
+                }
+                totalSignalSemaphoreCount += batches[i].signalSemaphoreCount;
+
+                if (batches[i].commandBufferCount == 0)
+                {
+                    commandBufferOffsets[i] = nullptr;
+                }
+                else
+                {
+                    commandBufferOffsets[i] = _commandBuffers + totalCommandBufferCount;
+                }
+                totalCommandBufferCount += batches[i].commandBufferCount;
+            }
+
+            VkSemaphoreSubmitInfo* waits = _waits;
+            std::vector<VkSemaphoreSubmitInfo> waitsDynamic(0);
+            if (totalWaitSemaphoreCount > _countof(_waits))
+            {
+                waitsDynamic.resize(totalWaitSemaphoreCount);
+                waits = waitsDynamic.data();
+            }
+            VkSemaphoreSubmitInfo* signals = _signals;
+            std::vector<VkSemaphoreSubmitInfo> signalsDynamic(0);
+            if (totalSignalSemaphoreCount > _countof(_signals))
+            {
+                signalsDynamic.resize(totalSignalSemaphoreCount);
+                signals = signalsDynamic.data();
+            }
+            VkCommandBufferSubmitInfo* commandBuffers = _commandBuffers;
+            std::vector<VkCommandBufferSubmitInfo> commandBuffersDynamic(0);
+            if (totalCommandBufferCount > _countof(_commandBuffers))
+            {
+                commandBuffersDynamic.resize(totalCommandBufferCount);
+                commandBuffers = commandBuffersDynamic.data();
+            }
+
+            uint32_t waitSemaphoreIndex = 0;
+            uint32_t signalSemaphoreIndex = 0;
+            uint32_t commandBufferIndex = 0;
+            for (auto i = 0u; i < batchCount; i++)
+            {
+                auto& batch = batches[i];
+                auto& submission = submissions[i];
+                submission.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+                submission.pNext = nullptr;
+                submission.waitSemaphoreInfoCount = batch.waitSemaphoreCount;
+                submission.pWaitSemaphoreInfos = waitOffsets[i];
+                submission.commandBufferInfoCount = batch.commandBufferCount;
+                submission.pCommandBufferInfos = commandBufferOffsets[i];
+                submission.signalSemaphoreInfoCount = batch.signalSemaphoreCount;
+                submission.pSignalSemaphoreInfos = signalOffsets[i];
+
+                for (auto j = 0u; j < batch.waitSemaphoreCount; j++)
+                {
+                    auto& semaphore = batch.waitSemaphores[j];
+                    auto& semaphoreInfo = waits[waitSemaphoreIndex];
+                    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+                    semaphoreInfo.pNext = nullptr;
+                    semaphoreInfo.semaphore = static_cast<VulkanSemaphore*>(semaphore.semaphore)->vulkanHandle();
+                    semaphoreInfo.value = semaphore.value;
+                    waitSemaphoreIndex++;
+                }
+                for (auto j = 0u; j < batch.commandBufferCount; j++)
+                {
+                    auto& commandBuffer = batch.commandBuffers[j];
+                    SLAG_ASSERT(QueueTypeSupportsCommands(_type,commandBuffer->type()) && "Queue cannot process command buffer outside it's capabilities");
+                    auto& commandBufferInfo = commandBuffers[commandBufferIndex];
+                    commandBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+                    commandBufferInfo.pNext = nullptr;
+                    commandBufferInfo.commandBuffer = static_cast<VulkanCommandBuffer*>(commandBuffer)->vulkanHandle();
+                    commandBufferInfo.deviceMask = 0;
+                    commandBufferIndex++;
+                }
+                for (auto j = 0u; j < batch.signalSemaphoreCount; j++)
+                {
+                    auto& semaphore = batch.signalSemaphores[j];
+                    auto& semaphoreInfo = signals[signalSemaphoreIndex];
+                    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+                    semaphoreInfo.pNext = nullptr;
+                    semaphoreInfo.semaphore = static_cast<VulkanSemaphore*>(semaphore.semaphore)->vulkanHandle();
+                    semaphoreInfo.value = semaphore.value;
+                    signalSemaphoreIndex++;
+                }
+            }
+
+            vkQueueSubmit2(_queue,batchCount,&submissions[0],nullptr);
+
         }
 
         VkQueue VulkanSubmissionQueue::vulkanHandle() const

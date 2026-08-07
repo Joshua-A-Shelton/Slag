@@ -63,16 +63,45 @@ namespace slag
                     pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_INFO,FALSE);
                     pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_MESSAGE,FALSE);
 
-                    D3D12_MESSAGE_CATEGORY hide[] =
+
+                    D3D12_MESSAGE_ID hideIds[] =
                     {
-                        D3D12_MESSAGE_CATEGORY_STATE_CREATION,
+                        D3D12_MESSAGE_ID_CREATE_COMMANDQUEUE,
+                        D3D12_MESSAGE_ID_CREATE_COMMANDALLOCATOR,
+                        D3D12_MESSAGE_ID_CREATE_PIPELINESTATE,
+                        D3D12_MESSAGE_ID_CREATE_COMMANDLIST12,
+                        D3D12_MESSAGE_ID_CREATE_RESOURCE,
+                        D3D12_MESSAGE_ID_CREATE_DESCRIPTORHEAP,
+                        D3D12_MESSAGE_ID_CREATE_ROOTSIGNATURE,
+                        D3D12_MESSAGE_ID_CREATE_LIBRARY,
+                        D3D12_MESSAGE_ID_CREATE_HEAP,
+                        D3D12_MESSAGE_ID_CREATE_MONITOREDFENCE,
+                        D3D12_MESSAGE_ID_CREATE_QUERYHEAP,
+                        D3D12_MESSAGE_ID_CREATE_COMMANDSIGNATURE,
+                        D3D12_MESSAGE_ID_CREATE_LIFETIMETRACKER,
+                        
+                        D3D12_MESSAGE_ID_DESTROY_COMMANDQUEUE,
+                        D3D12_MESSAGE_ID_DESTROY_COMMANDALLOCATOR,
+                        D3D12_MESSAGE_ID_DESTROY_PIPELINESTATE,
+                        D3D12_MESSAGE_ID_DESTROY_COMMANDLIST12,
+                        D3D12_MESSAGE_ID_DESTROY_RESOURCE,
+                        D3D12_MESSAGE_ID_DESTROY_DESCRIPTORHEAP,
+                        D3D12_MESSAGE_ID_DESTROY_ROOTSIGNATURE,
+                        D3D12_MESSAGE_ID_DESTROY_LIBRARY,
+                        D3D12_MESSAGE_ID_DESTROY_HEAP,
+                        D3D12_MESSAGE_ID_DESTROY_MONITOREDFENCE,
+                        D3D12_MESSAGE_ID_DESTROY_QUERYHEAP,
+                        D3D12_MESSAGE_ID_DESTROY_COMMANDSIGNATURE,
+                        D3D12_MESSAGE_ID_DESTROY_LIFETIMETRACKER
                     };
 
                     D3D12_INFO_QUEUE_FILTER NewFilter = {};
                     NewFilter.DenyList.NumSeverities = 0;
                     NewFilter.DenyList.pSeverityList = nullptr;
-                    NewFilter.DenyList.NumCategories = std::size(hide);
-                    NewFilter.DenyList.pCategoryList = hide;
+                    NewFilter.DenyList.NumCategories = 0;
+                    NewFilter.DenyList.pCategoryList = nullptr;
+                    NewFilter.DenyList.pIDList = hideIds;
+                    NewFilter.DenyList.NumIDs = std::size(hideIds);
 
                     pInfoQueue->PushStorageFilter(&NewFilter);
                 }
@@ -136,11 +165,28 @@ namespace slag
             _descriptorHeapDetails.bufferDescriptorAlignment = _descriptorHeapDetails.bufferDescriptorSize;
             _descriptorHeapDetails.samplerDescriptorSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
             _descriptorHeapDetails.samplerDescriptorAlignment = _descriptorHeapDetails.samplerDescriptorSize;
-            //TODO: this is only true on max hardware tiers. I should query it and set it from the query
-            _descriptorHeapDetails.maxResourceDescriptors = 1015808;
-            _descriptorHeapDetails.maxSamplerDescriptors = 2048;
-            _descriptorHeapDetails.resourceReservedRangeSize = 0;
-            _descriptorHeapDetails.samplerReservedRangeSize = 0;
+
+            if (options.ResourceHeapTier == D3D12_RESOURCE_HEAP_TIER_1)
+            {
+                _descriptorHeapDetails.maxResourceDescriptors = 1000000;
+                _descriptorHeapDetails.maxSamplerDescriptors = 16;
+                _descriptorHeapDetails.resourceReservedRangeSize = 0;
+                _descriptorHeapDetails.samplerReservedRangeSize = 0;
+            }
+            else if (options.ResourceHeapTier == D3D12_RESOURCE_HEAP_TIER_2)
+            {
+                _descriptorHeapDetails.maxResourceDescriptors = 1000000;
+                _descriptorHeapDetails.maxSamplerDescriptors = 2048;
+                _descriptorHeapDetails.resourceReservedRangeSize = 0;
+                _descriptorHeapDetails.samplerReservedRangeSize = 0;
+            }
+            else
+            {
+                _descriptorHeapDetails.maxResourceDescriptors = 1000000;
+                _descriptorHeapDetails.maxSamplerDescriptors = 2048;
+                _descriptorHeapDetails.resourceReservedRangeSize = 0;
+                _descriptorHeapDetails.samplerReservedRangeSize = 0;
+            }
 
             //root signature
             D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
@@ -174,6 +220,31 @@ namespace slag
 
             device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&_rootSignature));
 
+            //create indirect command signatures
+
+            D3D12_INDIRECT_ARGUMENT_DESC indirectArgumentDesc
+            {
+                .Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW
+            };
+
+            D3D12_COMMAND_SIGNATURE_DESC indirectCommandSignatureDesc
+            {
+                .ByteStride = sizeof(slag::IndirectDrawCommand),
+                .NumArgumentDescs = 1,
+                .pArgumentDescs = &indirectArgumentDesc,
+                .NodeMask = 0
+            };
+            _device->CreateCommandSignature(&indirectCommandSignatureDesc,nullptr, IID_PPV_ARGS(&_drawIndirectCommandSignature));
+
+
+            indirectArgumentDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
+            indirectCommandSignatureDesc.ByteStride = sizeof(slag::IndirectDrawIndexedCommand);
+            _device->CreateCommandSignature(&indirectCommandSignatureDesc,nullptr, IID_PPV_ARGS(&_drawIndexedIndirectCommandSignature));
+
+            indirectArgumentDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
+            indirectCommandSignatureDesc.ByteStride = sizeof(slag::IndirectDispatchCommand);
+            _device->CreateCommandSignature(&indirectCommandSignatureDesc,nullptr, IID_PPV_ARGS(&_dispatchIndirectCommandSignature));
+
         }
 
         DX12GraphicsCard::~DX12GraphicsCard()
@@ -185,6 +256,9 @@ namespace slag
                 delete _transferQueue;
                 _cpuReadablePool->Release();
                 _rootSignature->Release();
+                _drawIndirectCommandSignature->Release();
+                _drawIndexedIndirectCommandSignature->Release();
+                _dispatchIndirectCommandSignature->Release();
             }
         }
 
@@ -263,7 +337,7 @@ namespace slag
             }
             if (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_TYPED_UNORDERED_ACCESS_VIEW)
             {
-                properties.validUsageFlags |= TextureUsageFlags::UNORDERED_ACCESS;
+                properties.validUsageFlags |= TextureUsageFlags::READ_WRITE;
             }
 
             //TODO: not sure if this is right or not.... but there's not great documentation on which allow linear or not
@@ -386,7 +460,7 @@ namespace slag
                     .signalSemaphoreCount = 1,
                 };
 
-                _graphicsQueue->submit(&batch,1);
+                _graphicsQueue->submit(batch);
                 moved.waitForValue(1);
                 for (auto i=0; i< movedResources.size(); i++)
                 {
@@ -597,6 +671,7 @@ namespace slag
         void DX12GraphicsCard::writeReadWriteTextureDescriptor(Texture* texture, uint32_t mip, uint32_t baseLayer,
             uint32_t layerCount, void* destination)
         {
+            SLAG_ASSERT((bool)(texture->usage() & TextureUsageFlags::READ_WRITE) && "Only unordered access textures can be bound for read-write texture descriptors");
             SLAG_ASSERT(texture->type() != TextureType::CUBE_MAP && "Unordered access textures cannot be cube maps");
             auto dxTexture = static_cast<DX12Texture*>(texture);
             D3D12_CPU_DESCRIPTOR_HANDLE handle((size_t)destination);
@@ -695,9 +770,24 @@ namespace slag
             return _dxgiFactory;
         }
 
-        ID3D12RootSignature* DX12GraphicsCard::rootSignature()
+        ID3D12RootSignature* DX12GraphicsCard::rootSignature() const
         {
             return _rootSignature;
+        }
+
+        ID3D12CommandSignature* DX12GraphicsCard::drawIndirectCommandSignature() const
+        {
+            return _drawIndirectCommandSignature;
+        }
+
+        ID3D12CommandSignature* DX12GraphicsCard::drawIndexedIndirectCommandSignature() const
+        {
+            return _drawIndexedIndirectCommandSignature;
+        }
+
+        ID3D12CommandSignature* DX12GraphicsCard::dispatchIndirectCommandSignature() const
+        {
+            return _dispatchIndirectCommandSignature;
         }
 
         void DX12GraphicsCard::move(DX12GraphicsCard& from)
@@ -714,6 +804,9 @@ namespace slag
             std::swap(_transferQueue,from._transferQueue);
             std::swap(_cpuReadablePool,from._cpuReadablePool);
             std::swap(_rootSignature,from._rootSignature);
+            std::swap(_drawIndirectCommandSignature, from._drawIndirectCommandSignature);
+            std::swap(_drawIndexedIndirectCommandSignature, from._drawIndexedIndirectCommandSignature);
+            std::swap(_dispatchIndirectCommandSignature, from._dispatchIndirectCommandSignature);
         }
     } // dx12
 } // slag

@@ -117,7 +117,7 @@ TEST(GraphicsCard, Defragment)
             .signalSemaphoreCount = 1,
         };
 
-        card->transferQueue()->submit(&batch,1);
+        card->transferQueue()->submit(batch);
         finished->waitForValue(1);
         buffer2 = nullptr;
         buffer3 = nullptr;
@@ -161,7 +161,7 @@ TEST(GraphicsCard, Defragment)
 
         signal.semaphore = transferFinished.get();
         cbuffer = commandBuffer.get();
-        card->transferQueue()->submit(&batch,1);
+        card->transferQueue()->submit(batch);
         transferFinished->waitForValue(1);
         data = downloadData->as<uint8_t>();
         for (int i=0; i< 256; i++)

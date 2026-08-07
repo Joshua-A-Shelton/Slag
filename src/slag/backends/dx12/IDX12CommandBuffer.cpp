@@ -33,14 +33,8 @@ namespace slag
             _commandBuffer->Reset(_commandPool,nullptr);
             if (_queueType == QueueType::GRAPHICS)
             {
-                _commandBuffer->SetGraphicsRootSignature(_graphicsCard->rootSignature());
                 //TODO: I don't know if this is the right place for this, I don't know why it has to be set at all because the shader pipeline also has this information
                 _commandBuffer->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-                _commandBuffer->SetComputeRootSignature(_graphicsCard->rootSignature());
-            }
-            else if (_queueType == QueueType::COMPUTE)
-            {
-                _commandBuffer->SetComputeRootSignature(_graphicsCard->rootSignature());
             }
 
         }
@@ -52,6 +46,7 @@ namespace slag
             _setViewport = false;
             _setScissor = false;
             _boundPipelineType = BoundPipeLineType::NONE;
+            _heapsBound = false;
 #endif
         }
 
@@ -60,7 +55,14 @@ namespace slag
             SLAG_ASSERT(barriers != nullptr && "barriers cannot be nullptr");
             SLAG_ASSERT(barrierCount != 0 && "barriersCount cannot be 0");
 
-            std::vector<D3D12_GLOBAL_BARRIER> globalBarriers(barrierCount);
+            D3D12_GLOBAL_BARRIER* globalBarriers = _scratchMemory.barrierMemory.globalBarriers;
+            std::vector<D3D12_GLOBAL_BARRIER> globalBarriersDynamic(0);
+
+            if (barrierCount > _countof(_scratchMemory.barrierMemory.globalBarriers))
+            {
+                globalBarriersDynamic.resize(barrierCount);
+                globalBarriers = globalBarriersDynamic.data();
+            }
             for (int i=0; i<barrierCount; i++)
             {
                 auto& copyBarrier = barriers[i];
@@ -73,7 +75,7 @@ namespace slag
             D3D12_BARRIER_GROUP barrierGroup{};
             barrierGroup.NumBarriers = barrierCount;
             barrierGroup.Type = D3D12_BARRIER_TYPE_GLOBAL;
-            barrierGroup.pGlobalBarriers = globalBarriers.data();
+            barrierGroup.pGlobalBarriers = globalBarriers;
             _commandBuffer->Barrier(1, &barrierGroup);
         }
 
@@ -82,7 +84,14 @@ namespace slag
             SLAG_ASSERT(barriers != nullptr && "barriers cannot be nullptr");
             SLAG_ASSERT(barrierCount != 0 && "barriersCount cannot be 0");
 
-            std::vector<D3D12_BUFFER_BARRIER> bufferBarriers(barrierCount);
+            D3D12_BUFFER_BARRIER* bufferBarriers = _scratchMemory.barrierMemory.bufferBarriers;
+            std::vector<D3D12_BUFFER_BARRIER> bufferBarriersDynamic(0);
+            if (barrierCount > _countof(_scratchMemory.barrierMemory.bufferBarriers))
+            {
+                bufferBarriersDynamic.resize(barrierCount);
+                bufferBarriers = bufferBarriersDynamic.data();
+            }
+
             for (int i=0; i<barrierCount; i++)
             {
                 auto& copyBarrier = barriers[i];
@@ -98,7 +107,7 @@ namespace slag
             D3D12_BARRIER_GROUP barrierGroup{};
             barrierGroup.NumBarriers = barrierCount;
             barrierGroup.Type = D3D12_BARRIER_TYPE_BUFFER;
-            barrierGroup.pBufferBarriers = bufferBarriers.data();
+            barrierGroup.pBufferBarriers = bufferBarriers;
             _commandBuffer->Barrier(1, &barrierGroup);
         }
 
@@ -107,7 +116,14 @@ namespace slag
             SLAG_ASSERT(barriers != nullptr && "barriers cannot be nullptr");
             SLAG_ASSERT(barrierCount != 0 && "barriersCount cannot be 0");
 
-            std::vector<D3D12_TEXTURE_BARRIER> textureBarriers(barrierCount);
+            D3D12_TEXTURE_BARRIER* textureBarriers = _scratchMemory.barrierMemory.textureBarriers;
+            std::vector<D3D12_TEXTURE_BARRIER> textureBarriersDynamic(0);
+            if (barrierCount > _countof(_scratchMemory.barrierMemory.textureBarriers))
+            {
+                textureBarriersDynamic.resize(barrierCount);
+                textureBarriers = textureBarriersDynamic.data();
+            }
+
             for (int i=0; i<barrierCount; i++)
             {
                 auto& copyBarrier = barriers[i];
@@ -138,7 +154,7 @@ namespace slag
             D3D12_BARRIER_GROUP barrierGroup{};
             barrierGroup.NumBarriers = barrierCount;
             barrierGroup.Type = D3D12_BARRIER_TYPE_TEXTURE;
-            barrierGroup.pTextureBarriers = textureBarriers.data();
+            barrierGroup.pTextureBarriers = textureBarriers;
             _commandBuffer->Barrier(1, &barrierGroup);
         }
 
@@ -146,7 +162,14 @@ namespace slag
             BufferBarrier* bufferBarriers, uint32_t bufferBarrierCount, TextureBarrier* textureBarriers,
             uint32_t textureBarrierCount)
         {
-            std::vector<D3D12_GLOBAL_BARRIER> globalBarriersNative(globalBarrierCount);
+            D3D12_GLOBAL_BARRIER* globalBarriersNative = _scratchMemory.barrierMemory.globalBarriers;
+            std::vector<D3D12_GLOBAL_BARRIER> globalBarriersDynamic(0);
+            if (globalBarrierCount > _countof(_scratchMemory.barrierMemory.globalBarriers))
+            {
+                globalBarriersDynamic.resize(globalBarrierCount);
+                globalBarriersNative = globalBarriersDynamic.data();
+            }
+
             for (int i=0; i<globalBarrierCount; i++)
             {
                 auto& copyBarrier = globalBarriers[i];
@@ -157,7 +180,14 @@ namespace slag
                 globalBarrier.SyncAfter = DX12Backend::nativePipelineStages(copyBarrier.syncAfter);
             }
 
-            std::vector<D3D12_BUFFER_BARRIER> bufferBarriersNative(bufferBarrierCount);
+            D3D12_BUFFER_BARRIER* bufferBarriersNative = _scratchMemory.barrierMemory.bufferBarriers;
+            std::vector<D3D12_BUFFER_BARRIER> bufferBarriersDynamic(0);
+            if (bufferBarrierCount > _countof(_scratchMemory.barrierMemory.bufferBarriers))
+            {
+                bufferBarriersDynamic.resize(bufferBarrierCount);
+                bufferBarriersNative = bufferBarriersDynamic.data();
+            }
+
             for (int i=0; i<bufferBarrierCount; i++)
             {
                 auto& copyBarrier = bufferBarriers[i];
@@ -171,7 +201,15 @@ namespace slag
                 bufferBarrier.Size = copyBarrier.length == 0 ? copyBarrier.buffer->size()-copyBarrier.offset : copyBarrier.length;
             }
 
-            std::vector<D3D12_TEXTURE_BARRIER> textureBarriersNative(textureBarrierCount);
+            D3D12_TEXTURE_BARRIER* textureBarriersNative = _scratchMemory.barrierMemory.textureBarriers;
+            std::vector<D3D12_TEXTURE_BARRIER> textureBarriersDynamic(0);
+
+            if (textureBarrierCount > _countof(_scratchMemory.barrierMemory.textureBarriers))
+            {
+                textureBarriersDynamic.resize(textureBarrierCount);
+                textureBarriersNative = textureBarriersDynamic.data();
+            }
+
             for (int i=0; i<textureBarrierCount; i++)
             {
                 auto& copyBarrier = textureBarriers[i];
@@ -181,7 +219,6 @@ namespace slag
                 bufferBarrier.SyncBefore = DX12Backend::nativePipelineStages(copyBarrier.syncBefore);
                 bufferBarrier.SyncAfter = DX12Backend::nativePipelineStages(copyBarrier.syncAfter);
                 bufferBarrier.pResource = static_cast<DX12Texture*>(copyBarrier.texture)->dx12Handle();
-                //bufferBarrier.Flags = ;
                 bufferBarrier.LayoutBefore = D3D12_BARRIER_LAYOUT_COMMON;
                 bufferBarrier.LayoutAfter = D3D12_BARRIER_LAYOUT_COMMON;
                 bufferBarrier.Subresources = D3D12_BARRIER_SUBRESOURCE_RANGE
@@ -193,22 +230,27 @@ namespace slag
                     .FirstPlane = 0,
                     .NumPlanes = static_cast<UINT>(std::popcount(static_cast<uint8_t>(Pixel::aspectFlags(copyBarrier.texture->format()))))
                 };
+                if (copyBarrier.layoutBefore == TextureLayout::UNKNOWN)
+                {
+                    bufferBarrier.AccessBefore = D3D12_BARRIER_ACCESS_NO_ACCESS;
+                    bufferBarrier.Flags = D3D12_TEXTURE_BARRIER_FLAG_DISCARD;
+                }
             }
             D3D12_BARRIER_GROUP barrierGroups[3]{};
             auto globalGroup = barrierGroups[0];
             globalGroup.NumBarriers = globalBarrierCount;
             globalGroup.Type = D3D12_BARRIER_TYPE_GLOBAL;
-            globalGroup.pGlobalBarriers = globalBarriersNative.data();
+            globalGroup.pGlobalBarriers = globalBarriersNative;
 
             auto bufferGroup = barrierGroups[1];
             bufferGroup.NumBarriers = bufferBarrierCount;
             bufferGroup.Type = D3D12_BARRIER_TYPE_BUFFER;
-            globalGroup.pBufferBarriers = bufferBarriersNative.data();
+            globalGroup.pBufferBarriers = bufferBarriersNative;
 
             auto textureGroup = barrierGroups[2];
             textureGroup.NumBarriers = textureBarrierCount;
             textureGroup.Type = D3D12_BARRIER_TYPE_TEXTURE;
-            textureGroup.pTextureBarriers = textureBarriersNative.data();
+            textureGroup.pTextureBarriers = textureBarriersNative;
 
             _commandBuffer->Barrier(3, barrierGroups);
         }
@@ -221,23 +263,41 @@ namespace slag
             DX12SamplerDescriptorHeap* dx12SamplerHeap = static_cast<DX12SamplerDescriptorHeap*>(samplerHeap);
             ID3D12DescriptorHeap* heaps[]{dx12ResourceHeap->dx12Handle(),dx12SamplerHeap->dx12Handle()};
             _commandBuffer->SetDescriptorHeaps(2,heaps);
+
+            if (_queueType == QueueType::GRAPHICS)
+            {
+                _commandBuffer->SetGraphicsRootSignature(_graphicsCard->rootSignature());
+            }
+            _commandBuffer->SetComputeRootSignature(_graphicsCard->rootSignature());
+#ifdef SLAG_DEBUG
+            _heapsBound = true;
+#endif
+
         }
 
         void IDX12CommandBuffer::setGraphicsShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
         {
-            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 
-            SLAG_ASSERT(shaderDataOffset % 4 == 0 && "shaderDataOffset must be aligned to 4");
-            SLAG_ASSERT(dataSize % 4 == 0 && "dataSize must be aligned to 4");
+            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+            SLAG_ASSERT(shaderDataOffset + dataSize < 128 && "Exceeded size of shader parameter data");
+            SLAG_ASSERT(shaderDataOffset %4 == 0 && "Shader data offset must be aligned to 4 bytes");
+            SLAG_ASSERT(dataSize % 4 == 0 && "dataSize must be multiple of 4");
+#ifdef SLAG_DEBUG
+            SLAG_ASSERT(_heapsBound && "Heaps must be bound before setting shader parameters");
+#endif
             _commandBuffer->SetGraphicsRoot32BitConstants(0,dataSize/4,data,shaderDataOffset/4);
         }
 
         void IDX12CommandBuffer::setComputeShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
         {
-            SLAG_ASSERT(_queueType != QueueType::TRANSFER && "Command Buffer cannot record commands outside it's capabilities");
 
-            SLAG_ASSERT(shaderDataOffset % 4 == 0 && "shaderDataOffset must be aligned to 4");
-            SLAG_ASSERT(dataSize % 4 == 0 && "dataSize must be aligned to 4");
+            SLAG_ASSERT(_queueType != QueueType::TRANSFER && "Command Buffer cannot record commands outside it's capabilities");
+            SLAG_ASSERT(shaderDataOffset + dataSize < 128 && "Exceeded size of shader parameter data");
+            SLAG_ASSERT(shaderDataOffset %4 == 0 && "Shader data offset must be aligned to 4 bytes");
+            SLAG_ASSERT(dataSize % 4 == 0 && "dataSize must be multiple of 4");
+#ifdef SLAG_DEBUG
+            SLAG_ASSERT(_heapsBound && "Heaps must be bound before setting shader parameters");
+#endif
             _commandBuffer->SetComputeRoot32BitConstants(0,dataSize/4,data,shaderDataOffset/4);
         }
 
@@ -277,7 +337,7 @@ namespace slag
                 uint32_t layerOffsetIndex = 0;
                 for (auto i=0; i<mapping.subresource.layerCount; ++i)
                 {
-                    auto subResourceIndex = D3D12CalcSubresource(mapping.subresource.mipLevel,mapping.subresource.baseArrayLayer+layerOffsetIndex,plane,1,1);
+                    auto subResourceIndex = D3D12CalcSubresource(mapping.subresource.mipLevel,mapping.subresource.baseArrayLayer+layerOffsetIndex,plane,source->mipLevels(),source->layers());
                     D3D12_TEXTURE_COPY_LOCATION sourceLocation
                     {
                         .pResource = tex->dx12Handle(),
@@ -384,8 +444,9 @@ namespace slag
                                                 Attachment* depthAttachment, const Rectangle& bounds)
         {
             SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+            SLAG_ASSERT(colorAttachmentCount <=8 && "Cannot have more than 8 color attachments");
 
-            std::vector<D3D12_RENDER_PASS_RENDER_TARGET_DESC> targets(colorAttachmentCount);
+            D3D12_RENDER_PASS_RENDER_TARGET_DESC targets[8];
             for (auto i=0; i<colorAttachmentCount; i++)
             {
                 SLAG_ASSERT((bool)(colorAttachments[i].texture->usage() & TextureUsageFlags::COLOR_TARGET) && "Not all color attachments are color target textures");
@@ -406,7 +467,7 @@ namespace slag
             }
             if (depthAttachment == nullptr)
             {
-                _commandBuffer->BeginRenderPass(colorAttachmentCount, targets.data(),nullptr,D3D12_RENDER_PASS_FLAG_NONE);
+                _commandBuffer->BeginRenderPass(colorAttachmentCount, targets,nullptr,D3D12_RENDER_PASS_FLAG_NONE);
             }
             else
             {
@@ -431,7 +492,7 @@ namespace slag
 
                 depthTarget.cpuDescriptor = static_cast<DX12Texture*>(depthAttachment->texture)->targetHandle();
 
-                _commandBuffer->BeginRenderPass(colorAttachmentCount, targets.data(), &depthTarget, D3D12_RENDER_PASS_FLAG_NONE);
+                _commandBuffer->BeginRenderPass(colorAttachmentCount, targets, &depthTarget, D3D12_RENDER_PASS_FLAG_NONE);
             }
 #ifdef SLAG_DEBUG
             _inRenderPass = true;
@@ -491,7 +552,14 @@ namespace slag
         {
             SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 
-            std::vector<D3D12_VERTEX_BUFFER_VIEW> vertexBufferViews(bufferCount);
+            D3D12_VERTEX_BUFFER_VIEW* vertexBufferViews = _scratchMemory.vertexBufferMemory.vertexBufferView;
+            std::vector<D3D12_VERTEX_BUFFER_VIEW> vertexBufferViewsDynamic(0);
+            if (bufferCount > _countof(_scratchMemory.vertexBufferMemory.vertexBufferView))
+            {
+                vertexBufferViewsDynamic.resize(bufferCount);
+                vertexBufferViews = vertexBufferViewsDynamic.data();
+            }
+
             for (auto i=0; i<bufferCount; i++)
             {
                 auto& buffer = buffers[i];
@@ -501,7 +569,7 @@ namespace slag
                 vertexBufferViews[i].SizeInBytes = buffer->size() - offset;
                 vertexBufferViews[i].StrideInBytes = stride;
             }
-            _commandBuffer->IASetVertexBuffers(firstBinding, bufferCount, vertexBufferViews.data());
+            _commandBuffer->IASetVertexBuffers(firstBinding, bufferCount, vertexBufferViews);
         }
 
         void IDX12CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
@@ -532,7 +600,7 @@ namespace slag
             _commandBuffer->DrawIndexedInstanced(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
         }
 
-        void IDX12CommandBuffer::drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount, uint32_t stride)
+        void IDX12CommandBuffer::drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount)
         {
             SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 
@@ -542,11 +610,11 @@ namespace slag
             SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
 #endif
-            throw std::runtime_error("Not implemented");
+            auto dx12Buffer = static_cast<DX12Buffer*>(buffer);
+            _commandBuffer->ExecuteIndirect(_graphicsCard->drawIndirectCommandSignature(), drawCount, dx12Buffer->dx12Handle(), offset,nullptr,0);
         }
 
-        void IDX12CommandBuffer::drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount,
-            uint32_t stride)
+        void IDX12CommandBuffer::drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount)
         {
             SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 
@@ -556,11 +624,13 @@ namespace slag
             SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
 #endif
-            throw std::runtime_error("Not implemented");
+            auto dx12Buffer = static_cast<DX12Buffer*>(buffer);
+            _commandBuffer->ExecuteIndirect(_graphicsCard->drawIndexedIndirectCommandSignature(), drawCount, dx12Buffer->dx12Handle(), offset,nullptr,0);
+
         }
 
         void IDX12CommandBuffer::drawIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer,
-            uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
+                                                   uint64_t countBufferOffset, uint32_t maxDrawCount)
         {
             SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 
@@ -570,11 +640,13 @@ namespace slag
             SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
 #endif
-            throw std::runtime_error("Not implemented");
+            auto dx12Buffer = static_cast<DX12Buffer*>(buffer);
+            auto countBufferDX12 = static_cast<DX12Buffer*>(countBuffer);
+            _commandBuffer->ExecuteIndirect(_graphicsCard->drawIndirectCommandSignature(), maxDrawCount, dx12Buffer->dx12Handle(), offset,countBufferDX12->dx12Handle(),countBufferOffset);
         }
 
         void IDX12CommandBuffer::drawIndexedIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer,
-            uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
+                                                          uint64_t countBufferOffset, uint32_t maxDrawCount)
         {
             SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 
@@ -584,7 +656,9 @@ namespace slag
             SLAG_ASSERT(_setScissor && "Scissor must be set prior to issuing drawing commands");
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
 #endif
-            throw std::runtime_error("Not implemented");
+            auto dx12Buffer = static_cast<DX12Buffer*>(buffer);
+            auto countBufferDX12 = static_cast<DX12Buffer*>(countBuffer);
+            _commandBuffer->ExecuteIndirect(_graphicsCard->drawIndexedIndirectCommandSignature(), maxDrawCount, dx12Buffer->dx12Handle(), offset,countBufferDX12->dx12Handle(),countBufferOffset);
         }
 
         void IDX12CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
@@ -593,6 +667,8 @@ namespace slag
 
 #if SLAG_DEBUG
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
+            SLAG_ASSERT(!_inRenderPass && "Cannot dispatch within render pass (between beginRendering() and endRendering())");
+
 #endif
             _commandBuffer->Dispatch(groupCountX, groupCountY, groupCountZ);
         }
@@ -603,8 +679,11 @@ namespace slag
 
 #if SLAG_DEBUG
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
+            SLAG_ASSERT(!_inRenderPass && "Cannot dispatch within render pass (between beginRendering() and endRendering())");
 #endif
-            throw std::runtime_error("Not implemented");
+            auto dx12Buffer = static_cast<DX12Buffer*>(buffer);
+            _commandBuffer->ExecuteIndirect(_graphicsCard->dispatchIndirectCommandSignature(), 1, dx12Buffer->dx12Handle(), offset,nullptr,0);
+
         }
 
         void IDX12CommandBuffer::resolveTexture(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Offset2D destinationOffset)
@@ -618,8 +697,8 @@ namespace slag
             DX12Texture* dx12Destination = static_cast<DX12Texture*>(destination);
             D3D12_RECT dx12SourceRect = {sourceRect.offset.x, sourceRect.offset.y, (long)(sourceRect.offset.x + sourceRect.extent.width), (long)(sourceRect.offset.y + sourceRect.extent.height)};
 
-            auto sourceSubResource = D3D12CalcSubresource(sourceMip,sourceLayer,0,1,1);
-            auto destinationSubResource = D3D12CalcSubresource(destinationMip,destinationLayer,0,1,1);
+            auto sourceSubResource = D3D12CalcSubresource(sourceMip,sourceLayer,0,source->mipLevels(),source->layers());
+            auto destinationSubResource = D3D12CalcSubresource(destinationMip,destinationLayer,0,destination->mipLevels(),destination->layers());
 
             _commandBuffer->ResolveSubresourceRegion(
                 dx12Destination->dx12Handle(),
@@ -631,6 +710,46 @@ namespace slag
                 &dx12SourceRect,
                 DX12Backend::nativeFormat(source->format()),
                 D3D12_RESOLVE_MODE::D3D12_RESOLVE_MODE_AVERAGE);
+        }
+
+        void IDX12CommandBuffer::copyTextureRegion(PixelAspect aspect, Texture* source, uint32_t sourceLayer, uint32_t sourceMip,
+            Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip,
+            Offset2D destinationOffset)
+        {
+            SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+            auto src = static_cast<DX12Texture*>(source);
+            auto dst = static_cast<DX12Texture*>(destination);
+
+            auto planeSlice = 0;
+            if (aspect == PixelAspect::STENCIL)
+            {
+                planeSlice = 1;
+            }
+
+            D3D12_TEXTURE_COPY_LOCATION copyLocation
+            {
+                .pResource = src->dx12Handle(),
+                .Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+                .SubresourceIndex = D3D12CalcSubresource(sourceMip,sourceLayer,planeSlice,source->mipLevels(),source->layers()),
+            };
+
+            D3D12_TEXTURE_COPY_LOCATION dstCopyLocation
+            {
+                .pResource = dst->dx12Handle(),
+                .Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+                .SubresourceIndex = D3D12CalcSubresource(destinationMip,destinationLayer,planeSlice,destination->mipLevels(),destination->layers()),
+            };
+
+            D3D12_BOX copyRegion =
+            {
+                .left = static_cast<UINT>(sourceRect.offset.x),
+                .top = static_cast<UINT>(sourceRect.offset.y),
+                .front = 0,
+                .right = sourceRect.offset.x + sourceRect.extent.width,
+                .bottom = sourceRect.offset.y + sourceRect.extent.height,
+                .back = 1,
+            };
+            _commandBuffer->CopyTextureRegion(&dstCopyLocation,destinationOffset.x,destinationOffset.y,0, &copyLocation,&copyRegion);
         }
 
         ID3D12GraphicsCommandList7* IDX12CommandBuffer::dx12Handle() const

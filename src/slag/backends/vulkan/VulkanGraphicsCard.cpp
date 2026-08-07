@@ -250,7 +250,7 @@ namespace slag
             }
             if (features & VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT )
             {
-                usage |= TextureUsageFlags::UNORDERED_ACCESS;
+                usage |= TextureUsageFlags::READ_WRITE;
                 hasUsage = true;
             }
             if (features & VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT)
@@ -626,6 +626,7 @@ namespace slag
         void VulkanGraphicsCard::writeReadWriteTextureDescriptor(Texture* texture, uint32_t mip,
             uint32_t baseLayer, uint32_t layerCount, void* destination)
         {
+            SLAG_ASSERT((bool)(texture->usage() & TextureUsageFlags::READ_WRITE) && "Only unordered access textures can be bound for read-write texture descriptors");
             auto vulkanTexture = static_cast<VulkanTexture*>(texture);
             VkHostAddressRangeEXT hostAddressRange{.address = destination, .size = _descriptorHeapDetails.textureDescriptorSize};
 

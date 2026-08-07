@@ -123,7 +123,10 @@ namespace slag
             [[nodiscard]] D3D12MA::Pool* cpuReadablePool() const;
             Microsoft::WRL::ComPtr<ID3D12Device2>& device();
             Microsoft::WRL::ComPtr<IDXGIFactory4>& dxgiFactory();
-            ID3D12RootSignature* rootSignature();
+            ID3D12RootSignature* rootSignature() const;
+            ID3D12CommandSignature* drawIndirectCommandSignature() const;
+            ID3D12CommandSignature* drawIndexedIndirectCommandSignature() const;
+            ID3D12CommandSignature* dispatchIndirectCommandSignature() const;
 
         private:
             void move(DX12GraphicsCard& from);
@@ -139,6 +142,10 @@ namespace slag
             DX12SubmissionQueue* _transferQueue = nullptr;
             D3D12MA::Pool* _cpuReadablePool = nullptr;
             ID3D12RootSignature* _rootSignature = nullptr;
+
+            ID3D12CommandSignature* _drawIndirectCommandSignature = nullptr;
+            ID3D12CommandSignature* _drawIndexedIndirectCommandSignature = nullptr;
+            ID3D12CommandSignature* _dispatchIndirectCommandSignature = nullptr;
         };
     } // dx12
 } // slag

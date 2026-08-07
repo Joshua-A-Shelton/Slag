@@ -26,7 +26,7 @@
 #include "core/SwapChain.h"
 #include "core/Texture.h"
 #include "core/VertexDescription.h"
-
+#undef ERROR
 
 namespace slag
 {

@@ -318,6 +318,7 @@ namespace slag
             resourceDesc.Flags = DX12Backend::nativeTextureUsageFlags(_usage);
 
             D3D12_RESOURCE_DESC rdesc{};
+            rdesc.Dimension = resourceDesc.Dimension;
             rdesc.Alignment = resourceDesc.Alignment;
             rdesc.Width = resourceDesc.Width;
             rdesc.Height = resourceDesc.Height;

@@ -8,11 +8,11 @@ TEST(Texture, Create)
 {
     auto card = Slag::backend()->graphicsCard(0);
     auto tex1d = std::unique_ptr<Texture>(card->newTexture1D(256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::NONE,3));
-    auto tex2d = std::unique_ptr<Texture>(card->newTexture2D(100,250,PixelFormat::R32_FLOAT,TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::UNORDERED_ACCESS,2,SampleCount::ONE));
+    auto tex2d = std::unique_ptr<Texture>(card->newTexture2D(100,250,PixelFormat::R32_FLOAT,TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::READ_WRITE,2,SampleCount::ONE));
     auto tex2dDepth = std::unique_ptr<Texture>(card->newTexture2D(1920,1080,PixelFormat::D32_FLOAT_S8X24_UINT,TextureUsageFlags::DEPTH_STENCIL_TARGET,1,SampleCount::EIGHT));
     auto tex2dDepthMultiMip = std::unique_ptr<Texture>(card->newTexture2D(1920,1080,PixelFormat::D32_FLOAT_S8X24_UINT,TextureUsageFlags::DEPTH_STENCIL_TARGET,3,SampleCount::ONE));
     auto tex2dArray = std::unique_ptr<Texture>(card->newTexture2D(50,50,PixelFormat::BC7_UNORM_SRGB,TextureUsageFlags::SAMPLED,2,SampleCount::ONE,5));
-    auto tex3d = std::unique_ptr<Texture>(card->newTexture3D(25,25,25,PixelFormat::R32G32B32A32_FLOAT,TextureUsageFlags::SAMPLED | TextureUsageFlags::UNORDERED_ACCESS,3));
+    auto tex3d = std::unique_ptr<Texture>(card->newTexture3D(25,25,25,PixelFormat::R32G32B32A32_FLOAT,TextureUsageFlags::SAMPLED | TextureUsageFlags::READ_WRITE,3));
     auto cube = std::unique_ptr<Texture>(card->newTextureCube(500,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,3,2));
 
     GTEST_ASSERT_EQ(tex1d->width(),256);
@@ -31,7 +31,7 @@ TEST(Texture, Create)
     GTEST_ASSERT_EQ(tex2d->depth(),1);
     GTEST_ASSERT_EQ(tex2d->layers(),1);
     GTEST_ASSERT_EQ(tex2d->format(),PixelFormat::R32_FLOAT);
-    GTEST_ASSERT_EQ(tex2d->usage(),TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::UNORDERED_ACCESS);
+    GTEST_ASSERT_EQ(tex2d->usage(),TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::READ_WRITE);
     GTEST_ASSERT_EQ(tex2d->mipLevels(),2);
     GTEST_ASSERT_EQ(tex2d->sampleCount(),SampleCount::ONE);
     GTEST_ASSERT_EQ(tex2d->type(), TextureType::TWO_DIMENSIONAL);
@@ -75,7 +75,7 @@ TEST(Texture, Create)
     GTEST_ASSERT_EQ(tex3d->depth(),25);
     GTEST_ASSERT_EQ(tex3d->layers(),1);
     GTEST_ASSERT_EQ(tex3d->format(),PixelFormat::R32G32B32A32_FLOAT);
-    GTEST_ASSERT_EQ(tex3d->usage(),TextureUsageFlags::SAMPLED | TextureUsageFlags::UNORDERED_ACCESS);
+    GTEST_ASSERT_EQ(tex3d->usage(),TextureUsageFlags::SAMPLED | TextureUsageFlags::READ_WRITE);
     GTEST_ASSERT_EQ(tex3d->mipLevels(),3);
     GTEST_ASSERT_EQ(tex3d->sampleCount(),SampleCount::ONE);
     GTEST_ASSERT_EQ(tex3d->type(), TextureType::THREE_DIMENSIONAL);

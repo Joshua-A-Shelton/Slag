@@ -138,7 +138,7 @@ namespace slag
             {
                 flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
             }
-            if (static_cast<uint8_t>(usage & TextureUsageFlags::UNORDERED_ACCESS))
+            if (static_cast<uint8_t>(usage & TextureUsageFlags::READ_WRITE))
             {
                 flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
             }
@@ -182,7 +182,7 @@ namespace slag
             {
                 flags |= D3D12_BARRIER_ACCESS_SHADER_RESOURCE;
             }
-            if (static_cast<bool>(caches & MemoryCaches::SHADER_UNORDERED_ACCESS))
+            if (static_cast<bool>(caches & MemoryCaches::SHADER_READ_WRITE_ACCESS))
             {
                 flags |= D3D12_BARRIER_ACCESS_UNORDERED_ACCESS;
             }

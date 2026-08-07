@@ -42,18 +42,46 @@ namespace slag
             void bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, uint64_t* bufferOffsets, uint64_t* strides, uint32_t bufferCount)override;
             void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)override;
             void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance)override;
-            void drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount, uint32_t stride)override;
-            void drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount, uint32_t stride)override;
-            void drawIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer, uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)override;
-            void drawIndexedIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer, uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)override;
+            void drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount)override;
+            void drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount)override;
+            void drawIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer, uint64_t countBufferOffset, uint32_t maxDrawCount)override;
+            void drawIndexedIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer, uint64_t countBufferOffset, uint32_t maxDrawCount)override;
             void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)override;
             void dispatchIndirect(Buffer* buffer, uint64_t offset)override;
             void resolveTexture(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Offset2D destinationOffset)override;
+            void copyTextureRegion(PixelAspect aspect, Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Offset2D destinationOffset)override;
+
 
             [[nodiscard]] VkCommandBuffer vulkanHandle() const;
 
         protected:
+            struct MemoryBarriersMemory
+            {
+                VkImageMemoryBarrier2 textureBarriers[5];
+                VkBufferMemoryBarrier2 bufferBarriers[5];
+                VkMemoryBarrier2 globalBarriers[3];
+            };
+
+            struct BufferImageCopyMemory
+            {
+                VkBufferImageCopy bufferImageCopies[18];
+            };
+
+            struct VertexBufferMemory
+            {
+                VkBuffer vertexBuffers[16];
+            };
+
+            union ScratchMemory
+            {
+                MemoryBarriersMemory memoryBarriersMemory;
+                BufferImageCopyMemory bufferImageCopiesMemory;
+                VertexBufferMemory vertexBuffersMemory;
+            };
+
+
             void IVKCBMove(IVulkanCommandBuffer& from);
+            ScratchMemory _scratchMemory{};
             VkCommandBuffer _commandBuffer = nullptr;
             VkCommandPool _commandPool = nullptr;
             VulkanGraphicsCard* _graphicsCard = nullptr;
@@ -69,6 +97,7 @@ namespace slag
                 COMPUTE
             };
             BoundPipeLineType _boundPipelineType = BoundPipeLineType::NONE;
+            bool _heapsBound = false;
 #endif
 
         };

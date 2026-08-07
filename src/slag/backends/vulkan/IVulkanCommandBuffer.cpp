@@ -47,6 +47,7 @@ namespace slag
             _setViewport = false;
             _setScissor = false;
             _boundPipelineType = BoundPipeLineType::NONE;
+            _heapsBound = false;
 #endif
         }
 
@@ -54,12 +55,20 @@ namespace slag
         {
             SLAG_ASSERT(barriers != nullptr && "barriers cannot be nullptr");
             SLAG_ASSERT(barrierCount != 0 && "barriersCount cannot be 0");
-            std::vector<VkMemoryBarrier2> memBarriers(barrierCount,VkMemoryBarrier2{});
+            VkMemoryBarrier2* memBarriers = _scratchMemory.memoryBarriersMemory.globalBarriers;
+            std::vector<VkMemoryBarrier2> memBarriersDynamic(0);
+            if (barrierCount > _countof(_scratchMemory.memoryBarriersMemory.globalBarriers))
+            {
+                memBarriersDynamic.resize(barrierCount,VkMemoryBarrier2{});
+                memBarriers = memBarriersDynamic.data();
+            }
+
             for(size_t i=0; i< barrierCount; i++)
             {
                 auto& memoryBarrier = memBarriers[i];
                 auto& memoryBarrierDesc = barriers[i];
                 memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
+                memoryBarrier.pNext = nullptr;
                 memoryBarrier.srcAccessMask = VulkanBackend::nativeMemoryCaches(memoryBarrierDesc.flush);
                 memoryBarrier.dstAccessMask = VulkanBackend::nativeMemoryCaches(memoryBarrierDesc.invalidate);
                 memoryBarrier.srcStageMask = VulkanBackend::nativePipelineStages(memoryBarrierDesc.syncBefore);
@@ -68,7 +77,7 @@ namespace slag
             VkDependencyInfo dependencyInfo{};
             dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
             dependencyInfo.memoryBarrierCount = barrierCount;
-            dependencyInfo.pMemoryBarriers = memBarriers.data();
+            dependencyInfo.pMemoryBarriers = memBarriers;
             vkCmdPipelineBarrier2(_commandBuffer,&dependencyInfo);
         }
 
@@ -76,13 +85,20 @@ namespace slag
         {
             SLAG_ASSERT(barriers != nullptr && "barriers cannot be nullptr");
             SLAG_ASSERT(barrierCount != 0 && "barriersCount cannot be 0");
-            std::vector<VkBufferMemoryBarrier2> bufferMemoryBarriers(barrierCount,VkBufferMemoryBarrier2{});
+            VkBufferMemoryBarrier2* bufferMemoryBarriers = _scratchMemory.memoryBarriersMemory.bufferBarriers;
+            std::vector<VkBufferMemoryBarrier2> bufferMemoryBarriersDynamic(0);
+            if (barrierCount > _countof(_scratchMemory.memoryBarriersMemory.bufferBarriers))
+            {
+                bufferMemoryBarriersDynamic.resize(barrierCount,VkBufferMemoryBarrier2{});
+                bufferMemoryBarriers = bufferMemoryBarriersDynamic.data();
+            }
             for(size_t i=0; i< barrierCount; i++)
             {
                 auto& bufferBarrier = bufferMemoryBarriers[i];
                 auto bufferBarrierDesc = barriers[i];
                 auto buffer = static_cast<VulkanBuffer*>(bufferBarrierDesc.buffer);
                 bufferBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+                bufferBarrier.pNext = nullptr;
                 bufferBarrier.buffer = buffer->vulkanHandle();
                 bufferBarrier.srcAccessMask = VulkanBackend::nativeMemoryCaches(bufferBarrierDesc.flush);
                 bufferBarrier.dstAccessMask = VulkanBackend::nativeMemoryCaches(bufferBarrierDesc.invalidate);
@@ -90,12 +106,14 @@ namespace slag
                 bufferBarrier.size = bufferBarrierDesc.length != 0 ? bufferBarrierDesc.length : VK_WHOLE_SIZE;
                 bufferBarrier.srcStageMask = VulkanBackend::nativePipelineStages(bufferBarrierDesc.syncBefore);
                 bufferBarrier.dstStageMask = VulkanBackend::nativePipelineStages(bufferBarrierDesc.syncAfter);
+                bufferBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                bufferBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             }
 
             VkDependencyInfo dependencyInfo{};
             dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
             dependencyInfo.bufferMemoryBarrierCount = barrierCount;
-            dependencyInfo.pBufferMemoryBarriers = bufferMemoryBarriers.data();
+            dependencyInfo.pBufferMemoryBarriers = bufferMemoryBarriers;
             vkCmdPipelineBarrier2(_commandBuffer,&dependencyInfo);
         }
 
@@ -103,13 +121,21 @@ namespace slag
         {
             SLAG_ASSERT(barriers != nullptr && "barriers cannot be nullptr");
             SLAG_ASSERT(barrierCount != 0 && "barriersCount cannot be 0");
-            std::vector<VkImageMemoryBarrier2> imageMemoryBarriers(barrierCount,VkImageMemoryBarrier2{});
+            VkImageMemoryBarrier2* imageMemoryBarriers = _scratchMemory.memoryBarriersMemory.textureBarriers;
+            std::vector<VkImageMemoryBarrier2> imageMemoryBarriersDynamic(0);
+
+            if (barrierCount > _countof(_scratchMemory.memoryBarriersMemory.textureBarriers))
+            {
+                imageMemoryBarriersDynamic.resize(barrierCount,VkImageMemoryBarrier2{});
+                imageMemoryBarriers = imageMemoryBarriersDynamic.data();
+            }
             for(size_t i=0; i< barrierCount; i++)
             {
                 auto& vkbarrier = imageMemoryBarriers[i];
                 auto barrier = barriers[i];
                 auto texture = static_cast<VulkanTexture*>(barrier.texture);
                 vkbarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+                vkbarrier.pNext = nullptr;
                 vkbarrier.srcAccessMask = VulkanBackend::nativeMemoryCaches(barrier.flush);
                 vkbarrier.dstAccessMask = VulkanBackend::nativeMemoryCaches(barrier.invalidate);
                 vkbarrier.image = texture->vulkanHandle();
@@ -118,13 +144,14 @@ namespace slag
                 vkbarrier.srcStageMask = VulkanBackend::nativePipelineStages(barrier.syncBefore);
                 vkbarrier.dstStageMask = VulkanBackend::nativePipelineStages(barrier.syncAfter);
                 vkbarrier.subresourceRange = {.aspectMask = VulkanBackend::nativeTextureAspect(Pixel::aspectFlags(texture->format())), .baseMipLevel =barrier.baseMipLevel, .levelCount = barrier.mipCount == 0 ? texture->mipLevels()-barrier.baseMipLevel : barrier.mipCount, .baseArrayLayer = barrier.baseLayer, .layerCount = barrier.layerCount == 0 ? texture->layers()-barrier.baseLayer : barrier.layerCount};
-
+                vkbarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                vkbarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             }
 
             VkDependencyInfo dependencyInfo{};
             dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
             dependencyInfo.imageMemoryBarrierCount = barrierCount;
-            dependencyInfo.pImageMemoryBarriers = imageMemoryBarriers.data();
+            dependencyInfo.pImageMemoryBarriers = imageMemoryBarriers;
             vkCmdPipelineBarrier2(_commandBuffer,&dependencyInfo);
         }
 
@@ -136,13 +163,20 @@ namespace slag
             TextureBarrier* textureBarriers,
             uint32_t textureBarrierCount)
         {
-            std::vector<VkImageMemoryBarrier2> imageMemoryBarriers(textureBarrierCount,VkImageMemoryBarrier2{});
+            VkImageMemoryBarrier2* imageMemoryBarriers = _scratchMemory.memoryBarriersMemory.textureBarriers;
+            std::vector<VkImageMemoryBarrier2> imageMemoryBarriersDynamic(0);
+            if (textureBarrierCount > _countof(_scratchMemory.memoryBarriersMemory.textureBarriers))
+            {
+                imageMemoryBarriersDynamic.resize(textureBarrierCount,VkImageMemoryBarrier2{});
+                imageMemoryBarriers = imageMemoryBarriersDynamic.data();
+            }
             for(size_t i=0; i< textureBarrierCount; i++)
             {
                 auto& vkbarrier = imageMemoryBarriers[i];
                 auto barrier = textureBarriers[i];
                 auto texture = static_cast<VulkanTexture*>(barrier.texture);
                 vkbarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+                vkbarrier.pNext = nullptr;
                 vkbarrier.srcAccessMask = VulkanBackend::nativeMemoryCaches(barrier.flush);
                 vkbarrier.dstAccessMask = VulkanBackend::nativeMemoryCaches(barrier.invalidate);
                 vkbarrier.image = texture->vulkanHandle();
@@ -151,15 +185,23 @@ namespace slag
                 vkbarrier.srcStageMask = VulkanBackend::nativePipelineStages(barrier.syncBefore);
                 vkbarrier.dstStageMask = VulkanBackend::nativePipelineStages(barrier.syncAfter);
                 vkbarrier.subresourceRange = {.aspectMask = VulkanBackend::nativeTextureAspect(Pixel::aspectFlags(texture->format())), .baseMipLevel =barrier.baseMipLevel, .levelCount = barrier.mipCount == 0 ? texture->mipLevels()-barrier.baseMipLevel : barrier.mipCount, .baseArrayLayer = barrier.baseLayer, .layerCount = barrier.layerCount == 0 ? texture->layers()-barrier.baseLayer : barrier.layerCount};
-
+                vkbarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                vkbarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             }
-            std::vector<VkBufferMemoryBarrier2> bufferMemoryBarriers(bufferBarrierCount,VkBufferMemoryBarrier2{});
+            VkBufferMemoryBarrier2* bufferMemoryBarriers = _scratchMemory.memoryBarriersMemory.bufferBarriers;
+            std::vector<VkBufferMemoryBarrier2> bufferMemoryBarriersDynamic(0);
+            if (bufferBarrierCount > _countof(_scratchMemory.memoryBarriersMemory.bufferBarriers))
+            {
+                bufferMemoryBarriersDynamic.resize(bufferBarrierCount,VkBufferMemoryBarrier2{});
+                bufferMemoryBarriers = bufferMemoryBarriersDynamic.data();
+            }
             for(size_t i=0; i< bufferBarrierCount; i++)
             {
                 auto& bufferBarrier = bufferMemoryBarriers[i];
                 auto bufferBarrierDesc = bufferBarriers[i];
                 auto buffer = static_cast<VulkanBuffer*>(bufferBarrierDesc.buffer);
                 bufferBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+                bufferBarrier.pNext = nullptr;
                 bufferBarrier.buffer = buffer->vulkanHandle();
                 bufferBarrier.srcAccessMask = VulkanBackend::nativeMemoryCaches(bufferBarrierDesc.flush);
                 bufferBarrier.dstAccessMask = VulkanBackend::nativeMemoryCaches(bufferBarrierDesc.invalidate);
@@ -167,13 +209,22 @@ namespace slag
                 bufferBarrier.size = bufferBarrierDesc.length != 0 ? bufferBarrierDesc.length : VK_WHOLE_SIZE;
                 bufferBarrier.srcStageMask = VulkanBackend::nativePipelineStages(bufferBarrierDesc.syncBefore);
                 bufferBarrier.dstStageMask = VulkanBackend::nativePipelineStages(bufferBarrierDesc.syncAfter);
+                bufferBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                bufferBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             }
-            std::vector<VkMemoryBarrier2> memBarriers(globalBarrierCount,VkMemoryBarrier2{});
+            VkMemoryBarrier2* memBarriers = _scratchMemory.memoryBarriersMemory.globalBarriers;
+            std::vector<VkMemoryBarrier2> memBarriersDynamic(0);
+            if (globalBarrierCount > _countof(_scratchMemory.memoryBarriersMemory.globalBarriers))
+            {
+                memBarriersDynamic.resize(globalBarrierCount,VkMemoryBarrier2{});
+                memBarriers = memBarriersDynamic.data();
+            }
             for(size_t i=0; i< globalBarrierCount; i++)
             {
                 auto& memoryBarrier = memBarriers[i];
                 auto& memoryBarrierDesc = globalBarriers[i];
                 memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
+                memoryBarrier.pNext = nullptr;
                 memoryBarrier.srcAccessMask = VulkanBackend::nativeMemoryCaches(memoryBarrierDesc.flush);
                 memoryBarrier.dstAccessMask = VulkanBackend::nativeMemoryCaches(memoryBarrierDesc.invalidate);
                 memoryBarrier.srcStageMask = VulkanBackend::nativePipelineStages(memoryBarrierDesc.syncBefore);
@@ -182,11 +233,11 @@ namespace slag
             VkDependencyInfo dependencyInfo{};
             dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
             dependencyInfo.memoryBarrierCount = globalBarrierCount;
-            dependencyInfo.pMemoryBarriers = memBarriers.data();
+            dependencyInfo.pMemoryBarriers = memBarriers;
             dependencyInfo.bufferMemoryBarrierCount = bufferBarrierCount;
-            dependencyInfo.pBufferMemoryBarriers = bufferMemoryBarriers.data();
+            dependencyInfo.pBufferMemoryBarriers = bufferMemoryBarriers;
             dependencyInfo.imageMemoryBarrierCount = textureBarrierCount;
-            dependencyInfo.pImageMemoryBarriers = imageMemoryBarriers.data();
+            dependencyInfo.pImageMemoryBarriers = imageMemoryBarriers;
             vkCmdPipelineBarrier2(_commandBuffer,&dependencyInfo);
         }
 
@@ -220,13 +271,22 @@ namespace slag
                };
                 _graphicsCard->vkCmdBindSamplerHeap(_commandBuffer,&bindHeapInfo);
             }
+#ifdef SLAG_DEBUG
+            _heapsBound = true;
+#endif
+
         }
 
         void IVulkanCommandBuffer::setGraphicsShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
         {
+
             SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
             SLAG_ASSERT(shaderDataOffset + dataSize < 128 && "Exceeded size of shader parameter data");
             SLAG_ASSERT(shaderDataOffset %4 == 0 && "Shader data offset must be aligned to 4 bytes");
+            SLAG_ASSERT(dataSize % 4 == 0 && "dataSize must be multiple of 4");
+#ifdef SLAG_DEBUG
+            SLAG_ASSERT(_heapsBound && "Heaps must be bound before setting shader parameters");
+#endif
             VkPushDataInfoEXT pushDataInfo
             {
                 .sType = VK_STRUCTURE_TYPE_PUSH_DATA_INFO_EXT,
@@ -239,9 +299,14 @@ namespace slag
 
         void IVulkanCommandBuffer::setComputeShaderParameters(uint32_t shaderDataOffset, void* data, uint32_t dataSize)
         {
+
             SLAG_ASSERT(_type != QueueType::TRANSFER && "Command Buffer cannot record commands outside it's capabilities");
             SLAG_ASSERT(shaderDataOffset + dataSize < 128 && "Exceeded size of shader parameter data");
             SLAG_ASSERT(shaderDataOffset %4 == 0 && "Shader data offset must be aligned to 4 bytes");
+            SLAG_ASSERT(dataSize % 4 == 0 && "dataSize must be multiple of 4");
+#ifdef SLAG_DEBUG
+            SLAG_ASSERT(_heapsBound && "Heaps must be bound before setting shader parameters");
+#endif
             VkPushDataInfoEXT pushDataInfo
             {
                 .sType = VK_STRUCTURE_TYPE_PUSH_DATA_INFO_EXT,
@@ -290,7 +355,13 @@ namespace slag
             auto vulkanTexture = static_cast<VulkanTexture*>(source);
             auto vulkanBuffer = static_cast<VulkanBuffer*>(destination);
 
-            std::vector<VkBufferImageCopy> regions(mappingCount);
+            VkBufferImageCopy* regions = _scratchMemory.bufferImageCopiesMemory.bufferImageCopies;
+            std::vector<VkBufferImageCopy> regionsDynamic(0);
+            if (mappingCount > _countof(_scratchMemory.bufferImageCopiesMemory.bufferImageCopies))
+            {
+                regionsDynamic.resize(mappingCount);
+                regions = regionsDynamic.data();
+            }
             for (uint32_t i = 0; i < mappingCount; ++i)
             {
                 auto& region = regions[i];
@@ -307,7 +378,7 @@ namespace slag
                 region.imageExtent = {.width = subResource.extent.width,.height = subResource.extent.height,.depth = subResource.extent.depth};
             }
 
-            vkCmdCopyImageToBuffer(_commandBuffer,vulkanTexture->vulkanHandle(),VK_IMAGE_LAYOUT_GENERAL,vulkanBuffer->vulkanHandle(),mappingCount,regions.data());
+            vkCmdCopyImageToBuffer(_commandBuffer,vulkanTexture->vulkanHandle(),VK_IMAGE_LAYOUT_GENERAL,vulkanBuffer->vulkanHandle(),mappingCount,regions);
         }
 
         void IVulkanCommandBuffer::copyBufferToTexture(
@@ -325,7 +396,13 @@ namespace slag
             auto image = static_cast<VulkanTexture*>(destination);
             auto buffer = static_cast<VulkanBuffer*>(source);
 
-            std::vector<VkBufferImageCopy> regions(mappingCount);
+            VkBufferImageCopy* regions = _scratchMemory.bufferImageCopiesMemory.bufferImageCopies;
+            std::vector<VkBufferImageCopy> regionsDynamic(0);
+            if (mappingCount > _countof(_scratchMemory.bufferImageCopiesMemory.bufferImageCopies))
+            {
+                regionsDynamic.resize(mappingCount);
+                regions = regionsDynamic.data();
+            }
 
             for (uint32_t i = 0; i < mappingCount; ++i)
             {
@@ -343,7 +420,7 @@ namespace slag
                 region.imageExtent = {.width = subResource.extent.width,.height = subResource.extent.height,.depth = subResource.extent.depth};
             }
 
-            vkCmdCopyBufferToImage(_commandBuffer,buffer->vulkanHandle(),image->vulkanHandle(),VK_IMAGE_LAYOUT_GENERAL,mappingCount,regions.data());
+            vkCmdCopyBufferToImage(_commandBuffer,buffer->vulkanHandle(),image->vulkanHandle(),VK_IMAGE_LAYOUT_GENERAL,mappingCount,regions);
         }
 
         void IVulkanCommandBuffer::bindShaderPipeline(ShaderPipeline* pipeline)
@@ -373,7 +450,8 @@ namespace slag
                                                   Attachment* depthAttachment, const Rectangle& bounds)
         {
             SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
-            std::vector<VkRenderingAttachmentInfo> descriptions(colorAttachmentCount);
+            SLAG_ASSERT(colorAttachmentCount <=8 && "Cannot have more than 8 color attachments");
+            VkRenderingAttachmentInfo descriptions[8];
             for(auto i=0; i< colorAttachmentCount; i++)
             {
 
@@ -384,6 +462,7 @@ namespace slag
                 descriptions[i]=VkRenderingAttachmentInfo
                 {
                     .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
+                    .pNext = nullptr,
                     .imageView = colorTexture->vulkanView(),
                     .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                     .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -427,7 +506,7 @@ namespace slag
                 .renderArea = {{bounds.offset.x,bounds.offset.y},{bounds.extent.width,bounds.extent.height}},
                 .layerCount = 1,
                 .colorAttachmentCount = colorAttachmentCount,
-                .pColorAttachments = descriptions.data(),
+                .pColorAttachments = descriptions,
                 .pDepthAttachment = depthAttachment == nullptr? nullptr : &depth,
                 .pStencilAttachment = hasStencil ? &depth : nullptr
             };
@@ -484,12 +563,18 @@ namespace slag
         void IVulkanCommandBuffer::bindVertexBuffers(uint32_t firstBinding, Buffer** buffers, uint64_t* bufferOffsets, uint64_t* strides, uint32_t bufferCount)
         {
             SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
-            std::vector<VkBuffer> vulkanBuffers(bufferCount);
+            VkBuffer* vulkanBuffers = _scratchMemory.vertexBuffersMemory.vertexBuffers;
+            std::vector<VkBuffer> vulkanBuffersDynamic(0);
+            if (bufferCount > _countof(_scratchMemory.vertexBuffersMemory.vertexBuffers))
+            {
+                vulkanBuffersDynamic.resize(bufferCount);
+                vulkanBuffers = vulkanBuffersDynamic.data();
+            }
             for (auto i = 0; i < bufferCount; i++)
             {
                 vulkanBuffers[i] = static_cast<VulkanBuffer*>(buffers[i])->vulkanHandle();
             }
-            vkCmdBindVertexBuffers2(_commandBuffer, firstBinding,bufferCount,vulkanBuffers.data(),bufferOffsets,nullptr,strides);
+            vkCmdBindVertexBuffers2(_commandBuffer, firstBinding,bufferCount,vulkanBuffers,bufferOffsets,nullptr,strides);
         }
 
         void IVulkanCommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
@@ -519,7 +604,7 @@ namespace slag
             vkCmdDrawIndexed(_commandBuffer,indexCount,instanceCount,firstIndex,vertexOffset,firstInstance);
         }
 
-        void IVulkanCommandBuffer::drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount, uint32_t stride)
+        void IVulkanCommandBuffer::drawIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount)
         {
             SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 #if SLAG_DEBUG
@@ -529,11 +614,10 @@ namespace slag
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
 #endif
             auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
-            vkCmdDrawIndirect(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,drawCount,stride);
+            vkCmdDrawIndirect(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,drawCount,sizeof(IndirectDrawCommand));
         }
 
-        void IVulkanCommandBuffer::drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount,
-            uint32_t stride)
+        void IVulkanCommandBuffer::drawIndexedIndirect(Buffer* buffer, uint64_t offset, uint32_t drawCount)
         {
             SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 
@@ -544,11 +628,11 @@ namespace slag
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::GRAPHICS && "Must bind graphics pipeline prior to drawing");
 #endif
             auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
-            vkCmdDrawIndexedIndirect(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,drawCount,stride);
+            vkCmdDrawIndexedIndirect(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,drawCount,sizeof(IndirectDrawIndexedCommand));
         }
 
         void IVulkanCommandBuffer::drawIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer,
-            uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
+                                                     uint64_t countBufferOffset, uint32_t maxDrawCount)
         {
             SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 #if SLAG_DEBUG
@@ -559,11 +643,11 @@ namespace slag
 #endif
             auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
             auto vulkanCountBuffer = static_cast<VulkanBuffer*>(countBuffer);
-            vkCmdDrawIndirectCount(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,vulkanCountBuffer->vulkanHandle(),countBufferOffset,maxDrawCount,stride);
+            vkCmdDrawIndirectCount(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,vulkanCountBuffer->vulkanHandle(),countBufferOffset,maxDrawCount,sizeof(IndirectDrawCommand));
         }
 
         void IVulkanCommandBuffer::drawIndexedIndirectCount(Buffer* buffer, uint64_t offset, Buffer* countBuffer,
-            uint64_t countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
+                                                            uint64_t countBufferOffset, uint32_t maxDrawCount)
         {
             SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
 #if SLAG_DEBUG
@@ -574,7 +658,7 @@ namespace slag
 #endif
             auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
             auto vulkanCountBuffer = static_cast<VulkanBuffer*>(countBuffer);
-            vkCmdDrawIndexedIndirectCount(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,vulkanCountBuffer->vulkanHandle(),countBufferOffset,maxDrawCount,stride);
+            vkCmdDrawIndexedIndirectCount(_commandBuffer,vulkanBuffer->vulkanHandle(),offset,vulkanCountBuffer->vulkanHandle(),countBufferOffset,maxDrawCount,sizeof(IndirectDrawIndexedCommand));
         }
 
         void IVulkanCommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
@@ -583,6 +667,7 @@ namespace slag
 
 #if SLAG_DEBUG
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
+            SLAG_ASSERT(!_inRenderPass && "Cannot dispatch within render pass (between beginRendering() and endRendering())");
 #endif
             vkCmdDispatch(_commandBuffer,groupCountX,groupCountY,groupCountZ);
         }
@@ -593,6 +678,8 @@ namespace slag
 
 #if SLAG_DEBUG
             SLAG_ASSERT(_boundPipelineType == BoundPipeLineType::COMPUTE && "Must bind compute pipeline prior to dispatching");
+            SLAG_ASSERT(!_inRenderPass && "Cannot dispatch within render pass (between beginRendering() and endRendering())");
+
 #endif
             auto vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
             vkCmdDispatchIndirect(_commandBuffer,vulkanBuffer->vulkanHandle(),offset);
@@ -638,6 +725,45 @@ namespace slag
                 .pRegions = &region
             };
             vkCmdResolveImage2(_commandBuffer,&resolveInfo);
+        }
+
+        void IVulkanCommandBuffer::copyTextureRegion(PixelAspect aspect, Texture* source, uint32_t sourceLayer, uint32_t sourceMip,
+            Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip,
+            Offset2D destinationOffset)
+        {
+            SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
+            VkImageCopy2 copyRegion
+            {
+                .sType = VK_STRUCTURE_TYPE_IMAGE_COPY_2,
+                .srcSubresource =
+                {
+                    .aspectMask = VulkanBackend::nativeTextureAspect((PixelAspectFlags)aspect),
+                    .mipLevel = sourceMip,
+                    .baseArrayLayer = sourceLayer,
+                    .layerCount = 1
+                },
+                .srcOffset = {sourceRect.offset.x,sourceRect.offset.y,0},
+                .dstSubresource =
+                {
+                    .aspectMask = VulkanBackend::nativeTextureAspect((PixelAspectFlags)aspect),
+                    .mipLevel = destinationMip,
+                    .baseArrayLayer = destinationLayer,
+                    .layerCount = 1
+                },
+                .dstOffset = {destinationOffset.x,destinationOffset.y,0},
+                .extent = {.width = sourceRect.extent.width,.height = sourceRect.extent.height,.depth = 1}
+            };
+            VkCopyImageInfo2 copyData
+            {
+                .sType = VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2,
+                .srcImage = static_cast<VulkanTexture*>(source)->vulkanHandle(),
+                .srcImageLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .dstImage = static_cast<VulkanTexture*>(destination)->vulkanHandle(),
+                .dstImageLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .regionCount = 1,
+                .pRegions = &copyRegion
+            };
+            vkCmdCopyImage2(_commandBuffer,&copyData);
         }
 
         VkCommandBuffer IVulkanCommandBuffer::vulkanHandle() const

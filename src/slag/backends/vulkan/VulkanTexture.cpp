@@ -129,6 +129,8 @@ namespace slag
             _layers = layers;
             _mipLevels = mipLevels;
             _sampleCount = sampleCount;
+
+            populateDescriptorInfo();
         }
 
         VulkanTexture::VulkanTexture(VulkanTexture&& from) noexcept
@@ -467,6 +469,53 @@ namespace slag
 
             vmaCreateImage(_graphicsCard->allocator(),&createInfo,&allocationCreateInfo,&_texture,&_allocation,nullptr);
 
+            populateDescriptorInfo();
+
+            if (static_cast<bool>(_usage & (TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::DEPTH_STENCIL_TARGET)))
+            {
+
+                vkCreateImageView(_graphicsCard->device(),&_descriptorInfo,nullptr,&_view);
+            }
+
+            //Transition to general
+
+            VulkanCommandBuffer transitionBuffer(_graphicsCard,QueueType::TRANSFER);
+            transitionBuffer.begin();
+            auto vkcmdbuffer = transitionBuffer.vulkanHandle();
+
+            VkImageMemoryBarrier2 barrier = {};
+            barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+            barrier.image = _texture;
+            barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+            barrier.subresourceRange = _descriptorInfo.subresourceRange;
+
+            VkDependencyInfo dependencyInfo = {};
+            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+            dependencyInfo.imageMemoryBarrierCount = 1;
+            dependencyInfo.pImageMemoryBarriers = &barrier;
+            vkCmdPipelineBarrier2(vkcmdbuffer,&dependencyInfo);
+            transitionBuffer.end();
+            VulkanSemaphore finished(_graphicsCard,0);
+            SemaphoreValue signal{.semaphore = &finished, .value = 1};
+            CommandBuffer* commandBuffers = &transitionBuffer;
+            SubmissionBatch batch
+            {
+                .waitSemaphores = nullptr,
+                .waitSemaphoreCount = 0,
+                .commandBuffers = &commandBuffers,
+                .commandBufferCount = 1,
+                .signalSemaphores = &signal,
+                .signalSemaphoreCount = 1,
+            };
+            _graphicsCard->transferQueue()->submit(batch);
+            finished.waitForValue(1);
+
+        }
+
+        void VulkanTexture::populateDescriptorInfo()
+        {
+            auto vulkanFormat = VulkanBackend::nativeFormat(_format);
             _descriptorInfo.image = _texture;
             switch (_type)
             {
@@ -519,47 +568,6 @@ namespace slag
                 .baseArrayLayer = 0,
                 .layerCount = _layers
             };
-
-            if (static_cast<bool>(_usage & (TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::DEPTH_STENCIL_TARGET)))
-            {
-
-                vkCreateImageView(_graphicsCard->device(),&_descriptorInfo,nullptr,&_view);
-            }
-
-            //Transition to general
-
-            VulkanCommandBuffer transitionBuffer(_graphicsCard,QueueType::TRANSFER);
-            transitionBuffer.begin();
-            auto vkcmdbuffer = transitionBuffer.vulkanHandle();
-
-            VkImageMemoryBarrier2 barrier = {};
-            barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-            barrier.image = _texture;
-            barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-            barrier.subresourceRange = _descriptorInfo.subresourceRange;
-
-            VkDependencyInfo dependencyInfo = {};
-            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-            dependencyInfo.imageMemoryBarrierCount = 1;
-            dependencyInfo.pImageMemoryBarriers = &barrier;
-            vkCmdPipelineBarrier2(vkcmdbuffer,&dependencyInfo);
-            transitionBuffer.end();
-            VulkanSemaphore finished(_graphicsCard,0);
-            SemaphoreValue signal{.semaphore = &finished, .value = 1};
-            CommandBuffer* commandBuffers = &transitionBuffer;
-            SubmissionBatch batch
-            {
-                .waitSemaphores = nullptr,
-                .waitSemaphoreCount = 0,
-                .commandBuffers = &commandBuffers,
-                .commandBufferCount = 1,
-                .signalSemaphores = &signal,
-                .signalSemaphoreCount = 1,
-            };
-            _graphicsCard->transferQueue()->submit(&batch,1);
-            finished.waitForValue(1);
-
         }
     } // vulkan
 } // slag
