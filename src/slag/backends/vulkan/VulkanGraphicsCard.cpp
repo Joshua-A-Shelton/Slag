@@ -396,8 +396,7 @@ namespace slag
                         }
                     };
 
-                    _graphicsQueue->submit(batches[0]);
-                    _graphicsQueue->submit(batches[1]);
+                    _graphicsQueue->submit(batches,2);
                     moved.waitForValue(1);
                     for (auto i=0; i< movedTextures.size(); i++)
                     {

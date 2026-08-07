@@ -47,6 +47,12 @@ namespace slag
          * @param batch Batch of commands to execute
          */
         virtual void submit(const SubmissionBatch& batch)=0;
+        /**
+         * Submit multiple batches of commands for execution
+         * @param batches Array of batches to execute
+         * @param batchCount Number of batches in batches array
+         */
+        virtual void submit(SubmissionBatch* batches, uint32_t batchCount)=0;
     };
 
     inline bool QueueTypeSupportsCommands(QueueType queue, QueueType commands)

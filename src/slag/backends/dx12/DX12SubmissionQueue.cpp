@@ -82,6 +82,14 @@ namespace slag
             }
         }
 
+        void DX12SubmissionQueue::submit(SubmissionBatch* batches, uint32_t batchCount)
+        {
+            for (auto i = 0u; i < batchCount; i++)
+            {
+                submit(batches[i]);
+            }
+        }
+
         ID3D12CommandQueue* DX12SubmissionQueue::dx12Handle() const
         {
             return _queue;
