@@ -1346,7 +1346,7 @@ TEST(CommandBuffer, DispatchIndirect)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::COMPUTE));
     auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
 
-    auto computeModule = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/SetFromBase.compute");
+    auto computeModule = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/ParallelAdd.compute");
     auto parallelAdd = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(&computeModule.details));
     auto resourceHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
     auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
@@ -1357,8 +1357,18 @@ TEST(CommandBuffer, DispatchIndirect)
 
 
 
-    auto buffer1 = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t)*100,BufferCPUAccess::READ_WRITE,BufferMemoryType::GENERAL));
+    auto buffer1 = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t)*100,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto buffer2 = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t)*100,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto results = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t)*100,BufferCPUAccess::READ_WRITE,BufferMemoryType::GENERAL));
     auto buffer1Ptr = buffer1->as<uint32_t>();
+    auto buffer2Ptr = buffer2->as<uint32_t>();
+    auto resultsPtr = results->as<uint32_t>();
+    for(uint32_t i = 0;i < 100;i++)
+    {
+        buffer1Ptr[i] = i;
+        buffer2Ptr[i] = i*i;
+        resultsPtr[i] = 0.0f;
+    }
 
     auto indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDispatchCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
     auto indirectPtr = indirectBuffer->as<IndirectDispatchCommand>();
@@ -1366,17 +1376,18 @@ TEST(CommandBuffer, DispatchIndirect)
     indirectPtr[0].groupCountY = 1;
     indirectPtr[0].groupCountZ = 1;
 
-    for(uint32_t i = 0;i < 100;i++)
-    {
-        buffer1Ptr[i] = 0;
-    }
-
     graphicsCard->writeReadWriteBufferDescriptor(buffer1.get(),0,100,sizeof(uint32_t),resourceHeapPtr);
+    graphicsCard->writeReadWriteBufferDescriptor(buffer2.get(),0,100,sizeof(uint32_t),resourceHeapPtr+descriptorSize);
+    graphicsCard->writeReadWriteBufferDescriptor(results.get(),0,100,sizeof(uint32_t),resourceHeapPtr+descriptorSize*2);
 
     commandBuffer->begin();
     commandBuffer->bindDescriptorHeaps(resourceHeap.get(),samplerHeap.get());
     uint32_t b1index = 0;
+    uint32_t b2index = 1;
+    uint32_t resultsIndex = 2;
     commandBuffer->setComputeShaderParameters(0,&b1index,sizeof(uint32_t));
+    commandBuffer->setComputeShaderParameters(8,&b2index,sizeof(uint32_t));
+    commandBuffer->setComputeShaderParameters(16,&resultsIndex,sizeof(uint32_t));
     commandBuffer->bindShaderPipeline(parallelAdd.get());
     commandBuffer->dispatchIndirect(indirectBuffer.get(),0);
 
@@ -1397,7 +1408,7 @@ TEST(CommandBuffer, DispatchIndirect)
 
     for (uint32_t i = 0;i < 100;i++)
     {
-        ASSERT_EQ(buffer1Ptr[i],i);
+        ASSERT_EQ(resultsPtr[i],i+(i*i));
     }
 }
 
