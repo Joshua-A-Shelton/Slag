@@ -245,78 +245,78 @@ namespace slag
 
         /**
          * Allocate a new 1D texture
-         * @param width Number of texels in width
          * @param format Format of texels in texture
          * @param usage Capabilities of this texture
+         * @param width Number of texels in width
          * @param mipLevels Number of downsized LOD levels
          * @param layers Array depth of texture
          * @return
          * @throws slag::ResourceCreationError if unable to allocate a new texture
          */
         [[nodiscard]] virtual Texture* newTexture1D(
-            uint32_t width,
             PixelFormat format,
             TextureUsageFlags usage,
+            uint32_t width,
             uint32_t mipLevels = 1,
             uint32_t layers = 1)=0;
 
         /**
          * Allocate a new 2D texture
-         * @param width Number of texels in width
-         * @param height Number of texels in height
          * @param format Format of texels in texture
          * @param usage Capabilities of this texture
+         * @param width Number of texels in width
+         * @param height Number of texels in height
          * @param mipLevels Number of downsized LOD levels
-         * @param sampleCount Number of samples per texel
          * @param layers Array depth of texture
+         * @param sampleCount Number of samples per texel
          * @return
          * @throws slag::ResourceCreationError if unable to allocate a new texture
          */
         [[nodiscard]] virtual Texture* newTexture2D(
-            uint32_t width,
-            uint32_t height,
             PixelFormat format,
             TextureUsageFlags usage,
+            uint32_t width,
+            uint32_t height,
             uint32_t mipLevels = 1,
-            SampleCount sampleCount = SampleCount::ONE,
-            uint32_t layers = 1)=0;
+            uint32_t layers = 1,
+            SampleCount sampleCount = SampleCount::ONE)=0;
 
         /**
          * Allocate a new 3D texture
+         * @param format Format of texels in texture
+         * @param usage Capabilities of this texture
          * @param width Number of texels in width
          * @param height Number of texels in height
          * @param depth Number of texels in depth
-         * @param format Format of texels in texture
-         * @param usage Capabilities of this texture
          * @param mipLevels Number of downsized LOD levels
          * @return
          * @throws slag::ResourceCreationError if unable to allocate a new texture
          */
         [[nodiscard]] virtual Texture* newTexture3D(
+            PixelFormat format,
+            TextureUsageFlags usage,
             uint32_t width,
             uint32_t height,
             uint32_t depth,
-            PixelFormat format,
-            TextureUsageFlags usage,
             uint32_t mipLevels = 1)=0;
 
         /**
          * Allocate a new Cube Texture
-         * @param dimension Number of texels in width and height
          * @param format Format of texels in texture
          * @param usage Capabilities of this texture
+         * @param dimension Number of texels in width and height
          * @param mipLevels Number of downsized LOD levels
          * @param arrayDepth Number of cubes in the array (Total layers will be arrayDepth * 6)
          * @return
          * @throws slag::ResourceCreationError if unable to allocate a new texture
          */
         [[nodiscard]] virtual Texture* newTextureCube(
-            uint32_t dimension,
             PixelFormat format,
             TextureUsageFlags usage,
+            uint32_t dimension,
             uint32_t mipLevels = 1,
             uint32_t arrayDepth = 1
-            )=0;
+        )=0;
 
         /**
          * Create a new Sampler

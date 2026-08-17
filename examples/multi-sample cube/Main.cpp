@@ -82,7 +82,7 @@ slag::Texture* loadTexture(std::filesystem::path const& path, slag::GraphicsCard
         .offset = {0,0,0},
         .extent = {(uint32_t)width,(uint32_t)height,1}
     };
-    auto texture = graphicsCard->newTexture2D((uint32_t)width, (uint32_t)height,slag::PixelFormat::R8G8B8A8_UNORM,slag::TextureUsageFlags::SAMPLED,1);
+    auto texture = graphicsCard->newTexture2D(slag::PixelFormat::R8G8B8A8_UNORM, slag::TextureUsageFlags::SAMPLED,(uint32_t)width,(uint32_t)height,1);
     auto pixels = std::unique_ptr<slag::Buffer>(graphicsCard->newBuffer(width*height*4,slag::BufferCPUAccess::WRITE_ONLY));
     auto pixelsPtr = pixels->as<uint8_t>();
     memcpy(pixelsPtr,data.get(),width*height*4);
@@ -300,8 +300,8 @@ int main()
 
     slag::Semaphore* commandsFinished = nullptr;
     slag::CommandBuffer* commandBuffer = graphicsCard->newCommandBuffer(slag::QueueType::GRAPHICS);
-    slag::Texture* colorTarget = graphicsCard->newTexture2D(300,300,slag::PixelFormat::B8G8R8A8_UNORM,slag::TextureUsageFlags::COLOR_TARGET,1,SampleCount::FOUR);
-    slag::Texture* depthTarget = graphicsCard->newTexture2D(300,300,slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET,1,SampleCount::FOUR);
+    slag::Texture* colorTarget = graphicsCard->newTexture2D(slag::PixelFormat::B8G8R8A8_UNORM,slag::TextureUsageFlags::COLOR_TARGET,300,300,1,SampleCount::FOUR);
+    slag::Texture* depthTarget = graphicsCard->newTexture2D(slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET,300,300,1,SampleCount::FOUR);
 
     auto sampler = graphicsCard->newSampler();
     auto texture = loadTexture("resources/examples/textures/gradient.jpg",graphicsCard);
@@ -374,8 +374,8 @@ int main()
                 delete colorTarget;
                 delete depthTarget;
 
-                colorTarget = graphicsCard->newTexture2D(backBuffer->width(),backBuffer->height(),slag::PixelFormat::R8G8B8A8_UNORM,slag::TextureUsageFlags::COLOR_TARGET,1,SampleCount::FOUR);
-                depthTarget = graphicsCard->newTexture2D(backBuffer->width(),backBuffer->height(),slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET,1,SampleCount::FOUR);
+                colorTarget = graphicsCard->newTexture2D(slag::PixelFormat::R8G8B8A8_UNORM,slag::TextureUsageFlags::COLOR_TARGET,backBuffer->width(),backBuffer->height(),1,SampleCount::FOUR);
+                depthTarget = graphicsCard->newTexture2D(slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET,backBuffer->width(),backBuffer->height(),1,SampleCount::FOUR);
             }
 
             objectTransform = glm::rotate(objectTransform,glm::radians(45.0f)*delta,glm::vec3(0.0f,1.0f,0.0f));
