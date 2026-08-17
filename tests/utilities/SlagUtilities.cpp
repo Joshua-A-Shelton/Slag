@@ -1,5 +1,6 @@
 #include "SlagUtilities.h"
 #define STB_IMAGE_IMPLEMENTATION
+#include <iostream>
 #include <stb_image.h>
 
 #include "../third-party/LodePNG/lodepng.h"
@@ -30,7 +31,7 @@ namespace slag
                 .offset = {0,0,0},
                 .extent = {(uint32_t)width,(uint32_t)height,1}
             };
-            auto texture = std::unique_ptr<Texture>(graphicsCard->newTexture2D((uint32_t)width, (uint32_t)height,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,1));
+            auto texture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM, TextureUsageFlags::SAMPLED,(uint32_t)width,(uint32_t)height,1));
             auto pixels = std::unique_ptr<Buffer>(graphicsCard->newBuffer(width*height*4,BufferCPUAccess::WRITE_ONLY));
             auto pixelsPtr = pixels->as<uint8_t>();
             memcpy(pixelsPtr,data.get(),width*height*4);
@@ -132,6 +133,11 @@ namespace slag
             auto card = texture->graphicsCard();
             int width, height, channels;
             unique_ptr_custom<stbi_uc> data(stbi_load(againstPath.string().c_str(), &width, &height,&channels,4),[](stbi_uc* uc){stbi_image_free(uc);});
+
+            if (data == nullptr)
+            {
+                throw std::runtime_error("unable to load file: " + againstPath.string());
+            }
 
             if (texture->mipWidth(mipLevel) != width || texture->mipHeight(mipLevel) != height)
             {

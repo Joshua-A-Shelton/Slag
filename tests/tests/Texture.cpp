@@ -7,13 +7,13 @@ using namespace slag;
 TEST(Texture, Create)
 {
     auto card = Slag::backend()->graphicsCard(0);
-    auto tex1d = std::unique_ptr<Texture>(card->newTexture1D(256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::NONE,3));
-    auto tex2d = std::unique_ptr<Texture>(card->newTexture2D(100,250,PixelFormat::R32_FLOAT,TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::READ_WRITE,2,SampleCount::ONE));
-    auto tex2dDepth = std::unique_ptr<Texture>(card->newTexture2D(1920,1080,PixelFormat::D32_FLOAT_S8X24_UINT,TextureUsageFlags::DEPTH_STENCIL_TARGET,1,SampleCount::EIGHT));
-    auto tex2dDepthMultiMip = std::unique_ptr<Texture>(card->newTexture2D(1920,1080,PixelFormat::D32_FLOAT_S8X24_UINT,TextureUsageFlags::DEPTH_STENCIL_TARGET,3,SampleCount::ONE));
-    auto tex2dArray = std::unique_ptr<Texture>(card->newTexture2D(50,50,PixelFormat::BC7_UNORM_SRGB,TextureUsageFlags::SAMPLED,2,SampleCount::ONE,5));
-    auto tex3d = std::unique_ptr<Texture>(card->newTexture3D(25,25,25,PixelFormat::R32G32B32A32_FLOAT,TextureUsageFlags::SAMPLED | TextureUsageFlags::READ_WRITE,3));
-    auto cube = std::unique_ptr<Texture>(card->newTextureCube(500,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,3,2));
+    auto tex1d = std::unique_ptr<Texture>(card->newTexture1D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::NONE,256,3));
+    auto tex2d = std::unique_ptr<Texture>(card->newTexture2D(PixelFormat::R32_FLOAT,TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::READ_WRITE,100,250,2,1,SampleCount::ONE));
+    auto tex2dDepth = std::unique_ptr<Texture>(card->newTexture2D(PixelFormat::D32_FLOAT_S8X24_UINT,TextureUsageFlags::DEPTH_STENCIL_TARGET,1920,1080,1,1,SampleCount::EIGHT));
+    auto tex2dDepthMultiMip = std::unique_ptr<Texture>(card->newTexture2D(PixelFormat::D32_FLOAT_S8X24_UINT,TextureUsageFlags::DEPTH_STENCIL_TARGET,1920,1080,3,1,SampleCount::ONE));
+    auto tex2dArray = std::unique_ptr<Texture>(card->newTexture2D(PixelFormat::BC7_UNORM_SRGB,TextureUsageFlags::SAMPLED,50,50,2,5,SampleCount::ONE));
+    auto tex3d = std::unique_ptr<Texture>(card->newTexture3D(PixelFormat::R32G32B32A32_FLOAT,TextureUsageFlags::SAMPLED | TextureUsageFlags::READ_WRITE,25,25,25,3));
+    auto cube = std::unique_ptr<Texture>(card->newTextureCube(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,500,3,2));
 
     GTEST_ASSERT_EQ(tex1d->width(),256);
     GTEST_ASSERT_EQ(tex1d->height(),1);
@@ -98,42 +98,42 @@ TEST(Texture, InvalidWidth)
 {
     GTEST_FLAG_SET(death_test_style, "threadsafe");
     auto card = Slag::backend()->graphicsCard(0);
-    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture1D(0,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED)),"Texture must have a width of at least 1");
-    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture2D(0,50,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED)),"Texture must have a width of at least 1");
-    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture3D(0,50,50,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED)),"Texture must have a width of at least 1");
-    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTextureCube(0,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED)),"Texture must have a dimension of at least 1");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture1D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,0)),"Texture must have a width of at least 1");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,0,50)),"Texture must have a width of at least 1");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture3D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,0,50,50)),"Texture must have a width of at least 1");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTextureCube(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,0)),"Texture must have a dimension of at least 1");
 }
 
 TEST(Texture, InvalidHeight)
 {
     GTEST_FLAG_SET(death_test_style, "threadsafe");
     auto card = Slag::backend()->graphicsCard(0);
-    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture2D(50,0,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED)),"Texture must have a height of at least 1");
-    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture3D(50,0,50,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED)),"Texture must have a height of at least 1");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,50,0)),"Texture must have a height of at least 1");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture3D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,50,0,50)),"Texture must have a height of at least 1");
 }
 
 TEST(Texture, InvalidDepth)
 {
     GTEST_FLAG_SET(death_test_style, "threadsafe");
     auto card = Slag::backend()->graphicsCard(0);
-    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture3D(50,50,0,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED)),"Texture must have a depth of at least 1");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture3D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,50,50,0)),"Texture must have a depth of at least 1");
 }
 
 TEST(Texture, InvalidLayers)
 {
     GTEST_FLAG_SET(death_test_style, "threadsafe");
     auto card = Slag::backend()->graphicsCard(0);
-    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture2D(50,50,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,1,SampleCount::ONE,0)),"Texture must have a layer count of at least 1");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,50,50,1,0,SampleCount::ONE)),"Texture must have a layer count of at least 1");
 }
 
 TEST(Texture, InvalidMips)
 {
     GTEST_FLAG_SET(death_test_style, "threadsafe");
     auto card = Slag::backend()->graphicsCard(0);
-    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture1D(50,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,0)),"Texture must have a mip level count of at least 1");
-    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture2D(50,50,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,0)),"Texture must have a mip level count of at least 1");
-    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture3D(50,50,50,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,0)),"Texture must have a mip level count of at least 1");
-    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTextureCube(50,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,0)),"Texture must have a mip level count of at least 1");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture1D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,50,0)),"Texture must have a mip level count of at least 1");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,50,50,0)),"Texture must have a mip level count of at least 1");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture3D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,50,50,50,0)),"Texture must have a mip level count of at least 1");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTextureCube(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,50,0)),"Texture must have a mip level count of at least 1");
 }
 
 TEST(Texture, InvalidColorAndDepthUsage)
@@ -141,13 +141,13 @@ TEST(Texture, InvalidColorAndDepthUsage)
     GTEST_FLAG_SET(death_test_style, "threadsafe");
     auto card = Slag::backend()->graphicsCard(0);
 
-    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture2D(25,25,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::DEPTH_STENCIL_TARGET)),"Texture cannot be both a color target and a depth/stencil target");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET | TextureUsageFlags::DEPTH_STENCIL_TARGET,25,25)),"Texture cannot be both a color target and a depth/stencil target");
 }
 
 TEST(Texture, InvalidUnDefinedFormat)
 {
     auto card = Slag::backend()->graphicsCard(0);
-    EXPECT_THROW(auto tex = std::unique_ptr<Texture>(card->newTexture2D(25,25,PixelFormat::UNDEFINED,TextureUsageFlags::NONE)),ResourceCreationError);
+    EXPECT_THROW(auto tex = std::unique_ptr<Texture>(card->newTexture2D(PixelFormat::UNDEFINED,TextureUsageFlags::NONE,25,25)),ResourceCreationError);
 }
 
 TEST(Texture, InvalidColorUsageFormat)
@@ -161,7 +161,7 @@ TEST(Texture, InvalidColorUsageFormat)
         PixelFormatProperties properties = card->formatProperties(format);
         if (properties.tiling == TextureTiling::UNSUPPORTED && format != PixelFormat::UNDEFINED)
         {
-            EXPECT_THROW(auto tex = std::unique_ptr<Texture>(card->newTexture2D(25,25,format,TextureUsageFlags::NONE)),ResourceCreationError);
+            EXPECT_THROW(auto tex = std::unique_ptr<Texture>(card->newTexture2D(format,TextureUsageFlags::NONE,25,25)),ResourceCreationError);
             performedTest = true;
         }
     }
@@ -176,6 +176,6 @@ TEST(Texture,MipSampleCounts)
     GTEST_FLAG_SET(death_test_style, "threadsafe");
     auto card = Slag::backend()->graphicsCard(0);
 
-    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture2D(100,100,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,2,SampleCount::TWO)),"Texture cannot have both multiple mip levels and have a sample count greater than one");
+    EXPECT_DEATH(auto tex = std::unique_ptr<Texture>(card->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,100,100,2,1,SampleCount::TWO)),"Texture cannot have both multiple mip levels and have a sample count greater than one");
 }
 #endif

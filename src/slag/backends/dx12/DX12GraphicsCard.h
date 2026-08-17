@@ -71,36 +71,36 @@ namespace slag
 
             //Textures
             [[nodiscard]] Texture* newTexture1D(
-            uint32_t width,
-            PixelFormat format,
-            TextureUsageFlags usage,
-            uint32_t mipLevels,
-            uint32_t layers)override;
-
-            [[nodiscard]] Texture* newTexture2D(
-                uint32_t width,
-                uint32_t height,
                 PixelFormat format,
                 TextureUsageFlags usage,
+                uint32_t width,
                 uint32_t mipLevels,
-                SampleCount sampleCount,
                 uint32_t layers)override;
 
+            [[nodiscard]] Texture* newTexture2D(
+                PixelFormat format,
+                TextureUsageFlags usage,
+                uint32_t width,
+                uint32_t height,
+                uint32_t mipLevels,
+                uint32_t layers,
+                SampleCount sampleCount)override;
+
             [[nodiscard]] Texture* newTexture3D(
+                PixelFormat format,
+                TextureUsageFlags usage,
                 uint32_t width,
                 uint32_t height,
                 uint32_t depth,
-                PixelFormat format,
-                TextureUsageFlags usage,
                 uint32_t mipLevels)override;
 
             [[nodiscard]] Texture* newTextureCube(
-                uint32_t dimension,
                 PixelFormat format,
                 TextureUsageFlags usage,
+                uint32_t dimension,
                 uint32_t mipLevels,
                 uint32_t arrayDepth
-                )override;
+            )override;
 
             [[nodiscard]] Sampler* newSampler(
                 SamplerFilter min,

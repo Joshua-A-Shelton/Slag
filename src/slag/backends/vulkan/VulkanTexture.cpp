@@ -13,9 +13,9 @@ namespace slag
     {
         VulkanTexture::VulkanTexture(
             VulkanGraphicsCard* card,
-            uint32_t width,
             PixelFormat format,
             TextureUsageFlags usage,
+            uint32_t width,
             uint32_t mipLevels,
             uint32_t layers)
         {
@@ -38,13 +38,13 @@ namespace slag
 
         VulkanTexture::VulkanTexture(
             VulkanGraphicsCard* card,
-            uint32_t width,
-            uint32_t height,
             PixelFormat format,
             TextureUsageFlags usage,
+            uint32_t width,
+            uint32_t height,
             uint32_t mipLevels,
-            SampleCount sampleCount,
-            uint32_t layers)
+            uint32_t layers,
+            SampleCount sampleCount)
         {
             auto formatInfo = card->formatProperties(format);
             if (formatInfo.tiling == TextureTiling::UNSUPPORTED)
@@ -68,11 +68,11 @@ namespace slag
 
         VulkanTexture::VulkanTexture(
             VulkanGraphicsCard* card,
+            PixelFormat format,
+            TextureUsageFlags usage,
             uint32_t width,
             uint32_t height,
             uint32_t depth,
-            PixelFormat format,
-            TextureUsageFlags usage,
             uint32_t mipLevels)
         {
             auto formatInfo = card->formatProperties(format);
@@ -93,8 +93,8 @@ namespace slag
             construct(VK_IMAGE_TYPE_3D,formatInfo,0);
         }
 
-        VulkanTexture::VulkanTexture(VulkanGraphicsCard* card, PixelFormat format,
-            TextureUsageFlags usage, uint32_t dimension, uint32_t mipLevels, uint32_t arrayDepth)
+        VulkanTexture::VulkanTexture(VulkanGraphicsCard* card, uint32_t dimension, PixelFormat format,
+            TextureUsageFlags usage, uint32_t mipLevels, uint32_t arrayDepth)
         {
             SLAG_ASSERT(dimension > 0 && "Texture must have a dimension of at least 1");
             auto formatInfo = card->formatProperties(format);

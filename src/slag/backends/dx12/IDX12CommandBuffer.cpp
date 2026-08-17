@@ -58,7 +58,7 @@ namespace slag
             D3D12_GLOBAL_BARRIER* globalBarriers = _scratchMemory.barrierMemory.globalBarriers;
             std::vector<D3D12_GLOBAL_BARRIER> globalBarriersDynamic(0);
 
-            if (barrierCount > _countof(_scratchMemory.barrierMemory.globalBarriers))
+            if (barrierCount > std::size(_scratchMemory.barrierMemory.globalBarriers))
             {
                 globalBarriersDynamic.resize(barrierCount);
                 globalBarriers = globalBarriersDynamic.data();
@@ -86,7 +86,7 @@ namespace slag
 
             D3D12_BUFFER_BARRIER* bufferBarriers = _scratchMemory.barrierMemory.bufferBarriers;
             std::vector<D3D12_BUFFER_BARRIER> bufferBarriersDynamic(0);
-            if (barrierCount > _countof(_scratchMemory.barrierMemory.bufferBarriers))
+            if (barrierCount > std::size(_scratchMemory.barrierMemory.bufferBarriers))
             {
                 bufferBarriersDynamic.resize(barrierCount);
                 bufferBarriers = bufferBarriersDynamic.data();
@@ -118,7 +118,7 @@ namespace slag
 
             D3D12_TEXTURE_BARRIER* textureBarriers = _scratchMemory.barrierMemory.textureBarriers;
             std::vector<D3D12_TEXTURE_BARRIER> textureBarriersDynamic(0);
-            if (barrierCount > _countof(_scratchMemory.barrierMemory.textureBarriers))
+            if (barrierCount > std::size(_scratchMemory.barrierMemory.textureBarriers))
             {
                 textureBarriersDynamic.resize(barrierCount);
                 textureBarriers = textureBarriersDynamic.data();
@@ -164,7 +164,7 @@ namespace slag
         {
             D3D12_GLOBAL_BARRIER* globalBarriersNative = _scratchMemory.barrierMemory.globalBarriers;
             std::vector<D3D12_GLOBAL_BARRIER> globalBarriersDynamic(0);
-            if (globalBarrierCount > _countof(_scratchMemory.barrierMemory.globalBarriers))
+            if (globalBarrierCount > std::size(_scratchMemory.barrierMemory.globalBarriers))
             {
                 globalBarriersDynamic.resize(globalBarrierCount);
                 globalBarriersNative = globalBarriersDynamic.data();
@@ -182,7 +182,7 @@ namespace slag
 
             D3D12_BUFFER_BARRIER* bufferBarriersNative = _scratchMemory.barrierMemory.bufferBarriers;
             std::vector<D3D12_BUFFER_BARRIER> bufferBarriersDynamic(0);
-            if (bufferBarrierCount > _countof(_scratchMemory.barrierMemory.bufferBarriers))
+            if (bufferBarrierCount > std::size(_scratchMemory.barrierMemory.bufferBarriers))
             {
                 bufferBarriersDynamic.resize(bufferBarrierCount);
                 bufferBarriersNative = bufferBarriersDynamic.data();
@@ -204,7 +204,7 @@ namespace slag
             D3D12_TEXTURE_BARRIER* textureBarriersNative = _scratchMemory.barrierMemory.textureBarriers;
             std::vector<D3D12_TEXTURE_BARRIER> textureBarriersDynamic(0);
 
-            if (textureBarrierCount > _countof(_scratchMemory.barrierMemory.textureBarriers))
+            if (textureBarrierCount > std::size(_scratchMemory.barrierMemory.textureBarriers))
             {
                 textureBarriersDynamic.resize(textureBarrierCount);
                 textureBarriersNative = textureBarriersDynamic.data();
@@ -554,7 +554,7 @@ namespace slag
 
             D3D12_VERTEX_BUFFER_VIEW* vertexBufferViews = _scratchMemory.vertexBufferMemory.vertexBufferView;
             std::vector<D3D12_VERTEX_BUFFER_VIEW> vertexBufferViewsDynamic(0);
-            if (bufferCount > _countof(_scratchMemory.vertexBufferMemory.vertexBufferView))
+            if (bufferCount > std::size(_scratchMemory.vertexBufferMemory.vertexBufferView))
             {
                 vertexBufferViewsDynamic.resize(bufferCount);
                 vertexBufferViews = vertexBufferViewsDynamic.data();

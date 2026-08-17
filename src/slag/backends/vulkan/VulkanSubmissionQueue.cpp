@@ -47,21 +47,21 @@ namespace slag
 
             VkSemaphoreSubmitInfo* waits = _waits;
             std::vector<VkSemaphoreSubmitInfo> waitsDynamic(0);
-            if (batch.waitSemaphoreCount > _countof(_waits))
+            if (batch.waitSemaphoreCount > std::size(_waits))
             {
                 waitsDynamic.resize(batch.waitSemaphoreCount);
                 waits = waitsDynamic.data();
             }
             VkSemaphoreSubmitInfo* signals = _signals;
             std::vector<VkSemaphoreSubmitInfo> signalsDynamic(0);
-            if (batch.signalSemaphoreCount > _countof(_signals))
+            if (batch.signalSemaphoreCount > std::size(_signals))
             {
                 signalsDynamic.resize(batch.signalSemaphoreCount);
                 signals = signalsDynamic.data();
             }
             VkCommandBufferSubmitInfo* commandBuffers = _commandBuffers;
             std::vector<VkCommandBufferSubmitInfo> commandBuffersDynamic(0);
-            if (batch.commandBufferCount > _countof(_commandBuffers))
+            if (batch.commandBufferCount > std::size(_commandBuffers))
             {
                 commandBuffersDynamic.resize(batch.commandBufferCount);
                 commandBuffers = commandBuffersDynamic.data();
@@ -121,7 +121,7 @@ namespace slag
             std::vector<VkSemaphoreSubmitInfo*> waitOffsetsDynamic(0);
             std::vector<VkSemaphoreSubmitInfo*> signalOffsetsDynamic(0);
             std::vector<VkCommandBufferSubmitInfo*> commandBufferOffsetsDynamic(0);
-            if (batchCount > _countof(_submits))
+            if (batchCount > std::size(_submits))
             {
                 submissionsDynamic.resize(batchCount);
                 submissions = submissionsDynamic.data();
@@ -171,21 +171,21 @@ namespace slag
 
             VkSemaphoreSubmitInfo* waits = _waits;
             std::vector<VkSemaphoreSubmitInfo> waitsDynamic(0);
-            if (totalWaitSemaphoreCount > _countof(_waits))
+            if (totalWaitSemaphoreCount > std::size(_waits))
             {
                 waitsDynamic.resize(totalWaitSemaphoreCount);
                 waits = waitsDynamic.data();
             }
             VkSemaphoreSubmitInfo* signals = _signals;
             std::vector<VkSemaphoreSubmitInfo> signalsDynamic(0);
-            if (totalSignalSemaphoreCount > _countof(_signals))
+            if (totalSignalSemaphoreCount > std::size(_signals))
             {
                 signalsDynamic.resize(totalSignalSemaphoreCount);
                 signals = signalsDynamic.data();
             }
             VkCommandBufferSubmitInfo* commandBuffers = _commandBuffers;
             std::vector<VkCommandBufferSubmitInfo> commandBuffersDynamic(0);
-            if (totalCommandBufferCount > _countof(_commandBuffers))
+            if (totalCommandBufferCount > std::size(_commandBuffers))
             {
                 commandBuffersDynamic.resize(totalCommandBufferCount);
                 commandBuffers = commandBuffersDynamic.data();

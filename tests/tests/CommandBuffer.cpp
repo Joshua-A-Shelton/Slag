@@ -28,7 +28,7 @@ TEST(CommandBuffer, InsertBarriers)
     auto finished = std::unique_ptr<Semaphore>(card->newSemaphore());
     auto sourceBuffer = std::unique_ptr<Buffer>(card->newBuffer(256,BufferCPUAccess::WRITE_ONLY));
     auto destinationBuffer = std::unique_ptr<Buffer>(card->newBuffer(256,BufferCPUAccess::READ_WRITE));
-    auto destinationTexture = std::unique_ptr<Texture>(card->newTexture2D(32,32,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+    auto destinationTexture = std::unique_ptr<Texture>(card->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,32,32));
     auto srcBufferPtr = sourceBuffer->as<uint8_t>();
     for (auto i=0; i< sourceBuffer->size(); i++)
     {
@@ -154,7 +154,7 @@ TEST(CommandBuffer, CopyBufferToTextureToBuffer)
 {
     auto card = Slag::backend()->graphicsCard(0);
     auto commandBuffer = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(QueueType::TRANSFER));
-    auto texture = std::unique_ptr<Texture>(card->newTexture2D(64,64,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,3));
+    auto texture = std::unique_ptr<Texture>(card->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,64,64,3));
     auto finished = std::unique_ptr<Semaphore>(card->newSemaphore());
     auto srcBuffer = std::unique_ptr<Buffer>(card->newBuffer((32*32*4)+32,BufferCPUAccess::WRITE_ONLY));
     auto dstBuffer = std::unique_ptr<Buffer>(card->newBuffer(srcBuffer->size(),BufferCPUAccess::READ_WRITE));
@@ -243,8 +243,8 @@ TEST(CommandBuffer, Draw)
     auto graphicsCard = Slag::backend()->graphicsCard(0);
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
     auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
-    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
-    auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,256,256));
+    auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,256,256));
 
     auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
     auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
@@ -411,8 +411,8 @@ TEST(CommandBuffer, DrawIndexed)
     auto graphicsCard = Slag::backend()->graphicsCard(0);
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
     auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
-    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
-    auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,256,256));
+    auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,256,256));
 
     auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
     auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
@@ -584,8 +584,8 @@ TEST(CommandBuffer, DrawIndirect)
     auto graphicsCard = Slag::backend()->graphicsCard(0);
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
     auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
-    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
-    auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,256,256));
+    auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,256,256));
 
     auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
     auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
@@ -758,8 +758,8 @@ TEST(CommandBuffer, DrawIndexedIndirect)
     auto graphicsCard = Slag::backend()->graphicsCard(0);
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
     auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
-    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
-    auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,256,256));
+    auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,256,256));
 
     auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
     auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
@@ -938,8 +938,8 @@ TEST(CommandBuffer, DrawIndirectCount)
     auto graphicsCard = Slag::backend()->graphicsCard(0);
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
     auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
-    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
-    auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,256,256));
+    auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,256,256));
 
     auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
     auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
@@ -1115,8 +1115,8 @@ TEST(CommandBuffer, DrawIndexedIndirectCount)
     auto graphicsCard = Slag::backend()->graphicsCard(0);
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
     auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
-    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
-    auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,256,256));
+    auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,256,256));
 
     auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
     auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
@@ -1346,7 +1346,7 @@ TEST(CommandBuffer, DispatchIndirect)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::COMPUTE));
     auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
 
-    auto computeModule = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/SetFromBase.compute");
+    auto computeModule = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/ParallelAdd.compute");
     auto parallelAdd = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(&computeModule.details));
     auto resourceHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
     auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
@@ -1357,8 +1357,18 @@ TEST(CommandBuffer, DispatchIndirect)
 
 
 
-    auto buffer1 = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t)*100,BufferCPUAccess::READ_WRITE,BufferMemoryType::GENERAL));
+    auto buffer1 = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t)*100,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto buffer2 = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t)*100,BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
+    auto results = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t)*100,BufferCPUAccess::READ_WRITE,BufferMemoryType::GENERAL));
     auto buffer1Ptr = buffer1->as<uint32_t>();
+    auto buffer2Ptr = buffer2->as<uint32_t>();
+    auto resultsPtr = results->as<uint32_t>();
+    for(uint32_t i = 0;i < 100;i++)
+    {
+        buffer1Ptr[i] = i;
+        buffer2Ptr[i] = i*i;
+        resultsPtr[i] = 0.0f;
+    }
 
     auto indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDispatchCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
     auto indirectPtr = indirectBuffer->as<IndirectDispatchCommand>();
@@ -1366,17 +1376,18 @@ TEST(CommandBuffer, DispatchIndirect)
     indirectPtr[0].groupCountY = 1;
     indirectPtr[0].groupCountZ = 1;
 
-    for(uint32_t i = 0;i < 100;i++)
-    {
-        buffer1Ptr[i] = 0;
-    }
-
     graphicsCard->writeReadWriteBufferDescriptor(buffer1.get(),0,100,sizeof(uint32_t),resourceHeapPtr);
+    graphicsCard->writeReadWriteBufferDescriptor(buffer2.get(),0,100,sizeof(uint32_t),resourceHeapPtr+descriptorSize);
+    graphicsCard->writeReadWriteBufferDescriptor(results.get(),0,100,sizeof(uint32_t),resourceHeapPtr+descriptorSize*2);
 
     commandBuffer->begin();
     commandBuffer->bindDescriptorHeaps(resourceHeap.get(),samplerHeap.get());
     uint32_t b1index = 0;
+    uint32_t b2index = 1;
+    uint32_t resultsIndex = 2;
     commandBuffer->setComputeShaderParameters(0,&b1index,sizeof(uint32_t));
+    commandBuffer->setComputeShaderParameters(8,&b2index,sizeof(uint32_t));
+    commandBuffer->setComputeShaderParameters(16,&resultsIndex,sizeof(uint32_t));
     commandBuffer->bindShaderPipeline(parallelAdd.get());
     commandBuffer->dispatchIndirect(indirectBuffer.get(),0);
 
@@ -1397,7 +1408,7 @@ TEST(CommandBuffer, DispatchIndirect)
 
     for (uint32_t i = 0;i < 100;i++)
     {
-        ASSERT_EQ(buffer1Ptr[i],i);
+        ASSERT_EQ(resultsPtr[i],i+(i*i));
     }
 }
 
@@ -1426,9 +1437,9 @@ TEST(CommandBuffer, Resolve)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
     auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
 
-    auto colorTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,1,SampleCount::FOUR));
-    auto finalTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,1));
-    auto depthTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(256,256,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,1,SampleCount::FOUR));
+    auto colorTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,256,256,1,1,SampleCount::FOUR));
+    auto finalTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,256,256,1));
+    auto depthTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,256,256,1,1,SampleCount::FOUR));
 
     auto transferBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::TRANSFER));
     auto transferFinished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
@@ -1651,8 +1662,8 @@ TEST(CommandBuffer, CopyTextureRegion)
     auto graphicsCard = Slag::backend()->graphicsCard(0);
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
     auto sourceTexture = utilities::loadTexture("resources/tests/textures/TestImg.png", graphicsCard);
-    auto immediateTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(300,300,sourceTexture->format(),TextureUsageFlags::NONE,3,SampleCount::ONE,2));
-    auto destinationTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(150,150,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::NONE));
+    auto immediateTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(sourceTexture->format(),TextureUsageFlags::NONE,300,300,3,2,SampleCount::ONE));
+    auto destinationTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::NONE,150,150));
     auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
 
     auto fillBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(immediateTexture->bufferSize(PixelAspect::COLOR),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
@@ -1838,8 +1849,8 @@ TEST(CommandBuffer, TransferErrorGraphicsCommands)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::TRANSFER));
     auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
     auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
-    auto colorTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
-    auto depthTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+    auto colorTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,1024,1024));
+    auto depthTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,1024,1024));
     auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
     auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
     auto indexBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(indices),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
@@ -1886,9 +1897,9 @@ TEST(CommandBuffer, TransferErrorGraphicsCommands)
     auto countBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
     EXPECT_DEATH(commandBuffer->drawIndirectCount(indirectBuffer.get(),0,countBuffer.get(),0,1), "Command Buffer cannot record commands outside it's capabilities");
     EXPECT_DEATH(commandBuffer->drawIndexedIndirectCount(indirectIndexedBuffer.get(),0,countBuffer.get(),0,1), "Command Buffer cannot record commands outside it's capabilities");
-    auto resolveTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,1,SampleCount::FOUR));
+    auto resolveTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,1024,1024,1,1,SampleCount::FOUR));
     EXPECT_DEATH(commandBuffer->resolveTexture(resolveTexture.get(),0,0,slag::Rectangle{{0,0},{1024,1024}},colorTarget.get(),0,0,{0,0}), "Command Buffer cannot record commands outside it's capabilities");
-    auto destTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+    auto destTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,1024,1024));
     EXPECT_DEATH(commandBuffer->copyTextureRegion(PixelAspect::COLOR,colorTarget.get(),0,0,slag::Rectangle{{0,0},{1024,1024}},destTexture.get(),0,0,{0,0}), "Command Buffer cannot record commands outside it's capabilities");
 }
 TEST(CommandBuffer, ComputeErrorGraphicsCommands)
@@ -1917,8 +1928,8 @@ TEST(CommandBuffer, ComputeErrorGraphicsCommands)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::COMPUTE));
     auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
     auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
-    auto colorTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
-    auto depthTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+    auto colorTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,1024,1024));
+    auto depthTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,1024,1024));
     auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
     auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
     auto indexBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(indices),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
@@ -1965,9 +1976,9 @@ TEST(CommandBuffer, ComputeErrorGraphicsCommands)
     auto countBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uint32_t),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
     EXPECT_DEATH(commandBuffer->drawIndirectCount(indirectBuffer.get(),0,countBuffer.get(),0,1), "Command Buffer cannot record commands outside it's capabilities");
     EXPECT_DEATH(commandBuffer->drawIndexedIndirectCount(indirectIndexedBuffer.get(),0,countBuffer.get(),0,1), "Command Buffer cannot record commands outside it's capabilities");
-    auto resolveTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,1,SampleCount::FOUR));
+    auto resolveTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,1024,1024,1,1,SampleCount::FOUR));
     EXPECT_DEATH(commandBuffer->resolveTexture(resolveTexture.get(),0,0,slag::Rectangle{{0,0},{1024,1024}},colorTarget.get(),0,0,{0,0}), "Command Buffer cannot record commands outside it's capabilities");
-    auto destTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED));
+    auto destTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::SAMPLED,1024,1024));
     EXPECT_DEATH(commandBuffer->copyTextureRegion(PixelAspect::COLOR,colorTarget.get(),0,0,slag::Rectangle{{0,0},{1024,1024}},destTexture.get(),0,0,{0,0}), "Command Buffer cannot record commands outside it's capabilities");
 }
 
@@ -2065,7 +2076,7 @@ TEST(CommandBuffer, DrawCommandsWhenGraphicsNotBoundError)
     auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
     auto computeModule = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/ParallelAdd.compute");
     auto computePipeline = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(&computeModule.details));
-    auto drawTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
+    auto drawTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,1024,1024));
     auto indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
     auto indirectIndexedBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawIndexedCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
 
@@ -2102,8 +2113,8 @@ TEST(CommandBuffer, GraphicsCommandsWhenGraphicsNotBoundError)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
     auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
     auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
-    auto colorTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
-    auto depthTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+    auto colorTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,1024,1024));
+    auto depthTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,1024,1024));
 
 
     PipelineState pipelineState{};
@@ -2137,8 +2148,8 @@ TEST(CommandBuffer, DrawCommandsOutsideBeginEndRendering)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
     auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
     auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
-    auto colorTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET));
-    auto depthTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(1024,1024,PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET));
+    auto colorTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,1024,1024));
+    auto depthTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,1024,1024));
     auto indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
     auto indirectIndexedBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawIndexedCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
 
@@ -2183,7 +2194,7 @@ TEST(CommandBuffer, DispatchCommandsInsideBeginEndRendering)
     auto computeModule = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/ParallelAdd.compute");
     auto computePipeline = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(&computeModule.details));
 
-    auto colorTexture = graphicsCard->newTexture2D(512,512,PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET);
+    auto colorTexture = graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,512,512);
     auto indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDispatchCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
 
 

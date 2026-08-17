@@ -57,7 +57,7 @@ namespace slag
             SLAG_ASSERT(barrierCount != 0 && "barriersCount cannot be 0");
             VkMemoryBarrier2* memBarriers = _scratchMemory.memoryBarriersMemory.globalBarriers;
             std::vector<VkMemoryBarrier2> memBarriersDynamic(0);
-            if (barrierCount > _countof(_scratchMemory.memoryBarriersMemory.globalBarriers))
+            if (barrierCount > std::size(_scratchMemory.memoryBarriersMemory.globalBarriers))
             {
                 memBarriersDynamic.resize(barrierCount,VkMemoryBarrier2{});
                 memBarriers = memBarriersDynamic.data();
@@ -87,7 +87,7 @@ namespace slag
             SLAG_ASSERT(barrierCount != 0 && "barriersCount cannot be 0");
             VkBufferMemoryBarrier2* bufferMemoryBarriers = _scratchMemory.memoryBarriersMemory.bufferBarriers;
             std::vector<VkBufferMemoryBarrier2> bufferMemoryBarriersDynamic(0);
-            if (barrierCount > _countof(_scratchMemory.memoryBarriersMemory.bufferBarriers))
+            if (barrierCount > std::size(_scratchMemory.memoryBarriersMemory.bufferBarriers))
             {
                 bufferMemoryBarriersDynamic.resize(barrierCount,VkBufferMemoryBarrier2{});
                 bufferMemoryBarriers = bufferMemoryBarriersDynamic.data();
@@ -124,7 +124,7 @@ namespace slag
             VkImageMemoryBarrier2* imageMemoryBarriers = _scratchMemory.memoryBarriersMemory.textureBarriers;
             std::vector<VkImageMemoryBarrier2> imageMemoryBarriersDynamic(0);
 
-            if (barrierCount > _countof(_scratchMemory.memoryBarriersMemory.textureBarriers))
+            if (barrierCount > std::size(_scratchMemory.memoryBarriersMemory.textureBarriers))
             {
                 imageMemoryBarriersDynamic.resize(barrierCount,VkImageMemoryBarrier2{});
                 imageMemoryBarriers = imageMemoryBarriersDynamic.data();
@@ -165,7 +165,7 @@ namespace slag
         {
             VkImageMemoryBarrier2* imageMemoryBarriers = _scratchMemory.memoryBarriersMemory.textureBarriers;
             std::vector<VkImageMemoryBarrier2> imageMemoryBarriersDynamic(0);
-            if (textureBarrierCount > _countof(_scratchMemory.memoryBarriersMemory.textureBarriers))
+            if (textureBarrierCount > std::size(_scratchMemory.memoryBarriersMemory.textureBarriers))
             {
                 imageMemoryBarriersDynamic.resize(textureBarrierCount,VkImageMemoryBarrier2{});
                 imageMemoryBarriers = imageMemoryBarriersDynamic.data();
@@ -190,7 +190,7 @@ namespace slag
             }
             VkBufferMemoryBarrier2* bufferMemoryBarriers = _scratchMemory.memoryBarriersMemory.bufferBarriers;
             std::vector<VkBufferMemoryBarrier2> bufferMemoryBarriersDynamic(0);
-            if (bufferBarrierCount > _countof(_scratchMemory.memoryBarriersMemory.bufferBarriers))
+            if (bufferBarrierCount > std::size(_scratchMemory.memoryBarriersMemory.bufferBarriers))
             {
                 bufferMemoryBarriersDynamic.resize(bufferBarrierCount,VkBufferMemoryBarrier2{});
                 bufferMemoryBarriers = bufferMemoryBarriersDynamic.data();
@@ -214,7 +214,7 @@ namespace slag
             }
             VkMemoryBarrier2* memBarriers = _scratchMemory.memoryBarriersMemory.globalBarriers;
             std::vector<VkMemoryBarrier2> memBarriersDynamic(0);
-            if (globalBarrierCount > _countof(_scratchMemory.memoryBarriersMemory.globalBarriers))
+            if (globalBarrierCount > std::size(_scratchMemory.memoryBarriersMemory.globalBarriers))
             {
                 memBarriersDynamic.resize(globalBarrierCount,VkMemoryBarrier2{});
                 memBarriers = memBarriersDynamic.data();
@@ -357,7 +357,7 @@ namespace slag
 
             VkBufferImageCopy* regions = _scratchMemory.bufferImageCopiesMemory.bufferImageCopies;
             std::vector<VkBufferImageCopy> regionsDynamic(0);
-            if (mappingCount > _countof(_scratchMemory.bufferImageCopiesMemory.bufferImageCopies))
+            if (mappingCount > std::size(_scratchMemory.bufferImageCopiesMemory.bufferImageCopies))
             {
                 regionsDynamic.resize(mappingCount);
                 regions = regionsDynamic.data();
@@ -398,7 +398,7 @@ namespace slag
 
             VkBufferImageCopy* regions = _scratchMemory.bufferImageCopiesMemory.bufferImageCopies;
             std::vector<VkBufferImageCopy> regionsDynamic(0);
-            if (mappingCount > _countof(_scratchMemory.bufferImageCopiesMemory.bufferImageCopies))
+            if (mappingCount > std::size(_scratchMemory.bufferImageCopiesMemory.bufferImageCopies))
             {
                 regionsDynamic.resize(mappingCount);
                 regions = regionsDynamic.data();
@@ -565,7 +565,7 @@ namespace slag
             SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
             VkBuffer* vulkanBuffers = _scratchMemory.vertexBuffersMemory.vertexBuffers;
             std::vector<VkBuffer> vulkanBuffersDynamic(0);
-            if (bufferCount > _countof(_scratchMemory.vertexBuffersMemory.vertexBuffers))
+            if (bufferCount > std::size(_scratchMemory.vertexBuffersMemory.vertexBuffers))
             {
                 vulkanBuffersDynamic.resize(bufferCount);
                 vulkanBuffers = vulkanBuffersDynamic.data();

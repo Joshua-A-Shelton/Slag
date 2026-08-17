@@ -12,9 +12,9 @@ namespace slag
     {
         DX12Texture::DX12Texture(
             DX12GraphicsCard* card,
-            uint32_t width,
             PixelFormat format,
             TextureUsageFlags usage,
+            uint32_t width,
             uint32_t mipLevels,
             uint32_t layers)
         {
@@ -35,8 +35,8 @@ namespace slag
             construct(D3D12_RESOURCE_DIMENSION_TEXTURE1D);
         }
 
-        DX12Texture::DX12Texture(DX12GraphicsCard* card, uint32_t width, uint32_t height, PixelFormat format,
-            TextureUsageFlags usage, uint32_t mipLevels, SampleCount sampleCount, uint32_t layers)
+        DX12Texture::DX12Texture(DX12GraphicsCard* card, PixelFormat format,
+            TextureUsageFlags usage, uint32_t width, uint32_t height, uint32_t mipLevels, uint32_t layers, SampleCount sampleCount)
         {
             auto formatInfo = card->formatProperties(format);
             if (formatInfo.tiling == TextureTiling::UNSUPPORTED)
@@ -57,8 +57,8 @@ namespace slag
             construct(D3D12_RESOURCE_DIMENSION_TEXTURE2D);
         }
 
-        DX12Texture::DX12Texture(DX12GraphicsCard* card, uint32_t width, uint32_t height, uint32_t depth,
-            PixelFormat format, TextureUsageFlags usage, uint32_t mipLevels)
+        DX12Texture::DX12Texture(DX12GraphicsCard* card, PixelFormat format, TextureUsageFlags usage, uint32_t width,
+            uint32_t height, uint32_t depth, uint32_t mipLevels)
         {
             auto formatInfo = card->formatProperties(format);
             if (formatInfo.tiling == TextureTiling::UNSUPPORTED)
@@ -78,8 +78,12 @@ namespace slag
             construct(D3D12_RESOURCE_DIMENSION_TEXTURE3D);
         }
 
-        DX12Texture::DX12Texture(DX12GraphicsCard* card, PixelFormat format, TextureUsageFlags usage,
-            uint32_t dimension, uint32_t mipLevels, uint32_t arrayDepth)
+        DX12Texture::DX12Texture(DX12GraphicsCard* card,
+                uint32_t dimension,
+                PixelFormat format,
+                TextureUsageFlags usage,
+                uint32_t mipLevels,
+                uint32_t arrayDepth)
         {
             SLAG_ASSERT(dimension > 0 && "Texture must have a dimension of at least 1");
             auto formatInfo = card->formatProperties(format);
@@ -100,9 +104,17 @@ namespace slag
             construct(D3D12_RESOURCE_DIMENSION_TEXTURE2D);
         }
 
-        DX12Texture::DX12Texture(DX12GraphicsCard* card, ID3D12Resource* texture, TextureType type,
-            SampleCount sampleCount, uint32_t width, uint32_t height, uint32_t depth, PixelFormat format,
-            TextureUsageFlags usage, uint32_t mipLevels, uint32_t arrayDepth)
+        DX12Texture::DX12Texture(DX12GraphicsCard* card,
+                ID3D12Resource* texture,
+                PixelFormat format,
+                TextureUsageFlags usage,
+                TextureType type,
+                uint32_t width,
+                uint32_t height,
+                uint32_t depth,
+                uint32_t mipLevels,
+                uint32_t arrayDepth,
+                SampleCount sampleCount)
         {
             _graphicsCard = card;
             _texture = texture;
