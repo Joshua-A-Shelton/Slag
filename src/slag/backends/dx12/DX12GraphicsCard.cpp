@@ -722,24 +722,24 @@ namespace slag
 
         Texture* DX12GraphicsCard::newTexture1D(PixelFormat format, TextureUsageFlags usage, uint32_t width, uint32_t mipLevels, uint32_t arrayDepth)
         {
-            return new DX12Texture(this,width,format,usage,mipLevels,arrayDepth);
+            return new DX12Texture(this,format,usage,width,mipLevels,arrayDepth);
         }
 
         Texture* DX12GraphicsCard::newTexture2D(PixelFormat format, TextureUsageFlags usage, uint32_t width, uint32_t height, uint32_t mipLevels,
                                                 uint32_t layers, SampleCount sampleCount)
         {
-            return new DX12Texture(this,width,height,format,usage,mipLevels,sampleCount,layers);
+            return new DX12Texture(this,format,usage,width,height,mipLevels,layers,sampleCount);
         }
 
         Texture* DX12GraphicsCard::newTexture3D(PixelFormat format, TextureUsageFlags usage, uint32_t width, uint32_t height, uint32_t depth,
                                                 uint32_t mipLevels)
         {
-            return new DX12Texture(this,width,height,depth,format,usage,mipLevels);
+            return new DX12Texture(this,format,usage,width,height,depth,mipLevels);
         }
 
         Texture* DX12GraphicsCard::newTextureCube(PixelFormat format, TextureUsageFlags usage, uint32_t dimension, uint32_t mipLevels, uint32_t arrayDepth)
         {
-            return new DX12Texture(this,format,usage,dimension,mipLevels,arrayDepth);
+            return new DX12Texture(this,dimension,format,usage,mipLevels,arrayDepth);
         }
 
         Sampler* DX12GraphicsCard::newSampler(SamplerFilter min, SamplerFilter mag, SamplerFilter mip,

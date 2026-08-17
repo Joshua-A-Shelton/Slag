@@ -11,7 +11,8 @@ namespace slag
             PixelFormat format, DX12SwapChain* parentChain)
         {
             _frameIndex = frameIndex;
-            _renderBuffer = new DX12Texture((DX12GraphicsCard*)parentChain->graphicsCard(),texture,TextureType::TWO_DIMENSIONAL,SampleCount::ONE,width,height,1,format,TextureUsageFlags::COLOR_TARGET,1,1);
+
+            _renderBuffer = new DX12Texture((DX12GraphicsCard*)parentChain->graphicsCard(),texture,format,TextureUsageFlags::COLOR_TARGET,TextureType::TWO_DIMENSIONAL,width,height,1,1,1,SampleCount::ONE);
             _parentChain = parentChain;
         }
 
