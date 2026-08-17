@@ -662,25 +662,25 @@ namespace slag
 
         Texture* VulkanGraphicsCard::newTexture1D(PixelFormat format, TextureUsageFlags usage, uint32_t width, uint32_t mipLevels, uint32_t layers)
         {
-            return new VulkanTexture(this,width,format,usage,mipLevels,layers);
+            return new VulkanTexture(this,format,usage,width,mipLevels,layers);
         }
 
         Texture* VulkanGraphicsCard::newTexture2D(PixelFormat format, TextureUsageFlags usage, uint32_t width, uint32_t height, uint32_t mipLevels,
                                                   uint32_t layers, SampleCount sampleCount)
         {
-            return new VulkanTexture(this,width,height,format,usage,mipLevels,sampleCount,layers);
+            return new VulkanTexture(this,format,usage,width,height,mipLevels,layers,sampleCount);
         }
 
         Texture* VulkanGraphicsCard::newTexture3D(PixelFormat format, TextureUsageFlags usage, uint32_t width, uint32_t height, uint32_t depth,
                                                   uint32_t mipLevels)
         {
-            return new VulkanTexture(this,width,height,depth,format,usage,mipLevels);
+            return new VulkanTexture(this,format,usage,width,height,depth,mipLevels);
         }
 
         Texture* VulkanGraphicsCard::newTextureCube(PixelFormat format, TextureUsageFlags usage, uint32_t dimension, uint32_t mipLevels,
                                                     uint32_t arrayDepth)
         {
-            return new VulkanTexture(this,format,usage,dimension,mipLevels,arrayDepth);
+            return new VulkanTexture(this,dimension,format,usage,mipLevels,arrayDepth);
         }
 
         Sampler* VulkanGraphicsCard::newSampler(
