@@ -3,6 +3,7 @@
 #include "VulkanBackend.h"
 #include "VulkanBuffer.h"
 #include "VulkanCommandBuffer.h"
+#include "VulkanFrameBufferView.h"
 #include "VulkanResourceDescriptorHeap.h"
 #include "VulkanSampler.h"
 #include "VulkanSamplerDescriptorHeap.h"
@@ -681,6 +682,12 @@ namespace slag
                                                     uint32_t arrayDepth)
         {
             return new VulkanTexture(this,dimension,format,usage,mipLevels,arrayDepth);
+        }
+
+        FrameBufferView* VulkanGraphicsCard::newFrameBufferView(Texture* texture, uint32_t mip, uint32_t baseLayer,
+            uint32_t layerCount)
+        {
+            return new VulkanFrameBufferView(this,texture,mip, baseLayer,layerCount);
         }
 
         Sampler* VulkanGraphicsCard::newSampler(

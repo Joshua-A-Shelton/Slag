@@ -92,7 +92,7 @@ void main()
                 
                 commandBuffer->insertBarriers(&toColorTarget,1);//insert the barrier into the command buffer
                 
-                Attachment colorAttachment{.texture = backBuffer, .autoClear = true, .clearValue = {.color = ClearColor{.2f,.2f,.8f,1.0f}}};//create the attachment we'll render to
+                Attachment colorAttachment{.bufferView = frame->defaultView(), .autoClear = true, .clearValue = {.color = ClearColor{.2f,.2f,.8f,1.0f}}};//create the attachment we'll render to
                 commandBuffer->beginRendering(&colorAttachment,1,nullptr,slag::Rectangle{0,0,backBuffer->width(),backBuffer->height()});//begin rendering
                 
                 Buffer* buffers[] = {vertexBuffer,colorBuffer};//Create an array of the buffers that contain vertex data

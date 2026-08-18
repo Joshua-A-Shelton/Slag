@@ -102,6 +102,13 @@ namespace slag
                 uint32_t arrayDepth
             )override;
 
+            [[nodiscard]] FrameBufferView* newFrameBufferView(
+                Texture* texture,
+                uint32_t mip,
+                uint32_t baseLayer,
+                uint32_t layerCount
+                )override;
+
             [[nodiscard]] Sampler* newSampler(
                 SamplerFilter min,
                 SamplerFilter mag,

@@ -300,8 +300,10 @@ int main()
 
     slag::Semaphore* commandsFinished = nullptr;
     slag::CommandBuffer* commandBuffer = graphicsCard->newCommandBuffer(slag::QueueType::GRAPHICS);
-    slag::Texture* colorTarget = graphicsCard->newTexture2D(slag::PixelFormat::B8G8R8A8_UNORM,slag::TextureUsageFlags::COLOR_TARGET,300,300,1,SampleCount::FOUR);
-    slag::Texture* depthTarget = graphicsCard->newTexture2D(slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET,300,300,1,SampleCount::FOUR);
+    slag::Texture* colorTarget = graphicsCard->newTexture2D(slag::PixelFormat::B8G8R8A8_UNORM,slag::TextureUsageFlags::COLOR_TARGET,300,300,1,1,SampleCount::FOUR);
+    slag::FrameBufferView* colorView = graphicsCard->newFrameBufferView(colorTarget);
+    slag::Texture* depthTarget = graphicsCard->newTexture2D(slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET,300,300,1,1,SampleCount::FOUR);
+    slag::FrameBufferView* depthView = graphicsCard->newFrameBufferView(depthTarget);
 
     auto sampler = graphicsCard->newSampler();
     auto texture = loadTexture("resources/examples/textures/gradient.jpg",graphicsCard);
@@ -374,8 +376,13 @@ int main()
                 delete colorTarget;
                 delete depthTarget;
 
-                colorTarget = graphicsCard->newTexture2D(slag::PixelFormat::R8G8B8A8_UNORM,slag::TextureUsageFlags::COLOR_TARGET,backBuffer->width(),backBuffer->height(),1,SampleCount::FOUR);
-                depthTarget = graphicsCard->newTexture2D(slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET,backBuffer->width(),backBuffer->height(),1,SampleCount::FOUR);
+                colorTarget = graphicsCard->newTexture2D(slag::PixelFormat::R8G8B8A8_UNORM,slag::TextureUsageFlags::COLOR_TARGET,backBuffer->width(),backBuffer->height(),1,1,SampleCount::FOUR);
+                depthTarget = graphicsCard->newTexture2D(slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET,backBuffer->width(),backBuffer->height(),1,1,SampleCount::FOUR);
+
+                delete colorView;
+                delete depthView;
+                colorView = graphicsCard->newFrameBufferView(colorTarget);
+                depthView = graphicsCard->newFrameBufferView(depthTarget);
             }
 
             objectTransform = glm::rotate(objectTransform,glm::radians(45.0f)*delta,glm::vec3(0.0f,1.0f,0.0f));
@@ -386,8 +393,8 @@ int main()
             commandBuffer->bindDescriptorHeaps(resourceHeap,samplerHeap);
             commandBuffer->setViewPort(0,0,colorTarget->width(),colorTarget->height(),0.0f,1.0f);
             commandBuffer->setScissors(slag::Rectangle{0,0,colorTarget->width(),colorTarget->height()});
-            Attachment colorAttachment(colorTarget,true,ClearValue{.5,.2,.1,1});
-            Attachment depthAttachment(depthTarget,true,ClearValue{1,0});
+            Attachment colorAttachment(colorView,true,ClearValue{.5,.2,.1,1});
+            Attachment depthAttachment(depthView,true,ClearValue{1,0});
 
             TextureBarrier barriers[]
             {
@@ -500,6 +507,8 @@ int main()
     delete swapChain;
     delete sampler;
     delete texture;
+    delete colorView;
+    delete depthView;
     delete colorTarget;
     delete depthTarget;
     delete pipeline;

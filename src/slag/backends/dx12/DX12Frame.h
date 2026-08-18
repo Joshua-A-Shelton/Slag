@@ -2,6 +2,9 @@
 #define SLAG_DX12FRAME_H
 #include <slag/Slag.h>
 #include <directx/d3d12.h>
+
+#include "DX12FrameBufferView.h"
+
 namespace slag
 {
     namespace dx12
@@ -18,10 +21,12 @@ namespace slag
             DX12Frame(DX12Frame&& from) noexcept;
             DX12Frame& operator=(DX12Frame&& from) noexcept;
             [[nodiscard]] Texture* renderBuffer()override;
+            [[nodiscard]] FrameBufferView* defaultView()override;
         private:
             void move(DX12Frame& from);
             uint32_t _frameIndex = 0;
             DX12Texture* _renderBuffer = nullptr;
+            DX12FrameBufferView* _frameBufferView = nullptr;
             DX12SwapChain* _parentChain = nullptr;
         };
     } // dx12

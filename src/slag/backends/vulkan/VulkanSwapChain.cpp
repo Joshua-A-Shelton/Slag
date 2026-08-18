@@ -131,12 +131,11 @@ namespace slag
             }
 
             auto images = chain->get_images().value();
-            auto views = chain->get_image_views().value();
 
             auto crossFormat = VulkanBackend::crossPlatformFormat(chain->image_format);
             for (auto i=0u;i<images.size();i++)
             {
-                _frames.emplace_back(i,images[i],views[i],chain->extent.width,chain->extent.height,crossFormat,this);
+                _frames.emplace_back(i,images[i],chain->extent.width,chain->extent.height,crossFormat,this);
 
                 VkFenceCreateInfo fenceCreateInfo = {.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
                 VkFence fence{};

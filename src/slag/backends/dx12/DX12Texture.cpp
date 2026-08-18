@@ -127,22 +127,6 @@ namespace slag
             _usage = usage;
             _mipLevels = mipLevels;
             _layers = arrayDepth;
-
-            //create color or depth descriptor if nessecary
-            D3D12_DESCRIPTOR_HEAP_DESC desc = {};
-            desc.NumDescriptors = 1;
-            if((uint8_t)(_usage & TextureUsageFlags::COLOR_TARGET))
-            {
-                desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-                _graphicsCard->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_targetHeap));
-                _graphicsCard->device()->CreateRenderTargetView(_texture, nullptr,_targetHeap->GetCPUDescriptorHandleForHeapStart());
-            }
-            else if((uint8_t)(_usage & TextureUsageFlags::DEPTH_STENCIL_TARGET))
-            {
-                desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-                _graphicsCard->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_targetHeap));
-                _graphicsCard->device()->CreateDepthStencilView(_texture, nullptr,_targetHeap->GetCPUDescriptorHandleForHeapStart());
-            }
         }
 
         DX12Texture::DX12Texture(DX12Texture&& from) noexcept
@@ -162,10 +146,6 @@ namespace slag
             {
                 _texture->Release();
                 _allocation->Release();
-            }
-            if (_targetHeap)
-            {
-                _targetHeap->Release();
             }
         }
 
@@ -234,11 +214,6 @@ namespace slag
             return _texture;
         }
 
-        D3D12_CPU_DESCRIPTOR_HANDLE DX12Texture::targetHandle() const
-        {
-            return _targetHeap->GetCPUDescriptorHandleForHeapStart();
-        }
-
         ID3D12Resource* DX12Texture::moveMemory(D3D12MA::Allocation* tempAllocation, CommandBuffer* copyDataBuffer, std::vector<D3D12_TEXTURE_BARRIER>& transitionBarriers)
         {
             D3D12_RESOURCE_DESC resDesc = _texture->GetDesc();
@@ -280,7 +255,6 @@ namespace slag
             std::swap(_graphicsCard,from._graphicsCard);
             std::swap(_texture,from._texture);
             std::swap(_allocation,from._allocation);
-            std::swap(_targetHeap, from._targetHeap);
             std::swap(_userData,from._userData);
             _format = from._format;
             _usage = from._usage;
@@ -353,23 +327,6 @@ namespace slag
             }
 
             _allocation->SetPrivateData(&_selfReference);
-
-            //create color or depth descriptor if nessecary
-            D3D12_DESCRIPTOR_HEAP_DESC desc = {};
-            desc.NumDescriptors = 1;
-            if((uint8_t)(_usage & TextureUsageFlags::COLOR_TARGET))
-            {
-                desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-                _graphicsCard->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_targetHeap));
-                _graphicsCard->device()->CreateRenderTargetView(_texture, nullptr,_targetHeap->GetCPUDescriptorHandleForHeapStart());
-                
-            }
-            else if((uint8_t)(_usage & TextureUsageFlags::DEPTH_STENCIL_TARGET))
-            {
-                desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-                _graphicsCard->device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_targetHeap));
-                _graphicsCard->device()->CreateDepthStencilView(_texture, nullptr,_targetHeap->GetCPUDescriptorHandleForHeapStart());
-            }
         }
     } // dx12
 } // slag

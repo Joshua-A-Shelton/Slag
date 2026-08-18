@@ -301,6 +301,7 @@ int main()
     slag::Semaphore* commandsFinished = nullptr;
     slag::CommandBuffer* commandBuffer = graphicsCard->newCommandBuffer(slag::QueueType::GRAPHICS);
     slag::Texture* depthTarget = graphicsCard->newTexture2D(slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET,300,300);
+    slag::FrameBufferView* depthView = graphicsCard->newFrameBufferView(depthTarget);
 
     auto sampler = graphicsCard->newSampler();
     auto texture = loadTexture("resources/examples/textures/gradient.jpg",graphicsCard);
@@ -367,10 +368,13 @@ int main()
             }
             commandsFinished = graphicsCard->newSemaphore();
             auto colorTarget = frame->renderBuffer();
+            auto colorView = frame->defaultView();
             if (depthTarget->width() != colorTarget->width() || depthTarget->height() != colorTarget->height())
             {
                 delete depthTarget;
                 depthTarget = graphicsCard->newTexture2D(slag::PixelFormat::D32_FLOAT,slag::TextureUsageFlags::DEPTH_STENCIL_TARGET,colorTarget->width(),colorTarget->height());
+                delete depthView;
+                depthView = graphicsCard->newFrameBufferView(depthTarget);
             }
 
             objectTransform = glm::rotate(objectTransform,glm::radians(45.0f)*delta,glm::vec3(0.0f,1.0f,0.0f));
@@ -381,8 +385,8 @@ int main()
             commandBuffer->bindDescriptorHeaps(resourceHeap,samplerHeap);
             commandBuffer->setViewPort(0,0,colorTarget->width(),colorTarget->height(),0.0f,1.0f);
             commandBuffer->setScissors(slag::Rectangle{0,0,colorTarget->width(),colorTarget->height()});
-            Attachment colorAttachment(colorTarget,true,ClearValue{.5,.2,.1,1});
-            Attachment depthAttachment(depthTarget,true,ClearValue{1,0});
+            Attachment colorAttachment(colorView,true,ClearValue{.5,.2,.1,1});
+            Attachment depthAttachment(depthView,true,ClearValue{1,0});
 
             TextureBarrier barriers[]
             {
@@ -477,6 +481,7 @@ int main()
     delete swapChain;
     delete sampler;
     delete texture;
+    delete depthView;
     delete depthTarget;
     delete pipeline;
     delete cubeVerts;

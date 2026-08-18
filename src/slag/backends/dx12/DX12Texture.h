@@ -79,7 +79,6 @@ namespace slag
             void setUserData(void* userData)override;
 
             [[nodiscard]] ID3D12Resource* dx12Handle()const;
-            D3D12_CPU_DESCRIPTOR_HANDLE targetHandle()const;
             [[nodiscard]] ID3D12Resource* moveMemory(D3D12MA::Allocation* tempAllocation, CommandBuffer* copyDataBuffer, std::vector<D3D12_TEXTURE_BARRIER>& transitionBarriers);
 
         private:
@@ -90,7 +89,6 @@ namespace slag
             DX12GraphicsCard* _graphicsCard = nullptr;
             ID3D12Resource* _texture = nullptr;
             D3D12MA::Allocation* _allocation = nullptr;
-            ID3D12DescriptorHeap* _targetHeap = nullptr;
             void* _userData = nullptr;
             PixelFormat _format = PixelFormat::UNDEFINED;
             TextureUsageFlags _usage = TextureUsageFlags::NONE;

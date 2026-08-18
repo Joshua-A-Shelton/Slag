@@ -13,6 +13,7 @@ namespace slag
             _frameIndex = frameIndex;
 
             _renderBuffer = new DX12Texture((DX12GraphicsCard*)parentChain->graphicsCard(),texture,format,TextureUsageFlags::COLOR_TARGET,TextureType::TWO_DIMENSIONAL,width,height,1,1,1,SampleCount::ONE);
+            _frameBufferView = new DX12FrameBufferView((DX12GraphicsCard*)parentChain->graphicsCard(),_renderBuffer,0,0,1);
             _parentChain = parentChain;
         }
 
@@ -40,11 +41,17 @@ namespace slag
             return _renderBuffer;
         }
 
+        FrameBufferView* DX12Frame::defaultView()
+        {
+            return _frameBufferView;
+        }
+
         void DX12Frame::move(DX12Frame& from)
         {
             _frameIndex = from._frameIndex;
             _parentChain = from._parentChain;
             std::swap(_renderBuffer, from._renderBuffer);
+            std::swap(_frameBufferView, from._frameBufferView);
         }
     } // dx12
 } // slag
