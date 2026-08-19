@@ -73,10 +73,14 @@ namespace slag
             return texture;
         }
 
-        void saveTexture(std::filesystem::path const& path, Texture* texture)
+        void saveTexture(std::filesystem::path const& path, Texture* texture,uint32_t level, uint32_t mip)
         {
+            if (texture->format() != PixelFormat::R8G8B8A8_UNORM)
+            {
+                throw std::runtime_error("Texture format must be R8G8B8A8_UNORM for saving");
+            }
             auto card = texture->graphicsCard();
-            auto pixels = std::unique_ptr<Buffer>(card->newBuffer(texture->bufferSize(PixelAspect::COLOR),BufferCPUAccess::READ_WRITE));
+            auto pixels = std::unique_ptr<Buffer>(card->newBuffer(texture->mipWidth(mip) * texture->mipHeight(mip) * 4,BufferCPUAccess::READ_WRITE));
             auto commandBuffer = std::unique_ptr<CommandBuffer>(card->newCommandBuffer(QueueType::TRANSFER));
             auto finished = std::unique_ptr<Semaphore>(card->newSemaphore());
             auto mapping = TextureBufferMapping
@@ -85,11 +89,12 @@ namespace slag
                 .subresource =
                 {
                      .aspect = PixelAspect::COLOR,
-                     .mipLevel = 0,
-                     .baseArrayLayer = 0,
+                     .mipLevel = mip,
+                     .baseArrayLayer = level,
+                    .layerCount = 1
                 },
                 .offset = {0,0,0},
-                .extent = {texture->width(),texture->height(),1}
+                .extent = {texture->mipWidth(mip),texture->mipHeight(mip),1}
             };
             commandBuffer->begin();
             commandBuffer->copyTextureToBuffer(texture,pixels.get(),&mapping,1);
@@ -120,7 +125,7 @@ namespace slag
             finished->waitForValue(1);
 
             auto data = pixels->as<uint8_t>();
-            lodepng::encode(path.string().c_str(),data,texture->width(),texture->height());
+            lodepng::encode(path.string().c_str(),data,texture->mipWidth(mip),texture->mipHeight(mip));
         }
 
         ImageSimilarity compareTexture(Texture* texture, uint32_t layer, uint32_t mipLevel,
@@ -152,7 +157,7 @@ namespace slag
                    .subresource =
                    {
                        .aspect = PixelAspect::COLOR,
-                       .mipLevel = 0,
+                       .mipLevel = mipLevel,
                        .baseArrayLayer = layer,
                        .layerCount = 1,
                   },

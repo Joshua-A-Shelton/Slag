@@ -9,7 +9,7 @@ namespace slag
     {
         std::unique_ptr<Texture> loadTexture(std::filesystem::path const& path, GraphicsCard* graphicsCard);
 
-        void saveTexture(std::filesystem::path const& path, Texture* texture);
+        void saveTexture(std::filesystem::path const& path, Texture* texture, uint32_t level = 0, uint32_t mip = 0);
 
         struct ImageSimilarity
         {
