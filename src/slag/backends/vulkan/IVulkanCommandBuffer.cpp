@@ -686,7 +686,7 @@ namespace slag
             vkCmdDispatchIndirect(_commandBuffer,vulkanBuffer->vulkanHandle(),offset);
         }
 
-        void IVulkanCommandBuffer::resolveTexture(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Offset2D destinationOffset)
+        void IVulkanCommandBuffer::resolveTexture(Texture* source, uint32_t sourceMip, uint32_t sourceLayer, Rectangle sourceRect, Texture* destination, uint32_t destinationMip, uint32_t destinationLayer, Offset2D destinationOffset)
         {
             SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
             SLAG_ASSERT(source->sampleCount() != SampleCount::ONE && destination->sampleCount() == SampleCount::ONE && "Source texture must be multisampled and destination texture must not be multisampled");
@@ -728,9 +728,9 @@ namespace slag
             vkCmdResolveImage2(_commandBuffer,&resolveInfo);
         }
 
-        void IVulkanCommandBuffer::copyTextureRegion(PixelAspect aspect, Texture* source, uint32_t sourceLayer, uint32_t sourceMip,
-            Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip,
-            Offset2D destinationOffset)
+        void IVulkanCommandBuffer::copyTextureRegion(PixelAspect aspect, Texture* source, uint32_t sourceMip, uint32_t sourceLayer,
+                                                     Rectangle sourceRect, Texture* destination, uint32_t destinationMip, uint32_t destinationLayer,
+                                                     Offset2D destinationOffset)
         {
             SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
             VkImageCopy2 copyRegion

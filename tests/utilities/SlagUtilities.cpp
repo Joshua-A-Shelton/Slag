@@ -43,10 +43,10 @@ namespace slag
             TextureBarrier barrier
             {
                 .texture = texture.get(),
-                .baseLayer = 0,
-                .layerCount = 1,
                 .baseMipLevel = 0,
                 .mipCount = 1,
+                .baseLayer = 0,
+                .layerCount = 1,
                 .syncBefore = SyncStages::ALL,
                 .syncAfter = SyncStages::ALL,
                 .flush = MemoryCaches::COPY_WRITE,

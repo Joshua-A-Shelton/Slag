@@ -687,7 +687,7 @@ namespace slag
 
         }
 
-        void IDX12CommandBuffer::resolveTexture(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Offset2D destinationOffset)
+        void IDX12CommandBuffer::resolveTexture(Texture* source, uint32_t sourceMip, uint32_t sourceLayer, Rectangle sourceRect, Texture* destination, uint32_t destinationMip, uint32_t destinationLayer, Offset2D destinationOffset)
         {
             SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
             SLAG_ASSERT(source->sampleCount() != SampleCount::ONE && destination->sampleCount() == SampleCount::ONE && "Source texture must be multisampled and destination texture must not be multisampled");
@@ -713,9 +713,9 @@ namespace slag
                 D3D12_RESOLVE_MODE::D3D12_RESOLVE_MODE_AVERAGE);
         }
 
-        void IDX12CommandBuffer::copyTextureRegion(PixelAspect aspect, Texture* source, uint32_t sourceLayer, uint32_t sourceMip,
-            Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip,
-            Offset2D destinationOffset)
+        void IDX12CommandBuffer::copyTextureRegion(PixelAspect aspect, Texture* source, uint32_t sourceMip, uint32_t sourceLayer,
+                                                   Rectangle sourceRect, Texture* destination, uint32_t destinationMip, uint32_t destinationLayer,
+                                                   Offset2D destinationOffset)
         {
             SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
             auto src = static_cast<DX12Texture*>(source);

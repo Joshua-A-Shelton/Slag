@@ -173,10 +173,10 @@ TEST(FrameBufferView, Texture2D)
     TextureBarrier textureBarrier
     {
         .texture = colorTexture.get(),
-        .baseLayer = 0,
-        .layerCount = colorTexture->layers(),
         .baseMipLevel = 0,
         .mipCount = colorTexture->mipLevels(),
+        .baseLayer = 0,
+        .layerCount = colorTexture->layers(),
         .syncBefore = SyncStages::COPY,
         .syncAfter = SyncStages::ALL_GRAPHICS,
         .flush = MemoryCaches::COPY_WRITE,

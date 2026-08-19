@@ -329,10 +329,10 @@ TEST(CommandBuffer, Draw)
         TextureBarrier
         {
             .texture = colorTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -343,10 +343,10 @@ TEST(CommandBuffer, Draw)
         TextureBarrier
         {
             .texture = depthTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -502,10 +502,10 @@ TEST(CommandBuffer, DrawIndexed)
         TextureBarrier
         {
             .texture = colorTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL,
             .flush = MemoryCaches::NONE,
@@ -516,10 +516,10 @@ TEST(CommandBuffer, DrawIndexed)
         TextureBarrier
         {
             .texture = depthTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL,
             .flush = MemoryCaches::NONE,
@@ -674,10 +674,10 @@ TEST(CommandBuffer, DrawIndirect)
         TextureBarrier
         {
             .texture = colorTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -688,10 +688,10 @@ TEST(CommandBuffer, DrawIndirect)
         TextureBarrier
         {
             .texture = depthTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -853,10 +853,10 @@ TEST(CommandBuffer, DrawIndexedIndirect)
         TextureBarrier
         {
             .texture = colorTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -867,10 +867,10 @@ TEST(CommandBuffer, DrawIndexedIndirect)
         TextureBarrier
         {
             .texture = depthTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -1032,10 +1032,10 @@ TEST(CommandBuffer, DrawIndirectCount)
         TextureBarrier
         {
             .texture = colorTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -1046,10 +1046,10 @@ TEST(CommandBuffer, DrawIndirectCount)
         TextureBarrier
         {
             .texture = depthTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -1214,10 +1214,10 @@ TEST(CommandBuffer, DrawIndexedIndirectCount)
         TextureBarrier
         {
             .texture = colorTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -1228,10 +1228,10 @@ TEST(CommandBuffer, DrawIndexedIndirectCount)
         TextureBarrier
         {
             .texture = depthTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -1561,10 +1561,10 @@ TEST(CommandBuffer, Resolve)
     {
         {
             .texture = colorTarget.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -1574,10 +1574,10 @@ TEST(CommandBuffer, Resolve)
         },
         {
             .texture = depthTarget.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -1727,10 +1727,10 @@ TEST(CommandBuffer, CopyTextureRegion)
       TextureBarrier
         {
             .texture = immediateTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 2,
             .baseMipLevel = 0,
             .mipCount = 3,
+            .baseLayer = 0,
+            .layerCount = 2,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL,
             .flush = MemoryCaches::COPY_WRITE,
@@ -1741,10 +1741,10 @@ TEST(CommandBuffer, CopyTextureRegion)
         TextureBarrier
         {
             .texture = destinationTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL,
             .flush = MemoryCaches::COPY_WRITE,
@@ -1772,15 +1772,15 @@ TEST(CommandBuffer, CopyTextureRegion)
     fillFinished->waitForValue(1);
 
     commandBuffer->begin();
-    commandBuffer->copyTextureRegion(PixelAspect::COLOR, sourceTexture.get(),0,0,slag::Rectangle{{75,0},{75,150}},immediateTexture.get(),0,1,{0,0});
+    commandBuffer->copyTextureRegion(PixelAspect::COLOR, sourceTexture.get(),0,0,slag::Rectangle{{75,0},{75,150}},immediateTexture.get(),1,0,{0,0});
     commandBuffer->copyTextureRegion(PixelAspect::COLOR, sourceTexture.get(),0,0,slag::Rectangle{{0,0},{75,150}},immediateTexture.get(),1,1,{75,0});
     TextureBarrier barrier
     {
         .texture = immediateTexture.get(),
-        .baseLayer = 0,
-        .layerCount = immediateTexture->layers(),
         .baseMipLevel = 0,
         .mipCount = immediateTexture->mipLevels(),
+        .baseLayer = 0,
+        .layerCount = immediateTexture->layers(),
         .syncBefore = SyncStages::COPY,
         .syncAfter = SyncStages::COPY,
         .flush = MemoryCaches::COPY_WRITE,
@@ -1789,7 +1789,7 @@ TEST(CommandBuffer, CopyTextureRegion)
         .layoutAfter = TextureLayout::GENERAL
     };
     commandBuffer->insertBarriers(&barrier,1);
-    commandBuffer->copyTextureRegion(PixelAspect::COLOR, immediateTexture.get(),0,1,slag::Rectangle{{10,15},{70,75}},destinationTexture.get(),0,0,{5,10});
+    commandBuffer->copyTextureRegion(PixelAspect::COLOR, immediateTexture.get(),1,0,slag::Rectangle{{10,15},{70,75}},destinationTexture.get(),0,0,{5,10});
     commandBuffer->copyTextureRegion(PixelAspect::COLOR, immediateTexture.get(),1,1,slag::Rectangle{{85,0},{45,30}},destinationTexture.get(),0,0,{90,90});
 
     commandBuffer->end();
