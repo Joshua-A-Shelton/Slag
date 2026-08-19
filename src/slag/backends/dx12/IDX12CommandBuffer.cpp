@@ -10,6 +10,7 @@
 #include "slag/utilities/SLAG_ASSERT.h"
 #include <directx/d3dx12.h>
 
+#include "DX12FrameBufferView.h"
 #include "DX12ResourceDescriptorHeap.h"
 #include "DX12SamplerDescriptorHeap.h"
 #include "DX12ShaderPipeline.h"
@@ -449,13 +450,13 @@ namespace slag
             D3D12_RENDER_PASS_RENDER_TARGET_DESC targets[8];
             for (auto i=0; i<colorAttachmentCount; i++)
             {
-                SLAG_ASSERT((bool)(colorAttachments[i].texture->usage() & TextureUsageFlags::COLOR_TARGET) && "Not all color attachments are color target textures");
+                SLAG_ASSERT((bool)(colorAttachments[i].bufferView->texture()->usage() & TextureUsageFlags::COLOR_TARGET) && "Not all color attachments are color target textures");
                 auto& colorAttachment = colorAttachments[i];
                 auto& renderTarget = targets[i];
                 renderTarget.BeginningAccess.Type = colorAttachment.autoClear ? D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR : D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE;
                 renderTarget.EndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
                 D3D12_CLEAR_VALUE clearColor;
-                clearColor.Format = DX12Backend::nativeFormat(colorAttachment.texture->format());
+                clearColor.Format = DX12Backend::nativeFormat(colorAttachment.bufferView->texture()->format());
                 //TODO: I'm not sure this is correct.... colorAttachment.clearValue.color doesn't have to have floats....
                 clearColor.Color[0] = colorAttachment.clearValue.color.floats[0];
                 clearColor.Color[1] = colorAttachment.clearValue.color.floats[1];
@@ -463,7 +464,7 @@ namespace slag
                 clearColor.Color[3] = colorAttachment.clearValue.color.floats[3];
                 renderTarget.BeginningAccess.Clear.ClearValue = clearColor;
 
-                renderTarget.cpuDescriptor = static_cast<DX12Texture*>(colorAttachment.texture)->targetHandle();
+                renderTarget.cpuDescriptor = static_cast<DX12FrameBufferView*>(colorAttachment.bufferView)->dx12Handle();
             }
             if (depthAttachment == nullptr)
             {
@@ -471,15 +472,15 @@ namespace slag
             }
             else
             {
-                SLAG_ASSERT((bool)(depthAttachment->texture->usage() & TextureUsageFlags::DEPTH_STENCIL_TARGET) && "Depth/Stencil Attachment must be a depth/stencil target texture");
+                SLAG_ASSERT((bool)(depthAttachment->bufferView->texture()->usage() & TextureUsageFlags::DEPTH_STENCIL_TARGET) && "Depth/Stencil Attachment must be a depth/stencil target texture");
 
                 D3D12_RENDER_PASS_DEPTH_STENCIL_DESC depthTarget{};
                 depthTarget.DepthBeginningAccess.Type = depthAttachment->autoClear ? D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR : D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE;
-                depthTarget.DepthBeginningAccess.Clear.ClearValue.Format = DX12Backend::nativeFormat(depthAttachment->texture->format());
+                depthTarget.DepthBeginningAccess.Clear.ClearValue.Format = DX12Backend::nativeFormat(depthAttachment->bufferView->texture()->format());
                 depthTarget.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = depthAttachment->clearValue.depthStencil.depth;
                 depthTarget.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = depthAttachment->clearValue.depthStencil.stencil;
                 depthTarget.DepthEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
-                if ((bool)(Pixel::aspectFlags(depthAttachment->texture->format()) & PixelAspectFlags::STENCIL_FLAG))
+                if ((bool)(Pixel::aspectFlags(depthAttachment->bufferView->texture()->format()) & PixelAspectFlags::STENCIL_FLAG))
                 {
                     depthTarget.StencilBeginningAccess = depthTarget.DepthBeginningAccess;
                     depthTarget.StencilEndingAccess = depthTarget.DepthEndingAccess;
@@ -490,7 +491,7 @@ namespace slag
                     depthTarget.StencilEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS;
                 }
 
-                depthTarget.cpuDescriptor = static_cast<DX12Texture*>(depthAttachment->texture)->targetHandle();
+                depthTarget.cpuDescriptor = static_cast<DX12FrameBufferView*>(depthAttachment->bufferView)->dx12Handle();
 
                 _commandBuffer->BeginRenderPass(colorAttachmentCount, targets, &depthTarget, D3D12_RENDER_PASS_FLAG_NONE);
             }
@@ -686,7 +687,7 @@ namespace slag
 
         }
 
-        void IDX12CommandBuffer::resolveTexture(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Offset2D destinationOffset)
+        void IDX12CommandBuffer::resolveTexture(Texture* source, uint32_t sourceMip, uint32_t sourceLayer, Rectangle sourceRect, Texture* destination, uint32_t destinationMip, uint32_t destinationLayer, Offset2D destinationOffset)
         {
             SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
             SLAG_ASSERT(source->sampleCount() != SampleCount::ONE && destination->sampleCount() == SampleCount::ONE && "Source texture must be multisampled and destination texture must not be multisampled");
@@ -712,9 +713,9 @@ namespace slag
                 D3D12_RESOLVE_MODE::D3D12_RESOLVE_MODE_AVERAGE);
         }
 
-        void IDX12CommandBuffer::copyTextureRegion(PixelAspect aspect, Texture* source, uint32_t sourceLayer, uint32_t sourceMip,
-            Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip,
-            Offset2D destinationOffset)
+        void IDX12CommandBuffer::copyTextureRegion(PixelAspect aspect, Texture* source, uint32_t sourceMip, uint32_t sourceLayer,
+                                                   Rectangle sourceRect, Texture* destination, uint32_t destinationMip, uint32_t destinationLayer,
+                                                   Offset2D destinationOffset)
         {
             SLAG_ASSERT(_queueType == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
             auto src = static_cast<DX12Texture*>(source);

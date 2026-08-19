@@ -4,6 +4,7 @@
 
 #include "VulkanBackend.h"
 #include "VulkanBuffer.h"
+#include "VulkanFrameBufferView.h"
 #include "VulkanGraphicsCard.h"
 #include "VulkanResourceDescriptorHeap.h"
 #include "VulkanSamplerDescriptorHeap.h"
@@ -456,14 +457,14 @@ namespace slag
             {
 
                 auto attachment = colorAttachments[i];
-                auto colorTexture = static_cast<VulkanTexture*>(attachment.texture);
-                SLAG_ASSERT(colorTexture != nullptr && "color texture cannot be null");
-                SLAG_ASSERT((bool)(colorTexture->usage() & TextureUsageFlags::COLOR_TARGET) && "Color attachment without Texture::UsageFlags::RENDER_TARGET_ATTACHMENT provided");
+                auto colorView = static_cast<VulkanFrameBufferView*>(attachment.bufferView);
+                SLAG_ASSERT(colorView != nullptr && "color texture cannot be null");
+                SLAG_ASSERT((bool)(colorView->texture()->usage() & TextureUsageFlags::COLOR_TARGET) && "Color attachment without Texture::UsageFlags::RENDER_TARGET_ATTACHMENT provided");
                 descriptions[i]=VkRenderingAttachmentInfo
                 {
                     .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
                     .pNext = nullptr,
-                    .imageView = colorTexture->vulkanView(),
+                    .imageView = colorView->vulkanHandle(),
                     .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                     .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
                     .clearValue = std::bit_cast<VkClearValue>(attachment.clearValue)
@@ -481,9 +482,9 @@ namespace slag
             bool hasStencil = false;
             if(depthAttachment)
             {
-                auto depthTex = static_cast<VulkanTexture*>(depthAttachment->texture);
+                auto depthView = static_cast<VulkanFrameBufferView*>(depthAttachment->bufferView);
                 depth.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-                depth.imageView = depthTex->vulkanView();
+                depth.imageView = depthView->vulkanHandle();
                 depth.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
                 depth.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
                 depth.clearValue = std::bit_cast<VkClearValue>(depthAttachment->clearValue);
@@ -495,7 +496,7 @@ namespace slag
                 {
                     depth.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
                 }
-                if(static_cast<bool>(Pixel::aspectFlags(depthAttachment->texture->format()) & PixelAspectFlags::STENCIL_FLAG))
+                if(static_cast<bool>(Pixel::aspectFlags(depthAttachment->bufferView->texture()->format()) & PixelAspectFlags::STENCIL_FLAG))
                 {
                     hasStencil = true;
                 }
@@ -685,7 +686,7 @@ namespace slag
             vkCmdDispatchIndirect(_commandBuffer,vulkanBuffer->vulkanHandle(),offset);
         }
 
-        void IVulkanCommandBuffer::resolveTexture(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Offset2D destinationOffset)
+        void IVulkanCommandBuffer::resolveTexture(Texture* source, uint32_t sourceMip, uint32_t sourceLayer, Rectangle sourceRect, Texture* destination, uint32_t destinationMip, uint32_t destinationLayer, Offset2D destinationOffset)
         {
             SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
             SLAG_ASSERT(source->sampleCount() != SampleCount::ONE && destination->sampleCount() == SampleCount::ONE && "Source texture must be multisampled and destination texture must not be multisampled");
@@ -727,9 +728,9 @@ namespace slag
             vkCmdResolveImage2(_commandBuffer,&resolveInfo);
         }
 
-        void IVulkanCommandBuffer::copyTextureRegion(PixelAspect aspect, Texture* source, uint32_t sourceLayer, uint32_t sourceMip,
-            Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip,
-            Offset2D destinationOffset)
+        void IVulkanCommandBuffer::copyTextureRegion(PixelAspect aspect, Texture* source, uint32_t sourceMip, uint32_t sourceLayer,
+                                                     Rectangle sourceRect, Texture* destination, uint32_t destinationMip, uint32_t destinationLayer,
+                                                     Offset2D destinationOffset)
         {
             SLAG_ASSERT(_type == QueueType::GRAPHICS && "Command Buffer cannot record commands outside it's capabilities");
             VkImageCopy2 copyRegion

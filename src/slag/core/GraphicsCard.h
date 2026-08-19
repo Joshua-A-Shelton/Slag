@@ -2,6 +2,7 @@
 #define SLAG_GRAPHICSCARD_H
 #include <functional>
 #include <string>
+#include "Attachment.h"
 #include "Buffer.h"
 #include "CommandBuffer.h"
 #include "Defragmentation.h"
@@ -88,7 +89,7 @@ namespace slag
         [[nodiscard]] virtual SubmissionQueue* transferQueue()=0;
 
         /**
-         * Defragment video memory. This is a blocking call, and will not return until defragmentation is complete
+         * Defragment video memory. This is a blocking call, and will not return until defragmentation is complete. If a FrameBufferView references a moved texture, the view is invalid and needs to be reconstructed
          * @param targetBytes Number of bytes to attempt to defragment before finishing, or 0 for a full defragmenation
          * @param memoryMoved Function to execute when a segment of memory has been moved
          * @return number of bytes defragmented
@@ -317,6 +318,16 @@ namespace slag
             uint32_t mipLevels = 1,
             uint32_t arrayDepth = 1
         )=0;
+
+        /**
+         * Create a view of a texture that can be rendered to
+         * @param texture The texture to have a view into
+         * @param mip Mip level to render to
+         * @param baseLayer Starting layer to render to
+         * @param layerCount Number of layers to render to
+         * @return
+         */
+        [[nodiscard]] virtual FrameBufferView* newFrameBufferView(Texture* texture, uint32_t mip = 0, uint32_t baseLayer = 0, uint32_t layerCount = 1)=0;
 
         /**
          * Create a new Sampler

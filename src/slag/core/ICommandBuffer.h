@@ -264,29 +264,29 @@ namespace slag
         /**
          * [GRAPHICS] Resolve a multisampled texture to a non-multisampled texture. The source texture must be multisampled and the destination texture must not be multisampled, and both must have the same format
          * @param source [[RESOLVE_READ]] Source texture
-         * @param sourceLayer Source texture layer
          * @param sourceMip Source texture mip level
+         * @param sourceLayer Source texture layer
          * @param sourceRect Source texture rectangle sampling area
          * @param destination [[RESOLVE_WRITE]] Destination texture
-         * @param destinationLayer Destination texture layer
          * @param destinationMip Destination texture mip level
+         * @param destinationLayer Destination texture layer
          * @param destinationOffset Destination texture offset
          */
-        virtual void resolveTexture(Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Offset2D destinationOffset)=0;
+        virtual void resolveTexture(Texture* source, uint32_t sourceMip, uint32_t sourceLayer, Rectangle sourceRect, Texture* destination, uint32_t destinationMip, uint32_t destinationLayer, Offset2D destinationOffset)=0;
 
         /**
          * [GRAPHICS] Copy a region of a texture to another texture
          * @param aspect The kind of data from the texture to copy
          * @param source [[COPY_READ]] Source Texture
-         * @param sourceLayer Source texture layer
          * @param sourceMip Source texture mip level
+         * @param sourceLayer Source texture layer
          * @param sourceRect Source texture rectangle sampling area
          * @param destination [[COPY_WRITE]] Destination texture
-         * @param destinationLayer Destination texture layer
          * @param destinationMip Destination texture mip level
+         * @param destinationLayer Destination texture layer
          * @param destinationOffset Destination texture offset
          */
-        virtual void copyTextureRegion(PixelAspect aspect, Texture* source, uint32_t sourceLayer, uint32_t sourceMip, Rectangle sourceRect, Texture* destination, uint32_t destinationLayer, uint32_t destinationMip, Offset2D destinationOffset)=0;
+        virtual void copyTextureRegion(PixelAspect aspect, Texture* source, uint32_t sourceMip, uint32_t sourceLayer, Rectangle sourceRect, Texture* destination, uint32_t destinationMip, uint32_t destinationLayer, Offset2D destinationOffset)=0;
 
     };
 } // slag

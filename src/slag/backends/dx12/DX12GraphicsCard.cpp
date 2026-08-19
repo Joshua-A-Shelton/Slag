@@ -10,6 +10,7 @@
 #include "DX12Texture.h"
 #include <directx/d3dx12.h>
 
+#include "DX12FrameBufferView.h"
 #include "DX12Sampler.h"
 #include "DX12SamplerDescriptorHeap.h"
 #include "DX12SwapChain.h"
@@ -742,10 +743,16 @@ namespace slag
             return new DX12Texture(this,dimension,format,usage,mipLevels,arrayDepth);
         }
 
+        FrameBufferView* DX12GraphicsCard::newFrameBufferView(Texture* texture, uint32_t mip, uint32_t baseLayer,
+            uint32_t layerCount)
+        {
+            return new DX12FrameBufferView(this,texture,mip,baseLayer,layerCount);
+        }
+
         Sampler* DX12GraphicsCard::newSampler(SamplerFilter min, SamplerFilter mag, SamplerFilter mip,
-            SamplerAddressMode u, SamplerAddressMode v, SamplerAddressMode w, float mipLODBias, bool anisotrophyEnabled,
-            uint8_t maxAnisotrophy, ComparisonFunction comparisonFunction, Color borderColor, float minLOD,
-            float maxLOD)
+                                              SamplerAddressMode u, SamplerAddressMode v, SamplerAddressMode w, float mipLODBias, bool anisotrophyEnabled,
+                                              uint8_t maxAnisotrophy, ComparisonFunction comparisonFunction, Color borderColor, float minLOD,
+                                              float maxLOD)
         {
             return new DX12Sampler(this, min, mag, mip, u, v, w, mipLODBias, anisotrophyEnabled, maxAnisotrophy, comparisonFunction, borderColor, minLOD, maxLOD);
         }

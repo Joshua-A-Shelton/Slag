@@ -178,14 +178,14 @@ namespace slag
     {
         ///Texture whose memory needs to be synchronized
         Texture* texture = nullptr;
-        ///Index into texture array of first texture to have its memory synchronized
-        uint32_t baseLayer = 0;
-        ///Number of textures in the array to have their memory synchronized
-        uint32_t layerCount = 0;
         ///First mip level of the texture to have its memory synchronized
         uint32_t baseMipLevel = 0;
         ///Number of mip levels to have their memory synchronized
         uint32_t mipCount = 0;
+        ///Index into texture array of first texture to have its memory synchronized
+        uint32_t baseLayer = 0;
+        ///Number of textures in the array to have their memory synchronized
+        uint32_t layerCount = 0;
         ///Finish all work of this kind before the barrier executes
         SyncStages syncBefore = SyncStages::ALL;
         ///Make all work of this kind wait until after the barrier executes

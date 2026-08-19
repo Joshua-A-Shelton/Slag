@@ -78,10 +78,10 @@ void main()
                 TextureBarrier toColorTarget
                 {
                     .texture = backBuffer, //The texture we need to make sure is in the correct state
-                    .baseLayer = 0, //The first array index of the texture we're making sure is in the correct state
-                    .layerCount = 1, //The number of array indices we need to make sure is in the correct state
                     .baseMipLevel = 0, //The first mipmap level we need to make sure is in the correct state
                     .mipCount = 1, //The number of mipmap levels we need to make sure is in the correct state
+                    .baseLayer = 0, //The first array index of the texture we're making sure is in the correct state
+                    .layerCount = 1, //The number of array indices we need to make sure is in the correct state
                     .syncBefore = SyncStages::NONE, //Which stages of execution need to finish before we change the texture's state
                     .syncAfter = SyncStages::ALL_GRAPHICS, //Which stages of execution need to wait until after the texture's state has been changed
                     .flush = MemoryCaches::NONE, //Which graphics cache needs to be written back to main memory
@@ -92,7 +92,7 @@ void main()
                 
                 commandBuffer->insertBarriers(&toColorTarget,1);//insert the barrier into the command buffer
                 
-                Attachment colorAttachment{.texture = backBuffer, .autoClear = true, .clearValue = {.color = ClearColor{.2f,.2f,.8f,1.0f}}};//create the attachment we'll render to
+                Attachment colorAttachment{.bufferView = frame->defaultView(), .autoClear = true, .clearValue = {.color = ClearColor{.2f,.2f,.8f,1.0f}}};//create the attachment we'll render to
                 commandBuffer->beginRendering(&colorAttachment,1,nullptr,slag::Rectangle{0,0,backBuffer->width(),backBuffer->height()});//begin rendering
                 
                 Buffer* buffers[] = {vertexBuffer,colorBuffer};//Create an array of the buffers that contain vertex data
@@ -107,10 +107,10 @@ void main()
                 TextureBarrier toPresent
                 {
                     .texture = backBuffer,
-                    .baseLayer = 0,
-                    .layerCount = 1,
                     .baseMipLevel = 0,
                     .mipCount = 1,
+                    .baseLayer = 0,
+                    .layerCount = 1,
                     .syncBefore = SyncStages::ALL_GRAPHICS, //Finish all graphics commands before we change the texture's state
                     .syncAfter = SyncStages::ALL, //Make all other commands wait until this texture's state has been changed (which is nothing, but a value must be provided)
                     .flush = MemoryCaches::COLOR_TARGET, //Write the color target cache back to main memory

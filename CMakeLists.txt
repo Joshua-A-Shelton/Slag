@@ -84,6 +84,8 @@ if(SLAG_VULKAN_BACKEND)
             src/slag/backends/vulkan/VulkanSwapChain.h
             src/slag/backends/vulkan/VulkanFrame.cpp
             src/slag/backends/vulkan/VulkanFrame.h
+            src/slag/backends/vulkan/VulkanFrameBufferView.cpp
+            src/slag/backends/vulkan/VulkanFrameBufferView.h
     )
 endif()
 if(SLAG_DX12_BACKEND)
@@ -120,6 +122,8 @@ if(SLAG_DX12_BACKEND)
             src/slag/backends/dx12/DX12SwapChain.h
             src/slag/backends/dx12/DX12Frame.cpp
             src/slag/backends/dx12/DX12Frame.h
+            src/slag/backends/dx12/DX12FrameBufferView.cpp
+            src/slag/backends/dx12/DX12FrameBufferView.h
     )
 endif()
 
@@ -309,6 +313,7 @@ if(SLAG_BUILD_TESTS)
             tests/utilities/PlatformUtilities.h
             tests/utilities/SlagUtilities.cpp
             tests/utilities/SlagUtilities.h
+            tests/tests/FrameBufferView.cpp
     )
 
     target_link_libraries(SlagTests GTest::gtest SDL3::SDL3 glm::glm slag::Slag)

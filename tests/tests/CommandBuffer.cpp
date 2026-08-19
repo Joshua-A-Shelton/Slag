@@ -244,7 +244,9 @@ TEST(CommandBuffer, Draw)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
     auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
     auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,256,256));
+    auto colorView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(colorTexture.get()));
     auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,256,256));
+    auto depthView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(depthTexture.get()));
 
     auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
     auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
@@ -319,18 +321,18 @@ TEST(CommandBuffer, Draw)
     uint64_t strides[] = {sizeof(glm::vec3),sizeof(glm::vec2)};
     commandBuffer->bindVertexBuffers(0,vertexBuffers,offsets,strides,2);
 
-    Attachment colorAttachment(colorTexture.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
-    Attachment depthAttachment(depthTexture.get(),true,{.depthStencil = ClearDepthStencilValue{.depth = 1.0f, .stencil = 0}});
+    Attachment colorAttachment(colorView.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
+    Attachment depthAttachment(depthView.get(),true,{.depthStencil = ClearDepthStencilValue{.depth = 1.0f, .stencil = 0}});
 
     TextureBarrier barriers[] =
     {
         TextureBarrier
         {
             .texture = colorTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -341,10 +343,10 @@ TEST(CommandBuffer, Draw)
         TextureBarrier
         {
             .texture = depthTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -412,7 +414,9 @@ TEST(CommandBuffer, DrawIndexed)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
     auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
     auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,256,256));
+    auto colorView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(colorTexture.get()));
     auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,256,256));
+    auto depthView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(depthTexture.get()));
 
     auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
     auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
@@ -490,18 +494,18 @@ TEST(CommandBuffer, DrawIndexed)
     commandBuffer->bindVertexBuffers(0,vertexBuffers,offsets,strides,2);
     commandBuffer->bindIndexBuffer(indexBuffer.get(),IndexBufferType::UINT_16,0);
 
-    Attachment colorAttachment(colorTexture.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
-    Attachment depthAttachment(depthTexture.get(),true,{.depthStencil = ClearDepthStencilValue{.depth = 1.0f, .stencil = 0}});
+    Attachment colorAttachment(colorView.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
+    Attachment depthAttachment(depthView.get(),true,{.depthStencil = ClearDepthStencilValue{.depth = 1.0f, .stencil = 0}});
 
     TextureBarrier barriers[] =
     {
         TextureBarrier
         {
             .texture = colorTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL,
             .flush = MemoryCaches::NONE,
@@ -512,10 +516,10 @@ TEST(CommandBuffer, DrawIndexed)
         TextureBarrier
         {
             .texture = depthTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL,
             .flush = MemoryCaches::NONE,
@@ -585,7 +589,9 @@ TEST(CommandBuffer, DrawIndirect)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
     auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
     auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,256,256));
+    auto colorView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(colorTexture.get()));
     auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,256,256));
+    auto depthView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(depthTexture.get()));
 
     auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
     auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
@@ -660,18 +666,18 @@ TEST(CommandBuffer, DrawIndirect)
     uint64_t strides[] = {sizeof(glm::vec3),sizeof(glm::vec2)};
     commandBuffer->bindVertexBuffers(0,vertexBuffers,offsets,strides,2);
 
-    Attachment colorAttachment(colorTexture.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
-    Attachment depthAttachment(depthTexture.get(),true,{.depthStencil = ClearDepthStencilValue{.depth = 1.0f, .stencil = 0}});
+    Attachment colorAttachment(colorView.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
+    Attachment depthAttachment(depthView.get(),true,{.depthStencil = ClearDepthStencilValue{.depth = 1.0f, .stencil = 0}});
 
     TextureBarrier barriers[] =
     {
         TextureBarrier
         {
             .texture = colorTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -682,10 +688,10 @@ TEST(CommandBuffer, DrawIndirect)
         TextureBarrier
         {
             .texture = depthTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -759,7 +765,9 @@ TEST(CommandBuffer, DrawIndexedIndirect)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
     auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
     auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,256,256));
+    auto colorView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(colorTexture.get()));
     auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,256,256));
+    auto depthView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(depthTexture.get()));
 
     auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
     auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
@@ -837,18 +845,18 @@ TEST(CommandBuffer, DrawIndexedIndirect)
     commandBuffer->bindVertexBuffers(0,vertexBuffers,offsets,strides,2);
     commandBuffer->bindIndexBuffer(indexBuffer.get(),IndexBufferType::UINT_16,0);
 
-    Attachment colorAttachment(colorTexture.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
-    Attachment depthAttachment(depthTexture.get(),true,{.depthStencil = ClearDepthStencilValue{.depth = 1.0f, .stencil = 0}});
+    Attachment colorAttachment(colorView.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
+    Attachment depthAttachment(depthView.get(),true,{.depthStencil = ClearDepthStencilValue{.depth = 1.0f, .stencil = 0}});
 
     TextureBarrier barriers[] =
     {
         TextureBarrier
         {
             .texture = colorTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -859,10 +867,10 @@ TEST(CommandBuffer, DrawIndexedIndirect)
         TextureBarrier
         {
             .texture = depthTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -939,7 +947,9 @@ TEST(CommandBuffer, DrawIndirectCount)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
     auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
     auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,256,256));
+    auto colorView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(colorTexture.get()));
     auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,256,256));
+    auto depthView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(depthTexture.get()));
 
     auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
     auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
@@ -1014,18 +1024,18 @@ TEST(CommandBuffer, DrawIndirectCount)
     uint64_t strides[] = {sizeof(glm::vec3),sizeof(glm::vec2)};
     commandBuffer->bindVertexBuffers(0,vertexBuffers,offsets,strides,2);
 
-    Attachment colorAttachment(colorTexture.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
-    Attachment depthAttachment(depthTexture.get(),true,{.depthStencil = ClearDepthStencilValue{.depth = 1.0f, .stencil = 0}});
+    Attachment colorAttachment(colorView.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
+    Attachment depthAttachment(depthView.get(),true,{.depthStencil = ClearDepthStencilValue{.depth = 1.0f, .stencil = 0}});
 
     TextureBarrier barriers[] =
     {
         TextureBarrier
         {
             .texture = colorTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -1036,10 +1046,10 @@ TEST(CommandBuffer, DrawIndirectCount)
         TextureBarrier
         {
             .texture = depthTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -1116,7 +1126,9 @@ TEST(CommandBuffer, DrawIndexedIndirectCount)
     auto commandBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::GRAPHICS));
     auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
     auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,256,256));
+    auto colorView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(colorTexture.get()));
     auto depthTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,256,256));
+    auto depthView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(depthTexture.get()));
 
     auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY));
     auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY));
@@ -1194,18 +1206,18 @@ TEST(CommandBuffer, DrawIndexedIndirectCount)
     commandBuffer->bindVertexBuffers(0,vertexBuffers,offsets,strides,2);
     commandBuffer->bindIndexBuffer(indexBuffer.get(),IndexBufferType::UINT_16,0);
 
-    Attachment colorAttachment(colorTexture.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
-    Attachment depthAttachment(depthTexture.get(),true,{.depthStencil = ClearDepthStencilValue{.depth = 1.0f, .stencil = 0}});
+    Attachment colorAttachment(colorView.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
+    Attachment depthAttachment(depthView.get(),true,{.depthStencil = ClearDepthStencilValue{.depth = 1.0f, .stencil = 0}});
 
     TextureBarrier barriers[] =
     {
         TextureBarrier
         {
             .texture = colorTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -1216,10 +1228,10 @@ TEST(CommandBuffer, DrawIndexedIndirectCount)
         TextureBarrier
         {
             .texture = depthTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -1438,8 +1450,10 @@ TEST(CommandBuffer, Resolve)
     auto finished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
 
     auto colorTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,256,256,1,1,SampleCount::FOUR));
+    auto colorView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(colorTarget.get()));
     auto finalTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,256,256,1));
     auto depthTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,256,256,1,1,SampleCount::FOUR));
+    auto depthView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(depthTarget.get()));
 
     auto transferBuffer = std::unique_ptr<CommandBuffer>(graphicsCard->newCommandBuffer(QueueType::TRANSFER));
     auto transferFinished = std::unique_ptr<Semaphore>(graphicsCard->newSemaphore());
@@ -1540,17 +1554,17 @@ TEST(CommandBuffer, Resolve)
     commandBuffer->bindDescriptorHeaps(resourceHeap.get(),samplerHeap.get());
     commandBuffer->setScissors(slag::Rectangle{0,0,colorTarget->width(),colorTarget->height()});
     commandBuffer->setViewPort(0,0,colorTarget->width(),colorTarget->height(),.0f,1.0f);
-    Attachment colorAttachment(colorTarget.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
-    Attachment depthAttachment(depthTarget.get(),true,ClearValue{1,0});
+    Attachment colorAttachment(colorView.get(),true,{.color = ClearColor{.floats = {0.0f,0.0f,1.0f,1.0f}}});
+    Attachment depthAttachment(depthView.get(),true,ClearValue{1,0});
 
     TextureBarrier textureBarriers[]
     {
         {
             .texture = colorTarget.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -1560,10 +1574,10 @@ TEST(CommandBuffer, Resolve)
         },
         {
             .texture = depthTarget.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL_GRAPHICS,
             .flush = MemoryCaches::NONE,
@@ -1713,10 +1727,10 @@ TEST(CommandBuffer, CopyTextureRegion)
       TextureBarrier
         {
             .texture = immediateTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 2,
             .baseMipLevel = 0,
             .mipCount = 3,
+            .baseLayer = 0,
+            .layerCount = 2,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL,
             .flush = MemoryCaches::COPY_WRITE,
@@ -1727,10 +1741,10 @@ TEST(CommandBuffer, CopyTextureRegion)
         TextureBarrier
         {
             .texture = destinationTexture.get(),
-            .baseLayer = 0,
-            .layerCount = 1,
             .baseMipLevel = 0,
             .mipCount = 1,
+            .baseLayer = 0,
+            .layerCount = 1,
             .syncBefore = SyncStages::ALL,
             .syncAfter = SyncStages::ALL,
             .flush = MemoryCaches::COPY_WRITE,
@@ -1758,15 +1772,15 @@ TEST(CommandBuffer, CopyTextureRegion)
     fillFinished->waitForValue(1);
 
     commandBuffer->begin();
-    commandBuffer->copyTextureRegion(PixelAspect::COLOR, sourceTexture.get(),0,0,slag::Rectangle{{75,0},{75,150}},immediateTexture.get(),0,1,{0,0});
+    commandBuffer->copyTextureRegion(PixelAspect::COLOR, sourceTexture.get(),0,0,slag::Rectangle{{75,0},{75,150}},immediateTexture.get(),1,0,{0,0});
     commandBuffer->copyTextureRegion(PixelAspect::COLOR, sourceTexture.get(),0,0,slag::Rectangle{{0,0},{75,150}},immediateTexture.get(),1,1,{75,0});
     TextureBarrier barrier
     {
         .texture = immediateTexture.get(),
-        .baseLayer = 0,
-        .layerCount = immediateTexture->layers(),
         .baseMipLevel = 0,
         .mipCount = immediateTexture->mipLevels(),
+        .baseLayer = 0,
+        .layerCount = immediateTexture->layers(),
         .syncBefore = SyncStages::COPY,
         .syncAfter = SyncStages::COPY,
         .flush = MemoryCaches::COPY_WRITE,
@@ -1775,7 +1789,7 @@ TEST(CommandBuffer, CopyTextureRegion)
         .layoutAfter = TextureLayout::GENERAL
     };
     commandBuffer->insertBarriers(&barrier,1);
-    commandBuffer->copyTextureRegion(PixelAspect::COLOR, immediateTexture.get(),0,1,slag::Rectangle{{10,15},{70,75}},destinationTexture.get(),0,0,{5,10});
+    commandBuffer->copyTextureRegion(PixelAspect::COLOR, immediateTexture.get(),1,0,slag::Rectangle{{10,15},{70,75}},destinationTexture.get(),0,0,{5,10});
     commandBuffer->copyTextureRegion(PixelAspect::COLOR, immediateTexture.get(),1,1,slag::Rectangle{{85,0},{45,30}},destinationTexture.get(),0,0,{90,90});
 
     commandBuffer->end();
@@ -1850,7 +1864,9 @@ TEST(CommandBuffer, TransferErrorGraphicsCommands)
     auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
     auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
     auto colorTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,1024,1024));
+    auto colorView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(colorTarget.get()));
     auto depthTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,1024,1024));
+    auto depthView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(depthTarget.get()));
     auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
     auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
     auto indexBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(indices),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
@@ -1877,8 +1893,8 @@ TEST(CommandBuffer, TransferErrorGraphicsCommands)
     int32_t index = 3;
     EXPECT_DEATH(commandBuffer->setGraphicsShaderParameters(0,&index,sizeof(int32_t)), "Command Buffer cannot record commands outside it's capabilities");
     EXPECT_DEATH(commandBuffer->bindShaderPipeline(shaderPipeline.get()), "Command Buffer cannot record commands outside it's capabilities");
-    Attachment colorAttachment{colorTarget.get(),true,{1.0f,1.0f,1.0f,1.0f}};
-    Attachment depthAttachment{depthTarget.get(),true,{1.0f,0.0f}};
+    Attachment colorAttachment{colorView.get(),true,{1.0f,1.0f,1.0f,1.0f}};
+    Attachment depthAttachment{depthView.get(),true,{1.0f,0.0f}};
     EXPECT_DEATH(commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{0,0,colorTarget->width(),colorTarget->height()}), "Command Buffer cannot record commands outside it's capabilities");
     EXPECT_DEATH(commandBuffer->endRendering(), "Command Buffer cannot record commands outside it's capabilities");
     EXPECT_DEATH(commandBuffer->setViewPort(0,0,50,50,1,0), "Command Buffer cannot record commands outside it's capabilities");
@@ -1929,7 +1945,9 @@ TEST(CommandBuffer, ComputeErrorGraphicsCommands)
     auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
     auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
     auto colorTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,1024,1024));
+    auto colorView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(colorTarget.get()));
     auto depthTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,1024,1024));
+    auto depthView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(depthTarget.get()));
     auto positionBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(positions),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
     auto uvBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(uvs),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
     auto indexBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(indices),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
@@ -1956,8 +1974,8 @@ TEST(CommandBuffer, ComputeErrorGraphicsCommands)
     int32_t index = 3;
     EXPECT_DEATH(commandBuffer->setGraphicsShaderParameters(0,&index,sizeof(int32_t)), "Command Buffer cannot record commands outside it's capabilities");
     EXPECT_DEATH(commandBuffer->bindShaderPipeline(shaderPipeline.get()), "Command Buffer cannot record commands outside it's capabilities");
-    Attachment colorAttachment{colorTarget.get(),true,{1.0f,1.0f,1.0f,1.0f}};
-    Attachment depthAttachment{depthTarget.get(),true,{1.0f,0.0f}};
+    Attachment colorAttachment{colorView.get(),true,{1.0f,1.0f,1.0f,1.0f}};
+    Attachment depthAttachment{depthView.get(),true,{1.0f,0.0f}};
     EXPECT_DEATH(commandBuffer->beginRendering(&colorAttachment,1,&depthAttachment,slag::Rectangle{0,0,colorTarget->width(),colorTarget->height()}), "Command Buffer cannot record commands outside it's capabilities");
     EXPECT_DEATH(commandBuffer->endRendering(), "Command Buffer cannot record commands outside it's capabilities");
     EXPECT_DEATH(commandBuffer->setViewPort(0,0,50,50,1,0), "Command Buffer cannot record commands outside it's capabilities");
@@ -2077,6 +2095,7 @@ TEST(CommandBuffer, DrawCommandsWhenGraphicsNotBoundError)
     auto computeModule = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/ParallelAdd.compute");
     auto computePipeline = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(&computeModule.details));
     auto drawTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,1024,1024));
+    auto drawView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(drawTexture.get()));
     auto indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
     auto indirectIndexedBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawIndexedCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
 
@@ -2085,7 +2104,7 @@ TEST(CommandBuffer, DrawCommandsWhenGraphicsNotBoundError)
     commandBuffer->setViewPort(0,0,drawTexture->width(),drawTexture->height(),1,0);
     commandBuffer->setScissors({{0,0},{drawTexture->width(),drawTexture->height()}});
 
-    Attachment colorAttachment{drawTexture.get(),true,{1.0f,1.0f,1.0f,1.0f}};
+    Attachment colorAttachment{drawView.get(),true,{1.0f,1.0f,1.0f,1.0f}};
     commandBuffer->beginRendering(&colorAttachment,1,nullptr,slag::Rectangle{0,0,drawTexture->width(),drawTexture->height()});
     EXPECT_DEATH(commandBuffer->draw(1,1,0,0), "Must bind graphics pipeline prior to drawing");
     EXPECT_DEATH(commandBuffer->drawIndexed(1,1,0,0,0), "Must bind graphics pipeline prior to drawing");
@@ -2149,7 +2168,9 @@ TEST(CommandBuffer, DrawCommandsOutsideBeginEndRendering)
     auto descriptorHeap = std::unique_ptr<ResourceDescriptorHeap>(graphicsCard->newResourceDescriptorHeap(512));
     auto samplerHeap = std::unique_ptr<SamplerDescriptorHeap>(graphicsCard->newSamplerDescriptorHeap(512));
     auto colorTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,1024,1024));
+    auto colorView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(colorTarget.get()));
     auto depthTarget = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::D32_FLOAT,TextureUsageFlags::DEPTH_STENCIL_TARGET,1024,1024));
+    auto depthView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(depthTarget.get()));
     auto indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
     auto indirectIndexedBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDrawIndexedCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
 
@@ -2172,8 +2193,8 @@ TEST(CommandBuffer, DrawCommandsOutsideBeginEndRendering)
     commandBuffer->setViewPort(0,0,colorTarget->width(),colorTarget->height(),1,0);
     commandBuffer->setScissors({{0,0},{colorTarget->width(),colorTarget->height()}});
 
-    Attachment colorAttachment{colorTarget.get(),true,{1.0f,1.0f,1.0f,1.0f}};
-    Attachment depthAttachment{depthTarget.get(),true,{1.0f,1.0f,1.0f,1.0f}};
+    Attachment colorAttachment{colorView.get(),true,{1.0f,1.0f,1.0f,1.0f}};
+    Attachment depthAttachment{depthView.get(),true,{1.0f,1.0f,1.0f,1.0f}};
     commandBuffer->bindShaderPipeline(shaderPipeline.get());
     //commandBuffer->beginRendering(&colorAttachment,1,nullptr,slag::Rectangle{0,0,drawTexture->width(),drawTexture->height()});
     EXPECT_DEATH(commandBuffer->draw(1,1,0,0), "Must be in render pass");
@@ -2194,7 +2215,8 @@ TEST(CommandBuffer, DispatchCommandsInsideBeginEndRendering)
     auto computeModule = utilities::createShaderModule(graphicsCard,"resources/tests/shaders/compiled/ParallelAdd.compute");
     auto computePipeline = std::unique_ptr<ShaderPipeline>(graphicsCard->newShaderPipeline(&computeModule.details));
 
-    auto colorTexture = graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,512,512);
+    auto colorTexture = std::unique_ptr<Texture>(graphicsCard->newTexture2D(PixelFormat::R8G8B8A8_UNORM,TextureUsageFlags::COLOR_TARGET,512,512));
+    auto colorView = std::unique_ptr<FrameBufferView>(graphicsCard->newFrameBufferView(colorTexture.get()));
     auto indirectBuffer = std::unique_ptr<Buffer>(graphicsCard->newBuffer(sizeof(IndirectDispatchCommand),BufferCPUAccess::WRITE_ONLY,BufferMemoryType::GENERAL));
 
 
@@ -2202,7 +2224,7 @@ TEST(CommandBuffer, DispatchCommandsInsideBeginEndRendering)
     commandBuffer->begin();
     commandBuffer->bindDescriptorHeaps(descriptorHeap.get(),samplerHeap.get());
     commandBuffer->bindShaderPipeline(computePipeline.get());
-    Attachment colorAttachment{.texture = colorTexture, .autoClear = true, .clearValue = {1.0f,1.0f,1.0f,1.0f}};
+    Attachment colorAttachment{.bufferView = colorView.get(), .autoClear = true, .clearValue = {1.0f,1.0f,1.0f,1.0f}};
     commandBuffer->beginRendering(&colorAttachment,1,nullptr,slag::Rectangle{0,0,colorTexture->width(),colorTexture->height()});
     EXPECT_DEATH(commandBuffer->dispatch(1,1,1), "Cannot dispatch within render pass");
     EXPECT_DEATH(commandBuffer->dispatchIndirect(indirectBuffer.get(),0), "Cannot dispatch within render pass");

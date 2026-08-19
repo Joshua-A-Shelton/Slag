@@ -55,7 +55,7 @@ namespace slag
                 uint32_t arrayDepth);
 
             //create a texture from existing resources, used for swapchain images
-            VulkanTexture(VulkanGraphicsCard* card, TextureType type, VkImage image, VkImageView view, PixelFormat format, TextureUsageFlags usage, uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, uint32_t mipLevels, SampleCount sampleCount);
+            VulkanTexture(VulkanGraphicsCard* card, TextureType type, VkImage image, PixelFormat format, TextureUsageFlags usage, uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, uint32_t mipLevels, SampleCount sampleCount);
 
             VulkanTexture(const VulkanTexture&)=delete;
             VulkanTexture& operator=(const VulkanTexture&)=delete;
@@ -79,7 +79,6 @@ namespace slag
 
             [[nodiscard]] VkImage vulkanHandle()const;
             [[nodiscard]] const VkImageViewCreateInfo& descriptorInfo();
-            [[nodiscard]] VkImageView vulkanView()const;
 
         private:
             void move(VulkanTexture& from);
@@ -90,7 +89,6 @@ namespace slag
             VulkanGraphicsCard* _graphicsCard = nullptr;
             VmaAllocation _allocation = nullptr;
             VkImage _texture = nullptr;
-            VkImageView _view = nullptr;
             void* _userData = nullptr;
             PixelFormat _format = PixelFormat::UNDEFINED;
             TextureUsageFlags _usage = TextureUsageFlags::NONE;
