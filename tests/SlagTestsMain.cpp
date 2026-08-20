@@ -1,6 +1,8 @@
 #define SDL_MAIN_HANDLED
 #include <gtest/gtest.h>
 #include <slag/Slag.h>
+#define SDL_MAIN_HANDLED 1
+#include <SDL3/SDL.h>
 
 //TODO: see if there's a way to automate this, this part must be in the final executable, not a library
 // For Direct3D 12 Agility SDK
@@ -58,7 +60,9 @@ int main(int argc, char** argv)
     }
     if (slag::Slag::initialize(initData) == slag::SlagInitializationResult::SUCCESS)
     {
+        SDL_Init(SDL_INIT_VIDEO);
         auto run = RUN_ALL_TESTS();
+        SDL_Quit();
         slag::Slag::cleanup();
         return run;
     }

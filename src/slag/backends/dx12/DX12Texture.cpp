@@ -142,9 +142,9 @@ namespace slag
 
         DX12Texture::~DX12Texture()
         {
+            _texture->Release();
             if (_allocation)
             {
-                _texture->Release();
                 _allocation->Release();
             }
         }

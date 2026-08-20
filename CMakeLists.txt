@@ -314,6 +314,7 @@ if(SLAG_BUILD_TESTS)
             tests/utilities/SlagUtilities.cpp
             tests/utilities/SlagUtilities.h
             tests/tests/FrameBufferView.cpp
+            tests/tests/SwapChain.cpp
     )
 
     target_link_libraries(SlagTests GTest::gtest SDL3::SDL3 glm::glm slag::Slag)

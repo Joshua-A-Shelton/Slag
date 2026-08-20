@@ -22,6 +22,7 @@ namespace slag
             if (_renderBuffer)
             {
                 delete _renderBuffer;
+                delete _frameBufferView;
             }
         }
 

@@ -46,6 +46,7 @@ namespace slag
         [[nodiscard]] virtual Frame* currentFrame()=0;
         virtual void present()=0;
         [[nodiscard]] virtual const SwapChainParameters& parameters()const=0;
+        virtual void setParameters(const SwapChainParameters& newParameters)=0;
         virtual GraphicsCard* graphicsCard()=0;
     };
 }
