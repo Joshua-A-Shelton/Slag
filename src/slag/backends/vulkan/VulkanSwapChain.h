@@ -25,6 +25,7 @@ namespace slag
             [[nodiscard]] Frame* currentFrame()override;
             void present()override;
             [[nodiscard]] const SwapChainParameters& parameters()const override;
+            void setParameters(const SwapChainParameters& newParameters)override;
             GraphicsCard* graphicsCard()override;
         private:
             void rebuild();
@@ -44,6 +45,7 @@ namespace slag
             uint32_t _height = 0;
             uint32_t _currentFrameIndex = 0;
             uint32_t _currentFenceIndex = 0;
+            bool _parametersChanged = false;
         };
     } // vulkan
 } // slag

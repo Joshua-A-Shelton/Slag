@@ -289,6 +289,8 @@ int main()
 #endif
 
     slag::SwapChainParameters swapchainParameters{};
+    swapchainParameters.imageCount = 2;
+    swapchainParameters.presentMode = PresentMode::IMMEDIATE;
     auto swapChain = graphicsCard->newSwapchain(pd,300,300,swapchainParameters);
     auto queue = graphicsCard->graphicsQueue();
     auto resourceHeap = graphicsCard->newResourceDescriptorHeap(100000);
@@ -357,6 +359,31 @@ int main()
             if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID == SDL_GetWindowID(window))
             {
                 keepOpen = false;
+            }
+            if (event.type == SDL_EVENT_KEY_UP)
+            {
+                auto swapChainParams = swapChain->parameters();
+                if (event.key.key == SDLK_1)
+                {
+                    std::cout << "Tearing Enabled" << std::endl;
+                    swapChainParams.presentMode = PresentMode::IMMEDIATE;
+                    swapChainParams.imageCount = 2;
+                    swapChain->setParameters(swapChainParams);
+                }
+                if (event.key.key == SDLK_2)
+                {
+                    std::cout << "Double buffering enabled" << std::endl;
+                    swapChainParams.presentMode = PresentMode::QUEUE;
+                    swapChainParams.imageCount = 2;
+                    swapChain->setParameters(swapChainParams);
+                }
+                if (event.key.key == SDLK_3)
+                {
+                    std::cout << "Triple buffering enabled" << std::endl;
+                    swapChainParams.presentMode = PresentMode::BUFFER;
+                    swapChainParams.imageCount = 3;
+                    swapChain->setParameters(swapChainParams);
+                }
             }
         }
 

@@ -63,7 +63,7 @@ namespace slag
         Frame* VulkanSwapChain::next()
         {
             auto result = vkAcquireNextImageKHR(_graphicsCard->device(), _swapChain, UINT64_MAX, nullptr, _imageAcquiredFence[_currentFenceIndex], &_currentFrameIndex);
-            if (result == VK_ERROR_OUT_OF_DATE_KHR)
+            if (result == VK_ERROR_OUT_OF_DATE_KHR || _parametersChanged)
             {
                 rebuild();
                 result = vkAcquireNextImageKHR(_graphicsCard->device(), _swapChain, UINT64_MAX, nullptr, _imageAcquiredFence[_currentFenceIndex], &_currentFrameIndex);
@@ -100,6 +100,12 @@ namespace slag
             return _parameters;
         }
 
+        void VulkanSwapChain::setParameters(const SwapChainParameters& newParameters)
+        {
+            _parameters = newParameters;
+            _parametersChanged = true;
+        }
+
         GraphicsCard* VulkanSwapChain::graphicsCard()
         {
             return _graphicsCard;
@@ -107,6 +113,11 @@ namespace slag
 
         void VulkanSwapChain::rebuild()
         {
+            if (_parameters.imageCount < 2)
+            {
+                throw ResourceCreationError("SwapChain must have at least 2 images");
+            }
+            _parametersChanged = false;
             _frames.clear();
             for (int i=0;i<_imageAcquiredFence.size();i++)
             {
@@ -171,6 +182,7 @@ namespace slag
             _imageAcquiredFence = std::move(from._imageAcquiredFence);
             _currentFrameIndex = from._currentFrameIndex;
             _currentFenceIndex = from._currentFenceIndex;
+            _parametersChanged = from._parametersChanged;
         }
 
         VkSurfaceKHR VulkanSwapChain::createNativeSurface(const PlatformData& platformData)

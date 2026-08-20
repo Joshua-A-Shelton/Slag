@@ -1,8 +1,12 @@
 #include "DX12SwapChain.h"
 
+#include <iostream>
+
 #include "DX12Backend.h"
+#include "DX12Semaphore.h"
 #include "DX12SubmissionQueue.h"
 #include "slag/exceptions/InvalidSwapChainOperation.h"
+#include "slag/exceptions/ResourceCreationError.h"
 
 namespace slag
 {
@@ -28,6 +32,9 @@ namespace slag
         {
             if (_swapChain)
             {
+                DX12Semaphore queueFinishedSemaphore(_graphicsCard,0);
+                static_cast<DX12SubmissionQueue*>(_graphicsCard->graphicsQueue())->dx12Handle()->Signal(queueFinishedSemaphore.dx12Handle(),1);
+                queueFinishedSemaphore.waitForValue(1);
                 _frames.clear();
             }
         }
@@ -51,8 +58,25 @@ namespace slag
             }
             auto wait = _swapChain->GetFrameLatencyWaitableObject();
             DWORD result = WaitForSingleObjectEx(wait,1000,true);
+            RECT rect{};
+            if (GetClientRect(_window,&rect))
+            {
+                int width = rect.right - rect.left;
+                int height = rect.bottom - rect.top;
+                if (_width != width || _height != height)
+                {
+                    _width = width;
+                    _height = height;
+                    _parametersChanged = true;
+                }
+            }
+            if (_parametersChanged)
+            {
+                rebuild();
+            }
             _presentRequired = true;
-            return &_frames[_swapChain->GetCurrentBackBufferIndex()];
+            auto index = _swapChain->GetCurrentBackBufferIndex();
+            return &_frames[index];
         }
 
         Frame* DX12SwapChain::currentFrame()
@@ -67,8 +91,8 @@ namespace slag
                 throw InvalidSwapChainOperation("Next must be called before present");
             }
             int flags = _parameters.presentMode == PresentMode::IMMEDIATE ? DXGI_PRESENT_ALLOW_TEARING : 0;
-            //TODO: not sure if this is correct, (it's likely not, but vulkan and dx12 are vastly different in presentation, it's hard to know what property controls what effect)
-            int syncInterval = _parameters.presentMode != PresentMode::IMMEDIATE && _parameters.imageCount < 2 ? 1 : 0;
+            //not sure if this is correct, (it's likely is now, but vulkan and dx12 are vastly different in presentation, it's hard to know what property controls what effect)
+            int syncInterval = (_parameters.presentMode == PresentMode::IMMEDIATE || _parameters.presentMode == PresentMode::BUFFER) ? 0 : 1;
             _swapChain->Present(syncInterval,flags);
             _presentRequired = false;
         }
@@ -76,6 +100,12 @@ namespace slag
         const SwapChainParameters& DX12SwapChain::parameters() const
         {
             return _parameters;
+        }
+
+        void DX12SwapChain::setParameters(const SwapChainParameters& newParameters)
+        {
+            _parameters = newParameters;
+            _parametersChanged = true;
         }
 
         GraphicsCard* DX12SwapChain::graphicsCard()
@@ -93,14 +123,17 @@ namespace slag
             _width = from._width;
             _height = from._height;
             _presentRequired = from._presentRequired;
+            _parametersChanged = from._parametersChanged;
         }
 
         void DX12SwapChain::rebuild()
         {
-            if (_swapChain)
+            if (_parameters.imageCount < 2)
             {
-                _swapChain = nullptr;
+                throw ResourceCreationError("SwapChain must have at least 2 images");
             }
+            _parametersChanged = false;
+
             DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
             swapChainDesc.Width = _width;
             swapChainDesc.Height = _height;
@@ -123,11 +156,23 @@ namespace slag
 
             swapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 
-            Microsoft::WRL::ComPtr<IDXGISwapChain1> swapChain1;
-            //TODO: I apparently can't use sRGB formats for swapchain images, I think I need to force non sRGB as the image type, and use sRGB format as render target? see bottom of accepted answer on https://gamedev.stackexchange.com/questions/149822/direct3d-12-cant-create-a-swap-chain
-            _graphicsCard->dxgiFactory()->CreateSwapChainForHwnd(static_cast<DX12SubmissionQueue*>(_graphicsCard->graphicsQueue())->dx12Handle(),_window,&swapChainDesc, nullptr, nullptr,&swapChain1);
-            //this is the reason we have to wrap the swapchain in the ComPtr, I don't know how to do this without it
-            swapChain1.As(&_swapChain);
+            if (_swapChain)
+            {
+                //wait for the queue to finish
+                DX12Semaphore queueFinishedSemaphore(_graphicsCard,0);
+                static_cast<DX12SubmissionQueue*>(_graphicsCard->graphicsQueue())->dx12Handle()->Signal(queueFinishedSemaphore.dx12Handle(),1);
+                queueFinishedSemaphore.waitForValue(1);
+                _frames.clear();
+                _swapChain->ResizeBuffers(swapChainDesc.BufferCount,_width,_height,swapChainDesc.Format,swapChainDesc.Flags);
+            }
+            else
+            {
+                Microsoft::WRL::ComPtr<IDXGISwapChain1> swapChain1;
+                //TODO: I apparently can't use sRGB formats for swapchain images, I think I need to force non sRGB as the image type, and use sRGB format as render target? see bottom of accepted answer on https://gamedev.stackexchange.com/questions/149822/direct3d-12-cant-create-a-swap-chain
+                _graphicsCard->dxgiFactory()->CreateSwapChainForHwnd(static_cast<DX12SubmissionQueue*>(_graphicsCard->graphicsQueue())->dx12Handle(),_window,&swapChainDesc, nullptr, nullptr,&swapChain1);
+                //this is the reason we have to wrap the swapchain in the ComPtr, I don't know how to do this without it
+                swapChain1.As(&_swapChain);
+            }
 
             if (_parameters.presentMode == PresentMode::QUEUE)
             {
@@ -144,8 +189,9 @@ namespace slag
             {
                 _swapChain->SetMaximumFrameLatency(1);
             }
-
-            _frames.clear();
+            DXGI_SWAP_CHAIN_DESC desc = {};
+            _swapChain->GetDesc(&desc);
+            _parameters.imageCount = desc.BufferCount;
             for(int i=0; i< _parameters.imageCount; i++)
             {
                 ID3D12Resource* backBuffer = nullptr;
