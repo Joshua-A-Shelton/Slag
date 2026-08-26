@@ -2,7 +2,7 @@
 #define SLAG_DX12FRAMEBUFFERVIEW_H
 #include <slag/Slag.h>
 
-#include "../../../../cmake-build-release/_deps/directx-headers-src/include/directx/d3d12.h"
+#include <d3d12.h>
 
 namespace slag
 {

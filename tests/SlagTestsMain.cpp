@@ -58,7 +58,8 @@ int main(int argc, char** argv)
     {
         return 1;
     }
-    if (slag::Slag::initialize(initData) == slag::SlagInitializationResult::SUCCESS)
+    auto initResult = slag::Slag::initialize(initData);
+    if (initResult == slag::SlagInitializationResult::SUCCESS)
     {
         SDL_Init(SDL_INIT_VIDEO);
         auto run = RUN_ALL_TESTS();
