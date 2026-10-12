@@ -31,6 +31,7 @@ namespace slag
 
         void IDX12CommandBuffer::begin()
         {
+            _commandPool->Reset();
             _commandBuffer->Reset(_commandPool,nullptr);
             if (_queueType == QueueType::GRAPHICS)
             {

@@ -151,6 +151,7 @@ namespace slag
         void VulkanSampler::move(VulkanSampler& from)
         {
             std::swap(_createInfo,from._createInfo);
+            std::swap(_borderExt,from._borderExt);
             std::swap(_min,from._min);
             std::swap(_mag,from._mag);
             std::swap(_u,from._u);

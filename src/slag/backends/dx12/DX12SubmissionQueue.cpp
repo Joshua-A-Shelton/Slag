@@ -51,6 +51,14 @@ namespace slag
             return *this;
         }
 
+        DX12SubmissionQueue::~DX12SubmissionQueue()
+        {
+            if (_queue)
+            {
+                _queue->Release();
+            }
+        }
+
         QueueType DX12SubmissionQueue::type() const
         {
             return _type;

@@ -16,7 +16,7 @@ namespace slag
             DX12SubmissionQueue& operator=(const DX12SubmissionQueue&)=delete;
             DX12SubmissionQueue(DX12SubmissionQueue&& from) noexcept;
             DX12SubmissionQueue& operator=(DX12SubmissionQueue&& from) noexcept;
-            ~DX12SubmissionQueue()override = default;
+            ~DX12SubmissionQueue()override;
             [[nodiscard]] QueueType type()const override;
             [[nodiscard]] GraphicsCard* graphicsCard()override;
             void submit(const SubmissionBatch& batch)override;

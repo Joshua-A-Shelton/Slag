@@ -18,6 +18,8 @@ namespace slag
     {
         ///Backend was successfully found and initialized
         SUCCESS,
+        ///Backend is already initialized
+        ALREADY_INITIALIZED,
         ///Backend is not supported on the current platform with the current build of the library
         BACKEND_UNSUPPORTED,
         ///Backend is supported on the platform, but does not have the required capabilities required by SLAG. Users may be able to remedy by updating the backend

@@ -1,6 +1,7 @@
 #include "DX12CommandBuffer.h"
 
 #include "DX12GraphicsCard.h"
+#include "slag/exceptions/ResourceCreationError.h"
 
 namespace slag
 {
@@ -24,8 +25,17 @@ namespace slag
                 comType = D3D12_COMMAND_LIST_TYPE_COPY;
                 break;
             }
-            _graphicsCard->device()->CreateCommandAllocator(comType, IID_PPV_ARGS(&_commandPool));
-            _graphicsCard->device()->CreateCommandList(0,comType,_commandPool, nullptr, IID_PPV_ARGS(&_commandBuffer));
+            auto result = _graphicsCard->device()->CreateCommandAllocator(comType, IID_PPV_ARGS(&_commandPool));
+            if (result != S_OK)
+            {
+                throw ResourceCreationError("Unable to create command buffer");
+            }
+            result = _graphicsCard->device()->CreateCommandList(0,comType,_commandPool, nullptr, IID_PPV_ARGS(&_commandBuffer));
+            if (result != S_OK)
+            {
+                _commandPool->Release();
+                throw ResourceCreationError("Unable to create command buffer");
+            }
             _commandBuffer->Close();
         }
 

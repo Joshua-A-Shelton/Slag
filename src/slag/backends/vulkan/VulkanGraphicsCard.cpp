@@ -171,8 +171,9 @@ namespace slag
         {
             if (_device)
             {
-                vmaDestroyAllocator(_allocator);
                 vkDeviceWaitIdle(_device);
+                vmaDestroyAllocator(_allocator);
+
                 if (!(_transferQueue == _computeQueue || _transferQueue == _graphicsQueue))
                 {
                     delete _transferQueue;
@@ -341,6 +342,12 @@ namespace slag
                         VmaAllocationInfo allocInfo;
                         vmaGetAllocationInfo(_allocator, pass.pMoves[i].srcAllocation, &allocInfo);
                         MemoryReference* userData = (MemoryReference*)allocInfo.pUserData;
+                        //ignore things not a texture or buffer (EG: don't move descriptor heaps)
+                        if (userData == nullptr)
+                        {
+                            pass.pMoves[i].operation = VMA_DEFRAGMENTATION_MOVE_OPERATION_IGNORE;
+                            continue;
+                        }
                         if (userData->type == MemoryObjectType::TEXTURE)
                         {
                             auto texture = static_cast<VulkanTexture*>(userData->memory.texture);
@@ -429,12 +436,16 @@ namespace slag
                     }
                     else if(res != VK_INCOMPLETE)
                     {
+                        VmaDefragmentationStats stats{};
+                        vmaEndDefragmentation(_allocator,defragCtx,&stats);
                         throw std::runtime_error("failed to defragment graphics memory");
                     }
 
                 }
                 else
                 {
+                    VmaDefragmentationStats stats{};
+                    vmaEndDefragmentation(_allocator,defragCtx,&stats);
                     throw std::runtime_error("failed to defragment graphics memory");
                 }
             }

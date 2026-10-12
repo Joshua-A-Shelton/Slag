@@ -840,7 +840,7 @@ namespace slag
 
             VkPhysicalDeviceDescriptorHeapFeaturesEXT descriptorHeapFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_HEAP_FEATURES_EXT};
             descriptorHeapFeatures.descriptorHeap = true;
-            descriptorHeapFeatures.descriptorHeapCaptureReplay = true;
+            //descriptorHeapFeatures.descriptorHeapCaptureReplay = true;
 
             VkPhysicalDeviceCustomBorderColorFeaturesEXT customBorderFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT};
             customBorderFeatures.customBorderColors = true;
