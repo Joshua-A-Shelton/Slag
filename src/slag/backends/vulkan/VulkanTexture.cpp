@@ -359,6 +359,7 @@ namespace slag
 
             VulkanImageMoveData imageMoveData = {true,_texture};
             _texture = newImage;
+            _descriptorInfo.image = _texture;
             return imageMoveData;
         }
 
@@ -434,7 +435,11 @@ namespace slag
             //reference this texture to allow for GPU memory defragmentation
             allocationCreateInfo.pUserData = &_selfReference;
 
-            vmaCreateImage(_graphicsCard->allocator(),&createInfo,&allocationCreateInfo,&_texture,&_allocation,nullptr);
+            auto result = vmaCreateImage(_graphicsCard->allocator(),&createInfo,&allocationCreateInfo,&_texture,&_allocation,nullptr);
+            if (result != VK_SUCCESS)
+            {
+                throw ResourceCreationError("Unable to create texture");
+            }
 
             populateDescriptorInfo();
 

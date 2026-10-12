@@ -11,6 +11,10 @@ namespace slag
     IBackend* SLAG_GRAPHICS_BACKEND = nullptr;
     SlagInitializationResult Slag::initialize(const InitializationData& initData)
     {
+        if (SLAG_GRAPHICS_BACKEND)
+        {
+            return SlagInitializationResult::ALREADY_INITIALIZED;
+        }
         auto desiredBackend = initData.backend;
         if (desiredBackend == BackendAPI::UNKNOWN)
         {

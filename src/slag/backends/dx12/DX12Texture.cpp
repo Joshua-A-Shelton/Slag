@@ -142,11 +142,15 @@ namespace slag
 
         DX12Texture::~DX12Texture()
         {
-            _texture->Release();
-            if (_allocation)
+            if (_texture)
             {
-                _allocation->Release();
+                _texture->Release();
+                if (_allocation)
+                {
+                    _allocation->Release();
+                }
             }
+
         }
 
         uint32_t DX12Texture::width() const

@@ -38,6 +38,7 @@ namespace slag
             uint32_t _height = 0;
             bool _presentRequired = false;
             bool _parametersChanged = false;
+            HANDLE _frameLatencyWaitObject = nullptr;
         };
 
     } // dx12

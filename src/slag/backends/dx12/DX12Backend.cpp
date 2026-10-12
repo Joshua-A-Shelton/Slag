@@ -636,7 +636,7 @@ namespace slag
                     {
                         continue;
                     }
-                    _graphicsCards.emplace_back(device,dxgiFactory,dxgiAdapter4,initializationData.debugHandler!=nullptr);
+                    _graphicsCards.push_back(DX12GraphicsCard(device,dxgiFactory,dxgiAdapter4,initializationData.debugHandler!=nullptr));
                 }
             }
             if (_graphicsCards.size() == 0)

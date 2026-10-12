@@ -141,6 +141,9 @@ namespace slag
             auto result = _allocator->CreatePool(&poolDesc,&_cpuReadablePool);
             if (FAILED(result))
             {
+                delete _graphicsQueue;
+                delete _computeQueue;
+                delete _transferQueue;
                 throw std::runtime_error("Failed to create CPU readable buffer pool");
             }
 
@@ -216,7 +219,17 @@ namespace slag
             HRESULT hr = D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1_0, &signature, &error);
             if (FAILED(hr))
             {
-                throw std::runtime_error(std::string("Failed to serialize root signature: ") + std::string(reinterpret_cast<const char*>(error->GetBufferPointer()), error->GetBufferSize()));
+                delete _graphicsQueue;
+                delete _computeQueue;
+                delete _transferQueue;
+                if (error)
+                {
+                    throw std::runtime_error(std::string("Failed to serialize root signature: ") + std::string(reinterpret_cast<const char*>(error->GetBufferPointer()), error->GetBufferSize()));
+                }
+                else
+                {
+                    throw std::runtime_error("Failed to serialize root signature");
+                }
             }
 
             device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&_rootSignature));
@@ -256,6 +269,7 @@ namespace slag
                 delete _computeQueue;
                 delete _transferQueue;
                 _cpuReadablePool->Release();
+                _allocator->Release();
                 _rootSignature->Release();
                 _drawIndirectCommandSignature->Release();
                 _drawIndexedIndirectCommandSignature->Release();
@@ -410,6 +424,7 @@ namespace slag
                 }
                 else if(hr != S_FALSE)
                 {
+                    defragCtx->Release();
                     throw std::runtime_error("failed to begin defragmentation");
                 }
 
@@ -490,6 +505,7 @@ namespace slag
                 }
                 else if(hr != S_FALSE)
                 {
+                    defragCtx->Release();
                     throw std::runtime_error("failed to defragment graphics memory");
                 }
 

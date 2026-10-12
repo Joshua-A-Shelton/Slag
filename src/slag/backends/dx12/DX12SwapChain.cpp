@@ -36,6 +36,7 @@ namespace slag
                 static_cast<DX12SubmissionQueue*>(_graphicsCard->graphicsQueue())->dx12Handle()->Signal(queueFinishedSemaphore.dx12Handle(),1);
                 queueFinishedSemaphore.waitForValue(1);
                 _frames.clear();
+                CloseHandle(_frameLatencyWaitObject);
             }
         }
 
@@ -56,8 +57,8 @@ namespace slag
             {
                 throw InvalidSwapChainOperation("Present must be called before calling next again");
             }
-            auto wait = _swapChain->GetFrameLatencyWaitableObject();
-            DWORD result = WaitForSingleObjectEx(wait,1000,true);
+
+            DWORD result = WaitForSingleObjectEx(_frameLatencyWaitObject,1000,true);
             RECT rect{};
             if (GetClientRect(_window,&rect))
             {
@@ -124,6 +125,7 @@ namespace slag
             _height = from._height;
             _presentRequired = from._presentRequired;
             _parametersChanged = from._parametersChanged;
+            _frameLatencyWaitObject = from._frameLatencyWaitObject;
         }
 
         void DX12SwapChain::rebuild()
@@ -172,6 +174,7 @@ namespace slag
                 _graphicsCard->dxgiFactory()->CreateSwapChainForHwnd(static_cast<DX12SubmissionQueue*>(_graphicsCard->graphicsQueue())->dx12Handle(),_window,&swapChainDesc, nullptr, nullptr,&swapChain1);
                 //this is the reason we have to wrap the swapchain in the ComPtr, I don't know how to do this without it
                 swapChain1.As(&_swapChain);
+                _frameLatencyWaitObject = _swapChain->GetFrameLatencyWaitableObject();
             }
 
             if (_parameters.presentMode == PresentMode::QUEUE)
@@ -199,6 +202,8 @@ namespace slag
                 DX12Frame frame(i,backBuffer,_width,_height,_parameters.imageFormat,this);
                 _frames.push_back(std::move(frame));
             }
+
+
         }
     } // dx12
 } // slag

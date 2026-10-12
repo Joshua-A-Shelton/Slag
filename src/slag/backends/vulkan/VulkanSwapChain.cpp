@@ -31,7 +31,28 @@ namespace slag
             _graphicsCard = graphicsCard;
             _width = width;
             _height = height;
-            rebuild();
+            try
+            {
+                rebuild();
+            }
+            catch (std::runtime_error& e)
+            {
+                _frames.clear();
+                if (_swapChain)
+                {
+                    vkDestroySwapchainKHR(_graphicsCard->device(), _swapChain, nullptr);
+                }
+                if (_surface)
+                {
+                    vkDestroySurfaceKHR(static_cast<VulkanBackend*>(Slag::backend())->instance().instance, _surface, nullptr);
+                }
+                for (auto& fence : _imageAcquiredFence)
+                {
+                    vkDestroyFence(_graphicsCard->device(), fence, nullptr);
+                }
+                throw;
+            }
+
         }
 
         VulkanSwapChain::VulkanSwapChain(VulkanSwapChain&& from) noexcept
@@ -172,14 +193,14 @@ namespace slag
 
         void VulkanSwapChain::move(VulkanSwapChain& from) noexcept
         {
-            _surface = from._surface;
-            _parameters = from._parameters;
-            _graphicsCard = from._graphicsCard;
+            std::swap(_surface,from._surface);
+            std::swap(_parameters, from._parameters);
+            std::swap(_graphicsCard,from._graphicsCard);
             _width = from._width;
             _height = from._height;
-            _swapChain = from._swapChain;
-            _frames = std::move(from._frames);
-            _imageAcquiredFence = std::move(from._imageAcquiredFence);
+            std::swap(_swapChain, from._swapChain);
+            _frames.swap(from._frames);
+            std::swap(_imageAcquiredFence, from._imageAcquiredFence);
             _currentFrameIndex = from._currentFrameIndex;
             _currentFenceIndex = from._currentFenceIndex;
             _parametersChanged = from._parametersChanged;

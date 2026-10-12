@@ -50,6 +50,7 @@ namespace slag
             auto result = vkAllocateCommandBuffers(_graphicsCard->device(), &allocInfo, &_commandBuffer);
             if(result != VK_SUCCESS)
             {
+                vkDestroyCommandPool(_graphicsCard->device(), _commandPool, nullptr);
                 throw ResourceCreationError("Unable to allocate command buffer");
             }
         }
