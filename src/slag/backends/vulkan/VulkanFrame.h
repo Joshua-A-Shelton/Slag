@@ -24,6 +24,7 @@ namespace slag
             [[nodiscard]] Texture* renderBuffer()override;
             [[nodiscard]] FrameBufferView* defaultView()override;
         private:
+            friend class VulkanSwapChain;
             void move(VulkanFrame& from);
             uint32_t _frameIndex = 0;
             VulkanTexture* _renderBuffer = nullptr;

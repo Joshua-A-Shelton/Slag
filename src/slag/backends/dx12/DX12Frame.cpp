@@ -13,7 +13,16 @@ namespace slag
             _frameIndex = frameIndex;
 
             _renderBuffer = new DX12Texture((DX12GraphicsCard*)parentChain->graphicsCard(),texture,format,TextureUsageFlags::COLOR_TARGET,TextureType::TWO_DIMENSIONAL,width,height,1,1,1,SampleCount::ONE);
-            _frameBufferView = new DX12FrameBufferView((DX12GraphicsCard*)parentChain->graphicsCard(),_renderBuffer,0,0,1);
+            try
+            {
+                _frameBufferView = new DX12FrameBufferView((DX12GraphicsCard*)parentChain->graphicsCard(),_renderBuffer,0,0,1);
+            }
+            catch (...)
+            {
+                delete _renderBuffer;
+                _renderBuffer = nullptr;
+                throw;
+            }
             _parentChain = parentChain;
         }
 

@@ -121,7 +121,11 @@ namespace slag
             allocatorDesc.pAdapter = _dxgiAdapter4.Get();
             // These flags are optional but recommended.
             allocatorDesc.Flags = static_cast<D3D12MA::ALLOCATOR_FLAGS>(D3D12MA::ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED | D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED);
-            D3D12MA::CreateAllocator(&allocatorDesc,&_allocator);
+            auto allocatorResult = D3D12MA::CreateAllocator(&allocatorDesc,&_allocator);
+            if (FAILED(allocatorResult))
+            {
+                throw std::runtime_error("Failed to create memory allocator");
+            }
 
             DXGI_ADAPTER_DESC3 desc;
             _dxgiAdapter4->GetDesc3(&desc);
@@ -144,6 +148,7 @@ namespace slag
                 delete _graphicsQueue;
                 delete _computeQueue;
                 delete _transferQueue;
+                _allocator->Release();
                 throw std::runtime_error("Failed to create CPU readable buffer pool");
             }
 
@@ -222,6 +227,8 @@ namespace slag
                 delete _graphicsQueue;
                 delete _computeQueue;
                 delete _transferQueue;
+                _cpuReadablePool->Release();
+                _allocator->Release();
                 if (error)
                 {
                     throw std::runtime_error(std::string("Failed to serialize root signature: ") + std::string(reinterpret_cast<const char*>(error->GetBufferPointer()), error->GetBufferSize()));
@@ -265,6 +272,13 @@ namespace slag
         {
             if (_graphicsQueue)
             {
+                //make sure the GPU is finished with everything before releasing queues and memory
+                for (auto queue : {_graphicsQueue, _computeQueue, _transferQueue})
+                {
+                    DX12Semaphore finished(this,0);
+                    queue->dx12Handle()->Signal(finished.dx12Handle(),1);
+                    finished.waitForValue(1);
+                }
                 delete _graphicsQueue;
                 delete _computeQueue;
                 delete _transferQueue;
@@ -414,101 +428,107 @@ namespace slag
             D3D12MA::DefragmentationContext* defragCtx;
             _allocator->BeginDefragmentation(&defragDesc, &defragCtx);
 
-            for(;;)
+            try
             {
-                D3D12MA::DEFRAGMENTATION_PASS_MOVE_INFO pass;
-                HRESULT hr = defragCtx->BeginPass(&pass);
-                if(hr == S_OK)
+                for(;;)
                 {
-                    break;
-                }
-                else if(hr != S_FALSE)
-                {
-                    defragCtx->Release();
-                    throw std::runtime_error("failed to begin defragmentation");
-                }
-
-                std::vector<ID3D12Resource*> movedResources;
-                std::vector<MemoryReference*> movedMemoryRefs;
-                DX12CommandBuffer moveCB(this,QueueType::GRAPHICS);
-                std::vector<D3D12_TEXTURE_BARRIER> textureBarriers;
-                DX12Semaphore moved(this,0);
-                moveCB.begin();
-                for(UINT i = 0; i < pass.MoveCount; ++i)
-                {
-                    MemoryReference* userData = (MemoryReference*)pass.pMoves[i].pSrcAllocation->GetPrivateData();
-
-                    if (userData->type == MemoryObjectType::TEXTURE)
+                    D3D12MA::DEFRAGMENTATION_PASS_MOVE_INFO pass;
+                    HRESULT hr = defragCtx->BeginPass(&pass);
+                    if(hr == S_OK)
                     {
-                        auto texture = static_cast<DX12Texture*>(userData->memory.texture);
-                        auto movedTexture = texture->moveMemory(pass.pMoves[i].pDstTmpAllocation,&moveCB,textureBarriers);
-                        movedResources.push_back(movedTexture);
-                        movedMemoryRefs.push_back(userData);
-
+                        break;
                     }
-                    else
+                    else if(hr != S_FALSE)
                     {
-                        auto buffer = static_cast<DX12Buffer*>(userData->memory.buffer);
-                        auto movedBuffer = buffer->moveMemory(pass.pMoves[i].pDstTmpAllocation,&moveCB);
-                        movedResources.push_back(movedBuffer);
-                        movedMemoryRefs.push_back(userData);
+                        throw std::runtime_error("failed to begin defragmentation");
                     }
-                }
-                D3D12_BARRIER_GROUP barrierGroup =
-                {
-                    .Type = D3D12_BARRIER_TYPE_TEXTURE,
-                    .NumBarriers = static_cast<uint32_t>(textureBarriers.size()),
-                    .pTextureBarriers = textureBarriers.data()
-                };
 
-                moveCB.dx12Handle()->Barrier(1,&barrierGroup);
-
-                moveCB.end();
-                CommandBuffer* movedPtr = &moveCB;
-                SemaphoreValue movedValue{.semaphore = &moved,.value = 1};
-                SubmissionBatch batch
-                {
-                    .waitSemaphores = nullptr,
-                    .waitSemaphoreCount = 0,
-                    .commandBuffers = &movedPtr,
-                    .commandBufferCount = 1,
-                    .signalSemaphores = &movedValue,
-                    .signalSemaphoreCount = 1,
-                };
-
-                _graphicsQueue->submit(batch);
-                moved.waitForValue(1);
-                for (auto i=0; i< movedResources.size(); i++)
-                {
-                    movedResources[i]->Release();
-                }
-                movedResources.clear();
-                for (auto i=0; i< movedMemoryRefs.size(); i++)
-                {
-                    if (movedMemoryRefs[i]->type == MemoryObjectType::BUFFER)
+                    std::vector<ID3D12Resource*> movedResources;
+                    std::vector<MemoryReference*> movedMemoryRefs;
+                    DX12CommandBuffer moveCB(this,QueueType::GRAPHICS);
+                    std::vector<D3D12_TEXTURE_BARRIER> textureBarriers;
+                    DX12Semaphore moved(this,0);
+                    moveCB.begin();
+                    for(UINT i = 0; i < pass.MoveCount; ++i)
                     {
-                        static_cast<DX12Buffer*>(movedMemoryRefs[i]->memory.buffer)->updatePointer();
+                        MemoryReference* userData = (MemoryReference*)pass.pMoves[i].pSrcAllocation->GetPrivateData();
+
+                        if (userData->type == MemoryObjectType::TEXTURE)
+                        {
+                            auto texture = static_cast<DX12Texture*>(userData->memory.texture);
+                            auto movedTexture = texture->moveMemory(pass.pMoves[i].pDstTmpAllocation,&moveCB,textureBarriers);
+                            movedResources.push_back(movedTexture);
+                            movedMemoryRefs.push_back(userData);
+
+                        }
+                        else
+                        {
+                            auto buffer = static_cast<DX12Buffer*>(userData->memory.buffer);
+                            auto movedBuffer = buffer->moveMemory(pass.pMoves[i].pDstTmpAllocation,&moveCB);
+                            movedResources.push_back(movedBuffer);
+                            movedMemoryRefs.push_back(userData);
+                        }
                     }
-                    if (memoryMoved != nullptr)
+                    D3D12_BARRIER_GROUP barrierGroup =
                     {
-                        memoryMoved(movedMemoryRefs[i]);
+                        .Type = D3D12_BARRIER_TYPE_TEXTURE,
+                        .NumBarriers = static_cast<uint32_t>(textureBarriers.size()),
+                        .pTextureBarriers = textureBarriers.data()
+                    };
+
+                    moveCB.dx12Handle()->Barrier(1,&barrierGroup);
+
+                    moveCB.end();
+                    CommandBuffer* movedPtr = &moveCB;
+                    SemaphoreValue movedValue{.semaphore = &moved,.value = 1};
+                    SubmissionBatch batch
+                    {
+                        .waitSemaphores = nullptr,
+                        .waitSemaphoreCount = 0,
+                        .commandBuffers = &movedPtr,
+                        .commandBufferCount = 1,
+                        .signalSemaphores = &movedValue,
+                        .signalSemaphoreCount = 1,
+                    };
+
+                    _graphicsQueue->submit(batch);
+                    moved.waitForValue(1);
+                    for (auto i=0; i< movedResources.size(); i++)
+                    {
+                        movedResources[i]->Release();
                     }
-                }
+                    movedResources.clear();
+                    for (auto i=0; i< movedMemoryRefs.size(); i++)
+                    {
+                        if (movedMemoryRefs[i]->type == MemoryObjectType::BUFFER)
+                        {
+                            static_cast<DX12Buffer*>(movedMemoryRefs[i]->memory.buffer)->updatePointer();
+                        }
+                        if (memoryMoved != nullptr)
+                        {
+                            memoryMoved(movedMemoryRefs[i]);
+                        }
+                    }
 
-                textureBarriers.clear();
-                movedMemoryRefs.clear();
+                    textureBarriers.clear();
+                    movedMemoryRefs.clear();
 
-                hr = defragCtx->EndPass(&pass);
-                if(hr == S_OK)
-                {
-                    break;
-                }
-                else if(hr != S_FALSE)
-                {
-                    defragCtx->Release();
-                    throw std::runtime_error("failed to defragment graphics memory");
-                }
+                    hr = defragCtx->EndPass(&pass);
+                    if(hr == S_OK)
+                    {
+                        break;
+                    }
+                    else if(hr != S_FALSE)
+                    {
+                        throw std::runtime_error("failed to defragment graphics memory");
+                    }
 
+                }
+            }
+            catch (...)
+            {
+                defragCtx->Release();
+                throw;
             }
             D3D12MA::DEFRAGMENTATION_STATS stats;
             defragCtx->GetStats(&stats);
@@ -830,6 +850,16 @@ namespace slag
             std::swap(_drawIndirectCommandSignature, from._drawIndirectCommandSignature);
             std::swap(_drawIndexedIndirectCommandSignature, from._drawIndexedIndirectCommandSignature);
             std::swap(_dispatchIndirectCommandSignature, from._dispatchIndirectCommandSignature);
+
+            //queues hold a back-pointer to their card, re-point them after the swap
+            for (auto queue : {_graphicsQueue, _computeQueue, _transferQueue})
+            {
+                if (queue) queue->_graphicsCard = this;
+            }
+            for (auto queue : {from._graphicsQueue, from._computeQueue, from._transferQueue})
+            {
+                if (queue) queue->_graphicsCard = &from;
+            }
         }
     } // dx12
 } // slag

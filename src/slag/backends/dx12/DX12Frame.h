@@ -23,6 +23,7 @@ namespace slag
             [[nodiscard]] Texture* renderBuffer()override;
             [[nodiscard]] FrameBufferView* defaultView()override;
         private:
+            friend class DX12SwapChain;
             void move(DX12Frame& from);
             uint32_t _frameIndex = 0;
             DX12Texture* _renderBuffer = nullptr;

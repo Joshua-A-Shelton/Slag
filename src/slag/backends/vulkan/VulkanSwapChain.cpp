@@ -35,7 +35,7 @@ namespace slag
             {
                 rebuild();
             }
-            catch (std::runtime_error& e)
+            catch (...)
             {
                 _frames.clear();
                 if (_swapChain)
@@ -162,17 +162,26 @@ namespace slag
                 throw ResourceCreationError("Unable to rebuild swap chain");
             }
 
-            auto images = chain->get_images().value();
-
             auto crossFormat = VulkanBackend::crossPlatformFormat(chain->image_format);
-            for (auto i=0u;i<images.size();i++)
+            try
             {
-                _frames.emplace_back(i,images[i],chain->extent.width,chain->extent.height,crossFormat,this);
+                auto images = chain->get_images().value();
+                for (auto i=0u;i<images.size();i++)
+                {
+                    _frames.emplace_back(i,images[i],chain->extent.width,chain->extent.height,crossFormat,this);
 
-                VkFenceCreateInfo fenceCreateInfo = {.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
-                VkFence fence{};
-                vkCreateFence(_graphicsCard->device(),&fenceCreateInfo,nullptr,&fence);
-                _imageAcquiredFence.push_back(fence);
+                    VkFenceCreateInfo fenceCreateInfo = {.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+                    VkFence fence{};
+                    vkCreateFence(_graphicsCard->device(),&fenceCreateInfo,nullptr,&fence);
+                    _imageAcquiredFence.push_back(fence);
+                }
+            }
+            catch (...)
+            {
+                //the new swapchain isn't owned by _swapChain yet, so destroy it here
+                _frames.clear();
+                vkDestroySwapchainKHR(_graphicsCard->device(),chain->swapchain,nullptr);
+                throw;
             }
             _width = chain->extent.width;
             _height = chain->extent.height;
@@ -183,7 +192,7 @@ namespace slag
                 vkDestroySwapchainKHR(_graphicsCard->device(),_swapChain,nullptr);
             }
             _swapChain = chain->swapchain;
-            _parameters.imageCount = images.size();
+            _parameters.imageCount = _frames.size();
             _parameters.presentMode = VulkanBackend::crossPlatformPresentMode(chain->present_mode);
             _parameters.imageFormat = crossFormat;
 
@@ -200,6 +209,15 @@ namespace slag
             _height = from._height;
             std::swap(_swapChain, from._swapChain);
             _frames.swap(from._frames);
+            //frames hold a back-pointer to their swapchain, re-point them after the swap
+            for (auto& frame : _frames)
+            {
+                frame._parentChain = this;
+            }
+            for (auto& frame : from._frames)
+            {
+                frame._parentChain = &from;
+            }
             std::swap(_imageAcquiredFence, from._imageAcquiredFence);
             _currentFrameIndex = from._currentFrameIndex;
             _currentFenceIndex = from._currentFenceIndex;

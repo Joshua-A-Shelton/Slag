@@ -23,6 +23,7 @@ namespace slag
             void submit(SubmissionBatch* batches, uint32_t batchCount)override;
             ID3D12CommandQueue* dx12Handle()const;
         private:
+            friend class DX12GraphicsCard;
             void move(DX12SubmissionQueue& from);
             DX12GraphicsCard* _graphicsCard = nullptr;
             ID3D12CommandQueue* _queue = nullptr;
