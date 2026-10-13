@@ -53,18 +53,27 @@ namespace slag
             break;
         }
 
-        auto result = SLAG_GRAPHICS_BACKEND->initializeBackend(initData);
-        if (result != SlagInitializationResult::SUCCESS)
+        try
         {
-            delete SLAG_GRAPHICS_BACKEND;
-            SLAG_GRAPHICS_BACKEND = nullptr;
-            return result;
+            auto result = SLAG_GRAPHICS_BACKEND->initializeBackend(initData);
+            if (result != SlagInitializationResult::SUCCESS)
+            {
+                delete SLAG_GRAPHICS_BACKEND;
+                SLAG_GRAPHICS_BACKEND = nullptr;
+                return result;
+            }
+            if (SLAG_GRAPHICS_BACKEND->graphicsCardCount() == 0)
+            {
+                delete SLAG_GRAPHICS_BACKEND;
+                SLAG_GRAPHICS_BACKEND = nullptr;
+                return SlagInitializationResult::NO_GRAPHICS_CARDS;
+            }
         }
-        if (SLAG_GRAPHICS_BACKEND->graphicsCardCount() == 0)
+        catch (...)
         {
             delete SLAG_GRAPHICS_BACKEND;
             SLAG_GRAPHICS_BACKEND = nullptr;
-            return SlagInitializationResult::NO_GRAPHICS_CARDS;
+            throw;
         }
         return SlagInitializationResult::SUCCESS;
     }

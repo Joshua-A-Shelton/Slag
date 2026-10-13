@@ -154,6 +154,7 @@ namespace slag
             std::swap(_borderExt,from._borderExt);
             std::swap(_min,from._min);
             std::swap(_mag,from._mag);
+            std::swap(_mip,from._mip);
             std::swap(_u,from._u);
             std::swap(_v,from._v);
             std::swap(_w,from._w);
@@ -167,6 +168,7 @@ namespace slag
             std::swap(_graphicsCard,from._graphicsCard);
 
             _createInfo.pNext = &_borderExt;
+            from._createInfo.pNext = &from._borderExt;
         }
     } // vulkan
 } // slag

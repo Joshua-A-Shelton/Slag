@@ -13,7 +13,16 @@ namespace slag
             _frameIndex = frameIndex;
             _parentChain = parentChain;
             _renderBuffer = new VulkanTexture(static_cast<VulkanGraphicsCard*>(parentChain->graphicsCard()),TextureType::TWO_DIMENSIONAL,image,format,TextureUsageFlags::COLOR_TARGET,width, height,1,1,1,SampleCount::ONE);
-            _frameBufferView = new VulkanFrameBufferView(static_cast<VulkanGraphicsCard*>(parentChain->graphicsCard()),_renderBuffer,0,0,1);
+            try
+            {
+                _frameBufferView = new VulkanFrameBufferView(static_cast<VulkanGraphicsCard*>(parentChain->graphicsCard()),_renderBuffer,0,0,1);
+            }
+            catch (...)
+            {
+                delete _renderBuffer;
+                _renderBuffer = nullptr;
+                throw;
+            }
         }
 
         VulkanFrame::~VulkanFrame()

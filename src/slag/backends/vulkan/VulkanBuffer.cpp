@@ -186,17 +186,21 @@ namespace slag
 
         void VulkanBuffer::move(VulkanBuffer& from)
         {
-            _size = from._size;
+            std::swap(_size,from._size);
             std::swap(_graphicsCard,from._graphicsCard);
             std::swap(_buffer,from._buffer);
             std::swap(_allocation,from._allocation);
             std::swap(_data,from._data);
             std::swap(_userData,from._userData);
-            _dataBits = from._dataBits;
+            std::swap(_dataBits,from._dataBits);
 
             if (_allocation)
             {
                 vmaSetAllocationUserData(_graphicsCard->allocator(),_allocation,&_selfReference);
+            }
+            if (from._allocation)
+            {
+                vmaSetAllocationUserData(from._graphicsCard->allocator(),from._allocation,&from._selfReference);
             }
         }
     } // vulkan

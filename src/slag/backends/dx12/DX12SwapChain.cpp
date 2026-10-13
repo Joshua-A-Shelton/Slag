@@ -121,11 +121,20 @@ namespace slag
             std::swap(_swapChain, from._swapChain);
             _parameters = from._parameters;
             _frames.swap(from._frames);
+            //frames hold a back-pointer to their swapchain, re-point them after the swap
+            for (auto& frame : _frames)
+            {
+                frame._parentChain = this;
+            }
+            for (auto& frame : from._frames)
+            {
+                frame._parentChain = &from;
+            }
             _width = from._width;
             _height = from._height;
             _presentRequired = from._presentRequired;
             _parametersChanged = from._parametersChanged;
-            _frameLatencyWaitObject = from._frameLatencyWaitObject;
+            std::swap(_frameLatencyWaitObject, from._frameLatencyWaitObject);
         }
 
         void DX12SwapChain::rebuild()

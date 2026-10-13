@@ -441,41 +441,52 @@ namespace slag
                 throw ResourceCreationError("Unable to create texture");
             }
 
-            populateDescriptorInfo();
-
-            //Transition to general
-
-            VulkanCommandBuffer transitionBuffer(_graphicsCard,QueueType::TRANSFER);
-            transitionBuffer.begin();
-            auto vkcmdbuffer = transitionBuffer.vulkanHandle();
-
-            VkImageMemoryBarrier2 barrier = {};
-            barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-            barrier.image = _texture;
-            barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-            barrier.subresourceRange = _descriptorInfo.subresourceRange;
-
-            VkDependencyInfo dependencyInfo = {};
-            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-            dependencyInfo.imageMemoryBarrierCount = 1;
-            dependencyInfo.pImageMemoryBarriers = &barrier;
-            vkCmdPipelineBarrier2(vkcmdbuffer,&dependencyInfo);
-            transitionBuffer.end();
-            VulkanSemaphore finished(_graphicsCard,0);
-            SemaphoreValue signal{.semaphore = &finished, .value = 1};
-            CommandBuffer* commandBuffers = &transitionBuffer;
-            SubmissionBatch batch
+            try
             {
-                .waitSemaphores = nullptr,
-                .waitSemaphoreCount = 0,
-                .commandBuffers = &commandBuffers,
-                .commandBufferCount = 1,
-                .signalSemaphores = &signal,
-                .signalSemaphoreCount = 1,
-            };
-            _graphicsCard->transferQueue()->submit(batch);
-            finished.waitForValue(1);
+                populateDescriptorInfo();
+
+                //Transition to general
+
+                VulkanCommandBuffer transitionBuffer(_graphicsCard,QueueType::TRANSFER);
+                transitionBuffer.begin();
+                auto vkcmdbuffer = transitionBuffer.vulkanHandle();
+
+                VkImageMemoryBarrier2 barrier = {};
+                barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+                barrier.image = _texture;
+                barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+                barrier.subresourceRange = _descriptorInfo.subresourceRange;
+
+                VkDependencyInfo dependencyInfo = {};
+                dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+                dependencyInfo.imageMemoryBarrierCount = 1;
+                dependencyInfo.pImageMemoryBarriers = &barrier;
+                vkCmdPipelineBarrier2(vkcmdbuffer,&dependencyInfo);
+                transitionBuffer.end();
+                VulkanSemaphore finished(_graphicsCard,0);
+                SemaphoreValue signal{.semaphore = &finished, .value = 1};
+                CommandBuffer* commandBuffers = &transitionBuffer;
+                SubmissionBatch batch
+                {
+                    .waitSemaphores = nullptr,
+                    .waitSemaphoreCount = 0,
+                    .commandBuffers = &commandBuffers,
+                    .commandBufferCount = 1,
+                    .signalSemaphores = &signal,
+                    .signalSemaphoreCount = 1,
+                };
+                _graphicsCard->transferQueue()->submit(batch);
+                finished.waitForValue(1);
+            }
+            catch (...)
+            {
+                //called from the constructors, so the destructor won't run to clean this up
+                vmaDestroyImage(_graphicsCard->allocator(),_texture,_allocation);
+                _texture = nullptr;
+                _allocation = nullptr;
+                throw;
+            }
 
         }
 
