@@ -1,1 +1,4 @@
 build/
+
+# Image check failures (tests/backend/ImageCheck.h)
+tests/golden/*.actual.rgba

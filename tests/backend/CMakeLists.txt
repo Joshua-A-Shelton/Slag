@@ -12,7 +12,9 @@ add_executable(slag_backend_tests
     DeviceTests.cpp
     InstanceTests.cpp
     MemoryTests.cpp
+    ImageCheck.cpp
     RenderTests.cpp
+    SceneTests.cpp
     TextureTests.cpp)
 target_link_libraries(slag_backend_tests PRIVATE slag::slag doctest::doctest)
 doctest_discover_tests(slag_backend_tests PROPERTIES LABELS gpu)
@@ -25,6 +27,9 @@ slag_add_shader(slag_backend_tests SOURCE ../shaders/Triangle.slang ENTRY vertex
 slag_add_shader(slag_backend_tests SOURCE ../shaders/Triangle.slang ENTRY pixelMain STAGE pixel)
 slag_add_shader(slag_backend_tests SOURCE ../shaders/DrawId.slang ENTRY vertexMain STAGE vertex)
 slag_add_shader(slag_backend_tests SOURCE ../shaders/DrawId.slang ENTRY pixelMain STAGE pixel)
+slag_add_shader(slag_backend_tests SOURCE ../shaders/Scene.slang ENTRY vertexMain STAGE vertex)
+slag_add_shader(slag_backend_tests SOURCE ../shaders/Scene.slang ENTRY pixelMain STAGE pixel)
+target_compile_definitions(slag_backend_tests PRIVATE "SLAG_GOLDEN_DIR=\"${PROJECT_SOURCE_DIR}/tests/golden\"")
 if(SLAG_BACKEND_D3D12)
     target_compile_definitions(slag_backend_tests PRIVATE SLAG_TEST_AGILITY_SDK_VERSION=${SLAG_AGILITY_SDK_VERSION})
 endif()
