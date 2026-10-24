@@ -48,7 +48,8 @@ The first release: a thin C++20 abstraction over Direct3D 12 (Agility SDK
   (ADR 0047).
 - Copies between buffers and textures, and MSAA resolves (ADR 0048).
 - Enhanced-Barriers-style barriers on both backends (ADR 0049).
-- Timeline semaphores for CPU and queue waits.
+- Timeline semaphores for CPU and queue waits: `semaphore->wait()`, and
+  `slag::waitSemaphores()` for all or any of several.
 - Timestamp and occlusion queries, and CPU/GPU clock calibration
   (ADR 0051).
 - Debug labels (ADR 0050).
@@ -63,7 +64,7 @@ The first release: a thin C++20 abstraction over Direct3D 12 (Agility SDK
 
 - Slag validation of every call in validation builds, with a stale-pointer
   quarantine and descriptor-slot tracking (D3D12 poison descriptors); all
-  398 checks are tested without a GPU (ADRs 0016, 0031, 0052, 0067).
+  399 checks are tested without a GPU (ADRs 0016, 0031, 0052, 0067).
 - Debug names on every object, in every build (ADR 0017).
 - Crash diagnostics: D3D12 DRED and Vulkan `VK_EXT_device_fault` reports on
   device loss (ADR 0014).

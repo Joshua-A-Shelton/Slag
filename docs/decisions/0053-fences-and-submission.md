@@ -11,9 +11,14 @@ Timeline semaphores (`Semaphore*`, ADR 0052; called fences in this note) are the
 | `createSemaphore(initialValue)` | `CreateFence` | `vkCreateSemaphore` (timeline) |
 | `semaphore->value()` | `GetCompletedValue` | `vkGetSemaphoreCounterValue` |
 | `semaphore->signal(value)` (CPU) | `ID3D12Fence::Signal` | `vkSignalSemaphore` |
-| `waitSemaphores(span<SemaphoreValue>, WaitAll \| WaitAny, timeoutNs)` (CPU) | `SetEventOnMultipleFenceCompletion` + `WaitForSingleObject` | `vkWaitSemaphores` |
+| `semaphore->wait(value, timeoutNs)` (CPU) | `ID3D12Fence::SetEventOnCompletion` + `WaitForSingleObject` | `vkWaitSemaphores` |
+| `slag::waitSemaphores(span<SemaphoreValue>, WaitAll \| WaitAny, timeoutNs)` (CPU) | `SetEventOnMultipleFenceCompletion` + `WaitForSingleObject` | `vkWaitSemaphores` |
 
 - Values must **strictly increase** (validated).
+- CPU waits live on the semaphores, not the device (changed after M8,
+  2026-10-24). Both native waits need the device, but every semaphore knows
+  its own, so `waitSemaphores` takes it from them; mixing devices in one wait
+  is a validation error.
 - Timeouts in nanoseconds; D3D12 rounds up to milliseconds.
 - Cut: cross-process shared fences.
 

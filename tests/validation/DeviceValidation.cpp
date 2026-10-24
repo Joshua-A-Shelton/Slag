@@ -26,20 +26,19 @@ TEST_CASE("semaphores")
     ValidationFixture f;
     Semaphore* semaphore = f.device->createSemaphore({.initialValue = 3}).value();
     CHECK_VALIDATION(f, "values must strictly increase", (void)semaphore->signal(3));
-    SemaphoreValue none = {nullptr, 1};
-    CHECK_VALIDATION(f, "a semaphore is null", (void)f.device->waitSemaphores({&none, 1}, WaitMode::All, 0));
+    SemaphoreValue mixed[] = {{semaphore, 1}, {nullptr, 1}};
+    CHECK_VALIDATION(f, "a semaphore is null", (void)waitSemaphores(mixed, WaitMode::All, 0));
     ValidationFixture other;
     Semaphore* foreign = other.device->createSemaphore({}).value();
-    SemaphoreValue foreignValue = {foreign, 0};
-    CHECK_VALIDATION(f, "a semaphore belongs to another device",
-                     (void)f.device->waitSemaphores({&foreignValue, 1}, WaitMode::All, 0));
+    mixed[1] = {foreign, 0};
+    CHECK_VALIDATION(f, "the semaphores belong to different devices", (void)waitSemaphores(mixed, WaitMode::All, 0));
     CHECK_VALIDATION(f, "the semaphore belongs to another device", f.device->destroy(foreign));
     other.device->destroy(foreign);
 
     f.device->destroy(semaphore);
     SemaphoreValue destroyed = {semaphore, 1};
-    CHECK_VALIDATION(f, "use of a destroyed Semaphore",
-                     (void)f.device->waitSemaphores({&destroyed, 1}, WaitMode::All, 0));
+    CHECK_VALIDATION(f, "use of a destroyed Semaphore", (void)waitSemaphores({&destroyed, 1}, WaitMode::All, 0));
+    CHECK_VALIDATION(f, "use of a destroyed Semaphore", (void)semaphore->wait(1, 0));
     CHECK_VALIDATION(f, "use of a destroyed Semaphore", (void)semaphore->value());
     CHECK_VALIDATION(f, "use of a destroyed Semaphore", (void)semaphore->signal(9));
     CHECK_VALIDATION(f, "use of a destroyed Semaphore", (void)semaphore->userData());

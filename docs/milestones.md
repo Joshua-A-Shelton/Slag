@@ -231,7 +231,7 @@ deliberately crashing sample produces a crash report on both backends.
 
 **Status (2026-10-24):** done on both backends.
 
-- **Validation tests:** all 398 checks in `src/` fire in a test, without a
+- **Validation tests:** all 399 checks in `src/` fire in a test, without a
   GPU, on a null test backend (`tests/validation/`, ADR 0067);
   `validation_coverage` keeps it that way.
 - **Crash sample:** `samples/crash` loses the device on purpose (it is run by
@@ -285,6 +285,9 @@ decision).
     every sample on both backends.
   - Hosted CI: green.
 - Names proposed during M8 were reviewed and settled (`docs/naming.md`).
+- After the review, CPU waits moved off the device: `semaphore->wait()` for
+  one semaphore and the free `slag::waitSemaphores()` for several, which
+  takes the device from the semaphores (ADR 0053). 399 validation checks.
 
 ## After v1.0
 

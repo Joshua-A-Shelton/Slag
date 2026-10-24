@@ -207,8 +207,7 @@ bool SampleApp::submitAndWait(slag::CommandBuffer* commandBuffer)
     slag::Semaphore* semaphore = device->createSemaphore({}).value();
     slag::SemaphoreValue done = {semaphore, 1};
     slag::CommandBuffer* list[] = {commandBuffer};
-    bool ok = queue->submit({.commandBuffers = list, .signals = {&done, 1}}) &&
-              device->waitSemaphores({&done, 1}, slag::WaitMode::All, UINT64_MAX);
+    bool ok = queue->submit({.commandBuffers = list, .signals = {&done, 1}}) && semaphore->wait(1, UINT64_MAX);
     device->destroy(semaphore);
     return ok;
 }
@@ -305,8 +304,7 @@ int SampleApp::run(const RecordFn& record)
         uint32_t slot = static_cast<uint32_t>(frameNumber % framesInFlight);
         if (frameNumber >= framesInFlight)
         {
-            slag::SemaphoreValue previous = {frameSemaphore, frameNumber - framesInFlight + 1};
-            device->waitSemaphores({&previous, 1}, slag::WaitMode::All, UINT64_MAX);
+            frameSemaphore->wait(frameNumber - framesInFlight + 1, UINT64_MAX);
         }
         slag::Result<uint32_t> acquired = swapchain->acquire();
         if (acquired.status() == slag::Status::OutOfDate)

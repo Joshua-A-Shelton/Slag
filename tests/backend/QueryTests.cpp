@@ -84,7 +84,7 @@ void timestampQueue(slag::GraphicsDevice* device, slag::CommandQueueType type)
         slag::CommandBuffer* commandBuffers[] = {commandBuffer};
         slag::SemaphoreValue signal = {semaphore, round + 1};
         REQUIRE(static_cast<bool>(queue->submit({.commandBuffers = commandBuffers, .signals = {&signal, 1}})));
-        REQUIRE(static_cast<bool>(device->waitSemaphores({&signal, 1}, slag::WaitMode::All, 5'000'000'000)));
+        REQUIRE(static_cast<bool>(signal.semaphore->wait(signal.value, 5'000'000'000)));
         REQUIRE(static_cast<bool>(commandBuffer->reset()));
     }
 

@@ -322,7 +322,7 @@ int main(int argc, char** argv)
         if (frame >= framesInFlight)
         {
             slag::SemaphoreValue done[] = {{computeDone, frame - 1}, {copyDone, frame - 1}};
-            device->waitSemaphores(done, slag::WaitMode::All, UINT64_MAX);
+            slag::waitSemaphores(done, slag::WaitMode::All, UINT64_MAX);
             for (uint32_t q = 0; q < QueueCount; ++q)
             {
                 collect(q, frame - framesInFlight);

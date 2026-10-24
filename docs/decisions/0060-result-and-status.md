@@ -14,7 +14,7 @@ enum class Status : int32_t {
     Ok = 0,
     Suboptimal,         // acquire/present worked; reconfigure soon
     Occluded,           // present skipped: window not visible
-    Timeout,            // waitSemaphores ran out of time
+    Timeout,            // a semaphore wait ran out of time
     // errors: no value
     OutOfDate = -1,     // swapchain must be reconfigured
     DeviceLost = -2,

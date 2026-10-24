@@ -75,8 +75,10 @@ Result<void> waitSemaphores(GraphicsDeviceCommon* common, std::span<const Semaph
     }
     D3D12_MULTIPLE_FENCE_WAIT_FLAGS flags =
         mode == WaitMode::Any ? D3D12_MULTIPLE_FENCE_WAIT_FLAG_ANY : D3D12_MULTIPLE_FENCE_WAIT_FLAG_ALL;
-    HRESULT result = device.device->SetEventOnMultipleFenceCompletion(fences.data(), waitValues.data(),
-                                                                      static_cast<UINT>(fences.size()), flags, event);
+    HRESULT result = fences.size() == 1
+                         ? fences[0]->SetEventOnCompletion(waitValues[0], event)
+                         : device.device->SetEventOnMultipleFenceCompletion(
+                               fences.data(), waitValues.data(), static_cast<UINT>(fences.size()), flags, event);
     Status status = toStatus(device, result);
     if (status == Status::Ok)
     {

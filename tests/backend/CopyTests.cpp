@@ -161,7 +161,7 @@ void roundTrip(TestInstance& test, slag::GraphicsDevice* device, const TextureCa
     slag::CommandBuffer* commandBuffers[] = {commandBuffer};
     REQUIRE(static_cast<bool>(device->commandQueue(slag::CommandQueueType::Graphics)
                                   ->submit({.commandBuffers = commandBuffers, .signals = {&done, 1}})));
-    REQUIRE(static_cast<bool>(device->waitSemaphores({&done, 1}, slag::WaitMode::All, 10'000'000'000)));
+    REQUIRE(static_cast<bool>(done.semaphore->wait(done.value, 10'000'000'000)));
 
     // Compare the texel bytes of every row.
     const auto* expected = static_cast<const uint8_t*>(upload->mappedData());

@@ -58,7 +58,7 @@ struct Submitter
         slag::CommandBuffer* list[] = {commandBuffer};
         REQUIRE(static_cast<bool>(device->commandQueue(type)->submit(
             {.waits = {&wait, 1}, .commandBuffers = list, .signals = {&signal, 1}})));
-        REQUIRE(static_cast<bool>(device->waitSemaphores({&signal, 1}, slag::WaitMode::All, 10'000'000'000)));
+        REQUIRE(static_cast<bool>(signal.semaphore->wait(signal.value, 10'000'000'000)));
         device->destroy(commandBuffer);
         return signal;
     }

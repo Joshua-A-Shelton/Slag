@@ -193,38 +193,6 @@ void GraphicsDevice::destroy(Semaphore* semaphore)
     SLAG_DISPATCH(self, destroySemaphore)(self, object);
 }
 
-Result<void> GraphicsDevice::waitSemaphores(std::span<const SemaphoreValue> values, WaitMode mode, uint64_t timeoutNs)
-{
-    GraphicsDeviceCommon* self = common(this);
-#ifdef SLAG_VALIDATION
-    for (const SemaphoreValue& value : values)
-    {
-        SLAG_VALIDATE(self->instance, value.semaphore, "GraphicsDevice::waitSemaphores", "a semaphore is null");
-        SLAG_CHECK_LIVE(self->instance, SemaphoreCommon, value.semaphore, "Semaphore",
-                        "GraphicsDevice::waitSemaphores");
-        SLAG_VALIDATE(self->instance,
-                      !value.semaphore || static_cast<SemaphoreCommon*>(value.semaphore)->device == self,
-                      "GraphicsDevice::waitSemaphores", "a semaphore belongs to another device");
-    }
-#endif
-    if (values.empty())
-    {
-        return {};
-    }
-    for (const SemaphoreValue& value : values)
-    {
-        if (!value.semaphore)
-        {
-            return Status::Unsupported; // reported above
-        }
-    }
-    if (self->lost)
-    {
-        return Status::DeviceLost;
-    }
-    return SLAG_DISPATCH(self, waitSemaphores)(self, values, mode, timeoutNs);
-}
-
 Result<void> GraphicsDevice::waitIdle()
 {
     GraphicsDeviceCommon* self = common(this);
@@ -311,6 +279,18 @@ Result<void> Semaphore::signal(uint64_t value)
     return SLAG_DISPATCH(self, signalSemaphore)(self, value);
 }
 
+Result<void> Semaphore::wait(uint64_t value, uint64_t timeoutNs)
+{
+    SLAG_CHECK_LIVE_THIS(SemaphoreCommon, "Semaphore", "Semaphore::wait");
+    auto* self = static_cast<SemaphoreCommon*>(this);
+    if (self->device->lost)
+    {
+        return Status::DeviceLost;
+    }
+    const SemaphoreValue wait = {this, value};
+    return SLAG_DISPATCH(self, waitSemaphores)(self->device, {&wait, 1}, WaitMode::All, timeoutNs);
+}
+
 uint64_t Semaphore::userData() const
 {
     SLAG_CHECK_LIVE_THIS(SemaphoreCommon, "Semaphore", "Semaphore::userData");
@@ -321,6 +301,47 @@ void Semaphore::setUserData(uint64_t value)
 {
     SLAG_CHECK_LIVE_THIS(SemaphoreCommon, "Semaphore", "Semaphore::setUserData");
     static_cast<SemaphoreCommon*>(this)->userData = value;
+}
+
+Result<void> waitSemaphores(std::span<const SemaphoreValue> values, WaitMode mode, uint64_t timeoutNs)
+{
+    // The device comes from the semaphores: both backends wait through it
+    // (vkWaitSemaphores, SetEventOnMultipleFenceCompletion).
+    GraphicsDeviceCommon* device = nullptr;
+    for (const SemaphoreValue& value : values)
+    {
+        if (value.semaphore)
+        {
+            device = static_cast<SemaphoreCommon*>(value.semaphore)->device;
+            break;
+        }
+    }
+#ifdef SLAG_VALIDATION
+    InstanceCommon* instance = device ? device->instance : nullptr;
+    for (const SemaphoreValue& value : values)
+    {
+        SLAG_VALIDATE(instance, value.semaphore, "waitSemaphores", "a semaphore is null");
+        SLAG_CHECK_LIVE(instance, SemaphoreCommon, value.semaphore, "Semaphore", "waitSemaphores");
+        SLAG_VALIDATE(instance, !value.semaphore || static_cast<SemaphoreCommon*>(value.semaphore)->device == device,
+                      "waitSemaphores", "the semaphores belong to different devices");
+    }
+#endif
+    if (values.empty())
+    {
+        return {};
+    }
+    for (const SemaphoreValue& value : values)
+    {
+        if (!value.semaphore || static_cast<SemaphoreCommon*>(value.semaphore)->device != device)
+        {
+            return Status::Unsupported; // reported above
+        }
+    }
+    if (device->lost)
+    {
+        return Status::DeviceLost;
+    }
+    return SLAG_DISPATCH(device, waitSemaphores)(device, values, mode, timeoutNs);
 }
 
 } // namespace slag

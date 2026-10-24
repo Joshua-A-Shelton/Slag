@@ -5,6 +5,7 @@
 #include <slag/Result.h>
 
 #include <cstdint>
+#include <span>
 
 namespace slag {
 
@@ -30,6 +31,9 @@ public:
 
     // Signals from the CPU. Values must strictly increase. One thread at a time.
     Result<void> signal(uint64_t value);
+    // CPU wait until the semaphore reaches `value`. Returns Timeout if the
+    // timeout passed first. Thread-safe.
+    Result<void> wait(uint64_t value, uint64_t timeoutNs);
 
     uint64_t userData() const;
     void setUserData(uint64_t value);
@@ -47,5 +51,9 @@ struct SemaphoreValue
     Semaphore* semaphore = nullptr;
     uint64_t value = 0;
 };
+
+// CPU wait on several semaphores of one device, for all of them or any one.
+// Returns Timeout if the timeout passed first. Thread-safe.
+Result<void> waitSemaphores(std::span<const SemaphoreValue> values, WaitMode mode, uint64_t timeoutNs);
 
 } // namespace slag

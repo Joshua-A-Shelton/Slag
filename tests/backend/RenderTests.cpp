@@ -138,7 +138,7 @@ void testTriangle(slag::Backend backend)
     slag::CommandBuffer* commandBuffers[] = {commandBuffer};
     REQUIRE(static_cast<bool>(device->commandQueue(slag::CommandQueueType::Graphics)
                                   ->submit({.commandBuffers = commandBuffers, .signals = {&done, 1}})));
-    REQUIRE(static_cast<bool>(device->waitSemaphores({&done, 1}, slag::WaitMode::All, 5'000'000'000)));
+    REQUIRE(static_cast<bool>(done.semaphore->wait(done.value, 5'000'000'000)));
 
     auto pixel = [&](uint32_t x, uint32_t y) {
         const uint8_t* p = static_cast<const uint8_t*>(readback->mappedData()) + y * footprint.rowPitch + x * 4;
@@ -171,7 +171,7 @@ void submitAndWait(slag::GraphicsDevice* device, slag::CommandBuffer* commandBuf
     slag::CommandBuffer* commandBuffers[] = {commandBuffer};
     REQUIRE(static_cast<bool>(device->commandQueue(slag::CommandQueueType::Graphics)
                                   ->submit({.commandBuffers = commandBuffers, .signals = {&done, 1}})));
-    REQUIRE(static_cast<bool>(device->waitSemaphores({&done, 1}, slag::WaitMode::All, 5'000'000'000)));
+    REQUIRE(static_cast<bool>(done.semaphore->wait(done.value, 5'000'000'000)));
     device->destroy(semaphore);
 }
 
@@ -519,7 +519,7 @@ void testSplitPass(slag::Backend backend)
         slag::CommandBuffer* commandBuffers[] = {first, second};
         REQUIRE(static_cast<bool>(device->commandQueue(slag::CommandQueueType::Graphics)
                                       ->submit({.commandBuffers = commandBuffers, .signals = {&done, 1}})));
-        REQUIRE(static_cast<bool>(device->waitSemaphores({&done, 1}, slag::WaitMode::All, 5'000'000'000)));
+        REQUIRE(static_cast<bool>(done.semaphore->wait(done.value, 5'000'000'000)));
 
         const auto* pixels = static_cast<const uint8_t*>(readback->mappedData());
         auto at = [&](uint32_t x, uint32_t y) {

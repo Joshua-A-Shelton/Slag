@@ -16,11 +16,11 @@
 | Object | Thread-safe | One thread at a time (on that object) |
 |---|---|---|
 | `Instance` | `graphicsDevices()` | `slag::destroy(instance)`: nothing else may use the instance |
-| `GraphicsDevice` | every `create*` and `destroy()`; `info()`, `capabilities()`, `formatSupport()`, `placementInfo()`, `copyFootprint()`, `memoryBudget()`, `status()`, `pipelineCacheData()`; `waitSemaphores()`; descriptor writes/clears to **different** slots | `initialize()` / `shutdown()`: nothing else may use the device; `waitIdle()`: no submits or presents may run concurrently |
+| `GraphicsDevice` | every `create*` and `destroy()`; `info()`, `capabilities()`, `formatSupport()`, `placementInfo()`, `copyFootprint()`, `memoryBudget()`, `status()`, `pipelineCacheData()`; descriptor writes/clears to **different** slots | `initialize()` / `shutdown()`: nothing else may use the device; `waitIdle()`: no submits or presents may run concurrently |
 | `CommandQueue` | `timestampFrequency()` | `submit()`, `present()`, `waitIdle()` |
 | `CommandBuffer` | — | everything |
 | `Swapchain` | `imageCount()`, `switchablePresentModes()` | `acquire()`, `reconfigure()`, `setHdrMetadata()`, `setMaxFrameLatency()`, `waitForNextFrame()` |
-| `Semaphore` | `value()` | `signal()` |
+| `Semaphore` | `value()`, `wait()`, and the free `waitSemaphores()` | `signal()` |
 | `Buffer` | `gpuAddress()`, `mappedData()` (CPU access to the memory is the user's to synchronize) | — |
 | Every object | `userData()` while no `setUserData()` runs | `setUserData()` |
 | Defragmentation pass | — | the whole pass; resources in an active pass must not be destroyed |

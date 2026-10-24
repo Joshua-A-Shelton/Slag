@@ -2,6 +2,7 @@
 #include "common/Vector.h"
 
 #include <slag/GraphicsDevice.h>
+#include <slag/Semaphore.h>
 #include <slag/util/DeferredDestroyer.h>
 
 namespace slag {
@@ -160,13 +161,13 @@ void DeferredDestroyer::flush()
         else
         {
             // Out of host memory: wait one at a time.
-            (void)device->waitSemaphores({&entry.after, 1}, WaitMode::All, UINT64_MAX);
+            (void)entry.after.semaphore->wait(entry.after.value, UINT64_MAX);
         }
     }
     if (recorded)
     {
         // A lost device completes every semaphore, so destroying still follows.
-        (void)device->waitSemaphores({state->waits.data(), state->waits.size()}, WaitMode::All, UINT64_MAX);
+        (void)waitSemaphores({state->waits.data(), state->waits.size()}, WaitMode::All, UINT64_MAX);
     }
     for (uint8_t kind = 0; kind < static_cast<uint8_t>(Kind::Count); ++kind)
     {
@@ -187,7 +188,7 @@ void DeferredDestroyer::flush()
         if (object && (!state || !state->add(object, Kind::Type, after)))                                              \
         {                                                                                                              \
             /* Out of host memory: wait now. */                                                                        \
-            (void)device->waitSemaphores({&after, 1}, WaitMode::All, UINT64_MAX);                                      \
+            (void)after.semaphore->wait(after.value, UINT64_MAX);                                                      \
             device->destroy(object);                                                                                   \
         }                                                                                                              \
     }

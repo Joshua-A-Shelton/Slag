@@ -130,7 +130,7 @@ void testTextureCreation(slag::Backend backend)
     slag::CommandBuffer* commandBuffers[] = {commandBuffer};
     REQUIRE(static_cast<bool>(device->commandQueue(slag::CommandQueueType::Graphics)
                                   ->submit({.commandBuffers = commandBuffers, .signals = {&done, 1}})));
-    REQUIRE(static_cast<bool>(device->waitSemaphores({&done, 1}, slag::WaitMode::All, 5'000'000'000)));
+    REQUIRE(static_cast<bool>(done.semaphore->wait(done.value, 5'000'000'000)));
 
     device->destroy(semaphore);
     device->destroy(commandBuffer);

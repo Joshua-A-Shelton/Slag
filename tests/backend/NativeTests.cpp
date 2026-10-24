@@ -133,7 +133,7 @@ void runScene(slag::Backend backend, const std::function<void(TestInstance&, Nat
     slag::CommandBuffer* list[] = {scene.commandBuffer};
     REQUIRE(static_cast<bool>(device->commandQueue(slag::CommandQueueType::Compute)
                                   ->submit({.commandBuffers = list, .signals = {&done, 1}})));
-    REQUIRE(static_cast<bool>(device->waitSemaphores({&done, 1}, slag::WaitMode::All, 5'000'000'000)));
+    REQUIRE(static_cast<bool>(done.semaphore->wait(done.value, 5'000'000'000)));
 
     const auto* results = static_cast<const uint32_t*>(scene.readback->mappedData());
     uint32_t badCopies = 0;

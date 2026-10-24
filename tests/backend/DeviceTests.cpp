@@ -66,12 +66,12 @@ void testSemaphores(slag::Backend backend)
     CHECK(b.value()->value() == 0);
 
     slag::SemaphoreValue waits[] = {{a.value(), 5}, {b.value(), 1}};
-    CHECK(device->waitSemaphores(waits, slag::WaitMode::All, 1'000'000).status() == slag::Status::Timeout);
-    CHECK(device->waitSemaphores(waits, slag::WaitMode::Any, 0).status() == slag::Status::Ok);
+    CHECK(slag::waitSemaphores(waits, slag::WaitMode::All, 1'000'000).status() == slag::Status::Timeout);
+    CHECK(slag::waitSemaphores(waits, slag::WaitMode::Any, 0).status() == slag::Status::Ok);
 
     REQUIRE(static_cast<bool>(b.value()->signal(1)));
     CHECK(b.value()->value() == 1);
-    CHECK(device->waitSemaphores(waits, slag::WaitMode::All, 0).status() == slag::Status::Ok);
+    CHECK(slag::waitSemaphores(waits, slag::WaitMode::All, 0).status() == slag::Status::Ok);
 
     device->destroy(a.value());
     device->destroy(b.value());

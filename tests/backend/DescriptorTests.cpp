@@ -190,7 +190,7 @@ void testDescriptorKinds(slag::Backend backend)
     slag::CommandBuffer* commandBuffers[] = {commandBuffer};
     REQUIRE(static_cast<bool>(device->commandQueue(slag::CommandQueueType::Graphics)
                                   ->submit({.commandBuffers = commandBuffers, .signals = {&done, 1}})));
-    REQUIRE(static_cast<bool>(device->waitSemaphores({&done, 1}, slag::WaitMode::All, 5'000'000'000)));
+    REQUIRE(static_cast<bool>(done.semaphore->wait(done.value, 5'000'000'000)));
 
     const auto* results = static_cast<const Float4*>(readback->mappedData());
     CHECK(equal(results[0], constants));
@@ -276,7 +276,7 @@ void testRootConstantBuffer(slag::Backend backend)
     slag::CommandBuffer* commandBuffers[] = {commandBuffer};
     REQUIRE(static_cast<bool>(device->commandQueue(slag::CommandQueueType::Compute)
                                   ->submit({.commandBuffers = commandBuffers, .signals = {&done, 1}})));
-    REQUIRE(static_cast<bool>(device->waitSemaphores({&done, 1}, slag::WaitMode::All, 5'000'000'000)));
+    REQUIRE(static_cast<bool>(done.semaphore->wait(done.value, 5'000'000'000)));
 
     const auto* results = static_cast<const uint8_t*>(readback->mappedData());
     for (int i = 0; i < 2; ++i)
@@ -375,7 +375,7 @@ void testReleasedSlots(slag::Backend backend)
         slag::CommandBuffer* commandBuffers[] = {commandBuffer};
         REQUIRE(static_cast<bool>(device->commandQueue(slag::CommandQueueType::Compute)
                                       ->submit({.commandBuffers = commandBuffers, .signals = {&done, 1}})));
-        REQUIRE(static_cast<bool>(device->waitSemaphores({&done, 1}, slag::WaitMode::All, 5'000'000'000)));
+        REQUIRE(static_cast<bool>(done.semaphore->wait(done.value, 5'000'000'000)));
         uint32_t values[7] = {};
         std::memcpy(values, readback->mappedData(), sizeof(values));
         float magenta[4] = {};
@@ -482,7 +482,7 @@ TEST_CASE("D3D12: GPU-based validation reports never-written descriptors")
     slag::CommandBuffer* commandBuffers[] = {commandBuffer};
     REQUIRE(static_cast<bool>(device->commandQueue(slag::CommandQueueType::Compute)
                                   ->submit({.commandBuffers = commandBuffers, .signals = {&done, 1}})));
-    (void)device->waitSemaphores({&done, 1}, slag::WaitMode::All, 10'000'000'000);
+    (void)done.semaphore->wait(done.value, 10'000'000'000);
     size_t uninitialized = 0;
     for (const std::string& error : messages.errors)
     {

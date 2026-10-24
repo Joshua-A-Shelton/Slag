@@ -126,7 +126,7 @@ int main(int argc, char** argv)
     slag::Status status = submitted.status();
     if (submitted)
     {
-        status = device->waitSemaphores({&done, 1}, slag::WaitMode::All, 20'000'000'000).status();
+        status = done.semaphore->wait(done.value, 20'000'000'000).status();
     }
     std::printf("wait: %s, device status: %s\n", statusName(status), statusName(device->status()));
 

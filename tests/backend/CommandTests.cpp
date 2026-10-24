@@ -70,7 +70,7 @@ void testCopyOnEachQueue(slag::Backend backend)
             slag::CommandBuffer* commandBuffers[] = {commandBuffer};
             slag::CommandQueue* queue = device->commandQueue(type);
             REQUIRE(static_cast<bool>(queue->submit({.commandBuffers = commandBuffers, .signals = {&signal, 1}})));
-            REQUIRE(static_cast<bool>(device->waitSemaphores({&signal, 1}, slag::WaitMode::All, 5'000'000'000)));
+            REQUIRE(static_cast<bool>(signal.semaphore->wait(signal.value, 5'000'000'000)));
 
             const auto* result = static_cast<const uint32_t*>(readback->mappedData());
             CHECK(std::memcmp(result, source, elementCount * 4) == 0);
@@ -182,11 +182,10 @@ void testQueueChain(slag::Backend backend)
         device->commandQueue(slag::CommandQueueType::Compute)
             ->submit({.waits = {&gateWait, 1}, .commandBuffers = computeList, .signals = {&computeSignal, 1}})));
 
-    CHECK(device->waitSemaphores({&graphicsSignal, 1}, slag::WaitMode::All, 50'000'000).status() ==
-          slag::Status::Timeout);
+    CHECK(graphicsSignal.semaphore->wait(graphicsSignal.value, 50'000'000).status() == slag::Status::Timeout);
     CHECK(graphicsDone->value() == 0);
     REQUIRE(static_cast<bool>(gate->signal(1)));
-    REQUIRE(static_cast<bool>(device->waitSemaphores({&graphicsSignal, 1}, slag::WaitMode::All, 5'000'000'000)));
+    REQUIRE(static_cast<bool>(graphicsSignal.semaphore->wait(graphicsSignal.value, 5'000'000'000)));
 
     const auto* values = static_cast<const uint32_t*>(readback->mappedData());
     uint32_t mismatches = 0;

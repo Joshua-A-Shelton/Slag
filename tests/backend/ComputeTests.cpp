@@ -106,7 +106,7 @@ void runFillBuffer(TestInstance& test, slag::GraphicsDevice* device, bool indire
     slag::CommandBuffer* commandBuffers[] = {commandBuffer};
     REQUIRE(static_cast<bool>(device->commandQueue(slag::CommandQueueType::Compute)
                                   ->submit({.commandBuffers = commandBuffers, .signals = {&signal, 1}})));
-    REQUIRE(static_cast<bool>(device->waitSemaphores({&signal, 1}, slag::WaitMode::All, 5'000'000'000)));
+    REQUIRE(static_cast<bool>(signal.semaphore->wait(signal.value, 5'000'000'000)));
 
     const auto* values = static_cast<const uint32_t*>(readback->mappedData());
     uint32_t mismatches = 0;
