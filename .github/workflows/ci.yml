@@ -1,0 +1,101 @@
+# Hosted CI (CLAUDE.md §12): build, unit tests, format check.
+# The self-hosted GPU runner (Vulkan backend tests on RADV) is added once
+# backend code exists (milestone M1).
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  SLANG_VERSION: 2026.18.2
+  SLANG_LINUX_SHA256: 8a097d4365e1cab10265d0b0d77b461b5d30576f99ddc0521a35723c34cad816
+  SLANG_WINDOWS_SHA256: 747602aec6b3623658d55fea87492d71828e15d16802d7941204fde418ceee8e
+  DXC_URL: https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.9.2609/dxc_2026_09_29.zip
+  DXC_SHA256: ad31b1fc8443175d204f77a611fdb3ef2ec42759bdc2f1167368de24a4a7e7f1
+  CLANG_FORMAT_VERSION: 23.1.3
+
+jobs:
+  linux:
+    name: Linux (${{ matrix.compiler }}, ${{ matrix.preset }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+        preset: [debug, release]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      - name: Install Slang
+        run: |
+          curl -sSL -o slang.tar.gz "https://github.com/shader-slang/slang/releases/download/v${SLANG_VERSION}/slang-${SLANG_VERSION}-linux-x86_64.tar.gz"
+          echo "${SLANG_LINUX_SHA256}  slang.tar.gz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/slang" && tar -xzf slang.tar.gz -C "$RUNNER_TEMP/slang"
+          echo "$RUNNER_TEMP/slang/bin" >> "$GITHUB_PATH"
+
+      - name: Configure
+        run: |
+          if [ "${{ matrix.compiler }}" = "clang" ]; then export CC=clang CXX=clang++; else export CC=gcc CXX=g++; fi
+          # Ubuntu's spirv-val predates descriptor-heap SPIR-V.
+          cmake --preset ${{ matrix.preset }} -DSLAG_VALIDATE_SPIRV=OFF
+
+      - name: Build
+        run: cmake --build --preset ${{ matrix.preset }}
+
+      - name: Test
+        run: ctest --preset ${{ matrix.preset }}
+
+  windows:
+    name: Windows (MSVC, ${{ matrix.preset }})
+    runs-on: windows-2025
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [debug, release]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Slang and DXC
+        shell: pwsh
+        run: |
+          $dir = Join-Path $env:RUNNER_TEMP "slang"
+          Invoke-WebRequest "https://github.com/shader-slang/slang/releases/download/v$env:SLANG_VERSION/slang-$env:SLANG_VERSION-windows-x86_64.zip" -OutFile slang.zip
+          if ((Get-FileHash slang.zip -Algorithm SHA256).Hash -ne $env:SLANG_WINDOWS_SHA256) { throw "Slang hash mismatch" }
+          Expand-Archive slang.zip -DestinationPath $dir
+          Invoke-WebRequest $env:DXC_URL -OutFile dxc.zip
+          if ((Get-FileHash dxc.zip -Algorithm SHA256).Hash -ne $env:DXC_SHA256) { throw "DXC hash mismatch" }
+          Expand-Archive dxc.zip -DestinationPath dxc
+          # Slang loads DXC from its own directory to produce DXIL.
+          Copy-Item dxc/bin/x64/dxcompiler.dll, dxc/bin/x64/dxil.dll (Join-Path $dir "bin")
+          Add-Content $env:GITHUB_PATH (Join-Path $dir "bin")
+
+      - name: Configure
+        run: cmake --preset ${{ matrix.preset }}
+
+      - name: Build
+        run: cmake --build --preset ${{ matrix.preset }}
+
+      - name: Test
+        run: ctest --preset ${{ matrix.preset }}
+
+  format:
+    name: Format check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install clang-format
+        run: pipx install "clang-format==${CLANG_FORMAT_VERSION}"
+
+      - name: Check formatting
+        run: find include src tests \( -name '*.h' -o -name '*.cpp' \) -print0 | xargs -0 clang-format --dry-run --Werror

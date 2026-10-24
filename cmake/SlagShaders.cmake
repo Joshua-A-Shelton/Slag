@@ -5,10 +5,12 @@
 #
 # Writes <name-of-source>.<entry>.spv (Vulkan backend) and .dxil (D3D12
 # backend) into ${CMAKE_CURRENT_BINARY_DIR}/shaders and makes <target> depend
-# on them. SPIR-V is checked with spirv-val when it is available.
+# on them. SPIR-V is checked with spirv-val when it is available and
+# SLAG_VALIDATE_SPIRV is on (descriptor-heap SPIR-V needs SPIRV-Tools 2026.3+).
 
 find_program(SLAG_SLANGC slangc)
 find_program(SLAG_SPIRV_VAL spirv-val)
+option(SLAG_VALIDATE_SPIRV "Validate generated SPIR-V with spirv-val" ON)
 
 # Required for every Vulkan shader: descriptor heaps with one shared slot index
 # space (ADRs 0029, 0034).
@@ -44,7 +46,7 @@ function(slag_add_shader target)
     if(SLAG_BACKEND_VULKAN)
         set(_spv "${_out_dir}/${_name}.${ARG_ENTRY}.spv")
         set(_validate)
-        if(SLAG_SPIRV_VAL)
+        if(SLAG_VALIDATE_SPIRV AND SLAG_SPIRV_VAL)
             set(_validate COMMAND "${SLAG_SPIRV_VAL}" --target-env vulkan1.4 "${_spv}")
         endif()
         add_custom_command(OUTPUT "${_spv}"

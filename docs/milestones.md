@@ -7,7 +7,7 @@ covered by tests. Validation (ADR 0067) grows with each milestone: whatever
 a milestone adds, it also validates. Open checks from `docs/open-items.md`
 are listed where a milestone settles them.
 
-## M0 — Tooling
+## M0 — Tooling (done, D3D12 side unverified)
 
 Finish the groundwork the first real code needs.
 
@@ -16,7 +16,9 @@ Finish the groundwork the first real code needs.
   (ADR 0034) for tests and samples.
 - Choose the unit test framework (tests only, ADR 0061) and hook it into
   CTest.
-- CI skeleton: hosted build + unit tests (CLAUDE.md §12).
+- CI skeleton: hosted build + unit tests (CLAUDE.md §12) — GitHub Actions.
+- Still to verify on Windows: Agility SDK fetch, header ordering, runtime
+  copy, DXIL output (first CI run or a local Windows build).
 
 **Done when:** a test shader compiles to DXIL and SPIR-V in the build, and a
 trivial unit test runs in CI.

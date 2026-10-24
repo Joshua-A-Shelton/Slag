@@ -357,9 +357,12 @@ The `header_check` test compiles every public header on its own, except
 
 - Unit tests for backend-agnostic code (formats, flag helpers, validation
   logic) run without a GPU.
-- **CI is split:**
-  - Hosted CI, on every change: builds, GPU-free unit tests, and D3D12
-    backend tests on WARP.
+- **CI is split** (GitHub Actions, `.github/workflows/ci.yml`):
+  - Hosted CI, on every change: Linux (GCC, Clang) and Windows (MSVC)
+    builds in both presets, unit tests, a clang-format check (pinned
+    clang-format), and later D3D12 backend tests on WARP. Slang, and DXC on
+    Windows, are fetched pinned by SHA-256. Linux CI turns
+    `SLAG_VALIDATE_SPIRV` off until runners have SPIRV-Tools 2026.3+.
   - A self-hosted GPU runner (Linux, AMD, RADV / Mesa 26.2+), on every merge
     or nightly: Vulkan backend tests.
   - No software Vulkan driver supports `VK_EXT_descriptor_heap` yet; re-check
