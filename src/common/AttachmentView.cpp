@@ -26,7 +26,7 @@ Result<AttachmentView*> GraphicsDevice::createAttachmentView(const AttachmentVie
 {
     auto* self = static_cast<GraphicsDeviceCommon*>(this);
     auto* texture = static_cast<TextureCommon*>(desc.texture);
-    InstanceCommon* instance = self->instance;
+    [[maybe_unused]] InstanceCommon* instance = self->instance;
     SLAG_VALIDATE(instance, self->initialized, "GraphicsDevice::createAttachmentView",
                   "device \"%s\" is not initialized", self->info.name);
     SLAG_VALIDATE(instance, texture, "GraphicsDevice::createAttachmentView", "texture is null");
