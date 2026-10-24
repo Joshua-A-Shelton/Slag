@@ -7,7 +7,7 @@ covered by tests. Validation (ADR 0067) grows with each milestone: whatever
 a milestone adds, it also validates. Open checks from `docs/open-items.md`
 are listed where a milestone settles them.
 
-## M0 — Tooling (done, D3D12 side unverified)
+## M0 — Tooling (done)
 
 Finish the groundwork the first real code needs.
 
@@ -17,13 +17,13 @@ Finish the groundwork the first real code needs.
 - Choose the unit test framework (tests only, ADR 0061) and hook it into
   CTest.
 - CI skeleton: hosted build + unit tests (CLAUDE.md §12) — GitHub Actions.
-- Still to verify on Windows: Agility SDK fetch, header ordering, runtime
-  copy, DXIL output (first CI run or a local Windows build).
+- Windows side verified in CI (2026-10-24): Agility SDK fetch, header
+  ordering, runtime copy, DXIL output.
 
 **Done when:** a test shader compiles to DXIL and SPIR-V in the build, and a
 trivial unit test runs in CI.
 
-## M1 — Risk spike: compute and readback (Vulkan done; D3D12 pending)
+## M1 — Risk spike: compute and readback (done on RADV and WARP)
 
 The smallest program that exercises the riskiest assumptions: a compute
 shader writes a buffer through a heap descriptor, and the CPU reads it back.
@@ -45,7 +45,11 @@ and WARP) and Vulkan (NVIDIA and RADV).
 
 **Status (2026-10-23):** Vulkan side done and tested on RADV (RX 7900 XT and
 Raphael iGPU): `tests/backend/ComputeTests.cpp` passes with no validation
-errors. Remaining: the D3D12 backend (needs Windows or CI), NVIDIA Vulkan.
+errors.
+
+**Status (2026-10-24):** D3D12 side done: the same test passes on WARP in
+Windows CI (MSVC, debug and release) with the debug layer on. Still
+unchecked: D3D12 on hardware, Vulkan on NVIDIA.
 
 **Settles:** Slang descriptor-heap targeting and version (open items 1, 13),
 descriptor sizes (19), WARP support (22), heap address-range limits (23),
