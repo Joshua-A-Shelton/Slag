@@ -1,5 +1,5 @@
 # Samples double as smoke tests (CLAUDE.md §12): triangle, textured_quad,
-# compute, bindless, multi_queue. Each takes --frames N for a scripted run;
+# compute, bindless, multi_queue, render_graph. Each takes --frames N for a scripted run;
 # the "sample" CTest label runs them where a window can be shown.
 
 add_library(slag_sample_common STATIC common/SampleApp.cpp)
@@ -47,3 +47,7 @@ slag_add_sample(bindless SHADERS Bindless)
 # Loses the device on purpose (ADR 0014), so it is run by hand, never by CTest.
 slag_add_sample(crash NO_TEST COMPUTE_SHADERS Crash)
 slag_add_sample(multi_queue SHADERS Particles FullScreenTexture COMPUTE_SHADERS ParticleUpdate)
+if(SLAG_BUILD_RENDERGRAPH)
+    slag_add_sample(render_graph SHADERS FullScreenTexture Triangle COMPUTE_SHADERS Plasma)
+    target_link_libraries(render_graph PRIVATE slag::rendergraph)
+endif()

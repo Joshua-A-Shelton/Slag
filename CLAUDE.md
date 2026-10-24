@@ -141,7 +141,7 @@ tests/
   unit/                        no GPU needed
   validation/                  every validation check, on a null test backend (no GPU)
   backend/                     runs on every compiled backend
-samples/                       triangle, textured_quad, compute, bindless, multi_queue; crash (run by hand)
+samples/                       triangle, textured_quad, compute, bindless, multi_queue, render_graph; crash (run by hand)
 third_party/                   pinned: Vulkan-Headers, Agility SDK (ADR 0061)
 docs/                          decisions/, naming.md, open-items.md, format-support.md, milestones.md
 ```
@@ -366,7 +366,8 @@ ctest --preset debug
 Presets: `debug` (validation on) and `release`, Ninja, output in
 `build/<preset>/`. CMake options: `SLAG_BACKEND_D3D12` (default on for
 Windows), `SLAG_BACKEND_VULKAN`, `SLAG_VALIDATION`, `SLAG_DISABLE_LABELS`,
-`SLAG_BUILD_TESTS`, `SLAG_BUILD_SAMPLES`, `SLAG_EXTERNAL_BACKEND_DIRS`.
+`SLAG_BUILD_TESTS`, `SLAG_BUILD_SAMPLES`, `SLAG_BUILD_RENDERGRAPH` (the optional
+`slag::rendergraph` target, ADR 0072), `SLAG_EXTERNAL_BACKEND_DIRS`.
 The `header_check` test compiles every public header on its own, except
 `native/D3D12.h` and `native/Vulkan.h`.
 
@@ -390,7 +391,7 @@ The `header_check` test compiles every public header on its own, except
 - Every common-interface feature needs a test that runs on **all** compiled
   backends and ideally compares output images across them.
 - Samples (`samples/`) double as smoke tests: triangle, textured quad,
-  compute, bindless, multi-queue.
+  compute, bindless, multi-queue, render graph.
 
 ## 13. Working with Claude on this repo
 

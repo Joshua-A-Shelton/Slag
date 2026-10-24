@@ -59,6 +59,13 @@ public:
     // Returns the process exit code.
     int run(const RecordFn& record);
 
+    // For samples that submit themselves: renders the acquired image and
+    // submits it, listing the swapchain in acquiredSwapchains and leaving the
+    // image in Present; the loop presents it on `queue`. Returns false on
+    // failure.
+    using FrameFn = std::function<bool(uint32_t image, uint32_t width, uint32_t height)>;
+    int runFrames(const FrameFn& frame);
+
     // Submits one command buffer and waits for it (for uploads).
     bool submitAndWait(slag::CommandBuffer* commandBuffer);
 

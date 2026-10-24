@@ -141,6 +141,27 @@ Slag takes precompiled DXIL and SPIR-V. Compile one Slang source to both; for
   const auto* values = static_cast<const uint32_t*>(readback->mappedData()); // 1, 3, 5, ...
   ```
 
+## Render graph (optional)
+
+`slag::rendergraph` (`slag/rendergraph/RenderGraph.h`, CMake option
+`SLAG_BUILD_RENDERGRAPH`) is built on the public API. Passes declare how they
+use textures and buffers; the graph records every barrier, splits passes into
+submits with semaphores between queues, begins and ends rendering for passes
+with attachments, and places transient resources in shared memory. It never
+reorders passes, and passes may be recorded on several threads.
+
+```cpp
+graph->beginFrame();
+slag::rg::TextureRef target = graph->createTexture({.format = ..., .width = w, .height = h,
+                                                    .usage = slag::TextureUsage::RenderTarget});
+graph->addPass("scene", slag::CommandQueueType::Graphics,
+    [&](slag::rg::PassBuilder& pass) { pass.renderTarget(target, slag::LoadOp::Clear); },
+    [=](slag::rg::PassContext& context, slag::CommandBuffer* commandBuffer) { /* draws */ });
+graph->compile();
+for (uint32_t i = 0; i < graph->passCount(); ++i) graph->recordPass(i); // or on worker threads
+graph->submit();
+```
+
 Everything is destroyed explicitly with `device->destroy(object)`, then
 `device->shutdown()` and `slag::destroy(instance)`. `util/DeferredDestroyer.h`
 destroys objects once a semaphore value is reached, and
@@ -151,7 +172,8 @@ destroys objects once a semaphore value is reached, and
 `samples/`: `triangle`, `textured_quad`, `compute` (a compute shader animates
 a texture), `bindless` (1024 quads picking textures by index while textures
 stream in and out), `multi_queue` (compute, copy, and graphics queues
-overlapping, measured with timestamps), and `crash` (loses the device on
+overlapping, measured with timestamps), `render_graph` (the optional render
+graph module driving async compute and the swapchain), and `crash` (loses the device on
 purpose to show crash reports; run by hand). Each takes `--backend d3d12|vulkan`
 and `--frames N`.
 

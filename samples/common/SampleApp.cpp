@@ -247,6 +247,46 @@ bool SampleApp::reconfigure()
 
 int SampleApp::run(const RecordFn& record)
 {
+    return runFrames([&](uint32_t image, uint32_t, uint32_t) {
+        // Wait for the frame that last used this command buffer.
+        uint32_t slot = static_cast<uint32_t>(frameNumber % framesInFlight);
+        if (frameNumber >= framesInFlight)
+        {
+            frameSemaphore->wait(frameNumber - framesInFlight + 1, UINT64_MAX);
+        }
+
+        slag::CommandBuffer* commandBuffer = commandBuffers[slot];
+        commandBuffer->reset();
+        commandBuffer->begin();
+        slag::TextureBarrier toTarget = {.syncBefore = slag::BarrierSync::None,
+                                         .syncAfter = slag::BarrierSync::RenderTarget,
+                                         .accessAfter = slag::BarrierAccess::RenderTarget,
+                                         .layoutBefore = slag::TextureLayout::Undefined,
+                                         .layoutAfter = slag::TextureLayout::RenderTarget,
+                                         .texture = swapchain->texture(image)};
+        commandBuffer->barrier({}, {}, {&toTarget, 1});
+        record(commandBuffer, swapchain->srgbAttachmentView(image), width, height);
+        slag::TextureBarrier toPresent = {.syncBefore = slag::BarrierSync::RenderTarget,
+                                          .syncAfter = slag::BarrierSync::None,
+                                          .accessBefore = slag::BarrierAccess::RenderTarget,
+                                          .accessAfter = slag::BarrierAccess::NoAccess,
+                                          .layoutBefore = slag::TextureLayout::RenderTarget,
+                                          .layoutAfter = slag::TextureLayout::Present,
+                                          .texture = swapchain->texture(image)};
+        commandBuffer->barrier({}, {}, {&toPresent, 1});
+        commandBuffer->end();
+
+        ++frameNumber;
+        slag::SemaphoreValue signal = {frameSemaphore, frameNumber};
+        slag::Swapchain* acquiredSwapchains[] = {swapchain};
+        slag::CommandBuffer* list[] = {commandBuffer};
+        queue->submit({.commandBuffers = list, .signals = {&signal, 1}, .acquiredSwapchains = acquiredSwapchains});
+        return true;
+    });
+}
+
+int SampleApp::runFrames(const FrameFn& frame)
+{
     if (!ok())
     {
         return 1;
@@ -300,12 +340,6 @@ int SampleApp::run(const RecordFn& record)
             }
         }
 
-        // Wait for the frame that last used this command buffer.
-        uint32_t slot = static_cast<uint32_t>(frameNumber % framesInFlight);
-        if (frameNumber >= framesInFlight)
-        {
-            frameSemaphore->wait(frameNumber - framesInFlight + 1, UINT64_MAX);
-        }
         slag::Result<uint32_t> acquired = swapchain->acquire();
         if (acquired.status() == slag::Status::OutOfDate)
         {
@@ -318,33 +352,11 @@ int SampleApp::run(const RecordFn& record)
             return 1;
         }
         uint32_t image = acquired.value();
-
-        slag::CommandBuffer* commandBuffer = commandBuffers[slot];
-        commandBuffer->reset();
-        commandBuffer->begin();
-        slag::TextureBarrier toTarget = {.syncBefore = slag::BarrierSync::None,
-                                         .syncAfter = slag::BarrierSync::RenderTarget,
-                                         .accessAfter = slag::BarrierAccess::RenderTarget,
-                                         .layoutBefore = slag::TextureLayout::Undefined,
-                                         .layoutAfter = slag::TextureLayout::RenderTarget,
-                                         .texture = swapchain->texture(image)};
-        commandBuffer->barrier({}, {}, {&toTarget, 1});
-        record(commandBuffer, swapchain->srgbAttachmentView(image), width, height);
-        slag::TextureBarrier toPresent = {.syncBefore = slag::BarrierSync::RenderTarget,
-                                          .syncAfter = slag::BarrierSync::None,
-                                          .accessBefore = slag::BarrierAccess::RenderTarget,
-                                          .accessAfter = slag::BarrierAccess::NoAccess,
-                                          .layoutBefore = slag::TextureLayout::RenderTarget,
-                                          .layoutAfter = slag::TextureLayout::Present,
-                                          .texture = swapchain->texture(image)};
-        commandBuffer->barrier({}, {}, {&toPresent, 1});
-        commandBuffer->end();
-
-        ++frameNumber;
-        slag::SemaphoreValue signal = {frameSemaphore, frameNumber};
-        slag::Swapchain* acquiredSwapchains[] = {swapchain};
-        slag::CommandBuffer* list[] = {commandBuffer};
-        queue->submit({.commandBuffers = list, .signals = {&signal, 1}, .acquiredSwapchains = acquiredSwapchains});
+        if (!frame(image, width, height))
+        {
+            std::fprintf(stderr, "frame failed\n");
+            return 1;
+        }
         slag::Result<void> result = queue->present(swapchain, presentMode);
         if (result.status() == slag::Status::Suboptimal || result.status() == slag::Status::OutOfDate)
         {

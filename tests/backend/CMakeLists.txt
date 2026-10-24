@@ -21,6 +21,11 @@ add_executable(slag_backend_tests
     TextureTests.cpp
     UtilTests.cpp)
 target_link_libraries(slag_backend_tests PRIVATE slag::slag doctest::doctest)
+if(SLAG_BUILD_RENDERGRAPH)
+    find_package(Threads REQUIRED)
+    target_sources(slag_backend_tests PRIVATE RenderGraphTests.cpp)
+    target_link_libraries(slag_backend_tests PRIVATE slag::rendergraph Threads::Threads)
+endif()
 doctest_discover_tests(slag_backend_tests PROPERTIES LABELS gpu)
 
 # Shaders for the backend tests (SLAG_SHADER_DIR points at them).

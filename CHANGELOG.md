@@ -47,7 +47,9 @@ The first release: a thin C++20 abstraction over Direct3D 12 (Agility SDK
   (ADR 0046); draws, indexed and indirect draws with GPU counts, dispatches
   (ADR 0047).
 - Copies between buffers and textures, and MSAA resolves (ADR 0048).
-- Enhanced-Barriers-style barriers on both backends (ADR 0049).
+- Enhanced-Barriers-style barriers on both backends (ADR 0049). A submit
+  starts after earlier work on its queue has finished and is visible, as at
+  D3D12's `ExecuteCommandLists` boundaries.
 - Timeline semaphores for CPU and queue waits: `semaphore->wait()`, and
   `slag::waitSemaphores()` for all or any of several.
 - Timestamp and occlusion queries, and CPU/GPU clock calibration
@@ -64,18 +66,26 @@ The first release: a thin C++20 abstraction over Direct3D 12 (Agility SDK
 
 - Slag validation of every call in validation builds, with a stale-pointer
   quarantine and descriptor-slot tracking (D3D12 poison descriptors); all
-  399 checks are tested without a GPU (ADRs 0016, 0031, 0052, 0067).
+  400 checks are tested without a GPU (ADRs 0016, 0031, 0052, 0067).
 - Debug names on every object, in every build (ADR 0017).
 - Crash diagnostics: D3D12 DRED and Vulkan `VK_EXT_device_fault` reports on
   device loss (ADR 0014).
 - Native interop: every object's native handles, and native commands
   recorded mid-stream (ADR 0071).
 
+### Render graph (optional module)
+
+- `slag::rendergraph`: passes declare resource uses; the graph records
+  barriers, splits submits with semaphores between queues, begins and ends
+  rendering, places transient resources in shared memory, and lets passes
+  record on several threads (ADR 0072).
+
 ### Utilities and samples
 
 - `util/DescriptorAllocator.h` and `util/DeferredDestroyer.h` (ADRs 0032,
   0069).
-- Samples: triangle, textured_quad, compute, bindless, multi_queue, crash.
+- Samples: triangle, textured_quad, compute, bindless, multi_queue,
+  render_graph, crash.
 
 ### Not in 1.0
 

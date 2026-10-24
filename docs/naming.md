@@ -381,6 +381,25 @@ alias `slag::slag`.
 | `slag_add_shader(<target> SOURCE ENTRY STAGE)` | Compiles a Slang shader to SPIR-V / DXIL for the enabled backends (`cmake/SlagShaders.cmake`) |
 | `slag_copy_agility_runtime(<target>)` | Copies the Agility SDK runtime DLLs into `D3D12\` next to an executable (`cmake/SlagDependencies.cmake`) |
 
+## Proposed during M9 (placeholders, pending review)
+
+Render graph module (ADR 0072), namespace `slag::rg`:
+
+| Name | Notes |
+|---|---|
+| `RenderGraph`, `createRenderGraph(RenderGraphDesc)`, `destroy(RenderGraph*)` | The graph object |
+| `RenderGraphDesc` | `device`, `graphicsQueue` / `computeQueue` / `copyQueue`, `framesInFlight`, `allocatorCallbacks`, `messageCallback`, `messageUserData` |
+| `beginFrame()`, `compile()`, `passCount()`, `recordPass(index)`, `submit()`, `transientMemorySize()` | Frame steps |
+| `importTexture(Texture*, ImportedTextureDesc)`, `importBuffer(Buffer*)` | Resources the graph doesn't own |
+| `ImportedTextureDesc` | `initialLayout`, `finalLayout`, `attachmentView`, `swapchain` |
+| `createTexture(Texture2DDesc)`, `createBuffer(BufferDesc)` | Transient resources |
+| `addPass(name, queue, setup, record)` | Setup runs now; record is stored |
+| `PassBuilder`: `use(ref, Access)`, `renderTarget(...)`, `depthStencil(...)` | Declares a pass's uses |
+| `PassContext`: `texture(ref)`, `buffer(ref)`, `frameSlot()` | Given to record functions |
+| `TextureRef`, `BufferRef` | Frame-local handles |
+| `Access`: `ShaderRead`, `ShaderWrite`, `CopySource`, `CopyDest`, `VertexBuffer`, `IndexBuffer`, `ConstantBuffer`, `IndirectArgument` | How a pass uses a resource |
+| `SLAG_BUILD_RENDERGRAPH`, `slag::rendergraph`, `slag/rendergraph/RenderGraph.h`, `samples/render_graph` | Build option, target, header, sample |
+
 ## Enum value style
 
 PascalCase; formats spell out channel bits as in DXGI (`R8G8B8A8UnormSrgb`)

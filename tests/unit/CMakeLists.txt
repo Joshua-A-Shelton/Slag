@@ -37,4 +37,8 @@ add_executable(slag_unit_tests
 target_link_libraries(slag_unit_tests PRIVATE slag::slag doctest::doctest)
 # Unit tests may test internal code directly.
 target_include_directories(slag_unit_tests PRIVATE "${PROJECT_SOURCE_DIR}/src")
+if(SLAG_BUILD_RENDERGRAPH)
+    target_sources(slag_unit_tests PRIVATE RenderGraphPlanTests.cpp)
+    target_link_libraries(slag_unit_tests PRIVATE slag::rendergraph)
+endif()
 doctest_discover_tests(slag_unit_tests)

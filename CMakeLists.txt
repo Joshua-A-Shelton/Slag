@@ -21,6 +21,7 @@ option(SLAG_VALIDATION "Compile Slag validation in" OFF)
 option(SLAG_DISABLE_LABELS "Strip debug labels" OFF)
 option(SLAG_BUILD_TESTS "Build Slag tests" ${PROJECT_IS_TOP_LEVEL})
 option(SLAG_BUILD_SAMPLES "Build Slag samples" ${PROJECT_IS_TOP_LEVEL})
+option(SLAG_BUILD_RENDERGRAPH "Build the optional render graph module (ADR 0072)" ON)
 set(SLAG_EXTERNAL_BACKEND_DIRS "" CACHE STRING
     "Directories containing out-of-tree (console) backends")
 
@@ -194,6 +195,26 @@ list(LENGTH SLAG_BACKEND_NAMES _slag_backend_count)
 list(LENGTH _slag_builtin_namespaces _slag_builtin_count)
 if(_slag_backend_count EQUAL 1 AND _slag_builtin_count EQUAL 1)
     target_compile_definitions(slag PRIVATE SLAG_DIRECT_BACKEND_NAMESPACE=${_slag_builtin_namespaces})
+endif()
+
+# ---------------------------------------------------------------------------
+# Optional render graph module (ADR 0072): its own target on top of slag.
+# ---------------------------------------------------------------------------
+
+if(SLAG_BUILD_RENDERGRAPH)
+    add_library(slag_rendergraph STATIC
+        src/rendergraph/Plan.cpp
+        src/rendergraph/RenderGraph.cpp)
+    add_library(slag::rendergraph ALIAS slag_rendergraph)
+    target_link_libraries(slag_rendergraph PUBLIC slag)
+    target_include_directories(slag_rendergraph PRIVATE src)
+    if(MSVC)
+        target_compile_options(slag_rendergraph PRIVATE /W4 /permissive- /EHs-c- /GR-)
+        target_compile_definitions(slag_rendergraph PRIVATE _HAS_EXCEPTIONS=0)
+    else()
+        target_compile_options(slag_rendergraph PRIVATE -Wall -Wextra -Wpedantic -Wno-missing-field-initializers
+                                                        -fno-exceptions -fno-rtti)
+    endif()
 endif()
 
 # ---------------------------------------------------------------------------

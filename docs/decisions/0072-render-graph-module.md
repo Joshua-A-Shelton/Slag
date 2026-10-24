@@ -51,7 +51,57 @@
   last use. Their `Texture` / `Buffer` objects are cached across frames by
   description and placement.
 
-## Core prerequisites
+## Core prerequisites (done 2026-10-24)
 
-- Barrier ordering across submits on Vulkan (ADR 0049).
+- Barrier ordering across submits on Vulkan (ADR 0049, "Submit
+  boundaries").
 - Per-queue layout validation (ADR 0049).
+
+## Implementation (M9, 2026-10-24)
+
+- **Planner** (`src/rendergraph/Plan.cpp`, plain data, unit-tested without
+  a GPU): batches, waits, barriers, handoffs, final layouts, placement.
+- **Submits:** consecutive passes of a queue share a submit until one uses a
+  resource last used on another queue; that closes both queues' open
+  submits, so every wait names a submit made earlier (no cycles, no wait
+  before its signal). Any change of queue between two uses of a resource is
+  ordered by a semaphore, even read after read, so a resource's uses are
+  totally ordered. Each submit signals the graph's semaphore for its queue.
+- **Barriers:** within a submit, from the earlier accesses (reads after a
+  write share one barrier until a new stage or access needs visibility);
+  across submits, only layout changes, from `syncBefore = None` (ADR 0049).
+  A layout the next queue can't use is changed at the end of the last use,
+  on its own queue, to the next layout if that queue allows it, else
+  `Common`.
+- **Imported textures** start in their initial layout with earlier work
+  finished (the graph's first use is a later submit) and end in their final
+  layout: at the end of the last use, or in an epilogue submit on the
+  graphics queue when that queue can't make the change (compute and copy
+  queues can't make `Present`). An acquired swapchain image's submit is the
+  one that first uses it.
+- **Transients:** placed largest first at the lowest offset clear of every
+  transient whose uses aren't ordered against its own (same submit, or a
+  wait chain). Taking over memory in the same submit: the old resource gets
+  a barrier from its accesses to `SyncAfter = None` / `NO_ACCESS` (D3D12
+  allows `NO_ACCESS` only with `SyncAfter = None` or an `Undefined` layout
+  after, which Vulkan forbids), the new one a barrier from `Undefined` with
+  `syncBefore` covering the old accesses and `NO_ACCESS` before (the
+  Enhanced Barriers aliasing steps). Across submits, nothing but `Undefined`.
+  Memory is one `GpuOnly` block per frame in flight, grown as needed;
+  `Texture` / `Buffer` objects are reused across frames by description and
+  offset.
+- **Checks** (reported through `messageCallback`; `compile` returns
+  `Unsupported`): layouts per queue, usage of transient textures, a
+  transient read before written or loaded on first use, one layout per
+  texture per pass (sampling a read-only depth attachment shares
+  `DepthStencilRead`), a texture first used on a copy queue must be imported
+  in `Common`, imported attachments need views.
+- **Sync per access:** shader accesses use `AllShading` on graphics passes
+  and `ComputeShading` on compute passes; vertex buffers `IndexInput |
+  VertexShading`, index buffers `IndexInput`, indirect arguments
+  `ExecuteIndirect`.
+- Tests: `RenderGraphPlanTests.cpp` (unit), `RenderGraphTests.cpp` (every
+  backend, synchronization validation on), and `samples/render_graph`. Run
+  on RADV, and on the RTX 2070 SUPER with D3D12 and Vulkan.
+- The public header also includes `<new>`, `<type_traits>`, and `<utility>`
+  (non-allocating), beyond ADR 0066's list, for storing lambdas.

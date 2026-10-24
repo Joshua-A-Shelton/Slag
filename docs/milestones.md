@@ -294,7 +294,22 @@ decision).
 An optional `slag::rendergraph` module built on the public API (ADR 0072):
 barriers and layouts from declared reads and writes, parallel recording,
 transient resources, multiple queues. Built before tagging so anything it
-shows about the core API can still change. Design under review.
+shows about the core API can still change.
+
+- Core prerequisites: Vulkan submits now start after earlier work on their
+  queue has finished and is visible, as at D3D12's `ExecuteCommandLists`
+  boundaries (ADR 0049), tested under synchronization validation; compute
+  queues accept only D3D12's compute layouts (400 validation checks).
+- Module: `slag::rendergraph` with the planner, transient memory and object
+  caching, recording from threads, and submits with semaphores (ADR 0072).
+- Tests: planner unit tests (no GPU); backend tests for queue handoffs,
+  aliasing in one submit, three queues with frames in flight recorded on
+  threads, and usage errors; `samples/render_graph` (async compute into the
+  swapchain image).
+- Runs: Linux (RADV) debug and release suites and the sample on Wayland and
+  X11; Windows (RTX 2070 SUPER) debug and release suites and every sample on
+  D3D12 and Vulkan.
+- Names are placeholders (`docs/naming.md`), for review at the end of M9.
 
 ## After v1.0
 
