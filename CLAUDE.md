@@ -117,6 +117,7 @@ include/slag/
   native/Vulkan.h              opt-in interop; includes vulkan.h
   native/D3D12Agility.h        SLAG_D3D12_AGILITY_SDK_EXPORTS (no Windows headers)
   util/DescriptorAllocator.h   slot allocator utility (ADR 0032)
+  util/DeferredDestroyer.h     delayed destruction utility (ADR 0069)
 src/
   common/                      dispatch tables, validation, stale-pointer quarantine, format tables
   d3d12/                       D3D12*.cpp
@@ -275,8 +276,9 @@ Accepted decisions live in `docs/decisions/`.
 - No allocations in command recording after warm-up: command buffers keep
   their internal capacity across `reset()`.
 - Object lifetime is explicit: `create*` / `destroy()` (or RAII wrappers that
-  call them). Slag does **not** defer destruction automatically; a helper for
-  frame-based deferred deletion may be offered as a utility, not as core behavior.
+  call them). Slag does **not** defer destruction automatically; the optional
+  `util/DeferredDestroyer.h` utility destroys objects once a semaphore value
+  is reached (ADR 0069).
 
 ## 10. Coding conventions
 

@@ -136,6 +136,14 @@ object has `userData()` / `setUserData()` (ADR 0063).
 
 `AllocatorCallbacks` (in `InstanceDesc`; ADR 0066).
 
+## Utilities (`slag/util/`)
+
+| Name | What it is | ADR |
+|---|---|---|
+| `DeferredDestroyer` | `destroyAfter(object, SemaphoreValue)`, `collect()`, `flush()` | 0069 |
+
+`DescriptorAllocator`'s API is still to be named (ADR 0032).
+
 `RasterizerState`, `DepthStencilState`, `BlendState`, `ColorTargetBlend`,
 `VertexInputLayout`, `VertexAttribute`, `ShaderStage`, `ShaderBinary`,
 `Placement`, `ClearValue`, `NativeWindow`.

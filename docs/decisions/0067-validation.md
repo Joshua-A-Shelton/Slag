@@ -44,7 +44,10 @@ the macro and all bookkeeping compile to nothing.
 - **Parameters:** create structs against limits, the format support table,
   per-type texture rules, alignments.
 - **Lifetime:** stale pointers (ADR 0052), wrong-device objects, destroying
-  objects still in use.
+  objects Slag itself still references (a texture with live attachment
+  views, a memory block with resources). **Not** destroying objects still
+  used by in-flight GPU work: that would need tracking every resource each
+  command buffer touches. `DeferredDestroyer` (ADR 0069) helps there.
 - **Call order and state:** draws outside a render pass and disallowed work
   inside one, label balance, query resolve-before-reuse, split-pass
   submission, increasing semaphore values, resetting an in-flight command
