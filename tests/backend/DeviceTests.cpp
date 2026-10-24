@@ -163,6 +163,14 @@ void testCapabilitiesAndBudget(slag::Backend backend)
 
         // Usage grows with an allocation once the device is initialized.
         REQUIRE(static_cast<bool>(device->initialize({})));
+        for (const std::string& info : test.messages.slagInfo)
+        {
+            if (info.find("descriptor sizes") != std::string::npos)
+            {
+                MESSAGE(info); // Vulkan: differs between drivers (open item 19)
+            }
+        }
+        test.messages.slagInfo.clear();
         slag::MemoryBudget before = device->memoryBudget();
         slag::Buffer* buffer = device
                                    ->createBuffer({.size = 64ull << 20,

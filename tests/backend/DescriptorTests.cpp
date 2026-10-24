@@ -444,3 +444,59 @@ TEST_CASE("D3D12: slots of destroyed and cleared resources read as poison")
 }
 #endif
 #endif
+
+#ifdef SLAG_BACKEND_D3D12
+// Open item 12 (settled in M7): D3D12 GPU-based validation reports reads of
+// descriptors that were never written, one error per slot.
+TEST_CASE("D3D12: GPU-based validation reports never-written descriptors")
+{
+    TestMessages messages;
+    slag::InstanceDesc desc;
+    desc.backend = slag::Backend::D3D12;
+    desc.validationFlags = slag::ValidationFlags::Api | slag::ValidationFlags::GpuAssisted;
+    desc.validationFailureAction = slag::ValidationFailureAction::Continue;
+    desc.allowSoftwareDevices = true;
+    desc.messageCallback = collectTestMessage;
+    desc.messageUserData = &messages;
+    slag::Instance* instance = slag::createInstance(desc).value();
+    REQUIRE(instance);
+    slag::GraphicsDevice* device = instance->graphicsDevices()[0];
+    REQUIRE(static_cast<bool>(device->initialize({})));
+    std::vector<char> spirv;
+    std::vector<char> dxil;
+    slag::Pipeline* pipeline = computePipeline(device, "ReadPoison", spirv, dxil);
+    slag::Buffer* output =
+        device->createBuffer({.size = 64, .placement = slag::Placement::automatic(slag::MemoryKind::GpuOnly)}).value();
+    REQUIRE((pipeline && output));
+    device->writeRWStructuredBuffer(4, {.buffer = output, .count = 16, .stride = 4});
+    slag::CommandBuffer* commandBuffer =
+        device->createCommandBuffer({.queueType = slag::CommandQueueType::Compute}).value();
+    REQUIRE(static_cast<bool>(commandBuffer->begin()));
+    commandBuffer->bindPipeline(pipeline);
+    const uint32_t push[] = {100, 101, 102, 4}; // slots 100-102 were never written
+    commandBuffer->pushConstants(push, sizeof(push));
+    commandBuffer->dispatch(1, 1, 1);
+    REQUIRE(static_cast<bool>(commandBuffer->end()));
+    slag::Semaphore* semaphore = device->createSemaphore({}).value();
+    slag::SemaphoreValue done = {semaphore, 1};
+    slag::CommandBuffer* commandBuffers[] = {commandBuffer};
+    REQUIRE(static_cast<bool>(device->commandQueue(slag::CommandQueueType::Compute)
+                                  ->submit({.commandBuffers = commandBuffers, .signals = {&done, 1}})));
+    (void)device->waitSemaphores({&done, 1}, slag::WaitMode::All, 10'000'000'000);
+    size_t uninitialized = 0;
+    for (const std::string& error : messages.errors)
+    {
+        uninitialized += error.find("Uninitialized descriptor") != std::string::npos ? 1 : 0;
+    }
+    MESSAGE("GPU-based validation: " << uninitialized << " uninitialized-descriptor reports of "
+                                     << messages.errors.size() << " errors");
+    CHECK(uninitialized == 3);
+    CHECK(messages.errors.size() == 3);
+    device->destroy(semaphore);
+    device->destroy(commandBuffer);
+    device->destroy(output);
+    device->destroy(pipeline);
+    device->shutdown();
+    slag::destroy(instance);
+}
+#endif

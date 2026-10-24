@@ -13,11 +13,9 @@ None right now.
 
 | # | Check | ADR |
 |---|---|---|
-| 12 | D3D12 GPU-based validation coverage for reads of uninitialized descriptors | 0016 |
 | 13 | Oldest Slang version that emits descriptor-heap SPIR-V (2026.18.2 is confirmed to work) | 0034 |
 | 14 | Intel Windows Vulkan driver support for `VK_EXT_descriptor_heap` | CLAUDE.md §3 |
 | 15 | Whether every Enhanced Barriers device has resource heap tier 2 (it's a baseline check either way; this only affects coverage) | 0012, 0023 |
-| 19 | Actual `imageDescriptorSize` / `bufferDescriptorSize` on current NVIDIA and Intel drivers (RADV measured: buffer 16, image 32 on RX 7900 XT / 64 on Raphael iGPU, sampler 16, reserved range 0). NVIDIA (RTX 2070 SUPER, driver 621.01) runs every heap test; sizes not yet logged | 0029 |
 | 20 | AMD D3D12 driver supports Enhanced Barriers and Shader Model 6.8 on RDNA2 (RX 6000) — the fallback path for older AMD on Windows | CLAUDE.md §3 |
 | 21 | Which GPU generations RADV's `VK_EXT_descriptor_heap` support covers | CLAUDE.md §3 |
 | 16 | Verify the ◐ entries in `docs/format-support.md` against driver reports (plus its two other "to verify" items) | 0022 |
@@ -73,6 +71,17 @@ None right now.
 
 - ◐ format entries: met by RADV (RX 7900 XT, Raphael iGPU) and WARP;
   NVIDIA and Intel still unchecked (item 16 stays open for them).
+
+## Resolved on 2026-10-24 (M7)
+
+- 12: D3D12 GPU-based validation reports reads of never-written descriptors,
+  one error per slot with its heap index ("Uninitialized descriptor accessed
+  via direct heap indexing"), on the RTX 2070 SUPER (driver 621.01). Tested
+  by "D3D12: GPU-based validation reports never-written descriptors" → 0016.
+- 19: NVIDIA RTX 2070 SUPER (driver 621.01) Vulkan descriptor sizes: buffer
+  16, image 32, sampler 32 bytes; driver-reserved ranges 96768 bytes
+  (resource) and 512 bytes (sampler). Slag now logs these at Info when a
+  Vulkan device initializes → 0029.
 
 ## Resolved on 2026-10-24 (M3)
 

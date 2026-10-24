@@ -476,6 +476,15 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
         shutdownDevice(&device);
         return status;
     }
+    // Sizes differ between drivers; worth having in logs (open item 19).
+    logMessage(messageSink(&instance), MessageSeverity::Info, MessageSource::Slag,
+               "slag: \"%s\": descriptor sizes: buffer %llu, image %llu, sampler %llu bytes; reserved ranges: "
+               "resource %llu, sampler %llu bytes",
+               device.info.name, static_cast<unsigned long long>(heap.bufferDescriptorSize),
+               static_cast<unsigned long long>(heap.imageDescriptorSize),
+               static_cast<unsigned long long>(heap.samplerDescriptorSize),
+               static_cast<unsigned long long>(heap.minResourceHeapReservedRange),
+               static_cast<unsigned long long>(heap.minSamplerHeapReservedRange));
     return {};
 }
 
