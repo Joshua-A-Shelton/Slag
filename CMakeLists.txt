@@ -59,6 +59,7 @@ target_include_directories(slag PRIVATE src)
 target_sources(slag PRIVATE
     src/common/Buffer.cpp
     src/common/CommandBuffer.cpp
+    src/common/Formats.cpp
     src/common/GraphicsDevice.cpp
     src/common/HostAllocator.cpp
     src/common/Instance.cpp
@@ -98,6 +99,7 @@ if(SLAG_BACKEND_D3D12)
         src/d3d12/D3D12Buffer.cpp
         src/d3d12/D3D12CommandBuffer.cpp
         src/d3d12/D3D12Device.cpp
+        src/d3d12/D3D12Formats.cpp
         src/d3d12/D3D12Instance.cpp
         src/d3d12/D3D12Pipeline.cpp
         src/d3d12/D3D12Semaphore.cpp)
@@ -112,6 +114,7 @@ if(SLAG_BACKEND_VULKAN)
         src/vulkan/VkBuffer.cpp
         src/vulkan/VkCommandBuffer.cpp
         src/vulkan/VkDevice.cpp
+        src/vulkan/VkFormats.cpp
         src/vulkan/VkInstance.cpp
         src/vulkan/VkLoader.cpp
         src/vulkan/VkMemory.cpp

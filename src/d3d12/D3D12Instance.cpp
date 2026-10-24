@@ -1,5 +1,6 @@
 #include "common/Logging.h"
 #include "d3d12/D3D12Backend.h"
+#include "d3d12/D3D12Formats.h"
 
 #include <cstdio>
 #include <cstring>
@@ -134,6 +135,14 @@ Status listDevices(InstanceImpl& instance, const InstanceDesc& desc)
                 release(adapter);
                 continue;
             }
+            FormatSupport formatSupport[pixelFormatCount];
+            queryFormatSupport(device, formatSupport);
+            if (!meetsFormatBaseline(instance, name, formatSupport))
+            {
+                release(device);
+                release(adapter);
+                continue;
+            }
 
             auto* impl = instance.allocator.create<GraphicsDeviceImpl>();
             if (!impl || !instance.devices.pushBack(impl))
@@ -151,6 +160,10 @@ Status listDevices(InstanceImpl& instance, const InstanceDesc& desc)
                 queues = Vector<CommandQueue*>(&instance.allocator);
             }
             fillInfo(adapter, adapterDesc, device, impl->info);
+            for (size_t format = 0; format < pixelFormatCount; ++format)
+            {
+                impl->formatSupport[format] = formatSupport[format];
+            }
             D3D12_FEATURE_DATA_D3D12_OPTIONS16 options16 = {};
             impl->gpuUploadHeap =
                 SUCCEEDED(device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS16, &options16, sizeof(options16))) &&

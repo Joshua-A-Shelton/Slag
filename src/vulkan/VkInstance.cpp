@@ -1,5 +1,6 @@
 #include "common/Logging.h"
 #include "vulkan/VkBackend.h"
+#include "vulkan/VkFormats.h"
 
 #include <slag/Limits.h>
 
@@ -393,6 +394,12 @@ Status listDevices(InstanceImpl& instance, const InstanceDesc& desc)
                        "slag: device \"%s\" skipped: %s", query.properties.properties.deviceName, failure);
             continue;
         }
+        FormatSupport formatSupport[pixelFormatCount];
+        queryFormatSupport(instance, physicalDevices[i], formatSupport);
+        if (!meetsFormatBaseline(instance, query.properties.properties.deviceName, formatSupport))
+        {
+            continue;
+        }
 
         auto* device = instance.allocator.create<GraphicsDeviceImpl>();
         if (!device)
@@ -418,6 +425,10 @@ Status listDevices(InstanceImpl& instance, const InstanceDesc& desc)
         }
         device->queueLocks = Vector<std::mutex*>(&instance.allocator);
         fillInfo(query, device->info);
+        for (size_t format = 0; format < pixelFormatCount; ++format)
+        {
+            device->formatSupport[format] = formatSupport[format];
+        }
 
         // Insert in preference order.
         if (!instance.devices.pushBack(device))

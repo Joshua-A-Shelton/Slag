@@ -28,6 +28,7 @@ add_test(NAME header_check COMMAND slag_header_check)
 add_executable(slag_unit_tests
     UnitTestMain.cpp
     FlagsTests.cpp
+    FormatTests.cpp
     InstanceTests.cpp
     ResultTests.cpp
     VectorTests.cpp

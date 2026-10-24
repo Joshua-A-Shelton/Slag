@@ -1,5 +1,6 @@
 #include <slag/GraphicsDevice.h>
 #include <slag/Instance.h>
+#include <slag/PixelFormat.h>
 
 #include <doctest/doctest.h>
 
@@ -81,5 +82,45 @@ TEST_CASE("Vulkan: createInstance lists devices meeting the baseline")
         MESSAGE("error: " << error);
     }
     CHECK(messages.errors.empty());
+}
+#endif
+
+namespace {
+
+// Every listed device supports the guaranteed table (docs/format-support.md);
+// the ◐ entries are what this checks on real drivers (open item 16).
+void checkFormatSupport(slag::Backend backend)
+{
+    slag::InstanceDesc desc;
+    desc.backend = backend;
+    desc.allowSoftwareDevices = true;
+    slag::Result<slag::Instance*> result = slag::createInstance(desc);
+    REQUIRE(static_cast<bool>(result));
+    for (slag::GraphicsDevice* device : result.value()->graphicsDevices())
+    {
+        CAPTURE(std::string(device->info().name));
+        CHECK(device->formatSupport(slag::PixelFormat::Undefined) == slag::FormatSupport::None);
+        CHECK((device->formatSupport(slag::PixelFormat::R8G8B8A8Unorm) & slag::FormatSupport::RenderTarget) !=
+              slag::FormatSupport::None);
+        CHECK((device->formatSupport(slag::PixelFormat::BC7Unorm) & slag::FormatSupport::RenderTarget) ==
+              slag::FormatSupport::None); // never reported, even if offered
+        CHECK(device->formatSupport(slag::PixelFormat::R32G32B32Float) == slag::FormatSupport::VertexBuffer);
+    }
+    slag::destroy(result.value());
+}
+
+} // namespace
+
+#ifdef SLAG_BACKEND_VULKAN
+TEST_CASE("Vulkan: format support covers the guaranteed table")
+{
+    checkFormatSupport(slag::Backend::Vulkan);
+}
+#endif
+
+#ifdef SLAG_BACKEND_D3D12
+TEST_CASE("D3D12: format support covers the guaranteed table")
+{
+    checkFormatSupport(slag::Backend::D3D12);
 }
 #endif

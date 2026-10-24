@@ -4,6 +4,7 @@
 // types (ADR 0065).
 
 #include "common/Backend.h"
+#include "common/Formats.h"
 #include "common/HostAllocator.h"
 #include "common/Vector.h"
 
@@ -43,6 +44,8 @@ struct GraphicsDeviceCommon : GraphicsDevice
     std::atomic<bool> lost = false;
     uint32_t resourceHeapSize = 0; // user-visible slots, while initialized
     uint32_t samplerHeapSize = 0;
+    // Filled by the backend when listing the device (ADR 0022).
+    FormatSupport formatSupport[pixelFormatCount] = {};
     // Indexed by CommandQueueType; filled by the backend in initialize.
     Vector<CommandQueue*> queues[3];
 };

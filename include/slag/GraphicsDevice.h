@@ -10,6 +10,7 @@
 #include <slag/Descriptors.h>
 #include <slag/Limits.h>
 #include <slag/Pipeline.h>
+#include <slag/PixelFormat.h>
 #include <slag/Result.h>
 #include <slag/Semaphore.h>
 
@@ -52,6 +53,10 @@ class GraphicsDevice
 {
 public:
     const GraphicsDeviceInfo& info() const;
+
+    // Support beyond docs/format-support.md's guaranteed table. Available
+    // before initialize. Thread-safe.
+    FormatSupport formatSupport(PixelFormat format) const;
 
     // Makes the device usable. Nothing else may use the device meanwhile.
     Result<void> initialize(const GraphicsDeviceInitDesc& desc);

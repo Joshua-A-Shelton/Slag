@@ -24,6 +24,15 @@ const GraphicsDeviceInfo& GraphicsDevice::info() const
     return common(this)->info;
 }
 
+FormatSupport GraphicsDevice::formatSupport(PixelFormat format) const
+{
+    const GraphicsDeviceCommon* self = common(this);
+    size_t index = static_cast<size_t>(format);
+    SLAG_VALIDATE(self->instance, index < pixelFormatCount, "GraphicsDevice::formatSupport",
+                  "format %zu is not a PixelFormat", index);
+    return index < pixelFormatCount ? self->formatSupport[index] : FormatSupport::None;
+}
+
 Result<void> GraphicsDevice::initialize(const GraphicsDeviceInitDesc& desc)
 {
     GraphicsDeviceCommon* self = common(this);
