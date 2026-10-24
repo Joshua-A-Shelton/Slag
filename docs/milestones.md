@@ -289,6 +289,13 @@ decision).
   one semaphore and the free `slag::waitSemaphores()` for several, which
   takes the device from the semaphores (ADR 0053). 399 validation checks.
 
+## M9 — Render graph (before v1.0.0)
+
+An optional `slag::rendergraph` module built on the public API (ADR 0072):
+barriers and layouts from declared reads and writes, parallel recording,
+transient resources, multiple queues. Built before tagging so anything it
+shows about the core API can still change. Design under review.
+
 ## After v1.0
 
 Mesh shaders and ray tracing (ADR 0005),

@@ -37,8 +37,9 @@ writing code.
 
 ## 2. Non-goals
 
-- Not a renderer, scene graph, material system, or render graph. (A render
-  graph may be built *on top of* Slag in a separate module later.)
+- Not a renderer, scene graph, material system, or render graph. The
+  optional `slag::rendergraph` module builds a render graph *on top of*
+  Slag's public API (ADR 0072); the core library stays graph-free.
 - No legacy API support: no D3D11, OpenGL, Vulkan < 1.3 (1.3 itself only
   under the fallback policy in §3), or D3D12 without Enhanced Barriers.
 - No automatic state tracking or barrier inference in the core.
@@ -128,12 +129,14 @@ include/slag/
   native/D3D12Agility.h        SLAG_D3D12_AGILITY_SDK_EXPORTS (no Windows headers)
   util/DescriptorAllocator.h   slot allocator utility (ADR 0032)
   util/DeferredDestroyer.h     delayed destruction utility (ADR 0069)
+  rendergraph/                 optional render graph module (ADR 0072)
 src/
   common/                      public functions with their validation checks, dispatch tables, format tables
   common/validation/           validation bookkeeping: stale-pointer quarantine, descriptor-slot tracking
   d3d12/                       D3D12*.cpp
   vulkan/                      Vk*.cpp
   util/                        the slag/util/ utilities, built on public functions
+  rendergraph/                 the slag::rendergraph module, built on public functions
 tests/
   unit/                        no GPU needed
   validation/                  every validation check, on a null test backend (no GPU)
@@ -186,7 +189,8 @@ Accepted decisions live in `docs/decisions/`.
 - **Placed resources and aliasing in v1** (ADR 0006), alongside committed
   creation.
 - **C-shaped C++ API** (ADR 0007): no C API yet, but no templates,
-  `std::function`, or other constructs that would block one.
+  `std::function`, or other constructs that would block one. The render
+  graph module is exempt (ADR 0072).
 - **Descriptor heaps, bindless-only.** Both backends use the same model: a
   resource heap and a sampler heap, with shaders indexing into them
   (D3D12 `ResourceDescriptorHeap`/`SamplerDescriptorHeap`, Vulkan
