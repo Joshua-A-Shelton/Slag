@@ -27,6 +27,14 @@ struct InstanceCommon : Instance
     uint64_t userData = 0;
 };
 
+struct GraphicsDeviceCommon : GraphicsDevice
+{
+    InstanceCommon* instance = nullptr;
+    const BackendFunctions* functions = nullptr;
+    GraphicsDeviceInfo info;
+    uint64_t userData = 0;
+};
+
 // Fills the shared fields; backends call this first when creating an instance.
 void initInstanceCommon(InstanceCommon& instance, const InstanceDesc& desc, const BackendInfo& backend,
                         const HostAllocator& allocator);

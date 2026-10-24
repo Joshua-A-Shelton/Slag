@@ -1,13 +1,616 @@
+#include "common/Logging.h"
 #include "vulkan/VkBackend.h"
+
+#include <slag/Limits.h>
+
+#include <cstdio>
+#include <cstring>
 
 namespace slag::vk {
 
-// Implemented in step 2 of M1 (loader, instance, device listing).
-Result<InstanceCommon*> createInstance(const InstanceDesc&, const HostAllocator&)
+namespace {
+
+constexpr const char* kValidationLayer = "VK_LAYER_KHRONOS_validation";
+
+bool hasExtension(const Vector<VkExtensionProperties>& extensions, const char* name)
 {
-    return Status::Unsupported;
+    for (const VkExtensionProperties& extension : extensions)
+    {
+        if (std::strcmp(extension.extensionName, name) == 0)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
-void destroyInstance(InstanceCommon*) {}
+bool instanceExtensions(const GlobalFunctions& global, const char* layer, Vector<VkExtensionProperties>& extensions)
+{
+    uint32_t count = 0;
+    if (global.vkEnumerateInstanceExtensionProperties(layer, &count, nullptr) != VK_SUCCESS)
+    {
+        return true; // e.g. the layer isn't installed: no extensions
+    }
+    if (!extensions.reserve(count))
+    {
+        return false;
+    }
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        (void)extensions.pushBack({}); // capacity reserved above
+    }
+    global.vkEnumerateInstanceExtensionProperties(layer, &count, extensions.data());
+    while (extensions.size() > count)
+    {
+        extensions.popBack();
+    }
+    return true;
+}
+
+bool hasLayer(const GlobalFunctions& global, const HostAllocator& allocator, const char* name)
+{
+    uint32_t count = 0;
+    global.vkEnumerateInstanceLayerProperties(&count, nullptr);
+    Vector<VkLayerProperties> layers(&allocator);
+    if (!layers.reserve(count))
+    {
+        return false;
+    }
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        (void)layers.pushBack({});
+    }
+    global.vkEnumerateInstanceLayerProperties(&count, layers.data());
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        if (std::strcmp(layers[i].layerName, name) == 0)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL debugMessenger(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
+                                              VkDebugUtilsMessageTypeFlagsEXT,
+                                              const VkDebugUtilsMessengerCallbackDataEXT* data, void* userData)
+{
+    MessageSeverity mapped = MessageSeverity::Info;
+    if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+    {
+        mapped = MessageSeverity::Error;
+    }
+    else if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+    {
+        mapped = MessageSeverity::Warning;
+    }
+    logMessage(messageSink(static_cast<const InstanceCommon*>(userData)), mapped, MessageSource::Backend, "%s",
+               data && data->pMessage ? data->pMessage : "");
+    return VK_FALSE; // Slag never aborts the call (ADR 0011)
+}
+
+VkDebugUtilsMessengerCreateInfoEXT messengerCreateInfo(InstanceImpl* instance)
+{
+    VkDebugUtilsMessengerCreateInfoEXT info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT};
+    info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
+                           VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                           VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
+    info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                       VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    info.pfnUserCallback = debugMessenger;
+    info.pUserData = static_cast<InstanceCommon*>(instance);
+    return info;
+}
+
+// Everything the baseline check (ADR 0012) and device info need.
+struct DeviceQuery
+{
+    VkPhysicalDeviceProperties2 properties = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+    VkPhysicalDeviceVulkan11Properties properties11 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES};
+    VkPhysicalDeviceVulkan12Properties properties12 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES};
+    VkPhysicalDeviceDescriptorHeapPropertiesEXT heapProperties = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_HEAP_PROPERTIES_EXT};
+
+    VkPhysicalDeviceFeatures2 features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+    VkPhysicalDeviceVulkan12Features features12 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
+    VkPhysicalDeviceVulkan13Features features13 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
+    VkPhysicalDeviceDescriptorHeapFeaturesEXT heapFeatures = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_HEAP_FEATURES_EXT};
+    VkPhysicalDeviceShaderUntypedPointersFeaturesKHR untypedPointers = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_UNTYPED_POINTERS_FEATURES_KHR};
+
+    VkPhysicalDeviceMemoryProperties2 memory = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2};
+
+    bool descriptorHeapExtension = false;
+    bool untypedPointersExtension = false;
+    bool graphicsQueue = false;
+    uint32_t graphicsQueueFamily = 0;
+};
+
+bool queryDevice(const InstanceImpl& instance, VkPhysicalDevice device, DeviceQuery& query)
+{
+    uint32_t count = 0;
+    instance.fn.vkEnumerateDeviceExtensionProperties(device, nullptr, &count, nullptr);
+    Vector<VkExtensionProperties> extensions(&instance.allocator);
+    if (!extensions.reserve(count))
+    {
+        return false;
+    }
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        (void)extensions.pushBack({});
+    }
+    instance.fn.vkEnumerateDeviceExtensionProperties(device, nullptr, &count, extensions.data());
+    query.descriptorHeapExtension = hasExtension(extensions, VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME);
+    query.untypedPointersExtension = hasExtension(extensions, VK_KHR_SHADER_UNTYPED_POINTERS_EXTENSION_NAME);
+
+    // Extension structs may only be chained when the extension exists.
+    query.properties.pNext = &query.properties11;
+    query.properties11.pNext = &query.properties12;
+    query.features.pNext = &query.features12;
+    query.features12.pNext = &query.features13;
+    void** propertiesTail = &query.properties12.pNext;
+    void** featuresTail = &query.features13.pNext;
+    if (query.descriptorHeapExtension)
+    {
+        *propertiesTail = &query.heapProperties;
+        propertiesTail = &query.heapProperties.pNext;
+        *featuresTail = &query.heapFeatures;
+        featuresTail = &query.heapFeatures.pNext;
+    }
+    if (query.untypedPointersExtension)
+    {
+        *featuresTail = &query.untypedPointers;
+        featuresTail = &query.untypedPointers.pNext;
+    }
+    instance.fn.vkGetPhysicalDeviceProperties2(device, &query.properties);
+    instance.fn.vkGetPhysicalDeviceFeatures2(device, &query.features);
+    instance.fn.vkGetPhysicalDeviceMemoryProperties2(device, &query.memory);
+
+    uint32_t familyCount = 0;
+    instance.fn.vkGetPhysicalDeviceQueueFamilyProperties2(device, &familyCount, nullptr);
+    Vector<VkQueueFamilyProperties2> families(&instance.allocator);
+    if (!families.reserve(familyCount))
+    {
+        return false;
+    }
+    for (uint32_t i = 0; i < familyCount; ++i)
+    {
+        (void)families.pushBack({VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2});
+    }
+    instance.fn.vkGetPhysicalDeviceQueueFamilyProperties2(device, &familyCount, families.data());
+    for (uint32_t i = 0; i < familyCount; ++i)
+    {
+        if (families[i].queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        {
+            query.graphicsQueue = true;
+            query.graphicsQueueFamily = i;
+            break;
+        }
+    }
+    return true;
+}
+
+// Returns why a device doesn't meet the baseline (ADRs 0012, 0028), or null.
+const char* baselineFailure(const DeviceQuery& query, bool allowSoftwareDevices)
+{
+    const VkPhysicalDeviceProperties& properties = query.properties.properties;
+    const VkPhysicalDeviceLimits& limits = properties.limits;
+    const VkPhysicalDeviceFeatures& features = query.features.features;
+
+    if (properties.apiVersion < VK_API_VERSION_1_4)
+    {
+        return "Vulkan 1.4 is not supported";
+    }
+    if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_CPU && !allowSoftwareDevices)
+    {
+        return "software device (allowSoftwareDevices is off)";
+    }
+    if (!query.descriptorHeapExtension || !query.heapFeatures.descriptorHeap)
+    {
+        return "VK_EXT_descriptor_heap is not supported";
+    }
+    if (!query.untypedPointersExtension || !query.untypedPointers.shaderUntypedPointers)
+    {
+        return "VK_KHR_shader_untyped_pointers is not supported";
+    }
+    if (!query.graphicsQueue)
+    {
+        return "no graphics queue family";
+    }
+
+    struct FeatureCheck
+    {
+        VkBool32 supported;
+        const char* name;
+    };
+    const FeatureCheck featureChecks[] = {
+        {query.features13.dynamicRendering, "dynamicRendering"},
+        {query.features13.synchronization2, "synchronization2"},
+        {query.features12.timelineSemaphore, "timelineSemaphore"},
+        {query.features12.bufferDeviceAddress, "bufferDeviceAddress"},
+        {query.features12.drawIndirectCount, "drawIndirectCount"},
+        {query.features12.samplerMirrorClampToEdge, "samplerMirrorClampToEdge"},
+        {features.multiViewport, "multiViewport"},
+        {features.fillModeNonSolid, "fillModeNonSolid"},
+        {features.depthBiasClamp, "depthBiasClamp"},
+        {features.depthClamp, "depthClamp"},
+        {features.independentBlend, "independentBlend"},
+        {features.dualSrcBlend, "dualSrcBlend"},
+        {features.multiDrawIndirect, "multiDrawIndirect"},
+        {features.shaderStorageImageExtendedFormats, "shaderStorageImageExtendedFormats"},
+        {features.textureCompressionBC, "textureCompressionBC"},
+        {features.samplerAnisotropy, "samplerAnisotropy"},
+        {features.imageCubeArray, "imageCubeArray"},
+    };
+    for (const FeatureCheck& check : featureChecks)
+    {
+        if (!check.supported)
+        {
+            return check.name;
+        }
+    }
+
+    struct LimitCheck
+    {
+        bool met;
+        const char* name;
+    };
+    const LimitCheck limitChecks[] = {
+        {limits.maxImageDimension1D >= kMaxTexture1DSize, "maxImageDimension1D"},
+        {limits.maxImageDimension2D >= kMaxTexture2DSize, "maxImageDimension2D"},
+        {limits.maxImageDimension3D >= kMaxTexture3DSize, "maxImageDimension3D"},
+        {limits.maxImageDimensionCube >= kMaxTextureCubeSize, "maxImageDimensionCube"},
+        {limits.maxImageArrayLayers >= kMaxTextureArrayLayers, "maxImageArrayLayers"},
+        {limits.maxTexelBufferElements >= kMaxTypedBufferElements, "maxTexelBufferElements"},
+        {limits.maxStorageBufferRange >= kMaxStorageBufferViewSize, "maxStorageBufferRange"},
+        {limits.maxUniformBufferRange >= kMaxConstantBufferSize, "maxUniformBufferRange"},
+        {limits.maxColorAttachments >= kMaxColorTargets, "maxColorAttachments"},
+        {limits.maxViewports >= kMaxViewports, "maxViewports"},
+        {limits.maxVertexInputAttributes >= kMaxVertexAttributes, "maxVertexInputAttributes"},
+        {limits.maxVertexInputBindings >= kMaxVertexBufferSlots, "maxVertexInputBindings"},
+        {limits.maxSamplerAnisotropy >= static_cast<float>(kMaxAnisotropy), "maxSamplerAnisotropy"},
+        {(limits.framebufferColorSampleCounts & VK_SAMPLE_COUNT_4_BIT) != 0, "4x color MSAA"},
+        {(limits.framebufferDepthSampleCounts & VK_SAMPLE_COUNT_4_BIT) != 0, "4x depth MSAA"},
+        // 128 bytes of push constants plus the constant buffer slot's address (ADRs 0003, 0044).
+        {query.heapProperties.maxPushDataSize >= kMaxPushConstantsSize + 8, "maxPushDataSize"},
+    };
+    for (const LimitCheck& check : limitChecks)
+    {
+        if (!check.met)
+        {
+            return check.name;
+        }
+    }
+    return nullptr;
+}
+
+GraphicsDeviceType deviceType(VkPhysicalDeviceType type)
+{
+    switch (type)
+    {
+    case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+        return GraphicsDeviceType::Integrated;
+    case VK_PHYSICAL_DEVICE_TYPE_CPU:
+        return GraphicsDeviceType::Software;
+    default:
+        // Virtual and "other" GPUs are treated as discrete (ADR 0008).
+        return GraphicsDeviceType::Discrete;
+    }
+}
+
+void fillInfo(const DeviceQuery& query, GraphicsDeviceInfo& info)
+{
+    const VkPhysicalDeviceProperties& properties = query.properties.properties;
+    std::snprintf(info.name, sizeof(info.name), "%s", properties.deviceName);
+    if (query.properties12.driverInfo[0] != '\0')
+    {
+        std::snprintf(info.driverVersion, sizeof(info.driverVersion), "%.63s", query.properties12.driverInfo);
+    }
+    else
+    {
+        std::snprintf(info.driverVersion, sizeof(info.driverVersion), "%u", properties.driverVersion);
+    }
+    info.vendorId = properties.vendorID;
+    info.deviceId = properties.deviceID;
+    info.type = deviceType(properties.deviceType);
+    const VkPhysicalDeviceMemoryProperties& memory = query.memory.memoryProperties;
+    for (uint32_t i = 0; i < memory.memoryHeapCount; ++i)
+    {
+        if (memory.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+        {
+            info.dedicatedMemoryBytes += memory.memoryHeaps[i].size;
+        }
+        else
+        {
+            info.sharedMemoryBytes += memory.memoryHeaps[i].size;
+        }
+    }
+    if (query.properties11.deviceLUIDValid)
+    {
+        std::memcpy(info.luid, query.properties11.deviceLUID, sizeof(info.luid));
+    }
+}
+
+// Lower sorts first (ADR 0008).
+uint32_t typeRank(GraphicsDeviceType type, DevicePreference preference)
+{
+    switch (type)
+    {
+    case GraphicsDeviceType::Discrete:
+        return preference == DevicePreference::HighPerformance ? 0 : 1;
+    case GraphicsDeviceType::Integrated:
+        return preference == DevicePreference::HighPerformance ? 1 : 0;
+    case GraphicsDeviceType::Software:
+        return 2;
+    }
+    return 3;
+}
+
+bool sortsBefore(const GraphicsDeviceImpl& a, const GraphicsDeviceImpl& b, DevicePreference preference)
+{
+    uint32_t rankA = typeRank(a.info.type, preference);
+    uint32_t rankB = typeRank(b.info.type, preference);
+    if (rankA != rankB)
+    {
+        return rankA < rankB;
+    }
+    return a.info.dedicatedMemoryBytes > b.info.dedicatedMemoryBytes;
+}
+
+Status listDevices(InstanceImpl& instance, const InstanceDesc& desc)
+{
+    uint32_t count = 0;
+    if (instance.fn.vkEnumeratePhysicalDevices(instance.instance, &count, nullptr) != VK_SUCCESS)
+    {
+        return Status::Ok; // no devices is not an error (ADR 0012)
+    }
+    Vector<VkPhysicalDevice> physicalDevices(&instance.allocator);
+    if (!physicalDevices.reserve(count))
+    {
+        return Status::OutOfHostMemory;
+    }
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        (void)physicalDevices.pushBack(VK_NULL_HANDLE);
+    }
+    instance.fn.vkEnumeratePhysicalDevices(instance.instance, &count, physicalDevices.data());
+
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        DeviceQuery query;
+        if (!queryDevice(instance, physicalDevices[i], query))
+        {
+            return Status::OutOfHostMemory;
+        }
+        const char* failure = baselineFailure(query, desc.allowSoftwareDevices);
+        if (failure)
+        {
+            logMessage(messageSink(&instance), MessageSeverity::Info, MessageSource::Slag,
+                       "slag: device \"%s\" skipped: %s", query.properties.properties.deviceName, failure);
+            continue;
+        }
+
+        auto* device = instance.allocator.create<GraphicsDeviceImpl>();
+        if (!device)
+        {
+            return Status::OutOfHostMemory;
+        }
+        device->instance = &instance;
+        device->functions = instance.functions;
+        device->physicalDevice = physicalDevices[i];
+        device->properties = query.properties.properties;
+        device->heapProperties = query.heapProperties;
+        device->heapProperties.pNext = nullptr;
+        device->graphicsQueueFamily = query.graphicsQueueFamily;
+        fillInfo(query, device->info);
+
+        // Insert in preference order.
+        if (!instance.devices.pushBack(device))
+        {
+            instance.allocator.destroy(device);
+            return Status::OutOfHostMemory;
+        }
+        for (size_t j = instance.devices.size() - 1; j > 0; --j)
+        {
+            auto* current = static_cast<GraphicsDeviceImpl*>(instance.devices[j]);
+            auto* previous = static_cast<GraphicsDeviceImpl*>(instance.devices[j - 1]);
+            if (!sortsBefore(*current, *previous, desc.devicePreference))
+            {
+                break;
+            }
+            instance.devices[j] = previous;
+            instance.devices[j - 1] = current;
+        }
+    }
+    return Status::Ok;
+}
+
+void destroyImpl(InstanceImpl* instance)
+{
+    for (GraphicsDevice* device : instance->devices)
+    {
+        instance->allocator.destroy(static_cast<GraphicsDeviceImpl*>(device));
+    }
+    instance->devices.clear();
+    if (instance->messenger != VK_NULL_HANDLE)
+    {
+        instance->fn.vkDestroyDebugUtilsMessengerEXT(instance->instance, instance->messenger, nullptr);
+    }
+    if (instance->instance != VK_NULL_HANDLE)
+    {
+        instance->fn.vkDestroyInstance(instance->instance, nullptr);
+    }
+    HostAllocator allocator = instance->allocator;
+    allocator.destroy(instance);
+}
+
+} // namespace
+
+Result<InstanceCommon*> createInstance(const InstanceDesc& desc, const HostAllocator& allocator)
+{
+    MessageSink sink = messageSink(desc);
+    const GlobalFunctions* global = loadGlobalFunctions();
+    if (!global)
+    {
+        logMessage(sink, MessageSeverity::Error, MessageSource::Slag,
+                   "slag: createInstance: the Vulkan loader library is not installed");
+        return Status::Unsupported;
+    }
+
+    uint32_t loaderVersion = VK_API_VERSION_1_0;
+    if (global->vkEnumerateInstanceVersion)
+    {
+        global->vkEnumerateInstanceVersion(&loaderVersion);
+    }
+    if (loaderVersion < VK_API_VERSION_1_4)
+    {
+        logMessage(sink, MessageSeverity::Error, MessageSource::Slag,
+                   "slag: createInstance: the Vulkan loader doesn't support Vulkan 1.4");
+        return Status::Unsupported;
+    }
+
+    auto* instance = allocator.create<InstanceImpl>();
+    if (!instance)
+    {
+        return Status::OutOfHostMemory;
+    }
+    initInstanceCommon(*instance, desc, *slagBackend_vulkan(), allocator);
+    instance->global = global;
+
+    Vector<VkExtensionProperties> available(&instance->allocator);
+    if (!instanceExtensions(*global, nullptr, available))
+    {
+        destroyImpl(instance);
+        return Status::OutOfHostMemory;
+    }
+
+    // Extensions: debug utils, and every surface extension that exists (ADRs 0013, 0059).
+    const char* wanted[] = {
+        VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+        VK_KHR_SURFACE_EXTENSION_NAME,
+        "VK_KHR_win32_surface",
+        "VK_KHR_xlib_surface",
+        "VK_KHR_xcb_surface",
+        "VK_KHR_wayland_surface",
+        "VK_KHR_get_surface_capabilities2",
+        "VK_EXT_surface_maintenance1",
+        "VK_EXT_swapchain_colorspace",
+    };
+    Vector<const char*> extensions(&instance->allocator);
+    for (const char* name : wanted)
+    {
+        if (hasExtension(available, name) && !extensions.pushBack(name))
+        {
+            destroyImpl(instance);
+            return Status::OutOfHostMemory;
+        }
+    }
+    instance->debugUtils = hasExtension(available, VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+
+    // Backend validation layers (ADR 0010); best effort, reported when missing.
+    Vector<const char*> layers(&instance->allocator);
+    VkBool32 settingTrue = VK_TRUE;
+    VkLayerSettingEXT settings[2] = {};
+    uint32_t settingCount = 0;
+    VkLayerSettingsCreateInfoEXT layerSettings = {VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT};
+    bool useLayerSettings = false;
+    if (desc.validation != ValidationFlags::None)
+    {
+        if (hasLayer(*global, instance->allocator, kValidationLayer))
+        {
+            (void)layers.pushBack(kValidationLayer);
+            Vector<VkExtensionProperties> layerExtensions(&instance->allocator);
+            (void)instanceExtensions(*global, kValidationLayer, layerExtensions);
+            bool settingsAvailable = hasExtension(layerExtensions, VK_EXT_LAYER_SETTINGS_EXTENSION_NAME);
+            if ((desc.validation & ValidationFlags::Synchronization) != ValidationFlags::None)
+            {
+                settings[settingCount++] = {kValidationLayer, "validate_sync", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1,
+                                            &settingTrue};
+            }
+            if ((desc.validation & ValidationFlags::GpuAssisted) != ValidationFlags::None)
+            {
+                settings[settingCount++] = {kValidationLayer, "gpuav_enable", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1,
+                                            &settingTrue};
+            }
+            if (settingCount > 0)
+            {
+                if (settingsAvailable)
+                {
+                    useLayerSettings = extensions.pushBack(VK_EXT_LAYER_SETTINGS_EXTENSION_NAME);
+                }
+                else
+                {
+                    logMessage(sink, MessageSeverity::Warning, MessageSource::Slag,
+                               "slag: createInstance: the validation layer can't be configured; GPU-assisted and "
+                               "synchronization validation are off");
+                }
+            }
+        }
+        else
+        {
+            logMessage(sink, MessageSeverity::Warning, MessageSource::Slag,
+                       "slag: createInstance: %s is not installed; Vulkan validation is off", kValidationLayer);
+        }
+    }
+
+    VkApplicationInfo application = {VK_STRUCTURE_TYPE_APPLICATION_INFO};
+    application.pApplicationName = desc.applicationName;
+    application.applicationVersion = desc.applicationVersion;
+    application.pEngineName = desc.engineName;
+    application.engineVersion = desc.engineVersion;
+    application.apiVersion = VK_API_VERSION_1_4;
+
+    // Chaining the messenger reports problems during vkCreateInstance too (ADR 0011).
+    VkDebugUtilsMessengerCreateInfoEXT messengerInfo = messengerCreateInfo(instance);
+    VkInstanceCreateInfo createInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
+    const void** tail = &createInfo.pNext;
+    if (instance->debugUtils)
+    {
+        *tail = &messengerInfo;
+        tail = &messengerInfo.pNext;
+    }
+    if (useLayerSettings)
+    {
+        layerSettings.settingCount = settingCount;
+        layerSettings.pSettings = settings;
+        *tail = &layerSettings;
+    }
+    createInfo.pApplicationInfo = &application;
+    createInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
+    createInfo.ppEnabledLayerNames = layers.data();
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+    createInfo.ppEnabledExtensionNames = extensions.data();
+
+    VkResult result = global->vkCreateInstance(&createInfo, nullptr, &instance->instance);
+    if (result != VK_SUCCESS)
+    {
+        logMessage(sink, MessageSeverity::Error, MessageSource::Slag,
+                   "slag: createInstance: vkCreateInstance failed (%d)", static_cast<int>(result));
+        instance->instance = VK_NULL_HANDLE;
+        destroyImpl(instance);
+        return result == VK_ERROR_OUT_OF_HOST_MEMORY ? Status::OutOfHostMemory : Status::Unsupported;
+    }
+    loadInstanceFunctions(*global, instance->instance, instance->fn);
+
+    if (instance->debugUtils && instance->fn.vkCreateDebugUtilsMessengerEXT)
+    {
+        messengerInfo.pNext = nullptr;
+        instance->fn.vkCreateDebugUtilsMessengerEXT(instance->instance, &messengerInfo, nullptr, &instance->messenger);
+    }
+
+    Status status = listDevices(*instance, desc);
+    if (status != Status::Ok)
+    {
+        destroyImpl(instance);
+        return status;
+    }
+    return static_cast<InstanceCommon*>(instance);
+}
+
+void destroyInstance(InstanceCommon* instance)
+{
+    destroyImpl(static_cast<InstanceImpl*>(instance));
+}
 
 } // namespace slag::vk

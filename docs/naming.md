@@ -143,6 +143,8 @@ Names introduced while implementing; treat as placeholders until confirmed.
   `debugName`, `userData`.
 - `BackendOptions` (union), `D3D12Options`, `VulkanOptions`.
 - `ValidationFlags::None`.
+- `GraphicsDeviceInfo` fields: `name`, `driverVersion`, `vendorId`,
+  `deviceId`, `type`, `dedicatedMemoryBytes`, `sharedMemoryBytes`, `luid`.
 
 ## Nested structs
 

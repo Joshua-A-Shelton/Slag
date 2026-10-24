@@ -1,5 +1,5 @@
 add_subdirectory(unit)
-# add_subdirectory(backend)   # once a backend exists
+add_subdirectory(backend)
 
 # Test shaders, compiled for every enabled backend.
 add_custom_target(slag_test_shaders ALL)

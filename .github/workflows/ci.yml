@@ -51,7 +51,7 @@ jobs:
         run: cmake --build --preset ${{ matrix.preset }}
 
       - name: Test
-        run: ctest --preset ${{ matrix.preset }}
+        run: ctest --preset ${{ matrix.preset }} -LE gpu  # hosted runners have no GPU
 
   windows:
     name: Windows (MSVC, ${{ matrix.preset }})
@@ -86,7 +86,7 @@ jobs:
         run: cmake --build --preset ${{ matrix.preset }}
 
       - name: Test
-        run: ctest --preset ${{ matrix.preset }}
+        run: ctest --preset ${{ matrix.preset }} -LE gpu  # hosted runners have no GPU
 
   format:
     name: Format check
