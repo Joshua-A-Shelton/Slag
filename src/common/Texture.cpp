@@ -409,7 +409,7 @@ PlacementInfo GraphicsDevice::placementInfo(const TextureCubeArrayDesc& desc) co
 
 CopyFootprint GraphicsDevice::copyFootprint(const Texture* texture, uint32_t mip, TexturePlane plane) const
 {
-    const GraphicsDeviceCommon* self = common(this);
+    [[maybe_unused]] const GraphicsDeviceCommon* self = common(this);
     auto* object = static_cast<const TextureCommon*>(texture);
     SLAG_VALIDATE(self->instance, object, "GraphicsDevice::copyFootprint", "texture is null");
     if (!object)
