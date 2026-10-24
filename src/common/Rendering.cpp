@@ -282,9 +282,8 @@ void indirect(CommandBuffer* object, IndirectKind kind, Buffer* arguments, uint6
     {
         SLAG_VALIDATE(self->device->instance, self->state == CommandBufferState::Recording && !self->inRenderPass,
                       function, "not recording, or inside a render pass");
-        SLAG_VALIDATE(self->device->instance,
-                      self->boundPipeline && self->boundPipeline->kind == PipelineKind::Compute, function,
-                      "no compute pipeline is bound");
+        SLAG_VALIDATE(self->device->instance, self->boundPipeline && self->boundPipeline->kind == PipelineKind::Compute,
+                      function, "no compute pipeline is bound");
     }
     else
     {

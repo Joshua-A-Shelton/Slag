@@ -208,8 +208,8 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
     }
     // One command signature per indirect kind; no root arguments change (ADR 0047).
     const D3D12_INDIRECT_ARGUMENT_TYPE argumentTypes[3] = {D3D12_INDIRECT_ARGUMENT_TYPE_DRAW,
-                                                          D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED,
-                                                          D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH};
+                                                           D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED,
+                                                           D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH};
     const UINT strides[3] = {sizeof(D3D12_DRAW_ARGUMENTS), sizeof(D3D12_DRAW_INDEXED_ARGUMENTS),
                              sizeof(D3D12_DISPATCH_ARGUMENTS)};
     for (int i = 0; i < 3; ++i)
