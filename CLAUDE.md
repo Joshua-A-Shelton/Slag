@@ -255,11 +255,17 @@ Accepted decisions live in `docs/decisions/`.
 
 ## 9. Memory & allocation
 
-- All CPU allocations go through a user-supplied allocator interface (default:
-  `malloc`/`free`, aligned). No `new`/`delete` or STL containers with the
-  default allocator in backend code paths that the user can't redirect.
-- No allocations in command recording hot paths after warm-up.
-- Object lifetime is explicit: `create*` / `destroy*` (or RAII wrappers that
+- All of Slag's CPU allocations go through `AllocatorCallbacks` in
+  `InstanceDesc` (default: aligned `malloc`/`free`); driver allocations are
+  not routed through it (ADR 0066). Allocation failure returns
+  `OutOfHostMemory`, never aborts.
+- Inside `src/`, use Slag's own containers (`Vector`, `SmallVector`,
+  `HashMap`, `ObjectPool`) — never `new`/`delete` or standard containers
+  with the default allocator. Only non-allocating standard headers are
+  allowed in `src/` (list in ADR 0066).
+- No allocations in command recording after warm-up: command buffers keep
+  their internal capacity across `reset()`.
+- Object lifetime is explicit: `create*` / `destroy()` (or RAII wrappers that
   call them). Slag does **not** defer destruction automatically; a helper for
   frame-based deferred deletion may be offered as a utility, not as core behavior.
 
@@ -285,7 +291,8 @@ Accepted decisions live in `docs/decisions/`.
 - Header hygiene: public headers are self-contained, minimal includes, forward
   declare where possible. Keep compile times low.
 - Prefer `std::span`, `std::string_view`, and plain structs in the public API.
-  Avoid `std::function`, `std::shared_ptr`, and heavy templates in public headers.
+  Public headers may include only `<cstdint>`, `<cstddef>`, `<span>`, and
+  `<string_view>` from the standard library (ADR 0066).
 - Comments explain *why* and any D3D12/Vulkan mapping subtleties, not *what*.
 
 ## 11. Build & tooling

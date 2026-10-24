@@ -134,6 +134,8 @@ object has `userData()` / `setUserData()` (ADR 0063).
 
 ## Nested structs
 
+`AllocatorCallbacks` (in `InstanceDesc`; ADR 0066).
+
 `RasterizerState`, `DepthStencilState`, `BlendState`, `ColorTargetBlend`,
 `VertexInputLayout`, `VertexAttribute`, `ShaderStage`, `ShaderBinary`,
 `Placement`, `ClearValue`, `NativeWindow`.
