@@ -1,6 +1,6 @@
 # 0001 — Backend dispatch
 
-**Status:** Accepted (2026-10-22)
+**Status:** Accepted (2026-10-22). Refined by ADR 0065 (object layout, generated table, registration).
 
 ## Decision
 

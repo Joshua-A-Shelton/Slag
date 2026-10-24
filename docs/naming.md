@@ -52,6 +52,7 @@ they mean the types above. Names not listed here are still placeholders.
 |---|---|
 | `slag::createInstance(InstanceDesc)` → `Result<Instance*>` | Backend tag, common options, backend-options union |
 | `slag::destroy(Instance*)` | Free-function overload |
+| `slag::isBackendAvailable(Backend)` → `bool` | Whether a backend is compiled in (ADR 0065) |
 | `instance->graphicsDevices()` | Span of `GraphicsDevice*` |
 | `device->info()` → `GraphicsDeviceInfo` | Name, vendor, memory, LUID |
 | `device->capabilities()` → `GraphicsDeviceCapabilities` | Optional features, per-device values |
@@ -149,7 +150,7 @@ Flag enums use a singular name with `SLAG_FLAGS`.
 
 | Enum | Values |
 |---|---|
-| `Backend` | `D3D12`, `Vulkan` |
+| `Backend` | `D3D12`, `Vulkan` (0x80+ reserved for external backends) |
 | `ValidationFlags` (flags) | `Api`, `GpuAssisted`, `Synchronization` |
 | `MessageSeverity` | `Error`, `Warning`, `Info` |
 | `MessageSource` | `Slag`, `Backend` |

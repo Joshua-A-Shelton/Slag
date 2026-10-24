@@ -81,9 +81,12 @@ doesn't ship. Never weaken or complicate the API design to accommodate 1.3.
   backend; mixing is UB and asserted in debug.
 - Backend-specific options are a union in the instance description, using
   plain types only (ADR 0010). In v1 the D3D12 and Vulkan members are empty.
-- Dispatch (ADR 0001): each device picks a per-backend function table at
-  creation; public wrappers forward through it. With a single backend
-  compiled in, wrappers call the backend directly. No per-object vtables.
+- Dispatch (ADRs 0001, 0065): public classes have non-virtual methods and no
+  visible data; backend objects derive from internal common structs. One
+  X-macro list generates the per-backend function table. Every public
+  function is implemented once in `src/common/` (validation, then
+  `SLAG_DISPATCH`), which calls the backend directly when only one backend is
+  compiled in. No vtables.
 - Object references (ADR 0052, superseding 0002): every object (buffers,
   textures, attachment views, pipelines, memory blocks, query pools, fences,
   queues, command lists, swapchains, devices) is a pointer to an opaque
@@ -138,8 +141,10 @@ listed in `SLAG_EXTERNAL_BACKEND_DIRS`.
 ### 4.3 Console backends
 
 - Live out-of-tree; discovered via `SLAG_EXTERNAL_BACKEND_DIRS` in CMake.
-- The public repo contains only the backend enum value and a generic
-  registration hook — no console-specific types, comments, or code paths.
+- Registration (ADR 0065): each backend provides `slagBackend_<name>()`;
+  CMake generates the registry. `Backend` values 0x80+ are reserved for
+  external backends, defined in their private headers — the public repo has
+  no console-specific types, values, comments, or code paths.
 - Design the common interface so that console constraints (unified memory,
   fixed-function differences, different descriptor models) are *possible* to
   implement, but don't speculate beyond publicly known information.
