@@ -32,7 +32,7 @@ Result<Instance*> createInstance(const InstanceDesc& desc)
     MessageSink sink = messageSink(desc);
 
 #ifdef SLAG_VALIDATION
-    if ((desc.allocator.allocate == nullptr) != (desc.allocator.free == nullptr))
+    if ((desc.allocatorCallbacks.allocate == nullptr) != (desc.allocatorCallbacks.free == nullptr))
     {
         logMessage(
             sink, MessageSeverity::Error, MessageSource::Slag,
@@ -49,7 +49,7 @@ Result<Instance*> createInstance(const InstanceDesc& desc)
         return Status::Unsupported;
     }
 
-    Result<InstanceCommon*> instance = backend->functions->createInstance(desc, HostAllocator(desc.allocator));
+    Result<InstanceCommon*> instance = backend->functions->createInstance(desc, HostAllocator(desc.allocatorCallbacks));
     if (!instance)
     {
         return instance.status();
@@ -89,9 +89,9 @@ void initInstanceCommon(InstanceCommon& instance, const InstanceDesc& desc, cons
     instance.backend = &backend;
     instance.functions = backend.functions;
     instance.allocator = allocator;
-    instance.debugCallback = desc.debugCallback;
-    instance.debugUserData = desc.debugUserData;
-    instance.validation = desc.validation;
+    instance.messageCallback = desc.messageCallback;
+    instance.messageUserData = desc.messageUserData;
+    instance.validationFlags = desc.validationFlags;
     instance.failureAction = desc.validationFailureAction;
     instance.devices = Vector<GraphicsDevice*>(&instance.allocator);
     instance.userData = desc.userData;

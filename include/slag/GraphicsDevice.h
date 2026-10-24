@@ -32,7 +32,7 @@ struct GraphicsDeviceInfo
     char driverVersion[64] = {}; // for logging only; vendors encode versions differently
     uint32_t vendorId = 0;
     uint32_t deviceId = 0;
-    GraphicsDeviceType type = GraphicsDeviceType::Discrete;
+    GraphicsDeviceType deviceType = GraphicsDeviceType::Discrete;
     uint64_t dedicatedMemoryBytes = 0;
     uint64_t sharedMemoryBytes = 0;
     uint8_t luid[8] = {}; // all zero where the platform has no LUID (Linux)

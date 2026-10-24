@@ -316,7 +316,7 @@ void fillInfo(const DeviceQuery& query, GraphicsDeviceInfo& info)
     }
     info.vendorId = properties.vendorID;
     info.deviceId = properties.deviceID;
-    info.type = deviceType(properties.deviceType);
+    info.deviceType = deviceType(properties.deviceType);
     const VkPhysicalDeviceMemoryProperties& memory = query.memory.memoryProperties;
     for (uint32_t i = 0; i < memory.memoryHeapCount; ++i)
     {
@@ -352,8 +352,8 @@ uint32_t typeRank(GraphicsDeviceType type, DevicePreference preference)
 
 bool sortsBefore(const GraphicsDeviceImpl& a, const GraphicsDeviceImpl& b, DevicePreference preference)
 {
-    uint32_t rankA = typeRank(a.info.type, preference);
-    uint32_t rankB = typeRank(b.info.type, preference);
+    uint32_t rankA = typeRank(a.info.deviceType, preference);
+    uint32_t rankB = typeRank(b.info.deviceType, preference);
     if (rankA != rankB)
     {
         return rankA < rankB;
@@ -542,7 +542,7 @@ Result<InstanceCommon*> createInstance(const InstanceDesc& desc, const HostAlloc
     uint32_t settingCount = 0;
     VkLayerSettingsCreateInfoEXT layerSettings = {VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT};
     bool useLayerSettings = false;
-    if (desc.validation != ValidationFlags::None)
+    if (desc.validationFlags != ValidationFlags::None)
     {
         if (hasLayer(*global, instance->allocator, kValidationLayer))
         {
@@ -550,12 +550,12 @@ Result<InstanceCommon*> createInstance(const InstanceDesc& desc, const HostAlloc
             Vector<VkExtensionProperties> layerExtensions(&instance->allocator);
             (void)instanceExtensions(*global, kValidationLayer, layerExtensions);
             bool settingsAvailable = hasExtension(layerExtensions, VK_EXT_LAYER_SETTINGS_EXTENSION_NAME);
-            if ((desc.validation & ValidationFlags::Synchronization) != ValidationFlags::None)
+            if ((desc.validationFlags & ValidationFlags::Synchronization) != ValidationFlags::None)
             {
                 settings[settingCount++] = {kValidationLayer, "validate_sync", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1,
                                             &settingTrue};
             }
-            if ((desc.validation & ValidationFlags::GpuAssisted) != ValidationFlags::None)
+            if ((desc.validationFlags & ValidationFlags::GpuAssisted) != ValidationFlags::None)
             {
                 settings[settingCount++] = {kValidationLayer, "gpuav_enable", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1,
                                             &settingTrue};

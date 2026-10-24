@@ -25,9 +25,9 @@ struct InstanceCommon : Instance
     const BackendInfo* backend = nullptr;
     const BackendFunctions* functions = nullptr;
     HostAllocator allocator;
-    DebugMessageFn debugCallback = nullptr;
-    void* debugUserData = nullptr;
-    ValidationFlags validation = ValidationFlags::None;
+    DebugMessageFn messageCallback = nullptr;
+    void* messageUserData = nullptr;
+    ValidationFlags validationFlags = ValidationFlags::None;
     ValidationFailureAction failureAction = ValidationFailureAction::Break;
     Vector<GraphicsDevice*> devices;
     uint64_t userData = 0;

@@ -32,10 +32,10 @@ public:
     {
         slag::InstanceDesc desc;
         desc.backend = backend;
-        desc.validation = slag::ValidationFlags::Api;
+        desc.validationFlags = slag::ValidationFlags::Api;
         desc.validationFailureAction = action;
-        desc.debugCallback = collectTestMessage;
-        desc.debugUserData = &messages;
+        desc.messageCallback = collectTestMessage;
+        desc.messageUserData = &messages;
         desc.applicationName = "slag_backend_tests";
         slag::Result<slag::Instance*> result = slag::createInstance(desc);
         if (result)

@@ -44,8 +44,8 @@ TEST_CASE("createInstance reports a backend that isn't compiled in")
     std::vector<CapturedMessage> messages;
     slag::InstanceDesc desc;
     desc.backend = slag::Backend::D3D12;
-    desc.debugCallback = captureMessage;
-    desc.debugUserData = &messages;
+    desc.messageCallback = captureMessage;
+    desc.messageUserData = &messages;
 
     slag::Result<slag::Instance*> instance = slag::createInstance(desc);
     CHECK(instance.status() == slag::Status::Unsupported);
@@ -59,8 +59,8 @@ TEST_CASE("validationFailure reports through the debug callback and continues")
 {
     std::vector<CapturedMessage> messages;
     slag::InstanceCommon instance;
-    instance.debugCallback = captureMessage;
-    instance.debugUserData = &messages;
+    instance.messageCallback = captureMessage;
+    instance.messageUserData = &messages;
     instance.failureAction = slag::ValidationFailureAction::Continue;
 
     slag::validationFailure(&instance, "CommandBuffer::draw", "no render pass is active (%s)", "MainPass");

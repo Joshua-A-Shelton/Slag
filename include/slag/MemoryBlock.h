@@ -34,17 +34,17 @@ struct Placement
         return placement;
     }
 
-    static Placement placed(MemoryBlock* block, uint64_t offset)
+    static Placement placed(MemoryBlock* memoryBlock, uint64_t offset)
     {
         Placement placement;
-        placement.block = block;
+        placement.memoryBlock = memoryBlock;
         placement.offset = offset;
         return placement;
     }
 
     MemoryKind kind = MemoryKind::GpuOnly;
     bool movable = false;
-    MemoryBlock* block = nullptr; // non-null: placed
+    MemoryBlock* memoryBlock = nullptr; // non-null: placed
     uint64_t offset = 0;
 };
 

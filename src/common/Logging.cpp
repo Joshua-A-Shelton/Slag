@@ -41,7 +41,7 @@ bool printByDefault(ValidationFlags validation)
 
 MessageSink messageSink(const InstanceDesc& desc)
 {
-    return {desc.debugCallback, desc.debugUserData, printByDefault(desc.validation)};
+    return {desc.messageCallback, desc.messageUserData, printByDefault(desc.validationFlags)};
 }
 
 MessageSink messageSink(const InstanceCommon* instance)
@@ -50,7 +50,7 @@ MessageSink messageSink(const InstanceCommon* instance)
     {
         return {};
     }
-    return {instance->debugCallback, instance->debugUserData, printByDefault(instance->validation)};
+    return {instance->messageCallback, instance->messageUserData, printByDefault(instance->validationFlags)};
 }
 
 void logMessage(const MessageSink& sink, MessageSeverity severity, MessageSource source, const char* format, ...)

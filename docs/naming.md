@@ -132,32 +132,22 @@ object has `userData()` / `setUserData()` (ADR 0063).
 | `Buffer` | `mappedData()`, `gpuAddress()` |
 | `SemaphoreValue` | `{ Semaphore* semaphore; uint64_t value; }` |
 
-## Proposed in M1 (confirm or rename)
+## Fields and small names (settled during M1)
 
-Names introduced while implementing; treat as placeholders until confirmed.
+| Where | Names |
+|---|---|
+| `InstanceDesc` | `backend`, `validationFlags`, `validationFailureAction`, `messageCallback`, `messageUserData`, `allocatorCallbacks`, `devicePreference`, `allowSoftwareDevices`, `crashDiagnostics`, `applicationName`, `applicationVersion`, `engineName`, `engineVersion`, `backendOptions`, `debugName`, `userData` |
+| Backend options | union `BackendOptions` with members `d3d12` (`D3D12Options`) and `vulkan` (`VulkanOptions`) |
+| `ValidationFlags` | adds `None` |
+| `GraphicsDeviceInfo` | `name`, `driverVersion`, `vendorId`, `deviceId`, `deviceType`, `dedicatedMemoryBytes`, `sharedMemoryBytes`, `luid` |
+| `GraphicsDeviceInitDesc` | `resourceHeapSize`, `samplerHeapSize`, `pipelineCacheData`, `graphicsQueueCount`, `computeQueueCount`, `copyQueueCount` |
+| Small additions | `CommandQueue::type()`, `SemaphoreDesc::initialValue`, `BufferDesc::size`, `CommandBufferDesc::queueType`, `ComputePipelineDesc::compute` |
+| Placement | `PlacementOptions` (`movable`); `Placement::automatic(kind, options)`, `Placement::placed(memoryBlock, offset)`; fields `kind`, `movable`, `memoryBlock`, `offset` |
+| Shaders | `ShaderBinary` (`format`, `data`, `size`); `ShaderStage` (`binaries`, `entryPoint`, default `"main"`) |
+| Descriptors | `StructuredBufferDescriptor` (`buffer`, `offset`, `count`, `stride`) |
+| `SubresourceRange` | `baseMip`, `mipCount`, `baseLayer`, `layerCount`, `plane`; counts default to `kRemainingMips` / `kRemainingLayers` (constants, `slag/Barriers.h`) |
 
-- `InstanceDesc` fields: `backend`, `validation`, `validationFailureAction`,
-  `debugCallback`, `debugUserData`, `allocator`, `devicePreference`,
-  `allowSoftwareDevices`, `crashDiagnostics`, `applicationName`,
-  `applicationVersion`, `engineName`, `engineVersion`, `backendOptions`,
-  `debugName`, `userData`.
-- `BackendOptions` (union), `D3D12Options`, `VulkanOptions`.
-- `ValidationFlags::None`.
-- `GraphicsDeviceInfo` fields: `name`, `driverVersion`, `vendorId`,
-  `deviceId`, `type`, `dedicatedMemoryBytes`, `sharedMemoryBytes`, `luid`.
-- `GraphicsDeviceInitDesc` fields: `resourceHeapSize`, `samplerHeapSize`,
-  `pipelineCacheData`, `graphicsQueueCount`, `computeQueueCount`,
-  `copyQueueCount`.
-- `CommandQueue::type()`; `SemaphoreDesc::initialValue`.
-- `MemoryKind` values (`GpuOnly`, `Upload`, `Readback`, `GpuUpload`) were
-  already decided; new: `PlacementOptions` (`movable`), `Placement` fields
-  (`kind`, `movable`, `block`, `offset`), `Placement::automatic` /
-  `Placement::placed`, `BufferDesc::size`.
-- `CommandBufferDesc::queueType`; `StructuredBufferDescriptor` fields
-  (`buffer`, `offset`, `count`, `stride`); `ShaderBinary` fields (`format`,
-  `data`, `size`); `ShaderStage` fields (`binaries`, `entryPoint`);
-  `ComputePipelineDesc::compute`; `SubresourceRange` fields (`baseMip`,
-  `mipCount`, `baseLayer`, `layerCount`, `plane`).
+New names added while implementing go here once confirmed.
 
 ## Nested structs
 

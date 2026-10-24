@@ -13,7 +13,7 @@ Result<Buffer*> GraphicsDevice::createBuffer(const BufferDesc& desc)
                   self->info.name);
     SLAG_VALIDATE(self->instance, desc.size > 0, "GraphicsDevice::createBuffer", "size is 0 (buffer \"%s\")",
                   desc.debugName ? desc.debugName : "");
-    if (desc.placement.block)
+    if (desc.placement.memoryBlock)
     {
         // Placed resources arrive with memory blocks in milestone M2.
         logMessage(messageSink(self->instance), MessageSeverity::Error, MessageSource::Slag,

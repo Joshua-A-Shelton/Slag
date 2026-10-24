@@ -44,9 +44,9 @@ TEST_CASE("Vulkan: createInstance lists devices meeting the baseline")
     Messages messages;
     slag::InstanceDesc desc;
     desc.backend = slag::Backend::Vulkan;
-    desc.validation = slag::ValidationFlags::Api;
-    desc.debugCallback = collect;
-    desc.debugUserData = &messages;
+    desc.validationFlags = slag::ValidationFlags::Api;
+    desc.messageCallback = collect;
+    desc.messageUserData = &messages;
     desc.applicationName = "slag_backend_tests";
 
     slag::Result<slag::Instance*> result = slag::createInstance(desc);
@@ -58,7 +58,7 @@ TEST_CASE("Vulkan: createInstance lists devices meeting the baseline")
     for (slag::GraphicsDevice* device : devices)
     {
         const slag::GraphicsDeviceInfo& info = device->info();
-        MESSAGE(info.name << " (" << std::string(typeName(info.type)) << ", " << info.driverVersion << ", "
+        MESSAGE(info.name << " (" << std::string(typeName(info.deviceType)) << ", " << info.driverVersion << ", "
                           << info.dedicatedMemoryBytes / (1024 * 1024) << " MiB dedicated)");
         CHECK(std::strlen(info.name) > 0);
         CHECK(info.vendorId != 0);
@@ -67,8 +67,8 @@ TEST_CASE("Vulkan: createInstance lists devices meeting the baseline")
     // Preference order: no device ranks better than the one before it.
     for (size_t i = 1; i < devices.size(); ++i)
     {
-        bool previousDiscrete = devices[i - 1]->info().type == slag::GraphicsDeviceType::Discrete;
-        bool currentDiscrete = devices[i]->info().type == slag::GraphicsDeviceType::Discrete;
+        bool previousDiscrete = devices[i - 1]->info().deviceType == slag::GraphicsDeviceType::Discrete;
+        bool currentDiscrete = devices[i]->info().deviceType == slag::GraphicsDeviceType::Discrete;
         CHECK((previousDiscrete || !currentDiscrete));
     }
 

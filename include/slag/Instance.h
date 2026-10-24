@@ -93,11 +93,11 @@ struct InstanceDesc
 #else
     Backend backend = Backend::Vulkan;
 #endif
-    ValidationFlags validation = ValidationFlags::None;
+    ValidationFlags validationFlags = ValidationFlags::None;
     ValidationFailureAction validationFailureAction = ValidationFailureAction::Break;
-    DebugMessageFn debugCallback = nullptr;
-    void* debugUserData = nullptr;
-    AllocatorCallbacks allocator;
+    DebugMessageFn messageCallback = nullptr;
+    void* messageUserData = nullptr;
+    AllocatorCallbacks allocatorCallbacks;
     DevicePreference devicePreference = DevicePreference::HighPerformance;
     bool allowSoftwareDevices = false;
     bool crashDiagnostics = false;
