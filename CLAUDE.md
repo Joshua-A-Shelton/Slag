@@ -6,6 +6,9 @@ room for NDA-gated console backends (PlayStation, Nintendo Switch 2), which are
 **not** a priority and must never be referenced by name in public code beyond
 the backend enum and build options.
 
+Licensed under zlib (`LICENSE`, ADR 0064); dependencies must stay
+compatible.
+
 The primary focus is games; tools and other applications are valid use
 cases too, and design decisions shouldn't rule them out.
 
@@ -89,7 +92,7 @@ doesn't ship. Never weaken or complicate the API design to accommodate 1.3.
 ### 4.2 Layout
 
 ```
-CMakeLists.txt  CMakePresets.json  .clang-format  CLAUDE.md
+CMakeLists.txt  CMakePresets.json  .clang-format  CLAUDE.md  LICENSE
 include/slag/
   Slag.h                       umbrella: everything except native/ and util/
   Result.h                     Result, Status

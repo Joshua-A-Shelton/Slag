@@ -72,3 +72,4 @@ says a name is final. Names are chosen in a separate, explicit step.
 | [0061](0061-dependencies.md) | Third-party dependencies | Accepted |
 | [0062](0062-defragmentation.md) | Defragmentation | Accepted |
 | [0063](0063-user-data.md) | User data on objects | Accepted |
+| [0064](0064-license.md) | License (zlib) | Accepted |
