@@ -149,10 +149,11 @@ VkImageLayout toLayout(TextureLayout layout)
         return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     case TextureLayout::DepthStencilWrite:
         return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    // One read-only layout for sampling and depth reads, so texture
+    // descriptors work in either (ADR 0049).
     case TextureLayout::DepthStencilRead:
-        return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
     case TextureLayout::ShaderRead:
-        return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        return VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
     case TextureLayout::CopySource:
     case TextureLayout::ResolveSource:
         return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;

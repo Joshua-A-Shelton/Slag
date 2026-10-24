@@ -369,6 +369,7 @@ void fillCapabilities(const DeviceQuery& query, const GraphicsDeviceInfo& info,
         }
     }
     capabilities.maxBufferSize = query.properties13.maxBufferSize;
+    capabilities.samplerReduction = query.features12.samplerFilterMinmax == VK_TRUE;
 }
 
 // Lower sorts first (ADR 0008).

@@ -56,8 +56,8 @@ CopySource, CopyDest, ResolveSource, ResolveDest. ShaderRead →
 | Present | `PRESENT` | `PRESENT_SRC_KHR` |
 | RenderTarget | `RENDER_TARGET` | `COLOR_ATTACHMENT_OPTIMAL` |
 | DepthStencilWrite | `DEPTH_STENCIL_WRITE` | `DEPTH_STENCIL_ATTACHMENT_OPTIMAL` |
-| DepthStencilRead | `DEPTH_STENCIL_READ` | `DEPTH_STENCIL_READ_ONLY_OPTIMAL` |
-| ShaderRead | `SHADER_RESOURCE` | `SHADER_READ_ONLY_OPTIMAL` |
+| DepthStencilRead | `DEPTH_STENCIL_READ` | `READ_ONLY_OPTIMAL` |
+| ShaderRead | `SHADER_RESOURCE` | `READ_ONLY_OPTIMAL` |
 | ShaderWrite | `UNORDERED_ACCESS` | `GENERAL` |
 | CopySource / CopyDest | `COPY_SOURCE` / `COPY_DEST` | `TRANSFER_SRC/DST_OPTIMAL` |
 | ResolveSource / ResolveDest | `RESOLVE_SOURCE` / `RESOLVE_DEST` | `TRANSFER_SRC/DST_OPTIMAL` |
@@ -105,3 +105,11 @@ debug layer.
 `SubresourceRange::plane = Color` on a depth/stencil texture covers every
 plane (D3D12 `NumPlanes = 2`, Vulkan depth + stencil aspects); `Depth` and
 `Stencil` select one.
+
+## One Vulkan read-only layout (M3, 2026-10-24)
+
+`VK_EXT_descriptor_heap` image descriptors carry the layout the image is in
+when shaders read it. Slag maps both ShaderRead and DepthStencilRead to
+`VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL` (core 1.3), so one texture descriptor
+works in either layout, as on D3D12. Writable texture descriptors use
+`GENERAL` (ShaderWrite).

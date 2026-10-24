@@ -41,3 +41,14 @@ Fixed constant: **256 bytes**. The Vulkan spec caps
 `minStorageBufferOffsetAlignment` at 256, so every device satisfies it and
 no baseline check is needed. D3D12's 16-byte rule is looser, so it's also
 satisfied.
+
+## Implementation notes (M3)
+
+- Typed buffer offsets are multiples of 256 (`alignment::rawBuffer`), which
+  satisfies Vulkan's texel buffer offset alignment on every device.
+- 3D writable textures are written whole: a 3D storage view can't select a
+  depth-slice range on Vulkan without `VK_EXT_image_2d_view_of_3d`.
+- Vulkan texel buffer descriptors are image-sized
+  (`imageDescriptorSize`); address-range buffers use `bufferDescriptorSize`.
+- Min/max sampler reduction: `GraphicsDeviceCapabilities::samplerReduction`
+  (D3D12 tiled resources tier 2, Vulkan `samplerFilterMinmax`).

@@ -175,6 +175,8 @@ void destroyPool(CpuDescriptorPool& pool);
 Status allocateGroup(GraphicsDeviceImpl& device, CpuDescriptorPool& pool, D3D12_CPU_DESCRIPTOR_HANDLE& handle);
 void freeGroup(CpuDescriptorPool& pool, D3D12_CPU_DESCRIPTOR_HANDLE handle);
 
+D3D12_COMPARISON_FUNC toComparisonFunc(CompareOp op);
+
 // HRESULT to Status; marks the device lost on removal.
 Status toStatus(GraphicsDeviceImpl& device, HRESULT result);
 

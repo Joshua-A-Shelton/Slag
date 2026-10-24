@@ -12,6 +12,7 @@
 #include <slag/Buffer.h>
 #include <slag/CommandBuffer.h>
 #include <slag/CommandQueue.h>
+#include <slag/Descriptors.h>
 #include <slag/GraphicsDevice.h>
 #include <slag/Instance.h>
 #include <slag/MemoryBlock.h>
@@ -158,6 +159,45 @@ struct AttachmentViewCommon : AttachmentView
     uint32_t mip = 0;
     uint32_t baseLayer = 0;
     uint32_t layerCount = 1;
+};
+
+enum class BufferDescriptorKind : uint8_t
+{
+    Constant,
+    Raw,
+    Structured,
+    Typed,
+    RWRaw,
+    RWStructured,
+    RWTyped,
+};
+
+// Every buffer descriptor kind, normalized (ADR 0030). `address` and `size`
+// give the range; count, stride, and format are for structured and typed kinds.
+struct BufferDescriptorInfo
+{
+    BufferDescriptorKind kind = BufferDescriptorKind::Raw;
+    BufferCommon* buffer = nullptr; // null for constant buffers (address only)
+    uint64_t address = 0;
+    uint64_t offset = 0; // into buffer
+    uint64_t size = 0;
+    uint32_t count = 0;
+    uint32_t stride = 0;
+    PixelFormat format = PixelFormat::Undefined;
+};
+
+// Texture and RW texture descriptors, normalized: format and counts resolved.
+struct TextureDescriptorInfo
+{
+    TextureCommon* texture = nullptr;
+    bool writable = false;
+    TextureViewType viewType = TextureViewType::Texture2D;
+    PixelFormat format = PixelFormat::Undefined;
+    uint32_t baseMip = 0;
+    uint32_t mipCount = 1;
+    uint32_t baseLayer = 0;
+    uint32_t layerCount = 1;
+    TexturePlane plane = TexturePlane::Color;
 };
 
 enum class PipelineKind : uint8_t

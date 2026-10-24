@@ -87,6 +87,11 @@ void fillCapabilities(ID3D12Device* device, GraphicsDeviceCapabilities& capabili
     capabilities.gpuUploadMemory =
         SUCCEEDED(device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS16, &options16, sizeof(options16))) &&
         options16.GPUUploadHeapSupported;
+    // Min/max filtering comes with tiled resources tier 2 (ADR 0033).
+    D3D12_FEATURE_DATA_D3D12_OPTIONS options = {};
+    capabilities.samplerReduction =
+        SUCCEEDED(device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options))) &&
+        options.TiledResourcesTier >= D3D12_TILED_RESOURCES_TIER_2;
     // No documented fixed limit: the per-resource GPU address space (ADR 0028).
     D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT addressing = {};
     if (SUCCEEDED(

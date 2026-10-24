@@ -46,9 +46,10 @@ struct GraphicsDeviceInfo
 // added.
 struct GraphicsDeviceCapabilities
 {
-    bool unifiedMemory = false;   // GPU and CPU share memory; staging copies can be skipped (ADR 0019)
-    bool gpuUploadMemory = false; // MemoryKind::GpuUpload is available (ADR 0019)
-    uint64_t maxBufferSize = 0;   // bytes (ADR 0028)
+    bool unifiedMemory = false;    // GPU and CPU share memory; staging copies can be skipped (ADR 0019)
+    bool gpuUploadMemory = false;  // MemoryKind::GpuUpload is available (ADR 0019)
+    uint64_t maxBufferSize = 0;    // bytes (ADR 0028)
+    bool samplerReduction = false; // ReductionMode::Minimum / Maximum (ADR 0033)
 };
 
 // This process's usage of one kind of memory against the OS budget, in bytes.
@@ -160,7 +161,30 @@ public:
 
     // Writes take effect immediately; a slot the GPU may be reading must not be
     // rewritten (ADR 0031). Different slots may be written concurrently.
+    void writeConstantBuffer(uint32_t index, const ConstantBufferDescriptor& descriptor);
+    void writeConstantBuffer(std::span<const ConstantBufferDescriptorWrite> writes);
+    void writeRawBuffer(uint32_t index, const RawBufferDescriptor& descriptor);
+    void writeRawBuffer(std::span<const RawBufferDescriptorWrite> writes);
+    void writeStructuredBuffer(uint32_t index, const StructuredBufferDescriptor& descriptor);
+    void writeStructuredBuffer(std::span<const StructuredBufferDescriptorWrite> writes);
+    void writeTypedBuffer(uint32_t index, const TypedBufferDescriptor& descriptor);
+    void writeTypedBuffer(std::span<const TypedBufferDescriptorWrite> writes);
+    void writeRWRawBuffer(uint32_t index, const RawBufferDescriptor& descriptor);
+    void writeRWRawBuffer(std::span<const RawBufferDescriptorWrite> writes);
     void writeRWStructuredBuffer(uint32_t index, const StructuredBufferDescriptor& descriptor);
+    void writeRWStructuredBuffer(std::span<const StructuredBufferDescriptorWrite> writes);
+    void writeRWTypedBuffer(uint32_t index, const TypedBufferDescriptor& descriptor);
+    void writeRWTypedBuffer(std::span<const TypedBufferDescriptorWrite> writes);
+    void writeTexture(uint32_t index, const TextureDescriptor& descriptor);
+    void writeTexture(std::span<const TextureDescriptorWrite> writes);
+    void writeRWTexture(uint32_t index, const RWTextureDescriptor& descriptor);
+    void writeRWTexture(std::span<const RWTextureDescriptorWrite> writes);
+    void writeSampler(uint32_t index, const SamplerDescriptor& descriptor);
+    void writeSampler(std::span<const SamplerDescriptorWrite> writes);
+    // Marks a slot empty. Reading an empty slot is undefined (ADR 0016);
+    // validation builds track it (ADR 0031).
+    void clearResourceDescriptor(uint32_t index);
+    void clearSamplerDescriptor(uint32_t index);
 
     Result<Semaphore*> createSemaphore(const SemaphoreDesc& desc);
     void destroy(Semaphore* semaphore);

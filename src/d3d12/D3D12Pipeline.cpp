@@ -62,20 +62,4 @@ void destroyPipeline(GraphicsDeviceCommon* common, PipelineCommon* object)
     device.instance->allocator.destroy(pipeline);
 }
 
-void writeRWStructuredBuffer(GraphicsDeviceCommon* common, uint32_t index, const StructuredBufferDescriptor& descriptor)
-{
-    auto& device = *static_cast<GraphicsDeviceImpl*>(common);
-    auto* buffer = static_cast<BufferImpl*>(descriptor.buffer);
-
-    D3D12_UNORDERED_ACCESS_VIEW_DESC view = {};
-    view.Format = DXGI_FORMAT_UNKNOWN;
-    view.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-    view.Buffer.FirstElement = descriptor.offset / descriptor.stride; // validated as a multiple
-    view.Buffer.NumElements = descriptor.count;
-    view.Buffer.StructureByteStride = descriptor.stride;
-    D3D12_CPU_DESCRIPTOR_HANDLE destination = device.resourceHeap.cpuStart;
-    destination.ptr += size_t(index) * device.resourceHeap.increment;
-    device.device->CreateUnorderedAccessView(buffer->resource, nullptr, &view, destination);
-}
-
 } // namespace slag::d3d12

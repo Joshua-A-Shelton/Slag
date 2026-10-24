@@ -26,6 +26,8 @@ struct BufferCommon;
 struct TextureCommon;
 struct TextureCreateInfo;
 struct AttachmentViewCommon;
+struct BufferDescriptorInfo;
+struct TextureDescriptorInfo;
 struct PipelineCommon;
 struct CommandBufferCommon;
 

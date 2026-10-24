@@ -8,6 +8,7 @@ add_executable(slag_backend_tests
     CommandTests.cpp
     ComputeTests.cpp
     CopyTests.cpp
+    DescriptorTests.cpp
     DeviceTests.cpp
     InstanceTests.cpp
     MemoryTests.cpp
@@ -17,6 +18,7 @@ doctest_discover_tests(slag_backend_tests PROPERTIES LABELS gpu)
 
 # Shaders for the backend tests (SLAG_SHADER_DIR points at them).
 slag_add_shader(slag_backend_tests SOURCE ../shaders/FillBuffer.slang ENTRY main STAGE compute)
+slag_add_shader(slag_backend_tests SOURCE ../shaders/DescriptorKinds.slang ENTRY main STAGE compute)
 if(SLAG_BACKEND_D3D12)
     target_compile_definitions(slag_backend_tests PRIVATE SLAG_TEST_AGILITY_SDK_VERSION=${SLAG_AGILITY_SDK_VERSION})
 endif()

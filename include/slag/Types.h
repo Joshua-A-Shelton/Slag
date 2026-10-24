@@ -8,6 +8,19 @@
 
 namespace slag {
 
+// Depth, stencil, and sampler comparisons.
+enum class CompareOp : uint8_t
+{
+    Never,
+    Less,
+    Equal,
+    LessEqual,
+    Greater,
+    NotEqual,
+    GreaterEqual,
+    Always,
+};
+
 // A render target's clear color, or a depth/stencil target's clear depth and
 // stencil (ADR 0046). Also the optional optimized clear value of a texture
 // (ADR 0021).

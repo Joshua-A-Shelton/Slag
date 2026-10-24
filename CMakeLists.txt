@@ -60,6 +60,7 @@ target_sources(slag PRIVATE
     src/common/AttachmentView.cpp
     src/common/Buffer.cpp
     src/common/CommandBuffer.cpp
+    src/common/Descriptors.cpp
     src/common/Formats.cpp
     src/common/GraphicsDevice.cpp
     src/common/HostAllocator.cpp
@@ -104,6 +105,7 @@ if(SLAG_BACKEND_D3D12)
         src/d3d12/D3D12Backend.cpp
         src/d3d12/D3D12Buffer.cpp
         src/d3d12/D3D12CommandBuffer.cpp
+        src/d3d12/D3D12Descriptors.cpp
         src/d3d12/D3D12Device.cpp
         src/d3d12/D3D12Formats.cpp
         src/d3d12/D3D12Instance.cpp
@@ -121,6 +123,7 @@ if(SLAG_BACKEND_VULKAN)
         src/vulkan/VkBackend.cpp
         src/vulkan/VkBuffer.cpp
         src/vulkan/VkCommandBuffer.cpp
+        src/vulkan/VkDescriptors.cpp
         src/vulkan/VkDevice.cpp
         src/vulkan/VkFormats.cpp
         src/vulkan/VkInstance.cpp

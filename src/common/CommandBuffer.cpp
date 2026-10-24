@@ -407,27 +407,4 @@ void Pipeline::setUserData(uint64_t value)
     static_cast<PipelineCommon*>(this)->userData = value;
 }
 
-// --- Descriptors (GraphicsDevice) -------------------------------------------
-
-void GraphicsDevice::writeRWStructuredBuffer(uint32_t index, const StructuredBufferDescriptor& descriptor)
-{
-    auto* self = static_cast<GraphicsDeviceCommon*>(this);
-    [[maybe_unused]] const auto* buffer = static_cast<const BufferCommon*>(descriptor.buffer);
-    SLAG_VALIDATE(self->instance, index < self->resourceHeapSize, "GraphicsDevice::writeRWStructuredBuffer",
-                  "slot %u is outside the resource heap (%u slots)", index, self->resourceHeapSize);
-    SLAG_VALIDATE(self->instance, buffer, "GraphicsDevice::writeRWStructuredBuffer", "buffer is null");
-    SLAG_VALIDATE(self->instance, descriptor.stride > 0 && descriptor.stride % 4 == 0,
-                  "GraphicsDevice::writeRWStructuredBuffer", "stride %u must be a non-zero multiple of 4",
-                  descriptor.stride);
-    SLAG_VALIDATE(self->instance, descriptor.stride == 0 || descriptor.offset % descriptor.stride == 0,
-                  "GraphicsDevice::writeRWStructuredBuffer", "offset must be a multiple of the stride");
-    SLAG_VALIDATE(self->instance, descriptor.count <= limits::maxStructuredBufferElements,
-                  "GraphicsDevice::writeRWStructuredBuffer", "count %u exceeds limits::maxStructuredBufferElements",
-                  descriptor.count);
-    SLAG_VALIDATE(self->instance,
-                  !buffer || descriptor.offset + uint64_t(descriptor.count) * descriptor.stride <= buffer->size,
-                  "GraphicsDevice::writeRWStructuredBuffer", "the view ends past the buffer");
-    SLAG_DISPATCH(self, writeRWStructuredBuffer)(self, index, descriptor);
-}
-
 } // namespace slag

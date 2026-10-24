@@ -96,23 +96,4 @@ void destroyPipeline(GraphicsDeviceCommon* common, PipelineCommon* object)
     device.instance->allocator.destroy(pipeline);
 }
 
-void writeRWStructuredBuffer(GraphicsDeviceCommon* common, uint32_t index, const StructuredBufferDescriptor& descriptor)
-{
-    auto& device = *static_cast<GraphicsDeviceImpl*>(common);
-    auto* buffer = static_cast<BufferImpl*>(descriptor.buffer);
-
-    VkDeviceAddressRangeEXT range = {};
-    range.address = buffer->gpuAddress + descriptor.offset;
-    range.size = uint64_t(descriptor.count) * descriptor.stride;
-    VkResourceDescriptorInfoEXT info = {VK_STRUCTURE_TYPE_RESOURCE_DESCRIPTOR_INFO_EXT};
-    info.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    info.data.pAddressRange = &range;
-
-    // Slots are the largest descriptor size apart (ADR 0029).
-    VkHostAddressRangeEXT destination = {};
-    destination.address = device.resourceHeap.mapped + uint64_t(index) * device.resourceHeap.stride;
-    destination.size = static_cast<size_t>(device.heapProperties.bufferDescriptorSize);
-    device.fn.vkWriteResourceDescriptorsEXT(device.device, 1, &info, &destination);
-}
-
 } // namespace slag::vk

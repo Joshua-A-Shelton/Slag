@@ -45,8 +45,12 @@ SLAG_BACKEND_FN(Result<PipelineCommon*>, createComputePipeline,
                 (GraphicsDeviceCommon * device, const ComputePipelineDesc& desc))
 SLAG_BACKEND_FN(void, destroyPipeline, (GraphicsDeviceCommon * device, PipelineCommon* pipeline))
 
-SLAG_BACKEND_FN(void, writeRWStructuredBuffer,
-                (GraphicsDeviceCommon * device, uint32_t index, const StructuredBufferDescriptor& descriptor))
+SLAG_BACKEND_FN(void, writeBufferDescriptor,
+                (GraphicsDeviceCommon * device, uint32_t index, const BufferDescriptorInfo& info))
+SLAG_BACKEND_FN(void, writeTextureDescriptor,
+                (GraphicsDeviceCommon * device, uint32_t index, const TextureDescriptorInfo& info))
+SLAG_BACKEND_FN(void, writeSamplerDescriptor,
+                (GraphicsDeviceCommon * device, uint32_t index, const SamplerDescriptor& descriptor))
 
 SLAG_BACKEND_FN(Result<CommandBufferCommon*>, createCommandBuffer,
                 (GraphicsDeviceCommon * device, const CommandBufferDesc& desc))

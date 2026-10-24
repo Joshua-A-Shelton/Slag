@@ -137,6 +137,8 @@ inline InstanceImpl& instanceOf(const GraphicsDeviceImpl& device)
     return *static_cast<InstanceImpl*>(device.instance);
 }
 
+VkCompareOp toCompareOp(CompareOp op);
+
 // VkResult to Status; marks the device lost on VK_ERROR_DEVICE_LOST.
 Status toStatus(GraphicsDeviceImpl& device, VkResult result);
 
