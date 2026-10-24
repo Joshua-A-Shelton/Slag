@@ -152,14 +152,14 @@ reorders passes, and passes may be recorded on several threads.
 
 ```cpp
 graph->beginFrame();
-slag::rg::TextureRef target = graph->createTexture({.format = ..., .width = w, .height = h,
+slag::rendergraph::TextureHandle target = graph->createTransientTexture({.format = ..., .width = w, .height = h,
                                                     .usage = slag::TextureUsage::RenderTarget});
 graph->addPass("scene", slag::CommandQueueType::Graphics,
-    [&](slag::rg::PassBuilder& pass) { pass.renderTarget(target, slag::LoadOp::Clear); },
-    [=](slag::rg::PassContext& context, slag::CommandBuffer* commandBuffer) { /* draws */ });
+    [&](slag::rendergraph::PassBuilder& pass) { pass.renderTarget(target, slag::LoadOp::Clear); },
+    [=](slag::rendergraph::PassContext& context, slag::CommandBuffer* commandBuffer) { /* draws */ });
 graph->compile();
 for (uint32_t i = 0; i < graph->passCount(); ++i) graph->recordPass(i); // or on worker threads
-graph->submit();
+graph->execute();
 ```
 
 Everything is destroyed explicitly with `device->destroy(object)`, then

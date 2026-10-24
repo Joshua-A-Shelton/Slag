@@ -9,13 +9,13 @@
 #include <cstdio>
 #include <utility>
 
-namespace slag::rg {
+namespace slag::rendergraph {
 
 namespace {
 
 enum class UseKind : uint8_t
 {
-    Access,
+    Usage,
     RenderTarget,
     DepthWrite,
     DepthRead,
@@ -25,8 +25,8 @@ struct DeclaredUse
 {
     uint32_t pass = 0;
     uint32_t resource = 0;
-    UseKind kind = UseKind::Access;
-    Access access = Access::ShaderRead;
+    UseKind kind = UseKind::Usage;
+    Usage usage = Usage::ShaderRead;
 };
 
 struct Attachment
@@ -195,7 +195,7 @@ struct RenderGraphImpl : RenderGraph
     {
         if (!frameOpen)
         {
-            report("slag::rg: %s: call beginFrame first, and declare before compile", function);
+            report("slag::rendergraph: %s: call beginFrame first, and declare before compile", function);
             return false;
         }
         return true;
@@ -211,11 +211,11 @@ struct RenderGraphImpl : RenderGraph
         return static_cast<uint32_t>(resources.size() - 1);
     }
 
-    void addUse(uint32_t pass, uint32_t resource, bool texture, UseKind kind, Access access, const char* function)
+    void addUse(uint32_t pass, uint32_t resource, bool texture, UseKind kind, Usage usage, const char* function)
     {
         if (resource >= resources.size() || resources[resource].texture != texture)
         {
-            report("slag::rg: %s: pass \"%s\": not a %s of this frame", function, passes[pass].name,
+            report("slag::rendergraph: %s: pass \"%s\": not a %s of this frame", function, passes[pass].name,
                    texture ? "texture" : "buffer");
             return;
         }
@@ -223,7 +223,7 @@ struct RenderGraphImpl : RenderGraph
         use.pass = pass;
         use.resource = resource;
         use.kind = kind;
-        use.access = access;
+        use.usage = usage;
         outOfMemory = outOfMemory || !declaredUses.pushBack(use);
     }
 
@@ -251,72 +251,69 @@ struct RenderGraphImpl : RenderGraph
             out = {use.resource, BarrierSync::DepthStencil, BarrierAccess::DepthStencilRead,
                    TextureLayout::DepthStencilRead, false};
             return true;
-        case UseKind::Access:
+        case UseKind::Usage:
             break;
         }
-        bool shader = use.access == Access::ShaderRead || use.access == Access::ShaderWrite ||
-                      use.access == Access::ConstantBuffer;
-        if (queue == CommandQueueType::Copy && use.access != Access::CopySource && use.access != Access::CopyDest)
+        if (queue == CommandQueueType::Copy && use.usage != Usage::CopySource && use.usage != Usage::CopyDest)
         {
-            report("slag::rg: pass \"%s\": copy queues only copy", name);
+            report("slag::rendergraph: pass \"%s\": copy queues only copy", name);
             return false;
         }
-        bool bufferOnly = use.access == Access::VertexBuffer || use.access == Access::IndexBuffer ||
-                          use.access == Access::ConstantBuffer || use.access == Access::IndirectArgument;
+        bool bufferOnly = use.usage == Usage::VertexBuffer || use.usage == Usage::IndexBuffer ||
+                          use.usage == Usage::ConstantBuffer || use.usage == Usage::IndirectArgument;
         if (texture && bufferOnly)
         {
-            report("slag::rg: pass \"%s\": that access is for buffers only", name);
+            report("slag::rendergraph: pass \"%s\": that usage is for buffers only", name);
             return false;
         }
-        if ((use.access == Access::VertexBuffer || use.access == Access::IndexBuffer) &&
+        if ((use.usage == Usage::VertexBuffer || use.usage == Usage::IndexBuffer) &&
             queue != CommandQueueType::Graphics)
         {
-            report("slag::rg: pass \"%s\": vertex and index buffers are for graphics passes", name);
+            report("slag::rendergraph: pass \"%s\": vertex and index buffers are for graphics passes", name);
             return false;
         }
         bool copyQueue = queue == CommandQueueType::Copy;
-        switch (use.access)
+        switch (use.usage)
         {
-        case Access::ShaderRead:
+        case Usage::ShaderRead:
             out.sync = shaderSync;
             out.access = BarrierAccess::ShaderRead;
             out.layout = TextureLayout::ShaderRead;
             break;
-        case Access::ShaderWrite:
+        case Usage::ShaderWrite:
             out.sync = shaderSync;
             out.access = BarrierAccess::ShaderWrite;
             out.layout = TextureLayout::ShaderWrite;
             out.write = true;
             break;
-        case Access::CopySource:
+        case Usage::CopySource:
             out.sync = BarrierSync::Copy;
             out.access = BarrierAccess::CopySource;
             out.layout = copyQueue ? TextureLayout::Common : TextureLayout::CopySource;
             break;
-        case Access::CopyDest:
+        case Usage::CopyDest:
             out.sync = BarrierSync::Copy;
             out.access = BarrierAccess::CopyDest;
             out.layout = copyQueue ? TextureLayout::Common : TextureLayout::CopyDest;
             out.write = true;
             break;
-        case Access::VertexBuffer:
+        case Usage::VertexBuffer:
             out.sync = BarrierSync::IndexInput | BarrierSync::VertexShading;
             out.access = BarrierAccess::VertexBuffer;
             break;
-        case Access::IndexBuffer:
+        case Usage::IndexBuffer:
             out.sync = BarrierSync::IndexInput;
             out.access = BarrierAccess::IndexBuffer;
             break;
-        case Access::ConstantBuffer:
+        case Usage::ConstantBuffer:
             out.sync = shaderSync;
             out.access = BarrierAccess::ConstantBuffer;
             break;
-        case Access::IndirectArgument:
+        case Usage::IndirectArgument:
             out.sync = BarrierSync::ExecuteIndirect;
             out.access = BarrierAccess::IndirectArgument;
             break;
         }
-        (void)shader;
         return true;
     }
 
@@ -356,7 +353,8 @@ struct RenderGraphImpl : RenderGraph
                         (use.layout == TextureLayout::DepthStencilRead && existing.layout == TextureLayout::ShaderRead);
                     if (!depthRead)
                     {
-                        report("slag::rg: pass \"%s\": a texture is used in two layouts in one pass", pass.name);
+                        report("slag::rendergraph: pass \"%s\": a texture is used in two layouts in one pass",
+                               pass.name);
                         return false;
                     }
                     existing.layout = TextureLayout::DepthStencilRead;
@@ -661,25 +659,25 @@ const RenderGraphImpl* impl(const RenderGraph* graph)
 
 // --- PassBuilder / PassContext ------------------------------------------------
 
-void PassBuilder::use(TextureRef texture, Access access)
+void PassBuilder::use(TextureHandle texture, Usage usage)
 {
     if (!graph)
     {
         return; // addPass failed and reported
     }
-    impl(graph)->addUse(pass, texture.index, true, UseKind::Access, access, "PassBuilder::use");
+    impl(graph)->addUse(pass, texture.index, true, UseKind::Usage, usage, "PassBuilder::use");
 }
 
-void PassBuilder::use(BufferRef buffer, Access access)
+void PassBuilder::use(BufferHandle buffer, Usage usage)
 {
     if (!graph)
     {
         return;
     }
-    impl(graph)->addUse(pass, buffer.index, false, UseKind::Access, access, "PassBuilder::use");
+    impl(graph)->addUse(pass, buffer.index, false, UseKind::Usage, usage, "PassBuilder::use");
 }
 
-void PassBuilder::renderTarget(TextureRef texture, LoadOp loadOp, StoreOp storeOp, const ClearValue& clearValue)
+void PassBuilder::renderTarget(TextureHandle texture, LoadOp loadOp, StoreOp storeOp, const ClearValue& clearValue)
 {
     if (!graph)
     {
@@ -689,16 +687,16 @@ void PassBuilder::renderTarget(TextureRef texture, LoadOp loadOp, StoreOp storeO
     PassEntry& entry = self->passes[pass];
     if (entry.queue != CommandQueueType::Graphics || entry.colorCount == limits::maxColorTargets)
     {
-        self->report("slag::rg: PassBuilder::renderTarget: pass \"%s\": %s", entry.name,
+        self->report("slag::rendergraph: PassBuilder::renderTarget: pass \"%s\": %s", entry.name,
                      entry.queue != CommandQueueType::Graphics ? "attachments are for graphics passes"
                                                                : "too many render targets");
         return;
     }
     entry.colors[entry.colorCount++] = {texture.index, loadOp, storeOp, clearValue};
-    self->addUse(pass, texture.index, true, UseKind::RenderTarget, Access::ShaderRead, "PassBuilder::renderTarget");
+    self->addUse(pass, texture.index, true, UseKind::RenderTarget, Usage::ShaderRead, "PassBuilder::renderTarget");
 }
 
-void PassBuilder::depthStencil(TextureRef texture, LoadOp loadOp, StoreOp storeOp, const ClearValue& clearValue,
+void PassBuilder::depthStencil(TextureHandle texture, LoadOp loadOp, StoreOp storeOp, const ClearValue& clearValue,
                                bool readOnly)
 {
     if (!graph)
@@ -709,24 +707,24 @@ void PassBuilder::depthStencil(TextureRef texture, LoadOp loadOp, StoreOp storeO
     PassEntry& entry = self->passes[pass];
     if (entry.queue != CommandQueueType::Graphics || entry.depth.resource != none)
     {
-        self->report("slag::rg: PassBuilder::depthStencil: pass \"%s\": %s", entry.name,
+        self->report("slag::rendergraph: PassBuilder::depthStencil: pass \"%s\": %s", entry.name,
                      entry.queue != CommandQueueType::Graphics ? "attachments are for graphics passes"
                                                                : "only one depth-stencil attachment");
         return;
     }
     entry.depth = {texture.index, loadOp, storeOp, clearValue};
     entry.depthReadOnly = readOnly;
-    self->addUse(pass, texture.index, true, readOnly ? UseKind::DepthRead : UseKind::DepthWrite, Access::ShaderRead,
+    self->addUse(pass, texture.index, true, readOnly ? UseKind::DepthRead : UseKind::DepthWrite, Usage::ShaderRead,
                  "PassBuilder::depthStencil");
 }
 
-Texture* PassContext::texture(TextureRef texture) const
+Texture* PassContext::texture(TextureHandle texture) const
 {
     const RenderGraphImpl* self = impl(graph);
     return texture.index < self->resources.size() ? self->resources[texture.index].textureObject : nullptr;
 }
 
-Buffer* PassContext::buffer(BufferRef buffer) const
+Buffer* PassContext::buffer(BufferHandle buffer) const
 {
     const RenderGraphImpl* self = impl(graph);
     return buffer.index < self->resources.size() ? self->resources[buffer.index].bufferObject : nullptr;
@@ -775,7 +773,7 @@ Result<void> RenderGraph::beginFrame()
     return {};
 }
 
-TextureRef RenderGraph::importTexture(Texture* texture, const ImportedTextureDesc& desc)
+TextureHandle RenderGraph::importTexture(Texture* texture, const ImportedTextureDesc& desc)
 {
     RenderGraphImpl* self = impl(this);
     if (!self->declaring("RenderGraph::importTexture"))
@@ -784,7 +782,7 @@ TextureRef RenderGraph::importTexture(Texture* texture, const ImportedTextureDes
     }
     if (!texture || desc.finalLayout == TextureLayout::Undefined)
     {
-        self->report("slag::rg: RenderGraph::importTexture: %s",
+        self->report("slag::rendergraph: RenderGraph::importTexture: %s",
                      !texture ? "the texture is null" : "the final layout can't be Undefined");
         return {};
     }
@@ -796,7 +794,7 @@ TextureRef RenderGraph::importTexture(Texture* texture, const ImportedTextureDes
     return {self->addResource(std::move(entry))};
 }
 
-BufferRef RenderGraph::importBuffer(Buffer* buffer)
+BufferHandle RenderGraph::importBuffer(Buffer* buffer)
 {
     RenderGraphImpl* self = impl(this);
     if (!self->declaring("RenderGraph::importBuffer"))
@@ -805,7 +803,7 @@ BufferRef RenderGraph::importBuffer(Buffer* buffer)
     }
     if (!buffer)
     {
-        self->report("slag::rg: RenderGraph::importBuffer: the buffer is null");
+        self->report("slag::rendergraph: RenderGraph::importBuffer: the buffer is null");
         return {};
     }
     ResourceEntry entry;
@@ -814,18 +812,18 @@ BufferRef RenderGraph::importBuffer(Buffer* buffer)
     return {self->addResource(std::move(entry))};
 }
 
-TextureRef RenderGraph::createTexture(const Texture2DDesc& desc)
+TextureHandle RenderGraph::createTransientTexture(const Texture2DDesc& desc)
 {
     RenderGraphImpl* self = impl(this);
-    if (!self->declaring("RenderGraph::createTexture"))
+    if (!self->declaring("RenderGraph::createTransientTexture"))
     {
         return {};
     }
     if (desc.format == PixelFormat::Undefined || !desc.castableFormats.empty())
     {
-        self->report("slag::rg: RenderGraph::createTexture: %s", desc.format == PixelFormat::Undefined
-                                                                     ? "the format is Undefined"
-                                                                     : "transient textures have no castable formats");
+        self->report("slag::rendergraph: RenderGraph::createTransientTexture: %s",
+                     desc.format == PixelFormat::Undefined ? "the format is Undefined"
+                                                           : "transient textures have no castable formats");
         return {};
     }
     ResourceEntry entry;
@@ -840,16 +838,16 @@ TextureRef RenderGraph::createTexture(const Texture2DDesc& desc)
     return {self->addResource(std::move(entry))};
 }
 
-BufferRef RenderGraph::createBuffer(const BufferDesc& desc)
+BufferHandle RenderGraph::createTransientBuffer(const BufferDesc& desc)
 {
     RenderGraphImpl* self = impl(this);
-    if (!self->declaring("RenderGraph::createBuffer"))
+    if (!self->declaring("RenderGraph::createTransientBuffer"))
     {
         return {};
     }
     if (desc.size == 0)
     {
-        self->report("slag::rg: RenderGraph::createBuffer: the size is 0");
+        self->report("slag::rendergraph: RenderGraph::createTransientBuffer: the size is 0");
         return {};
     }
     ResourceEntry entry;
@@ -923,7 +921,7 @@ PassBuilder RenderGraph::beginPass(const char* name, CommandQueueType queue, voi
     }
     if (!self->queues[queueIndex(queue)])
     {
-        self->report("slag::rg: RenderGraph::addPass: pass \"%s\": the device has no %s queue", entry.name,
+        self->report("slag::rendergraph: RenderGraph::addPass: pass \"%s\": the device has no %s queue", entry.name,
                      queueName(queue));
     }
     if (!self->passes.pushBack(std::move(entry)))
@@ -1006,7 +1004,7 @@ Result<void> RenderGraph::compile()
                 const ResourceEntry& entry = self->resources[use.resource];
                 if (entry.texture && !layoutValidOn(use.layout, pass.queue))
                 {
-                    self->report("slag::rg: pass \"%s\": %s queues can't use that layout", pass.name,
+                    self->report("slag::rendergraph: pass \"%s\": %s queues can't use that layout", pass.name,
                                  queueName(pass.queue));
                 }
                 if (entry.transient && entry.texture)
@@ -1020,8 +1018,9 @@ Result<void> RenderGraph::compile()
                         (depth && (usage & TextureUsage::DepthStencil) == TextureUsage::None) ||
                         (write && (usage & TextureUsage::ShaderWrite) == TextureUsage::None))
                     {
-                        self->report("slag::rg: pass \"%s\": a transient texture lacks the usage it's used with",
-                                     pass.name);
+                        self->report(
+                            "slag::rendergraph: pass \"%s\": a transient texture lacks the usage it's used with",
+                            pass.name);
                     }
                 }
                 if (!used[use.resource])
@@ -1029,8 +1028,9 @@ Result<void> RenderGraph::compile()
                     used[use.resource] = true;
                     if (entry.transient && !use.write)
                     {
-                        self->report("slag::rg: pass \"%s\": a transient resource is read before anything writes it",
-                                     pass.name);
+                        self->report(
+                            "slag::rendergraph: pass \"%s\": a transient resource is read before anything writes it",
+                            pass.name);
                     }
                     bool loads = false;
                     for (uint32_t c = 0; c < pass.colorCount; ++c)
@@ -1041,24 +1041,27 @@ Result<void> RenderGraph::compile()
                     loads = loads || (pass.depth.resource == use.resource && pass.depth.loadOp == LoadOp::Load);
                     if (entry.transient && loads)
                     {
-                        self->report("slag::rg: pass \"%s\": a transient attachment's first use loads it; clear or "
-                                     "discard it",
-                                     pass.name);
+                        self->report(
+                            "slag::rendergraph: pass \"%s\": a transient attachment's first use loads it; clear or "
+                            "discard it",
+                            pass.name);
                     }
                     if (entry.texture && pass.queue == CommandQueueType::Copy &&
                         (entry.transient || entry.import.initialLayout != TextureLayout::Common))
                     {
-                        self->report("slag::rg: pass \"%s\": a texture first used on a copy queue must be imported "
-                                     "in the Common layout",
-                                     pass.name);
+                        self->report(
+                            "slag::rendergraph: pass \"%s\": a texture first used on a copy queue must be imported "
+                            "in the Common layout",
+                            pass.name);
                     }
                     else if (entry.texture && !entry.transient && entry.import.initialLayout != use.layout &&
                              entry.import.initialLayout != TextureLayout::Undefined &&
                              !layoutValidOn(entry.import.initialLayout, pass.queue))
                     {
-                        self->report("slag::rg: pass \"%s\": %s queues can't change a texture from its initial "
-                                     "layout; use it on the graphics queue first",
-                                     pass.name, queueName(pass.queue));
+                        self->report(
+                            "slag::rendergraph: pass \"%s\": %s queues can't change a texture from its initial "
+                            "layout; use it on the graphics queue first",
+                            pass.name, queueName(pass.queue));
                     }
                 }
             }
@@ -1068,15 +1071,16 @@ Result<void> RenderGraph::compile()
                     !self->resources[pass.colors[c].resource].view &&
                     !self->resources[pass.colors[c].resource].transient)
                 {
-                    self->report("slag::rg: pass \"%s\": an imported render target needs an attachment view",
+                    self->report("slag::rendergraph: pass \"%s\": an imported render target needs an attachment view",
                                  pass.name);
                 }
             }
             if (pass.depth.resource != none && pass.depth.resource < self->resources.size() &&
                 !self->resources[pass.depth.resource].view && !self->resources[pass.depth.resource].transient)
             {
-                self->report("slag::rg: pass \"%s\": an imported depth-stencil target needs an attachment view",
-                             pass.name);
+                self->report(
+                    "slag::rendergraph: pass \"%s\": an imported depth-stencil target needs an attachment view",
+                    pass.name);
             }
         }
     }
@@ -1153,7 +1157,7 @@ Result<void> RenderGraph::compile()
             self->plan.firstPass[r] != none ? self->plan.passBatch[self->plan.firstPass[r]] : epilogueBatch;
         if (batch == none)
         {
-            self->report("slag::rg: an acquired swapchain image is never used");
+            self->report("slag::rendergraph: an acquired swapchain image is never used");
             return Status::Unsupported;
         }
         // Only one per batch is common; more are chained by resource index.
@@ -1173,7 +1177,7 @@ Result<void> RenderGraph::recordPass(uint32_t index)
     RenderGraphImpl* self = impl(this);
     if (!self->compiled || index >= self->passes.size() || self->passes[index].recorded)
     {
-        self->report("slag::rg: RenderGraph::recordPass: %s",
+        self->report("slag::rendergraph: RenderGraph::recordPass: %s",
                      !self->compiled ? "compile first" : "no such pass, or it is already recorded");
         return Status::Unsupported;
     }
@@ -1232,19 +1236,19 @@ Result<void> RenderGraph::recordPass(uint32_t index)
     return commandBuffer->end();
 }
 
-Result<void> RenderGraph::submit()
+Result<void> RenderGraph::execute()
 {
     RenderGraphImpl* self = impl(this);
     if (!self->compiled)
     {
-        self->report("slag::rg: RenderGraph::submit: compile first");
+        self->report("slag::rendergraph: RenderGraph::execute: compile first");
         return Status::Unsupported;
     }
     for (const PassEntry& pass : self->passes)
     {
         if (!pass.recorded)
         {
-            self->report("slag::rg: RenderGraph::submit: pass \"%s\" isn't recorded", pass.name);
+            self->report("slag::rendergraph: RenderGraph::execute: pass \"%s\" isn't recorded", pass.name);
             return Status::Unsupported;
         }
     }
@@ -1408,4 +1412,4 @@ void destroy(RenderGraph* graph)
     allocator.destroy(self);
 }
 
-} // namespace slag::rg
+} // namespace slag::rendergraph

@@ -5,7 +5,7 @@
 // splits the passes into submits with semaphores between queues, begins and
 // ends rendering for passes with attachments, and places transient resources
 // in shared memory. It never reorders passes: declaration order is execution
-// order. Exempt from ADR 0007 (lambdas and templates). Names are placeholders.
+// order. Exempt from ADR 0007 (lambdas and templates).
 
 #include <slag/GraphicsDevice.h>
 #include <slag/Instance.h>
@@ -17,15 +17,15 @@
 #include <type_traits>
 #include <utility>
 
-namespace slag::rg {
+namespace slag::rendergraph {
 
 // Handles to the graph's resources, valid for the frame they were made in.
-struct TextureRef
+struct TextureHandle
 {
     uint32_t index = UINT32_MAX;
 };
 
-struct BufferRef
+struct BufferHandle
 {
     uint32_t index = UINT32_MAX;
 };
@@ -34,7 +34,7 @@ struct BufferRef
 // pass's queue type. VertexBuffer, IndexBuffer, ConstantBuffer, and
 // IndirectArgument are for buffers only. On copy queues textures stay in the
 // Common layout (ADR 0049).
-enum class Access : uint8_t
+enum class Usage : uint8_t
 {
     ShaderRead,
     ShaderWrite, // read-write (RWTexture*, RWBuffer*)
@@ -62,13 +62,13 @@ class RenderGraph;
 class PassBuilder
 {
 public:
-    void use(TextureRef texture, Access access);
-    void use(BufferRef buffer, Access access);
+    void use(TextureHandle texture, Usage usage);
+    void use(BufferHandle buffer, Usage usage);
     // Graphics passes only; the graph begins and ends rendering around the
     // pass with these attachments, in the order declared.
-    void renderTarget(TextureRef texture, LoadOp loadOp = LoadOp::Load, StoreOp storeOp = StoreOp::Store,
+    void renderTarget(TextureHandle texture, LoadOp loadOp = LoadOp::Load, StoreOp storeOp = StoreOp::Store,
                       const ClearValue& clearValue = {});
-    void depthStencil(TextureRef texture, LoadOp loadOp = LoadOp::Load, StoreOp storeOp = StoreOp::Store,
+    void depthStencil(TextureHandle texture, LoadOp loadOp = LoadOp::Load, StoreOp storeOp = StoreOp::Store,
                       const ClearValue& clearValue = {}, bool readOnly = false);
 
 private:
@@ -86,8 +86,8 @@ private:
 class PassContext
 {
 public:
-    Texture* texture(TextureRef texture) const;
-    Buffer* buffer(BufferRef buffer) const;
+    Texture* texture(TextureHandle texture) const;
+    Buffer* buffer(BufferHandle buffer) const;
     // 0 to framesInFlight - 1: which copy of per-frame data (descriptor
     // slots, constants) the pass may write.
     uint32_t frameSlot() const;
@@ -116,7 +116,7 @@ struct RenderGraphDesc
 };
 
 // One frame at a time: beginFrame, declare resources and passes, compile,
-// recordPass for every pass (from any threads, each pass once), submit.
+// recordPass for every pass (from any threads, each pass once), execute.
 // The calls other than recordPass are not thread-safe.
 class RenderGraph
 {
@@ -125,14 +125,14 @@ public:
     // then starts declaring a new frame.
     Result<void> beginFrame();
 
-    TextureRef importTexture(Texture* texture, const ImportedTextureDesc& desc = {});
-    BufferRef importBuffer(Buffer* buffer);
+    TextureHandle importTexture(Texture* texture, const ImportedTextureDesc& desc = {});
+    BufferHandle importBuffer(Buffer* buffer);
     // Transient: lives for this frame, in memory shared with transients whose
     // uses don't overlap. Contents start undefined: the first use writes (or
     // clears) it. The placement field is ignored; castable formats aren't
     // supported.
-    TextureRef createTexture(const Texture2DDesc& desc);
-    BufferRef createBuffer(const BufferDesc& desc);
+    TextureHandle createTransientTexture(const Texture2DDesc& desc);
+    BufferHandle createTransientBuffer(const BufferDesc& desc);
 
     // `setup(PassBuilder&)` runs now; `record(PassContext&, CommandBuffer*)` is
     // stored (in the graph's memory) and runs in recordPass.
@@ -160,8 +160,8 @@ public:
     // Records pass `index` into its own command buffer. Different passes may
     // be recorded concurrently.
     Result<void> recordPass(uint32_t index);
-    // Submits every recorded pass, in order.
-    Result<void> submit();
+    // Submits every recorded pass, in order, with the semaphores between queues.
+    Result<void> execute();
 
     // Bytes of transient memory this frame's resources share.
     uint64_t transientMemorySize() const;
@@ -186,4 +186,4 @@ Result<RenderGraph*> createRenderGraph(const RenderGraphDesc& desc);
 // Waits for the graph's work, then frees it and everything it created.
 void destroy(RenderGraph* graph);
 
-} // namespace slag::rg
+} // namespace slag::rendergraph

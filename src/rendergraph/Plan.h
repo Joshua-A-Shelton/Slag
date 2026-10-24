@@ -16,7 +16,7 @@
 #include <cstdint>
 #include <span>
 
-namespace slag::rg {
+namespace slag::rendergraph {
 
 constexpr uint32_t none = UINT32_MAX;
 
@@ -106,4 +106,4 @@ bool layoutValidOn(TextureLayout layout, CommandQueueType queue);
 Status buildPlan(const HostAllocator* allocator, std::span<const PlanResource> resources,
                  std::span<const PlanPass> passes, std::span<const PlanUse> uses, Plan& plan);
 
-} // namespace slag::rg
+} // namespace slag::rendergraph

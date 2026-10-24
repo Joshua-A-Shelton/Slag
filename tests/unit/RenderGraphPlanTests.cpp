@@ -8,7 +8,7 @@
 #include <vector>
 
 using namespace slag;
-using namespace slag::rg;
+using namespace slag::rendergraph;
 
 namespace {
 

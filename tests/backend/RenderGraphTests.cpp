@@ -36,7 +36,7 @@ struct GraphTest
 
     ~GraphTest()
     {
-        slag::rg::destroy(graph);
+        slag::rendergraph::destroy(graph);
         for (slag::Buffer* buffer : buffers)
         {
             device->destroy(buffer);
@@ -45,12 +45,13 @@ struct GraphTest
         device->shutdown();
     }
 
-    slag::rg::RenderGraph* createGraph(uint32_t framesInFlight = 2)
+    slag::rendergraph::RenderGraph* createGraph(uint32_t framesInFlight = 2)
     {
-        slag::Result<slag::rg::RenderGraph*> created = slag::rg::createRenderGraph({.device = device,
-                                                                                    .framesInFlight = framesInFlight,
-                                                                                    .messageCallback = collect,
-                                                                                    .messageUserData = &graphErrors});
+        slag::Result<slag::rendergraph::RenderGraph*> created =
+            slag::rendergraph::createRenderGraph({.device = device,
+                                                  .framesInFlight = framesInFlight,
+                                                  .messageCallback = collect,
+                                                  .messageUserData = &graphErrors});
         REQUIRE(static_cast<bool>(created));
         graph = created.value();
         return graph;
@@ -106,7 +107,7 @@ struct GraphTest
 
     TestInstance test;
     slag::GraphicsDevice* device = nullptr;
-    slag::rg::RenderGraph* graph = nullptr;
+    slag::rendergraph::RenderGraph* graph = nullptr;
     slag::Pipeline* pipeline = nullptr;
     std::vector<slag::Buffer*> buffers;
     std::vector<std::string> graphErrors;
@@ -151,27 +152,27 @@ constexpr slag::Texture2DDesc targetDesc = {.format = slag::PixelFormat::R8G8B8A
 void testHandoff(slag::Backend backend)
 {
     GraphTest t(backend);
-    slag::rg::RenderGraph* graph = t.createGraph();
+    slag::rendergraph::RenderGraph* graph = t.createGraph();
     slag::Buffer* readback = t.readback(256 * size);
     const slag::ClearValue clear = {.color = {0.25f, 0.5f, 0.75f, 1.0f}};
 
     REQUIRE(static_cast<bool>(graph->beginFrame()));
-    slag::rg::TextureRef target = graph->createTexture(targetDesc);
-    slag::rg::BufferRef output = graph->importBuffer(readback);
+    slag::rendergraph::TextureHandle target = graph->createTransientTexture(targetDesc);
+    slag::rendergraph::BufferHandle output = graph->importBuffer(readback);
     graph->addPass(
         "clear", slag::CommandQueueType::Graphics,
-        [&](slag::rg::PassBuilder& pass) {
+        [&](slag::rendergraph::PassBuilder& pass) {
             pass.renderTarget(target, slag::LoadOp::Clear, slag::StoreOp::Store, clear);
         },
-        [](slag::rg::PassContext&, slag::CommandBuffer*) {});
+        [](slag::rendergraph::PassContext&, slag::CommandBuffer*) {});
     slag::GraphicsDevice* device = t.device;
     graph->addPass(
         "copy out", slag::CommandQueueType::Copy,
-        [&](slag::rg::PassBuilder& pass) {
-            pass.use(target, slag::rg::Access::CopySource);
-            pass.use(output, slag::rg::Access::CopyDest);
+        [&](slag::rendergraph::PassBuilder& pass) {
+            pass.use(target, slag::rendergraph::Usage::CopySource);
+            pass.use(output, slag::rendergraph::Usage::CopyDest);
         },
-        [=](slag::rg::PassContext& context, slag::CommandBuffer* commandBuffer) {
+        [=](slag::rendergraph::PassContext& context, slag::CommandBuffer* commandBuffer) {
             copyToBuffer(device, commandBuffer, context.texture(target), context.buffer(output));
         });
     REQUIRE(static_cast<bool>(graph->compile()));
@@ -179,7 +180,7 @@ void testHandoff(slag::Backend backend)
     {
         CHECK(static_cast<bool>(graph->recordPass(i)));
     }
-    CHECK(static_cast<bool>(graph->submit()));
+    CHECK(static_cast<bool>(graph->execute()));
     t.finish();
     const uint8_t expected[4] = {64, 128, 191, 255};
     CHECK(countPixelsNot(t.device, readback, 256, expected) == 0);
@@ -190,32 +191,33 @@ void testHandoff(slag::Backend backend)
 void testAliasing(slag::Backend backend)
 {
     GraphTest t(backend);
-    slag::rg::RenderGraph* graph = t.createGraph();
+    slag::rendergraph::RenderGraph* graph = t.createGraph();
     slag::Buffer* first = t.readback(256 * size);
     slag::Buffer* second = t.readback(256 * size);
     slag::GraphicsDevice* device = t.device;
 
     REQUIRE(static_cast<bool>(graph->beginFrame()));
-    slag::rg::TextureRef a = graph->createTexture(targetDesc);
-    slag::rg::TextureRef b = graph->createTexture(targetDesc);
-    slag::rg::BufferRef outA = graph->importBuffer(first);
-    slag::rg::BufferRef outB = graph->importBuffer(second);
-    auto clearPass = [&](const char* name, slag::rg::TextureRef target, const slag::ClearValue& clear) {
+    slag::rendergraph::TextureHandle a = graph->createTransientTexture(targetDesc);
+    slag::rendergraph::TextureHandle b = graph->createTransientTexture(targetDesc);
+    slag::rendergraph::BufferHandle outA = graph->importBuffer(first);
+    slag::rendergraph::BufferHandle outB = graph->importBuffer(second);
+    auto clearPass = [&](const char* name, slag::rendergraph::TextureHandle target, const slag::ClearValue& clear) {
         graph->addPass(
             name, slag::CommandQueueType::Graphics,
-            [&](slag::rg::PassBuilder& pass) {
+            [&](slag::rendergraph::PassBuilder& pass) {
                 pass.renderTarget(target, slag::LoadOp::Clear, slag::StoreOp::Store, clear);
             },
-            [](slag::rg::PassContext&, slag::CommandBuffer*) {});
+            [](slag::rendergraph::PassContext&, slag::CommandBuffer*) {});
     };
-    auto copyPass = [&](const char* name, slag::rg::TextureRef source, slag::rg::BufferRef destination) {
+    auto copyPass = [&](const char* name, slag::rendergraph::TextureHandle source,
+                        slag::rendergraph::BufferHandle destination) {
         graph->addPass(
             name, slag::CommandQueueType::Graphics,
-            [&](slag::rg::PassBuilder& pass) {
-                pass.use(source, slag::rg::Access::CopySource);
-                pass.use(destination, slag::rg::Access::CopyDest);
+            [&](slag::rendergraph::PassBuilder& pass) {
+                pass.use(source, slag::rendergraph::Usage::CopySource);
+                pass.use(destination, slag::rendergraph::Usage::CopyDest);
             },
-            [=](slag::rg::PassContext& context, slag::CommandBuffer* commandBuffer) {
+            [=](slag::rendergraph::PassContext& context, slag::CommandBuffer* commandBuffer) {
                 copyToBuffer(device, commandBuffer, context.texture(source), context.buffer(destination));
             });
     };
@@ -230,7 +232,7 @@ void testAliasing(slag::Backend backend)
     {
         CHECK(static_cast<bool>(graph->recordPass(i)));
     }
-    CHECK(static_cast<bool>(graph->submit()));
+    CHECK(static_cast<bool>(graph->execute()));
     t.finish();
     const uint8_t red[4] = {255, 0, 0, 255};
     const uint8_t green[4] = {0, 255, 0, 255};
@@ -244,7 +246,7 @@ void testAliasing(slag::Backend backend)
 void testQueuesAndThreads(slag::Backend backend)
 {
     GraphTest t(backend);
-    slag::rg::RenderGraph* graph = t.createGraph(2);
+    slag::rendergraph::RenderGraph* graph = t.createGraph(2);
     slag::Pipeline* pipeline = t.fillPipeline();
     constexpr uint32_t count = 4096;
     slag::Buffer* readbacks[2] = {t.readback(count * 4), t.readback(count * 4)};
@@ -253,13 +255,13 @@ void testQueuesAndThreads(slag::Backend backend)
     for (uint32_t frame = 0; frame < 4; ++frame)
     {
         REQUIRE(static_cast<bool>(graph->beginFrame()));
-        slag::rg::BufferRef filled = graph->createBuffer({.size = count * 4});
-        slag::rg::BufferRef copied = graph->createBuffer({.size = count * 4});
-        slag::rg::BufferRef output = graph->importBuffer(readbacks[frame % 2]);
+        slag::rendergraph::BufferHandle filled = graph->createTransientBuffer({.size = count * 4});
+        slag::rendergraph::BufferHandle copied = graph->createTransientBuffer({.size = count * 4});
+        slag::rendergraph::BufferHandle output = graph->importBuffer(readbacks[frame % 2]);
         graph->addPass(
             "fill", slag::CommandQueueType::Compute,
-            [&](slag::rg::PassBuilder& pass) { pass.use(filled, slag::rg::Access::ShaderWrite); },
-            [=](slag::rg::PassContext& context, slag::CommandBuffer* commandBuffer) {
+            [&](slag::rendergraph::PassBuilder& pass) { pass.use(filled, slag::rendergraph::Usage::ShaderWrite); },
+            [=](slag::rendergraph::PassContext& context, slag::CommandBuffer* commandBuffer) {
                 uint32_t slot = 20 + context.frameSlot(); // per frame in flight
                 device->writeRWStructuredBuffer(slot, {.buffer = context.buffer(filled), .count = count, .stride = 4});
                 commandBuffer->bindPipeline(pipeline);
@@ -269,20 +271,20 @@ void testQueuesAndThreads(slag::Backend backend)
             });
         graph->addPass(
             "copy", slag::CommandQueueType::Graphics,
-            [&](slag::rg::PassBuilder& pass) {
-                pass.use(filled, slag::rg::Access::CopySource);
-                pass.use(copied, slag::rg::Access::CopyDest);
+            [&](slag::rendergraph::PassBuilder& pass) {
+                pass.use(filled, slag::rendergraph::Usage::CopySource);
+                pass.use(copied, slag::rendergraph::Usage::CopyDest);
             },
-            [=](slag::rg::PassContext& context, slag::CommandBuffer* commandBuffer) {
+            [=](slag::rendergraph::PassContext& context, slag::CommandBuffer* commandBuffer) {
                 commandBuffer->copyBuffer(context.buffer(copied), 0, context.buffer(filled), 0, count * 4);
             });
         graph->addPass(
             "read back", slag::CommandQueueType::Copy,
-            [&](slag::rg::PassBuilder& pass) {
-                pass.use(copied, slag::rg::Access::CopySource);
-                pass.use(output, slag::rg::Access::CopyDest);
+            [&](slag::rendergraph::PassBuilder& pass) {
+                pass.use(copied, slag::rendergraph::Usage::CopySource);
+                pass.use(output, slag::rendergraph::Usage::CopyDest);
             },
-            [=](slag::rg::PassContext& context, slag::CommandBuffer* commandBuffer) {
+            [=](slag::rendergraph::PassContext& context, slag::CommandBuffer* commandBuffer) {
                 commandBuffer->copyBuffer(context.buffer(output), 0, context.buffer(copied), 0, count * 4);
             });
         REQUIRE(static_cast<bool>(graph->compile()));
@@ -302,7 +304,7 @@ void testQueuesAndThreads(slag::Backend backend)
         {
             REQUIRE(ok == 1);
         }
-        CHECK(static_cast<bool>(graph->submit()));
+        CHECK(static_cast<bool>(graph->execute()));
     }
     t.finish();
     for (slag::Buffer* readback : readbacks)
@@ -321,13 +323,13 @@ void testQueuesAndThreads(slag::Backend backend)
 void testErrors(slag::Backend backend)
 {
     GraphTest t(backend);
-    slag::rg::RenderGraph* graph = t.createGraph();
+    slag::rendergraph::RenderGraph* graph = t.createGraph();
     REQUIRE(static_cast<bool>(graph->beginFrame()));
-    slag::rg::TextureRef target = graph->createTexture(targetDesc);
+    slag::rendergraph::TextureHandle target = graph->createTransientTexture(targetDesc);
     graph->addPass(
         "reads garbage", slag::CommandQueueType::Graphics,
-        [&](slag::rg::PassBuilder& pass) { pass.use(target, slag::rg::Access::ShaderRead); },
-        [](slag::rg::PassContext&, slag::CommandBuffer*) {});
+        [&](slag::rendergraph::PassBuilder& pass) { pass.use(target, slag::rendergraph::Usage::ShaderRead); },
+        [](slag::rendergraph::PassContext&, slag::CommandBuffer*) {});
     CHECK(graph->compile().status() == slag::Status::Unsupported);
     REQUIRE(t.graphErrors.size() == 1);
     CHECK(t.graphErrors[0].find("read before anything writes it") != std::string::npos);

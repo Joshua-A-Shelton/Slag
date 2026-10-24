@@ -2,7 +2,7 @@
 
 #include <utility>
 
-namespace slag::rg {
+namespace slag::rendergraph {
 
 namespace {
 
@@ -502,4 +502,4 @@ Status buildPlan(const HostAllocator* allocator, std::span<const PlanResource> r
     return failed ? Status::OutOfHostMemory : Status::Ok;
 }
 
-} // namespace slag::rg
+} // namespace slag::rendergraph

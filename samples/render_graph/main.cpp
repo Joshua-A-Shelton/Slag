@@ -72,13 +72,13 @@ int main(int argc, char** argv)
                                                      .placement = slag::Placement::automatic(slag::MemoryKind::Upload)})
                                      .value();
     uint32_t graphErrors = 0;
-    slag::Result<slag::rg::RenderGraph*> created = slag::rg::createRenderGraph(
+    slag::Result<slag::rendergraph::RenderGraph*> created = slag::rendergraph::createRenderGraph(
         {.device = device, .graphicsQueue = app.queue, .messageCallback = printError, .messageUserData = &graphErrors});
     if (!plasmaPipeline || !fullScreenPipeline || !trianglePipeline || !vertexBuffer || !created)
     {
         return 1;
     }
-    slag::rg::RenderGraph* graph = created.value();
+    slag::rendergraph::RenderGraph* graph = created.value();
     std::memcpy(vertexBuffer->mappedData(), vertices, sizeof(vertices));
     device->writeSampler(samplerSlot, {});
 
@@ -88,22 +88,23 @@ int main(int argc, char** argv)
         {
             return false;
         }
-        slag::rg::TextureRef backbuffer = graph->importTexture(
+        slag::rendergraph::TextureHandle backbuffer = graph->importTexture(
             app.swapchain->texture(image), {.initialLayout = slag::TextureLayout::Undefined,
                                             .finalLayout = slag::TextureLayout::Present,
                                             .attachmentView = app.swapchain->srgbAttachmentView(image),
                                             .swapchain = app.swapchain});
-        slag::rg::TextureRef texture = graph->createTexture({.format = slag::PixelFormat::R8G8B8A8Unorm,
-                                                             .width = textureSize,
-                                                             .height = textureSize,
-                                                             .usage = slag::TextureUsage::ShaderWrite,
-                                                             .debugName = "plasma"});
+        slag::rendergraph::TextureHandle texture =
+            graph->createTransientTexture({.format = slag::PixelFormat::R8G8B8A8Unorm,
+                                           .width = textureSize,
+                                           .height = textureSize,
+                                           .usage = slag::TextureUsage::ShaderWrite,
+                                           .debugName = "plasma"});
         float time = static_cast<float>(frame++) / 60.0f;
 
         graph->addPass(
             "plasma", slag::CommandQueueType::Compute,
-            [&](slag::rg::PassBuilder& pass) { pass.use(texture, slag::rg::Access::ShaderWrite); },
-            [=](slag::rg::PassContext& context, slag::CommandBuffer* commandBuffer) {
+            [&](slag::rendergraph::PassBuilder& pass) { pass.use(texture, slag::rendergraph::Usage::ShaderWrite); },
+            [=](slag::rendergraph::PassContext& context, slag::CommandBuffer* commandBuffer) {
                 // Descriptor slots per frame in flight: 1 + 2 * slot is the
                 // writable view, 2 + 2 * slot the sampled one.
                 uint32_t slot = 1 + 2 * context.frameSlot();
@@ -121,11 +122,11 @@ int main(int argc, char** argv)
 
         graph->addPass(
             "composite", slag::CommandQueueType::Graphics,
-            [&](slag::rg::PassBuilder& pass) {
+            [&](slag::rendergraph::PassBuilder& pass) {
                 pass.renderTarget(backbuffer, slag::LoadOp::Discard);
-                pass.use(texture, slag::rg::Access::ShaderRead);
+                pass.use(texture, slag::rendergraph::Usage::ShaderRead);
             },
-            [=](slag::rg::PassContext& context, slag::CommandBuffer* commandBuffer) {
+            [=](slag::rendergraph::PassContext& context, slag::CommandBuffer* commandBuffer) {
                 uint32_t slot = 2 + 2 * context.frameSlot();
                 device->writeTexture(slot, {.texture = context.texture(texture)});
                 commandBuffer->bindPipeline(fullScreenPipeline);
@@ -154,10 +155,10 @@ int main(int argc, char** argv)
                 return false;
             }
         }
-        return static_cast<bool>(graph->submit());
+        return static_cast<bool>(graph->execute());
     });
 
-    slag::rg::destroy(graph);
+    slag::rendergraph::destroy(graph);
     device->destroy(vertexBuffer);
     device->destroy(trianglePipeline);
     device->destroy(fullScreenPipeline);

@@ -1,6 +1,7 @@
 # 0072 — Render graph module
 
-**Status:** Accepted (2026-10-24). Names are placeholders.
+**Status:** Accepted (2026-10-24). Names are final (docs/naming.md;
+settled after M9).
 
 ## Decided
 

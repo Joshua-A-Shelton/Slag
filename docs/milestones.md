@@ -309,7 +309,7 @@ shows about the core API can still change.
 - Runs: Linux (RADV) debug and release suites and the sample on Wayland and
   X11; Windows (RTX 2070 SUPER) debug and release suites and every sample on
   D3D12 and Vulkan.
-- Names are placeholders (`docs/naming.md`), for review at the end of M9.
+- Names proposed during M9 were reviewed and settled (`docs/naming.md`).
 
 ## After v1.0
 
