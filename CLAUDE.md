@@ -62,9 +62,16 @@ it** — no extra types, parameters, caps, or semantics leaking into the
 common interface for its sake. If the fallback can't meet that bar, it
 doesn't ship. Never weaken or complicate the API design to accommodate 1.3.
 
-- Target OSes: Windows (D3D12, Vulkan), Linux (Vulkan). Android/macOS are out
-  of scope for now (no MoltenVK target).
-- Compilers: MSVC (latest), Clang 17+, GCC 13+.
+- Target OSes (ADR 0070): Windows 10/11 (D3D12, Vulkan; minimum Windows 10
+  version set by the pinned Agility SDK), Linux (Vulkan). macOS, Android, iOS
+  are out of scope (no MoltenVK target).
+- Compilers: MSVC (current Visual Studio), Clang 17+, GCC 13+.
+- CPU architectures: x64 supported and tested. ARM64 must compile but isn't
+  supported in v1, so no x86-only code without a portable fallback. No
+  32-bit, no big-endian.
+- Versioning: semantic versioning (pre-1.0 minors may break the API). The
+  CMake project version generates `slag/Version.h` (`SLAG_VERSION_MAJOR`,
+  `_MINOR`, `_PATCH`, packed `SLAG_VERSION`). No stable ABI.
 - Language: **C++20**. Avoid features with poor MSVC/console-toolchain support
   (modules, `<format>` in public headers, coroutines).
 
@@ -96,6 +103,7 @@ doesn't ship. Never weaken or complicate the API design to accommodate 1.3.
 
 ```
 CMakeLists.txt  CMakePresets.json  .clang-format  CLAUDE.md  LICENSE
+cmake/                         Version.h.in and other CMake helpers
 include/slag/
   Slag.h                       umbrella: everything except native/ and util/
   Result.h                     Result, Status
@@ -113,6 +121,7 @@ include/slag/
   QueryPool.h  Semaphore.h
   Swapchain.h                  Swapchain, NativeWindow, PresentMode, ColorSpace, HDR metadata
   Types.h                      shared small value types: CompareOp, Viewport, Rect, ClearValue
+  Version.h                    generated from the CMake project version (ADR 0070)
   native/D3D12.h               opt-in interop; includes d3d12.h
   native/Vulkan.h              opt-in interop; includes vulkan.h
   native/D3D12Agility.h        SLAG_D3D12_AGILITY_SDK_EXPORTS (no Windows headers)

@@ -259,6 +259,11 @@ sources: `src/d3d12/D3D12*.cpp`, `src/vulkan/Vk*.cpp`; shared code in
 `src/common/`. CMake target `slag`,
 alias `slag::slag`.
 
+## Version macros (`slag/Version.h`, generated)
+
+`SLAG_VERSION_MAJOR`, `SLAG_VERSION_MINOR`, `SLAG_VERSION_PATCH`,
+`SLAG_VERSION` (packed `major << 22 | minor << 12 | patch`) — ADR 0070.
+
 ## Enum value style
 
 PascalCase; formats spell out channel bits as in DXGI (`R8G8B8A8UnormSrgb`)

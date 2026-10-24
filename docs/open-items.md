@@ -26,6 +26,7 @@ None right now.
 | 22 | WARP (recent Agility SDK) supports Enhanced Barriers and Shader Model 6.8, for hosted D3D12 CI | CLAUDE.md §12 |
 | 16 | Verify the ◐ entries in `docs/format-support.md` against driver reports (plus its two other "to verify" items) | 0022 |
 | 23 | `VK_EXT_descriptor_heap` address-range descriptors use the same range limits (`maxStorageBufferRange`, `maxTexelBufferElements`); Intel values | 0028 |
+| 24 | Whether Windows on ARM (D3D12, Vulkan) or ARM64 Linux drivers meet the baseline | 0070 |
 
 ## Resolved on 2026-10-23
 

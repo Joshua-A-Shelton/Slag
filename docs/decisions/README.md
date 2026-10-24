@@ -78,3 +78,4 @@ says a name is final. Names are chosen in a separate, explicit step.
 | [0067](0067-validation.md) | How validation is built | Accepted |
 | [0068](0068-thread-safety.md) | Per-call thread safety | Accepted |
 | [0069](0069-deferred-destroyer.md) | Delayed destruction utility | Accepted |
+| [0070](0070-platforms-and-versioning.md) | Platforms, CPU architectures, versioning | Accepted |

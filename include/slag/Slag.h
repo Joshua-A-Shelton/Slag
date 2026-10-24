@@ -21,3 +21,4 @@
 #include <slag/Swapchain.h>
 #include <slag/Texture.h>
 #include <slag/Types.h>
+#include <slag/Version.h>

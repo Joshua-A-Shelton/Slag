@@ -41,8 +41,13 @@ add_library(slag::slag ALIAS slag)
 
 target_compile_features(slag PUBLIC cxx_std_20)
 
+# slag/Version.h is generated from the project version (ADR 0070).
+set(SLAG_GENERATED_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/include")
+configure_file(cmake/Version.h.in "${SLAG_GENERATED_INCLUDE_DIR}/slag/Version.h" @ONLY)
+
 target_include_directories(slag PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${SLAG_GENERATED_INCLUDE_DIR}>
     $<INSTALL_INTERFACE:include>)
 
 target_sources(slag PRIVATE
