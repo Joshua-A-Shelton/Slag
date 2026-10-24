@@ -273,7 +273,12 @@ Result<void> endCommandBuffer(CommandBufferCommon* object)
     GraphicsDeviceImpl& device = deviceOf(object);
 
     // Makes GPU writes visible to the CPU after a semaphore wait, as on D3D12
-    // (ADR 0049).
+    // (ADR 0049). Not while a render pass is suspended: barriers aren't
+    // allowed then, and the command buffer that resumes it ends with one.
+    if (object->suspendsPass)
+    {
+        return toStatus(device, device.fn.vkEndCommandBuffer(commandBuffer->commandBuffer));
+    }
     VkMemoryBarrier2 hostVisibility = {VK_STRUCTURE_TYPE_MEMORY_BARRIER_2};
     hostVisibility.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
     hostVisibility.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
@@ -431,6 +436,27 @@ VkImageLayout copyLayout(const CommandBufferImpl& commandBuffer, bool source)
 }
 
 } // namespace
+
+void cmdResolveTexture(CommandBufferCommon* object, TextureCommon* destination, uint32_t destinationMip,
+                       uint32_t destinationLayer, TextureCommon* source, uint32_t sourceLayer)
+{
+    auto* commandBuffer = static_cast<CommandBufferImpl*>(object);
+    auto* dst = static_cast<TextureImpl*>(destination);
+    auto* src = static_cast<TextureImpl*>(source);
+    VkImageResolve2 region = {VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2};
+    region.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, sourceLayer, 1};
+    region.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, destinationMip, destinationLayer, 1};
+    region.extent = {src->width, src->height, 1};
+    // ResolveSource / ResolveDest (ADR 0049).
+    VkResolveImageInfo2 info = {VK_STRUCTURE_TYPE_RESOLVE_IMAGE_INFO_2};
+    info.srcImage = src->image;
+    info.srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    info.dstImage = dst->image;
+    info.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    info.regionCount = 1;
+    info.pRegions = &region;
+    deviceOf(object).fn.vkCmdResolveImage2(commandBuffer->commandBuffer, &info);
+}
 
 void cmdCopyTexture(CommandBufferCommon* object, const TextureLocation& destination, const TextureLocation& source,
                     uint32_t width, uint32_t height, uint32_t depth)

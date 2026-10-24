@@ -108,6 +108,12 @@ void CommandBuffer::beginRendering(const RenderingDesc& desc)
     SLAG_VALIDATE(instance, layers > 0, function, "a render pass needs at least one attachment");
     self->passSampleCount = samples ? samples : 1;
     self->inRenderPass = true;
+    if (!self->recordedPass)
+    {
+        self->resumesPass = desc.resuming;
+    }
+    self->recordedPass = true;
+    self->suspendsPass = desc.suspending;
     if (layers == 0)
     {
         return;

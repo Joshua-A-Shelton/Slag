@@ -96,6 +96,9 @@ SLAG_BACKEND_FN(void, cmdBarrier,
 SLAG_BACKEND_FN(void, cmdCopyBuffer,
                 (CommandBufferCommon * commandBuffer, BufferCommon* destination, uint64_t destinationOffset,
                  BufferCommon* source, uint64_t sourceOffset, uint64_t size))
+SLAG_BACKEND_FN(void, cmdResolveTexture,
+                (CommandBufferCommon * commandBuffer, TextureCommon* destination, uint32_t destinationMip,
+                 uint32_t destinationLayer, TextureCommon* source, uint32_t sourceLayer))
 SLAG_BACKEND_FN(void, cmdCopyTexture,
                 (CommandBufferCommon * commandBuffer, const TextureLocation& destination, const TextureLocation& source,
                  uint32_t width, uint32_t height, uint32_t depth))

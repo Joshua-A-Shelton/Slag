@@ -254,6 +254,10 @@ struct CommandBufferCommon : CommandBuffer
     uint32_t passSampleCount = 1;
     bool passReadOnlyDepth = false;
     bool passReadOnlyStencil = false;
+    // Split render passes (ADR 0046): the first pass resumes, the last suspends.
+    bool resumesPass = false;
+    bool suspendsPass = false;
+    bool recordedPass = false;
 };
 
 struct SemaphoreCommon : Semaphore

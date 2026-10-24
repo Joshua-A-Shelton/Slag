@@ -97,6 +97,7 @@ SLAG_VK_DEVICE_FN(vkCmdDispatchIndirect)
 SLAG_VK_DEVICE_FN(vkCmdPipelineBarrier2)
 SLAG_VK_DEVICE_FN(vkCmdCopyBuffer)
 SLAG_VK_DEVICE_FN(vkCmdCopyImage2)
+SLAG_VK_DEVICE_FN(vkCmdResolveImage2)
 SLAG_VK_DEVICE_FN(vkCmdCopyBufferToImage2)
 SLAG_VK_DEVICE_FN(vkCmdCopyImageToBuffer2)
 

@@ -380,6 +380,17 @@ DXGI_FORMAT copyFormat(PixelFormat format, TexturePlane plane)
 
 } // namespace
 
+void cmdResolveTexture(CommandBufferCommon* object, TextureCommon* destination, uint32_t destinationMip,
+                       uint32_t destinationLayer, TextureCommon* source, uint32_t sourceLayer)
+{
+    auto* dst = static_cast<TextureImpl*>(destination);
+    auto* src = static_cast<TextureImpl*>(source);
+    UINT dstSubresource = destinationMip + destinationLayer * dst->mipCount;
+    UINT srcSubresource = sourceLayer * src->mipCount;
+    static_cast<CommandBufferImpl*>(object)->list->ResolveSubresource(dst->resource, dstSubresource, src->resource,
+                                                                      srcSubresource, toDxgiFormat(src->format));
+}
+
 void cmdCopyTexture(CommandBufferCommon* object, const TextureLocation& destination, const TextureLocation& source,
                     uint32_t width, uint32_t height, uint32_t depth)
 {

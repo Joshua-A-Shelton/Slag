@@ -88,6 +88,9 @@ Result<void> CommandBuffer::begin()
         self->state = CommandBufferState::Recording;
         self->boundPipeline = nullptr;
         self->inRenderPass = false;
+        self->resumesPass = false;
+        self->suspendsPass = false;
+        self->recordedPass = false;
     }
     return result;
 }
@@ -328,6 +331,40 @@ void CommandBuffer::copyTexture(const TextureLocation& destination, const Textur
     SLAG_DISPATCH(self, cmdCopyTexture)(self, destination, source, width, height, depth);
 }
 
+void CommandBuffer::resolveTexture(Texture* destination, uint32_t destinationMip, uint32_t destinationLayer,
+                                   Texture* source, uint32_t sourceLayer)
+{
+    CommandBufferCommon* self = common(this);
+    auto* dst = static_cast<TextureCommon*>(destination);
+    auto* src = static_cast<TextureCommon*>(source);
+    [[maybe_unused]] const char* function = "CommandBuffer::resolveTexture";
+    SLAG_VALIDATE_RECORDING(self, function);
+    SLAG_VALIDATE_OUTSIDE_PASS(self, function);
+#ifdef SLAG_VALIDATION
+    InstanceCommon* instance = self->device->instance;
+    SLAG_VALIDATE(instance, self->queueType == CommandQueueType::Graphics, function, "resolves need a graphics queue");
+    SLAG_VALIDATE(instance, dst && src, function, "a texture is null");
+    if (dst && src)
+    {
+        SLAG_VALIDATE(instance, src->sampleCount > 1 && dst->sampleCount == 1, function,
+                      "resolves go from an MSAA texture into a single-sampled one");
+        SLAG_VALIDATE(instance, dst->format == src->format || formatsCastable(dst->format, src->format), function,
+                      "the formats differ");
+        SLAG_VALIDATE(instance, !hasTraits(src->format, FormatTraits::Integer | FormatTraits::Depth), function,
+                      "integer and depth formats can't be resolved");
+        SLAG_VALIDATE(instance,
+                      destinationMip < dst->mipCount && destinationLayer < dst->layerCount &&
+                          sourceLayer < src->layerCount,
+                      function, "the mip or a layer is outside its texture");
+        SLAG_VALIDATE(instance,
+                      (dst->width >> destinationMip ? dst->width >> destinationMip : 1) == src->width &&
+                          (dst->height >> destinationMip ? dst->height >> destinationMip : 1) == src->height,
+                      function, "the destination mip and the source differ in size");
+    }
+#endif
+    SLAG_DISPATCH(self, cmdResolveTexture)(self, dst, destinationMip, destinationLayer, src, sourceLayer);
+}
+
 void CommandBuffer::copyBufferToTexture(const TextureLocation& destination, const BufferLocation& source,
                                         uint32_t width, uint32_t height, uint32_t depth)
 {
@@ -380,6 +417,17 @@ Result<void> CommandQueue::submit(const SubmitDesc& desc)
                       "a command buffer is %s, not ended", stateName(object->state));
         SLAG_VALIDATE(self->device->instance, object->queueType == self->type, "CommandQueue::submit",
                       "a command buffer was created for a different queue type");
+    }
+    // A suspended render pass resumes in the very next command buffer (ADR 0046).
+    for (size_t i = 0; i < desc.commandBuffers.size(); ++i)
+    {
+        CommandBufferCommon* object = common(desc.commandBuffers[i]);
+        bool nextResumes = i + 1 < desc.commandBuffers.size() && common(desc.commandBuffers[i + 1])->resumesPass;
+        bool previousSuspends = i > 0 && common(desc.commandBuffers[i - 1])->suspendsPass;
+        SLAG_VALIDATE(self->device->instance, !object->suspendsPass || nextResumes, "CommandQueue::submit",
+                      "command buffer %zu suspends a render pass the next one doesn't resume", i);
+        SLAG_VALIDATE(self->device->instance, !object->resumesPass || previousSuspends, "CommandQueue::submit",
+                      "command buffer %zu resumes a render pass the previous one didn't suspend", i);
     }
 #endif
     if (self->device->lost)

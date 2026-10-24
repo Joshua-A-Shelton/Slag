@@ -292,7 +292,296 @@ void testDrawIds(slag::Backend backend)
     test.checkNoErrors();
 }
 
+slag::TextureBarrier transition(slag::Texture* texture, slag::TextureLayout before, slag::TextureLayout after)
+{
+    auto use = [](slag::TextureLayout layout, slag::BarrierSync& sync, slag::BarrierAccess& access) {
+        switch (layout)
+        {
+        case slag::TextureLayout::RenderTarget:
+            sync = slag::BarrierSync::RenderTarget;
+            access = slag::BarrierAccess::RenderTarget;
+            break;
+        case slag::TextureLayout::ResolveSource:
+            sync = slag::BarrierSync::Resolve;
+            access = slag::BarrierAccess::ResolveSource;
+            break;
+        case slag::TextureLayout::ResolveDest:
+            sync = slag::BarrierSync::Resolve;
+            access = slag::BarrierAccess::ResolveDest;
+            break;
+        case slag::TextureLayout::CopySource:
+            sync = slag::BarrierSync::Copy;
+            access = slag::BarrierAccess::CopySource;
+            break;
+        default:
+            sync = slag::BarrierSync::None;
+            access = slag::BarrierAccess::NoAccess;
+            break;
+        }
+    };
+    slag::TextureBarrier barrier = {.layoutBefore = before, .layoutAfter = after, .texture = texture};
+    use(before, barrier.syncBefore, barrier.accessBefore);
+    use(after, barrier.syncAfter, barrier.accessAfter);
+    return barrier;
+}
+
+// Shared setup for the triangle-based tests.
+struct TriangleScene
+{
+    slag::GraphicsDevice* device = nullptr;
+    ShaderFiles vertexShader{"Triangle", "vertexMain"};
+    ShaderFiles pixelShader{"Triangle", "pixelMain"};
+    slag::Buffer* vertices = nullptr;
+
+    // Triangle 0 red in the top-left quadrant, triangle 1 green in the bottom-right.
+    explicit TriangleScene(slag::GraphicsDevice* device)
+        : device(device)
+    {
+        const Vertex data[] = {{-1.0f, 1.0f, 1, 0, 0, 1}, {0.0f, 1.0f, 1, 0, 0, 1},  {-1.0f, 0.0f, 1, 0, 0, 1},
+                               {0.0f, -1.0f, 0, 1, 0, 1}, {1.0f, -1.0f, 0, 1, 0, 1}, {1.0f, 0.0f, 0, 1, 0, 1}};
+        vertices = device
+                       ->createBuffer(
+                           {.size = sizeof(data), .placement = slag::Placement::automatic(slag::MemoryKind::Upload)})
+                       .value();
+        REQUIRE(vertices);
+        std::memcpy(vertices->mappedData(), data, sizeof(data));
+    }
+
+    ~TriangleScene()
+    {
+        device->destroy(vertices);
+    }
+
+    slag::Pipeline* pipeline(uint32_t sampleCount)
+    {
+        const slag::VertexAttribute attributes[] = {
+            {.location = 0, .format = slag::PixelFormat::R32G32Float, .slot = 0, .offset = 0},
+            {.location = 1, .format = slag::PixelFormat::R32G32B32A32Float, .slot = 0, .offset = 8}};
+        const slag::VertexStepRate slots[] = {slag::VertexStepRate::PerVertex};
+        const slag::PixelFormat colorFormats[] = {slag::PixelFormat::R8G8B8A8Unorm};
+        return device
+            ->createGraphicsPipeline({.vertex = {.binaries = vertexShader.binaries, .entryPoint = "vertexMain"},
+                                      .pixel = {.binaries = pixelShader.binaries, .entryPoint = "pixelMain"},
+                                      .vertexInput = {.attributes = attributes, .slots = slots},
+                                      .colorFormats = colorFormats,
+                                      .sampleCount = sampleCount})
+            .value();
+    }
+
+    void draw(slag::CommandBuffer* commandBuffer, slag::Pipeline* pipeline, uint32_t triangle)
+    {
+        commandBuffer->bindPipeline(pipeline);
+        const slag::VertexBufferBinding binding = {vertices, 0, 6 * sizeof(Vertex), sizeof(Vertex)};
+        commandBuffer->bindVertexBuffers(0, {&binding, 1});
+        commandBuffer->draw(3, 1, triangle * 3);
+    }
+};
+
+slag::Texture* renderTarget(slag::GraphicsDevice* device, uint32_t size, uint32_t sampleCount)
+{
+    slag::Texture* texture = device
+                                 ->createTexture2D({.format = slag::PixelFormat::R8G8B8A8Unorm,
+                                                    .width = size,
+                                                    .height = size,
+                                                    .sampleCount = sampleCount,
+                                                    .usage = slag::TextureUsage::RenderTarget})
+                                 .value();
+    REQUIRE(texture);
+    return texture;
+}
+
+// 4x MSAA: a render-pass resolve and resolveTexture give the same image, with
+// averaged pixels along the triangle's edge.
+void testResolves(slag::Backend backend)
+{
+    TestInstance test(backend);
+    slag::GraphicsDevice* device = test.firstDevice();
+    REQUIRE(device);
+    REQUIRE(static_cast<bool>(device->initialize({})));
+    {
+        TriangleScene scene(device);
+        slag::Pipeline* pipeline = scene.pipeline(4);
+        REQUIRE(pipeline);
+        constexpr uint32_t size = 64;
+        slag::Texture* msaa = renderTarget(device, size, 4);
+        slag::Texture* passResolved = renderTarget(device, size, 1);
+        slag::Texture* commandResolved = renderTarget(device, size, 1);
+        slag::AttachmentView* msaaView = device->createAttachmentView({.texture = msaa}).value();
+        slag::AttachmentView* resolveView = device->createAttachmentView({.texture = passResolved}).value();
+        REQUIRE(msaaView);
+        REQUIRE(resolveView);
+        slag::CopyFootprint footprint = device->copyFootprint(passResolved, 0);
+        slag::Buffer* readback =
+            device
+                ->createBuffer(
+                    {.size = footprint.size * 2, .placement = slag::Placement::automatic(slag::MemoryKind::Readback)})
+                .value();
+        REQUIRE(readback);
+
+        slag::CommandBuffer* commandBuffer =
+            device->createCommandBuffer({.queueType = slag::CommandQueueType::Graphics}).value();
+        REQUIRE(static_cast<bool>(commandBuffer->begin()));
+        slag::TextureBarrier start[] = {
+            transition(msaa, slag::TextureLayout::Undefined, slag::TextureLayout::RenderTarget),
+            transition(passResolved, slag::TextureLayout::Undefined, slag::TextureLayout::RenderTarget),
+            transition(commandResolved, slag::TextureLayout::Undefined, slag::TextureLayout::ResolveDest)};
+        commandBuffer->barrier({}, {}, start);
+        slag::ColorAttachment color = {.view = msaaView,
+                                       .loadOp = slag::LoadOp::Clear,
+                                       .storeOp = slag::StoreOp::Resolve,
+                                       .clearValue = {.color = {0.0f, 0.0f, 1.0f, 1.0f}},
+                                       .resolveView = resolveView};
+        commandBuffer->beginRendering({.colorAttachments = {&color, 1}});
+        scene.draw(commandBuffer, pipeline, 0);
+        commandBuffer->endRendering();
+        color.storeOp = slag::StoreOp::Store;
+        color.resolveView = nullptr;
+        commandBuffer->beginRendering({.colorAttachments = {&color, 1}});
+        scene.draw(commandBuffer, pipeline, 0);
+        commandBuffer->endRendering();
+        slag::TextureBarrier toResolve =
+            transition(msaa, slag::TextureLayout::RenderTarget, slag::TextureLayout::ResolveSource);
+        commandBuffer->barrier({}, {}, {&toResolve, 1});
+        commandBuffer->resolveTexture(commandResolved, 0, 0, msaa, 0);
+        slag::TextureBarrier toCopy[] = {
+            transition(passResolved, slag::TextureLayout::RenderTarget, slag::TextureLayout::CopySource),
+            transition(commandResolved, slag::TextureLayout::ResolveDest, slag::TextureLayout::CopySource)};
+        commandBuffer->barrier({}, {}, toCopy);
+        commandBuffer->copyTextureToBuffer({readback, 0, footprint.rowPitch}, {.texture = passResolved}, size, size);
+        commandBuffer->copyTextureToBuffer({readback, footprint.size, footprint.rowPitch}, {.texture = commandResolved},
+                                           size, size);
+        REQUIRE(static_cast<bool>(commandBuffer->end()));
+        submitAndWait(device, commandBuffer);
+
+        const auto* a = static_cast<const uint8_t*>(readback->mappedData());
+        const uint8_t* b = a + footprint.size;
+        CHECK(std::memcmp(a, b, footprint.size) == 0);
+        CHECK(a[8 * footprint.rowPitch + 8 * 4] == 255);       // red inside
+        CHECK(a[56 * footprint.rowPitch + 56 * 4 + 2] == 255); // blue outside
+        uint32_t averaged = 0;
+        for (uint32_t y = 0; y < size; ++y)
+        {
+            for (uint32_t x = 0; x < size; ++x)
+            {
+                uint8_t red = a[y * footprint.rowPitch + x * 4];
+                averaged += red != 0 && red != 255 ? 1 : 0;
+            }
+        }
+        CHECK(averaged > 0); // edge pixels mix the triangle and the clear color
+
+        device->destroy(commandBuffer);
+        device->destroy(readback);
+        device->destroy(msaaView);
+        device->destroy(resolveView);
+        device->destroy(msaa);
+        device->destroy(passResolved);
+        device->destroy(commandResolved);
+        device->destroy(pipeline);
+    }
+    device->shutdown();
+    test.checkNoErrors();
+}
+
+// One render pass across two command buffers: cleared once, a triangle in each.
+void testSplitPass(slag::Backend backend)
+{
+    TestInstance test(backend);
+    slag::GraphicsDevice* device = test.firstDevice();
+    REQUIRE(device);
+    REQUIRE(static_cast<bool>(device->initialize({})));
+    {
+        TriangleScene scene(device);
+        slag::Pipeline* pipeline = scene.pipeline(1);
+        REQUIRE(pipeline);
+        constexpr uint32_t size = 64;
+        slag::Texture* target = renderTarget(device, size, 1);
+        slag::AttachmentView* view = device->createAttachmentView({.texture = target}).value();
+        slag::CopyFootprint footprint = device->copyFootprint(target, 0);
+        slag::Buffer* readback =
+            device
+                ->createBuffer(
+                    {.size = footprint.size, .placement = slag::Placement::automatic(slag::MemoryKind::Readback)})
+                .value();
+        REQUIRE(view);
+        REQUIRE(readback);
+
+        const slag::ColorAttachment color = {
+            .view = view, .loadOp = slag::LoadOp::Clear, .clearValue = {.color = {0.0f, 0.0f, 1.0f, 1.0f}}};
+        slag::CommandBuffer* first =
+            device->createCommandBuffer({.queueType = slag::CommandQueueType::Graphics}).value();
+        slag::CommandBuffer* second =
+            device->createCommandBuffer({.queueType = slag::CommandQueueType::Graphics}).value();
+        REQUIRE(static_cast<bool>(first->begin()));
+        slag::TextureBarrier toTarget =
+            transition(target, slag::TextureLayout::Undefined, slag::TextureLayout::RenderTarget);
+        first->barrier({}, {}, {&toTarget, 1});
+        first->beginRendering({.colorAttachments = {&color, 1}, .suspending = true});
+        scene.draw(first, pipeline, 0);
+        first->endRendering();
+        REQUIRE(static_cast<bool>(first->end()));
+        REQUIRE(static_cast<bool>(second->begin()));
+        second->beginRendering({.colorAttachments = {&color, 1}, .resuming = true});
+        scene.draw(second, pipeline, 1);
+        second->endRendering();
+        slag::TextureBarrier toCopy =
+            transition(target, slag::TextureLayout::RenderTarget, slag::TextureLayout::CopySource);
+        second->barrier({}, {}, {&toCopy, 1});
+        second->copyTextureToBuffer({readback, 0, footprint.rowPitch}, {.texture = target}, size, size);
+        REQUIRE(static_cast<bool>(second->end()));
+
+        slag::Semaphore* semaphore = device->createSemaphore({}).value();
+        slag::SemaphoreValue done = {semaphore, 1};
+        slag::CommandBuffer* commandBuffers[] = {first, second};
+        REQUIRE(static_cast<bool>(device->commandQueue(slag::CommandQueueType::Graphics)
+                                      ->submit({.commandBuffers = commandBuffers, .signals = {&done, 1}})));
+        REQUIRE(static_cast<bool>(device->waitSemaphores({&done, 1}, slag::WaitMode::All, 5'000'000'000)));
+
+        const auto* pixels = static_cast<const uint8_t*>(readback->mappedData());
+        auto at = [&](uint32_t x, uint32_t y) {
+            return pixels + y * footprint.rowPitch + x * 4;
+        };
+        CHECK(at(8, 8)[0] == 255);   // triangle 0, red
+        CHECK(at(56, 56)[1] == 255); // triangle 1, green
+        CHECK(at(56, 8)[2] == 255);  // cleared once, blue
+        CHECK(at(8, 56)[2] == 255);
+
+        device->destroy(semaphore);
+        device->destroy(first);
+        device->destroy(second);
+        device->destroy(readback);
+        device->destroy(view);
+        device->destroy(target);
+        device->destroy(pipeline);
+    }
+    device->shutdown();
+    test.checkNoErrors();
+}
+
 } // namespace
+
+#ifdef SLAG_BACKEND_VULKAN
+TEST_CASE("Vulkan: MSAA resolves in a render pass and with resolveTexture")
+{
+    testResolves(slag::Backend::Vulkan);
+}
+
+TEST_CASE("Vulkan: a render pass split across two command buffers")
+{
+    testSplitPass(slag::Backend::Vulkan);
+}
+#endif
+
+#ifdef SLAG_BACKEND_D3D12
+TEST_CASE("D3D12: MSAA resolves in a render pass and with resolveTexture")
+{
+    testResolves(slag::Backend::D3D12);
+}
+
+TEST_CASE("D3D12: a render pass split across two command buffers")
+{
+    testSplitPass(slag::Backend::D3D12);
+}
+#endif
 
 #ifdef SLAG_BACKEND_VULKAN
 TEST_CASE("Vulkan: indirect draws with a GPU count and draw IDs")
