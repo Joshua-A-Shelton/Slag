@@ -1,6 +1,7 @@
 #include "common/Logging.h"
 #include "common/Objects.h"
 #include "common/SubAllocator.h"
+#include "common/validation/SlotTracking.h"
 
 #include <slag/Buffer.h>
 #include <slag/GraphicsDevice.h>
@@ -112,6 +113,9 @@ void GraphicsDevice::destroy(Buffer* buffer)
     {
         dropMove(object->movePass, object->moveIndex);
     }
+#ifdef SLAG_VALIDATION
+    releaseSlots(self, object);
+#endif
     MemoryBlockCommon* block = object->memoryBlock;
     PoolAllocation allocation = object->allocation;
     SLAG_DISPATCH(self, destroyBuffer)(self, object);

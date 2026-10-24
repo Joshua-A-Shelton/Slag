@@ -197,3 +197,11 @@ void writeSamplerDescriptor(GraphicsDeviceCommon* common, uint32_t index, const 
 }
 
 } // namespace slag::vk
+
+namespace slag::vk {
+
+// Poison descriptors are D3D12 only: Vulkan GPU-assisted validation reports
+// bad descriptor use itself (ADR 0016).
+void poisonResourceSlot(GraphicsDeviceCommon*, uint32_t, const SlotDescription&) {}
+
+} // namespace slag::vk

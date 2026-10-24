@@ -20,6 +20,12 @@ SLAG_BACKEND_FN(void, swapTextureNative, (TextureCommon * a, TextureCommon* b))
 SLAG_BACKEND_FN(void, swapAttachmentViewNative, (AttachmentViewCommon * a, AttachmentViewCommon* b))
 SLAG_BACKEND_FN(void, cmdRecordMoves, (CommandBufferCommon * commandBuffer, const MoveEntry* moves, size_t count))
 
+// Validation builds: overwrites a cleared slot, or one whose resource was
+// destroyed, with a poison descriptor of the same kind (ADRs 0016, 0031).
+// D3D12 only; a no-op elsewhere.
+SLAG_BACKEND_FN(void, poisonResourceSlot,
+                (GraphicsDeviceCommon * device, uint32_t index, const SlotDescription& description))
+
 // Crash diagnostics (ADR 0014): writes what the backend knows about a lost
 // device into `text` (NUL-terminated); false when it has nothing.
 SLAG_BACKEND_FN(bool, describeDeviceLoss, (GraphicsDeviceCommon * device, char* text, size_t size))

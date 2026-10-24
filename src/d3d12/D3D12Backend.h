@@ -95,7 +95,20 @@ struct GraphicsDeviceImpl : GraphicsDeviceCommon
     std::mutex pipelineLibraryLock;
     // ExecuteIndirect signatures, indexed by IndirectKind (ADR 0047).
     ID3D12CommandSignature* commandSignatures[3] = {};
+#ifdef SLAG_VALIDATION
+    // Poison descriptors' resources (ADRs 0016, 0031): a buffer, and textures
+    // per format class (float, uint, sint), use (sampled, writable), and
+    // shape (1D, 2D array of 6, 3D).
+    ID3D12Resource* poisonBuffer = nullptr;
+    ID3D12Resource* poisonTextures[3][2][3] = {};
+#endif
 };
+
+#ifdef SLAG_VALIDATION
+// D3D12Poison.cpp: created at initialize, released at shutdown.
+void createPoison(GraphicsDeviceImpl& device);
+void destroyPoison(GraphicsDeviceImpl& device);
+#endif
 
 struct CommandQueueImpl : CommandQueueCommon
 {

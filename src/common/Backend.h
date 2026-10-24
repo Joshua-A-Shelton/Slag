@@ -39,6 +39,7 @@ struct TextureDescriptorInfo;
 struct PipelineCommon;
 struct CommandBufferCommon;
 struct MoveEntry;
+struct SlotDescription;
 
 struct BackendFunctions
 {

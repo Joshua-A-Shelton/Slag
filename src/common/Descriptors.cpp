@@ -1,5 +1,6 @@
 #include "common/Logging.h"
 #include "common/Objects.h"
+#include "common/validation/SlotTracking.h"
 
 #include <slag/Descriptors.h>
 #include <slag/GraphicsDevice.h>
@@ -209,7 +210,7 @@ void writeBuffer(GraphicsDeviceCommon* self, uint32_t index, const BufferDescrip
 #ifdef SLAG_VALIDATION
     SLAG_VALIDATE_LIVE(self->instance, info.buffer, "Buffer", functionName(info.kind));
     validateBuffer(self, index, info);
-    recordSlot(self, index, info.buffer, info.buffer ? info.buffer->moveCount : 0);
+    trackBufferSlot(self, index, info);
 #endif
     SLAG_DISPATCH(self, writeBufferDescriptor)(self, index, info);
 }
@@ -306,7 +307,7 @@ void writeTextureInfo(GraphicsDeviceCommon* self, uint32_t index, const TextureD
     SLAG_VALIDATE_LIVE(self->instance, info.texture, "Texture",
                        info.writable ? "GraphicsDevice::writeRWTexture" : "GraphicsDevice::writeTexture");
     validateTexture(self, index, info);
-    recordSlot(self, index, info.texture, info.texture ? info.texture->moveCount : 0);
+    trackTextureSlot(self, index, info);
 #endif
     SLAG_DISPATCH(self, writeTextureDescriptor)(self, index, info);
 }
@@ -386,7 +387,7 @@ void GraphicsDevice::clearResourceDescriptor([[maybe_unused]] uint32_t index)
     SLAG_VALIDATE(self->instance, index < self->resourceHeapSize, "GraphicsDevice::clearResourceDescriptor",
                   "slot %u is outside the resource heap (%u slots)", index, self->resourceHeapSize);
 #ifdef SLAG_VALIDATION
-    recordSlot(self, index, nullptr, 0);
+    clearSlot(self, index);
 #endif
 }
 

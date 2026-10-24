@@ -300,6 +300,105 @@ void testRootConstantBuffer(slag::Backend backend)
     test.checkNoErrors();
 }
 
+#ifdef SLAG_VALIDATION
+// Slot tracking (ADR 0031): destroying a resource still in slots logs one
+// Info message; clearing or overwriting the slot first doesn't. On D3D12 the
+// slots then read as poison (ADR 0016): 0xDEADBEEF for buffers and integer
+// textures, magenta for float textures.
+void testReleasedSlots(slag::Backend backend)
+{
+    TestInstance test(backend);
+    slag::GraphicsDevice* device = test.firstDevice();
+    REQUIRE(device);
+    REQUIRE(static_cast<bool>(device->initialize({})));
+    std::vector<char> spirv;
+    std::vector<char> dxil;
+    slag::Pipeline* pipeline = computePipeline(device, "ReadPoison", spirv, dxil);
+    REQUIRE(pipeline);
+    auto gpuBuffer = [&](uint64_t size, const char* name) {
+        return device
+            ->createBuffer(
+                {.size = size, .placement = slag::Placement::automatic(slag::MemoryKind::GpuOnly), .debugName = name})
+            .value();
+    };
+    auto texture = [&](slag::PixelFormat format, const char* name) {
+        return device->createTexture2D({.format = format, .width = 4, .height = 4, .debugName = name}).value();
+    };
+    slag::Buffer* raw = gpuBuffer(256, "raw");
+    slag::Buffer* overwritten = gpuBuffer(256, "overwritten");
+    slag::Texture* floats = texture(slag::PixelFormat::R8G8B8A8Unorm, "floats");
+    slag::Texture* uints = texture(slag::PixelFormat::R32G32B32A32Uint, "uints");
+    slag::Buffer* output = gpuBuffer(64, "output");
+    slag::Buffer* readback =
+        device->createBuffer({.size = 64, .placement = slag::Placement::automatic(slag::MemoryKind::Readback)}).value();
+    REQUIRE((raw && overwritten && floats && uints && output && readback));
+
+    device->writeRawBuffer(1, {.buffer = raw, .size = 256});
+    device->writeRawBuffer(5, {.buffer = raw, .size = 256}); // two slots, one message
+    device->writeTexture(2, {.texture = floats});
+    device->writeTexture(3, {.texture = uints});
+    device->writeRWStructuredBuffer(4, {.buffer = output, .count = 16, .stride = 4});
+    device->writeRawBuffer(6, {.buffer = overwritten, .size = 256});
+    device->writeRawBuffer(6, {.buffer = raw, .size = 256}); // no longer holds `overwritten`
+    device->clearResourceDescriptor(2);
+
+    test.messages.slagInfo.clear();
+    device->destroy(overwritten);
+    device->destroy(floats);
+    CHECK(test.messages.slagInfo.empty()); // neither is in a slot any more
+    device->destroy(raw);
+    device->destroy(uints);
+    REQUIRE(test.messages.slagInfo.size() == 2);
+    CHECK(test.messages.slagInfo[0].find("buffer \"raw\" was still in 3 resource slots (first: 1)") !=
+          std::string::npos);
+    CHECK(test.messages.slagInfo[1].find("texture \"uints\" was still in 1 resource slots") != std::string::npos);
+
+    if (backend == slag::Backend::D3D12)
+    {
+        slag::CommandBuffer* commandBuffer =
+            device->createCommandBuffer({.queueType = slag::CommandQueueType::Compute}).value();
+        REQUIRE(static_cast<bool>(commandBuffer->begin()));
+        commandBuffer->bindPipeline(pipeline);
+        const uint32_t push[] = {1, 2, 3, 4};
+        commandBuffer->pushConstants(push, sizeof(push));
+        commandBuffer->dispatch(1, 1, 1);
+        slag::BufferBarrier toCopy = {.syncBefore = slag::BarrierSync::ComputeShading,
+                                      .syncAfter = slag::BarrierSync::Copy,
+                                      .accessBefore = slag::BarrierAccess::ShaderWrite,
+                                      .accessAfter = slag::BarrierAccess::CopySource,
+                                      .buffer = output};
+        commandBuffer->barrier({}, {&toCopy, 1});
+        commandBuffer->copyBuffer(readback, 0, output, 0, 64);
+        REQUIRE(static_cast<bool>(commandBuffer->end()));
+        slag::Semaphore* semaphore = device->createSemaphore({}).value();
+        slag::SemaphoreValue done = {semaphore, 1};
+        slag::CommandBuffer* commandBuffers[] = {commandBuffer};
+        REQUIRE(static_cast<bool>(device->commandQueue(slag::CommandQueueType::Compute)
+                                      ->submit({.commandBuffers = commandBuffers, .signals = {&done, 1}})));
+        REQUIRE(static_cast<bool>(device->waitSemaphores({&done, 1}, slag::WaitMode::All, 5'000'000'000)));
+        uint32_t values[7] = {};
+        std::memcpy(values, readback->mappedData(), sizeof(values));
+        float magenta[4] = {};
+        std::memcpy(magenta, values + 1, sizeof(magenta));
+        CHECK(values[0] == 0xDEADBEEF);
+        CHECK(magenta[0] == 1.0f);
+        CHECK(magenta[1] == 0.0f);
+        CHECK(magenta[2] == 1.0f);
+        CHECK(magenta[3] == 1.0f);
+        CHECK(values[5] == 0xDEADBEEF);
+        CHECK(values[6] == 0xDEADBEEF);
+        device->destroy(semaphore);
+        device->destroy(commandBuffer);
+    }
+
+    device->destroy(output);
+    device->destroy(readback);
+    device->destroy(pipeline);
+    device->shutdown();
+    test.checkNoErrors();
+}
+#endif
+
 } // namespace
 
 #ifdef SLAG_BACKEND_VULKAN
@@ -328,4 +427,20 @@ TEST_CASE("D3D12: every descriptor kind reads and writes through the heaps")
 {
     testDescriptorKinds(slag::Backend::D3D12);
 }
+#endif
+
+#ifdef SLAG_VALIDATION
+#ifdef SLAG_BACKEND_VULKAN
+TEST_CASE("Vulkan: destroying a resource still in slots is reported once")
+{
+    testReleasedSlots(slag::Backend::Vulkan);
+}
+#endif
+
+#ifdef SLAG_BACKEND_D3D12
+TEST_CASE("D3D12: slots of destroyed and cleared resources read as poison")
+{
+    testReleasedSlots(slag::Backend::D3D12);
+}
+#endif
 #endif

@@ -289,6 +289,9 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
     }
     initPool(device, device.rtvPool, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1);
     initPool(device, device.dsvPool, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, DsvVariantCount);
+#ifdef SLAG_VALIDATION
+    createPoison(device);
+#endif
     return {};
 }
 
@@ -311,6 +314,9 @@ void shutdownDevice(GraphicsDeviceCommon* common)
         }
     }
     destroyQueues(device);
+#ifdef SLAG_VALIDATION
+    destroyPoison(device);
+#endif
     release(device.pipelineLibrary);
     device.pipelineLibraryBlob.clear();
     for (ID3D12CommandSignature*& signature : device.commandSignatures)

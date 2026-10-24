@@ -14,13 +14,19 @@
 struct TestMessages
 {
     std::vector<std::string> errors;
+    std::vector<std::string> slagInfo; // Slag's own Info messages
 };
 
-inline void collectTestMessage(slag::MessageSeverity severity, slag::MessageSource, const char* message, void* userData)
+inline void collectTestMessage(slag::MessageSeverity severity, slag::MessageSource source, const char* message,
+                               void* userData)
 {
     if (severity == slag::MessageSeverity::Error)
     {
         static_cast<TestMessages*>(userData)->errors.push_back(message);
+    }
+    else if (severity == slag::MessageSeverity::Info && source == slag::MessageSource::Slag)
+    {
+        static_cast<TestMessages*>(userData)->slagInfo.push_back(message);
     }
 }
 

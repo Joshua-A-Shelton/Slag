@@ -38,6 +38,27 @@ class SubAllocator;
 struct AttachmentViewCommon;
 struct DefragmentationPassCommon;
 
+enum class BufferDescriptorKind : uint8_t;
+
+// How a resource slot was last written (validation builds): enough to write
+// a poison descriptor of the same kind (ADRs 0016, 0031).
+enum class SlotContent : uint8_t
+{
+    Empty,
+    Buffer,
+    Texture,
+};
+
+struct SlotDescription
+{
+    SlotContent content = SlotContent::Empty;
+    BufferDescriptorKind bufferKind{};
+    bool writable = false; // textures
+    TextureViewType viewType = TextureViewType::Texture2D;
+    PixelFormat format = PixelFormat::Undefined; // typed buffers; textures: picks the poison's format class
+    uint32_t stride = 0;                         // structured buffers
+};
+
 // Every Slag object's record (ADRs 0017, 0052): its debug name, kept in
 // every build, and in validation builds whether it was destroyed.
 struct ObjectRecord
@@ -88,8 +109,9 @@ struct GraphicsDeviceCommon : GraphicsDevice, ObjectRecord
     // report stale slots after defragmentation (ADR 0062).
     struct SlotRecord
     {
-        std::atomic<const void*> object = nullptr;
-        std::atomic<uint32_t> moveCount = 0; // the object's moveCount when written
+        std::atomic<const void*> object = nullptr; // BufferCommon or TextureCommon, always live
+        std::atomic<uint32_t> moveCount = 0;       // the object's moveCount when written
+        SlotDescription description;               // how it was last written, for poisoning (ADR 0031)
     };
     struct StaleSlot
     {
@@ -144,6 +166,9 @@ struct BufferCommon : Buffer, ObjectRecord
     DefragmentationPassCommon* movePass = nullptr; // set while in an active pass's move list
     uint32_t moveIndex = 0;
     uint32_t moveCount = 0; // times moved
+#ifdef SLAG_VALIDATION
+    std::atomic<uint32_t> slotReferences = 0; // resource slots holding it (ADR 0031)
+#endif
 };
 
 enum class TextureType : uint8_t
@@ -203,6 +228,9 @@ struct TextureCommon : Texture, ObjectRecord
     DefragmentationPassCommon* movePass = nullptr;
     uint32_t moveIndex = 0;
     uint32_t moveCount = 0;
+#ifdef SLAG_VALIDATION
+    std::atomic<uint32_t> slotReferences = 0; // resource slots holding it (ADR 0031)
+#endif
     // For validation.
     PixelFormat castableFormats[16] = {};
     uint32_t castableCount = 0;
@@ -369,18 +397,6 @@ struct MoveEntry
     PoolAllocation from;
     PoolAllocation to;
 };
-
-#ifdef SLAG_VALIDATION
-// Records the resource a slot now holds, or null (ADR 0062).
-inline void recordSlot(GraphicsDeviceCommon* device, uint32_t index, const void* object, uint32_t moveCount)
-{
-    if (device->slotRecords && index < device->resourceHeapSize)
-    {
-        device->slotRecords[index].object.store(object, std::memory_order_relaxed);
-        device->slotRecords[index].moveCount.store(moveCount, std::memory_order_relaxed);
-    }
-}
-#endif
 
 struct DefragmentationPassCommon : DefragmentationPass
 {
