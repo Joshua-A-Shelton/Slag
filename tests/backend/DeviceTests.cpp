@@ -4,10 +4,11 @@
 #include <slag/GraphicsDevice.h>
 #include <slag/Semaphore.h>
 
-#ifdef SLAG_BACKEND_VULKAN
-TEST_CASE("Vulkan: initialize gives the requested queues and shutdown undoes it")
+namespace {
+
+void testInitializeAndShutdown(slag::Backend backend)
 {
-    TestInstance test(slag::Backend::Vulkan);
+    TestInstance test(backend);
     slag::GraphicsDevice* device = test.firstDevice();
     REQUIRE(device);
 
@@ -30,9 +31,9 @@ TEST_CASE("Vulkan: initialize gives the requested queues and shutdown undoes it"
     test.checkNoErrors();
 }
 
-TEST_CASE("Vulkan: more queues than the hardware has share hardware queues")
+void testSharedQueues(slag::Backend backend)
 {
-    TestInstance test(slag::Backend::Vulkan);
+    TestInstance test(backend);
     slag::GraphicsDevice* device = test.firstDevice();
     REQUIRE(device);
 
@@ -50,9 +51,9 @@ TEST_CASE("Vulkan: more queues than the hardware has share hardware queues")
     test.checkNoErrors();
 }
 
-TEST_CASE("Vulkan: semaphores signal from the CPU and wait with timeouts")
+void testSemaphores(slag::Backend backend)
 {
-    TestInstance test(slag::Backend::Vulkan);
+    TestInstance test(backend);
     slag::GraphicsDevice* device = test.firstDevice();
     REQUIRE(device);
     REQUIRE(static_cast<bool>(device->initialize({})));
@@ -79,9 +80,9 @@ TEST_CASE("Vulkan: semaphores signal from the CPU and wait with timeouts")
 }
 
 #ifdef SLAG_VALIDATION
-TEST_CASE("Vulkan: validation reports a semaphore value that doesn't increase")
+void testSemaphoreValidation(slag::Backend backend)
 {
-    TestInstance test(slag::Backend::Vulkan);
+    TestInstance test(backend);
     slag::GraphicsDevice* device = test.firstDevice();
     REQUIRE(device);
     REQUIRE(static_cast<bool>(device->initialize({})));
@@ -94,6 +95,49 @@ TEST_CASE("Vulkan: validation reports a semaphore value that doesn't increase")
 
     device->destroy(semaphore.value());
     device->shutdown();
+}
+#endif
+
+} // namespace
+
+#ifdef SLAG_BACKEND_VULKAN
+TEST_CASE("Vulkan: initialize gives the requested queues and shutdown undoes it")
+{
+    testInitializeAndShutdown(slag::Backend::Vulkan);
+}
+TEST_CASE("Vulkan: more queues than the hardware has share hardware queues")
+{
+    testSharedQueues(slag::Backend::Vulkan);
+}
+TEST_CASE("Vulkan: semaphores signal from the CPU and wait with timeouts")
+{
+    testSemaphores(slag::Backend::Vulkan);
+}
+#ifdef SLAG_VALIDATION
+TEST_CASE("Vulkan: validation reports a semaphore value that doesn't increase")
+{
+    testSemaphoreValidation(slag::Backend::Vulkan);
+}
+#endif
+#endif
+
+#ifdef SLAG_BACKEND_D3D12
+TEST_CASE("D3D12: initialize gives the requested queues and shutdown undoes it")
+{
+    testInitializeAndShutdown(slag::Backend::D3D12);
+}
+TEST_CASE("D3D12: more queues than the hardware has share hardware queues")
+{
+    testSharedQueues(slag::Backend::D3D12);
+}
+TEST_CASE("D3D12: semaphores signal from the CPU and wait with timeouts")
+{
+    testSemaphores(slag::Backend::D3D12);
+}
+#ifdef SLAG_VALIDATION
+TEST_CASE("D3D12: validation reports a semaphore value that doesn't increase")
+{
+    testSemaphoreValidation(slag::Backend::D3D12);
 }
 #endif
 #endif
