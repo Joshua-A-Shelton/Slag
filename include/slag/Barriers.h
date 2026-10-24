@@ -82,6 +82,7 @@ struct SubresourceRange
     uint32_t mipCount = remainingMips;
     uint32_t baseLayer = 0;
     uint32_t layerCount = remainingLayers;
+    // Color means every plane of a depth/stencil texture.
     TexturePlane plane = TexturePlane::Color;
 };
 

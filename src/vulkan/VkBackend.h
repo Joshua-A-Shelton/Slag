@@ -99,6 +99,7 @@ struct CommandBufferImpl : CommandBufferCommon
     bool bindsHeaps = false; // graphics/compute families only
     // Reused by barrier.
     Vector<VkBufferMemoryBarrier2> bufferBarriers;
+    Vector<VkImageMemoryBarrier2> imageBarriers;
     Vector<VkMemoryBarrier2> memoryBarriers;
 };
 
@@ -112,6 +113,13 @@ struct BufferImpl : BufferCommon
 {
     VkBuffer buffer = VK_NULL_HANDLE;
     VkDeviceMemory memory = VK_NULL_HANDLE; // own memory; null when placed
+};
+
+struct TextureImpl : TextureCommon
+{
+    VkImage image = VK_NULL_HANDLE;
+    VkDeviceMemory memory = VK_NULL_HANDLE; // own memory; null when placed
+    VkImageAspectFlags aspects = VK_IMAGE_ASPECT_COLOR_BIT;
 };
 
 struct SemaphoreImpl : SemaphoreCommon

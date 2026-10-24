@@ -23,6 +23,8 @@ struct CommandQueueCommon;
 struct SemaphoreCommon;
 struct MemoryBlockCommon;
 struct BufferCommon;
+struct TextureCommon;
+struct TextureCreateInfo;
 struct PipelineCommon;
 struct CommandBufferCommon;
 

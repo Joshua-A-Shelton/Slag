@@ -5,6 +5,9 @@ namespace slag::vk {
 
 namespace {
 
+static_assert(SubresourceRange::remainingMips == VK_REMAINING_MIP_LEVELS);
+static_assert(SubresourceRange::remainingLayers == VK_REMAINING_ARRAY_LAYERS);
+
 VkPipelineStageFlags2 toStages(BarrierSync sync)
 {
     auto has = [sync](BarrierSync flag) {
@@ -130,6 +133,50 @@ VkAccessFlags2 toAccess(BarrierAccess access)
     return flags;
 }
 
+// ADR 0049.
+VkImageLayout toLayout(TextureLayout layout)
+{
+    switch (layout)
+    {
+    case TextureLayout::Undefined:
+        return VK_IMAGE_LAYOUT_UNDEFINED;
+    case TextureLayout::Common:
+    case TextureLayout::ShaderWrite:
+        return VK_IMAGE_LAYOUT_GENERAL;
+    case TextureLayout::Present:
+        return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    case TextureLayout::RenderTarget:
+        return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    case TextureLayout::DepthStencilWrite:
+        return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    case TextureLayout::DepthStencilRead:
+        return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    case TextureLayout::ShaderRead:
+        return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    case TextureLayout::CopySource:
+    case TextureLayout::ResolveSource:
+        return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    case TextureLayout::CopyDest:
+    case TextureLayout::ResolveDest:
+        return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    }
+    return VK_IMAGE_LAYOUT_UNDEFINED;
+}
+
+VkImageAspectFlags aspectsOf(const TextureImpl& texture, TexturePlane plane)
+{
+    switch (plane)
+    {
+    case TexturePlane::Color:
+        return texture.aspects; // every plane
+    case TexturePlane::Depth:
+        return VK_IMAGE_ASPECT_DEPTH_BIT;
+    case TexturePlane::Stencil:
+        return VK_IMAGE_ASPECT_STENCIL_BIT;
+    }
+    return texture.aspects;
+}
+
 GraphicsDeviceImpl& deviceOf(CommandBufferCommon* commandBuffer)
 {
     return *static_cast<GraphicsDeviceImpl*>(commandBuffer->device);
@@ -162,6 +209,7 @@ Result<CommandBufferCommon*> createCommandBuffer(GraphicsDeviceCommon* common, c
         (device.queueFamilyFlags[queue->family] & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)) != 0;
     commandBuffer->bufferBarriers = Vector<VkBufferMemoryBarrier2>(&device.instance->allocator);
     commandBuffer->memoryBarriers = Vector<VkMemoryBarrier2>(&device.instance->allocator);
+    commandBuffer->imageBarriers = Vector<VkImageMemoryBarrier2>(&device.instance->allocator);
 
     // Each command buffer owns its pool (ADR 0045).
     VkCommandPoolCreateInfo poolInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
@@ -270,12 +318,34 @@ void cmdDispatch(CommandBufferCommon* object, uint32_t x, uint32_t y, uint32_t z
 }
 
 void cmdBarrier(CommandBufferCommon* object, std::span<const GlobalBarrier> globalBarriers,
-                std::span<const BufferBarrier> bufferBarriers, std::span<const TextureBarrier>)
+                std::span<const BufferBarrier> bufferBarriers, std::span<const TextureBarrier> textureBarriers)
 {
     auto* commandBuffer = static_cast<CommandBufferImpl*>(object);
     GraphicsDeviceImpl& device = deviceOf(object);
     commandBuffer->memoryBarriers.clear();
     commandBuffer->bufferBarriers.clear();
+    commandBuffer->imageBarriers.clear();
+    for (const TextureBarrier& barrier : textureBarriers)
+    {
+        auto* texture = static_cast<TextureImpl*>(barrier.texture);
+        VkImageMemoryBarrier2 vkBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2};
+        vkBarrier.srcStageMask = toStages(barrier.syncBefore);
+        vkBarrier.srcAccessMask = toAccess(barrier.accessBefore);
+        vkBarrier.dstStageMask = toStages(barrier.syncAfter);
+        vkBarrier.dstAccessMask = toAccess(barrier.accessAfter);
+        vkBarrier.oldLayout = toLayout(barrier.layoutBefore);
+        vkBarrier.newLayout = toLayout(barrier.layoutAfter);
+        vkBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        vkBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        vkBarrier.image = texture->image;
+        // Slag's "remaining" counts have the same value as Vulkan's.
+        vkBarrier.subresourceRange = {aspectsOf(*texture, barrier.range.plane), barrier.range.baseMip,
+                                      barrier.range.mipCount, barrier.range.baseLayer, barrier.range.layerCount};
+        if (!commandBuffer->imageBarriers.pushBack(vkBarrier))
+        {
+            return;
+        }
+    }
     for (const GlobalBarrier& barrier : globalBarriers)
     {
         VkMemoryBarrier2 vkBarrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER_2};
@@ -310,6 +380,8 @@ void cmdBarrier(CommandBufferCommon* object, std::span<const GlobalBarrier> glob
     dependency.pMemoryBarriers = commandBuffer->memoryBarriers.data();
     dependency.bufferMemoryBarrierCount = static_cast<uint32_t>(commandBuffer->bufferBarriers.size());
     dependency.pBufferMemoryBarriers = commandBuffer->bufferBarriers.data();
+    dependency.imageMemoryBarrierCount = static_cast<uint32_t>(commandBuffer->imageBarriers.size());
+    dependency.pImageMemoryBarriers = commandBuffer->imageBarriers.data();
     device.fn.vkCmdPipelineBarrier2(commandBuffer->commandBuffer, &dependency);
 }
 

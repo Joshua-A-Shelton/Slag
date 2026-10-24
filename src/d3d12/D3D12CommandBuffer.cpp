@@ -76,6 +76,68 @@ D3D12_BARRIER_ACCESS toAccess(BarrierAccess access)
     return static_cast<D3D12_BARRIER_ACCESS>(bits);
 }
 
+// ADR 0049.
+D3D12_BARRIER_LAYOUT toLayout(TextureLayout layout)
+{
+    switch (layout)
+    {
+    case TextureLayout::Undefined:
+        return D3D12_BARRIER_LAYOUT_UNDEFINED;
+    case TextureLayout::Common:
+        return D3D12_BARRIER_LAYOUT_COMMON;
+    case TextureLayout::Present:
+        return D3D12_BARRIER_LAYOUT_PRESENT;
+    case TextureLayout::RenderTarget:
+        return D3D12_BARRIER_LAYOUT_RENDER_TARGET;
+    case TextureLayout::DepthStencilWrite:
+        return D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_WRITE;
+    case TextureLayout::DepthStencilRead:
+        return D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_READ;
+    case TextureLayout::ShaderRead:
+        return D3D12_BARRIER_LAYOUT_SHADER_RESOURCE;
+    case TextureLayout::ShaderWrite:
+        return D3D12_BARRIER_LAYOUT_UNORDERED_ACCESS;
+    case TextureLayout::CopySource:
+        return D3D12_BARRIER_LAYOUT_COPY_SOURCE;
+    case TextureLayout::CopyDest:
+        return D3D12_BARRIER_LAYOUT_COPY_DEST;
+    case TextureLayout::ResolveSource:
+        return D3D12_BARRIER_LAYOUT_RESOLVE_SOURCE;
+    case TextureLayout::ResolveDest:
+        return D3D12_BARRIER_LAYOUT_RESOLVE_DEST;
+    }
+    return D3D12_BARRIER_LAYOUT_UNDEFINED;
+}
+
+// Slag's "remaining" counts resolved against the texture.
+D3D12_BARRIER_SUBRESOURCE_RANGE toRange(const TextureImpl& texture, const SubresourceRange& range)
+{
+    uint32_t layers = texture.type == TextureType::Texture3D ? 1 : texture.layerCount;
+    D3D12_BARRIER_SUBRESOURCE_RANGE result = {};
+    result.IndexOrFirstMipLevel = range.baseMip;
+    result.NumMipLevels =
+        range.mipCount == SubresourceRange::remainingMips ? texture.mipCount - range.baseMip : range.mipCount;
+    result.FirstArraySlice = range.baseLayer;
+    result.NumArraySlices =
+        range.layerCount == SubresourceRange::remainingLayers ? layers - range.baseLayer : range.layerCount;
+    switch (range.plane)
+    {
+    case TexturePlane::Color: // every plane
+        result.FirstPlane = 0;
+        result.NumPlanes = texture.planeCount;
+        break;
+    case TexturePlane::Depth:
+        result.FirstPlane = 0;
+        result.NumPlanes = 1;
+        break;
+    case TexturePlane::Stencil:
+        result.FirstPlane = 1;
+        result.NumPlanes = 1;
+        break;
+    }
+    return result;
+}
+
 GraphicsDeviceImpl& deviceOf(CommandBufferCommon* commandBuffer)
 {
     return *static_cast<GraphicsDeviceImpl*>(commandBuffer->device);
@@ -96,6 +158,7 @@ Result<CommandBufferCommon*> createCommandBuffer(GraphicsDeviceCommon* common, c
     commandBuffer->type = listType(desc.queueType);
     commandBuffer->globalBarriers = Vector<D3D12_GLOBAL_BARRIER>(&device.instance->allocator);
     commandBuffer->bufferBarriers = Vector<D3D12_BUFFER_BARRIER>(&device.instance->allocator);
+    commandBuffer->textureBarriers = Vector<D3D12_TEXTURE_BARRIER>(&device.instance->allocator);
 
     // Each command buffer owns its allocator (ADR 0045). CreateCommandList1
     // creates the list closed, so begin() can always Reset it.
@@ -184,11 +247,32 @@ void cmdDispatch(CommandBufferCommon* object, uint32_t x, uint32_t y, uint32_t z
 }
 
 void cmdBarrier(CommandBufferCommon* object, std::span<const GlobalBarrier> globalBarriers,
-                std::span<const BufferBarrier> bufferBarriers, std::span<const TextureBarrier>)
+                std::span<const BufferBarrier> bufferBarriers, std::span<const TextureBarrier> textureBarriers)
 {
     auto* commandBuffer = static_cast<CommandBufferImpl*>(object);
     commandBuffer->globalBarriers.clear();
     commandBuffer->bufferBarriers.clear();
+    commandBuffer->textureBarriers.clear();
+    for (const TextureBarrier& barrier : textureBarriers)
+    {
+        auto* texture = static_cast<TextureImpl*>(barrier.texture);
+        D3D12_TEXTURE_BARRIER d3d12Barrier = {};
+        d3d12Barrier.SyncBefore = toSync(barrier.syncBefore);
+        d3d12Barrier.SyncAfter = toSync(barrier.syncAfter);
+        d3d12Barrier.AccessBefore = toAccess(barrier.accessBefore);
+        d3d12Barrier.AccessAfter = toAccess(barrier.accessAfter);
+        d3d12Barrier.LayoutBefore = toLayout(barrier.layoutBefore);
+        d3d12Barrier.LayoutAfter = toLayout(barrier.layoutAfter);
+        d3d12Barrier.pResource = texture->resource;
+        d3d12Barrier.Subresources = toRange(*texture, barrier.range);
+        // A transition from Undefined always discards (ADR 0049).
+        d3d12Barrier.Flags = barrier.layoutBefore == TextureLayout::Undefined ? D3D12_TEXTURE_BARRIER_FLAG_DISCARD
+                                                                              : D3D12_TEXTURE_BARRIER_FLAG_NONE;
+        if (!commandBuffer->textureBarriers.pushBack(d3d12Barrier))
+        {
+            return;
+        }
+    }
     for (const GlobalBarrier& barrier : globalBarriers)
     {
         D3D12_GLOBAL_BARRIER d3d12Barrier = {toSync(barrier.syncBefore), toSync(barrier.syncAfter),
@@ -213,7 +297,7 @@ void cmdBarrier(CommandBufferCommon* object, std::span<const GlobalBarrier> glob
             return;
         }
     }
-    D3D12_BARRIER_GROUP groups[2] = {};
+    D3D12_BARRIER_GROUP groups[3] = {};
     UINT32 groupCount = 0;
     if (!commandBuffer->globalBarriers.empty())
     {
@@ -227,6 +311,13 @@ void cmdBarrier(CommandBufferCommon* object, std::span<const GlobalBarrier> glob
         groups[groupCount].Type = D3D12_BARRIER_TYPE_BUFFER;
         groups[groupCount].NumBarriers = static_cast<UINT32>(commandBuffer->bufferBarriers.size());
         groups[groupCount].pBufferBarriers = commandBuffer->bufferBarriers.data();
+        ++groupCount;
+    }
+    if (!commandBuffer->textureBarriers.empty())
+    {
+        groups[groupCount].Type = D3D12_BARRIER_TYPE_TEXTURE;
+        groups[groupCount].NumBarriers = static_cast<UINT32>(commandBuffer->textureBarriers.size());
+        groups[groupCount].pTextureBarriers = commandBuffer->textureBarriers.data();
         ++groupCount;
     }
     commandBuffer->list->Barrier(groupCount, groups);

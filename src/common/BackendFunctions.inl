@@ -30,6 +30,12 @@ SLAG_BACKEND_FN(Result<BufferCommon*>, createBuffer, (GraphicsDeviceCommon * dev
 SLAG_BACKEND_FN(void, destroyBuffer, (GraphicsDeviceCommon * device, BufferCommon* buffer))
 SLAG_BACKEND_FN(PlacementInfo, bufferPlacementInfo, (const GraphicsDeviceCommon* device, const BufferDesc& desc))
 
+// Placed in info.placement.memoryBlock when set; otherwise in its own memory.
+SLAG_BACKEND_FN(Result<TextureCommon*>, createTexture, (GraphicsDeviceCommon * device, const TextureCreateInfo& info))
+SLAG_BACKEND_FN(void, destroyTexture, (GraphicsDeviceCommon * device, TextureCommon* texture))
+SLAG_BACKEND_FN(PlacementInfo, texturePlacementInfo,
+                (const GraphicsDeviceCommon* device, const TextureCreateInfo& info))
+
 SLAG_BACKEND_FN(Result<PipelineCommon*>, createComputePipeline,
                 (GraphicsDeviceCommon * device, const ComputePipelineDesc& desc))
 SLAG_BACKEND_FN(void, destroyPipeline, (GraphicsDeviceCommon * device, PipelineCommon* pipeline))

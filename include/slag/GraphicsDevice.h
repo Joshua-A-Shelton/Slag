@@ -13,6 +13,7 @@
 #include <slag/PixelFormat.h>
 #include <slag/Result.h>
 #include <slag/Semaphore.h>
+#include <slag/Texture.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -104,9 +105,25 @@ public:
     Result<Buffer*> createBuffer(const BufferDesc& desc);
     void destroy(Buffer* buffer);
 
+    Result<Texture*> createTexture1D(const Texture1DDesc& desc);
+    Result<Texture*> createTexture1DArray(const Texture1DArrayDesc& desc);
+    Result<Texture*> createTexture2D(const Texture2DDesc& desc);
+    Result<Texture*> createTexture2DArray(const Texture2DArrayDesc& desc);
+    Result<Texture*> createTexture3D(const Texture3DDesc& desc);
+    Result<Texture*> createTextureCube(const TextureCubeDesc& desc);
+    Result<Texture*> createTextureCubeArray(const TextureCubeArrayDesc& desc);
+    void destroy(Texture* texture);
+
     // What a resource needs when placed in a memory block. Creates nothing;
     // the placement field is ignored. Thread-safe.
     PlacementInfo placementInfo(const BufferDesc& desc) const;
+    PlacementInfo placementInfo(const Texture1DDesc& desc) const;
+    PlacementInfo placementInfo(const Texture1DArrayDesc& desc) const;
+    PlacementInfo placementInfo(const Texture2DDesc& desc) const;
+    PlacementInfo placementInfo(const Texture2DArrayDesc& desc) const;
+    PlacementInfo placementInfo(const Texture3DDesc& desc) const;
+    PlacementInfo placementInfo(const TextureCubeDesc& desc) const;
+    PlacementInfo placementInfo(const TextureCubeArrayDesc& desc) const;
 
     Result<Pipeline*> createComputePipeline(const ComputePipelineDesc& desc);
     void destroy(Pipeline* pipeline);

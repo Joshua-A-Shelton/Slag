@@ -16,6 +16,7 @@
 #include <slag/MemoryBlock.h>
 #include <slag/Pipeline.h>
 #include <slag/Semaphore.h>
+#include <slag/Texture.h>
 
 #include <atomic>
 #include <cstdint>
@@ -90,6 +91,54 @@ struct BufferCommon : Buffer
     MemoryKind kind = MemoryKind::GpuOnly;
     void* mapped = nullptr;
     uint64_t gpuAddress = 0;
+    MemoryBlockCommon* memoryBlock = nullptr; // set when placed by the user
+    PoolAllocation allocation;                // set when sub-allocated
+};
+
+enum class TextureType : uint8_t
+{
+    Texture1D,
+    Texture1DArray,
+    Texture2D,
+    Texture2DArray,
+    Texture3D,
+    TextureCube,
+    TextureCubeArray,
+};
+
+// Every texture Desc, normalized (ADR 0021). layerCount counts cube faces.
+struct TextureCreateInfo
+{
+    TextureType type = TextureType::Texture2D;
+    PixelFormat format = PixelFormat::Undefined;
+    uint32_t width = 1;
+    uint32_t height = 1;
+    uint32_t depth = 1;
+    uint32_t layerCount = 1;
+    uint32_t mipCount = 1;
+    uint32_t sampleCount = 1;
+    TextureUsage usage = TextureUsage::None;
+    std::span<const PixelFormat> castableFormats;
+    const ClearValue* clearValue = nullptr;
+    Placement placement;
+    const char* debugName = nullptr;
+    uint64_t userData = 0;
+};
+
+struct TextureCommon : Texture
+{
+    GraphicsDeviceCommon* device = nullptr;
+    const BackendFunctions* functions = nullptr;
+    uint64_t userData = 0;
+    TextureType type = TextureType::Texture2D;
+    PixelFormat format = PixelFormat::Undefined;
+    uint32_t width = 1;
+    uint32_t height = 1;
+    uint32_t depth = 1;
+    uint32_t layerCount = 1;
+    uint32_t mipCount = 1;
+    uint32_t sampleCount = 1;
+    TextureUsage usage = TextureUsage::None;
     MemoryBlockCommon* memoryBlock = nullptr; // set when placed by the user
     PoolAllocation allocation;                // set when sub-allocated
 };

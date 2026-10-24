@@ -143,17 +143,51 @@ void CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_
 
 void CommandBuffer::barrier(std::span<const GlobalBarrier> globalBarriers,
                             std::span<const BufferBarrier> bufferBarriers,
-                            [[maybe_unused]] std::span<const TextureBarrier> textureBarriers)
+                            std::span<const TextureBarrier> textureBarriers)
 {
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_RECORDING(self, "CommandBuffer::barrier");
-    SLAG_VALIDATE(self->device->instance, textureBarriers.empty(), "CommandBuffer::barrier",
-                  "texture barriers arrive with textures in milestone M2");
-    if (globalBarriers.empty() && bufferBarriers.empty())
+#ifdef SLAG_VALIDATION
+    InstanceCommon* instance = self->device->instance;
+    for (const BufferBarrier& barrier : bufferBarriers)
+    {
+        SLAG_VALIDATE(instance, barrier.buffer, "CommandBuffer::barrier", "a buffer barrier has no buffer");
+    }
+    for (const TextureBarrier& barrier : textureBarriers)
+    {
+        auto* texture = static_cast<const TextureCommon*>(barrier.texture);
+        SLAG_VALIDATE(instance, texture, "CommandBuffer::barrier", "a texture barrier has no texture");
+        if (!texture)
+        {
+            continue;
+        }
+        const SubresourceRange& range = barrier.range;
+        uint32_t layers = texture->type == TextureType::Texture3D ? 1 : texture->layerCount;
+        SLAG_VALIDATE(instance,
+                      range.baseMip < texture->mipCount && (range.mipCount == SubresourceRange::remainingMips ||
+                                                            range.mipCount <= texture->mipCount - range.baseMip),
+                      "CommandBuffer::barrier", "the mip range is outside the texture (%u mips)", texture->mipCount);
+        SLAG_VALIDATE(instance,
+                      range.baseLayer < layers && (range.layerCount == SubresourceRange::remainingLayers ||
+                                                   range.layerCount <= layers - range.baseLayer),
+                      "CommandBuffer::barrier", "the layer range is outside the texture (%u layers)", layers);
+        bool depth = hasTraits(texture->format, FormatTraits::Depth);
+        SLAG_VALIDATE(instance,
+                      range.plane == TexturePlane::Color || (range.plane == TexturePlane::Depth && depth) ||
+                          (range.plane == TexturePlane::Stencil && hasTraits(texture->format, FormatTraits::Stencil)),
+                      "CommandBuffer::barrier", "the texture has no such plane");
+        // Copy queues can't transition layouts; textures stay in Common (ADR 0049).
+        SLAG_VALIDATE(instance,
+                      self->queueType != CommandQueueType::Copy || (barrier.layoutBefore == TextureLayout::Common &&
+                                                                    barrier.layoutAfter == TextureLayout::Common),
+                      "CommandBuffer::barrier", "textures stay in the Common layout on copy queues");
+    }
+#endif
+    if (globalBarriers.empty() && bufferBarriers.empty() && textureBarriers.empty())
     {
         return;
     }
-    SLAG_DISPATCH(self, cmdBarrier)(self, globalBarriers, bufferBarriers, {});
+    SLAG_DISPATCH(self, cmdBarrier)(self, globalBarriers, bufferBarriers, textureBarriers);
 }
 
 void CommandBuffer::copyBuffer(Buffer* destination, uint64_t destinationOffset, Buffer* source, uint64_t sourceOffset,

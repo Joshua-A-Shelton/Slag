@@ -269,6 +269,7 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
     features12.bufferDeviceAddress = VK_TRUE;
     features12.drawIndirectCount = VK_TRUE;
     features12.samplerMirrorClampToEdge = VK_TRUE;
+    features12.separateDepthStencilLayouts = VK_TRUE; // per-plane depth/stencil barriers (ADR 0049)
     VkPhysicalDeviceFeatures2 features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
     features.pNext = &features12;
     VkPhysicalDeviceFeatures& core = features.features;

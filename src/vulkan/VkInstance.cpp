@@ -239,6 +239,7 @@ const char* baselineFailure(const DeviceQuery& query, bool allowSoftwareDevices)
         {query.features12.bufferDeviceAddress, "bufferDeviceAddress"},
         {query.features12.drawIndirectCount, "drawIndirectCount"},
         {query.features12.samplerMirrorClampToEdge, "samplerMirrorClampToEdge"},
+        {query.features12.separateDepthStencilLayouts, "separateDepthStencilLayouts"},
         {features.multiViewport, "multiViewport"},
         {features.fillModeNonSolid, "fillModeNonSolid"},
         {features.depthBiasClamp, "depthBiasClamp"},

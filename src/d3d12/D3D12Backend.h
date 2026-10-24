@@ -64,7 +64,7 @@ struct GraphicsDeviceImpl : GraphicsDeviceCommon
     IDXGIAdapter4* adapter = nullptr;
 
     // Valid while initialized.
-    ID3D12Device10* device = nullptr;
+    ID3D12Device12* device = nullptr;
     ID3D12InfoQueue1* infoQueue = nullptr;
     DWORD messageCookie = 0;
     ID3D12RootSignature* rootSignature = nullptr; // the fixed layout (ADR 0003)
@@ -95,6 +95,7 @@ struct CommandBufferImpl : CommandBufferCommon
     // Reused by barrier.
     Vector<D3D12_GLOBAL_BARRIER> globalBarriers;
     Vector<D3D12_BUFFER_BARRIER> bufferBarriers;
+    Vector<D3D12_TEXTURE_BARRIER> textureBarriers;
 };
 
 struct MemoryBlockImpl : MemoryBlockCommon
@@ -105,6 +106,12 @@ struct MemoryBlockImpl : MemoryBlockCommon
 struct BufferImpl : BufferCommon
 {
     ID3D12Resource* resource = nullptr; // committed, or placed in a memory block
+};
+
+struct TextureImpl : TextureCommon
+{
+    ID3D12Resource* resource = nullptr; // committed, or placed in a memory block
+    uint32_t planeCount = 1;            // 2 for depth/stencil formats
 };
 
 struct SemaphoreImpl : SemaphoreCommon

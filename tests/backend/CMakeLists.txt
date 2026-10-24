@@ -9,7 +9,8 @@ add_executable(slag_backend_tests
     ComputeTests.cpp
     DeviceTests.cpp
     InstanceTests.cpp
-    MemoryTests.cpp)
+    MemoryTests.cpp
+    TextureTests.cpp)
 target_link_libraries(slag_backend_tests PRIVATE slag::slag doctest::doctest)
 doctest_discover_tests(slag_backend_tests PROPERTIES LABELS gpu)
 
