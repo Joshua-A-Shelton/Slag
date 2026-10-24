@@ -11,16 +11,7 @@ None right now.
 
 ## Still to test (no public documentation found)
 
-| # | Check | ADR |
-|---|---|---|
-| 13 | Oldest Slang version that emits descriptor-heap SPIR-V (2026.18.2 is confirmed to work) | 0034 |
-| 14 | Intel Windows Vulkan driver support for `VK_EXT_descriptor_heap` | CLAUDE.md §3 |
-| 15 | Whether every Enhanced Barriers device has resource heap tier 2 (it's a baseline check either way; this only affects coverage) | 0012, 0023 |
-| 20 | AMD D3D12 driver supports Enhanced Barriers and Shader Model 6.8 on RDNA2 (RX 6000) — the fallback path for older AMD on Windows | CLAUDE.md §3 |
-| 21 | Which GPU generations RADV's `VK_EXT_descriptor_heap` support covers | CLAUDE.md §3 |
-| 16 | Verify the ◐ entries in `docs/format-support.md` against driver reports (plus its two other "to verify" items) | 0022 |
-| 23 | `VK_EXT_descriptor_heap` address-range descriptors use the same range limits (`maxStorageBufferRange`, `maxTexelBufferElements`); Intel values | 0028 |
-| 24 | Whether Windows on ARM (D3D12, Vulkan) or ARM64 Linux drivers meet the baseline | 0070 |
+None for v1.0: the rest is deferred below (M8).
 
 ## Resolved on 2026-10-23
 
@@ -72,6 +63,12 @@ None right now.
 - ◐ format entries: met by RADV (RX 7900 XT, Raphael iGPU) and WARP;
   NVIDIA and Intel still unchecked (item 16 stays open for them).
 
+## Resolved on 2026-10-24 (M8)
+
+- 16: every ● and ◐ format entry is checked at device listing, so it holds
+  on every driver Slag ran on: RADV, NVIDIA (both backends), WARP. Intel and
+  Vulkan depth comparison sampling are deferred → `docs/format-support.md`.
+
 ## Resolved on 2026-10-24 (M7)
 
 - 12: D3D12 GPU-based validation reports reads of never-written descriptors,
@@ -98,6 +95,21 @@ None right now.
   0049.
 
 ## Deferred past v1 (for reference, not blocking)
+
+Hardware or toolchains Slag hasn't run on (deferred 2026-10-24, M8):
+
+| # | Check | ADR |
+|---|---|---|
+| 13 | Oldest Slang version that emits descriptor-heap SPIR-V (2026.18.2 works) | 0034 |
+| 14 | Intel Windows Vulkan driver support for `VK_EXT_descriptor_heap` | CLAUDE.md §3 |
+| 15 | Whether every Enhanced Barriers device has resource heap tier 2 (a baseline check either way) | 0012, 0023 |
+| 16b | Intel format support; Vulkan depth comparison sampling | 0022 |
+| 20 | AMD D3D12 Enhanced Barriers and SM 6.8 on RDNA2 (RX 6000) | CLAUDE.md §3 |
+| 21 | Which GPU generations RADV's `VK_EXT_descriptor_heap` covers | CLAUDE.md §3 |
+| 23 | Descriptor-heap address-range limits; Intel values | 0028 |
+| 24 | Windows on ARM and ARM64 Linux drivers against the baseline | 0070 |
+
+Features:
 
 Mesh shaders and ray tracing (0005), native device import and creation hooks
 (0018), sparse resources (0026), external memory / OpenXR (0027), transparent

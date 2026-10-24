@@ -1,7 +1,7 @@
 # Guaranteed format support (draft for review)
 
-**Status:** Accepted (2026-10-23); ◐ entries still to verify against driver
-reports. ADR 0022.
+**Status:** Accepted (2026-10-23). ◐ entries verified on every driver Slag
+has run on (2026-10-24, M8; see "To verify"). ADR 0022.
 
 What every graphics device that passes Slag's baseline check supports, per
 `PixelFormat`. Anything not guaranteed here is queried per device with
@@ -133,8 +133,15 @@ and 4×). Copies are supported for every format that is sampled.
 
 ## To verify
 
-- Every ◐ entry against driver reports (e.g. vulkan.gpuinfo.org) for current
-  NVIDIA, AMD, and Intel drivers.
-- Vulkan required support for `STORAGE_TEXEL_BUFFER_ATOMIC` on
-  `R32Uint`/`R32Sint` (the spec table extraction was ambiguous).
-- Depth comparison sampling support on Vulkan depth formats.
+Slag checks every ● and ◐ entry when it lists devices and skips a device
+that misses one (ADR 0012), so a listed device is a verified one. Verified
+(2026-10-24, M8) on RADV (RX 7900 XT, Raphael iGPU), NVIDIA RTX 2070 SUPER
+(Vulkan and D3D12, driver 621.01), and WARP. That covers the atomics column
+(`STORAGE_TEXEL_BUFFER_ATOMIC` on `R32Uint`/`R32Sint`), whose spec reading
+was ambiguous.
+
+Still open (deferred past v1, `docs/open-items.md`):
+
+- Intel drivers, Windows and Linux.
+- Depth comparison sampling on Vulkan depth formats: no format check or test
+  yet.
