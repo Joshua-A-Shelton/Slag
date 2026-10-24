@@ -79,6 +79,10 @@ SLAG_BACKEND_FN(void, cmdSetDepthBounds, (CommandBufferCommon * commandBuffer, f
 SLAG_BACKEND_FN(void, cmdDraw,
                 (CommandBufferCommon * commandBuffer, uint32_t vertexCount, uint32_t instanceCount,
                  uint32_t firstVertex, uint32_t firstInstance))
+// countBuffer is null for a fixed count of maxCount.
+SLAG_BACKEND_FN(void, cmdIndirect,
+                (CommandBufferCommon * commandBuffer, IndirectKind kind, BufferCommon* argumentBuffer,
+                 uint64_t argumentOffset, uint32_t maxCount, BufferCommon* countBuffer, uint64_t countOffset))
 SLAG_BACKEND_FN(void, cmdDrawIndexed,
                 (CommandBufferCommon * commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
                  int32_t vertexOffset, uint32_t firstInstance))

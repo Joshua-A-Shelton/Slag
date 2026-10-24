@@ -22,6 +22,8 @@ slag_add_shader(slag_backend_tests SOURCE ../shaders/FillBuffer.slang ENTRY main
 slag_add_shader(slag_backend_tests SOURCE ../shaders/DescriptorKinds.slang ENTRY main STAGE compute)
 slag_add_shader(slag_backend_tests SOURCE ../shaders/Triangle.slang ENTRY vertexMain STAGE vertex)
 slag_add_shader(slag_backend_tests SOURCE ../shaders/Triangle.slang ENTRY pixelMain STAGE pixel)
+slag_add_shader(slag_backend_tests SOURCE ../shaders/DrawId.slang ENTRY vertexMain STAGE vertex)
+slag_add_shader(slag_backend_tests SOURCE ../shaders/DrawId.slang ENTRY pixelMain STAGE pixel)
 if(SLAG_BACKEND_D3D12)
     target_compile_definitions(slag_backend_tests PRIVATE SLAG_TEST_AGILITY_SDK_VERSION=${SLAG_AGILITY_SDK_VERSION})
 endif()

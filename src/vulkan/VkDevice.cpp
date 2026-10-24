@@ -267,6 +267,9 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
     features13.maintenance4 = VK_TRUE;
     VkPhysicalDeviceVulkan12Features features12 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
     features12.pNext = &features13;
+    VkPhysicalDeviceVulkan11Features features11 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
+    features11.pNext = &features12;
+    features11.shaderDrawParameters = VK_TRUE;
     features12.timelineSemaphore = VK_TRUE;
     features12.bufferDeviceAddress = VK_TRUE;
     features12.drawIndirectCount = VK_TRUE;
@@ -275,7 +278,7 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
     features12.samplerFilterMinmax =
         device.capabilities.samplerReduction ? VK_TRUE : VK_FALSE; // per-plane depth/stencil barriers (ADR 0049)
     VkPhysicalDeviceFeatures2 features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
-    features.pNext = &features12;
+    features.pNext = &features11;
     VkPhysicalDeviceFeatures& core = features.features;
     core.multiViewport = VK_TRUE;
     core.fillModeNonSolid = VK_TRUE;

@@ -41,5 +41,8 @@ again (roughly tens of milliseconds).
 
 - Vulkan: `separateDepthStencilLayouts` (core 1.2 feature), for per-plane
   depth/stencil barriers (ADR 0049).
+- Vulkan: `shaderDrawParameters` (core 1.1 feature): Slang reads
+  `SV_StartInstanceLocation` and keeps `SV_InstanceID` / `SV_VertexID` at
+  D3D12 values through `BaseInstance` / `BaseVertex` (ADR 0047). Added in M3.
 - Both backends: every guaranteed (● and ◐) entry of
   `docs/format-support.md`, checked per format when devices are listed.

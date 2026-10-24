@@ -85,6 +85,33 @@ enum class IndexFormat : uint8_t
     Uint32,
 };
 
+// Indirect argument layouts, tightly packed in the argument buffer; they
+// match D3D12's and Vulkan's (ADR 0047). For a draw ID, write each draw's
+// index into firstInstance and read SV_StartInstanceLocation in the shader.
+struct DrawArguments
+{
+    uint32_t vertexCount = 0;
+    uint32_t instanceCount = 0;
+    uint32_t firstVertex = 0;
+    uint32_t firstInstance = 0;
+};
+
+struct DrawIndexedArguments
+{
+    uint32_t indexCount = 0;
+    uint32_t instanceCount = 0;
+    uint32_t firstIndex = 0;
+    int32_t vertexOffset = 0;
+    uint32_t firstInstance = 0;
+};
+
+struct DispatchArguments
+{
+    uint32_t groupCountX = 0;
+    uint32_t groupCountY = 0;
+    uint32_t groupCountZ = 0;
+};
+
 // One mip and layer of a texture, and a texel offset in it (ADR 0048). Depth
 // and stencil are copied separately: textures with both name a plane.
 struct TextureLocation
@@ -142,6 +169,17 @@ public:
     void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex = 0, uint32_t firstInstance = 0);
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex = 0, int32_t vertexOffset = 0,
                      uint32_t firstInstance = 0);
+
+    // Argument buffers are in the IndirectArgument access; offsets are
+    // multiples of 4. The ...Count forms read a uint32 draw count from
+    // countBuffer and draw at most maxDrawCount.
+    void drawIndirect(Buffer* argumentBuffer, uint64_t argumentOffset, uint32_t drawCount);
+    void drawIndirectCount(Buffer* argumentBuffer, uint64_t argumentOffset, Buffer* countBuffer, uint64_t countOffset,
+                           uint32_t maxDrawCount);
+    void drawIndexedIndirect(Buffer* argumentBuffer, uint64_t argumentOffset, uint32_t drawCount);
+    void drawIndexedIndirectCount(Buffer* argumentBuffer, uint64_t argumentOffset, Buffer* countBuffer,
+                                  uint64_t countOffset, uint32_t maxDrawCount);
+    void dispatchIndirect(Buffer* argumentBuffer, uint64_t argumentOffset);
     void pushConstants(const void* data, uint32_t size, uint32_t offset = 0);
 
     void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);

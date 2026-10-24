@@ -114,6 +114,7 @@ struct DeviceQuery
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_HEAP_PROPERTIES_EXT};
 
     VkPhysicalDeviceFeatures2 features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+    VkPhysicalDeviceVulkan11Features features11 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
     VkPhysicalDeviceVulkan12Features features12 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
     VkPhysicalDeviceVulkan13Features features13 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
     VkPhysicalDeviceDescriptorHeapFeaturesEXT heapFeatures = {
@@ -157,7 +158,8 @@ bool queryDevice(const InstanceImpl& instance, VkPhysicalDevice device, DeviceQu
     query.properties.pNext = &query.properties11;
     query.properties11.pNext = &query.properties12;
     query.properties12.pNext = &query.properties13;
-    query.features.pNext = &query.features12;
+    query.features.pNext = &query.features11;
+    query.features11.pNext = &query.features12;
     query.features12.pNext = &query.features13;
     void** propertiesTail = &query.properties13.pNext;
     void** featuresTail = &query.features13.pNext;
@@ -239,6 +241,7 @@ const char* baselineFailure(const DeviceQuery& query, bool allowSoftwareDevices)
         {query.features13.dynamicRendering, "dynamicRendering"},
         {query.features13.synchronization2, "synchronization2"},
         {query.features12.timelineSemaphore, "timelineSemaphore"},
+        {query.features11.shaderDrawParameters, "shaderDrawParameters"}, // SV_StartInstanceLocation (ADR 0047)
         {query.features12.bufferDeviceAddress, "bufferDeviceAddress"},
         {query.features12.drawIndirectCount, "drawIndirectCount"},
         {query.features12.samplerMirrorClampToEdge, "samplerMirrorClampToEdge"},

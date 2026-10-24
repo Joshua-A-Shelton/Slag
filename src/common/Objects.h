@@ -200,6 +200,13 @@ struct TextureDescriptorInfo
     TexturePlane plane = TexturePlane::Color;
 };
 
+enum class IndirectKind : uint8_t
+{
+    Draw,
+    DrawIndexed,
+    Dispatch,
+};
+
 enum class PipelineKind : uint8_t
 {
     Graphics,

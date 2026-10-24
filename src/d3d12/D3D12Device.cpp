@@ -206,6 +206,25 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
         shutdownDevice(&device);
         return status;
     }
+    // One command signature per indirect kind; no root arguments change (ADR 0047).
+    const D3D12_INDIRECT_ARGUMENT_TYPE argumentTypes[3] = {D3D12_INDIRECT_ARGUMENT_TYPE_DRAW,
+                                                          D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED,
+                                                          D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH};
+    const UINT strides[3] = {sizeof(D3D12_DRAW_ARGUMENTS), sizeof(D3D12_DRAW_INDEXED_ARGUMENTS),
+                             sizeof(D3D12_DISPATCH_ARGUMENTS)};
+    for (int i = 0; i < 3; ++i)
+    {
+        D3D12_INDIRECT_ARGUMENT_DESC argument = {};
+        argument.Type = argumentTypes[i];
+        D3D12_COMMAND_SIGNATURE_DESC signature = {strides[i], 1, &argument, 0};
+        result = device.device->CreateCommandSignature(&signature, nullptr, IID_PPV_ARGS(&device.commandSignatures[i]));
+        if (FAILED(result))
+        {
+            Status status = toStatus(device, result);
+            shutdownDevice(&device);
+            return status;
+        }
+    }
     initPool(device, device.rtvPool, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1);
     initPool(device, device.dsvPool, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, DsvVariantCount);
     return {};
@@ -230,6 +249,10 @@ void shutdownDevice(GraphicsDeviceCommon* common)
         }
     }
     destroyQueues(device);
+    for (ID3D12CommandSignature*& signature : device.commandSignatures)
+    {
+        release(signature);
+    }
     destroyPool(device.rtvPool);
     destroyPool(device.dsvPool);
     release(device.rootSignature);

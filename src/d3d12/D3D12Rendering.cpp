@@ -1,6 +1,10 @@
 #include "d3d12/D3D12Backend.h"
 #include "d3d12/D3D12Formats.h"
 
+static_assert(sizeof(slag::DrawArguments) == sizeof(D3D12_DRAW_ARGUMENTS));
+static_assert(sizeof(slag::DrawIndexedArguments) == sizeof(D3D12_DRAW_INDEXED_ARGUMENTS));
+static_assert(sizeof(slag::DispatchArguments) == sizeof(D3D12_DISPATCH_ARGUMENTS));
+
 namespace slag::d3d12 {
 
 namespace {
@@ -217,6 +221,16 @@ void cmdDrawIndexed(CommandBufferCommon* object, uint32_t indexCount, uint32_t i
                     int32_t vertexOffset, uint32_t firstInstance)
 {
     listOf(object)->DrawIndexedInstanced(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+}
+
+void cmdIndirect(CommandBufferCommon* object, IndirectKind kind, BufferCommon* argumentBuffer, uint64_t argumentOffset,
+                 uint32_t maxCount, BufferCommon* countBuffer, uint64_t countOffset)
+{
+    auto& device = *static_cast<GraphicsDeviceImpl*>(object->device);
+    ID3D12Resource* count = countBuffer ? static_cast<BufferImpl*>(countBuffer)->resource : nullptr;
+    listOf(object)->ExecuteIndirect(device.commandSignatures[static_cast<size_t>(kind)], maxCount,
+                                    static_cast<BufferImpl*>(argumentBuffer)->resource, argumentOffset, count,
+                                    countOffset);
 }
 
 } // namespace slag::d3d12

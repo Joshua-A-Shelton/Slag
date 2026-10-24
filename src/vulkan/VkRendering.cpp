@@ -1,5 +1,9 @@
 #include "vulkan/VkBackend.h"
 
+static_assert(sizeof(slag::DrawArguments) == sizeof(VkDrawIndirectCommand));
+static_assert(sizeof(slag::DrawIndexedArguments) == sizeof(VkDrawIndexedIndirectCommand));
+static_assert(sizeof(slag::DispatchArguments) == sizeof(VkDispatchIndirectCommand));
+
 namespace slag::vk {
 
 namespace {
@@ -221,6 +225,45 @@ void cmdDrawIndexed(CommandBufferCommon* object, uint32_t indexCount, uint32_t i
 {
     deviceOf(object).fn.vkCmdDrawIndexed(handle(object), indexCount, instanceCount, firstIndex, vertexOffset,
                                          firstInstance);
+}
+
+void cmdIndirect(CommandBufferCommon* object, IndirectKind kind, BufferCommon* argumentBuffer, uint64_t argumentOffset,
+                 uint32_t maxCount, BufferCommon* countBuffer, uint64_t countOffset)
+{
+    const DeviceFunctions& fn = deviceOf(object).fn;
+    VkCommandBuffer commandBuffer = handle(object);
+    VkBuffer arguments = static_cast<BufferImpl*>(argumentBuffer)->buffer;
+    VkBuffer count = countBuffer ? static_cast<BufferImpl*>(countBuffer)->buffer : VK_NULL_HANDLE;
+    // Tightly packed (ADR 0047).
+    switch (kind)
+    {
+    case IndirectKind::Draw:
+        if (count)
+        {
+            fn.vkCmdDrawIndirectCount(commandBuffer, arguments, argumentOffset, count, countOffset, maxCount,
+                                      sizeof(DrawArguments));
+        }
+        else
+        {
+            fn.vkCmdDrawIndirect(commandBuffer, arguments, argumentOffset, maxCount, sizeof(DrawArguments));
+        }
+        return;
+    case IndirectKind::DrawIndexed:
+        if (count)
+        {
+            fn.vkCmdDrawIndexedIndirectCount(commandBuffer, arguments, argumentOffset, count, countOffset, maxCount,
+                                             sizeof(DrawIndexedArguments));
+        }
+        else
+        {
+            fn.vkCmdDrawIndexedIndirect(commandBuffer, arguments, argumentOffset, maxCount,
+                                        sizeof(DrawIndexedArguments));
+        }
+        return;
+    case IndirectKind::Dispatch:
+        fn.vkCmdDispatchIndirect(commandBuffer, arguments, argumentOffset);
+        return;
+    }
 }
 
 } // namespace slag::vk

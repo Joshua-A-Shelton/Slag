@@ -85,6 +85,8 @@ struct GraphicsDeviceImpl : GraphicsDeviceCommon
     DescriptorHeap samplerHeap;
     CpuDescriptorPool rtvPool;
     CpuDescriptorPool dsvPool;
+    // ExecuteIndirect signatures, indexed by IndirectKind (ADR 0047).
+    ID3D12CommandSignature* commandSignatures[3] = {};
 };
 
 struct CommandQueueImpl : CommandQueueCommon

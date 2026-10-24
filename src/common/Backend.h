@@ -16,6 +16,10 @@
 #include <span>
 
 namespace slag {
+enum class IndirectKind : uint8_t;
+}
+
+namespace slag {
 
 struct InstanceCommon;
 struct GraphicsDeviceCommon;

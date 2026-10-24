@@ -268,15 +268,21 @@ Result<PipelineCommon*> createGraphicsPipeline(GraphicsDeviceCommon* common, con
     colorBlend.attachmentCount = colorCount;
     colorBlend.pAttachments = blends;
 
-    // Set while recording (ADR 0037).
-    VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT,
-                                      VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT,
-                                      VK_DYNAMIC_STATE_BLEND_CONSTANTS,
-                                      VK_DYNAMIC_STATE_STENCIL_REFERENCE,
-                                      VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE,
-                                      VK_DYNAMIC_STATE_DEPTH_BOUNDS};
+    // Set while recording (ADR 0037). Strides only with vertex buffers: the
+    // state must be set before every draw otherwise.
+    VkDynamicState dynamicStates[6] = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT,
+                                       VK_DYNAMIC_STATE_BLEND_CONSTANTS, VK_DYNAMIC_STATE_STENCIL_REFERENCE};
+    uint32_t dynamicCount = 4;
+    if (bindingCount > 0)
+    {
+        dynamicStates[dynamicCount++] = VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE;
+    }
+    if (ds.depthBoundsTest)
+    {
+        dynamicStates[dynamicCount++] = VK_DYNAMIC_STATE_DEPTH_BOUNDS;
+    }
     VkPipelineDynamicStateCreateInfo dynamic = {VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
-    dynamic.dynamicStateCount = ds.depthBoundsTest ? 6 : 5;
+    dynamic.dynamicStateCount = dynamicCount;
     dynamic.pDynamicStates = dynamicStates;
 
     // Dynamic rendering: attachment formats instead of a render pass (ADR 0042).

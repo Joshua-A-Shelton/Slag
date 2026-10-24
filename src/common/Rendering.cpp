@@ -245,4 +245,91 @@ void CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uin
     SLAG_DISPATCH(self, cmdDrawIndexed)(self, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
+namespace {
+
+[[maybe_unused]] void validateIndirect(CommandBufferCommon* self, IndirectKind kind, const BufferCommon* arguments,
+                                       uint64_t offset, uint32_t maxCount, const BufferCommon* count,
+                                       uint64_t countOffset, const char* function)
+{
+#ifdef SLAG_VALIDATION
+    InstanceCommon* instance = self->device->instance;
+    uint64_t stride = kind == IndirectKind::Draw          ? sizeof(DrawArguments)
+                      : kind == IndirectKind::DrawIndexed ? sizeof(DrawIndexedArguments)
+                                                          : sizeof(DispatchArguments);
+    SLAG_VALIDATE(instance, arguments && offset % 4 == 0 && offset + stride * maxCount <= arguments->size, function,
+                  "the argument buffer is null, misaligned, or too small for %u commands", maxCount);
+    SLAG_VALIDATE(instance, !count || (countOffset % 4 == 0 && countOffset + 4 <= count->size), function,
+                  "the count buffer offset is misaligned or past the buffer");
+#else
+    (void)self;
+    (void)kind;
+    (void)arguments;
+    (void)offset;
+    (void)maxCount;
+    (void)count;
+    (void)countOffset;
+    (void)function;
+#endif
+}
+
+void indirect(CommandBuffer* object, IndirectKind kind, Buffer* arguments, uint64_t offset, uint32_t maxCount,
+              Buffer* count, uint64_t countOffset, const char* function)
+{
+    CommandBufferCommon* self = common(object);
+    auto* argumentBuffer = static_cast<BufferCommon*>(arguments);
+    auto* countBuffer = static_cast<BufferCommon*>(count);
+    if (kind == IndirectKind::Dispatch)
+    {
+        SLAG_VALIDATE(self->device->instance, self->state == CommandBufferState::Recording && !self->inRenderPass,
+                      function, "not recording, or inside a render pass");
+        SLAG_VALIDATE(self->device->instance,
+                      self->boundPipeline && self->boundPipeline->kind == PipelineKind::Compute, function,
+                      "no compute pipeline is bound");
+    }
+    else
+    {
+        validateDraw(self, function);
+    }
+    validateIndirect(self, kind, argumentBuffer, offset, maxCount, countBuffer, countOffset, function);
+    SLAG_DISPATCH(self, cmdIndirect)(self, kind, argumentBuffer, offset, maxCount, countBuffer, countOffset);
+}
+
+} // namespace
+
+void CommandBuffer::drawIndirect(Buffer* argumentBuffer, uint64_t argumentOffset, uint32_t drawCount)
+{
+    indirect(this, IndirectKind::Draw, argumentBuffer, argumentOffset, drawCount, nullptr, 0,
+             "CommandBuffer::drawIndirect");
+}
+
+void CommandBuffer::drawIndirectCount(Buffer* argumentBuffer, uint64_t argumentOffset, Buffer* countBuffer,
+                                      uint64_t countOffset, uint32_t maxDrawCount)
+{
+    SLAG_VALIDATE(common(this)->device->instance, countBuffer, "CommandBuffer::drawIndirectCount",
+                  "the count buffer is null");
+    indirect(this, IndirectKind::Draw, argumentBuffer, argumentOffset, maxDrawCount, countBuffer, countOffset,
+             "CommandBuffer::drawIndirectCount");
+}
+
+void CommandBuffer::drawIndexedIndirect(Buffer* argumentBuffer, uint64_t argumentOffset, uint32_t drawCount)
+{
+    indirect(this, IndirectKind::DrawIndexed, argumentBuffer, argumentOffset, drawCount, nullptr, 0,
+             "CommandBuffer::drawIndexedIndirect");
+}
+
+void CommandBuffer::drawIndexedIndirectCount(Buffer* argumentBuffer, uint64_t argumentOffset, Buffer* countBuffer,
+                                             uint64_t countOffset, uint32_t maxDrawCount)
+{
+    SLAG_VALIDATE(common(this)->device->instance, countBuffer, "CommandBuffer::drawIndexedIndirectCount",
+                  "the count buffer is null");
+    indirect(this, IndirectKind::DrawIndexed, argumentBuffer, argumentOffset, maxDrawCount, countBuffer, countOffset,
+             "CommandBuffer::drawIndexedIndirectCount");
+}
+
+void CommandBuffer::dispatchIndirect(Buffer* argumentBuffer, uint64_t argumentOffset)
+{
+    indirect(this, IndirectKind::Dispatch, argumentBuffer, argumentOffset, 1, nullptr, 0,
+             "CommandBuffer::dispatchIndirect");
+}
+
 } // namespace slag

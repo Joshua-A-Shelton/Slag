@@ -21,7 +21,7 @@ std::vector<char> readFile(const std::string& path)
 
 // The M1 spike (docs/milestones.md): FillBuffer.slang writes id * 2 + 1 into a
 // RWStructuredBuffer reached through the resource heap; the CPU reads it back.
-void runFillBuffer(TestInstance& test, slag::GraphicsDevice* device)
+void runFillBuffer(TestInstance& test, slag::GraphicsDevice* device, bool indirect)
 {
     MESSAGE("device: " << std::string(device->info().name));
     REQUIRE(static_cast<bool>(device->initialize({})));
@@ -70,7 +70,26 @@ void runFillBuffer(TestInstance& test, slag::GraphicsDevice* device)
         uint32_t count;
     } constants = {outputSlot, elementCount};
     commandBuffer->pushConstants(&constants, sizeof(constants));
-    commandBuffer->dispatch((elementCount + 63) / 64, 1, 1);
+    slag::Buffer* arguments = nullptr;
+    if (indirect)
+    {
+        // The same group count, from a buffer (ADR 0047).
+        arguments =
+            device->createBuffer({.size = 256, .placement = slag::Placement::automatic(slag::MemoryKind::Upload)})
+                .value();
+        REQUIRE(arguments);
+        *static_cast<slag::DispatchArguments*>(arguments->mappedData()) = {(elementCount + 63) / 64, 1, 1};
+        slag::BufferBarrier toIndirect = {.syncBefore = slag::BarrierSync::None,
+                                          .syncAfter = slag::BarrierSync::ExecuteIndirect,
+                                          .accessAfter = slag::BarrierAccess::IndirectArgument,
+                                          .buffer = arguments};
+        commandBuffer->barrier({}, {&toIndirect, 1});
+        commandBuffer->dispatchIndirect(arguments, 0);
+    }
+    else
+    {
+        commandBuffer->dispatch((elementCount + 63) / 64, 1, 1);
+    }
     slag::BufferBarrier toCopy = {.syncBefore = slag::BarrierSync::ComputeShading,
                                   .syncAfter = slag::BarrierSync::Copy,
                                   .accessBefore = slag::BarrierAccess::ShaderWrite,
@@ -98,6 +117,7 @@ void runFillBuffer(TestInstance& test, slag::GraphicsDevice* device)
     CHECK(values[0] == 1);
     CHECK(values[elementCount - 1] == (elementCount - 1) * 2 + 1);
 
+    device->destroy(arguments);
     device->destroy(semaphore);
     device->destroy(commandBuffer);
     device->destroy(output);
@@ -115,7 +135,8 @@ void runFillBufferOnAllDevices(slag::Backend backend)
     REQUIRE_FALSE(test.instance->graphicsDevices().empty());
     for (slag::GraphicsDevice* device : test.instance->graphicsDevices())
     {
-        runFillBuffer(test, device);
+        runFillBuffer(test, device, false);
+        runFillBuffer(test, device, true);
     }
 }
 
