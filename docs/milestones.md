@@ -213,8 +213,8 @@ Results:
 
 Every moved buffer and texture (all mips) reads back unchanged. A moved
 render target renders through its rebuilt attachment view. The three
-validation checks have tests. Names proposed during M6 are listed in
-`docs/naming.md` for review.
+validation checks have tests. Names proposed during M6 were reviewed and
+settled (`docs/naming.md`).
 
 ## M7 — Debugging and diagnostics
 

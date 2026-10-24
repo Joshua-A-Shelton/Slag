@@ -2,7 +2,7 @@
 
 **Status:** Accepted (2026-10-23). Implemented before v1.0 (milestone M6,
 `docs/milestones.md`); the allocator built in M2 must already satisfy the
-constraints below. Names are placeholders until reviewed after M6.
+constraints below. Names are final (docs/naming.md; settled after M6).
 
 ## Goal
 
