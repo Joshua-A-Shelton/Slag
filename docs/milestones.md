@@ -229,6 +229,37 @@ deliberately crashing sample produces a crash report on both backends.
 
 **Settles:** GPU-based validation coverage (12).
 
+**Status (2026-10-24):** done on both backends.
+
+- **Validation tests:** all 398 checks in `src/` fire in a test, without a
+  GPU, on a null test backend (`tests/validation/`, ADR 0067);
+  `validation_coverage` keeps it that way.
+- **Crash sample:** `samples/crash` loses the device on purpose (it is run by
+  hand, never by CTest). On the RTX 2070 SUPER:
+  - Vulkan (`VK_EXT_device_fault`) reports the faulting write and
+    instruction addresses.
+  - D3D12 (DRED) reports a hang with the named command list, its queue, and
+    its last operations. NVIDIA gave DRED no page-fault data (ADR 0014).
+- **Also landed:**
+  - Debug names kept in every build.
+  - The 4096-object stale-pointer quarantine, and "use of a destroyed"
+    checks on every call.
+  - Labels.
+  - Occlusion queries (exact counts, matching the pixels drawn).
+  - Descriptor-slot tracking with D3D12 poison descriptors.
+- **Settled open items:** 12 (D3D12 GPU-based validation reports
+  never-written descriptor reads) and 19 (NVIDIA descriptor sizes).
+- **Changed:**
+  - Render-pass resolves were cut: the RenderTarget layout for the
+    destination was wrong on D3D12 (ADR 0049).
+  - Calls now return after reporting where going on would corrupt Slag's own
+    state (ADR 0067).
+- **Fixed:** `resolveTexture` never rejected integer or depth formats.
+- **Not built:** the "resetting an in-flight command buffer" check (ADR 0067).
+- **Runs:** every sample passes on RADV and, with both backends, on NVIDIA;
+  hosted CI is green.
+- **Names:** proposed during M7 are listed in `docs/naming.md` for review.
+
 ## M8 — v1.0
 
 - CI complete: hosted WARP + self-hosted RADV runner (CLAUDE.md §12).

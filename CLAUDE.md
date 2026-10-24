@@ -136,8 +136,9 @@ src/
   util/                        the slag/util/ utilities, built on public functions
 tests/
   unit/                        no GPU needed
+  validation/                  every validation check, on a null test backend (no GPU)
   backend/                     runs on every compiled backend
-samples/                       triangle, textured_quad, compute, bindless, multi_queue
+samples/                       triangle, textured_quad, compute, bindless, multi_queue; crash (run by hand)
 third_party/                   pinned: Vulkan-Headers, Agility SDK (ADR 0061)
 docs/                          decisions/, naming.md, open-items.md, format-support.md, milestones.md
 ```
@@ -363,8 +364,10 @@ The `header_check` test compiles every public header on its own, except
 
 ## 12. Testing
 
-- Unit tests for backend-agnostic code (formats, flag helpers, validation
-  logic) run without a GPU.
+- Unit tests for backend-agnostic code (formats, flag helpers) run without a
+  GPU. Validation checks are tested the same way, on a null test backend
+  (`tests/validation/`, ADR 0067); `validation_coverage` fails if any check
+  in `src/` is never triggered.
 - **CI is split** (GitHub Actions, `.github/workflows/ci.yml`):
   - Hosted CI, on every change: Linux (GCC, Clang) and Windows (MSVC)
     builds in both presets, unit tests, a clang-format check (pinned

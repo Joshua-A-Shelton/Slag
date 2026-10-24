@@ -218,6 +218,8 @@ New names added while implementing go here once confirmed.
 | Where | Names |
 |---|---|
 | `CommandBuffer` labels | `beginLabel(name, const float* color = nullptr)`, `insertLabel(name, color)` (color: optional RGBA pointer) |
+| `CommandBuffer` occlusion queries | `beginQuery(pool, index)`, `endQuery(pool, index)` (the names were planned; the index on `endQuery` is new) |
+| Sample | `samples/crash` |
 
 ## Fields and small names (settled after M6)
 
