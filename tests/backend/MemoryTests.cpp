@@ -191,7 +191,10 @@ void testSubAllocation(slag::Backend backend)
         slag::MemoryKind kind = i % 3 == 0 ? slag::MemoryKind::Upload : slag::MemoryKind::GpuOnly;
         uint64_t size = 256 + random() % (2u << 20);
         slag::Buffer* buffer =
-            device->createBuffer({.size = size, .placement = slag::Placement::automatic(kind, {.movable = i % 2 == 0})})
+            device
+                ->createBuffer({.size = size,
+                                .placement = slag::Placement::automatic(
+                                    kind, {.movable = kind == slag::MemoryKind::GpuOnly && i % 2 == 0})})
                 .value();
         REQUIRE(buffer);
         auto pattern = static_cast<uint8_t>(i + 1);

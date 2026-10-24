@@ -80,6 +80,18 @@ Result<void> GraphicsDevice::initialize(const GraphicsDeviceInitDesc& desc)
         self->lost = false;
         self->resourceHeapSize = desc.resourceHeapSize;
         self->samplerHeapSize = desc.samplerHeapSize;
+#ifdef SLAG_VALIDATION
+        // Validation only, so a failed allocation just turns stale-slot reports off.
+        void* records =
+            self->instance->allocator.allocate(sizeof(GraphicsDeviceCommon::SlotRecord) * desc.resourceHeapSize,
+                                               alignof(GraphicsDeviceCommon::SlotRecord));
+        self->slotRecords = static_cast<GraphicsDeviceCommon::SlotRecord*>(records);
+        for (uint32_t i = 0; records && i < desc.resourceHeapSize; ++i)
+        {
+            new (&self->slotRecords[i]) GraphicsDeviceCommon::SlotRecord();
+        }
+        self->staleSlots = Vector<GraphicsDeviceCommon::StaleSlot>(&self->instance->allocator);
+#endif
     }
     return result;
 }
@@ -93,6 +105,17 @@ void GraphicsDevice::shutdown()
     {
         return;
     }
+    SLAG_VALIDATE(self->instance, !self->activePass, "GraphicsDevice::shutdown",
+                  "a defragmentation pass is still active");
+#ifdef SLAG_VALIDATION
+    if (self->slotRecords)
+    {
+        self->instance->allocator.free(self->slotRecords,
+                                       sizeof(GraphicsDeviceCommon::SlotRecord) * self->resourceHeapSize);
+        self->slotRecords = nullptr;
+    }
+    self->staleSlots = Vector<GraphicsDeviceCommon::StaleSlot>(&self->instance->allocator); // frees it
+#endif
     // Pool blocks go before the device; every resource must already be destroyed.
     self->instance->allocator.destroy(self->subAllocator);
     self->subAllocator = nullptr;

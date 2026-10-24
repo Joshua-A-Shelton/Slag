@@ -78,6 +78,16 @@ Result<AttachmentView*> GraphicsDevice::createAttachmentView(const AttachmentVie
     object->baseLayer = desc.baseLayer;
     object->layerCount = desc.layerCount;
     ++texture->liveViews;
+    {
+        // Defragmentation rebuilds a moved texture's views (ADR 0062).
+        std::lock_guard<std::mutex> lock(self->viewListLock);
+        object->nextView = texture->views;
+        if (texture->views)
+        {
+            texture->views->previousView = object;
+        }
+        texture->views = object;
+    }
     return static_cast<AttachmentView*>(object);
 }
 
@@ -92,6 +102,14 @@ void GraphicsDevice::destroy(AttachmentView* view)
     SLAG_VALIDATE(self->instance, object->device == self, "GraphicsDevice::destroy",
                   "the attachment view belongs to another device");
     TextureCommon* texture = object->texture;
+    {
+        std::lock_guard<std::mutex> lock(self->viewListLock);
+        (object->previousView ? object->previousView->nextView : texture->views) = object->nextView;
+        if (object->nextView)
+        {
+            object->nextView->previousView = object->previousView;
+        }
+    }
     SLAG_DISPATCH(self, destroyAttachmentView)(self, object);
     --texture->liveViews;
 }

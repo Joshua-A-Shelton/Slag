@@ -35,6 +35,7 @@ public:
         bool movable = false;
         uint64_t alignment = 0;
         void* owner = nullptr;
+        bool ownerIsTexture = false; // else a buffer
     };
 
     explicit Tlsf(const HostAllocator* allocator);
@@ -49,9 +50,10 @@ public:
     // OutOfHostMemory. `alignment` is a power of two.
     Status allocate(uint64_t size, uint64_t alignment, void* owner, bool movable, uint32_t& node, uint64_t& offset);
     void free(uint32_t node);
-    void setOwner(uint32_t node, void* owner)
+    void setOwner(uint32_t node, void* owner, bool isTexture)
     {
         nodeArray[node].owner = owner;
+        nodeArray[node].ownerIsTexture = isTexture;
     }
 
     bool empty() const

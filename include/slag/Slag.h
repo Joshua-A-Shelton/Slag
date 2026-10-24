@@ -7,6 +7,7 @@
 #include <slag/Buffer.h>
 #include <slag/CommandBuffer.h>
 #include <slag/CommandQueue.h>
+#include <slag/Defragmentation.h>
 #include <slag/Descriptors.h>
 #include <slag/Flags.h>
 #include <slag/GraphicsDevice.h>

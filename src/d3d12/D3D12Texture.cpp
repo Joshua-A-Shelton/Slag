@@ -163,9 +163,10 @@ Result<TextureCommon*> createTexture(GraphicsDeviceCommon* common, const Texture
         // The same alignment the placement query chose.
         (void)placement(device.device, resource, info.format);
         auto* block = static_cast<MemoryBlockImpl*>(info.placement.memoryBlock);
-        result = device.device->CreatePlacedResource2(block->heap, info.placement.offset, &resource.desc,
-                                                      D3D12_BARRIER_LAYOUT_UNDEFINED, clear, resource.castableCount,
-                                                      castable, IID_PPV_ARGS(&texture->resource));
+        D3D12_BARRIER_LAYOUT layout = info.moveTarget ? D3D12_BARRIER_LAYOUT_COMMON : D3D12_BARRIER_LAYOUT_UNDEFINED;
+        result =
+            device.device->CreatePlacedResource2(block->heap, info.placement.offset, &resource.desc, layout, clear,
+                                                 resource.castableCount, castable, IID_PPV_ARGS(&texture->resource));
     }
     else
     {

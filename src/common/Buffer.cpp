@@ -14,6 +14,10 @@ Result<Buffer*> GraphicsDevice::createBuffer(const BufferDesc& desc)
                   self->info.name);
     SLAG_VALIDATE(self->instance, desc.size > 0, "GraphicsDevice::createBuffer", "size is 0 (buffer \"%s\")",
                   desc.debugName ? desc.debugName : "");
+    SLAG_VALIDATE(self->instance,
+                  !desc.placement.movable || desc.placement.kind == MemoryKind::GpuOnly ||
+                      desc.placement.kind == MemoryKind::GpuUpload,
+                  "GraphicsDevice::createBuffer", "only GpuOnly and GpuUpload buffers can be movable (ADR 0062)");
     SLAG_VALIDATE(self->instance, desc.size <= self->capabilities.maxBufferSize, "GraphicsDevice::createBuffer",
                   "size %llu exceeds the device's maxBufferSize", static_cast<unsigned long long>(desc.size));
 #ifdef SLAG_VALIDATION
@@ -56,8 +60,10 @@ Result<Buffer*> GraphicsDevice::createBuffer(const BufferDesc& desc)
         {
             MemoryBlockCommon* block = nullptr;
             uint64_t offset = 0;
-            Status status = self->subAllocator->allocate(desc.placement.kind, placement, desc.placement.movable,
-                                                         allocation, block, offset);
+            bool movable = desc.placement.movable &&
+                           (desc.placement.kind == MemoryKind::GpuOnly || desc.placement.kind == MemoryKind::GpuUpload);
+            Status status =
+                self->subAllocator->allocate(desc.placement.kind, placement, movable, allocation, block, offset);
             if (status != Status::Ok)
             {
                 return status;
@@ -74,7 +80,7 @@ Result<Buffer*> GraphicsDevice::createBuffer(const BufferDesc& desc)
     if (allocation.block)
     {
         buffer.value()->allocation = allocation;
-        self->subAllocator->setOwner(allocation, buffer.value());
+        self->subAllocator->setOwner(allocation, buffer.value(), false);
     }
     buffer.value()->userData = desc.userData;
     if (desc.placement.memoryBlock)
@@ -95,6 +101,12 @@ void GraphicsDevice::destroy(Buffer* buffer)
     auto* object = static_cast<BufferCommon*>(buffer);
     SLAG_VALIDATE(self->instance, object->device == self, "GraphicsDevice::destroy",
                   "the buffer belongs to another device");
+    SLAG_VALIDATE(self->instance, !object->movePass, "GraphicsDevice::destroy",
+                  "the buffer is being moved by the active defragmentation pass; its move is dropped");
+    if (object->movePass)
+    {
+        dropMove(object->movePass, object->moveIndex);
+    }
     MemoryBlockCommon* block = object->memoryBlock;
     PoolAllocation allocation = object->allocation;
     SLAG_DISPATCH(self, destroyBuffer)(self, object);

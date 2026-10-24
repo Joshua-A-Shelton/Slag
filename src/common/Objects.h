@@ -12,6 +12,7 @@
 #include <slag/Buffer.h>
 #include <slag/CommandBuffer.h>
 #include <slag/CommandQueue.h>
+#include <slag/Defragmentation.h>
 #include <slag/Descriptors.h>
 #include <slag/GraphicsDevice.h>
 #include <slag/Instance.h>
@@ -24,11 +25,14 @@
 
 #include <atomic>
 #include <cstdint>
+#include <mutex>
 
 namespace slag {
 
 struct PoolBlock;
 class SubAllocator;
+struct AttachmentViewCommon;
+struct DefragmentationPassCommon;
 
 struct InstanceCommon : Instance
 {
@@ -59,6 +63,27 @@ struct GraphicsDeviceCommon : GraphicsDevice
     FormatSupport formatSupport[pixelFormatCount] = {};
     // Indexed by CommandQueueType; filled by the backend in initialize.
     Vector<CommandQueue*> queues[3];
+    DefragmentationPassCommon* activePass = nullptr; // ADR 0062
+    std::mutex viewListLock;                         // TextureCommon::views (ADR 0068)
+#ifdef SLAG_VALIDATION
+    // Which buffer or texture each resource slot was last written with, to
+    // report stale slots after defragmentation (ADR 0062).
+    struct SlotRecord
+    {
+        std::atomic<const void*> object = nullptr;
+        std::atomic<uint32_t> moveCount = 0; // the object's moveCount when written
+    };
+    struct StaleSlot
+    {
+        uint32_t slot;
+        const void* object;
+        uint32_t moveCount;
+    };
+    SlotRecord* slotRecords = nullptr; // resourceHeapSize entries, while initialized
+    Vector<StaleSlot> staleSlots;      // checked at the next submit
+    std::mutex staleSlotLock;
+    std::atomic<bool> hasStaleSlots = false; // so submits only lock when there are some
+#endif
 };
 
 struct CommandQueueCommon : CommandQueue
@@ -97,6 +122,10 @@ struct BufferCommon : Buffer
     uint64_t gpuAddress = 0;
     MemoryBlockCommon* memoryBlock = nullptr; // set when placed by the user
     PoolAllocation allocation;                // set when sub-allocated
+    // Defragmentation (ADR 0062).
+    DefragmentationPassCommon* movePass = nullptr; // set while in an active pass's move list
+    uint32_t moveIndex = 0;
+    uint32_t moveCount = 0; // times moved
 };
 
 enum class TextureType : uint8_t
@@ -127,6 +156,9 @@ struct TextureCreateInfo
     Placement placement;
     const char* debugName = nullptr;
     uint64_t userData = 0;
+    // A defragmentation move's new texture: D3D12 creates it in COMMON, so
+    // copy queues can write it (ADR 0062).
+    bool moveTarget = false;
 };
 
 struct TextureCommon : Texture
@@ -145,6 +177,14 @@ struct TextureCommon : Texture
     TextureUsage usage = TextureUsage::None;
     MemoryBlockCommon* memoryBlock = nullptr; // set when placed by the user
     PoolAllocation allocation;                // set when sub-allocated
+    // Defragmentation (ADR 0062): what recreating the texture needs, and its
+    // attachment views (under the device's viewListLock).
+    ClearValue clearValue;
+    bool hasClearValue = false;
+    AttachmentViewCommon* views = nullptr;
+    DefragmentationPassCommon* movePass = nullptr;
+    uint32_t moveIndex = 0;
+    uint32_t moveCount = 0;
     // For validation.
     PixelFormat castableFormats[16] = {};
     uint32_t castableCount = 0;
@@ -161,6 +201,9 @@ struct AttachmentViewCommon : AttachmentView
     uint32_t mip = 0;
     uint32_t baseLayer = 0;
     uint32_t layerCount = 1;
+    // In the texture's view list.
+    AttachmentViewCommon* previousView = nullptr;
+    AttachmentViewCommon* nextView = nullptr;
 };
 
 enum class BufferDescriptorKind : uint8_t
@@ -293,6 +336,47 @@ struct QueryPoolCommon : QueryPool
     uint32_t count = 0;
     CommandQueueType queueType = CommandQueueType::Graphics;
 };
+
+// One move of a defragmentation pass: the temporary objects hold the new
+// native objects until endDefragmentation swaps them in (ADR 0062).
+struct MoveEntry
+{
+    BufferCommon* buffer = nullptr; // the user's object, or null once dropped
+    TextureCommon* texture = nullptr;
+    BufferCommon* newBuffer = nullptr;
+    TextureCommon* newTexture = nullptr;
+    PoolAllocation from;
+    PoolAllocation to;
+};
+
+#ifdef SLAG_VALIDATION
+// Records the resource a slot now holds, or null (ADR 0062).
+inline void recordSlot(GraphicsDeviceCommon* device, uint32_t index, const void* object, uint32_t moveCount)
+{
+    if (device->slotRecords && index < device->resourceHeapSize)
+    {
+        device->slotRecords[index].object.store(object, std::memory_order_relaxed);
+        device->slotRecords[index].moveCount.store(moveCount, std::memory_order_relaxed);
+    }
+}
+#endif
+
+struct DefragmentationPassCommon : DefragmentationPass
+{
+    GraphicsDeviceCommon* device = nullptr;
+    MemoryKind kind = MemoryKind::GpuOnly;
+    Vector<DefragmentationMove> moves;
+    Vector<MoveEntry> entries; // parallel to moves
+    bool recorded = false;
+};
+
+// Abandons one move: its resource is being destroyed (Defragmentation.cpp).
+void dropMove(DefragmentationPassCommon* pass, uint32_t index);
+
+#ifdef SLAG_VALIDATION
+// Reports, once, resource slots a defragmentation pass left stale.
+void reportStaleSlots(GraphicsDeviceCommon* device);
+#endif
 
 struct SemaphoreCommon : Semaphore
 {

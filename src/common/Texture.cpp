@@ -277,6 +277,11 @@ Result<Texture*> createTexture(GraphicsDeviceCommon* self, const TextureCreateIn
     object->mipCount = info.mipCount;
     object->sampleCount = info.sampleCount;
     object->usage = info.usage;
+    if (info.clearValue)
+    {
+        object->clearValue = *info.clearValue;
+        object->hasClearValue = true;
+    }
     for (PixelFormat castable : info.castableFormats)
     {
         if (object->castableCount < 16)
@@ -292,7 +297,7 @@ Result<Texture*> createTexture(GraphicsDeviceCommon* self, const TextureCreateIn
     if (allocation.block)
     {
         object->allocation = allocation;
-        self->subAllocator->setOwner(allocation, object);
+        self->subAllocator->setOwner(allocation, object, true);
     }
     return static_cast<Texture*>(object);
 }
@@ -362,6 +367,12 @@ void GraphicsDevice::destroy(Texture* texture)
                   "the texture belongs to another device");
     SLAG_VALIDATE(self->instance, object->liveViews == 0, "GraphicsDevice::destroy",
                   "the texture still has %u attachment views", object->liveViews.load());
+    SLAG_VALIDATE(self->instance, !object->movePass, "GraphicsDevice::destroy",
+                  "the texture is being moved by the active defragmentation pass; its move is dropped");
+    if (object->movePass)
+    {
+        dropMove(object->movePass, object->moveIndex);
+    }
     MemoryBlockCommon* block = object->memoryBlock;
     PoolAllocation allocation = object->allocation;
     SLAG_DISPATCH(self, destroyTexture)(self, object);

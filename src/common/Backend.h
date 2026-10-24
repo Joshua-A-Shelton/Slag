@@ -38,6 +38,7 @@ struct BufferDescriptorInfo;
 struct TextureDescriptorInfo;
 struct PipelineCommon;
 struct CommandBufferCommon;
+struct MoveEntry;
 
 struct BackendFunctions
 {

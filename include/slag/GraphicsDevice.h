@@ -9,6 +9,7 @@
 #include <slag/Buffer.h>
 #include <slag/CommandBuffer.h>
 #include <slag/CommandQueue.h>
+#include <slag/Defragmentation.h>
 #include <slag/Descriptors.h>
 #include <slag/Limits.h>
 #include <slag/Pipeline.h>
@@ -204,6 +205,15 @@ public:
     uint32_t supportedSwapchainFormats(const NativeWindow& window, std::span<SwapchainFormat> formats) const;
     // Present modes the window supports: Fifo first.
     uint32_t supportedPresentModes(const NativeWindow& window, std::span<PresentMode> modes) const;
+
+    // Defragmentation (ADR 0062): plans moves and creates their new native
+    // objects; one pass per device at a time. Nothing waits: `completed` is
+    // a value the user has seen reached after the pass's copies, and other
+    // queues that use moved resources afterwards wait on it too. End swaps
+    // the native objects in, frees the old memory, and rebuilds attachment
+    // views; resource and view pointers stay valid.
+    Result<DefragmentationPass*> beginDefragmentation(const DefragmentationDesc& desc);
+    Result<void> endDefragmentation(DefragmentationPass* pass, SemaphoreValue completed);
 
     Result<QueryPool*> createQueryPool(const QueryPoolDesc& desc);
     void destroy(QueryPool* pool);

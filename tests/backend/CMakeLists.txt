@@ -8,6 +8,7 @@ add_executable(slag_backend_tests
     CommandTests.cpp
     ComputeTests.cpp
     CopyTests.cpp
+    DefragmentationTests.cpp
     DescriptorTests.cpp
     DeviceTests.cpp
     InstanceTests.cpp

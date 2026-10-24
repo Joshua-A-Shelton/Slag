@@ -213,6 +213,17 @@ New names added while implementing go here once confirmed.
 | `DescriptorHeap` | `Resource`, `Sampler` (utility-only for now; moves to the core with the same meaning if heaps are exposed) |
 | `DeferredDestroyer` | `destroyAfter` overloads for `AttachmentView`, `Buffer`, `Texture`, `QueryPool`, `Pipeline`, `CommandBuffer`, `MemoryBlock`, `Semaphore` |
 
+## Proposed during M6 (placeholders, reviewed at the end of M6)
+
+| Where | Names |
+|---|---|
+| File | `slag/Defragmentation.h` |
+| `GraphicsDevice` | `beginDefragmentation(DefragmentationDesc)` → `Result<DefragmentationPass*>`, `endDefragmentation(pass, SemaphoreValue completed)` → `Result<void>` |
+| `DefragmentationDesc` | `kind`, `maxBytes`, `maxMoves` |
+| `DefragmentationMove` | `buffer`, `texture` (one set) |
+| `DefragmentationPass` | `moves()`, `recordCopies(commandBuffer)` |
+| `PlacementOptions` | `movable` (from ADR 0062, never reviewed) |
+
 ## Nested structs
 
 `AllocatorCallbacks` (in `InstanceDesc`; ADR 0066).

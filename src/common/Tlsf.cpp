@@ -171,6 +171,7 @@ void Tlsf::free(uint32_t index)
     Node* node = &nodeArray[index];
     node->isFree = true;
     node->owner = nullptr;
+    node->ownerIsTexture = false;
     node->movable = false;
     node->alignment = 0;
     freeSize += node->size;

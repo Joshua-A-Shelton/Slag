@@ -208,6 +208,7 @@ void writeBuffer(GraphicsDeviceCommon* self, uint32_t index, const BufferDescrip
 {
 #ifdef SLAG_VALIDATION
     validateBuffer(self, index, info);
+    recordSlot(self, index, info.buffer, info.buffer ? info.buffer->moveCount : 0);
 #endif
     SLAG_DISPATCH(self, writeBufferDescriptor)(self, index, info);
 }
@@ -302,6 +303,7 @@ void writeTextureInfo(GraphicsDeviceCommon* self, uint32_t index, const TextureD
 {
 #ifdef SLAG_VALIDATION
     validateTexture(self, index, info);
+    recordSlot(self, index, info.texture, info.texture ? info.texture->moveCount : 0);
 #endif
     SLAG_DISPATCH(self, writeTextureDescriptor)(self, index, info);
 }
@@ -380,6 +382,9 @@ void GraphicsDevice::clearResourceDescriptor([[maybe_unused]] uint32_t index)
     [[maybe_unused]] GraphicsDeviceCommon* self = common(this);
     SLAG_VALIDATE(self->instance, index < self->resourceHeapSize, "GraphicsDevice::clearResourceDescriptor",
                   "slot %u is outside the resource heap (%u slots)", index, self->resourceHeapSize);
+#ifdef SLAG_VALIDATION
+    recordSlot(self, index, nullptr, 0);
+#endif
 }
 
 void GraphicsDevice::clearSamplerDescriptor([[maybe_unused]] uint32_t index)

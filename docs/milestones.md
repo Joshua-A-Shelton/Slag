@@ -193,6 +193,28 @@ proposed during M5 were reviewed and settled (`docs/naming.md`).
 allocation pattern, and every moved resource reads back unchanged on both
 backends.
 
+**Status (2026-10-24):** implemented on both backends, as decided in ADR
+0062. Movable kinds are GpuOnly and GpuUpload. Copies run on any queue,
+with textures copy-ready. The budget is a kind, `maxBytes` and `maxMoves`.
+Stale slots are reported at the next submit. The test:
+- allocates 1 GB of 1 MB buffers and 32 textures, all movable and stamped;
+- frees three quarters of the buffers and half the textures;
+- runs passes until nothing moves (the first limited to 64 moves,
+  alternating graphics and copy queues).
+
+Results:
+
+| Device | Passes | Moved | Memory in use |
+|---|---|---|---|
+| RX 7900 XT, RADV (Vulkan) | 2 | 128 buffers, 8 textures | 1552 → 1041 MB |
+| RTX 2070 SUPER, D3D12 | 2 | 128 buffers, 8 textures | 1573 → 1061 MB |
+| RTX 2070 SUPER, Vulkan | 2 | 128 buffers, 8 textures | 1610 → 1098 MB |
+
+Every moved buffer and texture (all mips) reads back unchanged. A moved
+render target renders through its rebuilt attachment view. The three
+validation checks have tests. Names proposed during M6 are listed in
+`docs/naming.md` for review.
+
 ## M7 — Debugging and diagnostics
 
 - Stale-pointer quarantine, descriptor-slot tracking, D3D12 poison

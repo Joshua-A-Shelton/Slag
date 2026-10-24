@@ -20,6 +20,20 @@ struct PoolBlock
 
     MemoryBlockCommon* memoryBlock = nullptr;
     Tlsf tlsf;
+    bool evacuating = false; // emptied by the active defragmentation pass: no new allocations
+};
+
+// A move planned by a defragmentation pass (ADR 0062): the new range is
+// already reserved.
+struct PlannedMove
+{
+    void* owner = nullptr; // BufferCommon or TextureCommon
+    bool ownerIsTexture = false;
+    PoolAllocation from;
+    PoolAllocation to;
+    MemoryBlockCommon* block = nullptr; // of `to`
+    uint64_t offset = 0;
+    uint64_t size = 0;
 };
 
 class SubAllocator
@@ -46,7 +60,12 @@ public:
     Status allocate(MemoryKind kind, const PlacementInfo& placement, bool movable, PoolAllocation& out,
                     MemoryBlockCommon*& memoryBlock, uint64_t& offset);
     // Records the resource that owns an allocation (for defragmentation).
-    void setOwner(const PoolAllocation& allocation, void* owner);
+    void setOwner(const PoolAllocation& allocation, void* owner, bool isTexture);
+
+    // Plans a pass over one kind (ADR 0062) and reserves the new ranges.
+    // Blocks being emptied take no new allocations until endDefragmentation.
+    Status planDefragmentation(MemoryKind kind, uint64_t maxBytes, uint32_t maxMoves, Vector<PlannedMove>& moves);
+    void endDefragmentation(MemoryKind kind);
     void free(PoolAllocation& allocation);
 
 private:

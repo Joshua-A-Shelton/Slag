@@ -410,6 +410,10 @@ Result<void> CommandQueue::submit(const SubmitDesc& desc)
 {
     auto* self = static_cast<CommandQueueCommon*>(this);
 #ifdef SLAG_VALIDATION
+    if (self->device->hasStaleSlots)
+    {
+        reportStaleSlots(self->device);
+    }
     for (CommandBuffer* commandBuffer : desc.commandBuffers)
     {
         CommandBufferCommon* object = common(commandBuffer);

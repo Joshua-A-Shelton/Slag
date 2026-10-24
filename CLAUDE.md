@@ -119,6 +119,7 @@ include/slag/
   Pipeline.h                   pipeline Descs, state structs, ShaderStage, VertexInputLayout
   Barriers.h                   BarrierSync/Access, TextureLayout, barrier structs
   QueryPool.h  Semaphore.h
+  Defragmentation.h            DefragmentationDesc, DefragmentationMove, DefragmentationPass
   Swapchain.h                  Swapchain, NativeWindow, PresentMode, ColorSpace, HDR metadata
   Types.h                      shared small value types: CompareOp, Viewport, Rect, ClearValue
   Version.h                    generated from the CMake project version (ADR 0070)

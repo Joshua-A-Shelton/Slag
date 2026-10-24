@@ -2,7 +2,7 @@
 
 **Status:** Accepted (2026-10-23). Implemented before v1.0 (milestone M6,
 `docs/milestones.md`); the allocator built in M2 must already satisfy the
-constraints below. Names are placeholders.
+constraints below. Names are placeholders until reviewed after M6.
 
 ## Goal
 
@@ -60,3 +60,51 @@ device->endDefragmentation(pass, /*completed*/ semaphoreValue);   // swaps nativ
 - Opt-in `movable` flag, not movable-by-default with per-move vetoes.
 - The user rewrites descriptor slots; Slag doesn't remember descriptor
   writes for this.
+
+## Decided before M6 (2026-10-24)
+
+- **Movable kinds:** `GpuOnly` and `GpuUpload`. `movable` on Upload or
+  Readback is a validation error (and ignored). Moved GpuUpload buffers get
+  a new mapped pointer: `mappedData()` returns it after `endDefragmentation`.
+  Textures only live in GpuOnly memory.
+- **Textures are copy-ready, on any queue.** Before `recordCopies`, moved
+  textures are in `CopySource` (graphics or compute command buffer) or
+  `Common` (copy queue, ADR 0049), and moved buffers' earlier writes are
+  visible to copies. Slag initializes each new texture, copies, and leaves it
+  in that same layout with no access pending: the user's next barrier on a
+  moved resource starts from `syncBefore = None`. D3D12 creates the new
+  texture in `COMMON` and moves it to `COPY_DEST` on graphics/compute queues
+  (a full-resource copy initializes placed render targets); Vulkan moves it
+  from `UNDEFINED` to `TRANSFER_DST_OPTIMAL`, or `GENERAL` on copy queues
+  (Vulkan allows image barriers on transfer queues).
+- **Budget:** `DefragmentationDesc { kind, maxBytes, maxMoves }`, 0 meaning
+  no limit. One kind per pass.
+- **Stale descriptor slots** (validation builds): every buffer and texture
+  descriptor write records the resource in a per-slot table. After
+  `endDefragmentation`, the next submit reports each slot still holding a
+  moved resource's old descriptor, once. Constant buffer descriptors are
+  written by address, so they aren't tracked; neither are GPU addresses.
+
+## Implementation (M6)
+
+- **Planning** is in the sub-allocator, under the kind's pool lock. Source
+  blocks are those holding only movable allocations, emptiest first; each
+  is evacuated into the fullest other non-empty blocks, never into a block
+  being evacuated. A source is taken only if all of it fits the budget and
+  the free space, so passes free whole blocks. When no whole block fits the
+  budget, the emptiest one is evacuated partially, so repeated passes still
+  make progress. Blocks being evacuated take no new allocations during the
+  pass. Freed blocks follow the usual rule (one empty block kept per kind).
+- **Moves:** `beginDefragmentation` reserves the new ranges and creates a
+  native object for each move placed there. `endDefragmentation` swaps the
+  native handles into the user's object (pointers stay stable), destroys
+  the old ones, frees the old ranges, and rebuilds the texture's attachment
+  views the same way. Moved resources lose their debug names until names
+  are kept (M7).
+- One pass per device at a time. Destroying a resource in an active pass is
+  a validation error; Slag then drops its move.
+- `endDefragmentation(pass, completed)` checks (validation builds) that
+  `recordCopies` was called when there are moves and that `completed` has
+  been reached. It waits for nothing. Other queues that use moved resources
+  afterwards should wait on the same value, which makes the copies visible
+  to them.

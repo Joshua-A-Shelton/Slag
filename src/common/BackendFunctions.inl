@@ -13,6 +13,13 @@ SLAG_BACKEND_FN(MemoryBudget, memoryBudget, (const GraphicsDeviceCommon* device)
 SLAG_BACKEND_FN(Result<void>, deviceWaitIdle, (GraphicsDeviceCommon * device))
 SLAG_BACKEND_FN(Result<void>, queueWaitIdle, (CommandQueueCommon * queue))
 
+// Defragmentation (ADR 0062): exchange the native objects of two objects of
+// the same type and description, and record a pass's copies.
+SLAG_BACKEND_FN(void, swapBufferNative, (BufferCommon * a, BufferCommon* b))
+SLAG_BACKEND_FN(void, swapTextureNative, (TextureCommon * a, TextureCommon* b))
+SLAG_BACKEND_FN(void, swapAttachmentViewNative, (AttachmentViewCommon * a, AttachmentViewCommon* b))
+SLAG_BACKEND_FN(void, cmdRecordMoves, (CommandBufferCommon * commandBuffer, const MoveEntry* moves, size_t count))
+
 SLAG_BACKEND_FN(Result<QueryPoolCommon*>, createQueryPool, (GraphicsDeviceCommon * device, const QueryPoolDesc& desc))
 SLAG_BACKEND_FN(void, destroyQueryPool, (GraphicsDeviceCommon * device, QueryPoolCommon* pool))
 SLAG_BACKEND_FN(void, cmdWriteTimestamp, (CommandBufferCommon * commandBuffer, QueryPoolCommon* pool, uint32_t index))

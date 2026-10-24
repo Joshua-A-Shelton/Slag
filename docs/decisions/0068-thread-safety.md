@@ -41,7 +41,11 @@ Callbacks may be invoked from any thread, concurrently: the debug callback
 - Pipeline creation: the pipeline cache index.
 - Submit/present, only when queues share a `VkQueue`: the shared-queue lock
   (ADR 0009).
-- Validation builds only: descriptor-slot tracking.
+- Attachment view create/destroy: the device's view-list lock, which keeps
+  each texture's views for defragmentation to rebuild (ADR 0062).
+- Validation builds only: descriptor-slot tracking. Slot records are
+  atomics; the list of slots a defragmentation pass left stale has a lock,
+  which submits take only while the list is non-empty.
 
 No locks on recording, descriptor writes, or submits to separate hardware
 queues.
