@@ -48,8 +48,8 @@ Raphael iGPU): `tests/backend/ComputeTests.cpp` passes with no validation
 errors.
 
 **Status (2026-10-24):** D3D12 side done: the same test passes on WARP in
-Windows CI (MSVC, debug and release) with the debug layer on. Still
-unchecked: D3D12 on hardware, Vulkan on NVIDIA.
+Windows CI (MSVC, debug and release) with the debug layer on. Also passes
+on NVIDIA (RTX 2070 SUPER, Windows 11) on both D3D12 and Vulkan.
 
 **Settles:** Slang descriptor-heap targeting and version (open items 1, 13),
 descriptor sizes (19), WARP support (22), heap address-range limits (23),
@@ -136,9 +136,11 @@ Linux (X11 and Wayland), surviving resize and minimize.
 **Status (2026-10-24):** swapchains on both backends (Win32, Xlib, XCB,
 Wayland), with present modes, reconfigure, Occluded, HDR color spaces and
 metadata, and frame latency. Both samples pass `--frames 120` (including
-a resize) on RADV under Wayland, Xlib, and XCB with no validation
-messages. Still to check: D3D12 and Vulkan on Windows by eye, and minimize
-by hand. Names proposed during M4 await review (`docs/naming.md`).
+a resize) on RADV under Wayland, Xlib, and XCB, and `--frames 300` on an
+NVIDIA RTX 2070 SUPER under Windows 11 with D3D12 and Vulkan, with no
+validation messages. The whole backend suite (59 tests, including the
+direct D3D12-vs-Vulkan scene comparison) passes there too. Still to check:
+minimize by hand. Names proposed during M4 await review (`docs/naming.md`).
 
 ## M5 — Queues, synchronization, utilities
 

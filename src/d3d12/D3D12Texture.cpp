@@ -114,12 +114,17 @@ D3D12_RESOURCE_ALLOCATION_INFO allocationInfo(ID3D12Device12* device, const Reso
 }
 
 // 4 KB alignment for small textures when the device allows it, else the
-// default (64 KB, or 4 MB for MSAA) (ADR 0023).
-D3D12_RESOURCE_ALLOCATION_INFO placement(ID3D12Device12* device, ResourceInfo& info)
+// default (64 KB, or 4 MB for MSAA) (ADR 0023). D3D12 only allows 4 KB when
+// the top mip fits in 64 KB, and the debug layer warns about asking otherwise.
+D3D12_RESOURCE_ALLOCATION_INFO placement(ID3D12Device12* device, ResourceInfo& info, PixelFormat format)
 {
     bool target =
         (info.desc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0;
-    if (!target && info.desc.SampleDesc.Count == 1)
+    uint64_t block = blockDimension(format);
+    uint64_t depth = info.desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? info.desc.DepthOrArraySize : 1;
+    uint64_t topMipBytes = (info.desc.Width + block - 1) / block * ((info.desc.Height + block - 1) / block) * depth *
+                           copyBlockBytes(format, TexturePlane::Color);
+    if (!target && info.desc.SampleDesc.Count == 1 && topMipBytes <= D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT)
     {
         D3D12_RESOURCE_DESC1 smallDesc = info.desc; // not "small": a Windows macro
         smallDesc.Alignment = D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT;
@@ -156,7 +161,7 @@ Result<TextureCommon*> createTexture(GraphicsDeviceCommon* common, const Texture
     if (info.placement.memoryBlock)
     {
         // The same alignment the placement query chose.
-        (void)placement(device.device, resource);
+        (void)placement(device.device, resource, info.format);
         auto* block = static_cast<MemoryBlockImpl*>(info.placement.memoryBlock);
         result = device.device->CreatePlacedResource2(block->heap, info.placement.offset, &resource.desc,
                                                       D3D12_BARRIER_LAYOUT_UNDEFINED, clear, resource.castableCount,
@@ -193,7 +198,7 @@ PlacementInfo texturePlacementInfo(const GraphicsDeviceCommon* common, const Tex
     auto& device = *static_cast<const GraphicsDeviceImpl*>(common);
     ResourceInfo resource;
     fillResourceInfo(info, resource);
-    D3D12_RESOURCE_ALLOCATION_INFO result = placement(device.device, resource);
+    D3D12_RESOURCE_ALLOCATION_INFO result = placement(device.device, resource, info.format);
     return {result.SizeInBytes, result.Alignment};
 }
 

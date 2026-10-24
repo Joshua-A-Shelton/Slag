@@ -17,7 +17,7 @@ None right now.
 | 13 | Oldest Slang version that emits descriptor-heap SPIR-V (2026.18.2 is confirmed to work) | 0034 |
 | 14 | Intel Windows Vulkan driver support for `VK_EXT_descriptor_heap` | CLAUDE.md §3 |
 | 15 | Whether every Enhanced Barriers device has resource heap tier 2 (it's a baseline check either way; this only affects coverage) | 0012, 0023 |
-| 19 | Actual `imageDescriptorSize` / `bufferDescriptorSize` on current NVIDIA and Intel drivers (RADV measured: buffer 16, image 32 on RX 7900 XT / 64 on Raphael iGPU, sampler 16, reserved range 0) | 0029 |
+| 19 | Actual `imageDescriptorSize` / `bufferDescriptorSize` on current NVIDIA and Intel drivers (RADV measured: buffer 16, image 32 on RX 7900 XT / 64 on Raphael iGPU, sampler 16, reserved range 0). NVIDIA (RTX 2070 SUPER, driver 621.01) runs every heap test; sizes not yet logged | 0029 |
 | 20 | AMD D3D12 driver supports Enhanced Barriers and Shader Model 6.8 on RDNA2 (RX 6000) — the fallback path for older AMD on Windows | CLAUDE.md §3 |
 | 21 | Which GPU generations RADV's `VK_EXT_descriptor_heap` support covers | CLAUDE.md §3 |
 | 16 | Verify the ◐ entries in `docs/format-support.md` against driver reports (plus its two other "to verify" items) | 0022 |
