@@ -122,8 +122,13 @@ reviewed and settled (`docs/naming.md`).
 - `Swapchain` for Win32, Xlib, XCB, Wayland; acquire and present;
   `reconfigure`; present modes and switchable modes; HDR color spaces and
   metadata; frame latency.
-- Choose the windowing library for samples (ADR 0061).
-- Samples: `triangle`, `textured_quad`.
+- Windowing library for samples: SDL3 (decided 2026-10-24, ADR 0061);
+  sample textures are generated in code.
+- Samples: `triangle`, `textured_quad`. Each takes `--frames N`: render N
+  frames, resize the window once, and exit non-zero on any error or
+  validation message. They run here on Wayland and X11, and in Windows CI
+  on WARP (D3D12); the project owner checks them by eye, including Vulkan
+  on Windows.
 
 **Done when:** both samples run in a window on Windows (both backends) and
 Linux (X11 and Wayland), surviving resize and minimize.

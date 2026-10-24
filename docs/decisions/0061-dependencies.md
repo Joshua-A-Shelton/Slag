@@ -38,7 +38,9 @@ Only two, both unavoidable:
 
 Allowed: a unit test framework, a windowing library (e.g. GLFW or SDL), and
 an image loader (e.g. stb_image). Chosen so far: **doctest** for unit tests
-(M0). Windowing and image loading are chosen with the first samples (M4).
+(M0) and **SDL3** (3.4.18, zlib) for sample windows (M4, decided
+2026-10-24). No image loader: sample textures are generated in code until a
+sample needs image files.
 
 ## Tools
 

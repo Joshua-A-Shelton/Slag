@@ -59,6 +59,27 @@ function(slag_copy_agility_runtime target)
 endfunction()
 
 # ---------------------------------------------------------------------------
+# SDL3 (zlib): sample windows only, never linked into the library (ADR 0061).
+# Built static with only the video subsystem the samples need.
+# ---------------------------------------------------------------------------
+
+if(SLAG_BUILD_SAMPLES)
+    FetchContent_Declare(SDL3
+        URL https://github.com/libsdl-org/SDL/releases/download/release-3.4.18/SDL3-3.4.18.tar.gz
+        URL_HASH SHA256=9c75cf16330322c217dedd2e0609f1124f1b54b8633e763467b4684d0f4334a3)
+    set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+    set(SDL_STATIC ON CACHE BOOL "" FORCE)
+    set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
+    set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(SDL_INSTALL OFF CACHE BOOL "" FORCE)
+    foreach(_slag_sdl_off SDL_AUDIO SDL_CAMERA SDL_GPU SDL_RENDER SDL_HAPTIC SDL_HIDAPI SDL_JOYSTICK SDL_SENSOR
+                          SDL_POWER SDL_DIALOG SDL_OPENGL SDL_OPENGLES SDL_VULKAN)
+        set(${_slag_sdl_off} OFF CACHE BOOL "" FORCE)
+    endforeach()
+    FetchContent_MakeAvailable(SDL3)
+endif()
+
+# ---------------------------------------------------------------------------
 # doctest (MIT): tests only, never linked into the library
 # ---------------------------------------------------------------------------
 
