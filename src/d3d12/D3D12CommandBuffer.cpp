@@ -247,6 +247,17 @@ void cmdPushConstants(CommandBufferCommon* object, const void* data, uint32_t si
     }
 }
 
+void cmdSetConstantBuffer(CommandBufferCommon* object, uint64_t address, uint32_t)
+{
+    auto* commandBuffer = static_cast<CommandBufferImpl*>(object);
+    // Root parameter 1; set for both pipeline types, as push constants are.
+    commandBuffer->list->SetComputeRootConstantBufferView(1, address);
+    if (commandBuffer->type == D3D12_COMMAND_LIST_TYPE_DIRECT)
+    {
+        commandBuffer->list->SetGraphicsRootConstantBufferView(1, address);
+    }
+}
+
 void cmdDispatch(CommandBufferCommon* object, uint32_t x, uint32_t y, uint32_t z)
 {
     static_cast<CommandBufferImpl*>(object)->list->Dispatch(x, y, z);

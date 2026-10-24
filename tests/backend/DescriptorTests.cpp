@@ -217,7 +217,104 @@ void testDescriptorKinds(slag::Backend backend)
     test.checkNoErrors();
 }
 
+// setConstantBuffer: two buffers set in turn, each read by one dispatch.
+void testRootConstantBuffer(slag::Backend backend)
+{
+    TestInstance test(backend);
+    slag::GraphicsDevice* device = test.firstDevice();
+    REQUIRE(device);
+    REQUIRE(static_cast<bool>(device->initialize({})));
+    std::vector<char> spirv;
+    std::vector<char> dxil;
+    slag::Pipeline* pipeline = computePipeline(device, "RootConstants", spirv, dxil);
+    REQUIRE(pipeline);
+
+    // Two constant blocks at 0 and 256; two outputs.
+    slag::Buffer* constants =
+        device->createBuffer({.size = 512, .placement = slag::Placement::automatic(slag::MemoryKind::Upload)}).value();
+    // GpuOnly: D3D12 readback memory can't be written by shaders.
+    slag::Buffer* output =
+        device->createBuffer({.size = 64, .placement = slag::Placement::automatic(slag::MemoryKind::GpuOnly)}).value();
+    slag::Buffer* readback =
+        device->createBuffer({.size = 64, .placement = slag::Placement::automatic(slag::MemoryKind::Readback)}).value();
+    REQUIRE(constants);
+    REQUIRE(output);
+    REQUIRE(readback);
+    auto* bytes = static_cast<uint8_t*>(constants->mappedData());
+    const Float4 first[2] = {{1.0f, 2.0f, 3.0f, 4.0f}, {5.0f, 6.0f, 7.0f, 8.0f}};
+    const uint32_t second[2][4] = {{10, 20, 30, 40}, {50, 60, 70, 80}};
+    for (int i = 0; i < 2; ++i)
+    {
+        std::memcpy(bytes + i * 256, &first[i], 16);
+        std::memcpy(bytes + i * 256 + 16, second[i], 16);
+    }
+    // The outputs are slots 20 and 21, 32 bytes each.
+    device->writeRWStructuredBuffer(20, {.buffer = output, .offset = 0, .count = 2, .stride = 16});
+    device->writeRWStructuredBuffer(21, {.buffer = output, .offset = 32, .count = 2, .stride = 16});
+
+    slag::CommandBuffer* commandBuffer =
+        device->createCommandBuffer({.queueType = slag::CommandQueueType::Compute}).value();
+    REQUIRE(static_cast<bool>(commandBuffer->begin()));
+    commandBuffer->bindPipeline(pipeline);
+    for (uint32_t i = 0; i < 2; ++i)
+    {
+        uint32_t slot = 20 + i;
+        commandBuffer->pushConstants(&slot, sizeof(slot));
+        commandBuffer->setConstantBuffer(constants->gpuAddress() + i * 256, 256);
+        commandBuffer->dispatch(1, 1, 1);
+    }
+    slag::BufferBarrier toCopy = {.syncBefore = slag::BarrierSync::ComputeShading,
+                                  .syncAfter = slag::BarrierSync::Copy,
+                                  .accessBefore = slag::BarrierAccess::ShaderWrite,
+                                  .accessAfter = slag::BarrierAccess::CopySource,
+                                  .buffer = output};
+    commandBuffer->barrier({}, {&toCopy, 1});
+    commandBuffer->copyBuffer(readback, 0, output, 0, 64);
+    REQUIRE(static_cast<bool>(commandBuffer->end()));
+    slag::Semaphore* semaphore = device->createSemaphore({}).value();
+    slag::SemaphoreValue done = {semaphore, 1};
+    slag::CommandBuffer* commandBuffers[] = {commandBuffer};
+    REQUIRE(static_cast<bool>(device->commandQueue(slag::CommandQueueType::Compute)
+                                  ->submit({.commandBuffers = commandBuffers, .signals = {&done, 1}})));
+    REQUIRE(static_cast<bool>(device->waitSemaphores({&done, 1}, slag::WaitMode::All, 5'000'000'000)));
+
+    const auto* results = static_cast<const uint8_t*>(readback->mappedData());
+    for (int i = 0; i < 2; ++i)
+    {
+        CAPTURE(i);
+        Float4 value;
+        uint32_t integers[4];
+        std::memcpy(&value, results + i * 32, 16);
+        std::memcpy(integers, results + i * 32 + 16, 16);
+        CHECK(equal(value, first[i]));
+        CHECK(std::memcmp(integers, second[i], 16) == 0);
+    }
+
+    device->destroy(semaphore);
+    device->destroy(commandBuffer);
+    device->destroy(constants);
+    device->destroy(output);
+    device->destroy(readback);
+    device->destroy(pipeline);
+    device->shutdown();
+    test.checkNoErrors();
+}
+
 } // namespace
+
+#ifdef SLAG_BACKEND_VULKAN
+TEST_CASE("Vulkan: the root constant buffer slot")
+{
+    testRootConstantBuffer(slag::Backend::Vulkan);
+}
+#endif
+
+#ifdef SLAG_BACKEND_D3D12
+TEST_CASE("D3D12: the root constant buffer slot")
+{
+    testRootConstantBuffer(slag::Backend::D3D12);
+}
+#endif
 
 #ifdef SLAG_BACKEND_VULKAN
 TEST_CASE("Vulkan: every descriptor kind reads and writes through the heaps")

@@ -25,6 +25,30 @@ const ShaderBinary* findSpirv(const ShaderStage& stage)
 
 namespace {
 
+const VkDescriptorSetAndBindingMappingEXT constantBufferBinding = [] {
+    VkDescriptorSetAndBindingMappingEXT mapping = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_AND_BINDING_MAPPING_EXT};
+    mapping.descriptorSet = 0;
+    mapping.firstBinding = 1; // register b1
+    mapping.bindingCount = 1;
+    mapping.resourceMask = VK_SPIRV_RESOURCE_TYPE_UNIFORM_BUFFER_BIT_EXT;
+    mapping.source = VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT;
+    mapping.sourceData.pushAddressOffset = constantBufferPushOffset;
+    return mapping;
+}();
+
+} // namespace
+
+VkShaderDescriptorSetAndBindingMappingInfoEXT constantBufferMapping()
+{
+    VkShaderDescriptorSetAndBindingMappingInfoEXT info = {
+        VK_STRUCTURE_TYPE_SHADER_DESCRIPTOR_SET_AND_BINDING_MAPPING_INFO_EXT};
+    info.mappingCount = 1;
+    info.pMappings = &constantBufferBinding;
+    return info;
+}
+
+namespace {
+
 // SPIR-V must be 4-byte aligned; copies into `storage` if the caller's data isn't.
 const uint32_t* alignedCode(const ShaderBinary& binary, Vector<uint32_t>& storage, Status& status)
 {
@@ -161,6 +185,8 @@ Result<PipelineCommon*> createGraphicsPipeline(GraphicsDeviceCommon* common, con
                                            {VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO}};
     VkPipelineShaderStageCreateInfo stages[2] = {{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO},
                                                  {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO}};
+    VkShaderDescriptorSetAndBindingMappingInfoEXT mappings[2] = {constantBufferMapping(), constantBufferMapping()};
+    modules[0].pNext = &mappings[0];
     modules[0].codeSize = vertex->size;
     modules[0].pCode = alignedCode(*vertex, vertexStorage, status);
     stages[0].pNext = &modules[0];
@@ -169,6 +195,7 @@ Result<PipelineCommon*> createGraphicsPipeline(GraphicsDeviceCommon* common, con
     uint32_t stageCount = 1;
     if (pixel && status == Status::Ok)
     {
+        modules[1].pNext = &mappings[1];
         modules[1].codeSize = pixel->size;
         modules[1].pCode = alignedCode(*pixel, pixelStorage, status);
         stages[1].pNext = &modules[1];
@@ -366,7 +393,9 @@ Result<PipelineCommon*> createComputePipeline(GraphicsDeviceCommon* common, cons
     }
 
     // No shader module: the code is passed inline (Vulkan 1.4, ADR 0036).
+    VkShaderDescriptorSetAndBindingMappingInfoEXT mapping = constantBufferMapping();
     VkShaderModuleCreateInfo moduleInfo = {VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
+    moduleInfo.pNext = &mapping;
     moduleInfo.codeSize = binary->size;
     moduleInfo.pCode = code;
     VkPipelineShaderStageCreateInfo stage = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};

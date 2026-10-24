@@ -88,6 +88,7 @@ SLAG_BACKEND_FN(void, cmdDrawIndexed,
                  int32_t vertexOffset, uint32_t firstInstance))
 SLAG_BACKEND_FN(void, cmdPushConstants,
                 (CommandBufferCommon * commandBuffer, const void* data, uint32_t size, uint32_t offset))
+SLAG_BACKEND_FN(void, cmdSetConstantBuffer, (CommandBufferCommon * commandBuffer, uint64_t address, uint32_t size))
 SLAG_BACKEND_FN(void, cmdDispatch, (CommandBufferCommon * commandBuffer, uint32_t x, uint32_t y, uint32_t z))
 SLAG_BACKEND_FN(void, cmdBarrier,
                 (CommandBufferCommon * commandBuffer, std::span<const GlobalBarrier> globalBarriers,

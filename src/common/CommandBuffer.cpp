@@ -139,6 +139,21 @@ void CommandBuffer::pushConstants(const void* data, uint32_t size, uint32_t offs
     SLAG_DISPATCH(self, cmdPushConstants)(self, data, size, offset);
 }
 
+void CommandBuffer::setConstantBuffer(uint64_t address, uint32_t size)
+{
+    CommandBufferCommon* self = common(this);
+    SLAG_VALIDATE_RECORDING(self, "CommandBuffer::setConstantBuffer");
+    SLAG_VALIDATE(self->device->instance, self->queueType != CommandQueueType::Copy, "CommandBuffer::setConstantBuffer",
+                  "copy command buffers have no shader state");
+    SLAG_VALIDATE(self->device->instance, address % alignment::constantBuffer == 0, "CommandBuffer::setConstantBuffer",
+                  "the address is not a multiple of %u", alignment::constantBuffer);
+    SLAG_VALIDATE(self->device->instance,
+                  size > 0 && size % alignment::constantBuffer == 0 && size <= limits::maxConstantBufferSize,
+                  "CommandBuffer::setConstantBuffer", "size %u is not a multiple of %u up to %u", size,
+                  alignment::constantBuffer, limits::maxConstantBufferSize);
+    SLAG_DISPATCH(self, cmdSetConstantBuffer)(self, address, size);
+}
+
 void CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
 {
     CommandBufferCommon* self = common(this);

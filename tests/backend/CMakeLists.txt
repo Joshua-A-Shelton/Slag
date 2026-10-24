@@ -20,6 +20,7 @@ doctest_discover_tests(slag_backend_tests PROPERTIES LABELS gpu)
 # Shaders for the backend tests (SLAG_SHADER_DIR points at them).
 slag_add_shader(slag_backend_tests SOURCE ../shaders/FillBuffer.slang ENTRY main STAGE compute)
 slag_add_shader(slag_backend_tests SOURCE ../shaders/DescriptorKinds.slang ENTRY main STAGE compute)
+slag_add_shader(slag_backend_tests SOURCE ../shaders/RootConstants.slang ENTRY main STAGE compute)
 slag_add_shader(slag_backend_tests SOURCE ../shaders/Triangle.slang ENTRY vertexMain STAGE vertex)
 slag_add_shader(slag_backend_tests SOURCE ../shaders/Triangle.slang ENTRY pixelMain STAGE pixel)
 slag_add_shader(slag_backend_tests SOURCE ../shaders/DrawId.slang ENTRY vertexMain STAGE vertex)

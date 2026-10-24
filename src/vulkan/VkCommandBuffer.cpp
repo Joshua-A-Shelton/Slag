@@ -312,6 +312,18 @@ void cmdPushConstants(CommandBufferCommon* object, const void* data, uint32_t si
     deviceOf(object).fn.vkCmdPushDataEXT(commandBuffer->commandBuffer, &info);
 }
 
+void cmdSetConstantBuffer(CommandBufferCommon* object, uint64_t address, uint32_t)
+{
+    auto* commandBuffer = static_cast<CommandBufferImpl*>(object);
+    // The address goes in push data after the push constants; pipelines map
+    // binding 1 of set 0 to it (ADR 0044).
+    VkPushDataInfoEXT info = {VK_STRUCTURE_TYPE_PUSH_DATA_INFO_EXT};
+    info.offset = constantBufferPushOffset;
+    info.data.address = &address;
+    info.data.size = sizeof(address);
+    deviceOf(object).fn.vkCmdPushDataEXT(commandBuffer->commandBuffer, &info);
+}
+
 void cmdDispatch(CommandBufferCommon* object, uint32_t x, uint32_t y, uint32_t z)
 {
     auto* commandBuffer = static_cast<CommandBufferImpl*>(object);

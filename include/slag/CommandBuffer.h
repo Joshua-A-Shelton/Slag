@@ -181,6 +181,11 @@ public:
                                   uint64_t countOffset, uint32_t maxDrawCount);
     void dispatchIndirect(Buffer* argumentBuffer, uint64_t argumentOffset);
     void pushConstants(const void* data, uint32_t size, uint32_t offset = 0);
+    // The root constant buffer (ADR 0044): shaders declare it as
+    // `ConstantBuffer<T> name : register(b1);`. address and size are
+    // multiples of alignment::constantBuffer; size is at most
+    // limits::maxConstantBufferSize. Not bounds-checked on the GPU.
+    void setConstantBuffer(uint64_t address, uint32_t size);
 
     void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
 

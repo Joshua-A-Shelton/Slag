@@ -50,6 +50,14 @@ struct DescriptorHeap
 
 constexpr uint32_t maxQueueFamilies = 16;
 
+// Push data layout: push constants, then the root constant buffer's address
+// (ADRs 0003, 0044).
+constexpr uint32_t constantBufferPushOffset = 128;
+
+// Maps the root constant buffer (set 0, binding 1) to its push address; chain
+// into every shader stage's create info.
+VkShaderDescriptorSetAndBindingMappingInfoEXT constantBufferMapping();
+
 struct GraphicsDeviceImpl : GraphicsDeviceCommon
 {
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;

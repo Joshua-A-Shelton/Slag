@@ -42,8 +42,9 @@ HRESULT createHeap(GraphicsDeviceImpl& device, D3D12_DESCRIPTOR_HEAP_TYPE type, 
     return S_OK;
 }
 
-// The fixed layout (ADR 0003): heap-indexed descriptors and 128 bytes of root
-// constants at b0, where Slang puts [[vk::push_constant]] blocks for DXIL.
+// The fixed layout (ADRs 0003, 0044): heap-indexed descriptors, 128 bytes of
+// root constants at b0 (where Slang puts [[vk::push_constant]] blocks for
+// DXIL), and a root constant buffer at b1.
 HRESULT createRootSignature(GraphicsDeviceImpl& device)
 {
     D3D12_ROOT_PARAMETER1 pushConstants = {};
@@ -53,10 +54,19 @@ HRESULT createRootSignature(GraphicsDeviceImpl& device)
     pushConstants.Constants.Num32BitValues = limits::maxPushConstantsSize / 4;
     pushConstants.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
+    // The root constant buffer at b1 (ADR 0044).
+    D3D12_ROOT_PARAMETER1 constantBuffer = {};
+    constantBuffer.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    constantBuffer.Descriptor.ShaderRegister = 1;
+    constantBuffer.Descriptor.RegisterSpace = 0;
+    constantBuffer.Descriptor.Flags = D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE;
+    constantBuffer.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    const D3D12_ROOT_PARAMETER1 parameters[] = {pushConstants, constantBuffer};
+
     D3D12_VERSIONED_ROOT_SIGNATURE_DESC desc = {};
     desc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
-    desc.Desc_1_1.NumParameters = 1;
-    desc.Desc_1_1.pParameters = &pushConstants;
+    desc.Desc_1_1.NumParameters = 2;
+    desc.Desc_1_1.pParameters = parameters;
     desc.Desc_1_1.Flags = D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED |
                           D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED |
                           D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;

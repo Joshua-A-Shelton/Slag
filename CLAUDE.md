@@ -210,8 +210,8 @@ Accepted decisions live in `docs/decisions/`.
   (plus future console formats). The supported toolchain is **Slang**,
   compiling one source to DXIL and SPIR-V with output flags that make both
   targets behave the same (ADR 0034). Vulkan SPIR-V requires
-  `-capability spvDescriptorHeapEXT` and
-  `-spirv-unified-descriptor-heap-stride`. The shader compiler is a
+  `-capability spvDescriptorHeapEXT`,
+  `-spirv-unified-descriptor-heap-stride`, and `-fvk-b-shift 0 0`. The shader compiler is a
   separate, optional tool/module.
 - **Queues** (ADRs 0009, 0054): graphics, compute, and copy queues, with a
   count per type chosen at initialization (default one each); they may

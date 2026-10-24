@@ -13,10 +13,12 @@ find_program(SLAG_SPIRV_VAL spirv-val)
 option(SLAG_VALIDATE_SPIRV "Validate generated SPIR-V with spirv-val" ON)
 
 # Required for every Vulkan shader: descriptor heaps with one shared slot index
-# space (ADRs 0029, 0034).
+# space, and D3D register numbers as Vulkan bindings so the root constant
+# buffer (register b1) is binding 1 (ADRs 0029, 0034, 0044).
 set(SLAG_SLANG_SPIRV_FLAGS
     -capability spvDescriptorHeapEXT
     -spirv-unified-descriptor-heap-stride
+    -fvk-b-shift 0 0
     -fvk-use-entrypoint-name)
 
 function(slag_add_shader target)

@@ -27,6 +27,7 @@ flags to be recorded.
 |---|---|---|
 | SPIR-V (Vulkan) | `-capability spvDescriptorHeapEXT` | Heap access through `VK_EXT_descriptor_heap` |
 | SPIR-V (Vulkan) | `-spirv-unified-descriptor-heap-stride` | Index every descriptor kind with the largest descriptor stride, giving one shared slot index space (ADR 0029) |
+| SPIR-V (Vulkan) | `-fvk-b-shift 0 0` | Keep D3D `b` register numbers as Vulkan bindings in set 0, so the root constant buffer at `register(b1)` is binding 1 (ADR 0044); without it Slang warns but assigns the same binding |
 
 Not yet known whether flags are needed for buffer layout, push constants,
 semantic names in SPIR-V, `SV_VertexID`/`SV_InstanceID` base behavior,
@@ -52,3 +53,16 @@ DXIL output needs DXC, so it is only built on Windows.
 
 Accepted binary formats per pipeline (DXIL, SPIR-V, Shader Model 7
 SPIR-V for D3D12): pipeline design.
+
+## Confirmed in M3 (2026-10-24)
+
+- `[[vk::push_constant]] ConstantBuffer<T>` becomes root constants at `b0`
+  on D3D12 and push data on Vulkan.
+- The root constant buffer is `ConstantBuffer<T> name : register(b1);`.
+- Vertex inputs carry `Location` decorations only, no semantic names, so
+  vertex attributes are matched by location (ADR 0038).
+- `SV_VertexID` / `SV_InstanceID` keep D3D12 values (no base vertex or
+  instance) on Vulkan: Slang subtracts `BaseVertex` / `BaseInstance`, which
+  needs `shaderDrawParameters` (ADR 0012). `SV_StartInstanceLocation` reads
+  `BaseInstance`.
+
