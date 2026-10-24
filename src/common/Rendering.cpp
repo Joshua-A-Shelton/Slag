@@ -34,7 +34,7 @@ void CommandBuffer::beginRendering(const RenderingDesc& desc)
 {
     CommandBufferCommon* self = common(this);
     [[maybe_unused]] InstanceCommon* instance = self->device->instance;
-    const char* function = "CommandBuffer::beginRendering";
+    [[maybe_unused]] const char* function = "CommandBuffer::beginRendering";
     SLAG_VALIDATE(instance, self->state == CommandBufferState::Recording && !self->inRenderPass, function,
                   "not recording, or a render pass is already open");
     SLAG_VALIDATE(instance, self->queueType == CommandQueueType::Graphics, function,
@@ -75,7 +75,7 @@ void CommandBuffer::beginRendering(const RenderingDesc& desc)
         SLAG_VALIDATE(instance, (view->texture->usage & TextureUsage::RenderTarget) != TextureUsage::None, function,
                       "color attachment %u is not a render target view", i);
         consider(view);
-        auto* resolve = static_cast<const AttachmentViewCommon*>(attachment.resolveView);
+        [[maybe_unused]] auto* resolve = static_cast<const AttachmentViewCommon*>(attachment.resolveView);
         SLAG_VALIDATE(instance, (attachment.storeOp == StoreOp::Resolve) == (resolve != nullptr), function,
                       "color attachment %u: StoreOp::Resolve and a resolve view go together", i);
         SLAG_VALIDATE(instance,
@@ -83,8 +83,10 @@ void CommandBuffer::beginRendering(const RenderingDesc& desc)
                                    resolve->format == view->format),
                       function,
                       "color attachment %u: resolves go from MSAA into a single-sampled view of the same format", i);
-        SLAG_VALIDATE(instance, !resolve || hasTraits(view->format, FormatTraits::Integer) == false, function,
+        SLAG_VALIDATE(instance, !resolve || !hasTraits(view->format, FormatTraits::Integer), function,
                       "color attachment %u: integer formats can't be resolved", i);
+        SLAG_VALIDATE(instance, !resolve || (view->layerCount == 1 && resolve->layerCount == 1), function,
+                      "color attachment %u: resolves in a render pass cover one layer", i);
     }
     self->passDepthStencilFormat = PixelFormat::Undefined;
     self->passReadOnlyDepth = false;
