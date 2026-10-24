@@ -270,6 +270,21 @@ deliberately crashing sample produces a crash report on both backends.
 - API documentation pass (README and header comments), `CHANGELOG.md`, tag
   `v1.0.0`.
 
+**Status (2026-10-24):** ready to tag.
+
+- Native interop accessors for every object, with mid-stream native
+  recording, tested on both backends (ADR 0071).
+- Open item 16 settled; the hardware-gated items deferred past v1.
+- `README.md` and `CHANGELOG.md` written; header comments reviewed; version
+  1.0.0.
+- Final runs:
+  - Linux (RADV): debug and release suites; every sample on Wayland, X11,
+    and XCB.
+  - Windows (RTX 2070 SUPER): debug and release suites on D3D12 and Vulkan;
+    every sample on both backends.
+  - Hosted CI: green.
+- Still to do: review the names proposed during M8, then tag `v1.0.0`.
+
 ## After v1.0
 
 Mesh shaders and ray tracing (ADR 0005),
