@@ -41,6 +41,8 @@ Result<void> GraphicsDevice::initialize(const GraphicsDeviceInitDesc& desc)
     {
         self->initialized = true;
         self->lost = false;
+        self->resourceHeapSize = desc.resourceHeapSize;
+        self->samplerHeapSize = desc.samplerHeapSize;
     }
     return result;
 }

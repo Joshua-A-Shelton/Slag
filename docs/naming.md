@@ -153,6 +153,11 @@ Names introduced while implementing; treat as placeholders until confirmed.
   already decided; new: `PlacementOptions` (`movable`), `Placement` fields
   (`kind`, `movable`, `block`, `offset`), `Placement::automatic` /
   `Placement::placed`, `BufferDesc::size`.
+- `CommandBufferDesc::queueType`; `StructuredBufferDescriptor` fields
+  (`buffer`, `offset`, `count`, `stride`); `ShaderBinary` fields (`format`,
+  `data`, `size`); `ShaderStage` fields (`binaries`, `entryPoint`);
+  `ComputePipelineDesc::compute`; `SubresourceRange` fields (`baseMip`,
+  `mipCount`, `baseLayer`, `layerCount`, `plane`).
 
 ## Nested structs
 

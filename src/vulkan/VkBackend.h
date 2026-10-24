@@ -66,6 +66,9 @@ struct GraphicsDeviceImpl : GraphicsDeviceCommon
     DescriptorHeap resourceHeap;
     DescriptorHeap samplerHeap;
     Vector<std::mutex*> queueLocks; // one per VkQueue shared by several Slag queues (ADR 0009)
+    // Distinct queue families in use; resources are CONCURRENT across them (ADR 0009).
+    uint32_t sharingFamilies[3] = {};
+    uint32_t sharingFamilyCount = 0;
 };
 
 struct CommandQueueImpl : CommandQueueCommon
@@ -73,6 +76,26 @@ struct CommandQueueImpl : CommandQueueCommon
     VkQueue queue = VK_NULL_HANDLE;
     uint32_t family = 0;
     std::mutex* sharedLock = nullptr; // set when the VkQueue is shared
+    // Reused by submit, so submitting doesn't allocate after warm-up.
+    Vector<VkSemaphoreSubmitInfo> waitInfos;
+    Vector<VkSemaphoreSubmitInfo> signalInfos;
+    Vector<VkCommandBufferSubmitInfo> commandBufferInfos;
+};
+
+struct PipelineImpl : PipelineCommon
+{
+    VkPipeline pipeline = VK_NULL_HANDLE;
+    VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+};
+
+struct CommandBufferImpl : CommandBufferCommon
+{
+    VkCommandPool pool = VK_NULL_HANDLE;
+    VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
+    bool bindsHeaps = false; // graphics/compute families only
+    // Reused by barrier.
+    Vector<VkBufferMemoryBarrier2> bufferBarriers;
+    Vector<VkMemoryBarrier2> memoryBarriers;
 };
 
 struct BufferImpl : BufferCommon

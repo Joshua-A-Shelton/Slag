@@ -5,8 +5,11 @@
 // pipeline cache (ADRs 0008, 0015, 0019, 0023, 0029, 0031, 0043, 0053, 0054).
 
 #include <slag/Buffer.h>
+#include <slag/CommandBuffer.h>
 #include <slag/CommandQueue.h>
+#include <slag/Descriptors.h>
 #include <slag/Limits.h>
+#include <slag/Pipeline.h>
 #include <slag/Result.h>
 #include <slag/Semaphore.h>
 
@@ -65,6 +68,16 @@ public:
 
     Result<Buffer*> createBuffer(const BufferDesc& desc);
     void destroy(Buffer* buffer);
+
+    Result<Pipeline*> createComputePipeline(const ComputePipelineDesc& desc);
+    void destroy(Pipeline* pipeline);
+
+    Result<CommandBuffer*> createCommandBuffer(const CommandBufferDesc& desc);
+    void destroy(CommandBuffer* commandBuffer);
+
+    // Writes take effect immediately; a slot the GPU may be reading must not be
+    // rewritten (ADR 0031). Different slots may be written concurrently.
+    void writeRWStructuredBuffer(uint32_t index, const StructuredBufferDescriptor& descriptor);
 
     Result<Semaphore*> createSemaphore(const SemaphoreDesc& desc);
     void destroy(Semaphore* semaphore);

@@ -31,7 +31,17 @@ Status createDedicatedBuffer(GraphicsDeviceImpl& device, VkDeviceSize size, VkBu
     VkBufferCreateInfo bufferInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     bufferInfo.size = size;
     bufferInfo.usage = usage | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    // CONCURRENT across every queue family in use: no ownership transfers (ADR 0009).
+    if (device.sharingFamilyCount > 1)
+    {
+        bufferInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+        bufferInfo.queueFamilyIndexCount = device.sharingFamilyCount;
+        bufferInfo.pQueueFamilyIndices = device.sharingFamilies;
+    }
+    else
+    {
+        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    }
     VkResult result = device.fn.vkCreateBuffer(device.device, &bufferInfo, nullptr, &out.buffer);
     if (result != VK_SUCCESS)
     {

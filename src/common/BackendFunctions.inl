@@ -22,3 +22,29 @@ SLAG_BACKEND_FN(Result<void>, waitSemaphores,
 
 SLAG_BACKEND_FN(Result<BufferCommon*>, createBuffer, (GraphicsDeviceCommon * device, const BufferDesc& desc))
 SLAG_BACKEND_FN(void, destroyBuffer, (GraphicsDeviceCommon * device, BufferCommon* buffer))
+
+SLAG_BACKEND_FN(Result<PipelineCommon*>, createComputePipeline,
+                (GraphicsDeviceCommon * device, const ComputePipelineDesc& desc))
+SLAG_BACKEND_FN(void, destroyPipeline, (GraphicsDeviceCommon * device, PipelineCommon* pipeline))
+
+SLAG_BACKEND_FN(void, writeRWStructuredBuffer,
+                (GraphicsDeviceCommon * device, uint32_t index, const StructuredBufferDescriptor& descriptor))
+
+SLAG_BACKEND_FN(Result<CommandBufferCommon*>, createCommandBuffer,
+                (GraphicsDeviceCommon * device, const CommandBufferDesc& desc))
+SLAG_BACKEND_FN(void, destroyCommandBuffer, (GraphicsDeviceCommon * device, CommandBufferCommon* commandBuffer))
+SLAG_BACKEND_FN(Result<void>, beginCommandBuffer, (CommandBufferCommon * commandBuffer))
+SLAG_BACKEND_FN(Result<void>, endCommandBuffer, (CommandBufferCommon * commandBuffer))
+SLAG_BACKEND_FN(Result<void>, resetCommandBuffer, (CommandBufferCommon * commandBuffer))
+SLAG_BACKEND_FN(void, cmdBindPipeline, (CommandBufferCommon * commandBuffer, PipelineCommon* pipeline))
+SLAG_BACKEND_FN(void, cmdPushConstants,
+                (CommandBufferCommon * commandBuffer, const void* data, uint32_t size, uint32_t offset))
+SLAG_BACKEND_FN(void, cmdDispatch, (CommandBufferCommon * commandBuffer, uint32_t x, uint32_t y, uint32_t z))
+SLAG_BACKEND_FN(void, cmdBarrier,
+                (CommandBufferCommon * commandBuffer, std::span<const GlobalBarrier> globalBarriers,
+                 std::span<const BufferBarrier> bufferBarriers, std::span<const TextureBarrier> textureBarriers))
+SLAG_BACKEND_FN(void, cmdCopyBuffer,
+                (CommandBufferCommon * commandBuffer, BufferCommon* destination, uint64_t destinationOffset,
+                 BufferCommon* source, uint64_t sourceOffset, uint64_t size))
+
+SLAG_BACKEND_FN(Result<void>, submit, (CommandQueueCommon * queue, const SubmitDesc& desc))

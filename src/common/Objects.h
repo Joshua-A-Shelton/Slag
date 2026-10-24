@@ -8,9 +8,11 @@
 #include "common/Vector.h"
 
 #include <slag/Buffer.h>
+#include <slag/CommandBuffer.h>
 #include <slag/CommandQueue.h>
 #include <slag/GraphicsDevice.h>
 #include <slag/Instance.h>
+#include <slag/Pipeline.h>
 #include <slag/Semaphore.h>
 
 #include <atomic>
@@ -39,6 +41,8 @@ struct GraphicsDeviceCommon : GraphicsDevice
     uint64_t userData = 0;
     bool initialized = false;
     std::atomic<bool> lost = false;
+    uint32_t resourceHeapSize = 0; // user-visible slots, while initialized
+    uint32_t samplerHeapSize = 0;
     // Indexed by CommandQueueType; filled by the backend in initialize.
     Vector<CommandQueue*> queues[3];
 };
@@ -59,6 +63,39 @@ struct BufferCommon : Buffer
     MemoryKind kind = MemoryKind::GpuOnly;
     void* mapped = nullptr;
     uint64_t gpuAddress = 0;
+};
+
+enum class PipelineKind : uint8_t
+{
+    Graphics,
+    Compute,
+};
+
+struct PipelineCommon : Pipeline
+{
+    GraphicsDeviceCommon* device = nullptr;
+    const BackendFunctions* functions = nullptr;
+    uint64_t userData = 0;
+    PipelineKind kind = PipelineKind::Compute;
+};
+
+enum class CommandBufferState : uint8_t
+{
+    Initial,    // created or reset
+    Recording,  // between begin and end
+    Executable, // ended, ready to submit
+};
+
+struct CommandBufferCommon : CommandBuffer
+{
+    GraphicsDeviceCommon* device = nullptr;
+    // A copy of the table pointer, so recording dispatches in one load (ADR 0065).
+    const BackendFunctions* functions = nullptr;
+    uint64_t userData = 0;
+    CommandQueueType queueType = CommandQueueType::Graphics;
+    // Validation state.
+    CommandBufferState state = CommandBufferState::Initial;
+    const PipelineCommon* boundPipeline = nullptr;
 };
 
 struct SemaphoreCommon : Semaphore

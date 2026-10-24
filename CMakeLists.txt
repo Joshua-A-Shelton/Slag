@@ -58,6 +58,7 @@ target_include_directories(slag PRIVATE src)
 
 target_sources(slag PRIVATE
     src/common/Buffer.cpp
+    src/common/CommandBuffer.cpp
     src/common/GraphicsDevice.cpp
     src/common/HostAllocator.cpp
     src/common/Instance.cpp
@@ -100,10 +101,12 @@ if(SLAG_BACKEND_VULKAN)
     target_sources(slag PRIVATE
         src/vulkan/VkBackend.cpp
         src/vulkan/VkBuffer.cpp
+        src/vulkan/VkCommandBuffer.cpp
         src/vulkan/VkDevice.cpp
         src/vulkan/VkInstance.cpp
         src/vulkan/VkLoader.cpp
         src/vulkan/VkMemory.cpp
+        src/vulkan/VkPipeline.cpp
         src/vulkan/VkSemaphore.cpp)
     # Slag loads every Vulkan function itself (ADR 0061).
     target_compile_definitions(slag PRIVATE VK_NO_PROTOTYPES)

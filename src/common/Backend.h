@@ -4,8 +4,12 @@
 
 #include "common/HostAllocator.h"
 
+#include <slag/Barriers.h>
+#include <slag/CommandBuffer.h>
+#include <slag/Descriptors.h>
 #include <slag/GraphicsDevice.h>
 #include <slag/Instance.h>
+#include <slag/Pipeline.h>
 #include <slag/Result.h>
 #include <slag/Semaphore.h>
 
@@ -18,6 +22,8 @@ struct GraphicsDeviceCommon;
 struct CommandQueueCommon;
 struct SemaphoreCommon;
 struct BufferCommon;
+struct PipelineCommon;
+struct CommandBufferCommon;
 
 struct BackendFunctions
 {

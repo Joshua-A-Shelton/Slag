@@ -316,7 +316,19 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
             queue->functions = device.functions;
             queue->type = static_cast<CommandQueueType>(type);
             queue->family = assignment.family;
+            queue->waitInfos = Vector<VkSemaphoreSubmitInfo>(&instance.allocator);
+            queue->signalInfos = Vector<VkSemaphoreSubmitInfo>(&instance.allocator);
+            queue->commandBufferInfos = Vector<VkCommandBufferSubmitInfo>(&instance.allocator);
             device.fn.vkGetDeviceQueue(device.device, assignment.family, assignment.index, &queue->queue);
+            bool known = false;
+            for (uint32_t i = 0; i < device.sharingFamilyCount; ++i)
+            {
+                known = known || device.sharingFamilies[i] == assignment.family;
+            }
+            if (!known)
+            {
+                device.sharingFamilies[device.sharingFamilyCount++] = assignment.family;
+            }
         }
     }
     for (size_t type = 0; type < 3; ++type)
@@ -392,6 +404,7 @@ void shutdownDevice(GraphicsDeviceCommon* common)
     device.fn.vkDestroyDevice(device.device, nullptr);
     device.device = VK_NULL_HANDLE;
     device.fn = {};
+    device.sharingFamilyCount = 0;
     device.initialized = false;
 }
 
