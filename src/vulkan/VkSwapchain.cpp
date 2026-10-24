@@ -416,7 +416,7 @@ Result<SwapchainCommon*> createSwapchain(GraphicsDeviceCommon* common, const Swa
         destroyImpl(device, swapchain);
         return Status::Unsupported;
     }
-    Status status = buildSwapchain(device, *swapchain, desc.width, desc.height, desc.imageCount, desc.format,
+    Status status = buildSwapchain(device, *swapchain, desc.width, desc.height, desc.minImageCount, desc.format,
                                    desc.colorSpace, desc.presentMode, desc.debugName);
     if (status != Status::Ok)
     {
@@ -443,7 +443,7 @@ Result<void> reconfigureSwapchain(SwapchainCommon* object, const SwapchainReconf
             semaphore = VK_NULL_HANDLE;
         }
     }
-    return buildSwapchain(device, *swapchain, desc.width, desc.height, desc.imageCount, desc.format, desc.colorSpace,
+    return buildSwapchain(device, *swapchain, desc.width, desc.height, desc.minImageCount, desc.format, desc.colorSpace,
                           desc.presentMode, nullptr);
 }
 

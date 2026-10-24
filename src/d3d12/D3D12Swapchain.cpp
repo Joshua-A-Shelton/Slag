@@ -140,7 +140,7 @@ Result<SwapchainCommon*> createSwapchain(GraphicsDeviceCommon* common, const Swa
     swapchainDesc.Format = toDxgiFormat(desc.format);
     swapchainDesc.SampleDesc.Count = 1;
     swapchainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapchainDesc.BufferCount = desc.imageCount;
+    swapchainDesc.BufferCount = desc.minImageCount;
     swapchainDesc.Scaling = DXGI_SCALING_NONE; // the size must match the window (ADR 0056)
     swapchainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     swapchainDesc.AlphaMode = DXGI_ALPHA_MODE_IGNORE; // opaque only in v1
@@ -199,7 +199,7 @@ Result<void> reconfigureSwapchain(SwapchainCommon* object, const SwapchainReconf
     GraphicsDeviceImpl& device = deviceOf(object);
     // Buffer references go before ResizeBuffers (ADR 0058).
     releaseImages(device, *swapchain);
-    HRESULT result = swapchain->swapchain->ResizeBuffers(desc.imageCount, desc.width, desc.height,
+    HRESULT result = swapchain->swapchain->ResizeBuffers(desc.minImageCount, desc.width, desc.height,
                                                          toDxgiFormat(desc.format), swapchain->flags);
     Status status = toStatus(device, result);
     if (status == Status::Ok)

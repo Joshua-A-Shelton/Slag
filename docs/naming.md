@@ -127,7 +127,7 @@ object has `userData()` / `setUserData()` (ADR 0063).
 
 | Object | Methods |
 |---|---|
-| `Swapchain` | `acquire()` → `Result<uint32_t>` (ADR 0060), `texture(index)`, `attachmentView(index)`, `imageCount()`, `switchablePresentModes()`, `reconfigure(desc)`, `setHdrMetadata(HdrMetadata)`, `setMaxFrameLatency(n)`, `waitForNextFrame(timeoutNs)` |
+| `Swapchain` | `acquire()` → `Result<uint32_t>` (ADR 0060), `texture(index)`, `attachmentView(index)`, `srgbAttachmentView(index)`, `imageCount()`, `switchablePresentModes()`, `reconfigure(desc)`, `setHdrMetadata(HdrMetadata)`, `setMaxFrameLatency(n)`, `waitForNextFrame(timeoutNs)` |
 | `Semaphore` | `value()`, `signal(value)` |
 | `Buffer` | `mappedData()`, `gpuAddress()` |
 | `SemaphoreValue` | `{ Semaphore* semaphore; uint64_t value; }` |
@@ -186,17 +186,17 @@ New names added while implementing go here once confirmed.
 | Command parameters | `drawIndirect(argumentBuffer, argumentOffset, drawCount)`, `drawIndirectCount(argumentBuffer, argumentOffset, countBuffer, countOffset, maxDrawCount)` (and the indexed pair), `dispatchIndirect(argumentBuffer, argumentOffset)`, `resolveTexture(destination, destinationMip, destinationLayer, source, sourceLayer)` |
 | Behavior | `beginRendering` starts with a full-area viewport and scissor; `StoreOp::Resolve` discards the MSAA samples |
 
-## Proposed during M4 (placeholders, to review)
+## Fields and small names (settled after M4)
 
 | Where | Names |
 |---|---|
 | `NativeWindow` | `kind`, `display`, `window` (shape from ADR 0055) |
-| `SwapchainDesc` | `window`, `queue`, `width`, `height`, `imageCount`, `format`, `colorSpace`, `presentMode`, `debugName`, `userData` |
-| `SwapchainReconfigureDesc` | `width`, `height`, `imageCount`, `format`, `colorSpace`, `presentMode` |
+| `SwapchainDesc` | `window`, `queue`, `width`, `height`, `minImageCount`, `format`, `colorSpace`, `presentMode`, `debugName`, `userData` |
+| `SwapchainReconfigureDesc` | `width`, `height`, `minImageCount`, `format`, `colorSpace`, `presentMode` |
 | `SwapchainFormat` | `format`, `colorSpace` |
 | `HdrMetadata` | `redPrimary[2]`, `greenPrimary[2]`, `bluePrimary[2]`, `whitePoint[2]`, `maxMasteringLuminance`, `minMasteringLuminance`, `maxContentLightLevel`, `maxFrameAverageLightLevel` |
 | Device queries | `supportedSwapchainFormats(window, span<SwapchainFormat>)` → count, and new `supportedPresentModes(window, span<PresentMode>)` → count (fill the span, return how many exist) |
-| `Swapchain` | `attachmentView(index, srgb = false)`: the second parameter picks the sRGB view |
+| `Swapchain` | `attachmentView(index)` and `srgbAttachmentView(index)` (8-bit formats) |
 | Capabilities | `frameLatency` |
 
 ## Nested structs

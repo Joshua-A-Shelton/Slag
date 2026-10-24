@@ -172,7 +172,7 @@ SampleApp::SampleApp(const char* title, const SampleOptions& options)
                                                                                .queue = queue,
                                                                                .width = width,
                                                                                .height = height,
-                                                                               .imageCount = 3,
+                                                                               .minImageCount = 3,
                                                                                .debugName = "sample swapchain"});
     if (createdSwapchain)
     {
@@ -226,7 +226,7 @@ bool SampleApp::reconfigure()
     queue->waitIdle();
     width = static_cast<uint32_t>(pixelWidth);
     height = static_cast<uint32_t>(pixelHeight);
-    bool ok = static_cast<bool>(swapchain->reconfigure({.width = width, .height = height, .imageCount = 3}));
+    bool ok = static_cast<bool>(swapchain->reconfigure({.width = width, .height = height, .minImageCount = 3}));
     std::printf("reconfigured: %ux%u (%s)\n", width, height, ok ? "ok" : "failed");
     return ok;
 }
@@ -316,7 +316,7 @@ int SampleApp::run(const RecordFn& record)
                                          .layoutAfter = slag::TextureLayout::RenderTarget,
                                          .texture = swapchain->texture(image)};
         commandBuffer->barrier({}, {}, {&toTarget, 1});
-        record(commandBuffer, swapchain->attachmentView(image, true), width, height);
+        record(commandBuffer, swapchain->srgbAttachmentView(image), width, height);
         slag::TextureBarrier toPresent = {.syncBefore = slag::BarrierSync::RenderTarget,
                                           .syncAfter = slag::BarrierSync::None,
                                           .accessBefore = slag::BarrierAccess::RenderTarget,

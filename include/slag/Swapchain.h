@@ -64,7 +64,7 @@ struct SwapchainDesc
     CommandQueue* queue = nullptr; // a graphics queue; the only one it presents on
     uint32_t width = 0;            // always explicit; must match the window
     uint32_t height = 0;
-    uint32_t imageCount = 3; // a minimum (2 or 3); imageCount() gives the actual count
+    uint32_t minImageCount = 3; // 2 or 3; imageCount() gives the actual count
     PixelFormat format = PixelFormat::B8G8R8A8Unorm;
     ColorSpace colorSpace = ColorSpace::SrgbNonlinear;
     PresentMode presentMode = PresentMode::Fifo; // also decides which modes present() can switch to
@@ -77,7 +77,7 @@ struct SwapchainReconfigureDesc
 {
     uint32_t width = 0;
     uint32_t height = 0;
-    uint32_t imageCount = 3;
+    uint32_t minImageCount = 3;
     PixelFormat format = PixelFormat::B8G8R8A8Unorm;
     ColorSpace colorSpace = ColorSpace::SrgbNonlinear;
     PresentMode presentMode = PresentMode::Fifo;
@@ -107,8 +107,9 @@ public:
     uint32_t imageCount() const;
     // Valid until the next reconfigure or destroy.
     Texture* texture(uint32_t index) const;
-    // `srgb` picks the sRGB view of an 8-bit format.
-    AttachmentView* attachmentView(uint32_t index, bool srgb = false) const;
+    AttachmentView* attachmentView(uint32_t index) const;
+    // The sRGB view of an 8-bit format's image.
+    AttachmentView* srgbAttachmentView(uint32_t index) const;
 
     // Modes present() can use without reconfiguring (ADR 0056).
     std::span<const PresentMode> switchablePresentModes() const;

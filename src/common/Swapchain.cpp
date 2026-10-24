@@ -50,7 +50,7 @@ void validateSize(InstanceCommon* instance, uint32_t width, uint32_t height, uin
 {
     // Minimized windows have no size: skip rendering instead (ADR 0058).
     SLAG_VALIDATE(instance, width > 0 && height > 0, function, "the size is 0 (a minimized window?)");
-    SLAG_VALIDATE(instance, imageCount == 2 || imageCount == 3, function, "imageCount %u is not 2 or 3", imageCount);
+    SLAG_VALIDATE(instance, imageCount == 2 || imageCount == 3, function, "minImageCount %u is not 2 or 3", imageCount);
 }
 #endif
 
@@ -106,7 +106,7 @@ Result<Swapchain*> GraphicsDevice::createSwapchain(const SwapchainDesc& desc)
     auto* queue = static_cast<const CommandQueueCommon*>(desc.queue);
     SLAG_VALIDATE(instance, queue && queue->device == self && queue->type == CommandQueueType::Graphics, function,
                   "swapchains present on a graphics queue of this device (ADR 0013)");
-    validateSize(instance, desc.width, desc.height, desc.imageCount, function);
+    validateSize(instance, desc.width, desc.height, desc.minImageCount, function);
     validateFormat(instance, desc.format, desc.colorSpace, function);
 #endif
     if (self->lost)
@@ -195,18 +195,22 @@ Texture* Swapchain::texture(uint32_t index) const
     return index < self->textures.size() ? self->textures[index] : nullptr;
 }
 
-AttachmentView* Swapchain::attachmentView(uint32_t index, bool srgb) const
+AttachmentView* Swapchain::attachmentView(uint32_t index) const
 {
     const SwapchainCommon* self = common(this);
     SLAG_VALIDATE(self->device->instance, index < self->views.size(), "Swapchain::attachmentView",
                   "image %u is out of range (%zu images)", index, self->views.size());
-    SLAG_VALIDATE(self->device->instance, !srgb || srgbVariant(self->format) != PixelFormat::Undefined,
-                  "Swapchain::attachmentView", "%s has no sRGB variant", formatInfo(self->format).name);
-    if (index >= self->views.size())
-    {
-        return nullptr;
-    }
-    return srgb ? self->srgbViews[index] : self->views[index];
+    return index < self->views.size() ? self->views[index] : nullptr;
+}
+
+AttachmentView* Swapchain::srgbAttachmentView(uint32_t index) const
+{
+    const SwapchainCommon* self = common(this);
+    SLAG_VALIDATE(self->device->instance, index < self->srgbViews.size(), "Swapchain::srgbAttachmentView",
+                  "image %u is out of range (%zu images)", index, self->srgbViews.size());
+    SLAG_VALIDATE(self->device->instance, srgbVariant(self->format) != PixelFormat::Undefined,
+                  "Swapchain::srgbAttachmentView", "%s has no sRGB variant", formatInfo(self->format).name);
+    return index < self->srgbViews.size() ? self->srgbViews[index] : nullptr;
 }
 
 std::span<const PresentMode> Swapchain::switchablePresentModes() const
@@ -223,7 +227,7 @@ Result<void> Swapchain::reconfigure(const SwapchainReconfigureDesc& desc)
     InstanceCommon* instance = self->device->instance;
     SLAG_VALIDATE(instance, self->acquiredImage == SwapchainCommon::noImage, function,
                   "image %u is acquired but not presented", self->acquiredImage);
-    validateSize(instance, desc.width, desc.height, desc.imageCount, function);
+    validateSize(instance, desc.width, desc.height, desc.minImageCount, function);
     validateFormat(instance, desc.format, desc.colorSpace, function);
 #endif
     if (self->device->lost)

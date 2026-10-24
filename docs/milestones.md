@@ -140,7 +140,7 @@ a resize) on RADV under Wayland, Xlib, and XCB, and `--frames 300` on an
 NVIDIA RTX 2070 SUPER under Windows 11 with D3D12 and Vulkan, with no
 validation messages. The whole backend suite (59 tests, including the
 direct D3D12-vs-Vulkan scene comparison) passes there too. Still to check:
-minimize by hand. Names proposed during M4 await review (`docs/naming.md`).
+minimize by hand. Names proposed during M4 were reviewed and settled (`docs/naming.md`).
 
 ## M5 — Queues, synchronization, utilities
 
