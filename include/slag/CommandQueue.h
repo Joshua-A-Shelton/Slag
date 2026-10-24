@@ -4,6 +4,7 @@
 
 #include <slag/Result.h>
 #include <slag/Semaphore.h>
+#include <slag/Swapchain.h>
 
 #include <cstdint>
 #include <span>
@@ -35,6 +36,12 @@ public:
 
     // One thread at a time per queue (ADR 0068).
     Result<void> submit(const SubmitDesc& desc);
+
+    // Shows the acquired image, which is in the Present layout. The mode is
+    // one of the swapchain's switchablePresentModes (ADR 0056). Returns Ok,
+    // Suboptimal or OutOfDate (reconfigure), Occluded (the window isn't
+    // visible: skip rendering), or DeviceLost (ADRs 0057, 0058).
+    Result<void> present(Swapchain* swapchain, PresentMode mode);
 
     // Waits until all work submitted to this queue has finished. One thread at
     // a time per queue (ADR 0068).

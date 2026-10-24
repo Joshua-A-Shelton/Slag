@@ -128,6 +128,17 @@ struct DeviceQuery
     bool untypedPointersExtension = false;
     bool memoryBudgetExtension = false;
     bool conservativeRasterizationExtension = false;
+    // Presentation (ADRs 0013, 0056, 0057, 0059).
+    bool swapchainExtension = false;
+    bool swapchainMaintenanceExtension = false; // the one matching the instance's surface_maintenance1
+    bool mutableFormatExtension = false;
+    bool presentIdExtension = false;
+    bool presentWaitExtension = false;
+    bool hdrMetadataExtension = false;
+    VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR swapchainMaintenance = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_KHR};
+    VkPhysicalDevicePresentIdFeaturesKHR presentId = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR};
+    VkPhysicalDevicePresentWaitFeaturesKHR presentWait = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_FEATURES_KHR};
     bool graphicsQueue = false;
     uint32_t queueFamilyCount = 0;
     VkQueueFlags queueFamilyFlags[maxQueueFamilies] = {};
@@ -153,6 +164,14 @@ bool queryDevice(const InstanceImpl& instance, VkPhysicalDevice device, DeviceQu
     query.memoryBudgetExtension = hasExtension(extensions, VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
     query.conservativeRasterizationExtension =
         hasExtension(extensions, VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME);
+    query.swapchainExtension = hasExtension(extensions, VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    query.swapchainMaintenanceExtension =
+        (instance.surfaceMaintenanceKHR && hasExtension(extensions, VK_KHR_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME)) ||
+        (instance.surfaceMaintenanceEXT && hasExtension(extensions, VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME));
+    query.mutableFormatExtension = hasExtension(extensions, VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME);
+    query.presentIdExtension = hasExtension(extensions, VK_KHR_PRESENT_ID_EXTENSION_NAME);
+    query.presentWaitExtension = hasExtension(extensions, VK_KHR_PRESENT_WAIT_EXTENSION_NAME);
+    query.hdrMetadataExtension = hasExtension(extensions, VK_EXT_HDR_METADATA_EXTENSION_NAME);
 
     // Extension structs may only be chained when the extension exists.
     query.properties.pNext = &query.properties11;
@@ -174,6 +193,21 @@ bool queryDevice(const InstanceImpl& instance, VkPhysicalDevice device, DeviceQu
     {
         *featuresTail = &query.untypedPointers;
         featuresTail = &query.untypedPointers.pNext;
+    }
+    if (query.swapchainMaintenanceExtension)
+    {
+        *featuresTail = &query.swapchainMaintenance;
+        featuresTail = &query.swapchainMaintenance.pNext;
+    }
+    if (query.presentIdExtension)
+    {
+        *featuresTail = &query.presentId;
+        featuresTail = &query.presentId.pNext;
+    }
+    if (query.presentWaitExtension)
+    {
+        *featuresTail = &query.presentWait;
+        featuresTail = &query.presentWait.pNext;
     }
     instance.fn.vkGetPhysicalDeviceProperties2(device, &query.properties);
     instance.fn.vkGetPhysicalDeviceFeatures2(device, &query.features);
@@ -378,6 +412,8 @@ void fillCapabilities(const DeviceQuery& query, const GraphicsDeviceInfo& info,
     capabilities.samplerReduction = query.features12.samplerFilterMinmax == VK_TRUE;
     capabilities.conservativeRasterization = query.conservativeRasterizationExtension; // overestimate is the base mode
     capabilities.depthBounds = query.features.features.depthBounds == VK_TRUE;
+    capabilities.frameLatency = query.presentIdExtension && query.presentWaitExtension && query.presentId.presentId &&
+                                query.presentWait.presentWait;
 }
 
 // Lower sorts first (ADR 0008).
@@ -471,6 +507,11 @@ Status listDevices(InstanceImpl& instance, const InstanceDesc& desc)
         fillInfo(query, device->info);
         fillCapabilities(query, device->info, device->capabilities);
         device->memoryBudgetExtension = query.memoryBudgetExtension;
+        // Swapchains need swapchain_maintenance1 and mutable formats (ADR 0056).
+        device->presentation = query.swapchainExtension && query.swapchainMaintenanceExtension &&
+                               query.swapchainMaintenance.swapchainMaintenance1 && query.mutableFormatExtension;
+        device->capabilities.frameLatency = device->capabilities.frameLatency && device->presentation;
+        device->hdrMetadata = query.hdrMetadataExtension;
         for (size_t format = 0; format < pixelFormatCount; ++format)
         {
             device->formatSupport[format] = formatSupport[format];

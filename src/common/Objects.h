@@ -18,6 +18,7 @@
 #include <slag/MemoryBlock.h>
 #include <slag/Pipeline.h>
 #include <slag/Semaphore.h>
+#include <slag/Swapchain.h>
 #include <slag/Texture.h>
 
 #include <atomic>
@@ -258,6 +259,28 @@ struct CommandBufferCommon : CommandBuffer
     bool resumesPass = false;
     bool suspendsPass = false;
     bool recordedPass = false;
+};
+
+struct SwapchainCommon : Swapchain
+{
+    GraphicsDeviceCommon* device = nullptr;
+    const BackendFunctions* functions = nullptr;
+    uint64_t userData = 0;
+    CommandQueueCommon* queue = nullptr;
+    NativeWindow window;
+    uint32_t width = 0;
+    uint32_t height = 0;
+    PixelFormat format = PixelFormat::B8G8R8A8Unorm;
+    ColorSpace colorSpace = ColorSpace::SrgbNonlinear;
+    // Filled by the backend at create and reconfigure; common code makes the views.
+    Vector<TextureCommon*> textures;
+    Vector<AttachmentView*> views;     // one per image, in the swapchain format
+    Vector<AttachmentView*> srgbViews; // one per image, the sRGB variant (8-bit formats)
+    PresentMode switchableModes[3] = {};
+    uint32_t switchableCount = 0;
+    // Validation: the acquired, not yet presented image, or none.
+    static constexpr uint32_t noImage = UINT32_MAX;
+    uint32_t acquiredImage = noImage;
 };
 
 struct SemaphoreCommon : Semaphore

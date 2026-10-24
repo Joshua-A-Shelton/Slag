@@ -232,8 +232,16 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
                                                                         : nullptr;
     const char* conservative =
         device.capabilities.conservativeRasterization ? VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME : nullptr;
-    const char* optional[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
-                              swapchainMaintenance, conservative};
+    bool presentation = device.presentation;
+    bool latency = device.capabilities.frameLatency;
+    const char* optional[] = {presentation ? VK_KHR_SWAPCHAIN_EXTENSION_NAME : nullptr,
+                              VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
+                              presentation ? swapchainMaintenance : nullptr,
+                              presentation ? VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME : nullptr,
+                              latency ? VK_KHR_PRESENT_ID_EXTENSION_NAME : nullptr,
+                              latency ? VK_KHR_PRESENT_WAIT_EXTENSION_NAME : nullptr,
+                              presentation && device.hdrMetadata ? VK_EXT_HDR_METADATA_EXTENSION_NAME : nullptr,
+                              conservative};
     for (const char* name : required)
     {
         if (!extensions.pushBack(name))
@@ -249,10 +257,20 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
         }
     }
 
-    // Features: the baseline (ADR 0012).
+    // Features: the baseline (ADR 0012), then presentation.
+    VkPhysicalDevicePresentWaitFeaturesKHR presentWait = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_FEATURES_KHR};
+    presentWait.presentWait = VK_TRUE;
+    VkPhysicalDevicePresentIdFeaturesKHR presentId = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR};
+    presentId.pNext = &presentWait;
+    presentId.presentId = VK_TRUE;
+    VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR swapchainFeatures = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_KHR};
+    swapchainFeatures.pNext = latency ? &presentId : nullptr;
+    swapchainFeatures.swapchainMaintenance1 = VK_TRUE;
     VkPhysicalDeviceShaderUntypedPointersFeaturesKHR untypedPointers = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_UNTYPED_POINTERS_FEATURES_KHR};
     untypedPointers.shaderUntypedPointers = VK_TRUE;
+    untypedPointers.pNext = presentation ? &swapchainFeatures : nullptr;
     VkPhysicalDeviceDescriptorHeapFeaturesEXT heapFeatures = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_HEAP_FEATURES_EXT};
     heapFeatures.pNext = &untypedPointers;

@@ -6,6 +6,54 @@
 
 #include <vulkan/vulkan.h>
 
+// Platform surface creation without X11, Wayland, or Windows headers: these
+// mirror VkWin32/Xlib/Xcb/WaylandSurfaceCreateInfoKHR with plain types
+// (handles are pointers or integers of the same size).
+struct SlagWin32SurfaceCreateInfo
+{
+    VkStructureType sType;
+    const void* pNext;
+    VkFlags flags;
+    void* hinstance;
+    void* hwnd;
+};
+
+struct SlagXlibSurfaceCreateInfo
+{
+    VkStructureType sType;
+    const void* pNext;
+    VkFlags flags;
+    void* dpy;
+    unsigned long window; // XID
+};
+
+struct SlagXcbSurfaceCreateInfo
+{
+    VkStructureType sType;
+    const void* pNext;
+    VkFlags flags;
+    void* connection;
+    uint32_t window; // xcb_window_t
+};
+
+struct SlagWaylandSurfaceCreateInfo
+{
+    VkStructureType sType;
+    const void* pNext;
+    VkFlags flags;
+    void* display;
+    void* surface;
+};
+
+typedef VkResult(VKAPI_PTR* PFN_vkCreateWin32SurfaceKHR)(VkInstance, const SlagWin32SurfaceCreateInfo*,
+                                                         const VkAllocationCallbacks*, VkSurfaceKHR*);
+typedef VkResult(VKAPI_PTR* PFN_vkCreateXlibSurfaceKHR)(VkInstance, const SlagXlibSurfaceCreateInfo*,
+                                                        const VkAllocationCallbacks*, VkSurfaceKHR*);
+typedef VkResult(VKAPI_PTR* PFN_vkCreateXcbSurfaceKHR)(VkInstance, const SlagXcbSurfaceCreateInfo*,
+                                                       const VkAllocationCallbacks*, VkSurfaceKHR*);
+typedef VkResult(VKAPI_PTR* PFN_vkCreateWaylandSurfaceKHR)(VkInstance, const SlagWaylandSurfaceCreateInfo*,
+                                                           const VkAllocationCallbacks*, VkSurfaceKHR*);
+
 namespace slag::vk {
 
 struct GlobalFunctions

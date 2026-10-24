@@ -108,3 +108,19 @@ SLAG_BACKEND_FN(void, cmdCopyBufferTexture,
                  const BufferLocation& buffer, uint32_t width, uint32_t height, uint32_t depth))
 
 SLAG_BACKEND_FN(Result<void>, submit, (CommandQueueCommon * queue, const SubmitDesc& desc))
+
+// Swapchains (ADRs 0055-0059). The backend fills textures; common code makes
+// the attachment views.
+SLAG_BACKEND_FN(Result<SwapchainCommon*>, createSwapchain, (GraphicsDeviceCommon * device, const SwapchainDesc& desc))
+SLAG_BACKEND_FN(void, destroySwapchain, (GraphicsDeviceCommon * device, SwapchainCommon* swapchain))
+SLAG_BACKEND_FN(Result<void>, reconfigureSwapchain,
+                (SwapchainCommon * swapchain, const SwapchainReconfigureDesc& desc))
+SLAG_BACKEND_FN(Result<uint32_t>, acquireImage, (SwapchainCommon * swapchain))
+SLAG_BACKEND_FN(Result<void>, presentImage, (CommandQueueCommon * queue, SwapchainCommon* swapchain, PresentMode mode))
+SLAG_BACKEND_FN(uint32_t, swapchainFormats,
+                (const GraphicsDeviceCommon* device, const NativeWindow& window, std::span<SwapchainFormat> formats))
+SLAG_BACKEND_FN(uint32_t, presentModes,
+                (const GraphicsDeviceCommon* device, const NativeWindow& window, std::span<PresentMode> modes))
+SLAG_BACKEND_FN(void, setHdrMetadata, (SwapchainCommon * swapchain, const HdrMetadata& metadata))
+SLAG_BACKEND_FN(void, setMaxFrameLatency, (SwapchainCommon * swapchain, uint32_t frames))
+SLAG_BACKEND_FN(Result<void>, waitForNextFrame, (SwapchainCommon * swapchain, uint64_t timeoutNs))

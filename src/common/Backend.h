@@ -12,6 +12,7 @@
 #include <slag/Pipeline.h>
 #include <slag/Result.h>
 #include <slag/Semaphore.h>
+#include <slag/Swapchain.h>
 
 #include <span>
 
@@ -30,6 +31,7 @@ struct BufferCommon;
 struct TextureCommon;
 struct TextureCreateInfo;
 struct AttachmentViewCommon;
+struct SwapchainCommon;
 struct BufferDescriptorInfo;
 struct TextureDescriptorInfo;
 struct PipelineCommon;

@@ -87,6 +87,7 @@ void fillCapabilities(ID3D12Device* device, GraphicsDeviceCapabilities& capabili
     capabilities.gpuUploadMemory =
         SUCCEEDED(device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS16, &options16, sizeof(options16))) &&
         options16.GPUUploadHeapSupported;
+    capabilities.frameLatency = true; // frame latency waitable objects (ADR 0057)
     // Min/max filtering comes with tiled resources tier 2 (ADR 0033).
     D3D12_FEATURE_DATA_D3D12_OPTIONS options = {};
     capabilities.samplerReduction =

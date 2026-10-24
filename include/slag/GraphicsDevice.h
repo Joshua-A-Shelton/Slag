@@ -15,6 +15,7 @@
 #include <slag/PixelFormat.h>
 #include <slag/Result.h>
 #include <slag/Semaphore.h>
+#include <slag/Swapchain.h>
 #include <slag/Texture.h>
 
 #include <cstddef>
@@ -52,6 +53,7 @@ struct GraphicsDeviceCapabilities
     bool samplerReduction = false;          // ReductionMode::Minimum / Maximum (ADR 0033)
     bool conservativeRasterization = false; // overestimating (ADR 0039)
     bool depthBounds = false;               // depth bounds test (ADR 0040)
+    bool frameLatency = false;              // Swapchain::setMaxFrameLatency / waitForNextFrame (ADR 0057)
 };
 
 // This process's usage of one kind of memory against the OS budget, in bytes.
@@ -188,6 +190,15 @@ public:
     // validation builds track it (ADR 0031).
     void clearResourceDescriptor(uint32_t index);
     void clearSamplerDescriptor(uint32_t index);
+
+    Result<Swapchain*> createSwapchain(const SwapchainDesc& desc);
+    // The GPU must be done with its images.
+    void destroy(Swapchain* swapchain);
+    // Formats and color spaces the window supports; fills `formats` and
+    // returns how many exist (call with an empty span to count).
+    uint32_t supportedSwapchainFormats(const NativeWindow& window, std::span<SwapchainFormat> formats) const;
+    // Present modes the window supports: Fifo first.
+    uint32_t supportedPresentModes(const NativeWindow& window, std::span<PresentMode> modes) const;
 
     Result<Semaphore*> createSemaphore(const SemaphoreDesc& desc);
     void destroy(Semaphore* semaphore);

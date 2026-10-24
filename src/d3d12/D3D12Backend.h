@@ -128,8 +128,17 @@ struct BufferImpl : BufferCommon
 
 struct TextureImpl : TextureCommon
 {
-    ID3D12Resource* resource = nullptr; // committed, or placed in a memory block
+    ID3D12Resource* resource = nullptr; // committed, placed, or a swapchain buffer
     uint32_t planeCount = 1;            // 2 for depth/stencil formats
+};
+
+struct SwapchainImpl : SwapchainCommon
+{
+    IDXGISwapChain4* swapchain = nullptr;
+    HWND window = nullptr;
+    HANDLE frameLatencyWaitable = nullptr;
+    bool tearing = false; // DXGI_FEATURE_PRESENT_ALLOW_TEARING
+    UINT flags = 0;       // DXGI_SWAP_CHAIN_FLAG_*, kept for ResizeBuffers
 };
 
 // The DSV group holds the variants in this order (ADR 0035).

@@ -537,6 +537,16 @@ Result<void> submit(CommandQueueCommon* object, const SubmitDesc& desc)
             return Status::OutOfHostMemory;
         }
     }
+    for (Swapchain* swapchain : desc.acquiredSwapchains)
+    {
+        VkSemaphoreSubmitInfo info = {VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO};
+        info.semaphore = acquireSemaphore(static_cast<SwapchainCommon*>(swapchain));
+        info.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+        if (info.semaphore != VK_NULL_HANDLE && !queue->waitInfos.pushBack(info))
+        {
+            return Status::OutOfHostMemory;
+        }
+    }
     for (const SemaphoreValue& signal : desc.signals)
     {
         VkSemaphoreSubmitInfo info = {VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO};

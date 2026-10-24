@@ -68,6 +68,8 @@ struct GraphicsDeviceImpl : GraphicsDeviceCommon
     VkQueueFlags queueFamilyFlags[maxQueueFamilies] = {};
     uint32_t queueFamilyQueueCount[maxQueueFamilies] = {};
     bool memoryBudgetExtension = false;
+    bool presentation = false; // swapchain + swapchain_maintenance1 + mutable format
+    bool hdrMetadata = false;
 
     // Valid while initialized.
     VkDevice device = VK_NULL_HANDLE;
@@ -128,6 +130,32 @@ struct TextureImpl : TextureCommon
     VkImage image = VK_NULL_HANDLE;
     VkDeviceMemory memory = VK_NULL_HANDLE; // own memory; null when placed
     VkImageAspectFlags aspects = VK_IMAGE_ASPECT_COLOR_BIT;
+    bool swapchainImage = false; // owned by its swapchain
+};
+
+// A binary semaphore and the fence that says when presentation is done with it
+// (swapchain_maintenance1 present fences, ADR 0057).
+struct PresentSlot
+{
+    VkSemaphore semaphore = VK_NULL_HANDLE;
+    VkFence fence = VK_NULL_HANDLE;
+    bool used = false;
+};
+
+struct SwapchainImpl : SwapchainCommon
+{
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
+    VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+    // Acquire semaphores: a free pool, and the one each image was acquired with.
+    // An image acquired again has been presented, so its previous semaphore's
+    // wait has executed and it can be reused.
+    Vector<VkSemaphore> freeAcquireSemaphores;
+    Vector<VkSemaphore> imageAcquireSemaphores; // per image; may be null
+    Vector<PresentSlot> presentSlots;
+    uint32_t nextPresentSlot = 0;
+    // Frame latency (ADR 0057).
+    uint64_t presentId = 0;
+    uint32_t maxFrameLatency = 2;
 };
 
 struct AttachmentViewImpl : AttachmentViewCommon
@@ -146,6 +174,10 @@ inline InstanceImpl& instanceOf(const GraphicsDeviceImpl& device)
 }
 
 VkCompareOp toCompareOp(CompareOp op);
+
+// The semaphore the swapchain's acquired image was acquired with; submits that
+// list the swapchain wait on it (ADR 0057).
+VkSemaphore acquireSemaphore(SwapchainCommon* swapchain);
 
 // VkResult to Status; marks the device lost on VK_ERROR_DEVICE_LOST.
 Status toStatus(GraphicsDeviceImpl& device, VkResult result);
