@@ -259,16 +259,21 @@ void testDefragmentation(slag::Backend backend)
         }
         commandBuffer->barrier({}, {}, toSource);
         pass->recordCopies(commandBuffer);
-        // Back to Common: the moved textures come out in CopySource.
-        for (slag::TextureBarrier& barrier : toSource)
-        {
-            barrier = {.layoutBefore = slag::TextureLayout::CopySource,
-                       .layoutAfter = slag::TextureLayout::Common,
-                       .texture = barrier.texture};
-        }
-        commandBuffer->barrier({}, {}, toSource);
         slag::SemaphoreValue done = submitter.submit(commandBuffer, queue);
         REQUIRE(static_cast<bool>(device->endDefragmentation(pass, done)));
+        // The textures now hold the new copies, in CopySource: back to Common.
+        if (!toSource.empty())
+        {
+            for (slag::TextureBarrier& barrier : toSource)
+            {
+                barrier = {.layoutBefore = slag::TextureLayout::CopySource,
+                           .layoutAfter = slag::TextureLayout::Common,
+                           .texture = barrier.texture};
+            }
+            slag::CommandBuffer* toCommon = submitter.begin(slag::CommandQueueType::Graphics);
+            toCommon->barrier({}, {}, toSource);
+            submitter.submit(toCommon, slag::CommandQueueType::Graphics);
+        }
     }
     uint64_t after = usage(device);
     MESSAGE(passes << " passes moved " << movedBuffers << " buffers and " << movedTextures << " textures; usage "

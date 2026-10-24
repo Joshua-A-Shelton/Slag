@@ -40,8 +40,11 @@ public:
 
     // Records every move's copy, outside render passes, on any queue type.
     // Before: moved textures are in CopySource (Common on copy queues), and
-    // earlier writes to moved resources are visible to copies. After: the
-    // new textures are in that same layout with no access pending.
+    // earlier writes to moved resources are visible to copies. Until
+    // endDefragmentation, the Buffer and Texture objects still refer to the
+    // old copies, so record nothing else on them in between; after it, they
+    // are the new copies, textures in that same layout with no access
+    // pending (the next barrier starts from syncBefore = None).
     void recordCopies(CommandBuffer* commandBuffer);
 
     DefragmentationPass(const DefragmentationPass&) = delete;

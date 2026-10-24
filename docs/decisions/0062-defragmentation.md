@@ -72,7 +72,10 @@ device->endDefragmentation(pass, /*completed*/ semaphoreValue);   // swaps nativ
   `Common` (copy queue, ADR 0049), and moved buffers' earlier writes are
   visible to copies. Slag initializes each new texture, copies, and leaves it
   in that same layout with no access pending: the user's next barrier on a
-  moved resource starts from `syncBefore = None`. D3D12 creates the new
+  moved resource starts from `syncBefore = None`. Until
+  `endDefragmentation` swaps the native objects, `Buffer*` and `Texture*`
+  still refer to the old copies, so barriers on them belong after the pass
+  (found on WARP, 2026-10-24). D3D12 creates the new
   texture in `COMMON` and moves it to `COPY_DEST` on graphics/compute queues
   (a full-resource copy initializes placed render targets); Vulkan moves it
   from `UNDEFINED` to `TRANSFER_DST_OPTIMAL`, or `GENERAL` on copy queues
