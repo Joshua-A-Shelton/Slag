@@ -36,6 +36,15 @@ The project owner prefers this design, but "no heap objects" is not a fixed
 rule. If another part of the API turns out to be better served by exposing
 heap objects (and binding them), revisit this decision.
 
+**Revisited 2026-10-24, kept.** Three levels were weighed: resizable device
+heaps; heap objects bound once per command buffer; heap objects bound
+anywhere. Costs: descriptor indices become heap-relative, only one pair is
+bound at a time (so separate subsystems still share a heap to mix
+resources), heap switches can be expensive on both APIs, heap-to-heap
+copies would need a CPU shadow on D3D12, and every write function gains a
+heap parameter. No current need justifies that. If the fixed size at
+`initialize` becomes a problem, resizable device heaps are the first step.
+
 ## Mapping
 
 | | D3D12 | Vulkan |
