@@ -89,11 +89,21 @@ proposed during M2 were reviewed and settled (`docs/naming.md`).
   draws with draw IDs.
 - `resolveTexture` (moved from M2), tested on rendered MSAA targets.
 - Samplers and all descriptor kinds.
-- An image comparison harness: render the same scene on both backends and
-  compare.
+- An image comparison harness (decided 2026-10-24). No machine or CI job
+  runs both backends together yet, so each backend is checked on its own:
+  - pixels with a known value (flat colors, depth-tested overlaps,
+    point-sampled texels) are checked exactly against values the test
+    computes;
+  - the whole image is compared with a committed golden image (raw RGBA8,
+    `tests/golden/`) within a tolerance (channel difference ≤ 2, at most
+    0.5% of pixels off), covering triangle edges;
+  - when both backends are available, the harness also compares them
+    directly.
+  On failure the harness writes the actual image next to the golden one;
+  `SLAG_UPDATE_GOLDEN=1` regenerates goldens.
 
 **Done when:** a textured, depth-tested scene renders off-screen and
-matches across backends.
+passes the exact and golden checks on both backends.
 
 **Settles:** render-pass resolve layout (10), mixed depth/stencil layout (11).
 
