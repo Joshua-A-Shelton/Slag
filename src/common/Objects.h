@@ -22,6 +22,9 @@
 
 namespace slag {
 
+struct PoolBlock;
+class SubAllocator;
+
 struct InstanceCommon : Instance
 {
     const BackendInfo* backend = nullptr;
@@ -46,6 +49,7 @@ struct GraphicsDeviceCommon : GraphicsDevice
     std::atomic<bool> lost = false;
     uint32_t resourceHeapSize = 0; // user-visible slots, while initialized
     uint32_t samplerHeapSize = 0;
+    SubAllocator* subAllocator = nullptr; // while initialized
     // Filled by the backend when listing the device (ADR 0022).
     FormatSupport formatSupport[pixelFormatCount] = {};
     // Indexed by CommandQueueType; filled by the backend in initialize.
@@ -57,6 +61,14 @@ struct CommandQueueCommon : CommandQueue
     GraphicsDeviceCommon* device = nullptr;
     const BackendFunctions* functions = nullptr;
     CommandQueueType type = CommandQueueType::Graphics;
+};
+
+// A resource's place in the sub-allocator (SubAllocator.h); empty when it
+// was placed by the user or has dedicated memory.
+struct PoolAllocation
+{
+    PoolBlock* block = nullptr;
+    uint32_t node = 0;
 };
 
 struct MemoryBlockCommon : MemoryBlock
@@ -78,7 +90,8 @@ struct BufferCommon : Buffer
     MemoryKind kind = MemoryKind::GpuOnly;
     void* mapped = nullptr;
     uint64_t gpuAddress = 0;
-    MemoryBlockCommon* memoryBlock = nullptr; // set when placed
+    MemoryBlockCommon* memoryBlock = nullptr; // set when placed by the user
+    PoolAllocation allocation;                // set when sub-allocated
 };
 
 enum class PipelineKind : uint8_t

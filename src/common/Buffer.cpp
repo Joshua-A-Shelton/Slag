@@ -1,5 +1,6 @@
 #include "common/Logging.h"
 #include "common/Objects.h"
+#include "common/SubAllocator.h"
 
 #include <slag/Buffer.h>
 #include <slag/GraphicsDevice.h>
@@ -37,10 +38,43 @@ Result<Buffer*> GraphicsDevice::createBuffer(const BufferDesc& desc)
     {
         return Status::DeviceLost;
     }
-    Result<BufferCommon*> buffer = SLAG_DISPATCH(self, createBuffer)(self, desc);
+    if (desc.placement.kind == MemoryKind::GpuUpload && !desc.placement.memoryBlock &&
+        !self->capabilities.gpuUploadMemory)
+    {
+        logMessage(messageSink(self->instance), MessageSeverity::Error, MessageSource::Slag,
+                   "slag: GraphicsDevice::createBuffer: GpuUpload memory is not supported on \"%s\"", self->info.name);
+        return Status::Unsupported;
+    }
+
+    // Automatic placement: sub-allocated, or dedicated when large (ADR 0061).
+    PoolAllocation allocation;
+    BufferDesc placed = desc;
+    if (!desc.placement.memoryBlock)
+    {
+        PlacementInfo placement = SLAG_DISPATCH(self, bufferPlacementInfo)(self, desc);
+        if (self->subAllocator->fits(desc.placement.kind, placement))
+        {
+            MemoryBlockCommon* block = nullptr;
+            uint64_t offset = 0;
+            Status status = self->subAllocator->allocate(desc.placement.kind, placement, desc.placement.movable,
+                                                         allocation, block, offset);
+            if (status != Status::Ok)
+            {
+                return status;
+            }
+            placed.placement = Placement::placed(block, offset);
+        }
+    }
+    Result<BufferCommon*> buffer = SLAG_DISPATCH(self, createBuffer)(self, placed);
     if (!buffer)
     {
+        self->subAllocator->free(allocation);
         return buffer.status();
+    }
+    if (allocation.block)
+    {
+        buffer.value()->allocation = allocation;
+        self->subAllocator->setOwner(allocation, buffer.value());
     }
     buffer.value()->userData = desc.userData;
     if (desc.placement.memoryBlock)
@@ -62,11 +96,13 @@ void GraphicsDevice::destroy(Buffer* buffer)
     SLAG_VALIDATE(self->instance, object->device == self, "GraphicsDevice::destroy",
                   "the buffer belongs to another device");
     MemoryBlockCommon* block = object->memoryBlock;
+    PoolAllocation allocation = object->allocation;
     SLAG_DISPATCH(self, destroyBuffer)(self, object);
     if (block)
     {
         --block->liveResources;
     }
+    self->subAllocator->free(allocation);
 }
 
 PlacementInfo GraphicsDevice::placementInfo(const BufferDesc& desc) const

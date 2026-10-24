@@ -1,5 +1,6 @@
 #include "common/Logging.h"
 #include "common/Objects.h"
+#include "common/SubAllocator.h"
 
 #include <slag/GraphicsDevice.h>
 
@@ -61,6 +62,12 @@ Result<void> GraphicsDevice::initialize(const GraphicsDeviceInitDesc& desc)
     Result<void> result = SLAG_DISPATCH(self, initializeDevice)(self, desc);
     if (result)
     {
+        self->subAllocator = self->instance->allocator.create<SubAllocator>(self);
+        if (!self->subAllocator)
+        {
+            SLAG_DISPATCH(self, shutdownDevice)(self);
+            return Status::OutOfHostMemory;
+        }
         self->initialized = true;
         self->lost = false;
         self->resourceHeapSize = desc.resourceHeapSize;
@@ -78,6 +85,9 @@ void GraphicsDevice::shutdown()
     {
         return;
     }
+    // Pool blocks go before the device; every resource must already be destroyed.
+    self->instance->allocator.destroy(self->subAllocator);
+    self->subAllocator = nullptr;
     SLAG_DISPATCH(self, shutdownDevice)(self);
     for (Vector<CommandQueue*>& queues : self->queues)
     {

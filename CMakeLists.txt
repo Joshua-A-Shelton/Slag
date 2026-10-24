@@ -65,7 +65,9 @@ target_sources(slag PRIVATE
     src/common/Instance.cpp
     src/common/Logging.cpp
     src/common/MemoryBlock.cpp
-    src/common/Platform.cpp)
+    src/common/Platform.cpp
+    src/common/SubAllocator.cpp
+    src/common/Tlsf.cpp)
 
 target_compile_definitions(slag PUBLIC
     $<$<BOOL:${SLAG_BACKEND_D3D12}>:SLAG_BACKEND_D3D12>

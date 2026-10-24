@@ -31,6 +31,7 @@ add_executable(slag_unit_tests
     FormatTests.cpp
     InstanceTests.cpp
     ResultTests.cpp
+    TlsfTests.cpp
     VectorTests.cpp
     VersionTests.cpp)
 target_link_libraries(slag_unit_tests PRIVATE slag::slag doctest::doctest)
