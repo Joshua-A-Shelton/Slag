@@ -20,6 +20,20 @@ Only two, both unavoidable:
 | SPIR-V reflection libraries | Minimal parser for vertex input semantics (ADR 0038) | `src/vulkan/` |
 | A hashing library | 64-bit hash for D3D12 pipeline cache keys (ADR 0043) | `src/common/` |
 
+## Sub-allocator policy (decided 2026-10-24)
+
+- **Algorithm:** TLSF (two-level segregated fit): constant-time allocate and
+  free, low fragmentation.
+- **Blocks:** one pool per memory kind. Blocks are 256 MB, or heap size / 8
+  on heaps of 1 GB or less. Blocks are memory blocks created internally
+  (ADR 0023).
+- **Dedicated allocations:** resources larger than half a block get their
+  own memory (D3D12 committed resource, Vulkan dedicated allocation).
+- **Freeing:** a block that becomes empty is released, except one empty
+  block kept per memory kind to avoid churn.
+- **Bookkeeping:** every allocation records owner, offset, size, and
+  alignment, as defragmentation needs (ADR 0062).
+
 ## Tests, samples, and tools only (never linked into the library)
 
 Allowed: a unit test framework, a windowing library (e.g. GLFW or SDL), and

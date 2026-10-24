@@ -23,7 +23,6 @@ None right now.
 | 19 | Actual `imageDescriptorSize` / `bufferDescriptorSize` on current NVIDIA and Intel drivers (RADV measured: buffer 16, image 32 on RX 7900 XT / 64 on Raphael iGPU, sampler 16, reserved range 0) | 0029 |
 | 20 | AMD D3D12 driver supports Enhanced Barriers and Shader Model 6.8 on RDNA2 (RX 6000) — the fallback path for older AMD on Windows | CLAUDE.md §3 |
 | 21 | Which GPU generations RADV's `VK_EXT_descriptor_heap` support covers | CLAUDE.md §3 |
-| 22 | WARP (recent Agility SDK) supports Enhanced Barriers and Shader Model 6.8, for hosted D3D12 CI | CLAUDE.md §12 |
 | 16 | Verify the ◐ entries in `docs/format-support.md` against driver reports (plus its two other "to verify" items) | 0022 |
 | 23 | `VK_EXT_descriptor_heap` address-range descriptors use the same range limits (`maxStorageBufferRange`, `maxTexelBufferElements`); Intel values | 0028 |
 | 24 | Whether Windows on ARM (D3D12, Vulkan) or ARM64 Linux drivers meet the baseline | 0070 |
@@ -67,6 +66,13 @@ None right now.
 - Timestamp valid bits: per-device value (36–64) → 0051.
 - `VK_KHR_present_wait`: patchy on Windows (absent on some Intel); frame
   latency stays an optional capability → 0057.
+
+## Resolved on 2026-10-24
+
+- WARP on the `windows-2025` GitHub runner passes the D3D12 baseline
+  (Enhanced Barriers, Shader Model 6.8) and runs the M1 spike → CLAUDE.md §12.
+- Sub-allocator: TLSF, 256 MB blocks (heap / 8 on small heaps), dedicated
+  above half a block → 0061.
 
 ## Deferred past v1 (for reference, not blocking)
 

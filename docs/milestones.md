@@ -62,7 +62,8 @@ plus the driver-reserved heap range in practice.
 - The shared sub-allocator, with the per-block bookkeeping defragmentation
   needs later (ADR 0062).
 - All memory kinds, mapping rules, memory budget.
-- All copies, `copyFootprint`, `placementInfo`.
+- All copies except `resolveTexture` (moved to M3: MSAA content needs
+  rendering), `copyFootprint`, `placementInfo`.
 - `PixelFormat` tables, `formatSupport()`, every baseline check including the
   ◐ format entries; limits constants.
 - Device info and capabilities.
@@ -78,6 +79,7 @@ back on both backends, with tests for each.
   SPIR-V input reflection (ADR 0038), the root constant buffer slot.
 - Render passes (including split passes), draws, indexed and indirect
   draws with draw IDs.
+- `resolveTexture` (moved from M2), tested on rendered MSAA targets.
 - Samplers and all descriptor kinds.
 - An image comparison harness: render the same scene on both backends and
   compare.
