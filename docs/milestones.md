@@ -270,7 +270,7 @@ deliberately crashing sample produces a crash report on both backends.
 - API documentation pass (README and header comments), `CHANGELOG.md`, tag
   `v1.0.0`.
 
-**Status (2026-10-24):** ready to tag.
+**Status (2026-10-24):** done; tagged `v1.0.0`.
 
 - Native interop accessors for every object, with mid-stream native
   recording, tested on both backends (ADR 0071).
@@ -283,7 +283,7 @@ deliberately crashing sample produces a crash report on both backends.
   - Windows (RTX 2070 SUPER): debug and release suites on D3D12 and Vulkan;
     every sample on both backends.
   - Hosted CI: green.
-- Still to do: review the names proposed during M8, then tag `v1.0.0`.
+- Names proposed during M8 were reviewed and settled (`docs/naming.md`).
 
 ## After v1.0
 

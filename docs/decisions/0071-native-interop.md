@@ -1,7 +1,7 @@
 # 0071 — Native interop accessors
 
-**Status:** Accepted (2026-10-24, M8). Names are placeholders until reviewed
-after M8.
+**Status:** Accepted (2026-10-24, M8). Names are final (docs/naming.md;
+settled after M8).
 
 ## Decision
 
