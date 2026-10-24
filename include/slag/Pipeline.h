@@ -172,11 +172,11 @@ SLAG_FLAGS(ColorWriteMask)
 struct ColorTargetBlend
 {
     bool blendEnable = false;
-    BlendFactor srcColor = BlendFactor::One;
-    BlendFactor destColor = BlendFactor::Zero;
+    BlendFactor srcColorFactor = BlendFactor::One;
+    BlendFactor destColorFactor = BlendFactor::Zero;
     BlendOp colorOp = BlendOp::Add;
-    BlendFactor srcAlpha = BlendFactor::One;
-    BlendFactor destAlpha = BlendFactor::Zero;
+    BlendFactor srcAlphaFactor = BlendFactor::One;
+    BlendFactor destAlphaFactor = BlendFactor::Zero;
     BlendOp alphaOp = BlendOp::Add;
     ColorWriteMask writeMask = ColorWriteMask::All;
 };

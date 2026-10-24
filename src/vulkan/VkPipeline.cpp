@@ -283,11 +283,11 @@ Result<PipelineCommon*> createGraphicsPipeline(GraphicsDeviceCommon* common, con
         const ColorTargetBlend& target = desc.blend.targets[i];
         colorFormats[i] = toVkFormat(desc.colorFormats[i]);
         blends[i].blendEnable = target.blendEnable ? VK_TRUE : VK_FALSE;
-        blends[i].srcColorBlendFactor = toBlendFactor(target.srcColor);
-        blends[i].dstColorBlendFactor = toBlendFactor(target.destColor);
+        blends[i].srcColorBlendFactor = toBlendFactor(target.srcColorFactor);
+        blends[i].dstColorBlendFactor = toBlendFactor(target.destColorFactor);
         blends[i].colorBlendOp = toBlendOp(target.colorOp);
-        blends[i].srcAlphaBlendFactor = toBlendFactor(target.srcAlpha);
-        blends[i].dstAlphaBlendFactor = toBlendFactor(target.destAlpha);
+        blends[i].srcAlphaBlendFactor = toBlendFactor(target.srcAlphaFactor);
+        blends[i].dstAlphaBlendFactor = toBlendFactor(target.destAlphaFactor);
         blends[i].alphaBlendOp = toBlendOp(target.alphaOp);
         blends[i].colorWriteMask = static_cast<VkColorComponentFlags>(target.writeMask); // same bits
     }

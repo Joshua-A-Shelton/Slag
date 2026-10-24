@@ -305,11 +305,11 @@ Result<PipelineCommon*> createGraphicsPipeline(GraphicsDeviceCommon* common, con
         const ColorTargetBlend& target = desc.blend.targets[i];
         D3D12_RENDER_TARGET_BLEND_DESC& out = blend.RenderTarget[i];
         out.BlendEnable = target.blendEnable;
-        out.SrcBlend = toBlend(target.srcColor);
-        out.DestBlend = toBlend(target.destColor);
+        out.SrcBlend = toBlend(target.srcColorFactor);
+        out.DestBlend = toBlend(target.destColorFactor);
         out.BlendOp = static_cast<D3D12_BLEND_OP>(static_cast<int>(target.colorOp) + 1); // same order, from 1
-        out.SrcBlendAlpha = toBlend(target.srcAlpha);
-        out.DestBlendAlpha = toBlend(target.destAlpha);
+        out.SrcBlendAlpha = toBlend(target.srcAlphaFactor);
+        out.DestBlendAlpha = toBlend(target.destAlphaFactor);
         out.BlendOpAlpha = static_cast<D3D12_BLEND_OP>(static_cast<int>(target.alphaOp) + 1);
         out.LogicOp = D3D12_LOGIC_OP_NOOP;
         out.RenderTargetWriteMask = static_cast<UINT8>(target.writeMask); // same bits

@@ -496,11 +496,12 @@ void validateGraphicsPipeline(GraphicsDeviceCommon* self, const GraphicsPipeline
                       "color target %zu: %s doesn't support %ux MSAA", i, formatInfo(format).name, desc.sampleCount);
         SLAG_VALIDATE(instance,
                       i == 0 || !blend.blendEnable ||
-                          !(isDualSource(blend.srcColor) || isDualSource(blend.destColor) ||
-                            isDualSource(blend.srcAlpha) || isDualSource(blend.destAlpha)),
+                          !(isDualSource(blend.srcColorFactor) || isDualSource(blend.destColorFactor) ||
+                            isDualSource(blend.srcAlphaFactor) || isDualSource(blend.destAlphaFactor)),
                       function, "dual-source blending is for render target 0 only");
         SLAG_VALIDATE(instance,
-                      !blend.blendEnable || (!isColorFactor(blend.srcAlpha) && !isColorFactor(blend.destAlpha)),
+                      !blend.blendEnable ||
+                          (!isColorFactor(blend.srcAlphaFactor) && !isColorFactor(blend.destAlphaFactor)),
                       function, "color target %zu: alpha blend factors can't be color factors", i);
     }
     bool hasDepthStencil = desc.depthStencilFormat != PixelFormat::Undefined;

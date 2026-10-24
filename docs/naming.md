@@ -166,7 +166,7 @@ New names added while implementing go here once confirmed.
 | Footprint | `copyFootprint(texture, mip, plane = Color)` → `CopyFootprint` (`size`, `rowPitch`, `rowCount`, `width`, `height`, `depth`) |
 | Semantics | `SubresourceRange::plane = Color` covers every plane of a depth/stencil texture |
 
-## Proposed during M3 (placeholders, to review)
+## Fields and small names (settled after M3)
 
 | Where | Names |
 |---|---|
@@ -178,7 +178,7 @@ New names added while implementing go here once confirmed.
 | Vertex input | `VertexAttribute` (`location`, `format`, `slot`, `offset`; `location` replaces `semantic`/`semanticIndex`), `VertexInputLayout` (`attributes`, `slots`) |
 | `RasterizerState` | `fillMode`, `cullMode`, `frontCounterClockwise`, `depthBias`, `depthBiasClamp`, `depthBiasSlopeScale`, `depthClip`, `conservativeRasterization` |
 | Depth/stencil | `StencilFaceState` (`failOp`, `depthFailOp`, `passOp`, `compareOp`), `DepthStencilState` (`depthTest`, `depthWrite`, `depthCompareOp`, `stencilTest`, `front`, `back`, `stencilReadMask`, `stencilWriteMask`, `depthBoundsTest`) |
-| Blend | `ColorTargetBlend` (`blendEnable`, `srcColor`, `destColor`, `colorOp`, `srcAlpha`, `destAlpha`, `alphaOp`, `writeMask`), `BlendState` (`alphaToCoverage`, `targets[8]`); `ColorWriteMask` adds `None` |
+| Blend | `ColorTargetBlend` (`blendEnable`, `srcColorFactor`, `destColorFactor`, `colorOp`, `srcAlphaFactor`, `destAlphaFactor`, `alphaOp`, `writeMask`), `BlendState` (`alphaToCoverage`, `targets[8]`); `ColorWriteMask` adds `None` |
 | `GraphicsPipelineDesc` | `vertex`, `pixel`, `vertexInput`, `topology`, `rasterizer`, `depthStencil`, `blend`, `colorFormats`, `depthStencilFormat`, `sampleCount`, `sampleMask`, `debugName`, `userData` |
 | Render passes | `ColorAttachment` (`view`, `loadOp`, `storeOp`, `clearValue`, `resolveView`), `DepthStencilAttachment` (`view`, `depthLoadOp`, `depthStoreOp`, `stencilLoadOp`, `stencilStoreOp`, `clearValue`, `readOnlyDepth`, `readOnlyStencil`), `RenderingDesc` (`colorAttachments`, `depthStencilAttachment`, `suspending`, `resuming`) |
 | Small types | `Viewport` (`x`, `y`, `width`, `height`, `minDepth`, `maxDepth`), `Rect` (`x`, `y`, `width`, `height`), `VertexBufferBinding` (`buffer`, `offset`, `size`, `stride`) |
