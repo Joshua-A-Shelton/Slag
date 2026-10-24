@@ -238,11 +238,13 @@ Accepted decisions live in `docs/decisions/`.
 ## 6. Escape hatches / native interop
 
 - Every object exposes `native()` via the interop headers, returning the
-  underlying handle(s) (`ID3D12Resource*`, `VkImage` + `VmaAllocation`, ...).
+  underlying handle(s) (`ID3D12Resource*`, `VkImage` + `VkDeviceMemory`,
+  ...) (ADR 0071).
 - Command lists expose their native command buffer so users can record native
-  commands mid-stream. Document any state Slag assumes is preserved.
-- Import paths exist for external native resources (e.g. interop with other
-  libraries, video decode, XR runtimes).
+  commands mid-stream. Slag assumes only its descriptor heaps (and, on D3D12,
+  root signature) stay bound (ADR 0071).
+- Import paths for external native resources (interop with other
+  libraries, video decode, XR runtimes) come after v1.0 (ADRs 0018, 0027).
 
 ## 7. Threading model
 
@@ -374,8 +376,9 @@ The `header_check` test compiles every public header on its own, except
     clang-format), and later D3D12 backend tests on WARP. Slang, and DXC on
     Windows, are fetched pinned by SHA-256. Linux CI turns
     `SLAG_VALIDATE_SPIRV` off until runners have SPIRV-Tools 2026.3+.
-  - A self-hosted GPU runner (Linux, AMD, RADV / Mesa 26.2+), on every merge
-    or nightly: Vulkan backend tests.
+  - No self-hosted GPU runner (decided 2026-10-24, M8): Vulkan backend tests
+    and samples run by hand on real GPUs (RADV on Linux; NVIDIA on Windows)
+    before each release.
   - No software Vulkan driver supports `VK_EXT_descriptor_heap` yet; re-check
     lavapipe periodically and move Vulkan tests to hosted CI once it does.
 - Every common-interface feature needs a test that runs on **all** compiled

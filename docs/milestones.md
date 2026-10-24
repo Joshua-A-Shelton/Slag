@@ -262,9 +262,13 @@ deliberately crashing sample produces a crash report on both backends.
 
 ## M8 — v1.0
 
-- CI complete: hosted WARP + self-hosted RADV runner (CLAUDE.md §12).
+- CI complete: hosted CI with WARP. No self-hosted RADV runner (decided
+  2026-10-24): Vulkan runs by hand on RADV and NVIDIA before each release
+  (CLAUDE.md §12).
+- Native interop accessors (ADR 0071), added to M8 on 2026-10-24.
 - Remaining open items closed or explicitly deferred.
-- API documentation pass, `CHANGELOG.md`, tag `v1.0.0`.
+- API documentation pass (README and header comments), `CHANGELOG.md`, tag
+  `v1.0.0`.
 
 ## After v1.0
 

@@ -1,6 +1,7 @@
 # Hosted CI (CLAUDE.md §12): build, unit tests, format check.
-# D3D12 backend tests run on WARP on the Windows runners. The self-hosted GPU
-# runner (Vulkan backend tests on RADV) is not set up yet.
+# D3D12 backend tests run on WARP on the Windows runners. Vulkan backend tests
+# need VK_EXT_descriptor_heap, which no software driver has yet; they run by
+# hand on real GPUs before each release (no self-hosted runner, M8).
 
 name: CI
 
