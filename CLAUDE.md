@@ -232,12 +232,16 @@ Accepted decisions live in `docs/decisions/`.
 
 ## 7. Threading model
 
-- Objects are **externally synchronized** unless documented otherwise
-  (Vulkan-style rules).
-- Thread-safe by contract: resource creation/destruction on a device, descriptor
-  allocation from distinct ranges, recording *different* command lists on
-  different threads.
-- No internal global locks on hot paths. If a lock is required, document it.
+- Calls on different objects may run concurrently; calls on the same object
+  are **externally synchronized** unless listed as thread-safe. The full
+  per-call table is ADR 0068.
+- Thread-safe by contract: every `create*` / `destroy()` on a device,
+  descriptor writes to different slots, device queries, pipeline creation,
+  recording *different* command buffers on different threads, and using
+  immutable objects from many command buffers at once.
+- No locks on hot paths (recording, descriptor writes, submits to separate
+  hardware queues). Every internal lock is listed in ADR 0068; adding one
+  means updating that list.
 
 ## 8. Error handling & validation
 
