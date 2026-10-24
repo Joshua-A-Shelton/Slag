@@ -270,7 +270,8 @@ deliberately crashing sample produces a crash report on both backends.
 - API documentation pass (README and header comments), `CHANGELOG.md`, tag
   `v1.0.0`.
 
-**Status (2026-10-24):** done; tagged `v1.0.0`.
+**Status (2026-10-24):** ready to tag; `v1.0.0` is not tagged yet (owner
+decision).
 
 - Native interop accessors for every object, with mid-stream native
   recording, tested on both backends (ADR 0071).

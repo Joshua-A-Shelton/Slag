@@ -2,7 +2,7 @@
 
 Slag follows semantic versioning (ADR 0070). There is no stable ABI.
 
-## 1.0.0 — 2026-10-24
+## 1.0.0 — unreleased
 
 The first release: a thin C++20 abstraction over Direct3D 12 (Agility SDK
 1.619.6, Shader Model 6.8, Enhanced Barriers) and Vulkan 1.4 with
