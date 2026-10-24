@@ -21,6 +21,7 @@ struct InstanceCommon;
 struct GraphicsDeviceCommon;
 struct CommandQueueCommon;
 struct SemaphoreCommon;
+struct MemoryBlockCommon;
 struct BufferCommon;
 struct PipelineCommon;
 struct CommandBufferCommon;

@@ -64,6 +64,7 @@ target_sources(slag PRIVATE
     src/common/HostAllocator.cpp
     src/common/Instance.cpp
     src/common/Logging.cpp
+    src/common/MemoryBlock.cpp
     src/common/Platform.cpp)
 
 target_compile_definitions(slag PUBLIC

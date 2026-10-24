@@ -366,6 +366,15 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
         }
     }
 
+    Status blockStatus = selectBlockMemoryTypes(device);
+    if (blockStatus != Status::Ok)
+    {
+        logMessage(messageSink(&instance), MessageSeverity::Error, MessageSource::Slag,
+                   "slag: GraphicsDevice::initialize: no memory type fits every resource type");
+        shutdownDevice(&device);
+        return blockStatus;
+    }
+
     // Descriptor heaps, with the driver-reserved range after the user slots (ADRs 0029, 0032).
     const VkPhysicalDeviceDescriptorHeapPropertiesEXT& heap = device.heapProperties;
     VkDeviceSize resourceDescriptorSize =

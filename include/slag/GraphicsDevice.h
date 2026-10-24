@@ -97,8 +97,16 @@ public:
     // index < the count requested for that type in initialize.
     CommandQueue* commandQueue(CommandQueueType type, uint32_t index = 0) const;
 
+    Result<MemoryBlock*> createMemoryBlock(const MemoryBlockDesc& desc);
+    // Every resource placed in the block must be destroyed first.
+    void destroy(MemoryBlock* memoryBlock);
+
     Result<Buffer*> createBuffer(const BufferDesc& desc);
     void destroy(Buffer* buffer);
+
+    // What a resource needs when placed in a memory block. Creates nothing;
+    // the placement field is ignored. Thread-safe.
+    PlacementInfo placementInfo(const BufferDesc& desc) const;
 
     Result<Pipeline*> createComputePipeline(const ComputePipelineDesc& desc);
     void destroy(Pipeline* pipeline);

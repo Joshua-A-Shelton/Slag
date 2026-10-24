@@ -97,9 +97,14 @@ struct CommandBufferImpl : CommandBufferCommon
     Vector<D3D12_BUFFER_BARRIER> bufferBarriers;
 };
 
+struct MemoryBlockImpl : MemoryBlockCommon
+{
+    ID3D12Heap* heap = nullptr;
+};
+
 struct BufferImpl : BufferCommon
 {
-    ID3D12Resource* resource = nullptr; // committed until the M2 sub-allocator
+    ID3D12Resource* resource = nullptr; // committed, or placed in a memory block
 };
 
 struct SemaphoreImpl : SemaphoreCommon

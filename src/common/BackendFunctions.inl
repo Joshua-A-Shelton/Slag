@@ -21,8 +21,14 @@ SLAG_BACKEND_FN(Result<void>, waitSemaphores,
                 (GraphicsDeviceCommon * device, std::span<const SemaphoreValue> values, WaitMode mode,
                  uint64_t timeoutNs))
 
+SLAG_BACKEND_FN(Result<MemoryBlockCommon*>, createMemoryBlock,
+                (GraphicsDeviceCommon * device, const MemoryBlockDesc& desc))
+SLAG_BACKEND_FN(void, destroyMemoryBlock, (GraphicsDeviceCommon * device, MemoryBlockCommon* memoryBlock))
+
+// Placed in desc.placement.memoryBlock when set; otherwise in its own memory.
 SLAG_BACKEND_FN(Result<BufferCommon*>, createBuffer, (GraphicsDeviceCommon * device, const BufferDesc& desc))
 SLAG_BACKEND_FN(void, destroyBuffer, (GraphicsDeviceCommon * device, BufferCommon* buffer))
+SLAG_BACKEND_FN(PlacementInfo, bufferPlacementInfo, (const GraphicsDeviceCommon* device, const BufferDesc& desc))
 
 SLAG_BACKEND_FN(Result<PipelineCommon*>, createComputePipeline,
                 (GraphicsDeviceCommon * device, const ComputePipelineDesc& desc))

@@ -70,6 +70,9 @@ struct GraphicsDeviceImpl : GraphicsDeviceCommon
     // Distinct queue families in use; resources are CONCURRENT across them (ADR 0009).
     uint32_t sharingFamilies[3] = {};
     uint32_t sharingFamilyCount = 0;
+    // Memory type for memory blocks of each MemoryKind: valid for every
+    // resource type that kind may hold (ADR 0023).
+    uint32_t blockMemoryTypes[4] = {};
 };
 
 struct CommandQueueImpl : CommandQueueCommon
@@ -99,10 +102,16 @@ struct CommandBufferImpl : CommandBufferCommon
     Vector<VkMemoryBarrier2> memoryBarriers;
 };
 
+struct MemoryBlockImpl : MemoryBlockCommon
+{
+    VkDeviceMemory memory = VK_NULL_HANDLE;
+    uint8_t* mapped = nullptr; // CPU-visible kinds: mapped once, for the block's lifetime (ADR 0024)
+};
+
 struct BufferImpl : BufferCommon
 {
     VkBuffer buffer = VK_NULL_HANDLE;
-    VkDeviceMemory memory = VK_NULL_HANDLE; // dedicated until the M2 sub-allocator
+    VkDeviceMemory memory = VK_NULL_HANDLE; // own memory; null when placed
 };
 
 struct SemaphoreImpl : SemaphoreCommon

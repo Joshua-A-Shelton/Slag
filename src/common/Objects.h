@@ -13,6 +13,7 @@
 #include <slag/CommandQueue.h>
 #include <slag/GraphicsDevice.h>
 #include <slag/Instance.h>
+#include <slag/MemoryBlock.h>
 #include <slag/Pipeline.h>
 #include <slag/Semaphore.h>
 
@@ -58,6 +59,16 @@ struct CommandQueueCommon : CommandQueue
     CommandQueueType type = CommandQueueType::Graphics;
 };
 
+struct MemoryBlockCommon : MemoryBlock
+{
+    GraphicsDeviceCommon* device = nullptr;
+    const BackendFunctions* functions = nullptr;
+    uint64_t userData = 0;
+    uint64_t size = 0;
+    MemoryKind kind = MemoryKind::GpuOnly;
+    std::atomic<uint32_t> liveResources = 0; // placed resources, for validation
+};
+
 struct BufferCommon : Buffer
 {
     GraphicsDeviceCommon* device = nullptr;
@@ -67,6 +78,7 @@ struct BufferCommon : Buffer
     MemoryKind kind = MemoryKind::GpuOnly;
     void* mapped = nullptr;
     uint64_t gpuAddress = 0;
+    MemoryBlockCommon* memoryBlock = nullptr; // set when placed
 };
 
 enum class PipelineKind : uint8_t

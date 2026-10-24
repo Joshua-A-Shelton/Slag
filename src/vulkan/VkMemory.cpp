@@ -24,24 +24,118 @@ uint32_t findMemoryType(const VkPhysicalDeviceMemoryProperties& properties, uint
     return best;
 }
 
+MemoryFlags memoryFlags(MemoryKind kind)
+{
+    constexpr VkMemoryPropertyFlags hostCoherent =
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    switch (kind)
+    {
+    case MemoryKind::GpuOnly:
+        return {VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT};
+    case MemoryKind::Upload:
+        return {hostCoherent, 0, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
+    case MemoryKind::Readback:
+        return {hostCoherent, VK_MEMORY_PROPERTY_HOST_CACHED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
+    case MemoryKind::GpuUpload:
+        return {hostCoherent | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0, 0};
+    }
+    return {};
+}
+
+VkBufferCreateInfo bufferCreateInfo(const GraphicsDeviceImpl& device, VkDeviceSize size, VkBufferUsageFlags usage)
+{
+    VkBufferCreateInfo info = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+    info.size = size;
+    info.usage = usage | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    // CONCURRENT across every queue family in use: no ownership transfers (ADR 0009).
+    if (device.sharingFamilyCount > 1)
+    {
+        info.sharingMode = VK_SHARING_MODE_CONCURRENT;
+        info.queueFamilyIndexCount = device.sharingFamilyCount;
+        info.pQueueFamilyIndices = device.sharingFamilies;
+    }
+    else
+    {
+        info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    }
+    return info;
+}
+
+bool supportsGpuUpload(const GraphicsDeviceImpl& device, uint32_t memoryType)
+{
+    uint32_t heapIndex = device.memoryProperties.memoryTypes[memoryType].heapIndex;
+    VkDeviceSize heapSize = device.memoryProperties.memoryHeaps[heapIndex].size;
+    return heapSize * 10 >= device.info.dedicatedMemoryBytes * 9;
+}
+
+namespace {
+
+uint32_t imageTypeBits(const GraphicsDeviceImpl& device, VkFormat format, VkImageUsageFlags usage)
+{
+    VkImageCreateInfo image = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+    image.imageType = VK_IMAGE_TYPE_2D;
+    image.format = format;
+    image.extent = {256, 256, 1};
+    image.mipLevels = 1;
+    image.arrayLayers = 1;
+    image.samples = VK_SAMPLE_COUNT_1_BIT;
+    image.tiling = VK_IMAGE_TILING_OPTIMAL;
+    image.usage =
+        usage | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    VkDeviceImageMemoryRequirements info = {VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS};
+    info.pCreateInfo = &image;
+    VkMemoryRequirements2 requirements = {VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2};
+    device.fn.vkGetDeviceImageMemoryRequirements(device.device, &info, &requirements);
+    return requirements.memoryRequirements.memoryTypeBits;
+}
+
+} // namespace
+
+Status selectBlockMemoryTypes(GraphicsDeviceImpl& device)
+{
+    VkBufferCreateInfo buffer = bufferCreateInfo(device, 65536, allBufferUsage);
+    VkDeviceBufferMemoryRequirements bufferInfo = {VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS};
+    bufferInfo.pCreateInfo = &buffer;
+    VkMemoryRequirements2 bufferRequirements = {VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2};
+    device.fn.vkGetDeviceBufferMemoryRequirements(device.device, &bufferInfo, &bufferRequirements);
+    uint32_t bufferBits = bufferRequirements.memoryRequirements.memoryTypeBits;
+
+    // Representative textures: color with every usage, depth/stencil, block-compressed.
+    uint32_t textureBits =
+        imageTypeBits(device, VK_FORMAT_R8G8B8A8_UNORM,
+                      VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) &
+        imageTypeBits(device, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) &
+        imageTypeBits(device, VK_FORMAT_BC7_UNORM_BLOCK, 0);
+
+    for (size_t kind = 0; kind < 4; ++kind)
+    {
+        MemoryFlags flags = memoryFlags(static_cast<MemoryKind>(kind));
+        // Textures only go in GpuOnly blocks (ADR 0023).
+        uint32_t typeBits =
+            static_cast<MemoryKind>(kind) == MemoryKind::GpuOnly ? bufferBits & textureBits : bufferBits;
+        device.blockMemoryTypes[kind] =
+            findMemoryType(device.memoryProperties, typeBits, flags.required, flags.preferred, flags.avoided);
+        if (static_cast<MemoryKind>(kind) == MemoryKind::GpuUpload)
+        {
+            if (device.blockMemoryTypes[kind] != noMemoryType &&
+                !supportsGpuUpload(device, device.blockMemoryTypes[kind]))
+            {
+                device.blockMemoryTypes[kind] = noMemoryType;
+            }
+        }
+        else if (device.blockMemoryTypes[kind] == noMemoryType)
+        {
+            return Status::Unsupported;
+        }
+    }
+    return Status::Ok;
+}
+
 Status createDedicatedBuffer(GraphicsDeviceImpl& device, VkDeviceSize size, VkBufferUsageFlags usage,
                              VkMemoryPropertyFlags required, VkMemoryPropertyFlags preferred,
                              VkMemoryPropertyFlags avoided, DedicatedBuffer& out)
 {
-    VkBufferCreateInfo bufferInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-    bufferInfo.size = size;
-    bufferInfo.usage = usage | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-    // CONCURRENT across every queue family in use: no ownership transfers (ADR 0009).
-    if (device.sharingFamilyCount > 1)
-    {
-        bufferInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
-        bufferInfo.queueFamilyIndexCount = device.sharingFamilyCount;
-        bufferInfo.pQueueFamilyIndices = device.sharingFamilies;
-    }
-    else
-    {
-        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    }
+    VkBufferCreateInfo bufferInfo = bufferCreateInfo(device, size, usage);
     VkResult result = device.fn.vkCreateBuffer(device.device, &bufferInfo, nullptr, &out.buffer);
     if (result != VK_SUCCESS)
     {
