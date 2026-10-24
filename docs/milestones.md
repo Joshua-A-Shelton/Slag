@@ -161,6 +161,24 @@ minimize by hand. Names proposed during M4 were reviewed and settled (`docs/nami
 **Done when:** the multi-queue sample overlaps compute and copy work with
 graphics on both backends.
 
+**Status (2026-10-24):** implemented on both backends: pipeline cache blob,
+timestamp queries with calibration, `DescriptorAllocator` and
+`DeferredDestroyer`, queue tests on both backends (including a
+compute → copy → graphics semaphore chain), and the three samples. The
+multi-queue sample draws its particles in a submit of their own (so the
+pass doesn't wait for the swapchain image) and presents with Mailbox or
+Immediate where it can. Overlap with graphics work, measured by the sample:
+
+| Device | Compute | Copy |
+|---|---|---|
+| RX 7900 XT, RADV (Vulkan) | 64–73% | 69–79% |
+| RTX 2070 SUPER, D3D12 | 47% | 48% |
+| RTX 2070 SUPER, Vulkan | 75% | not measured: NVIDIA's transfer family can't resolve queries (ADR 0051) |
+
+All five samples pass `--frames 300` on the NVIDIA machine with both
+backends, and `--frames 120` on RADV, with no validation messages. Names
+proposed during M5 are listed in `docs/naming.md` for review.
+
 ## M6 — Defragmentation
 
 - Defragmentation passes as designed in ADR 0062: `movable` placement flag,

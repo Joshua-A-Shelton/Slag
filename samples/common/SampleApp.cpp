@@ -213,6 +213,21 @@ bool SampleApp::submitAndWait(slag::CommandBuffer* commandBuffer)
     return ok;
 }
 
+void SampleApp::preferPresentModes(std::span<const slag::PresentMode> preferred)
+{
+    for (slag::PresentMode mode : preferred)
+    {
+        for (slag::PresentMode switchable : swapchain->switchablePresentModes())
+        {
+            if (mode == switchable)
+            {
+                presentMode = mode;
+                return;
+            }
+        }
+    }
+}
+
 // The GPU must be done with every image first (ADR 0058).
 bool SampleApp::reconfigure()
 {
@@ -332,7 +347,7 @@ int SampleApp::run(const RecordFn& record)
         slag::Swapchain* acquiredSwapchains[] = {swapchain};
         slag::CommandBuffer* list[] = {commandBuffer};
         queue->submit({.commandBuffers = list, .signals = {&signal, 1}, .acquiredSwapchains = acquiredSwapchains});
-        slag::Result<void> result = queue->present(swapchain, slag::PresentMode::Fifo);
+        slag::Result<void> result = queue->present(swapchain, presentMode);
         if (result.status() == slag::Status::Suboptimal || result.status() == slag::Status::OutOfDate)
         {
             needsReconfigure = true;

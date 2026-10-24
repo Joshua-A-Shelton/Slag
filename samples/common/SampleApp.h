@@ -9,6 +9,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -61,6 +62,15 @@ public:
     // Submits one command buffer and waits for it (for uploads).
     bool submitAndWait(slag::CommandBuffer* commandBuffer);
 
+    // Picks the first of `preferred` the swapchain can switch to; Fifo otherwise.
+    void preferPresentModes(std::span<const slag::PresentMode> preferred);
+
+    // Inside the record callback: the value this frame's submit signals.
+    slag::SemaphoreValue frameSignal() const
+    {
+        return {frameSemaphore, frameNumber + 1};
+    }
+
     slag::Instance* instance = nullptr;
     slag::GraphicsDevice* device = nullptr;
     slag::CommandQueue* queue = nullptr;
@@ -72,6 +82,7 @@ private:
     bool reconfigure();
 
     SampleOptions options;
+    slag::PresentMode presentMode = slag::PresentMode::Fifo;
     SDL_Window* window = nullptr;
     slag::NativeWindow nativeWindow;
     uint32_t width = 0;
