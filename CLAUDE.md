@@ -136,7 +136,7 @@ tests/
   backend/                     runs on every compiled backend
 samples/                       triangle, textured_quad, compute, bindless, multi_queue
 third_party/                   pinned: Vulkan-Headers, Agility SDK (ADR 0061)
-docs/                          decisions/, naming.md, open-items.md
+docs/                          decisions/, naming.md, open-items.md, format-support.md, milestones.md
 ```
 
 External (console) backends live outside the repository, in the directories
@@ -205,7 +205,7 @@ Accepted decisions live in `docs/decisions/`.
 - **Explicit memory.** Users can allocate memory blocks and place resources,
   or use automatic placement. Automatic placement uses Slag's own
   backend-agnostic sub-allocator (ADR 0061), designed to support
-  defragmentation later (ADR 0062).
+  defragmentation (ADR 0062, milestone M6).
 - **Shaders are pre-compiled bytecode.** Slag accepts DXIL and SPIR-V blobs
   (plus future console formats). The supported toolchain is **Slang**,
   compiling one source to DXIL and SPIR-V with output flags that make both

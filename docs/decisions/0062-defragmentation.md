@@ -1,14 +1,15 @@
 # 0062 — Defragmentation
 
-**Status:** Accepted (2026-10-23). Implementation after v1; the v1 allocator
-must already satisfy the constraints below. Names are placeholders.
+**Status:** Accepted (2026-10-23). Implemented before v1.0 (milestone M6,
+`docs/milestones.md`); the allocator built in M2 must already satisfy the
+constraints below. Names are placeholders.
 
 ## Goal
 
 Compact automatically placed resources into fewer memory blocks, so freed
 space can be returned and large allocations still fit after long runs.
 
-## Constraints on v1 (so defragmentation can be added without API breaks)
+## Constraints on the allocator (so defragmentation fits without API breaks)
 
 1. **Stable pointers.** A moved resource keeps its `Buffer*` / `Texture*`;
    Slag swaps the native object behind it. (Opaque pointers, ADR 0052, make
