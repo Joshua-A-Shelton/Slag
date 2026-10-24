@@ -24,5 +24,6 @@ VertexOutput vertexMain(uint vertex : SV_VertexID, uint instance : SV_InstanceID
 [shader("pixel")]
 float4 pixelMain(VertexOutput input) : SV_Target
 {
-    return float4((input.id.x + 1) / 8.0, (input.id.y + 1) / 4.0, 0.0, 1.0);
+    // Exact byte values (k / 255): no rounding ties, which GPUs may break either way.
+    return float4((input.id.x + 1) * 32 / 255.0, (input.id.y + 1) * 64 / 255.0, 0.0, 1.0);
 }

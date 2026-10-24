@@ -174,11 +174,6 @@ void submitAndWait(slag::GraphicsDevice* device, slag::CommandBuffer* commandBuf
     device->destroy(semaphore);
 }
 
-uint8_t unorm(float value)
-{
-    return static_cast<uint8_t>(value * 255.0f + 0.5f);
-}
-
 // drawIndirectCount: four argument records, a GPU count of 3, two instances
 // each. Checks draw IDs (firstInstance -> SV_StartInstanceLocation), that
 // SV_InstanceID starts at 0, and that the count limits the draws.
@@ -270,8 +265,8 @@ void testDrawIds(slag::Backend backend)
             const uint8_t* p = pixels + (instance * 16 + 8) * footprint.rowPitch + (draw * 16 + 8) * 4;
             if (draw < 3)
             {
-                CHECK(p[0] == unorm((draw + 1) / 8.0f));
-                CHECK(p[1] == unorm((instance + 1) / 4.0f));
+                CHECK(p[0] == (draw + 1) * 32);
+                CHECK(p[1] == (instance + 1) * 64);
                 CHECK(p[3] == 255);
             }
             else
