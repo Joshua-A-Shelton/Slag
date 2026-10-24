@@ -77,6 +77,26 @@ void fillInfo(IDXGIAdapter4* adapter, const DXGI_ADAPTER_DESC3& desc, ID3D12Devi
     info.deviceType = uma ? GraphicsDeviceType::Integrated : GraphicsDeviceType::Discrete;
 }
 
+void fillCapabilities(ID3D12Device* device, GraphicsDeviceCapabilities& capabilities)
+{
+    D3D12_FEATURE_DATA_ARCHITECTURE1 architecture = {};
+    capabilities.unifiedMemory =
+        SUCCEEDED(device->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE1, &architecture, sizeof(architecture))) &&
+        architecture.UMA;
+    D3D12_FEATURE_DATA_D3D12_OPTIONS16 options16 = {};
+    capabilities.gpuUploadMemory =
+        SUCCEEDED(device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS16, &options16, sizeof(options16))) &&
+        options16.GPUUploadHeapSupported;
+    // No documented fixed limit: the per-resource GPU address space (ADR 0028).
+    D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT addressing = {};
+    if (SUCCEEDED(
+            device->CheckFeatureSupport(D3D12_FEATURE_GPU_VIRTUAL_ADDRESS_SUPPORT, &addressing, sizeof(addressing))))
+    {
+        UINT bits = addressing.MaxGPUVirtualAddressBitsPerResource;
+        capabilities.maxBufferSize = bits >= 64 ? UINT64_MAX : (uint64_t(1) << bits);
+    }
+}
+
 // Creates a device per adapter to check the baseline, then releases it (ADR 0012).
 Status listDevices(InstanceImpl& instance, const InstanceDesc& desc)
 {
@@ -164,10 +184,7 @@ Status listDevices(InstanceImpl& instance, const InstanceDesc& desc)
             {
                 impl->formatSupport[format] = formatSupport[format];
             }
-            D3D12_FEATURE_DATA_D3D12_OPTIONS16 options16 = {};
-            impl->gpuUploadHeap =
-                SUCCEEDED(device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS16, &options16, sizeof(options16))) &&
-                options16.GPUUploadHeapSupported;
+            fillCapabilities(device, impl->capabilities);
             release(device);
         }
     }

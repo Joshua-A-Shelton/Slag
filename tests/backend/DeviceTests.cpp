@@ -97,3 +97,55 @@ TEST_CASE("Vulkan: validation reports a semaphore value that doesn't increase")
 }
 #endif
 #endif
+
+namespace {
+
+void testCapabilitiesAndBudget(slag::Backend backend)
+{
+    TestInstance test(backend);
+    REQUIRE(test.instance);
+    for (slag::GraphicsDevice* device : test.instance->graphicsDevices())
+    {
+        const slag::GraphicsDeviceCapabilities& capabilities = device->capabilities();
+        slag::MemoryBudget budget = device->memoryBudget();
+        MESSAGE(std::string(device->info().name)
+                << ": unifiedMemory " << capabilities.unifiedMemory << ", gpuUploadMemory "
+                << capabilities.gpuUploadMemory << ", maxBufferSize " << capabilities.maxBufferSize << ", budget "
+                << budget.dedicatedBudgetBytes / (1024 * 1024) << " MiB dedicated (" << budget.dedicatedUsageBytes
+                << " B used), " << budget.sharedBudgetBytes / (1024 * 1024) << " MiB shared");
+        // At least the largest structured buffer view (ADR 0028).
+        CHECK(capabilities.maxBufferSize >= slag::limits::maxStorageBufferViewSize);
+        CHECK(budget.dedicatedBudgetBytes + budget.sharedBudgetBytes > 0);
+
+        // Usage grows with an allocation once the device is initialized.
+        REQUIRE(static_cast<bool>(device->initialize({})));
+        slag::MemoryBudget before = device->memoryBudget();
+        slag::Buffer* buffer = device
+                                   ->createBuffer({.size = 64ull << 20,
+                                                   .placement = slag::Placement::automatic(slag::MemoryKind::GpuOnly)})
+                                   .value();
+        REQUIRE(buffer);
+        slag::MemoryBudget after = device->memoryBudget();
+        CHECK(after.dedicatedUsageBytes + after.sharedUsageBytes >=
+              before.dedicatedUsageBytes + before.sharedUsageBytes);
+        device->destroy(buffer);
+        device->shutdown();
+    }
+    test.checkNoErrors();
+}
+
+} // namespace
+
+#ifdef SLAG_BACKEND_VULKAN
+TEST_CASE("Vulkan: capabilities and memory budget")
+{
+    testCapabilitiesAndBudget(slag::Backend::Vulkan);
+}
+#endif
+
+#ifdef SLAG_BACKEND_D3D12
+TEST_CASE("D3D12: capabilities and memory budget")
+{
+    testCapabilitiesAndBudget(slag::Backend::D3D12);
+}
+#endif

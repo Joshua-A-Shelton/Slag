@@ -109,6 +109,7 @@ struct DeviceQuery
     VkPhysicalDeviceProperties2 properties = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
     VkPhysicalDeviceVulkan11Properties properties11 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES};
     VkPhysicalDeviceVulkan12Properties properties12 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES};
+    VkPhysicalDeviceVulkan13Properties properties13 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_PROPERTIES};
     VkPhysicalDeviceDescriptorHeapPropertiesEXT heapProperties = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_HEAP_PROPERTIES_EXT};
 
@@ -124,6 +125,7 @@ struct DeviceQuery
 
     bool descriptorHeapExtension = false;
     bool untypedPointersExtension = false;
+    bool memoryBudgetExtension = false;
     bool graphicsQueue = false;
     uint32_t queueFamilyCount = 0;
     VkQueueFlags queueFamilyFlags[maxQueueFamilies] = {};
@@ -146,13 +148,15 @@ bool queryDevice(const InstanceImpl& instance, VkPhysicalDevice device, DeviceQu
     instance.fn.vkEnumerateDeviceExtensionProperties(device, nullptr, &count, extensions.data());
     query.descriptorHeapExtension = hasExtension(extensions, VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME);
     query.untypedPointersExtension = hasExtension(extensions, VK_KHR_SHADER_UNTYPED_POINTERS_EXTENSION_NAME);
+    query.memoryBudgetExtension = hasExtension(extensions, VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
 
     // Extension structs may only be chained when the extension exists.
     query.properties.pNext = &query.properties11;
     query.properties11.pNext = &query.properties12;
+    query.properties12.pNext = &query.properties13;
     query.features.pNext = &query.features12;
     query.features12.pNext = &query.features13;
-    void** propertiesTail = &query.properties12.pNext;
+    void** propertiesTail = &query.properties13.pNext;
     void** featuresTail = &query.features13.pNext;
     if (query.descriptorHeapExtension)
     {
@@ -336,6 +340,36 @@ void fillInfo(const DeviceQuery& query, GraphicsDeviceInfo& info)
     }
 }
 
+// ADR 0019. GpuUpload needs full resizable BAR: a CPU-visible device-local
+// heap about the size of VRAM, not the 256 MB window.
+void fillCapabilities(const DeviceQuery& query, const GraphicsDeviceInfo& info,
+                      GraphicsDeviceCapabilities& capabilities)
+{
+    // Integrated GPUs, matching D3D12's UMA; RADV still lists their system
+    // memory as a separate, non-device-local heap. Otherwise, every heap is
+    // device-local.
+    const VkPhysicalDeviceMemoryProperties& memory = query.memory.memoryProperties;
+    bool allDeviceLocal = true;
+    for (uint32_t i = 0; i < memory.memoryHeapCount; ++i)
+    {
+        allDeviceLocal = allDeviceLocal && (memory.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != 0;
+    }
+    capabilities.unifiedMemory = info.deviceType == GraphicsDeviceType::Integrated || allDeviceLocal;
+    constexpr VkMemoryPropertyFlags gpuUpload = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
+                                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    for (uint32_t i = 0; i < memory.memoryTypeCount; ++i)
+    {
+        VkDeviceSize heapSize = memory.memoryHeaps[memory.memoryTypes[i].heapIndex].size;
+        if ((memory.memoryTypes[i].propertyFlags & gpuUpload) == gpuUpload &&
+            heapSize * 10 >= info.dedicatedMemoryBytes * 9)
+        {
+            capabilities.gpuUploadMemory = true;
+        }
+    }
+    capabilities.maxBufferSize = query.properties13.maxBufferSize;
+}
+
 // Lower sorts first (ADR 0008).
 uint32_t typeRank(GraphicsDeviceType type, DevicePreference preference)
 {
@@ -425,6 +459,8 @@ Status listDevices(InstanceImpl& instance, const InstanceDesc& desc)
         }
         device->queueLocks = Vector<std::mutex*>(&instance.allocator);
         fillInfo(query, device->info);
+        fillCapabilities(query, device->info, device->capabilities);
+        device->memoryBudgetExtension = query.memoryBudgetExtension;
         for (size_t format = 0; format < pixelFormatCount; ++format)
         {
             device->formatSupport[format] = formatSupport[format];

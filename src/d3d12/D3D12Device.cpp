@@ -242,6 +242,25 @@ void shutdownDevice(GraphicsDeviceCommon* common)
     device.initialized = false;
 }
 
+MemoryBudget memoryBudget(const GraphicsDeviceCommon* common)
+{
+    auto& device = *static_cast<const GraphicsDeviceImpl*>(common);
+    MemoryBudget result;
+    DXGI_QUERY_VIDEO_MEMORY_INFO local = {};
+    DXGI_QUERY_VIDEO_MEMORY_INFO nonLocal = {};
+    if (SUCCEEDED(device.adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &local)))
+    {
+        result.dedicatedBudgetBytes = local.Budget;
+        result.dedicatedUsageBytes = local.CurrentUsage;
+    }
+    if (SUCCEEDED(device.adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL, &nonLocal)))
+    {
+        result.sharedBudgetBytes = nonLocal.Budget;
+        result.sharedUsageBytes = nonLocal.CurrentUsage;
+    }
+    return result;
+}
+
 Result<void> deviceWaitIdle(GraphicsDeviceCommon* common)
 {
     auto& device = *static_cast<GraphicsDeviceImpl*>(common);

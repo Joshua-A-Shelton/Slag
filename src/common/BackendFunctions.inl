@@ -9,6 +9,7 @@ SLAG_BACKEND_FN(void, destroyInstance, (InstanceCommon * instance))
 
 SLAG_BACKEND_FN(Result<void>, initializeDevice, (GraphicsDeviceCommon * device, const GraphicsDeviceInitDesc& desc))
 SLAG_BACKEND_FN(void, shutdownDevice, (GraphicsDeviceCommon * device))
+SLAG_BACKEND_FN(MemoryBudget, memoryBudget, (const GraphicsDeviceCommon* device))
 SLAG_BACKEND_FN(Result<void>, deviceWaitIdle, (GraphicsDeviceCommon * device))
 SLAG_BACKEND_FN(Result<void>, queueWaitIdle, (CommandQueueCommon * queue))
 

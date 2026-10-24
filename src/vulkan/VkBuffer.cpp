@@ -53,6 +53,13 @@ bool supportsGpuUpload(const GraphicsDeviceImpl& device, uint32_t memoryType)
 Result<BufferCommon*> createBuffer(GraphicsDeviceCommon* common, const BufferDesc& desc)
 {
     auto& device = *static_cast<GraphicsDeviceImpl*>(common);
+    if (desc.placement.kind == MemoryKind::GpuUpload && !device.capabilities.gpuUploadMemory)
+    {
+        logMessage(messageSink(device.instance), MessageSeverity::Error, MessageSource::Slag,
+                   "slag: GraphicsDevice::createBuffer: no suitable memory for this memory kind on \"%s\"",
+                   device.info.name);
+        return Status::Unsupported;
+    }
     auto* buffer = device.instance->allocator.create<BufferImpl>();
     if (!buffer)
     {

@@ -408,6 +408,39 @@ void shutdownDevice(GraphicsDeviceCommon* common)
     device.initialized = false;
 }
 
+MemoryBudget memoryBudget(const GraphicsDeviceCommon* common)
+{
+    auto& device = *static_cast<const GraphicsDeviceImpl*>(common);
+    const InstanceImpl& instance = *static_cast<const InstanceImpl*>(device.instance);
+    VkPhysicalDeviceMemoryBudgetPropertiesEXT budget = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT};
+    VkPhysicalDeviceMemoryProperties2 properties = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2};
+    if (device.memoryBudgetExtension)
+    {
+        properties.pNext = &budget;
+    }
+    instance.fn.vkGetPhysicalDeviceMemoryProperties2(device.physicalDevice, &properties);
+
+    // Without VK_EXT_memory_budget, the heap sizes are the budget and usage is unknown (0).
+    MemoryBudget result;
+    const VkPhysicalDeviceMemoryProperties& memory = properties.memoryProperties;
+    for (uint32_t i = 0; i < memory.memoryHeapCount; ++i)
+    {
+        uint64_t heapBudget = device.memoryBudgetExtension ? budget.heapBudget[i] : memory.memoryHeaps[i].size;
+        uint64_t heapUsage = device.memoryBudgetExtension ? budget.heapUsage[i] : 0;
+        if (memory.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+        {
+            result.dedicatedBudgetBytes += heapBudget;
+            result.dedicatedUsageBytes += heapUsage;
+        }
+        else
+        {
+            result.sharedBudgetBytes += heapBudget;
+            result.sharedUsageBytes += heapUsage;
+        }
+    }
+    return result;
+}
+
 Result<void> deviceWaitIdle(GraphicsDeviceCommon* common)
 {
     auto& device = *static_cast<GraphicsDeviceImpl*>(common);

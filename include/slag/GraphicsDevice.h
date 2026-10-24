@@ -39,6 +39,25 @@ struct GraphicsDeviceInfo
     uint8_t luid[8] = {}; // all zero where the platform has no LUID (Linux)
 };
 
+// Optional features and per-device values (ADR 0015). Grows as features are
+// added.
+struct GraphicsDeviceCapabilities
+{
+    bool unifiedMemory = false;   // GPU and CPU share memory; staging copies can be skipped (ADR 0019)
+    bool gpuUploadMemory = false; // MemoryKind::GpuUpload is available (ADR 0019)
+    uint64_t maxBufferSize = 0;   // bytes (ADR 0028)
+};
+
+// Budget and current usage, in bytes (ADR 0019). Dedicated is GPU memory,
+// shared is system memory the GPU can use, as in GraphicsDeviceInfo.
+struct MemoryBudget
+{
+    uint64_t dedicatedBudgetBytes = 0;
+    uint64_t dedicatedUsageBytes = 0;
+    uint64_t sharedBudgetBytes = 0;
+    uint64_t sharedUsageBytes = 0;
+};
+
 struct GraphicsDeviceInitDesc
 {
     uint32_t resourceHeapSize = defaults::resourceHeapSize; // up to limits::maxResourceHeapSize (ADR 0029)
@@ -53,6 +72,13 @@ class GraphicsDevice
 {
 public:
     const GraphicsDeviceInfo& info() const;
+
+    // Available before initialize. Thread-safe.
+    const GraphicsDeviceCapabilities& capabilities() const;
+
+    // This process's usage against the OS budget. Available before
+    // initialize. Thread-safe.
+    MemoryBudget memoryBudget() const;
 
     // Support beyond docs/format-support.md's guaranteed table. Available
     // before initialize. Thread-safe.

@@ -39,6 +39,7 @@ struct GraphicsDeviceCommon : GraphicsDevice
     InstanceCommon* instance = nullptr;
     const BackendFunctions* functions = nullptr;
     GraphicsDeviceInfo info;
+    GraphicsDeviceCapabilities capabilities; // filled by the backend when listing
     uint64_t userData = 0;
     bool initialized = false;
     std::atomic<bool> lost = false;

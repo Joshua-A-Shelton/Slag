@@ -24,6 +24,17 @@ const GraphicsDeviceInfo& GraphicsDevice::info() const
     return common(this)->info;
 }
 
+const GraphicsDeviceCapabilities& GraphicsDevice::capabilities() const
+{
+    return common(this)->capabilities;
+}
+
+MemoryBudget GraphicsDevice::memoryBudget() const
+{
+    const GraphicsDeviceCommon* self = common(this);
+    return SLAG_DISPATCH(self, memoryBudget)(self);
+}
+
 FormatSupport GraphicsDevice::formatSupport(PixelFormat format) const
 {
     const GraphicsDeviceCommon* self = common(this);

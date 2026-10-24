@@ -62,7 +62,6 @@ struct DescriptorHeap
 struct GraphicsDeviceImpl : GraphicsDeviceCommon
 {
     IDXGIAdapter4* adapter = nullptr;
-    bool gpuUploadHeap = false; // D3D12_OPTIONS16::GPUUploadHeapSupported
 
     // Valid while initialized.
     ID3D12Device10* device = nullptr;

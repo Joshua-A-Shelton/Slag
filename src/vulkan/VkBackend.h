@@ -59,6 +59,7 @@ struct GraphicsDeviceImpl : GraphicsDeviceCommon
     uint32_t queueFamilyCount = 0;
     VkQueueFlags queueFamilyFlags[maxQueueFamilies] = {};
     uint32_t queueFamilyQueueCount[maxQueueFamilies] = {};
+    bool memoryBudgetExtension = false;
 
     // Valid while initialized.
     VkDevice device = VK_NULL_HANDLE;
