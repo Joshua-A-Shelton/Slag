@@ -213,7 +213,7 @@ New names added while implementing go here once confirmed.
 | `DescriptorHeap` | `Resource`, `Sampler` (utility-only for now; moves to the core with the same meaning if heaps are exposed) |
 | `DeferredDestroyer` | `destroyAfter` overloads for `AttachmentView`, `Buffer`, `Texture`, `QueryPool`, `Pipeline`, `CommandBuffer`, `MemoryBlock`, `Semaphore` |
 
-## Proposed during M7 (placeholders, reviewed at the end of M7)
+## Fields and small names (settled after M7)
 
 | Where | Names |
 |---|---|

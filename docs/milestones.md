@@ -258,7 +258,7 @@ deliberately crashing sample produces a crash report on both backends.
 - **Not built:** the "resetting an in-flight command buffer" check (ADR 0067).
 - **Runs:** every sample passes on RADV and, with both backends, on NVIDIA;
   hosted CI is green.
-- **Names:** proposed during M7 are listed in `docs/naming.md` for review.
+- **Names:** proposed during M7 were reviewed and settled (`docs/naming.md`).
 
 ## M8 — v1.0
 

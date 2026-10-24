@@ -1,6 +1,6 @@
 # 0050 — Debug labels
 
-**Status:** Accepted (2026-10-23). Names are placeholders.
+**Status:** Accepted (2026-10-23). Names are final (docs/naming.md; settled after M7).
 
 ## Decision
 
