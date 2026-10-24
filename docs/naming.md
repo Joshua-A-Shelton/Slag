@@ -128,7 +128,7 @@ object has `userData()` / `setUserData()` (ADR 0063).
 | Object | Methods |
 |---|---|
 | `Swapchain` | `acquire()` → `Result<uint32_t>` (ADR 0060), `texture(index)`, `attachmentView(index)`, `srgbAttachmentView(index)`, `imageCount()`, `switchablePresentModes()`, `reconfigure(desc)`, `setHdrMetadata(HdrMetadata)`, `setMaxFrameLatency(n)`, `waitForNextFrame(timeoutNs)` |
-| `Semaphore` | `value()`, `signal(value)`; the free function `slag::waitSemaphores(span<SemaphoreValue>, WaitMode, timeoutNs)` waits on several (moved off the device after M8) |
+| `Semaphore` | `value()`, `signal(value)`, `wait(value, timeoutNs)`; the free function `slag::waitSemaphores(span<SemaphoreValue>, WaitMode, timeoutNs)` waits on several (moved off the device after M8) |
 | `Buffer` | `mappedData()`, `gpuAddress()` |
 | `SemaphoreValue` | `{ Semaphore* semaphore; uint64_t value; }` |
 
@@ -385,9 +385,3 @@ alias `slag::slag`.
 
 PascalCase; formats spell out channel bits as in DXGI (`R8G8B8A8UnormSrgb`)
 — ADR 0022.
-
-## Proposed after M8 (placeholders, pending review)
-
-| Name | Notes |
-|---|---|
-| `semaphore->wait(value, timeoutNs)` → `Result<void>` | CPU wait on one semaphore (ADR 0053) |
