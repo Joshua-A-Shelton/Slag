@@ -57,7 +57,13 @@ void testCopyOnEachQueue(slag::Backend backend)
         for (int pass = 0; pass < 2; ++pass)
         {
             REQUIRE(static_cast<bool>(commandBuffer->begin()));
+            // Labels on every queue type (ADR 0050), nested, with a marker.
+            commandBuffer->beginLabel("copy test");
+            commandBuffer->beginLabel("copy");
+            commandBuffer->insertLabel("before the copy");
             commandBuffer->copyBuffer(readback, 0, upload, 0, elementCount * 4);
+            commandBuffer->endLabel();
+            commandBuffer->endLabel();
             REQUIRE(static_cast<bool>(commandBuffer->end()));
 
             slag::SemaphoreValue signal = {semaphore, ++signalValue};

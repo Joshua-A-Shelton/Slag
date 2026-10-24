@@ -213,6 +213,12 @@ New names added while implementing go here once confirmed.
 | `DescriptorHeap` | `Resource`, `Sampler` (utility-only for now; moves to the core with the same meaning if heaps are exposed) |
 | `DeferredDestroyer` | `destroyAfter` overloads for `AttachmentView`, `Buffer`, `Texture`, `QueryPool`, `Pipeline`, `CommandBuffer`, `MemoryBlock`, `Semaphore` |
 
+## Proposed during M7 (placeholders, reviewed at the end of M7)
+
+| Where | Names |
+|---|---|
+| `CommandBuffer` labels | `beginLabel(name, const float* color = nullptr)`, `insertLabel(name, color)` (color: optional RGBA pointer) |
+
 ## Fields and small names (settled after M6)
 
 | Where | Names |

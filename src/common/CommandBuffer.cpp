@@ -95,6 +95,7 @@ Result<void> CommandBuffer::begin()
         self->resumesPass = false;
         self->suspendsPass = false;
         self->recordedPass = false;
+        self->labelDepth = 0;
     }
     return result;
 }
@@ -105,6 +106,9 @@ Result<void> CommandBuffer::end()
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_RECORDING(self, "CommandBuffer::end");
     SLAG_VALIDATE(self->device->instance, !self->inRenderPass, "CommandBuffer::end", "a render pass is still open");
+    // Labels may stay open into, or close from, the other lists of a split render pass.
+    SLAG_VALIDATE(self->device->instance, self->labelDepth <= 0 || self->suspendsPass, "CommandBuffer::end",
+                  "%d labels are still open", self->labelDepth);
     Result<void> result = SLAG_DISPATCH(self, endCommandBuffer)(self);
     if (result)
     {

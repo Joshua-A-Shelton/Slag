@@ -1,6 +1,10 @@
 #include "d3d12/D3D12Backend.h"
 #include "d3d12/D3D12Formats.h"
 
+#include <slag/Limits.h>
+
+#include <cwchar>
+
 namespace slag::d3d12 {
 
 namespace {
@@ -466,6 +470,50 @@ Result<void> submit(CommandQueueCommon* object, const SubmitDesc& desc)
         }
     }
     return {};
+}
+
+} // namespace slag::d3d12
+
+namespace slag::d3d12 {
+
+namespace {
+
+// UTF-8 to UTF-16 in a fixed buffer, truncated (ADR 0050); returns the byte
+// size BeginEvent / SetMarker take, terminator included.
+UINT toWide(const char* text, wchar_t (&wide)[limits::maxDebugNameLength + 1])
+{
+    int count = MultiByteToWideChar(CP_UTF8, 0, text, -1, wide, static_cast<int>(limits::maxDebugNameLength + 1));
+    if (count <= 0)
+    {
+        wide[limits::maxDebugNameLength] = L'\0'; // too long: keep what fit
+        count = static_cast<int>(wcslen(wide)) + 1;
+    }
+    return static_cast<UINT>(count * sizeof(wchar_t));
+}
+
+// PIX's metadata value for a plain UTF-16 string (WINPIX_EVENT_UNICODE_VERSION).
+constexpr UINT unicodeEvent = 0;
+
+} // namespace
+
+// Color is ignored: plain BeginEvent has none (ADR 0050).
+void cmdBeginLabel(CommandBufferCommon* object, const char* name, const float*)
+{
+    wchar_t wide[limits::maxDebugNameLength + 1] = {};
+    UINT size = toWide(name, wide);
+    static_cast<CommandBufferImpl*>(object)->list->BeginEvent(unicodeEvent, wide, size);
+}
+
+void cmdEndLabel(CommandBufferCommon* object)
+{
+    static_cast<CommandBufferImpl*>(object)->list->EndEvent();
+}
+
+void cmdInsertLabel(CommandBufferCommon* object, const char* name, const float*)
+{
+    wchar_t wide[limits::maxDebugNameLength + 1] = {};
+    UINT size = toWide(name, wide);
+    static_cast<CommandBufferImpl*>(object)->list->SetMarker(unicodeEvent, wide, size);
 }
 
 } // namespace slag::d3d12

@@ -494,14 +494,19 @@ void testSplitPass(slag::Backend backend)
         slag::TextureBarrier toTarget =
             transition(target, slag::TextureLayout::Undefined, slag::TextureLayout::RenderTarget);
         first->barrier({}, {}, {&toTarget, 1});
+        // A label may span the lists of a split render pass (ADR 0050).
+        const float labelColor[4] = {0.2f, 0.6f, 1.0f, 1.0f};
+        first->beginLabel("split pass", labelColor);
         first->beginRendering({.colorAttachments = {&color, 1}, .suspending = true});
         scene.draw(first, pipeline, 0);
         first->endRendering();
         REQUIRE(static_cast<bool>(first->end()));
         REQUIRE(static_cast<bool>(second->begin()));
         second->beginRendering({.colorAttachments = {&color, 1}, .resuming = true});
+        second->insertLabel("second triangle");
         scene.draw(second, pipeline, 1);
         second->endRendering();
+        second->endLabel();
         slag::TextureBarrier toCopy =
             transition(target, slag::TextureLayout::RenderTarget, slag::TextureLayout::CopySource);
         second->barrier({}, {}, {&toCopy, 1});

@@ -211,6 +211,14 @@ public:
     // which is in the CopyDest access. Outside render passes.
     void resolveQueries(QueryPool* pool, uint32_t first, uint32_t count, Buffer* buffer, uint64_t offset);
 
+    // Debug labels (ADR 0050), shown in capture tools; UTF-8. `color` is an
+    // optional RGBA in [0, 1]: Vulkan shows it, D3D12 ignores it. Labels
+    // balance within a command buffer, except across a split render pass.
+    // Compiled out with SLAG_DISABLE_LABELS.
+    void beginLabel(const char* name, const float* color = nullptr);
+    void endLabel();
+    void insertLabel(const char* name, const float* color = nullptr);
+
     void resolveTexture(Texture* destination, uint32_t destinationMip, uint32_t destinationLayer, Texture* source,
                         uint32_t sourceLayer);
 

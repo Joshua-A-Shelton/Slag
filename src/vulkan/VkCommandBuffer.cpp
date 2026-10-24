@@ -590,3 +590,55 @@ Result<void> submit(CommandQueueCommon* object, const SubmitDesc& desc)
 }
 
 } // namespace slag::vk
+
+namespace slag::vk {
+
+namespace {
+
+// Skipped without VK_EXT_debug_utils (ADR 0050).
+const InstanceFunctions* labelFunctions(CommandBufferCommon* object)
+{
+    InstanceImpl& instance = instanceOf(*static_cast<GraphicsDeviceImpl*>(object->device));
+    return instance.debugUtils && instance.fn.vkCmdBeginDebugUtilsLabelEXT ? &instance.fn : nullptr;
+}
+
+VkDebugUtilsLabelEXT label(const char* name, const float* color)
+{
+    VkDebugUtilsLabelEXT info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
+    info.pLabelName = name;
+    for (int i = 0; color && i < 4; ++i)
+    {
+        info.color[i] = color[i];
+    }
+    return info;
+}
+
+} // namespace
+
+void cmdBeginLabel(CommandBufferCommon* object, const char* name, const float* color)
+{
+    if (const InstanceFunctions* fn = labelFunctions(object))
+    {
+        VkDebugUtilsLabelEXT info = label(name, color);
+        fn->vkCmdBeginDebugUtilsLabelEXT(static_cast<CommandBufferImpl*>(object)->commandBuffer, &info);
+    }
+}
+
+void cmdEndLabel(CommandBufferCommon* object)
+{
+    if (const InstanceFunctions* fn = labelFunctions(object))
+    {
+        fn->vkCmdEndDebugUtilsLabelEXT(static_cast<CommandBufferImpl*>(object)->commandBuffer);
+    }
+}
+
+void cmdInsertLabel(CommandBufferCommon* object, const char* name, const float* color)
+{
+    if (const InstanceFunctions* fn = labelFunctions(object))
+    {
+        VkDebugUtilsLabelEXT info = label(name, color);
+        fn->vkCmdInsertDebugUtilsLabelEXT(static_cast<CommandBufferImpl*>(object)->commandBuffer, &info);
+    }
+}
+
+} // namespace slag::vk

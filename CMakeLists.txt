@@ -67,6 +67,7 @@ target_sources(slag PRIVATE
     src/common/GraphicsDevice.cpp
     src/common/HostAllocator.cpp
     src/common/Instance.cpp
+    src/common/Labels.cpp
     src/common/Logging.cpp
     src/common/MemoryBlock.cpp
     src/common/Platform.cpp

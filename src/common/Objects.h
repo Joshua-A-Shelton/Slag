@@ -320,6 +320,7 @@ struct CommandBufferCommon : CommandBuffer, ObjectRecord
     bool resumesPass = false;
     bool suspendsPass = false;
     bool recordedPass = false;
+    int32_t labelDepth = 0; // open labels (ADR 0050); below 0 when closing ones a split pass opened
 };
 
 struct SwapchainCommon : Swapchain, ObjectRecord
