@@ -209,6 +209,7 @@ Results:
 | RX 7900 XT, RADV (Vulkan) | 2 | 128 buffers, 8 textures | 1552 → 1041 MB |
 | RTX 2070 SUPER, D3D12 | 2 | 128 buffers, 8 textures | 1573 → 1061 MB |
 | RTX 2070 SUPER, Vulkan | 2 | 128 buffers, 8 textures | 1610 → 1098 MB |
+| WARP (hosted CI), D3D12 | 2 | 191 buffers, 1 texture | 1284 → 520 MB |
 
 Every moved buffer and texture (all mips) reads back unchanged. A moved
 render target renders through its rebuilt attachment view. The three
