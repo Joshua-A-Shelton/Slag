@@ -27,6 +27,7 @@ slag_add_shader(slag_backend_tests SOURCE ../shaders/Triangle.slang ENTRY vertex
 slag_add_shader(slag_backend_tests SOURCE ../shaders/Triangle.slang ENTRY pixelMain STAGE pixel)
 slag_add_shader(slag_backend_tests SOURCE ../shaders/DrawId.slang ENTRY vertexMain STAGE vertex)
 slag_add_shader(slag_backend_tests SOURCE ../shaders/DrawId.slang ENTRY pixelMain STAGE pixel)
+slag_add_shader(slag_backend_tests SOURCE ../shaders/FullScreen.slang ENTRY vertexMain STAGE vertex)
 slag_add_shader(slag_backend_tests SOURCE ../shaders/Scene.slang ENTRY vertexMain STAGE vertex)
 slag_add_shader(slag_backend_tests SOURCE ../shaders/Scene.slang ENTRY pixelMain STAGE pixel)
 target_compile_definitions(slag_backend_tests PRIVATE "SLAG_GOLDEN_DIR=\"${PROJECT_SOURCE_DIR}/tests/golden\"")

@@ -557,7 +557,137 @@ void testSplitPass(slag::Backend backend)
     test.checkNoErrors();
 }
 
+// Read-only depth with writable stencil (open item 11): a depth-only
+// pipeline tests depth (0.25 < 0.5 passes) without writing it, and replaces
+// stencil with 7. The depth plane is in DepthStencilRead, stencil in
+// DepthStencilWrite.
+void testMixedDepthStencil(slag::Backend backend)
+{
+    TestInstance test(backend);
+    slag::GraphicsDevice* device = test.firstDevice();
+    REQUIRE(device);
+    REQUIRE(static_cast<bool>(device->initialize({})));
+    {
+        ShaderFiles vertexShader("FullScreen", "vertexMain");
+        slag::DepthStencilState depthStencil = {
+            .depthTest = true, .depthWrite = false, .depthCompareOp = slag::CompareOp::Less, .stencilTest = true};
+        depthStencil.front = {.passOp = slag::StencilOp::Replace, .compareOp = slag::CompareOp::Always};
+        depthStencil.back = depthStencil.front;
+        slag::Pipeline* pipeline =
+            device
+                ->createGraphicsPipeline({.vertex = {.binaries = vertexShader.binaries, .entryPoint = "vertexMain"},
+                                          .depthStencil = depthStencil,
+                                          .depthStencilFormat = slag::PixelFormat::D32FloatS8Uint})
+                .value();
+        REQUIRE(pipeline);
+        constexpr uint32_t size = 32;
+        slag::Texture* texture = device
+                                     ->createTexture2D({.format = slag::PixelFormat::D32FloatS8Uint,
+                                                        .width = size,
+                                                        .height = size,
+                                                        .usage = slag::TextureUsage::DepthStencil})
+                                     .value();
+        REQUIRE(texture);
+        slag::AttachmentView* view = device->createAttachmentView({.texture = texture}).value();
+        REQUIRE(view);
+        slag::CopyFootprint depthFootprint = device->copyFootprint(texture, 0, slag::TexturePlane::Depth);
+        slag::CopyFootprint stencilFootprint = device->copyFootprint(texture, 0, slag::TexturePlane::Stencil);
+        uint64_t stencilOffset = (depthFootprint.size + 511) / 512 * 512;
+        slag::Buffer* readback =
+            device
+                ->createBuffer({.size = stencilOffset + stencilFootprint.size,
+                                .placement = slag::Placement::automatic(slag::MemoryKind::Readback)})
+                .value();
+        REQUIRE(readback);
+
+        slag::CommandBuffer* commandBuffer =
+            device->createCommandBuffer({.queueType = slag::CommandQueueType::Graphics}).value();
+        REQUIRE(static_cast<bool>(commandBuffer->begin()));
+        // Clear both planes in a writable pass, then switch depth to read-only.
+        slag::TextureBarrier toWrite = {.syncBefore = slag::BarrierSync::None,
+                                        .syncAfter = slag::BarrierSync::DepthStencil,
+                                        .accessAfter = slag::BarrierAccess::DepthStencilWrite,
+                                        .layoutBefore = slag::TextureLayout::Undefined,
+                                        .layoutAfter = slag::TextureLayout::DepthStencilWrite,
+                                        .texture = texture};
+        commandBuffer->barrier({}, {}, {&toWrite, 1});
+        slag::DepthStencilAttachment clearPass = {.view = view,
+                                                  .depthLoadOp = slag::LoadOp::Clear,
+                                                  .stencilLoadOp = slag::LoadOp::Clear,
+                                                  .clearValue = {.depth = 0.5f, .stencil = 0}};
+        commandBuffer->beginRendering({.depthStencilAttachment = &clearPass});
+        commandBuffer->endRendering();
+        slag::TextureBarrier depthToRead = {.syncBefore = slag::BarrierSync::DepthStencil,
+                                            .syncAfter = slag::BarrierSync::DepthStencil,
+                                            .accessBefore = slag::BarrierAccess::DepthStencilWrite,
+                                            .accessAfter = slag::BarrierAccess::DepthStencilRead,
+                                            .layoutBefore = slag::TextureLayout::DepthStencilWrite,
+                                            .layoutAfter = slag::TextureLayout::DepthStencilRead,
+                                            .texture = texture,
+                                            .range = {.plane = slag::TexturePlane::Depth}};
+        commandBuffer->barrier({}, {}, {&depthToRead, 1});
+        slag::DepthStencilAttachment mixedPass = {.view = view, .readOnlyDepth = true};
+        commandBuffer->beginRendering({.depthStencilAttachment = &mixedPass});
+        commandBuffer->bindPipeline(pipeline);
+        commandBuffer->setStencilReference(7);
+        commandBuffer->draw(3, 1);
+        commandBuffer->endRendering();
+        slag::TextureBarrier toCopy[] = {{.syncBefore = slag::BarrierSync::DepthStencil,
+                                          .syncAfter = slag::BarrierSync::Copy,
+                                          .accessBefore = slag::BarrierAccess::DepthStencilRead,
+                                          .accessAfter = slag::BarrierAccess::CopySource,
+                                          .layoutBefore = slag::TextureLayout::DepthStencilRead,
+                                          .layoutAfter = slag::TextureLayout::CopySource,
+                                          .texture = texture,
+                                          .range = {.plane = slag::TexturePlane::Depth}},
+                                         {.syncBefore = slag::BarrierSync::DepthStencil,
+                                          .syncAfter = slag::BarrierSync::Copy,
+                                          .accessBefore = slag::BarrierAccess::DepthStencilWrite,
+                                          .accessAfter = slag::BarrierAccess::CopySource,
+                                          .layoutBefore = slag::TextureLayout::DepthStencilWrite,
+                                          .layoutAfter = slag::TextureLayout::CopySource,
+                                          .texture = texture,
+                                          .range = {.plane = slag::TexturePlane::Stencil}}};
+        commandBuffer->barrier({}, {}, toCopy);
+        commandBuffer->copyTextureToBuffer({readback, 0, depthFootprint.rowPitch},
+                                           {.texture = texture, .plane = slag::TexturePlane::Depth}, size, size);
+        commandBuffer->copyTextureToBuffer({readback, stencilOffset, stencilFootprint.rowPitch},
+                                           {.texture = texture, .plane = slag::TexturePlane::Stencil}, size, size);
+        REQUIRE(static_cast<bool>(commandBuffer->end()));
+        submitAndWait(device, commandBuffer);
+
+        const auto* bytes = static_cast<const uint8_t*>(readback->mappedData());
+        float depth = 0.0f;
+        std::memcpy(&depth, bytes + 16 * depthFootprint.rowPitch + 16 * 4, 4);
+        CHECK(depth == 0.5f);                                                   // not written
+        CHECK(bytes[stencilOffset + 16 * stencilFootprint.rowPitch + 16] == 7); // replaced
+        CHECK(bytes[stencilOffset + 0 * stencilFootprint.rowPitch + 0] == 7);
+
+        device->destroy(commandBuffer);
+        device->destroy(readback);
+        device->destroy(view);
+        device->destroy(texture);
+        device->destroy(pipeline);
+    }
+    device->shutdown();
+    test.checkNoErrors();
+}
+
 } // namespace
+
+#ifdef SLAG_BACKEND_VULKAN
+TEST_CASE("Vulkan: read-only depth with writable stencil")
+{
+    testMixedDepthStencil(slag::Backend::Vulkan);
+}
+#endif
+
+#ifdef SLAG_BACKEND_D3D12
+TEST_CASE("D3D12: read-only depth with writable stencil")
+{
+    testMixedDepthStencil(slag::Backend::D3D12);
+}
+#endif
 
 #ifdef SLAG_BACKEND_VULKAN
 TEST_CASE("Vulkan: MSAA resolves in a render pass and with resolveTexture")
