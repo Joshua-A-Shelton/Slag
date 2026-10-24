@@ -33,7 +33,7 @@ void destroyQueryPool(GraphicsDeviceCommon* common, QueryPoolCommon* object)
     auto& device = *static_cast<GraphicsDeviceImpl*>(common);
     auto* pool = static_cast<QueryPoolImpl*>(object);
     release(pool->heap);
-    device.instance->allocator.destroy(pool);
+    destroyObject(device.instance, pool);
 }
 
 void cmdWriteTimestamp(CommandBufferCommon* object, QueryPoolCommon* poolObject, uint32_t index)

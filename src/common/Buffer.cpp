@@ -21,6 +21,8 @@ Result<Buffer*> GraphicsDevice::createBuffer(const BufferDesc& desc)
     SLAG_VALIDATE(self->instance, desc.size <= self->capabilities.maxBufferSize, "GraphicsDevice::createBuffer",
                   "size %llu exceeds the device's maxBufferSize", static_cast<unsigned long long>(desc.size));
 #ifdef SLAG_VALIDATION
+    SLAG_CHECK_LIVE(self->instance, MemoryBlockCommon, desc.placement.memoryBlock, "MemoryBlock",
+                    "GraphicsDevice::createBuffer");
     if (desc.placement.memoryBlock)
     {
         auto* block = static_cast<const MemoryBlockCommon*>(desc.placement.memoryBlock);
@@ -83,6 +85,7 @@ Result<Buffer*> GraphicsDevice::createBuffer(const BufferDesc& desc)
         self->subAllocator->setOwner(allocation, buffer.value(), false);
     }
     buffer.value()->userData = desc.userData;
+    setDebugName(self->instance, buffer.value(), desc.debugName);
     if (desc.placement.memoryBlock)
     {
         buffer.value()->memoryBlock = static_cast<MemoryBlockCommon*>(desc.placement.memoryBlock);
@@ -93,6 +96,8 @@ Result<Buffer*> GraphicsDevice::createBuffer(const BufferDesc& desc)
 
 void GraphicsDevice::destroy(Buffer* buffer)
 {
+    SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, BufferCommon, buffer, "Buffer",
+                    "GraphicsDevice::destroy");
     if (!buffer)
     {
         return;
@@ -127,21 +132,25 @@ PlacementInfo GraphicsDevice::placementInfo(const BufferDesc& desc) const
 
 uint64_t Buffer::gpuAddress() const
 {
+    SLAG_CHECK_LIVE_THIS(BufferCommon, "Buffer", "Buffer::gpuAddress");
     return static_cast<const BufferCommon*>(this)->gpuAddress;
 }
 
 void* Buffer::mappedData() const
 {
+    SLAG_CHECK_LIVE_THIS(BufferCommon, "Buffer", "Buffer::mappedData");
     return static_cast<const BufferCommon*>(this)->mapped;
 }
 
 uint64_t Buffer::userData() const
 {
+    SLAG_CHECK_LIVE_THIS(BufferCommon, "Buffer", "Buffer::userData");
     return static_cast<const BufferCommon*>(this)->userData;
 }
 
 void Buffer::setUserData(uint64_t value)
 {
+    SLAG_CHECK_LIVE_THIS(BufferCommon, "Buffer", "Buffer::setUserData");
     static_cast<BufferCommon*>(this)->userData = value;
 }
 

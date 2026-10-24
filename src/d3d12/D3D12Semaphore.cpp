@@ -28,7 +28,7 @@ void destroySemaphore(GraphicsDeviceCommon* common, SemaphoreCommon* object)
     auto& device = *static_cast<GraphicsDeviceImpl*>(common);
     auto* semaphore = static_cast<SemaphoreImpl*>(object);
     release(semaphore->fence);
-    device.instance->allocator.destroy(semaphore);
+    destroyObject(device.instance, semaphore);
 }
 
 uint64_t semaphoreValue(const SemaphoreCommon* object)

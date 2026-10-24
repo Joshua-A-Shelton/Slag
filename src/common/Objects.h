@@ -6,7 +6,11 @@
 #include "common/Backend.h"
 #include "common/Formats.h"
 #include "common/HostAllocator.h"
+#include "common/Logging.h"
 #include "common/Vector.h"
+#ifdef SLAG_VALIDATION
+#include "common/validation/Quarantine.h"
+#endif
 
 #include <slag/AttachmentView.h>
 #include <slag/Buffer.h>
@@ -34,6 +38,16 @@ class SubAllocator;
 struct AttachmentViewCommon;
 struct DefragmentationPassCommon;
 
+// Every Slag object's record (ADRs 0017, 0052): its debug name, kept in
+// every build, and in validation builds whether it was destroyed.
+struct ObjectRecord
+{
+    char* debugName = nullptr; // a copy; null when unnamed
+#ifdef SLAG_VALIDATION
+    bool destroyed = false; // set on destroy; the record stays in the quarantine
+#endif
+};
+
 struct InstanceCommon : Instance
 {
     const BackendInfo* backend = nullptr;
@@ -45,9 +59,12 @@ struct InstanceCommon : Instance
     ValidationFailureAction failureAction = ValidationFailureAction::Break;
     Vector<GraphicsDevice*> devices;
     uint64_t userData = 0;
+#ifdef SLAG_VALIDATION
+    Quarantine quarantine;
+#endif
 };
 
-struct GraphicsDeviceCommon : GraphicsDevice
+struct GraphicsDeviceCommon : GraphicsDevice, ObjectRecord
 {
     InstanceCommon* instance = nullptr;
     const BackendFunctions* functions = nullptr;
@@ -86,7 +103,7 @@ struct GraphicsDeviceCommon : GraphicsDevice
 #endif
 };
 
-struct CommandQueueCommon : CommandQueue
+struct CommandQueueCommon : CommandQueue, ObjectRecord
 {
     GraphicsDeviceCommon* device = nullptr;
     const BackendFunctions* functions = nullptr;
@@ -101,7 +118,7 @@ struct PoolAllocation
     uint32_t node = 0;
 };
 
-struct MemoryBlockCommon : MemoryBlock
+struct MemoryBlockCommon : MemoryBlock, ObjectRecord
 {
     GraphicsDeviceCommon* device = nullptr;
     const BackendFunctions* functions = nullptr;
@@ -111,7 +128,7 @@ struct MemoryBlockCommon : MemoryBlock
     std::atomic<uint32_t> liveResources = 0; // placed resources, for validation
 };
 
-struct BufferCommon : Buffer
+struct BufferCommon : Buffer, ObjectRecord
 {
     GraphicsDeviceCommon* device = nullptr;
     const BackendFunctions* functions = nullptr;
@@ -161,7 +178,7 @@ struct TextureCreateInfo
     bool moveTarget = false;
 };
 
-struct TextureCommon : Texture
+struct TextureCommon : Texture, ObjectRecord
 {
     GraphicsDeviceCommon* device = nullptr;
     const BackendFunctions* functions = nullptr;
@@ -191,7 +208,7 @@ struct TextureCommon : Texture
     std::atomic<uint32_t> liveViews = 0;
 };
 
-struct AttachmentViewCommon : AttachmentView
+struct AttachmentViewCommon : AttachmentView, ObjectRecord
 {
     GraphicsDeviceCommon* device = nullptr;
     const BackendFunctions* functions = nullptr;
@@ -258,7 +275,7 @@ enum class PipelineKind : uint8_t
     Compute,
 };
 
-struct PipelineCommon : Pipeline
+struct PipelineCommon : Pipeline, ObjectRecord
 {
     GraphicsDeviceCommon* device = nullptr;
     const BackendFunctions* functions = nullptr;
@@ -281,7 +298,7 @@ enum class CommandBufferState : uint8_t
     Executable, // ended, ready to submit
 };
 
-struct CommandBufferCommon : CommandBuffer
+struct CommandBufferCommon : CommandBuffer, ObjectRecord
 {
     GraphicsDeviceCommon* device = nullptr;
     // A copy of the table pointer, so recording dispatches in one load (ADR 0065).
@@ -305,7 +322,7 @@ struct CommandBufferCommon : CommandBuffer
     bool recordedPass = false;
 };
 
-struct SwapchainCommon : Swapchain
+struct SwapchainCommon : Swapchain, ObjectRecord
 {
     GraphicsDeviceCommon* device = nullptr;
     const BackendFunctions* functions = nullptr;
@@ -327,7 +344,7 @@ struct SwapchainCommon : Swapchain
     uint32_t acquiredImage = noImage;
 };
 
-struct QueryPoolCommon : QueryPool
+struct QueryPoolCommon : QueryPool, ObjectRecord
 {
     GraphicsDeviceCommon* device = nullptr;
     const BackendFunctions* functions = nullptr;
@@ -378,7 +395,7 @@ void dropMove(DefragmentationPassCommon* pass, uint32_t index);
 void reportStaleSlots(GraphicsDeviceCommon* device);
 #endif
 
-struct SemaphoreCommon : Semaphore
+struct SemaphoreCommon : Semaphore, ObjectRecord
 {
     GraphicsDeviceCommon* device = nullptr;
     const BackendFunctions* functions = nullptr;
@@ -392,5 +409,65 @@ Status reportDeviceLost(GraphicsDeviceCommon* device);
 // Fills the shared fields; backends call this first when creating an instance.
 void initInstanceCommon(InstanceCommon& instance, const InstanceDesc& desc, const BackendInfo& backend,
                         const HostAllocator& allocator);
+
+// Debug names (ADR 0017): copied at creation, in every build.
+void setDebugName(InstanceCommon* instance, ObjectRecord* record, const char* name);
+void releaseDebugName(InstanceCommon* instance, ObjectRecord* record);
+// The name for messages: "" when unnamed.
+inline const char* debugNameOf(const ObjectRecord* record)
+{
+    return record && record->debugName ? record->debugName : "";
+}
+
+// Frees a destroyed Slag object (T is its exact type). Validation builds keep
+// it in the quarantine instead, marked destroyed (ADR 0052).
+template <class T>
+void destroyObject(InstanceCommon* instance, T* object)
+{
+#ifdef SLAG_VALIDATION
+    object->destroyed = true;
+    instance->quarantine.add(instance, object, [](InstanceCommon* owner, void* pointer) {
+        T* quarantined = static_cast<T*>(pointer);
+        releaseDebugName(owner, quarantined);
+        owner->allocator.destroy(quarantined);
+    });
+#else
+    releaseDebugName(instance, object);
+    instance->allocator.destroy(object);
+#endif
+}
+
+#ifdef SLAG_VALIDATION
+// Reports use of a destroyed object (a public pointer, converted to its
+// Common type); `object` may be null.
+#define SLAG_CHECK_LIVE(instance, CommonType, object, typeName, function)                                              \
+    SLAG_VALIDATE_LIVE((instance), static_cast<const CommonType*>(object), (typeName), (function))
+// The object a method is called on (never null).
+#define SLAG_CHECK_LIVE_THIS(CommonType, typeName, function)                                                           \
+    SLAG_VALIDATE(static_cast<const CommonType*>(this)->device->instance,                                              \
+                  !static_cast<const CommonType*>(this)->destroyed, (function), "use of a destroyed %s \"%s\"",        \
+                  (typeName), ::slag::debugNameOf(static_cast<const CommonType*>(this)))
+#else
+#define SLAG_CHECK_LIVE_THIS(CommonType, typeName, function)                                                           \
+    do                                                                                                                 \
+    {                                                                                                                  \
+    } while (false)
+#define SLAG_CHECK_LIVE(instance, CommonType, object, typeName, function)                                              \
+    do                                                                                                                 \
+    {                                                                                                                  \
+    } while (false)
+#endif
+
+#ifdef SLAG_VALIDATION
+// Reports use of a destroyed object; `object` may be null.
+#define SLAG_VALIDATE_LIVE(instance, object, typeName, function)                                                       \
+    SLAG_VALIDATE((instance), !(object) || !(object)->destroyed, (function), "use of a destroyed %s \"%s\"",           \
+                  (typeName), ::slag::debugNameOf(object))
+#else
+#define SLAG_VALIDATE_LIVE(instance, object, typeName, function)                                                       \
+    do                                                                                                                 \
+    {                                                                                                                  \
+    } while (false)
+#endif
 
 } // namespace slag

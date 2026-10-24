@@ -25,11 +25,14 @@ Result<MemoryBlock*> GraphicsDevice::createMemoryBlock(const MemoryBlockDesc& de
         return block.status();
     }
     block.value()->userData = desc.userData;
+    setDebugName(self->instance, block.value(), desc.debugName);
     return static_cast<MemoryBlock*>(block.value());
 }
 
 void GraphicsDevice::destroy(MemoryBlock* memoryBlock)
 {
+    SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, MemoryBlockCommon, memoryBlock,
+                    "MemoryBlock", "GraphicsDevice::destroy");
     if (!memoryBlock)
     {
         return;
@@ -45,21 +48,25 @@ void GraphicsDevice::destroy(MemoryBlock* memoryBlock)
 
 uint64_t MemoryBlock::size() const
 {
+    SLAG_CHECK_LIVE_THIS(MemoryBlockCommon, "MemoryBlock", "MemoryBlock::size");
     return static_cast<const MemoryBlockCommon*>(this)->size;
 }
 
 MemoryKind MemoryBlock::kind() const
 {
+    SLAG_CHECK_LIVE_THIS(MemoryBlockCommon, "MemoryBlock", "MemoryBlock::kind");
     return static_cast<const MemoryBlockCommon*>(this)->kind;
 }
 
 uint64_t MemoryBlock::userData() const
 {
+    SLAG_CHECK_LIVE_THIS(MemoryBlockCommon, "MemoryBlock", "MemoryBlock::userData");
     return static_cast<const MemoryBlockCommon*>(this)->userData;
 }
 
 void MemoryBlock::setUserData(uint64_t value)
 {
+    SLAG_CHECK_LIVE_THIS(MemoryBlockCommon, "MemoryBlock", "MemoryBlock::setUserData");
     static_cast<MemoryBlockCommon*>(this)->userData = value;
 }
 

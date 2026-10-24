@@ -124,7 +124,7 @@ void destroyMemoryBlock(GraphicsDeviceCommon* common, MemoryBlockCommon* object)
     {
         device.fn.vkFreeMemory(device.device, block->memory, nullptr); // also unmaps
     }
-    device.instance->allocator.destroy(block);
+    destroyObject(device.instance, block);
 }
 
 Result<BufferCommon*> createBuffer(GraphicsDeviceCommon* common, const BufferDesc& desc)
@@ -163,7 +163,7 @@ void destroyBuffer(GraphicsDeviceCommon* common, BufferCommon* object)
         allocation.mapped = buffer->mapped;
         destroyDedicatedBuffer(device, allocation);
     }
-    device.instance->allocator.destroy(buffer);
+    destroyObject(device.instance, buffer);
 }
 
 PlacementInfo bufferPlacementInfo(const GraphicsDeviceCommon* common, const BufferDesc& desc)

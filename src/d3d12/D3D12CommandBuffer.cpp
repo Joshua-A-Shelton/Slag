@@ -185,7 +185,7 @@ void destroyCommandBuffer(GraphicsDeviceCommon* common, CommandBufferCommon* obj
     auto* commandBuffer = static_cast<CommandBufferImpl*>(object);
     release(commandBuffer->list);
     release(commandBuffer->allocator);
-    device.instance->allocator.destroy(commandBuffer);
+    destroyObject(device.instance, commandBuffer);
 }
 
 Result<void> beginCommandBuffer(CommandBufferCommon* object)

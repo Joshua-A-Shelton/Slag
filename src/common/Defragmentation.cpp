@@ -27,6 +27,7 @@ TextureCreateInfo recreateInfo(const TextureCommon& texture, MemoryBlockCommon* 
     info.clearValue = texture.hasClearValue ? &texture.clearValue : nullptr;
     info.placement = Placement::placed(block, offset);
     info.moveTarget = true;
+    info.debugName = texture.debugName; // the native object keeps its name (ADR 0017)
     return info;
 }
 
@@ -48,6 +49,7 @@ Status rebuildViews(GraphicsDeviceCommon* device, TextureCommon* texture)
         desc.mip = view->mip;
         desc.baseLayer = view->baseLayer;
         desc.layerCount = view->layerCount;
+        desc.debugName = view->debugName;
         Result<AttachmentViewCommon*> rebuilt = SLAG_DISPATCH(device, createAttachmentView)(device, desc);
         if (!rebuilt)
         {
@@ -196,6 +198,7 @@ Result<DefragmentationPass*> GraphicsDevice::beginDefragmentation(const Defragme
             BufferDesc bufferDesc;
             bufferDesc.size = buffer->size;
             bufferDesc.placement = Placement::placed(move.block, move.offset);
+            bufferDesc.debugName = buffer->debugName;
             Result<BufferCommon*> created = SLAG_DISPATCH(self, createBuffer)(self, bufferDesc);
             if (!created)
             {
@@ -223,6 +226,8 @@ std::span<const DefragmentationMove> DefragmentationPass::moves() const
 
 void DefragmentationPass::recordCopies(CommandBuffer* commandBuffer)
 {
+    SLAG_CHECK_LIVE(static_cast<const DefragmentationPassCommon*>(this)->device->instance, CommandBufferCommon,
+                    commandBuffer, "CommandBuffer", "DefragmentationPass::recordCopies");
     auto* self = static_cast<DefragmentationPassCommon*>(this);
     auto* object = static_cast<CommandBufferCommon*>(commandBuffer);
     [[maybe_unused]] const char* function = "DefragmentationPass::recordCopies";

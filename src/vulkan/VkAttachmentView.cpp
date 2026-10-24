@@ -61,7 +61,7 @@ void destroyAttachmentView(GraphicsDeviceCommon* common, AttachmentViewCommon* o
     auto& device = *static_cast<GraphicsDeviceImpl*>(common);
     auto* view = static_cast<AttachmentViewImpl*>(object);
     device.fn.vkDestroyImageView(device.device, view->view, nullptr);
-    device.instance->allocator.destroy(view);
+    destroyObject(device.instance, view);
 }
 
 } // namespace slag::vk

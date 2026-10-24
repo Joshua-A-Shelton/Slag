@@ -207,6 +207,7 @@ void validateSampler(GraphicsDeviceCommon* self, uint32_t index, const SamplerDe
 void writeBuffer(GraphicsDeviceCommon* self, uint32_t index, const BufferDescriptorInfo& info)
 {
 #ifdef SLAG_VALIDATION
+    SLAG_VALIDATE_LIVE(self->instance, info.buffer, "Buffer", functionName(info.kind));
     validateBuffer(self, index, info);
     recordSlot(self, index, info.buffer, info.buffer ? info.buffer->moveCount : 0);
 #endif
@@ -302,6 +303,8 @@ TextureDescriptorInfo textureInfo(const RWTextureDescriptor& descriptor)
 void writeTextureInfo(GraphicsDeviceCommon* self, uint32_t index, const TextureDescriptorInfo& info)
 {
 #ifdef SLAG_VALIDATION
+    SLAG_VALIDATE_LIVE(self->instance, info.texture, "Texture",
+                       info.writable ? "GraphicsDevice::writeRWTexture" : "GraphicsDevice::writeTexture");
     validateTexture(self, index, info);
     recordSlot(self, index, info.texture, info.texture ? info.texture->moveCount : 0);
 #endif

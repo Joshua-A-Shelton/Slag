@@ -31,6 +31,7 @@ Result<QueryPool*> GraphicsDevice::createQueryPool(const QueryPoolDesc& desc)
         return pool.status();
     }
     pool.value()->userData = desc.userData;
+    setDebugName(self->instance, pool.value(), desc.debugName);
     pool.value()->type = desc.type;
     pool.value()->count = desc.count;
     pool.value()->queueType = desc.queueType;
@@ -39,6 +40,8 @@ Result<QueryPool*> GraphicsDevice::createQueryPool(const QueryPoolDesc& desc)
 
 void GraphicsDevice::destroy(QueryPool* pool)
 {
+    SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, QueryPoolCommon, pool, "QueryPool",
+                    "GraphicsDevice::destroy");
     if (!pool)
     {
         return;
@@ -52,16 +55,21 @@ void GraphicsDevice::destroy(QueryPool* pool)
 
 uint64_t QueryPool::userData() const
 {
+    SLAG_CHECK_LIVE_THIS(QueryPoolCommon, "QueryPool", "QueryPool::userData");
     return static_cast<const QueryPoolCommon*>(this)->userData;
 }
 
 void QueryPool::setUserData(uint64_t value)
 {
+    SLAG_CHECK_LIVE_THIS(QueryPoolCommon, "QueryPool", "QueryPool::setUserData");
     static_cast<QueryPoolCommon*>(this)->userData = value;
 }
 
 void CommandBuffer::writeTimestamp(QueryPool* pool, uint32_t index)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::writeTimestamp");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, QueryPoolCommon, pool, "QueryPool",
+                    "CommandBuffer::writeTimestamp");
     auto* self = static_cast<CommandBufferCommon*>(this);
     auto* object = static_cast<QueryPoolCommon*>(pool);
     [[maybe_unused]] InstanceCommon* instance = self->device->instance;
@@ -78,6 +86,11 @@ void CommandBuffer::writeTimestamp(QueryPool* pool, uint32_t index)
 
 void CommandBuffer::resolveQueries(QueryPool* pool, uint32_t first, uint32_t count, Buffer* buffer, uint64_t offset)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::resolveQueries");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, QueryPoolCommon, pool, "QueryPool",
+                    "CommandBuffer::resolveQueries");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, BufferCommon, buffer, "Buffer",
+                    "CommandBuffer::resolveQueries");
     auto* self = static_cast<CommandBufferCommon*>(this);
     auto* object = static_cast<QueryPoolCommon*>(pool);
     auto* destination = static_cast<BufferCommon*>(buffer);

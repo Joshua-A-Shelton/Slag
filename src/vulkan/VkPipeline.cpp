@@ -435,7 +435,7 @@ void destroyPipeline(GraphicsDeviceCommon* common, PipelineCommon* object)
     auto& device = *static_cast<GraphicsDeviceImpl*>(common);
     auto* pipeline = static_cast<PipelineImpl*>(object);
     device.fn.vkDestroyPipeline(device.device, pipeline->pipeline, nullptr);
-    device.instance->allocator.destroy(pipeline);
+    destroyObject(device.instance, pipeline);
 }
 
 } // namespace slag::vk

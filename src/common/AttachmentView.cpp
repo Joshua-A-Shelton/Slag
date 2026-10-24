@@ -24,6 +24,8 @@ namespace {
 
 Result<AttachmentView*> GraphicsDevice::createAttachmentView(const AttachmentViewDesc& desc)
 {
+    SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, TextureCommon, desc.texture, "Texture",
+                    "GraphicsDevice::createAttachmentView");
     auto* self = static_cast<GraphicsDeviceCommon*>(this);
     auto* texture = static_cast<TextureCommon*>(desc.texture);
     [[maybe_unused]] InstanceCommon* instance = self->instance;
@@ -72,6 +74,7 @@ Result<AttachmentView*> GraphicsDevice::createAttachmentView(const AttachmentVie
     }
     AttachmentViewCommon* object = view.value();
     object->userData = desc.userData;
+    setDebugName(self->instance, object, desc.debugName);
     object->texture = texture;
     object->format = resolved.format;
     object->mip = desc.mip;
@@ -93,6 +96,8 @@ Result<AttachmentView*> GraphicsDevice::createAttachmentView(const AttachmentVie
 
 void GraphicsDevice::destroy(AttachmentView* view)
 {
+    SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, AttachmentViewCommon, view,
+                    "AttachmentView", "GraphicsDevice::destroy");
     if (!view)
     {
         return;
@@ -116,11 +121,13 @@ void GraphicsDevice::destroy(AttachmentView* view)
 
 uint64_t AttachmentView::userData() const
 {
+    SLAG_CHECK_LIVE_THIS(AttachmentViewCommon, "AttachmentView", "AttachmentView::userData");
     return static_cast<const AttachmentViewCommon*>(this)->userData;
 }
 
 void AttachmentView::setUserData(uint64_t value)
 {
+    SLAG_CHECK_LIVE_THIS(AttachmentViewCommon, "AttachmentView", "AttachmentView::setUserData");
     static_cast<AttachmentViewCommon*>(this)->userData = value;
 }
 

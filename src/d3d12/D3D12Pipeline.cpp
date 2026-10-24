@@ -515,7 +515,7 @@ void destroyPipeline(GraphicsDeviceCommon* common, PipelineCommon* object)
     auto& device = *static_cast<GraphicsDeviceImpl*>(common);
     auto* pipeline = static_cast<PipelineImpl*>(object);
     release(pipeline->pipeline);
-    device.instance->allocator.destroy(pipeline);
+    destroyObject(device.instance, pipeline);
 }
 
 } // namespace slag::d3d12

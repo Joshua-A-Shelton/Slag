@@ -33,7 +33,7 @@ void destroySemaphore(GraphicsDeviceCommon* common, SemaphoreCommon* object)
     auto& device = *static_cast<GraphicsDeviceImpl*>(common);
     auto* semaphore = static_cast<SemaphoreImpl*>(object);
     device.fn.vkDestroySemaphore(device.device, semaphore->semaphore, nullptr);
-    device.instance->allocator.destroy(semaphore);
+    destroyObject(device.instance, semaphore);
 }
 
 uint64_t semaphoreValue(const SemaphoreCommon* object)

@@ -191,7 +191,7 @@ void destroyTexture(GraphicsDeviceCommon* common, TextureCommon* object)
     auto& device = *static_cast<GraphicsDeviceImpl*>(common);
     auto* texture = static_cast<TextureImpl*>(object);
     release(texture->resource);
-    device.instance->allocator.destroy(texture);
+    destroyObject(device.instance, texture);
 }
 
 PlacementInfo texturePlacementInfo(const GraphicsDeviceCommon* common, const TextureCreateInfo& info)

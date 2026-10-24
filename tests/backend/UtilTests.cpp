@@ -143,6 +143,37 @@ void testDeferredDestroyer(slag::Backend backend)
         destroyer.destroyAfter(extra, {frame, 2});
         destroyer.destroyAfter(static_cast<slag::Buffer*>(nullptr), {frame, 1});
 
+#ifdef SLAG_VALIDATION
+        // Validation builds keep destroyed objects in the quarantine (ADR
+        // 0052), so ask Slag instead: using one reports "use of a destroyed".
+        auto destroyed = [&](auto* object) {
+            size_t before = messages.errors.size();
+            (void)object->userData();
+            bool reported = messages.errors.size() > before;
+            messages.errors.resize(before);
+            return reported;
+        };
+        auto firstGone = [&] {
+            return destroyed(block) && destroyed(texture) && destroyed(placed) && destroyed(view);
+        };
+        auto secondGone = [&] {
+            return destroyed(buffer) && destroyed(pool) && destroyed(commandBuffer) && destroyed(extra);
+        };
+        destroyer.collect();
+        CHECK_FALSE(destroyed(block)); // nothing reached yet
+        CHECK_FALSE(destroyed(buffer));
+
+        REQUIRE(static_cast<bool>(frame->signal(1)));
+        destroyer.collect();
+        CHECK(firstGone());
+        CHECK_FALSE(destroyed(buffer));
+
+        // Reached before flush(), so its wait returns at once.
+        REQUIRE(static_cast<bool>(frame->signal(2)));
+        destroyer.flush();
+        CHECK(secondGone());
+        (void)baseline;
+#else
         destroyer.collect();
         CHECK(counter.live >= created); // nothing reached yet
 
@@ -155,6 +186,7 @@ void testDeferredDestroyer(slag::Backend backend)
         REQUIRE(static_cast<bool>(frame->signal(2)));
         destroyer.flush();
         CHECK(counter.live < afterFirst);
+#endif
     }
     device->destroy(frame);
     device->shutdown();

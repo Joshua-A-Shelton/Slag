@@ -156,11 +156,14 @@ Result<Semaphore*> GraphicsDevice::createSemaphore(const SemaphoreDesc& desc)
         return semaphore.status();
     }
     semaphore.value()->userData = desc.userData;
+    setDebugName(self->instance, semaphore.value(), desc.debugName);
     return static_cast<Semaphore*>(semaphore.value());
 }
 
 void GraphicsDevice::destroy(Semaphore* semaphore)
 {
+    SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, SemaphoreCommon, semaphore, "Semaphore",
+                    "GraphicsDevice::destroy");
     if (!semaphore)
     {
         return;
@@ -179,6 +182,8 @@ Result<void> GraphicsDevice::waitSemaphores(std::span<const SemaphoreValue> valu
     for (const SemaphoreValue& value : values)
     {
         SLAG_VALIDATE(self->instance, value.semaphore, "GraphicsDevice::waitSemaphores", "a semaphore is null");
+        SLAG_CHECK_LIVE(self->instance, SemaphoreCommon, value.semaphore, "Semaphore",
+                        "GraphicsDevice::waitSemaphores");
         SLAG_VALIDATE(self->instance,
                       !value.semaphore || static_cast<SemaphoreCommon*>(value.semaphore)->device == self,
                       "GraphicsDevice::waitSemaphores", "a semaphore belongs to another device");
@@ -247,12 +252,14 @@ Result<void> CommandQueue::waitIdle()
 
 uint64_t Semaphore::value() const
 {
+    SLAG_CHECK_LIVE_THIS(SemaphoreCommon, "Semaphore", "Semaphore::value");
     auto* self = static_cast<const SemaphoreCommon*>(this);
     return SLAG_DISPATCH(self, semaphoreValue)(self);
 }
 
 Result<void> Semaphore::signal(uint64_t value)
 {
+    SLAG_CHECK_LIVE_THIS(SemaphoreCommon, "Semaphore", "Semaphore::signal");
     auto* self = static_cast<SemaphoreCommon*>(this);
 #ifdef SLAG_VALIDATION
     uint64_t current = SLAG_DISPATCH(self, semaphoreValue)(self);
@@ -269,11 +276,13 @@ Result<void> Semaphore::signal(uint64_t value)
 
 uint64_t Semaphore::userData() const
 {
+    SLAG_CHECK_LIVE_THIS(SemaphoreCommon, "Semaphore", "Semaphore::userData");
     return static_cast<const SemaphoreCommon*>(this)->userData;
 }
 
 void Semaphore::setUserData(uint64_t value)
 {
+    SLAG_CHECK_LIVE_THIS(SemaphoreCommon, "Semaphore", "Semaphore::setUserData");
     static_cast<SemaphoreCommon*>(this)->userData = value;
 }
 

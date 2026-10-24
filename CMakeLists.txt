@@ -60,6 +60,7 @@ target_sources(slag PRIVATE
     src/common/AttachmentView.cpp
     src/common/Buffer.cpp
     src/common/CommandBuffer.cpp
+    src/common/DebugNames.cpp
     src/common/Defragmentation.cpp
     src/common/Descriptors.cpp
     src/common/Formats.cpp
@@ -75,6 +76,7 @@ target_sources(slag PRIVATE
     src/common/Swapchain.cpp
     src/common/Texture.cpp
     src/common/Tlsf.cpp
+    src/common/validation/Quarantine.cpp
     src/util/DeferredDestroyer.cpp
     src/util/DescriptorAllocator.cpp)
 

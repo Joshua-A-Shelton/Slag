@@ -120,6 +120,7 @@ Result<Swapchain*> GraphicsDevice::createSwapchain(const SwapchainDesc& desc)
     }
     SwapchainCommon* swapchain = result.value();
     swapchain->userData = desc.userData;
+    setDebugName(self->instance, swapchain, desc.debugName);
     swapchain->queue = static_cast<CommandQueueCommon*>(desc.queue);
     swapchain->window = desc.window;
     swapchain->width = desc.width;
@@ -137,6 +138,8 @@ Result<Swapchain*> GraphicsDevice::createSwapchain(const SwapchainDesc& desc)
 
 void GraphicsDevice::destroy(Swapchain* swapchain)
 {
+    SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, SwapchainCommon, swapchain, "Swapchain",
+                    "GraphicsDevice::destroy");
     if (!swapchain)
     {
         return;
@@ -167,6 +170,7 @@ uint32_t GraphicsDevice::supportedPresentModes(const NativeWindow& window, std::
 
 Result<uint32_t> Swapchain::acquire()
 {
+    SLAG_CHECK_LIVE_THIS(SwapchainCommon, "Swapchain", "Swapchain::acquire");
     SwapchainCommon* self = common(this);
     SLAG_VALIDATE(self->device->instance, self->acquiredImage == SwapchainCommon::noImage, "Swapchain::acquire",
                   "image %u is acquired but not presented", self->acquiredImage);
@@ -184,11 +188,13 @@ Result<uint32_t> Swapchain::acquire()
 
 uint32_t Swapchain::imageCount() const
 {
+    SLAG_CHECK_LIVE_THIS(SwapchainCommon, "Swapchain", "Swapchain::imageCount");
     return static_cast<uint32_t>(common(this)->textures.size());
 }
 
 Texture* Swapchain::texture(uint32_t index) const
 {
+    SLAG_CHECK_LIVE_THIS(SwapchainCommon, "Swapchain", "Swapchain::texture");
     const SwapchainCommon* self = common(this);
     SLAG_VALIDATE(self->device->instance, index < self->textures.size(), "Swapchain::texture",
                   "image %u is out of range (%zu images)", index, self->textures.size());
@@ -197,6 +203,7 @@ Texture* Swapchain::texture(uint32_t index) const
 
 AttachmentView* Swapchain::attachmentView(uint32_t index) const
 {
+    SLAG_CHECK_LIVE_THIS(SwapchainCommon, "Swapchain", "Swapchain::attachmentView");
     const SwapchainCommon* self = common(this);
     SLAG_VALIDATE(self->device->instance, index < self->views.size(), "Swapchain::attachmentView",
                   "image %u is out of range (%zu images)", index, self->views.size());
@@ -205,6 +212,7 @@ AttachmentView* Swapchain::attachmentView(uint32_t index) const
 
 AttachmentView* Swapchain::srgbAttachmentView(uint32_t index) const
 {
+    SLAG_CHECK_LIVE_THIS(SwapchainCommon, "Swapchain", "Swapchain::srgbAttachmentView");
     const SwapchainCommon* self = common(this);
     SLAG_VALIDATE(self->device->instance, index < self->srgbViews.size(), "Swapchain::srgbAttachmentView",
                   "image %u is out of range (%zu images)", index, self->srgbViews.size());
@@ -215,12 +223,14 @@ AttachmentView* Swapchain::srgbAttachmentView(uint32_t index) const
 
 std::span<const PresentMode> Swapchain::switchablePresentModes() const
 {
+    SLAG_CHECK_LIVE_THIS(SwapchainCommon, "Swapchain", "Swapchain::switchablePresentModes");
     const SwapchainCommon* self = common(this);
     return {self->switchableModes, self->switchableCount};
 }
 
 Result<void> Swapchain::reconfigure(const SwapchainReconfigureDesc& desc)
 {
+    SLAG_CHECK_LIVE_THIS(SwapchainCommon, "Swapchain", "Swapchain::reconfigure");
     SwapchainCommon* self = common(this);
     [[maybe_unused]] const char* function = "Swapchain::reconfigure";
 #ifdef SLAG_VALIDATION
@@ -250,12 +260,14 @@ Result<void> Swapchain::reconfigure(const SwapchainReconfigureDesc& desc)
 
 void Swapchain::setHdrMetadata(const HdrMetadata& metadata)
 {
+    SLAG_CHECK_LIVE_THIS(SwapchainCommon, "Swapchain", "Swapchain::setHdrMetadata");
     SwapchainCommon* self = common(this);
     SLAG_DISPATCH(self, setHdrMetadata)(self, metadata);
 }
 
 void Swapchain::setMaxFrameLatency(uint32_t frames)
 {
+    SLAG_CHECK_LIVE_THIS(SwapchainCommon, "Swapchain", "Swapchain::setMaxFrameLatency");
     SwapchainCommon* self = common(this);
     SLAG_VALIDATE(self->device->instance, self->device->capabilities.frameLatency, "Swapchain::setMaxFrameLatency",
                   "frame latency control is not supported on \"%s\"", self->device->info.name);
@@ -266,6 +278,7 @@ void Swapchain::setMaxFrameLatency(uint32_t frames)
 
 Result<void> Swapchain::waitForNextFrame(uint64_t timeoutNs)
 {
+    SLAG_CHECK_LIVE_THIS(SwapchainCommon, "Swapchain", "Swapchain::waitForNextFrame");
     SwapchainCommon* self = common(this);
     SLAG_VALIDATE(self->device->instance, self->device->capabilities.frameLatency, "Swapchain::waitForNextFrame",
                   "frame latency control is not supported on \"%s\"", self->device->info.name);
@@ -274,16 +287,20 @@ Result<void> Swapchain::waitForNextFrame(uint64_t timeoutNs)
 
 uint64_t Swapchain::userData() const
 {
+    SLAG_CHECK_LIVE_THIS(SwapchainCommon, "Swapchain", "Swapchain::userData");
     return common(this)->userData;
 }
 
 void Swapchain::setUserData(uint64_t value)
 {
+    SLAG_CHECK_LIVE_THIS(SwapchainCommon, "Swapchain", "Swapchain::setUserData");
     common(this)->userData = value;
 }
 
 Result<void> CommandQueue::present(Swapchain* swapchain, PresentMode mode)
 {
+    SLAG_CHECK_LIVE(static_cast<const CommandQueueCommon*>(this)->device->instance, SwapchainCommon, swapchain,
+                    "Swapchain", "CommandQueue::present");
     auto* self = static_cast<CommandQueueCommon*>(this);
     SwapchainCommon* object = common(swapchain);
 #ifdef SLAG_VALIDATION

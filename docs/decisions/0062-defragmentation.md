@@ -102,8 +102,7 @@ device->endDefragmentation(pass, /*completed*/ semaphoreValue);   // swaps nativ
   native object for each move placed there. `endDefragmentation` swaps the
   native handles into the user's object (pointers stay stable), destroys
   the old ones, frees the old ranges, and rebuilds the texture's attachment
-  views the same way. Moved resources lose their debug names until names
-  are kept (M7).
+  views the same way. The new native objects get the resources' debug names (kept since M7).
 - One pass per device at a time. Destroying a resource in an active pass is
   a validation error; Slag then drops its move.
 - `endDefragmentation(pass, completed)` checks (validation builds) that

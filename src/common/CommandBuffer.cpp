@@ -58,12 +58,15 @@ Result<CommandBuffer*> GraphicsDevice::createCommandBuffer(const CommandBufferDe
         return commandBuffer.status();
     }
     commandBuffer.value()->userData = desc.userData;
+    setDebugName(self->instance, commandBuffer.value(), desc.debugName);
     commandBuffer.value()->queueType = desc.queueType;
     return static_cast<CommandBuffer*>(commandBuffer.value());
 }
 
 void GraphicsDevice::destroy(CommandBuffer* commandBuffer)
 {
+    SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, CommandBufferCommon, commandBuffer,
+                    "CommandBuffer", "GraphicsDevice::destroy");
     if (!commandBuffer)
     {
         return;
@@ -79,6 +82,7 @@ void GraphicsDevice::destroy(CommandBuffer* commandBuffer)
 
 Result<void> CommandBuffer::begin()
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::begin");
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE(self->device->instance, self->state == CommandBufferState::Initial, "CommandBuffer::begin",
                   "the command buffer is %s; reset it first", stateName(self->state));
@@ -97,6 +101,7 @@ Result<void> CommandBuffer::begin()
 
 Result<void> CommandBuffer::end()
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::end");
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_RECORDING(self, "CommandBuffer::end");
     SLAG_VALIDATE(self->device->instance, !self->inRenderPass, "CommandBuffer::end", "a render pass is still open");
@@ -110,6 +115,7 @@ Result<void> CommandBuffer::end()
 
 Result<void> CommandBuffer::reset()
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::reset");
     CommandBufferCommon* self = common(this);
     Result<void> result = SLAG_DISPATCH(self, resetCommandBuffer)(self);
     if (result)
@@ -122,6 +128,9 @@ Result<void> CommandBuffer::reset()
 
 void CommandBuffer::bindPipeline(Pipeline* pipeline)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::bindPipeline");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, PipelineCommon, pipeline,
+                    "Pipeline", "CommandBuffer::bindPipeline");
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_RECORDING(self, "CommandBuffer::bindPipeline");
     SLAG_VALIDATE(self->device->instance, pipeline, "CommandBuffer::bindPipeline", "pipeline is null");
@@ -132,6 +141,7 @@ void CommandBuffer::bindPipeline(Pipeline* pipeline)
 
 void CommandBuffer::pushConstants(const void* data, uint32_t size, uint32_t offset)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::pushConstants");
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_RECORDING(self, "CommandBuffer::pushConstants");
     SLAG_VALIDATE(self->device->instance, offset + size <= limits::maxPushConstantsSize, "CommandBuffer::pushConstants",
@@ -144,6 +154,7 @@ void CommandBuffer::pushConstants(const void* data, uint32_t size, uint32_t offs
 
 void CommandBuffer::setConstantBuffer(uint64_t address, uint32_t size)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::setConstantBuffer");
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_RECORDING(self, "CommandBuffer::setConstantBuffer");
     SLAG_VALIDATE(self->device->instance, self->queueType != CommandQueueType::Copy, "CommandBuffer::setConstantBuffer",
@@ -159,6 +170,7 @@ void CommandBuffer::setConstantBuffer(uint64_t address, uint32_t size)
 
 void CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::dispatch");
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_RECORDING(self, "CommandBuffer::dispatch");
     SLAG_VALIDATE_OUTSIDE_PASS(self, "CommandBuffer::dispatch");
@@ -179,11 +191,13 @@ void CommandBuffer::barrier(std::span<const GlobalBarrier> globalBarriers,
     for (const BufferBarrier& barrier : bufferBarriers)
     {
         SLAG_VALIDATE(instance, barrier.buffer, "CommandBuffer::barrier", "a buffer barrier has no buffer");
+        SLAG_CHECK_LIVE(instance, BufferCommon, barrier.buffer, "Buffer", "CommandBuffer::barrier");
     }
     for (const TextureBarrier& barrier : textureBarriers)
     {
         auto* texture = static_cast<const TextureCommon*>(barrier.texture);
         SLAG_VALIDATE(instance, texture, "CommandBuffer::barrier", "a texture barrier has no texture");
+        SLAG_VALIDATE_LIVE(instance, texture, "Texture", "CommandBuffer::barrier");
         if (!texture)
         {
             continue;
@@ -220,6 +234,11 @@ void CommandBuffer::barrier(std::span<const GlobalBarrier> globalBarriers,
 void CommandBuffer::copyBuffer(Buffer* destination, uint64_t destinationOffset, Buffer* source, uint64_t sourceOffset,
                                uint64_t size)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::copyBuffer");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, BufferCommon, destination,
+                    "Buffer", "CommandBuffer::copyBuffer");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, BufferCommon, source, "Buffer",
+                    "CommandBuffer::copyBuffer");
     CommandBufferCommon* self = common(this);
     auto* dst = static_cast<BufferCommon*>(destination);
     auto* src = static_cast<BufferCommon*>(source);
@@ -315,6 +334,11 @@ void validateBufferRegion(InstanceCommon* instance, const BufferLocation& locati
 void CommandBuffer::copyTexture(const TextureLocation& destination, const TextureLocation& source, uint32_t width,
                                 uint32_t height, uint32_t depth)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::copyTexture");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, TextureCommon, destination.texture,
+                    "Texture", "CommandBuffer::copyTexture");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, TextureCommon, source.texture,
+                    "Texture", "CommandBuffer::copyTexture");
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_RECORDING(self, "CommandBuffer::copyTexture");
     SLAG_VALIDATE_OUTSIDE_PASS(self, "CommandBuffer::copyTexture");
@@ -334,6 +358,11 @@ void CommandBuffer::copyTexture(const TextureLocation& destination, const Textur
 void CommandBuffer::resolveTexture(Texture* destination, uint32_t destinationMip, uint32_t destinationLayer,
                                    Texture* source, uint32_t sourceLayer)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::resolveTexture");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, TextureCommon, destination,
+                    "Texture", "CommandBuffer::resolveTexture");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, TextureCommon, source, "Texture",
+                    "CommandBuffer::resolveTexture");
     CommandBufferCommon* self = common(this);
     auto* dst = static_cast<TextureCommon*>(destination);
     auto* src = static_cast<TextureCommon*>(source);
@@ -368,6 +397,11 @@ void CommandBuffer::resolveTexture(Texture* destination, uint32_t destinationMip
 void CommandBuffer::copyBufferToTexture(const TextureLocation& destination, const BufferLocation& source,
                                         uint32_t width, uint32_t height, uint32_t depth)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::copyBufferToTexture");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, TextureCommon, destination.texture,
+                    "Texture", "CommandBuffer::copyBufferToTexture");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, BufferCommon, source.buffer,
+                    "Buffer", "CommandBuffer::copyBufferToTexture");
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_RECORDING(self, "CommandBuffer::copyBufferToTexture");
     SLAG_VALIDATE_OUTSIDE_PASS(self, "CommandBuffer::copyBufferToTexture");
@@ -383,6 +417,11 @@ void CommandBuffer::copyBufferToTexture(const TextureLocation& destination, cons
 void CommandBuffer::copyTextureToBuffer(const BufferLocation& destination, const TextureLocation& source,
                                         uint32_t width, uint32_t height, uint32_t depth)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::copyTextureToBuffer");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, BufferCommon, destination.buffer,
+                    "Buffer", "CommandBuffer::copyTextureToBuffer");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, TextureCommon, source.texture,
+                    "Texture", "CommandBuffer::copyTextureToBuffer");
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_RECORDING(self, "CommandBuffer::copyTextureToBuffer");
     SLAG_VALIDATE_OUTSIDE_PASS(self, "CommandBuffer::copyTextureToBuffer");
@@ -396,11 +435,13 @@ void CommandBuffer::copyTextureToBuffer(const BufferLocation& destination, const
 
 uint64_t CommandBuffer::userData() const
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::userData");
     return static_cast<const CommandBufferCommon*>(this)->userData;
 }
 
 void CommandBuffer::setUserData(uint64_t value)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::setUserData");
     common(this)->userData = value;
 }
 
@@ -414,9 +455,22 @@ Result<void> CommandQueue::submit(const SubmitDesc& desc)
     {
         reportStaleSlots(self->device);
     }
+    for (const SemaphoreValue& value : desc.waits)
+    {
+        SLAG_CHECK_LIVE(self->device->instance, SemaphoreCommon, value.semaphore, "Semaphore", "CommandQueue::submit");
+    }
+    for (const SemaphoreValue& value : desc.signals)
+    {
+        SLAG_CHECK_LIVE(self->device->instance, SemaphoreCommon, value.semaphore, "Semaphore", "CommandQueue::submit");
+    }
+    for (Swapchain* swapchain : desc.acquiredSwapchains)
+    {
+        SLAG_CHECK_LIVE(self->device->instance, SwapchainCommon, swapchain, "Swapchain", "CommandQueue::submit");
+    }
     for (CommandBuffer* commandBuffer : desc.commandBuffers)
     {
         CommandBufferCommon* object = common(commandBuffer);
+        SLAG_VALIDATE_LIVE(self->device->instance, object, "CommandBuffer", "CommandQueue::submit");
         SLAG_VALIDATE(self->device->instance, object->state == CommandBufferState::Executable, "CommandQueue::submit",
                       "a command buffer is %s, not ended", stateName(object->state));
         SLAG_VALIDATE(self->device->instance, object->queueType == self->type, "CommandQueue::submit",
@@ -567,6 +621,7 @@ Result<Pipeline*> GraphicsDevice::createGraphicsPipeline(const GraphicsPipelineD
     }
     PipelineCommon* pipeline = result.value();
     pipeline->userData = desc.userData;
+    setDebugName(self->instance, pipeline, desc.debugName);
     pipeline->kind = PipelineKind::Graphics;
     pipeline->colorCount = static_cast<uint32_t>(desc.colorFormats.size() < 8 ? desc.colorFormats.size() : 8);
     for (uint32_t i = 0; i < pipeline->colorCount; ++i)
@@ -598,12 +653,15 @@ Result<Pipeline*> GraphicsDevice::createComputePipeline(const ComputePipelineDes
         return pipeline.status();
     }
     pipeline.value()->userData = desc.userData;
+    setDebugName(self->instance, pipeline.value(), desc.debugName);
     pipeline.value()->kind = PipelineKind::Compute;
     return static_cast<Pipeline*>(pipeline.value());
 }
 
 void GraphicsDevice::destroy(Pipeline* pipeline)
 {
+    SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, PipelineCommon, pipeline, "Pipeline",
+                    "GraphicsDevice::destroy");
     if (!pipeline)
     {
         return;
@@ -617,11 +675,13 @@ void GraphicsDevice::destroy(Pipeline* pipeline)
 
 uint64_t Pipeline::userData() const
 {
+    SLAG_CHECK_LIVE_THIS(PipelineCommon, "Pipeline", "Pipeline::userData");
     return static_cast<const PipelineCommon*>(this)->userData;
 }
 
 void Pipeline::setUserData(uint64_t value)
 {
+    SLAG_CHECK_LIVE_THIS(PipelineCommon, "Pipeline", "Pipeline::setUserData");
     static_cast<PipelineCommon*>(this)->userData = value;
 }
 

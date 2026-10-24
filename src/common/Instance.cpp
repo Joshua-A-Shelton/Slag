@@ -64,6 +64,9 @@ void destroy(Instance* instance)
         return;
     }
     auto* self = static_cast<InstanceCommon*>(instance);
+#ifdef SLAG_VALIDATION
+    self->quarantine.flush(self);
+#endif
     SLAG_DISPATCH(self, destroyInstance)(self);
 }
 

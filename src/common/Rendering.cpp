@@ -32,6 +32,7 @@ void viewExtent(const AttachmentViewCommon& view, uint32_t& width, uint32_t& hei
 
 void CommandBuffer::beginRendering(const RenderingDesc& desc)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::beginRendering");
     CommandBufferCommon* self = common(this);
     [[maybe_unused]] InstanceCommon* instance = self->device->instance;
     [[maybe_unused]] const char* function = "CommandBuffer::beginRendering";
@@ -49,6 +50,7 @@ void CommandBuffer::beginRendering(const RenderingDesc& desc)
     uint32_t samples = 0;
     self->passColorCount = static_cast<uint32_t>(desc.colorAttachments.size() < 8 ? desc.colorAttachments.size() : 8);
     auto consider = [&](const AttachmentViewCommon* view) {
+        SLAG_VALIDATE_LIVE(instance, view, "AttachmentView", function);
         uint32_t viewWidth = 0;
         uint32_t viewHeight = 0;
         viewExtent(*view, viewWidth, viewHeight);
@@ -123,6 +125,7 @@ void CommandBuffer::beginRendering(const RenderingDesc& desc)
 
 void CommandBuffer::endRendering()
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::endRendering");
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_IN_PASS(self, "CommandBuffer::endRendering");
     self->inRenderPass = false;
@@ -131,6 +134,7 @@ void CommandBuffer::endRendering()
 
 void CommandBuffer::bindVertexBuffers(uint32_t firstSlot, std::span<const VertexBufferBinding> bindings)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::bindVertexBuffers");
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE(self->device->instance, self->state == CommandBufferState::Recording,
                   "CommandBuffer::bindVertexBuffers", "not recording");
@@ -140,6 +144,7 @@ void CommandBuffer::bindVertexBuffers(uint32_t firstSlot, std::span<const Vertex
     for (const VertexBufferBinding& binding : bindings)
     {
         auto* buffer = static_cast<const BufferCommon*>(binding.buffer);
+        SLAG_VALIDATE_LIVE(self->device->instance, buffer, "Buffer", "CommandBuffer::bindVertexBuffers");
         SLAG_VALIDATE(self->device->instance, buffer && binding.offset + binding.size <= buffer->size,
                       "CommandBuffer::bindVertexBuffers", "a binding is null or ends past its buffer");
     }
@@ -149,6 +154,9 @@ void CommandBuffer::bindVertexBuffers(uint32_t firstSlot, std::span<const Vertex
 
 void CommandBuffer::bindIndexBuffer(Buffer* buffer, uint64_t offset, uint64_t size, IndexFormat format)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::bindIndexBuffer");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, BufferCommon, buffer, "Buffer",
+                    "CommandBuffer::bindIndexBuffer");
     CommandBufferCommon* self = common(this);
     auto* object = static_cast<BufferCommon*>(buffer);
     SLAG_VALIDATE(self->device->instance, self->state == CommandBufferState::Recording,
@@ -162,6 +170,7 @@ void CommandBuffer::bindIndexBuffer(Buffer* buffer, uint64_t offset, uint64_t si
 
 void CommandBuffer::setViewports(std::span<const Viewport> viewports)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::setViewports");
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE(self->device->instance, !viewports.empty() && viewports.size() <= limits::maxViewports,
                   "CommandBuffer::setViewports", "1 to %u viewports", limits::maxViewports);
@@ -170,6 +179,7 @@ void CommandBuffer::setViewports(std::span<const Viewport> viewports)
 
 void CommandBuffer::setScissors(std::span<const Rect> scissors)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::setScissors");
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE(self->device->instance, !scissors.empty() && scissors.size() <= limits::maxViewports,
                   "CommandBuffer::setScissors", "1 to %u scissors", limits::maxViewports);
@@ -178,18 +188,21 @@ void CommandBuffer::setScissors(std::span<const Rect> scissors)
 
 void CommandBuffer::setBlendConstant(const float constant[4])
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::setBlendConstant");
     CommandBufferCommon* self = common(this);
     SLAG_DISPATCH(self, cmdSetBlendConstant)(self, constant);
 }
 
 void CommandBuffer::setStencilReference(uint8_t reference)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::setStencilReference");
     CommandBufferCommon* self = common(this);
     SLAG_DISPATCH(self, cmdSetStencilReference)(self, reference);
 }
 
 void CommandBuffer::setDepthBounds(float minDepth, float maxDepth)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::setDepthBounds");
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE(self->device->instance, self->device->capabilities.depthBounds, "CommandBuffer::setDepthBounds",
                   "the depth bounds test is not supported");
@@ -238,6 +251,7 @@ namespace {
 
 void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::draw");
     CommandBufferCommon* self = common(this);
     validateDraw(self, "CommandBuffer::draw");
     SLAG_DISPATCH(self, cmdDraw)(self, vertexCount, instanceCount, firstVertex, firstInstance);
@@ -246,6 +260,7 @@ void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t 
 void CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset,
                                 uint32_t firstInstance)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::drawIndexed");
     CommandBufferCommon* self = common(this);
     validateDraw(self, "CommandBuffer::drawIndexed");
     SLAG_DISPATCH(self, cmdDrawIndexed)(self, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
@@ -303,6 +318,9 @@ void indirect(CommandBuffer* object, IndirectKind kind, Buffer* arguments, uint6
 
 void CommandBuffer::drawIndirect(Buffer* argumentBuffer, uint64_t argumentOffset, uint32_t drawCount)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::drawIndirect");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, BufferCommon, argumentBuffer,
+                    "Buffer", "CommandBuffer::drawIndirect");
     indirect(this, IndirectKind::Draw, argumentBuffer, argumentOffset, drawCount, nullptr, 0,
              "CommandBuffer::drawIndirect");
 }
@@ -310,6 +328,11 @@ void CommandBuffer::drawIndirect(Buffer* argumentBuffer, uint64_t argumentOffset
 void CommandBuffer::drawIndirectCount(Buffer* argumentBuffer, uint64_t argumentOffset, Buffer* countBuffer,
                                       uint64_t countOffset, uint32_t maxDrawCount)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::drawIndirectCount");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, BufferCommon, argumentBuffer,
+                    "Buffer", "CommandBuffer::drawIndirectCount");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, BufferCommon, countBuffer,
+                    "Buffer", "CommandBuffer::drawIndirectCount");
     SLAG_VALIDATE(common(this)->device->instance, countBuffer, "CommandBuffer::drawIndirectCount",
                   "the count buffer is null");
     indirect(this, IndirectKind::Draw, argumentBuffer, argumentOffset, maxDrawCount, countBuffer, countOffset,
@@ -318,6 +341,9 @@ void CommandBuffer::drawIndirectCount(Buffer* argumentBuffer, uint64_t argumentO
 
 void CommandBuffer::drawIndexedIndirect(Buffer* argumentBuffer, uint64_t argumentOffset, uint32_t drawCount)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::drawIndexedIndirect");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, BufferCommon, argumentBuffer,
+                    "Buffer", "CommandBuffer::drawIndexedIndirect");
     indirect(this, IndirectKind::DrawIndexed, argumentBuffer, argumentOffset, drawCount, nullptr, 0,
              "CommandBuffer::drawIndexedIndirect");
 }
@@ -325,6 +351,11 @@ void CommandBuffer::drawIndexedIndirect(Buffer* argumentBuffer, uint64_t argumen
 void CommandBuffer::drawIndexedIndirectCount(Buffer* argumentBuffer, uint64_t argumentOffset, Buffer* countBuffer,
                                              uint64_t countOffset, uint32_t maxDrawCount)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::drawIndexedIndirectCount");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, BufferCommon, argumentBuffer,
+                    "Buffer", "CommandBuffer::drawIndexedIndirectCount");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, BufferCommon, countBuffer,
+                    "Buffer", "CommandBuffer::drawIndexedIndirectCount");
     SLAG_VALIDATE(common(this)->device->instance, countBuffer, "CommandBuffer::drawIndexedIndirectCount",
                   "the count buffer is null");
     indirect(this, IndirectKind::DrawIndexed, argumentBuffer, argumentOffset, maxDrawCount, countBuffer, countOffset,
@@ -333,6 +364,9 @@ void CommandBuffer::drawIndexedIndirectCount(Buffer* argumentBuffer, uint64_t ar
 
 void CommandBuffer::dispatchIndirect(Buffer* argumentBuffer, uint64_t argumentOffset)
 {
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::dispatchIndirect");
+    SLAG_CHECK_LIVE(static_cast<const CommandBufferCommon*>(this)->device->instance, BufferCommon, argumentBuffer,
+                    "Buffer", "CommandBuffer::dispatchIndirect");
     indirect(this, IndirectKind::Dispatch, argumentBuffer, argumentOffset, 1, nullptr, 0,
              "CommandBuffer::dispatchIndirect");
 }

@@ -92,7 +92,7 @@ void destroyMemoryBlock(GraphicsDeviceCommon* common, MemoryBlockCommon* object)
     auto& device = *static_cast<GraphicsDeviceImpl*>(common);
     auto* block = static_cast<MemoryBlockImpl*>(object);
     release(block->heap);
-    device.instance->allocator.destroy(block);
+    destroyObject(device.instance, block);
 }
 
 Result<BufferCommon*> createBuffer(GraphicsDeviceCommon* common, const BufferDesc& desc)
@@ -158,7 +158,7 @@ void destroyBuffer(GraphicsDeviceCommon* common, BufferCommon* object)
     auto& device = *static_cast<GraphicsDeviceImpl*>(common);
     auto* buffer = static_cast<BufferImpl*>(object);
     release(buffer->resource); // unmaps
-    device.instance->allocator.destroy(buffer);
+    destroyObject(device.instance, buffer);
 }
 
 PlacementInfo bufferPlacementInfo(const GraphicsDeviceCommon* common, const BufferDesc& desc)

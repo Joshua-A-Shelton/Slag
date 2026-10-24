@@ -50,7 +50,7 @@ void releaseImages(GraphicsDeviceImpl& device, SwapchainImpl& swapchain)
     {
         auto* impl = static_cast<TextureImpl*>(texture);
         release(impl->resource);
-        device.instance->allocator.destroy(impl);
+        destroyObject(device.instance, impl);
     }
     swapchain.textures.clear();
 }
@@ -190,7 +190,7 @@ void destroySwapchain(GraphicsDeviceCommon* common, SwapchainCommon* object)
         CloseHandle(swapchain->frameLatencyWaitable);
     }
     release(swapchain->swapchain);
-    device.instance->allocator.destroy(swapchain);
+    destroyObject(device.instance, swapchain);
 }
 
 Result<void> reconfigureSwapchain(SwapchainCommon* object, const SwapchainReconfigureDesc& desc)

@@ -156,7 +156,7 @@ void destroyImages(GraphicsDeviceImpl& device, SwapchainImpl& swapchain)
 {
     for (TextureCommon* texture : swapchain.textures)
     {
-        device.instance->allocator.destroy(static_cast<TextureImpl*>(texture)); // the images belong to the swapchain
+        destroyObject(device.instance, static_cast<TextureImpl*>(texture)); // the images belong to the swapchain
     }
     swapchain.textures.clear();
 }
@@ -363,7 +363,7 @@ void destroyImpl(GraphicsDeviceImpl& device, SwapchainImpl* swapchain)
     {
         instanceOf(device).fn.vkDestroySurfaceKHR(instanceOf(device).instance, swapchain->surface, nullptr);
     }
-    device.instance->allocator.destroy(swapchain);
+    destroyObject(device.instance, swapchain);
 }
 
 } // namespace

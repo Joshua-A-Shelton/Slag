@@ -195,7 +195,7 @@ void destroyAttachmentView(GraphicsDeviceCommon* common, AttachmentViewCommon* o
     auto& device = *static_cast<GraphicsDeviceImpl*>(common);
     auto* view = static_cast<AttachmentViewImpl*>(object);
     freeGroup(view->depthStencil ? device.dsvPool : device.rtvPool, view->handle);
-    device.instance->allocator.destroy(view);
+    destroyObject(device.instance, view);
 }
 
 } // namespace slag::d3d12

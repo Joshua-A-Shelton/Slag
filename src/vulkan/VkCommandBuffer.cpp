@@ -242,7 +242,7 @@ void destroyCommandBuffer(GraphicsDeviceCommon* common, CommandBufferCommon* obj
     {
         device.fn.vkDestroyCommandPool(device.device, commandBuffer->pool, nullptr); // frees the command buffer
     }
-    device.instance->allocator.destroy(commandBuffer);
+    destroyObject(device.instance, commandBuffer);
 }
 
 Result<void> beginCommandBuffer(CommandBufferCommon* object)

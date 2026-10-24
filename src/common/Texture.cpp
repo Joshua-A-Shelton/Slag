@@ -220,6 +220,7 @@ Result<Texture*> createTexture(GraphicsDeviceCommon* self, const TextureCreateIn
 {
     validateTexture(self, info, function);
 #ifdef SLAG_VALIDATION
+    SLAG_CHECK_LIVE(self->instance, MemoryBlockCommon, info.placement.memoryBlock, "MemoryBlock", function);
     if (info.placement.memoryBlock)
     {
         auto* block = static_cast<const MemoryBlockCommon*>(info.placement.memoryBlock);
@@ -268,6 +269,7 @@ Result<Texture*> createTexture(GraphicsDeviceCommon* self, const TextureCreateIn
     }
     TextureCommon* object = texture.value();
     object->userData = info.userData;
+    setDebugName(self->instance, object, info.debugName);
     object->type = info.type;
     object->format = info.format;
     object->width = info.width;
@@ -357,6 +359,8 @@ Result<Texture*> GraphicsDevice::createTextureCubeArray(const TextureCubeArrayDe
 
 void GraphicsDevice::destroy(Texture* texture)
 {
+    SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, TextureCommon, texture, "Texture",
+                    "GraphicsDevice::destroy");
     if (!texture)
     {
         return;
@@ -420,6 +424,8 @@ PlacementInfo GraphicsDevice::placementInfo(const TextureCubeArrayDesc& desc) co
 
 CopyFootprint GraphicsDevice::copyFootprint(const Texture* texture, uint32_t mip, TexturePlane plane) const
 {
+    SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, TextureCommon, texture, "Texture",
+                    "GraphicsDevice::copyFootprint");
     [[maybe_unused]] const GraphicsDeviceCommon* self = common(this);
     auto* object = static_cast<const TextureCommon*>(texture);
     SLAG_VALIDATE(self->instance, object, "GraphicsDevice::copyFootprint", "texture is null");
@@ -447,11 +453,13 @@ CopyFootprint GraphicsDevice::copyFootprint(const Texture* texture, uint32_t mip
 
 uint64_t Texture::userData() const
 {
+    SLAG_CHECK_LIVE_THIS(TextureCommon, "Texture", "Texture::userData");
     return static_cast<const TextureCommon*>(this)->userData;
 }
 
 void Texture::setUserData(uint64_t value)
 {
+    SLAG_CHECK_LIVE_THIS(TextureCommon, "Texture", "Texture::setUserData");
     static_cast<TextureCommon*>(this)->userData = value;
 }
 

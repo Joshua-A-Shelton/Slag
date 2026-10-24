@@ -179,7 +179,7 @@ void destroyTexture(GraphicsDeviceCommon* common, TextureCommon* object)
     {
         device.fn.vkFreeMemory(device.device, texture->memory, nullptr);
     }
-    device.instance->allocator.destroy(texture);
+    destroyObject(device.instance, texture);
 }
 
 PlacementInfo texturePlacementInfo(const GraphicsDeviceCommon* common, const TextureCreateInfo& info)
