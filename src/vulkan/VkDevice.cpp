@@ -238,6 +238,14 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
         device.capabilities.conservativeRasterization ? VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME : nullptr;
     bool presentation = device.presentation;
     bool latency = device.capabilities.frameLatency;
+    // Crash diagnostics (ADR 0014): device_fault where the device has it.
+    bool faults = instance.crashDiagnostics && device.deviceFault;
+    if (instance.crashDiagnostics && !device.deviceFault)
+    {
+        logMessage(messageSink(&instance), MessageSeverity::Warning, MessageSource::Slag,
+                   "slag: GraphicsDevice::initialize: \"%s\" has no VK_EXT_device_fault; crash reports will be empty",
+                   device.info.name);
+    }
     const char* optional[] = {presentation ? VK_KHR_SWAPCHAIN_EXTENSION_NAME : nullptr,
                               VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
                               device.calibratedTimestamps ? VK_KHR_CALIBRATED_TIMESTAMPS_EXTENSION_NAME : nullptr,
@@ -246,6 +254,7 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
                               latency ? VK_KHR_PRESENT_ID_EXTENSION_NAME : nullptr,
                               latency ? VK_KHR_PRESENT_WAIT_EXTENSION_NAME : nullptr,
                               presentation && device.hdrMetadata ? VK_EXT_HDR_METADATA_EXTENSION_NAME : nullptr,
+                              faults ? VK_EXT_DEVICE_FAULT_EXTENSION_NAME : nullptr,
                               conservative};
     for (const char* name : required)
     {
@@ -281,7 +290,10 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
     heapFeatures.pNext = &untypedPointers;
     heapFeatures.descriptorHeap = VK_TRUE;
     VkPhysicalDeviceVulkan14Features features14 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES};
-    features14.pNext = &heapFeatures;
+    VkPhysicalDeviceFaultFeaturesEXT faultFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_EXT};
+    faultFeatures.pNext = &heapFeatures;
+    faultFeatures.deviceFault = VK_TRUE;
+    features14.pNext = faults ? static_cast<void*>(&faultFeatures) : static_cast<void*>(&heapFeatures);
     features14.maintenance5 = VK_TRUE;
     VkPhysicalDeviceVulkan13Features features13 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
     features13.pNext = &features14;

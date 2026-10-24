@@ -57,6 +57,7 @@ struct InstanceCommon : Instance
     void* messageUserData = nullptr;
     ValidationFlags validationFlags = ValidationFlags::None;
     ValidationFailureAction failureAction = ValidationFailureAction::Break;
+    bool crashDiagnostics = false; // ADR 0014
     Vector<GraphicsDevice*> devices;
     uint64_t userData = 0;
 #ifdef SLAG_VALIDATION

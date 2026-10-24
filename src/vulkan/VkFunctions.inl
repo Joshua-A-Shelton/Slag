@@ -139,6 +139,9 @@ SLAG_VK_DEVICE_FN(vkCmdCopyQueryPoolResults)
 SLAG_VK_DEVICE_FN(vkCmdResetQueryPool)
 SLAG_VK_DEVICE_FN(vkGetCalibratedTimestampsKHR)
 
+// Crash diagnostics (ADR 0014).
+SLAG_VK_DEVICE_FN(vkGetDeviceFaultInfoEXT)
+
 #undef SLAG_VK_GLOBAL_FN
 #undef SLAG_VK_INSTANCE_FN
 #undef SLAG_VK_DEVICE_FN

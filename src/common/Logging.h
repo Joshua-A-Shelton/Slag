@@ -28,6 +28,8 @@ MessageSink messageSink(const InstanceCommon* instance);
 
 void logMessage(const MessageSink& sink, MessageSeverity severity, MessageSource source, const char* format, ...)
     SLAG_PRINTF_FORMAT(4, 5);
+// Sends `text` as is, without the formatting buffer's length limit.
+void logText(const MessageSink& sink, MessageSeverity severity, MessageSource source, const char* text);
 
 // Reports a failed Slag validation check, then applies the instance's
 // ValidationFailureAction. The failing call still proceeds.

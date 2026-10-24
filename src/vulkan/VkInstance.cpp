@@ -134,6 +134,8 @@ struct DeviceQuery
     bool mutableFormatExtension = false;
     bool presentIdExtension = false;
     bool presentWaitExtension = false;
+    bool deviceFaultExtension = false;
+    VkPhysicalDeviceFaultFeaturesEXT deviceFault = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_EXT};
     bool hdrMetadataExtension = false;
     bool calibratedTimestampsExtension = false;
     VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR swapchainMaintenance = {
@@ -173,6 +175,7 @@ bool queryDevice(const InstanceImpl& instance, VkPhysicalDevice device, DeviceQu
     query.mutableFormatExtension = hasExtension(extensions, VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME);
     query.presentIdExtension = hasExtension(extensions, VK_KHR_PRESENT_ID_EXTENSION_NAME);
     query.presentWaitExtension = hasExtension(extensions, VK_KHR_PRESENT_WAIT_EXTENSION_NAME);
+    query.deviceFaultExtension = hasExtension(extensions, VK_EXT_DEVICE_FAULT_EXTENSION_NAME);
     query.hdrMetadataExtension = hasExtension(extensions, VK_EXT_HDR_METADATA_EXTENSION_NAME);
     query.calibratedTimestampsExtension = hasExtension(extensions, VK_KHR_CALIBRATED_TIMESTAMPS_EXTENSION_NAME);
 
@@ -211,6 +214,11 @@ bool queryDevice(const InstanceImpl& instance, VkPhysicalDevice device, DeviceQu
     {
         *featuresTail = &query.presentWait;
         featuresTail = &query.presentWait.pNext;
+    }
+    if (query.deviceFaultExtension)
+    {
+        *featuresTail = &query.deviceFault;
+        featuresTail = &query.deviceFault.pNext;
     }
     instance.fn.vkGetPhysicalDeviceProperties2(device, &query.properties);
     instance.fn.vkGetPhysicalDeviceFeatures2(device, &query.features);
@@ -562,6 +570,7 @@ Status listDevices(InstanceImpl& instance, const InstanceDesc& desc)
                                query.swapchainMaintenance.swapchainMaintenance1 && query.mutableFormatExtension;
         device->capabilities.frameLatency = device->capabilities.frameLatency && device->presentation;
         device->hdrMetadata = query.hdrMetadataExtension;
+        device->deviceFault = query.deviceFaultExtension && query.deviceFault.deviceFault;
         fillTimestampCapabilities(instance, query, *device);
         for (size_t format = 0; format < pixelFormatCount; ++format)
         {

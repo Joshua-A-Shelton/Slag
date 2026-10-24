@@ -1,6 +1,8 @@
 #include "common/Logging.h"
 #include "d3d12/D3D12Backend.h"
 
+#include <cstdio>
+
 #include <slag/Limits.h>
 
 namespace slag::d3d12 {
@@ -195,6 +197,11 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
                 shutdownDevice(&device);
                 return status;
             }
+            // Names for capture tools and crash reports (ADR 0014).
+            const char* typeNames[3] = {"graphics", "compute", "copy"};
+            char name[32];
+            std::snprintf(name, sizeof(name), "slag %s queue %u", typeNames[type], i);
+            setObjectName(queue->queue, name);
         }
     }
 

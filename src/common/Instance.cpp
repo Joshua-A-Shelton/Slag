@@ -96,6 +96,7 @@ void initInstanceCommon(InstanceCommon& instance, const InstanceDesc& desc, cons
     instance.messageUserData = desc.messageUserData;
     instance.validationFlags = desc.validationFlags;
     instance.failureAction = desc.validationFailureAction;
+    instance.crashDiagnostics = desc.crashDiagnostics;
     instance.devices = Vector<GraphicsDevice*>(&instance.allocator);
     instance.userData = desc.userData;
 }

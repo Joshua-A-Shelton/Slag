@@ -4,6 +4,7 @@
 // backend's object types.
 
 #include "common/Backend.h"
+#include "common/Logging.h"
 #include "common/Objects.h"
 
 #ifndef WIN32_LEAN_AND_MEAN
@@ -18,6 +19,8 @@
 #include <d3d12.h>
 #include <d3d12sdklayers.h>
 #include <dxgi1_6.h>
+
+#include <slag/Limits.h>
 
 #include <atomic>
 #include <cstdint>
@@ -203,6 +206,9 @@ D3D12_COMPARISON_FUNC toComparisonFunc(CompareOp op);
 Status toStatus(GraphicsDeviceImpl& device, HRESULT result);
 
 void setObjectName(ID3D12Object* object, const char* name);
+
+// Turns DRED on, process-wide, before devices are created (ADR 0014).
+void enableDred(const MessageSink& sink);
 
 // UTF-16 to UTF-8; empty if it doesn't fit.
 void toUtf8(const wchar_t* text, char* out, size_t outSize);

@@ -67,6 +67,14 @@ void logMessage(const MessageSink& sink, MessageSeverity severity, MessageSource
     emit(sink, severity, source, text);
 }
 
+void logText(const MessageSink& sink, MessageSeverity severity, MessageSource source, const char* text)
+{
+    if (sink.callback || sink.printWithoutCallback)
+    {
+        emit(sink, severity, source, text);
+    }
+}
+
 void validationFailure(const InstanceCommon* instance, const char* function, const char* format, ...)
 {
     char detail[maxMessageLength];

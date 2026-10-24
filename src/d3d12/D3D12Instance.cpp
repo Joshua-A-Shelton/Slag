@@ -243,6 +243,11 @@ Result<InstanceCommon*> createInstance(const InstanceDesc& desc, const HostAlloc
     }
     initInstanceCommon(*instance, desc, *slagBackend_d3d12(), allocator);
 
+    if (desc.crashDiagnostics)
+    {
+        enableDred(sink);
+    }
+
     // Backend validation (ADR 0010). The debug layer is process-wide and stays
     // on once enabled; GPU-based validation needs it.
     bool wantDebugLayer =

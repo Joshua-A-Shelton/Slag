@@ -20,6 +20,10 @@ SLAG_BACKEND_FN(void, swapTextureNative, (TextureCommon * a, TextureCommon* b))
 SLAG_BACKEND_FN(void, swapAttachmentViewNative, (AttachmentViewCommon * a, AttachmentViewCommon* b))
 SLAG_BACKEND_FN(void, cmdRecordMoves, (CommandBufferCommon * commandBuffer, const MoveEntry* moves, size_t count))
 
+// Crash diagnostics (ADR 0014): writes what the backend knows about a lost
+// device into `text` (NUL-terminated); false when it has nothing.
+SLAG_BACKEND_FN(bool, describeDeviceLoss, (GraphicsDeviceCommon * device, char* text, size_t size))
+
 SLAG_BACKEND_FN(Result<QueryPoolCommon*>, createQueryPool, (GraphicsDeviceCommon * device, const QueryPoolDesc& desc))
 SLAG_BACKEND_FN(void, destroyQueryPool, (GraphicsDeviceCommon * device, QueryPoolCommon* pool))
 SLAG_BACKEND_FN(void, cmdBeginQuery, (CommandBufferCommon * commandBuffer, QueryPoolCommon* pool, uint32_t index))

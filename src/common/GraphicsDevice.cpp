@@ -227,6 +227,18 @@ Status reportDeviceLost(GraphicsDeviceCommon* device)
     {
         logMessage(messageSink(device->instance), MessageSeverity::Error, MessageSource::Slag,
                    "slag: device \"%s\" was lost", device->info.name);
+        // One message with everything the backend collected (ADR 0014).
+        constexpr size_t reportSize = 16384;
+        auto* report = static_cast<char*>(
+            device->instance->crashDiagnostics ? device->instance->allocator.allocate(reportSize, 1) : nullptr);
+        if (report && SLAG_DISPATCH(device, describeDeviceLoss)(device, report, reportSize))
+        {
+            logText(messageSink(device->instance), MessageSeverity::Error, MessageSource::Backend, report);
+        }
+        if (report)
+        {
+            device->instance->allocator.free(report, reportSize);
+        }
     }
     return Status::DeviceLost;
 }

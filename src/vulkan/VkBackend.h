@@ -71,6 +71,7 @@ struct GraphicsDeviceImpl : GraphicsDeviceCommon
     bool calibratedTimestamps = false; // VK_KHR_calibrated_timestamps with the host clock (ADR 0051)
     bool presentation = false;         // swapchain + swapchain_maintenance1 + mutable format
     bool hdrMetadata = false;
+    bool deviceFault = false; // VK_EXT_device_fault, enabled with crash diagnostics (ADR 0014)
 
     // Valid while initialized.
     VkDevice device = VK_NULL_HANDLE;

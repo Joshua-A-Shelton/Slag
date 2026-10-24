@@ -115,6 +115,7 @@ if(SLAG_BACKEND_D3D12)
         src/d3d12/D3D12Buffer.cpp
         src/d3d12/D3D12Defragmentation.cpp
         src/d3d12/D3D12CommandBuffer.cpp
+        src/d3d12/D3D12Crash.cpp
         src/d3d12/D3D12Descriptors.cpp
         src/d3d12/D3D12Device.cpp
         src/d3d12/D3D12Formats.cpp
@@ -136,6 +137,7 @@ if(SLAG_BACKEND_VULKAN)
         src/vulkan/VkBackend.cpp
         src/vulkan/VkBuffer.cpp
         src/vulkan/VkCommandBuffer.cpp
+        src/vulkan/VkCrash.cpp
         src/vulkan/VkDefragmentation.cpp
         src/vulkan/VkDescriptors.cpp
         src/vulkan/VkDevice.cpp
