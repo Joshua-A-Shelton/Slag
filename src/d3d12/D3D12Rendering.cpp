@@ -128,6 +128,16 @@ void cmdBeginRendering(CommandBufferCommon* object, const RenderingDesc& desc, u
     }
 
     D3D12_RENDER_PASS_FLAGS flags = D3D12_RENDER_PASS_FLAG_ALLOW_UAV_WRITES; // always (ADR 0046)
+    // Read-only planes take both the read-only DSV variant and these flags.
+    if (depthStencilDesc && desc.depthStencilAttachment->readOnlyDepth)
+    {
+        flags |= D3D12_RENDER_PASS_FLAG_BIND_READ_ONLY_DEPTH;
+    }
+    if (depthStencilDesc && desc.depthStencilAttachment->readOnlyStencil &&
+        hasTraits(static_cast<AttachmentViewImpl*>(desc.depthStencilAttachment->view)->format, FormatTraits::Stencil))
+    {
+        flags |= D3D12_RENDER_PASS_FLAG_BIND_READ_ONLY_STENCIL;
+    }
     if (desc.suspending)
     {
         flags |= D3D12_RENDER_PASS_FLAG_SUSPENDING_PASS;

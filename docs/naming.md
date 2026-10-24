@@ -166,6 +166,26 @@ New names added while implementing go here once confirmed.
 | Footprint | `copyFootprint(texture, mip, plane = Color)` → `CopyFootprint` (`size`, `rowPitch`, `rowCount`, `width`, `height`, `depth`) |
 | Semantics | `SubresourceRange::plane = Color` covers every plane of a depth/stencil texture |
 
+## Proposed during M3 (placeholders, to review)
+
+| Where | Names |
+|---|---|
+| Buffer descriptors | `ConstantBufferDescriptor` (`address`, `size`), `RawBufferDescriptor` (`buffer`, `offset`, `size`), `TypedBufferDescriptor` (`buffer`, `offset`, `count`, `format`) |
+| Texture descriptors | `TextureDescriptor` (`texture`, `viewType`, `format`, `baseMip`, `mipCount`, `baseLayer`, `layerCount`, `plane`), `RWTextureDescriptor` (`texture`, `viewType`, `format`, `mip`, `baseLayer`, `layerCount`) |
+| `SamplerDescriptor` | `minFilter`, `magFilter`, `mipFilter`, `addressU`, `addressV`, `addressW`, `mipLodBias`, `maxAnisotropy`, `compareEnable`, `compareOp`, `minLod`, `maxLod`, `borderColor`, `reductionMode` |
+| Batch writes | `…DescriptorWrite` (`index`, `descriptor`) per kind: `ConstantBufferDescriptorWrite`, `RawBufferDescriptorWrite`, `StructuredBufferDescriptorWrite`, `TypedBufferDescriptorWrite`, `TextureDescriptorWrite`, `RWTextureDescriptorWrite`, `SamplerDescriptorWrite` |
+| Capabilities | `samplerReduction`, `conservativeRasterization`, `depthBounds` |
+| Vertex input | `VertexAttribute` (`location`, `format`, `slot`, `offset`; `location` replaces `semantic`/`semanticIndex`), `VertexInputLayout` (`attributes`, `slots`) |
+| `RasterizerState` | `fillMode`, `cullMode`, `frontCounterClockwise`, `depthBias`, `depthBiasClamp`, `depthBiasSlopeScale`, `depthClip`, `conservativeRasterization` |
+| Depth/stencil | `StencilFaceState` (`failOp`, `depthFailOp`, `passOp`, `compareOp`), `DepthStencilState` (`depthTest`, `depthWrite`, `depthCompareOp`, `stencilTest`, `front`, `back`, `stencilReadMask`, `stencilWriteMask`, `depthBoundsTest`) |
+| Blend | `ColorTargetBlend` (`blendEnable`, `srcColor`, `destColor`, `colorOp`, `srcAlpha`, `destAlpha`, `alphaOp`, `writeMask`), `BlendState` (`alphaToCoverage`, `targets[8]`); `ColorWriteMask` adds `None` |
+| `GraphicsPipelineDesc` | `vertex`, `pixel`, `vertexInput`, `topology`, `rasterizer`, `depthStencil`, `blend`, `colorFormats`, `depthStencilFormat`, `sampleCount`, `sampleMask`, `debugName`, `userData` |
+| Render passes | `ColorAttachment` (`view`, `loadOp`, `storeOp`, `clearValue`, `resolveView`), `DepthStencilAttachment` (`view`, `depthLoadOp`, `depthStoreOp`, `stencilLoadOp`, `stencilStoreOp`, `clearValue`, `readOnlyDepth`, `readOnlyStencil`), `RenderingDesc` (`colorAttachments`, `depthStencilAttachment`, `suspending`, `resuming`) |
+| Small types | `Viewport` (`x`, `y`, `width`, `height`, `minDepth`, `maxDepth`), `Rect` (`x`, `y`, `width`, `height`), `VertexBufferBinding` (`buffer`, `offset`, `size`, `stride`) |
+| Indirect arguments | `DrawArguments` (`vertexCount`, `instanceCount`, `firstVertex`, `firstInstance`), `DrawIndexedArguments` (`indexCount`, `instanceCount`, `firstIndex`, `vertexOffset`, `firstInstance`), `DispatchArguments` (`groupCountX`, `groupCountY`, `groupCountZ`) |
+| Command parameters | `drawIndirect(argumentBuffer, argumentOffset, drawCount)`, `drawIndirectCount(argumentBuffer, argumentOffset, countBuffer, countOffset, maxDrawCount)` (and the indexed pair), `dispatchIndirect(argumentBuffer, argumentOffset)`, `resolveTexture(destination, destinationMip, destinationLayer, source, sourceLayer)` |
+| Behavior | `beginRendering` starts with a full-area viewport and scissor; `StoreOp::Resolve` discards the MSAA samples |
+
 ## Nested structs
 
 `AllocatorCallbacks` (in `InstanceDesc`; ADR 0066).
