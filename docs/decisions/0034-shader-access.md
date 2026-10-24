@@ -33,6 +33,13 @@ semantic names in SPIR-V, `SV_VertexID`/`SV_InstanceID` base behavior,
 start-instance mapping, or the root constant buffer register. These are
 tested when shaders are first built; any flags found are added here.
 
+## Confirmed in M0
+
+Slang 2026.18.2 compiles `ResourceDescriptorHeap[index]` with the flags
+above to SPIR-V using `DescriptorHeapEXT`, `ResourceHeapEXT`, and
+`SPV_KHR_untyped_pointers`, which `spirv-val --target-env vulkan1.4` accepts.
+DXIL output needs DXC, so it is only built on Windows.
+
 ## Slang and descriptor heaps (checked 2026-10-23)
 
 - Slang targets descriptor heaps with `-capability spvDescriptorHeapEXT`

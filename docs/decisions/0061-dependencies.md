@@ -23,8 +23,8 @@ Only two, both unavoidable:
 ## Tests, samples, and tools only (never linked into the library)
 
 Allowed: a unit test framework, a windowing library (e.g. GLFW or SDL), and
-an image loader (e.g. stb_image). Specific choices are made when the first
-tests and samples are written.
+an image loader (e.g. stb_image). Chosen so far: **doctest** for unit tests
+(M0). Windowing and image loading are chosen with the first samples (M4).
 
 ## Tools
 

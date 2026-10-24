@@ -264,6 +264,13 @@ alias `slag::slag`.
 `SLAG_VERSION_MAJOR`, `SLAG_VERSION_MINOR`, `SLAG_VERSION_PATCH`,
 `SLAG_VERSION` (packed `major << 22 | minor << 12 | patch`) — ADR 0070.
 
+## CMake functions
+
+| Name | What it does |
+|---|---|
+| `slag_add_shader(<target> SOURCE ENTRY STAGE)` | Compiles a Slang shader to SPIR-V / DXIL for the enabled backends (`cmake/SlagShaders.cmake`) |
+| `slag_copy_agility_runtime(<target>)` | Copies the Agility SDK runtime DLLs into `D3D12\` next to an executable (`cmake/SlagDependencies.cmake`) |
+
 ## Enum value style
 
 PascalCase; formats spell out channel bits as in DXGI (`R8G8B8A8UnormSrgb`)

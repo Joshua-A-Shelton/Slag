@@ -23,3 +23,8 @@ endforeach()
 add_executable(slag_header_check HeaderCheckMain.cpp ${_slag_header_test_sources})
 target_link_libraries(slag_header_check PRIVATE slag::slag)
 add_test(NAME header_check COMMAND slag_header_check)
+
+# Unit tests (doctest; tests only, ADR 0061).
+add_executable(slag_unit_tests UnitTestMain.cpp VersionTests.cpp)
+target_link_libraries(slag_unit_tests PRIVATE slag::slag doctest::doctest)
+doctest_discover_tests(slag_unit_tests)

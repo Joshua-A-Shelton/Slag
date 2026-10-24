@@ -17,7 +17,7 @@ None right now.
 | 10 | D3D12 layout required for a render-pass resolve destination (debug layer test) | 0049 |
 | 11 | D3D12 mapping for mixed read-only depth / writable stencil (proposed: `DEPTH_STENCIL_WRITE` + read-only DSV variant) | 0049 |
 | 12 | D3D12 GPU-based validation coverage for reads of uninitialized descriptors | 0016 |
-| 13 | Slang 2026.14.1+ requirement for descriptor heaps: confirm in Slang's own release notes | 0034 |
+| 13 | Oldest Slang version that emits descriptor-heap SPIR-V (2026.18.2 is confirmed to work) | 0034 |
 | 14 | Intel Windows Vulkan driver support for `VK_EXT_descriptor_heap` | CLAUDE.md §3 |
 | 15 | Whether every Enhanced Barriers device has resource heap tier 2 (it's a baseline check either way; this only affects coverage) | 0012, 0023 |
 | 19 | Actual `imageDescriptorSize` / `bufferDescriptorSize` on current NVIDIA, AMD, Intel drivers (heap memory cost) | 0029 |
@@ -48,6 +48,8 @@ None right now.
   updated → `docs/format-support.md`, 0012, 0038.
 - Buffer view limits: 2^27 elements (typed, structured), 1 GiB per storage
   view → 0028.
+- Slang 2026.18.2 compiles `ResourceDescriptorHeap[...]` to
+  `SPV_EXT_descriptor_heap` SPIR-V that passes `spirv-val` (M0) → 0034.
 - All names settled: types, functions, structs, enums, constants, macros,
   files → docs/naming.md.
 - Driver-reserved heap range exists; Slag hides it → 0032.

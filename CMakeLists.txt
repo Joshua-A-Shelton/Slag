@@ -32,6 +32,10 @@ if(NOT SLAG_BACKEND_D3D12 AND NOT SLAG_BACKEND_VULKAN AND NOT SLAG_EXTERNAL_BACK
     message(FATAL_ERROR "Enable at least one backend")
 endif()
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(SlagDependencies)
+include(SlagShaders)
+
 # ---------------------------------------------------------------------------
 # Library
 # ---------------------------------------------------------------------------
@@ -67,13 +71,12 @@ else()
     target_compile_options(slag PRIVATE -Wall -Wextra -Wpedantic -fno-exceptions -fno-rtti)
 endif()
 
-# Backends and their third-party dependencies (Vulkan-Headers, volk, VMA,
-# D3D12MA, Agility SDK) are added here once their sources exist.
+# Backend sources are added here once they exist (src/d3d12, src/vulkan).
 if(SLAG_BACKEND_D3D12)
-    # add_subdirectory(src/d3d12)
+    target_link_libraries(slag PRIVATE slag_agility_sdk)
 endif()
 if(SLAG_BACKEND_VULKAN)
-    # add_subdirectory(src/vulkan)
+    target_link_libraries(slag PRIVATE Vulkan::Headers)
 endif()
 
 foreach(_slag_external_dir IN LISTS SLAG_EXTERNAL_BACKEND_DIRS)

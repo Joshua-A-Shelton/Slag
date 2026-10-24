@@ -49,7 +49,7 @@ writing code.
 
 | Backend | Minimum | Required features |
 |---|---|---|
-| D3D12 | Agility SDK 1.7xx+ (app exports `D3D12SDKVersion`/`D3D12SDKPath` via a Slag macro), Shader Model 6.8 (ADR 0047) | **Enhanced Barriers** (required, no legacy resource-state fallback), `ResourceDescriptorHeap`/`SamplerDescriptorHeap` (SM 6.6 dynamic resources), DXGI 1.6 |
+| D3D12 | Agility SDK 1.619.6 (retail; preview SDKs need Developer Mode, so never ship them) (app exports `D3D12SDKVersion`/`D3D12SDKPath` via a Slag macro), Shader Model 6.8 (ADR 0047) | **Enhanced Barriers** (required, no legacy resource-state fallback), `ResourceDescriptorHeap`/`SamplerDescriptorHeap` (SM 6.6 dynamic resources), DXGI 1.6 |
 | Vulkan | **1.4** | **`VK_EXT_descriptor_heap`** (required), plus the 1.3/1.4 core features: dynamic rendering, synchronization2, timeline semaphores, buffer device address. Known driver support (2026-10): NVIDIA 610+; AMD Windows 25.30.17.02+ (RX 7000/9000 class only); Mesa 26.2+ RADV and ANV; lavapipe unconfirmed. Older AMD GPUs on Windows use the D3D12 backend; revisit with the 1.3 fallback evaluation |
 | Vulkan fallback (maybe) | 1.3 | Only if it fits the existing API unchanged — see below |
 | Console (future) | TBD | Private repos only |
@@ -103,7 +103,7 @@ doesn't ship. Never weaken or complicate the API design to accommodate 1.3.
 
 ```
 CMakeLists.txt  CMakePresets.json  .clang-format  CLAUDE.md  LICENSE
-cmake/                         Version.h.in and other CMake helpers
+cmake/                         Version.h.in, SlagDependencies.cmake, SlagShaders.cmake
 include/slag/
   Slag.h                       umbrella: everything except native/ and util/
   Result.h                     Result, Status
@@ -321,8 +321,17 @@ Accepted decisions live in `docs/decisions/`.
   `slag`, alias `slag::slag`. Slag builds as a static library by default;
   shared library support is optional.
 - Keep dependencies low (ADR 0061). The library depends only on
-  Vulkan-Headers and the DirectX 12 Agility SDK, vendored or fetched at
-  pinned versions. Nothing else in the library without discussion.
+  Vulkan-Headers (v1.4.366) and the DirectX 12 Agility SDK (1.619.6),
+  fetched at configure time by `cmake/SlagDependencies.cmake`, pinned by
+  version and SHA-256. Nothing else in the library without discussion.
+  Offline builds: set `FETCHCONTENT_SOURCE_DIR_<NAME>`.
+- Tests use doctest (v2.5.3), registered with CTest via
+  `doctest_discover_tests`.
+- Shaders for tests and samples are built with
+  `slag_add_shader(<target> SOURCE ... ENTRY ... STAGE compute|vertex|pixel)`
+  (`cmake/SlagShaders.cmake`): SPIR-V when the Vulkan backend is on (checked
+  with `spirv-val` if found), DXIL when the D3D12 backend is on (needs DXC,
+  so Windows only). Tested with Slang 2026.18.2.
 - Slag implements its own Vulkan loader (per-device function tables, no
   link-time dependency on `vulkan-1`), its own memory sub-allocator for both
   backends, and its own SPIR-V input reflection.
