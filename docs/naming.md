@@ -213,6 +213,15 @@ New names added while implementing go here once confirmed.
 | `DescriptorHeap` | `Resource`, `Sampler` (utility-only for now; moves to the core with the same meaning if heaps are exposed) |
 | `DeferredDestroyer` | `destroyAfter` overloads for `AttachmentView`, `Buffer`, `Texture`, `QueryPool`, `Pipeline`, `CommandBuffer`, `MemoryBlock`, `Semaphore` |
 
+## Proposed during M8 (placeholders, reviewed at the end of M8)
+
+| Where | Names |
+|---|---|
+| Native interop (ADR 0071) | `slag::d3d12::native(object)`, `slag::vk::native(object)`, one overload per object type |
+| D3D12 structs | `NativeDevice { device, adapter, resourceHeap, samplerHeap, rootSignature }` |
+| Vulkan structs | `NativeDevice { instance, physicalDevice, device }`, `NativeQueue { queue, family }`, `NativeBuffer { buffer, memory, offset }`, `NativeTexture { image, memory, offset }`, `NativeSwapchain { swapchain, surface }` |
+| Vulkan | `slag::vk::getInstanceProcAddr(instance)` |
+
 ## Fields and small names (settled after M7)
 
 | Where | Names |

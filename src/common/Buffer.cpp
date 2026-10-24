@@ -90,6 +90,8 @@ Result<Buffer*> GraphicsDevice::createBuffer(const BufferDesc& desc)
         self->subAllocator->setOwner(allocation, buffer.value(), false);
     }
     buffer.value()->userData = desc.userData;
+    buffer.value()->placementBlock = static_cast<MemoryBlockCommon*>(placed.placement.memoryBlock);
+    buffer.value()->placementOffset = placed.placement.offset;
     setDebugName(self->instance, buffer.value(), desc.debugName);
     if (desc.placement.memoryBlock)
     {

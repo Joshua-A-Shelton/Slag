@@ -113,7 +113,9 @@ set(SLAG_BACKEND_NAMES)
 set(_slag_builtin_namespaces)
 
 if(SLAG_BACKEND_D3D12)
-    target_link_libraries(slag PRIVATE slag_agility_sdk d3d12 dxgi)
+    # Public: slag/native/D3D12.h needs the Agility SDK's d3d12.h (ADR 0071).
+    target_link_libraries(slag PUBLIC slag_agility_sdk)
+    target_link_libraries(slag PRIVATE d3d12 dxgi)
     target_sources(slag PRIVATE
         src/d3d12/D3D12AttachmentView.cpp
         src/d3d12/D3D12Backend.cpp
@@ -124,6 +126,7 @@ if(SLAG_BACKEND_D3D12)
         src/d3d12/D3D12Descriptors.cpp
         src/d3d12/D3D12Device.cpp
         src/d3d12/D3D12Formats.cpp
+        src/d3d12/D3D12Native.cpp
         src/d3d12/D3D12Instance.cpp
         src/d3d12/D3D12Pipeline.cpp
         src/d3d12/D3D12Poison.cpp
@@ -137,7 +140,8 @@ if(SLAG_BACKEND_D3D12)
 endif()
 
 if(SLAG_BACKEND_VULKAN)
-    target_link_libraries(slag PRIVATE Vulkan::Headers)
+    # Public: slag/native/Vulkan.h includes vulkan/vulkan.h (ADR 0071).
+    target_link_libraries(slag PUBLIC Vulkan::Headers)
     target_sources(slag PRIVATE
         src/vulkan/VkAttachmentView.cpp
         src/vulkan/VkBackend.cpp
@@ -151,6 +155,7 @@ if(SLAG_BACKEND_VULKAN)
         src/vulkan/VkInstance.cpp
         src/vulkan/VkLoader.cpp
         src/vulkan/VkMemory.cpp
+        src/vulkan/VkNative.cpp
         src/vulkan/VkPipeline.cpp
         src/vulkan/VkQueryPool.cpp
         src/vulkan/VkRendering.cpp

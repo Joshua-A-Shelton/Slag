@@ -179,6 +179,8 @@ Result<DefragmentationPass*> GraphicsDevice::beginDefragmentation(const Defragme
         MoveEntry entry;
         entry.from = move.from;
         entry.to = move.to;
+        entry.toBlock = move.block;
+        entry.toOffset = move.offset;
         DefragmentationMove publicMove;
         if (move.ownerIsTexture)
         {
@@ -282,6 +284,8 @@ Result<void> GraphicsDevice::endDefragmentation(DefragmentationPass* pass, [[may
             SLAG_DISPATCH(self, destroyBuffer)(self, entry.newBuffer);
             self->subAllocator->free(entry.buffer->allocation);
             entry.buffer->allocation = entry.to;
+            entry.buffer->placementBlock = entry.toBlock;
+            entry.buffer->placementOffset = entry.toOffset;
             self->subAllocator->setOwner(entry.to, entry.buffer, false);
             entry.buffer->movePass = nullptr;
             ++entry.buffer->moveCount;
@@ -295,6 +299,8 @@ Result<void> GraphicsDevice::endDefragmentation(DefragmentationPass* pass, [[may
             SLAG_DISPATCH(self, destroyTexture)(self, entry.newTexture);
             self->subAllocator->free(entry.texture->allocation);
             entry.texture->allocation = entry.to;
+            entry.texture->placementBlock = entry.toBlock;
+            entry.texture->placementOffset = entry.toOffset;
             self->subAllocator->setOwner(entry.to, entry.texture, true);
             entry.texture->movePass = nullptr;
             ++entry.texture->moveCount;

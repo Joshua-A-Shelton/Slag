@@ -274,6 +274,8 @@ Result<Texture*> createTexture(GraphicsDeviceCommon* self, const TextureCreateIn
     }
     TextureCommon* object = texture.value();
     object->userData = info.userData;
+    object->placementBlock = static_cast<MemoryBlockCommon*>(placed.placement.memoryBlock);
+    object->placementOffset = placed.placement.offset;
     setDebugName(self->instance, object, info.debugName);
     object->type = info.type;
     object->format = info.format;

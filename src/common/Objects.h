@@ -162,6 +162,10 @@ struct BufferCommon : Buffer, ObjectRecord
     uint64_t gpuAddress = 0;
     MemoryBlockCommon* memoryBlock = nullptr; // set when placed by the user
     PoolAllocation allocation;                // set when sub-allocated
+    // Where it lives when placed, by the user or the sub-allocator; null when
+    // it has its own memory (native interop, ADR 0071).
+    MemoryBlockCommon* placementBlock = nullptr;
+    uint64_t placementOffset = 0;
     // Defragmentation (ADR 0062).
     DefragmentationPassCommon* movePass = nullptr; // set while in an active pass's move list
     uint32_t moveIndex = 0;
@@ -220,6 +224,10 @@ struct TextureCommon : Texture, ObjectRecord
     TextureUsage usage = TextureUsage::None;
     MemoryBlockCommon* memoryBlock = nullptr; // set when placed by the user
     PoolAllocation allocation;                // set when sub-allocated
+    // Where it lives when placed, by the user or the sub-allocator; null when
+    // it has its own memory (native interop, ADR 0071).
+    MemoryBlockCommon* placementBlock = nullptr;
+    uint64_t placementOffset = 0;
     // Defragmentation (ADR 0062): what recreating the texture needs, and its
     // attachment views (under the device's viewListLock).
     ClearValue clearValue;
@@ -396,6 +404,8 @@ struct MoveEntry
     TextureCommon* newTexture = nullptr;
     PoolAllocation from;
     PoolAllocation to;
+    MemoryBlockCommon* toBlock = nullptr; // `to` as a block and offset
+    uint64_t toOffset = 0;
 };
 
 struct DefragmentationPassCommon : DefragmentationPass
