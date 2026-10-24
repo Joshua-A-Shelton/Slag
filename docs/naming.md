@@ -208,6 +208,14 @@ New names added while implementing go here once confirmed.
 | `TimestampCalibration` | `gpuTimestamp`, `cpuNanoseconds` |
 | Capabilities | `timestampValidBits`, `copyQueueTimestamps`, `timestampCalibration` |
 | `QueryPool` | `userData()`, `setUserData(value)` |
+| `slag/util/DescriptorAllocator.h` | `DescriptorAllocator(device, DescriptorAllocatorDesc)`, `allocate()` → slot or 0, `free(slot, SemaphoreValue)`, `collect()` |
+| `DescriptorAllocatorDesc` | `heap`, `firstSlot`, `slotCount` |
+| `DescriptorHeap` (util only) | `Resource`, `Sampler` |
+| `DeferredDestroyer` | overloads for `AttachmentView`, `Buffer`, `Texture`, `QueryPool`, `Pipeline`, `CommandBuffer`, `MemoryBlock`, `Semaphore` |
+
+Note on `free`: MSVC's debug heap (`_CRTDBG_MAP_ALLOC`) defines `free` as a
+function-like macro, which breaks `slots.free(slot, after)` in code that
+turns it on. `release` would avoid it.
 
 ## Nested structs
 
@@ -219,7 +227,7 @@ New names added while implementing go here once confirmed.
 |---|---|---|
 | `DeferredDestroyer` | `destroyAfter(object, SemaphoreValue)`, `collect()`, `flush()` | 0069 |
 
-`DescriptorAllocator`'s API is still to be named (ADR 0032).
+`DescriptorAllocator`'s API is proposed below (ADR 0032).
 
 `RasterizerState`, `DepthStencilState`, `BlendState`, `ColorTargetBlend`,
 `VertexInputLayout`, `VertexAttribute`, `ShaderStage`, `ShaderBinary`,

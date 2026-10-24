@@ -38,3 +38,17 @@ slots.collect();                             // returns reached slots to the fre
 Slot 0 is never handed out, so `allocate()` returns 0 when nothing is left;
 no extra `Status` value.
 
+## Implementation (2026-10-24)
+
+`include/slag/util/DescriptorAllocator.h`, `src/util/DescriptorAllocator.cpp`,
+compiled into the `slag` library. The class holds a pointer to its state, so
+the header needs no containers; state uses the instance's allocator.
+
+- A range starting at slot 0 starts at 1.
+- Never-used slots are handed out in order; freed slots come back from a free
+  list after `collect()`, which reads each semaphore's value once per run.
+- Out of host memory: `allocate()` returns 0, and a slot whose `free()` can't
+  be recorded is not reused (a warning is logged).
+- Validation: the range lies inside the heap, freed slots came from this
+  allocator.
+

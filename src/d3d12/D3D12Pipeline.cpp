@@ -441,7 +441,8 @@ Result<PipelineCommon*> createGraphicsPipeline(GraphicsDeviceCommon* common, con
         if (SUCCEEDED(result) && device.pipelineLibrary)
         {
             std::lock_guard<std::mutex> lock(device.pipelineLibraryLock);
-            (void)device.pipelineLibrary->StorePipeline(libraryName, pipeline->pipeline); // E_INVALIDARG: already stored
+            (void)device.pipelineLibrary->StorePipeline(libraryName,
+                                                        pipeline->pipeline); // E_INVALIDARG: already stored
         }
     }
     if (FAILED(result))
@@ -487,7 +488,8 @@ Result<PipelineCommon*> createComputePipeline(GraphicsDeviceCommon* common, cons
     if (device.pipelineLibrary)
     {
         std::lock_guard<std::mutex> lock(device.pipelineLibraryLock);
-        result = device.pipelineLibrary->LoadComputePipeline(libraryName, &stateDesc, IID_PPV_ARGS(&pipeline->pipeline));
+        result =
+            device.pipelineLibrary->LoadComputePipeline(libraryName, &stateDesc, IID_PPV_ARGS(&pipeline->pipeline));
     }
     if (FAILED(result))
     {

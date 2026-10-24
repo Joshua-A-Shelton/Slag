@@ -73,7 +73,9 @@ target_sources(slag PRIVATE
     src/common/SubAllocator.cpp
     src/common/Swapchain.cpp
     src/common/Texture.cpp
-    src/common/Tlsf.cpp)
+    src/common/Tlsf.cpp
+    src/util/DeferredDestroyer.cpp
+    src/util/DescriptorAllocator.cpp)
 
 target_compile_definitions(slag PUBLIC
     $<$<BOOL:${SLAG_BACKEND_D3D12}>:SLAG_BACKEND_D3D12>

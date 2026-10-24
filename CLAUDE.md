@@ -131,6 +131,7 @@ src/
   common/                      dispatch tables, validation, stale-pointer quarantine, format tables
   d3d12/                       D3D12*.cpp
   vulkan/                      Vk*.cpp
+  util/                        the slag/util/ utilities, built on public functions
 tests/
   unit/                        no GPU needed
   backend/                     runs on every compiled backend

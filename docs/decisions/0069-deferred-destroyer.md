@@ -33,6 +33,21 @@ public:
 - Descriptor slots are separate: `DescriptorAllocator` already delays slot
   reuse (ADR 0032).
 
+## Implementation (2026-10-24)
+
+`src/util/DeferredDestroyer.cpp`, compiled into the `slag` library; the
+class holds the device and a pointer to its state.
+
+- Overloads: `AttachmentView`, `Buffer`, `Texture`, `QueryPool`, `Pipeline`,
+  `CommandBuffer`, `MemoryBlock`, `Semaphore`. Null objects are ignored.
+- Objects reached in one `collect()` or `flush()` are destroyed views first,
+  then buffers, textures, query pools, pipelines, command buffers, memory
+  blocks, and semaphores last. All values are read before anything is
+  destroyed. A memory block, or a semaphore other entries wait on, is passed
+  with a value no earlier than the objects that need it.
+- The destructor calls `flush()`, so it runs before the device shuts down.
+- Out of host memory: `destroyAfter` waits for the value and destroys at once.
+
 ## Not chosen
 
 - No helper at all.
