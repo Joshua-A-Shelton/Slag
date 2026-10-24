@@ -73,6 +73,14 @@ back on both backends, with tests for each.
 
 **Settles:** ◐ format entries (16), resource heap tier 2 coverage (15).
 
+**Status (2026-10-24):** implemented on both backends: formats and the
+format baseline, capabilities, memory budget, memory blocks, placed and
+sub-allocated (TLSF) resources, all seven texture types, attachment views,
+texture barriers, copies, and `copyFootprint`. Every texture type
+round-trips buffer → texture → texture → buffer byte for byte on RADV (RX
+7900 XT, Raphael iGPU) and WARP. RADV and WARP meet every ◐ entry. Names
+proposed during M2 await review (`docs/naming.md`).
+
 ## M3 — Off-screen graphics
 
 - Graphics pipelines with all state (ADRs 0037–0042), vertex input with

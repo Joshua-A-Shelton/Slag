@@ -99,3 +99,9 @@ layer.
 Layout required for a render-pass resolve destination on D3D12: not
 documented publicly (`ResolveSubresource` uses `RESOLVE_DEST`). Test with the
 debug layer.
+
+## Planes (M2)
+
+`SubresourceRange::plane = Color` on a depth/stencil texture covers every
+plane (D3D12 `NumPlanes = 2`, Vulkan depth + stencil aspects); `Depth` and
+`Stencil` select one.

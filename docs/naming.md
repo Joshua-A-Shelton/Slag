@@ -149,6 +149,23 @@ object has `userData()` / `setUserData()` (ADR 0063).
 
 New names added while implementing go here once confirmed.
 
+## Proposed during M2 (placeholders, to review)
+
+| Where | Names |
+|---|---|
+| `PixelFormat` | adds `Undefined` (the default in every `Desc`) |
+| `FormatSupport` (flags) | `None`, `Sampled`, `LinearFilter`, `RenderTarget`, `Blend`, `Multisample2`, `Multisample4`, `Multisample8`, `RWTexture`, `RWTextureLoad`, `Atomics`, `DepthStencil`, `VertexBuffer`, `TypedBuffer`, `RWTypedBuffer` |
+| `GraphicsDeviceCapabilities` | `unifiedMemory`, `gpuUploadMemory`, `maxBufferSize` |
+| `MemoryBudget` | `dedicatedBudgetBytes`, `dedicatedUsageBytes`, `sharedBudgetBytes`, `sharedUsageBytes` |
+| `MemoryBlockDesc` | `size`, `kind`, `debugName`, `userData`; `MemoryBlock::size()`, `kind()` |
+| `TextureUsage` | adds `None` |
+| Texture `Desc`s | `format`, `width`, `height`, `depth`, `layerCount`, `size` (cube faces), `cubeCount`, `mipCount`, `sampleCount`, `usage`, `castableFormats`, `clearValue` (pointer: optional), `placement`, `debugName`, `userData` |
+| `ClearValue` | `color[4]`, `depth`, `stencil` |
+| `AttachmentViewDesc` | `texture`, `format` (`Undefined`: the texture's), `mip`, `baseLayer`, `layerCount`, `debugName`, `userData` |
+| Copies | `TextureLocation` (`texture`, `mip`, `layer`, `x`, `y`, `z`, `plane`), `BufferLocation` (`buffer`, `offset`, `rowPitch`); `copyTexture(destination, source, width, height, depth)`, `copyBufferToTexture(destination, source, …)`, `copyTextureToBuffer(destination, source, …)` |
+| Footprint | `copyFootprint(texture, mip, plane = Color)` → `CopyFootprint` (`size`, `rowPitch`, `rowCount`, `width`, `height`, `depth`) |
+| Semantics | `SubresourceRange::plane = Color` covers every plane of a depth/stencil texture |
+
 ## Nested structs
 
 `AllocatorCallbacks` (in `InstanceDesc`; ADR 0066).

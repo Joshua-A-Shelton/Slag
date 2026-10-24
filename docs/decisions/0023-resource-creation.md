@@ -34,3 +34,11 @@ is a working name chosen to avoid confusion with descriptor heaps.
 | Memory block | `CreateHeap` (4 MB alignment) | `vkAllocateMemory` |
 | Query | `GetResourceAllocationInfo2` | `vkGetDevice{Buffer,Image}MemoryRequirements` |
 | Placed | `CreatePlacedResource2` | create + `vkBind{Buffer,Image}Memory2` |
+
+## Implementation notes (M2)
+
+- Vulkan: each memory kind gets one memory type for blocks, chosen at
+  initialization; GpuOnly's is valid for buffers and for representative
+  color, depth/stencil, and block-compressed images. CPU-visible blocks hold
+  buffers only (D3D12 `ALLOW_ONLY_BUFFERS`).
+- D3D12 blocks of 4 MB or more are 4 MB-aligned; smaller blocks use 64 KB.

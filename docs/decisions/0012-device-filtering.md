@@ -36,3 +36,10 @@ swapchain creation.
 Checks need an `ID3D12Device`: Slag creates one per adapter, checks, and
 releases it, so listed devices stay cheap. Initializing a device creates it
 again (roughly tens of milliseconds).
+
+## Added in M2 (2026-10-24)
+
+- Vulkan: `separateDepthStencilLayouts` (core 1.2 feature), for per-plane
+  depth/stencil barriers (ADR 0049).
+- Both backends: every guaranteed (● and ◐) entry of
+  `docs/format-support.md`, checked per format when devices are listed.

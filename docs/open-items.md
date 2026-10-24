@@ -74,6 +74,9 @@ None right now.
 - Sub-allocator: TLSF, 256 MB blocks (heap / 8 on small heaps), dedicated
   above half a block → 0061.
 
+- ◐ format entries: met by RADV (RX 7900 XT, Raphael iGPU) and WARP;
+  NVIDIA and Intel still unchecked (item 16 stays open for them).
+
 ## Deferred past v1 (for reference, not blocking)
 
 Mesh shaders and ray tracing (0005), native device import and creation hooks

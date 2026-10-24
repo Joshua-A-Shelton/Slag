@@ -31,3 +31,12 @@
 Scaled/filtered blits, MSAA copies, compressed ↔ uncompressed copies,
 inline CPU-to-buffer updates, relaxed row-pitch capability, `fillBuffer`
 (would need hidden descriptor slots on D3D12), writable-texture clears.
+
+## Implementation (M2)
+
+- Copies take `TextureLocation` and `BufferLocation` structs (names in
+  review).
+- `copyFootprint` is computed in common code, so the buffer layout is the
+  same on both backends: rows of texels (or 4x4 blocks) padded to 256 bytes,
+  depth slices `rowPitch * rowCount` apart. Depth/stencil textures copy one
+  plane at a time: depth as 2 or 4 bytes, stencil as 1.
