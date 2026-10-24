@@ -100,6 +100,7 @@ struct CommandQueueImpl : CommandQueueCommon
 struct PipelineImpl : PipelineCommon
 {
     ID3D12PipelineState* pipeline = nullptr;
+    D3D_PRIMITIVE_TOPOLOGY topology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED; // set at bind (ADR 0042)
 };
 
 struct CommandBufferImpl : CommandBufferCommon

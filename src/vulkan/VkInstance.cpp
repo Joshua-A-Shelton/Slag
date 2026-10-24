@@ -126,6 +126,7 @@ struct DeviceQuery
     bool descriptorHeapExtension = false;
     bool untypedPointersExtension = false;
     bool memoryBudgetExtension = false;
+    bool conservativeRasterizationExtension = false;
     bool graphicsQueue = false;
     uint32_t queueFamilyCount = 0;
     VkQueueFlags queueFamilyFlags[maxQueueFamilies] = {};
@@ -149,6 +150,8 @@ bool queryDevice(const InstanceImpl& instance, VkPhysicalDevice device, DeviceQu
     query.descriptorHeapExtension = hasExtension(extensions, VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME);
     query.untypedPointersExtension = hasExtension(extensions, VK_KHR_SHADER_UNTYPED_POINTERS_EXTENSION_NAME);
     query.memoryBudgetExtension = hasExtension(extensions, VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
+    query.conservativeRasterizationExtension =
+        hasExtension(extensions, VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME);
 
     // Extension structs may only be chained when the extension exists.
     query.properties.pNext = &query.properties11;
@@ -370,6 +373,8 @@ void fillCapabilities(const DeviceQuery& query, const GraphicsDeviceInfo& info,
     }
     capabilities.maxBufferSize = query.properties13.maxBufferSize;
     capabilities.samplerReduction = query.features12.samplerFilterMinmax == VK_TRUE;
+    capabilities.conservativeRasterization = query.conservativeRasterizationExtension; // overestimate is the base mode
+    capabilities.depthBounds = query.features.features.depthBounds == VK_TRUE;
 }
 
 // Lower sorts first (ADR 0008).

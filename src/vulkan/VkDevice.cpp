@@ -230,8 +230,10 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
     const char* swapchainMaintenance = instance.surfaceMaintenanceKHR   ? VK_KHR_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME
                                        : instance.surfaceMaintenanceEXT ? VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME
                                                                         : nullptr;
+    const char* conservative =
+        device.capabilities.conservativeRasterization ? VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME : nullptr;
     const char* optional[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
-                              swapchainMaintenance};
+                              swapchainMaintenance, conservative};
     for (const char* name : required)
     {
         if (!extensions.pushBack(name))
@@ -286,6 +288,7 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
     core.textureCompressionBC = VK_TRUE;
     core.samplerAnisotropy = VK_TRUE;
     core.imageCubeArray = VK_TRUE;
+    core.depthBounds = device.capabilities.depthBounds ? VK_TRUE : VK_FALSE;
 
     VkDeviceCreateInfo createInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
     createInfo.pNext = &features;

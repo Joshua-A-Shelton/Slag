@@ -41,6 +41,8 @@ SLAG_BACKEND_FN(Result<AttachmentViewCommon*>, createAttachmentView,
                 (GraphicsDeviceCommon * device, const AttachmentViewDesc& desc))
 SLAG_BACKEND_FN(void, destroyAttachmentView, (GraphicsDeviceCommon * device, AttachmentViewCommon* view))
 
+SLAG_BACKEND_FN(Result<PipelineCommon*>, createGraphicsPipeline,
+                (GraphicsDeviceCommon * device, const GraphicsPipelineDesc& desc))
 SLAG_BACKEND_FN(Result<PipelineCommon*>, createComputePipeline,
                 (GraphicsDeviceCommon * device, const ComputePipelineDesc& desc))
 SLAG_BACKEND_FN(void, destroyPipeline, (GraphicsDeviceCommon * device, PipelineCommon* pipeline))

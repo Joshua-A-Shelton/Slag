@@ -46,10 +46,12 @@ struct GraphicsDeviceInfo
 // added.
 struct GraphicsDeviceCapabilities
 {
-    bool unifiedMemory = false;    // GPU and CPU share memory; staging copies can be skipped (ADR 0019)
-    bool gpuUploadMemory = false;  // MemoryKind::GpuUpload is available (ADR 0019)
-    uint64_t maxBufferSize = 0;    // bytes (ADR 0028)
-    bool samplerReduction = false; // ReductionMode::Minimum / Maximum (ADR 0033)
+    bool unifiedMemory = false;             // GPU and CPU share memory; staging copies can be skipped (ADR 0019)
+    bool gpuUploadMemory = false;           // MemoryKind::GpuUpload is available (ADR 0019)
+    uint64_t maxBufferSize = 0;             // bytes (ADR 0028)
+    bool samplerReduction = false;          // ReductionMode::Minimum / Maximum (ADR 0033)
+    bool conservativeRasterization = false; // overestimating (ADR 0039)
+    bool depthBounds = false;               // depth bounds test (ADR 0040)
 };
 
 // This process's usage of one kind of memory against the OS budget, in bytes.
@@ -153,6 +155,7 @@ public:
     // name a plane. Thread-safe.
     CopyFootprint copyFootprint(const Texture* texture, uint32_t mip, TexturePlane plane = TexturePlane::Color) const;
 
+    Result<Pipeline*> createGraphicsPipeline(const GraphicsPipelineDesc& desc);
     Result<Pipeline*> createComputePipeline(const ComputePipelineDesc& desc);
     void destroy(Pipeline* pipeline);
 

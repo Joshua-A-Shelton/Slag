@@ -212,6 +212,14 @@ struct PipelineCommon : Pipeline
     const BackendFunctions* functions = nullptr;
     uint64_t userData = 0;
     PipelineKind kind = PipelineKind::Compute;
+    // Graphics pipelines, for validation against the render pass.
+    PixelFormat colorFormats[8] = {};
+    uint32_t colorCount = 0;
+    PixelFormat depthStencilFormat = PixelFormat::Undefined;
+    uint32_t sampleCount = 1;
+    bool writesDepth = false;
+    bool writesStencil = false;
+    uint32_t vertexSlotCount = 0;
 };
 
 enum class CommandBufferState : uint8_t

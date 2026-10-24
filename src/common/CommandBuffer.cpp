@@ -4,6 +4,7 @@
 #include <slag/CommandBuffer.h>
 #include <slag/GraphicsDevice.h>
 #include <slag/Limits.h>
+#include <slag/Pipeline.h>
 
 namespace slag {
 
@@ -362,6 +363,143 @@ Result<void> CommandQueue::submit(const SubmitDesc& desc)
 }
 
 // --- Pipelines (GraphicsDevice, Pipeline) -----------------------------------
+
+namespace {
+
+#ifdef SLAG_VALIDATION
+bool isDualSource(BlendFactor factor)
+{
+    return factor == BlendFactor::Src1Color || factor == BlendFactor::InvSrc1Color ||
+           factor == BlendFactor::Src1Alpha || factor == BlendFactor::InvSrc1Alpha;
+}
+
+// D3D12 rejects color factors in the alpha blend.
+bool isColorFactor(BlendFactor factor)
+{
+    return factor == BlendFactor::SrcColor || factor == BlendFactor::InvSrcColor || factor == BlendFactor::DestColor ||
+           factor == BlendFactor::InvDestColor || factor == BlendFactor::Src1Color ||
+           factor == BlendFactor::InvSrc1Color;
+}
+
+bool supports(const GraphicsDeviceCommon* device, PixelFormat format, FormatSupport flag)
+{
+    return (device->formatSupport[static_cast<size_t>(format)] & flag) != FormatSupport::None;
+}
+
+FormatSupport multisampleFlag(uint32_t sampleCount)
+{
+    return sampleCount == 2   ? FormatSupport::Multisample2
+           : sampleCount == 4 ? FormatSupport::Multisample4
+           : sampleCount == 8 ? FormatSupport::Multisample8
+                              : FormatSupport::None;
+}
+
+// ADRs 0037-0042.
+void validateGraphicsPipeline(GraphicsDeviceCommon* self, const GraphicsPipelineDesc& desc)
+{
+    InstanceCommon* instance = self->instance;
+    const char* function = "GraphicsDevice::createGraphicsPipeline";
+    SLAG_VALIDATE(instance, !desc.vertex.binaries.empty(), function, "no vertex shader binaries");
+    SLAG_VALIDATE(instance, desc.colorFormats.size() <= limits::maxColorTargets, function,
+                  "%zu color targets exceed limits::maxColorTargets", desc.colorFormats.size());
+    SLAG_VALIDATE(instance, desc.sampleCount == 1 || multisampleFlag(desc.sampleCount) != FormatSupport::None, function,
+                  "sample count %u is not 1, 2, 4, or 8", desc.sampleCount);
+    FormatSupport msaa = multisampleFlag(desc.sampleCount);
+    for (size_t i = 0; i < desc.colorFormats.size() && i < 8; ++i)
+    {
+        PixelFormat format = desc.colorFormats[i];
+        const ColorTargetBlend& blend = desc.blend.targets[i];
+        if (format == PixelFormat::Undefined)
+        {
+            continue;
+        }
+        SLAG_VALIDATE(instance, supports(self, format, FormatSupport::RenderTarget), function,
+                      "color target %zu: %s can't be a render target", i, formatInfo(format).name);
+        SLAG_VALIDATE(instance, !blend.blendEnable || supports(self, format, FormatSupport::Blend), function,
+                      "color target %zu: %s doesn't support blending", i, formatInfo(format).name);
+        SLAG_VALIDATE(instance, msaa == FormatSupport::None || supports(self, format, msaa), function,
+                      "color target %zu: %s doesn't support %ux MSAA", i, formatInfo(format).name, desc.sampleCount);
+        SLAG_VALIDATE(instance,
+                      i == 0 || !blend.blendEnable ||
+                          !(isDualSource(blend.srcColor) || isDualSource(blend.destColor) ||
+                            isDualSource(blend.srcAlpha) || isDualSource(blend.destAlpha)),
+                      function, "dual-source blending is for render target 0 only");
+        SLAG_VALIDATE(instance,
+                      !blend.blendEnable || (!isColorFactor(blend.srcAlpha) && !isColorFactor(blend.destAlpha)),
+                      function, "color target %zu: alpha blend factors can't be color factors", i);
+    }
+    bool hasDepthStencil = desc.depthStencilFormat != PixelFormat::Undefined;
+    SLAG_VALIDATE(instance, !hasDepthStencil || supports(self, desc.depthStencilFormat, FormatSupport::DepthStencil),
+                  function, "%s can't be a depth/stencil target", formatInfo(desc.depthStencilFormat).name);
+    SLAG_VALIDATE(instance,
+                  !hasDepthStencil || msaa == FormatSupport::None || supports(self, desc.depthStencilFormat, msaa),
+                  function, "%s doesn't support %ux MSAA", formatInfo(desc.depthStencilFormat).name, desc.sampleCount);
+    SLAG_VALIDATE(instance, hasDepthStencil || (!desc.depthStencil.depthTest && !desc.depthStencil.stencilTest),
+                  function, "depth or stencil testing without a depth/stencil format");
+    SLAG_VALIDATE(instance, !desc.depthStencil.stencilTest || hasTraits(desc.depthStencilFormat, FormatTraits::Stencil),
+                  function, "stencil testing needs a format with stencil");
+    SLAG_VALIDATE(instance, !desc.depthStencil.depthBoundsTest || self->capabilities.depthBounds, function,
+                  "the depth bounds test is not supported on \"%s\"", self->info.name);
+    SLAG_VALIDATE(instance, !desc.rasterizer.conservativeRasterization || self->capabilities.conservativeRasterization,
+                  function, "conservative rasterization is not supported on \"%s\"", self->info.name);
+
+    const VertexInputLayout& input = desc.vertexInput;
+    SLAG_VALIDATE(instance, input.attributes.size() <= limits::maxVertexAttributes, function,
+                  "%zu vertex attributes exceed limits::maxVertexAttributes", input.attributes.size());
+    SLAG_VALIDATE(instance, input.slots.size() <= limits::maxVertexBufferSlots, function,
+                  "%zu vertex buffer slots exceed limits::maxVertexBufferSlots", input.slots.size());
+    for (size_t i = 0; i < input.attributes.size(); ++i)
+    {
+        const VertexAttribute& attribute = input.attributes[i];
+        SLAG_VALIDATE(instance, attribute.slot < input.slots.size(), function,
+                      "attribute at location %u uses slot %u, but only %zu slots are declared", attribute.location,
+                      attribute.slot, input.slots.size());
+        SLAG_VALIDATE(instance, supports(self, attribute.format, FormatSupport::VertexBuffer), function,
+                      "attribute at location %u: %s is not a vertex format", attribute.location,
+                      formatInfo(attribute.format).name);
+        for (size_t j = 0; j < i; ++j)
+        {
+            SLAG_VALIDATE(instance, input.attributes[j].location != attribute.location, function,
+                          "two attributes use location %u", attribute.location);
+        }
+    }
+}
+#endif
+
+} // namespace
+
+Result<Pipeline*> GraphicsDevice::createGraphicsPipeline(const GraphicsPipelineDesc& desc)
+{
+    auto* self = static_cast<GraphicsDeviceCommon*>(this);
+    SLAG_VALIDATE(self->instance, self->initialized, "GraphicsDevice::createGraphicsPipeline",
+                  "device \"%s\" is not initialized", self->info.name);
+#ifdef SLAG_VALIDATION
+    validateGraphicsPipeline(self, desc);
+#endif
+    if (self->lost)
+    {
+        return Status::DeviceLost;
+    }
+    Result<PipelineCommon*> result = SLAG_DISPATCH(self, createGraphicsPipeline)(self, desc);
+    if (!result)
+    {
+        return result.status();
+    }
+    PipelineCommon* pipeline = result.value();
+    pipeline->userData = desc.userData;
+    pipeline->kind = PipelineKind::Graphics;
+    pipeline->colorCount = static_cast<uint32_t>(desc.colorFormats.size() < 8 ? desc.colorFormats.size() : 8);
+    for (uint32_t i = 0; i < pipeline->colorCount; ++i)
+    {
+        pipeline->colorFormats[i] = desc.colorFormats[i];
+    }
+    pipeline->depthStencilFormat = desc.depthStencilFormat;
+    pipeline->sampleCount = desc.sampleCount;
+    pipeline->writesDepth = desc.depthStencil.depthTest && desc.depthStencil.depthWrite;
+    pipeline->writesStencil = desc.depthStencil.stencilTest && desc.depthStencil.stencilWriteMask != 0;
+    pipeline->vertexSlotCount = static_cast<uint32_t>(desc.vertexInput.slots.size());
+    return static_cast<Pipeline*>(pipeline);
+}
 
 Result<Pipeline*> GraphicsDevice::createComputePipeline(const ComputePipelineDesc& desc)
 {

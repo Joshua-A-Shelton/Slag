@@ -1,6 +1,6 @@
 # 0038 — Vertex input
 
-**Status:** Accepted (2026-10-23). Names are placeholders.
+**Status:** Accepted (2026-10-23); attributes identified by location instead of semantic (2026-10-24, below). Names are placeholders.
 
 ## Decision
 
@@ -59,3 +59,23 @@ cmd->bindVertexBuffers(firstSlot, std::span<const VertexBufferBinding>);
 Plain SPIR-V carries locations, not semantic names. The compiler must emit
 semantic decorations (`UserSemantic`, `SPV_GOOGLE_hlsl_functionality1`).
 Confirm the Slang flag for it and add it to the required flag set.
+
+## Change (2026-10-24): attributes by location, not semantic
+
+Slang's SPIR-V has no semantic names on vertex inputs, only `Location`
+decorations (checked with Slang 2026.18.2, with and without
+`-fspv-reflect`), so Vulkan can't match by semantic.
+
+- `VertexAttribute` names a **location**: the input's position in the
+  vertex shader's input struct (Slang numbers non-system inputs in
+  declaration order), or an explicit `[[vk::location(n)]]`.
+- **Vulkan** uses the location directly; no SPIR-V reflection is needed.
+- **D3D12** reads the DXIL input signature (`ISG1` part of the DXIL
+  container) and takes the semantic name and index of the n-th
+  non-system-value input element, ordered by register, for location n.
+  This is the only shader reflection Slag does (ADR 0036).
+- A shader input with no attribute still fails creation, naming the
+  location.
+
+The `semantic` / `semanticIndex` fields are replaced by `location`.
+
