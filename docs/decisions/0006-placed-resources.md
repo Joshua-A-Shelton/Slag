@@ -1,6 +1,6 @@
 # 0006 — Placed resources and aliasing
 
-**Status:** Accepted (2026-10-22)
+**Status:** Accepted (2026-10-22). Allocator libraries replaced by Slag's own allocator (ADR 0061).
 
 ## Decision
 
@@ -11,7 +11,7 @@ convenience "committed" creation path.
 
 | | D3D12 | Vulkan |
 |---|---|---|
-| Heap | `ID3D12Heap` (via D3D12MA) | `VkDeviceMemory` (via VMA) |
+| Heap | `ID3D12Heap` | `VkDeviceMemory` |
 | Placed resource | `CreatePlacedResource` | create + bind buffer/image memory at offset |
 | Alias activation | Enhanced Barriers layout from `UNDEFINED` with discard | barrier from `VK_IMAGE_LAYOUT_UNDEFINED` |
 

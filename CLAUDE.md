@@ -119,7 +119,7 @@ tests/
   unit/                        no GPU needed
   backend/                     runs on every compiled backend
 samples/                       triangle, textured_quad, compute, bindless, multi_queue
-third_party/                   pinned: Vulkan-Headers, volk, VMA, D3D12MA, Agility SDK
+third_party/                   pinned: Vulkan-Headers, Agility SDK (ADR 0061)
 docs/                          decisions/, naming.md, open-items.md
 ```
 
@@ -184,9 +184,10 @@ Accepted decisions live in `docs/decisions/`.
   internal detail of the Vulkan swapchain.
 - **Dynamic rendering** (begin/end rendering with attachments) — no render
   pass / framebuffer objects.
-- **Explicit memory.** Users can allocate heaps and place resources, or use a
-  convenience "committed" path. Integrate with D3D12MA / VMA internally rather
-  than reinventing allocators.
+- **Explicit memory.** Users can allocate memory blocks and place resources,
+  or use automatic placement. Automatic placement uses Slag's own
+  backend-agnostic sub-allocator (ADR 0061), designed to support
+  defragmentation later (ADR 0062).
 - **Shaders are pre-compiled bytecode.** Slag accepts DXIL and SPIR-V blobs
   (plus future console formats). The supported toolchain is **Slang**,
   compiling one source to DXIL and SPIR-V with output flags that make both
@@ -284,11 +285,14 @@ Accepted decisions live in `docs/decisions/`.
 - **CMake** (3.25+) with presets (`CMakePresets.json`). Library target
   `slag`, alias `slag::slag`. Slag builds as a static library by default;
   shared library support is optional.
-- Third-party dependencies are vendored or fetched at pinned versions:
-  Vulkan headers + volk, D3D12 Agility SDK, D3D12MA, VMA. Nothing else in core
-  without discussion.
-- Do not load Vulkan via the static loader; use volk (or equivalent) so the
-  library works without a link-time dependency on `vulkan-1`.
+- Keep dependencies low (ADR 0061). The library depends only on
+  Vulkan-Headers and the DirectX 12 Agility SDK, vendored or fetched at
+  pinned versions. Nothing else in the library without discussion.
+- Slag implements its own Vulkan loader (per-device function tables, no
+  link-time dependency on `vulkan-1`), its own memory sub-allocator for both
+  backends, and its own SPIR-V input reflection.
+- Tests, samples, and tools may use a unit test framework, a windowing
+  library, and an image loader; these are never linked into the library.
 
 ```bash
 cmake --preset debug && cmake --build --preset debug

@@ -7,8 +7,9 @@ is a working name chosen to avoid confusion with descriptor heaps.
 
 - **Placement field** in every resource create struct (buffer and all seven
   texture types), one of:
-  - **Automatic:** a memory kind; D3D12MA / VMA decide whether to
-    sub-allocate or give a dedicated allocation. No dedicated-allocation hint.
+  - **Automatic:** a memory kind; Slag's allocator decides whether to
+    sub-allocate or give a dedicated allocation (ADR 0061). No
+    dedicated-allocation hint.
   - **Placed:** a memory block + offset.
 - **Memory blocks:** created with size, memory kind, debug name; destroyed
   explicitly. Destroying a block with live resources is a validation error.
@@ -29,7 +30,7 @@ is a working name chosen to avoid confusion with descriptor heaps.
 
 | | D3D12 | Vulkan |
 |---|---|---|
-| Automatic | D3D12MA (`CreateCommittedResource3` or sub-allocation) | VMA |
+| Automatic | Slag's own sub-allocator, or `CreateCommittedResource3` for dedicated (ADR 0061) | Slag's own sub-allocator, or dedicated `vkAllocateMemory` (ADR 0061) |
 | Memory block | `CreateHeap` (4 MB alignment) | `vkAllocateMemory` |
 | Query | `GetResourceAllocationInfo2` | `vkGetDevice{Buffer,Image}MemoryRequirements` |
 | Placed | `CreatePlacedResource2` | create + `vkBind{Buffer,Image}Memory2` |

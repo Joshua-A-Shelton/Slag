@@ -69,3 +69,5 @@ says a name is final. Names are chosen in a separate, explicit step.
 | [0058](0058-resizing.md) | Resizing and reconfiguring swapchains | Accepted |
 | [0059](0059-fullscreen-tearing-hdr.md) | Fullscreen, tearing, HDR | Accepted |
 | [0060](0060-result-and-status.md) | Result and Status | Accepted |
+| [0061](0061-dependencies.md) | Third-party dependencies | Accepted |
+| [0062](0062-defragmentation.md) | Defragmentation | Accepted |

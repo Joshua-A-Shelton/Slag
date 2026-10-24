@@ -21,6 +21,17 @@
 | Save | `Serialize` | `vkGetPipelineCacheData` |
 | Mismatched blob | driver-mismatch error on load → discard | header check → discard |
 
+## D3D12 cache keys (decided 2026-10-23)
+
+`ID3D12PipelineLibrary` stores pipelines under a name. Slag derives the name
+from a 64-bit hash of everything that defines the pipeline: shader
+bytecode, entry points, vertex layout, rasterizer / depth-stencil / blend
+state, topology, target formats, and sample count. The hash is a small
+function inside Slag (no dependency, ADR 0061). A collision is harmless:
+D3D12 rejects a stored pipeline whose description doesn't match exactly,
+and Slag then compiles normally. Vulkan needs no key (`VkPipelineCache`
+matches internally).
+
 ## Cut
 
 Per-pipeline blobs; `FAIL_ON_PIPELINE_COMPILE_REQUIRED` (no D3D12
