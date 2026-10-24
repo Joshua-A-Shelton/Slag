@@ -71,3 +71,4 @@ says a name is final. Names are chosen in a separate, explicit step.
 | [0060](0060-result-and-status.md) | Result and Status | Accepted |
 | [0061](0061-dependencies.md) | Third-party dependencies | Accepted |
 | [0062](0062-defragmentation.md) | Defragmentation | Accepted |
+| [0063](0063-user-data.md) | User data on objects | Accepted |

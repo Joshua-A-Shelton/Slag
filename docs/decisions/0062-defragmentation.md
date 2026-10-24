@@ -48,6 +48,11 @@ device->endDefragmentation(pass, /*completed*/ semaphoreValue);   // swaps nativ
   the layout the user must have them in (`CopySource` / after the copy the
   same layout as before).
 - Mapped pointers of moved buffers change; the move list flags them.
+- **Attachment views of moved textures are rebuilt by Slag** in
+  `endDefragmentation` (they are Slag objects); `AttachmentView*` pointers
+  keep working. So the user only fixes descriptor slots, GPU addresses, and
+  mapped pointers.
+- `userData` (ADR 0063) gets from a moved resource back to its owner.
 
 ## Decided
 

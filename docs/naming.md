@@ -74,7 +74,8 @@ they mean the types above. Names not listed here are still placeholders.
 | `createSwapchain` | `SwapchainDesc` |
 | `swapchain->reconfigure` | `SwapchainReconfigureDesc` (size, image count, format, present mode, color space) |
 
-Every `Desc` has an optional `debugName`.
+Every `Desc` has an optional `debugName` and `userData` (`uint64_t`); every
+object has `userData()` / `setUserData()` (ADR 0063).
 
 ## Device queries
 
