@@ -85,6 +85,11 @@ struct GraphicsDeviceImpl : GraphicsDeviceCommon
     DescriptorHeap samplerHeap;
     CpuDescriptorPool rtvPool;
     CpuDescriptorPool dsvPool;
+    // The pipeline cache (ADR 0043): a pipeline library over a copy of the
+    // caller's blob, which must outlive it. Calls on it take the lock.
+    ID3D12PipelineLibrary1* pipelineLibrary = nullptr;
+    Vector<uint8_t> pipelineLibraryBlob;
+    std::mutex pipelineLibraryLock;
     // ExecuteIndirect signatures, indexed by IndirectKind (ADR 0047).
     ID3D12CommandSignature* commandSignatures[3] = {};
 };

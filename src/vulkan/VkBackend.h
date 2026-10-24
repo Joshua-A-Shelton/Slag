@@ -76,7 +76,8 @@ struct GraphicsDeviceImpl : GraphicsDeviceCommon
     DeviceFunctions fn;
     DescriptorHeap resourceHeap;
     DescriptorHeap samplerHeap;
-    Vector<std::mutex*> queueLocks; // one per VkQueue shared by several Slag queues (ADR 0009)
+    VkPipelineCache pipelineCache = VK_NULL_HANDLE; // internally synchronized (ADR 0043)
+    Vector<std::mutex*> queueLocks;                 // one per VkQueue shared by several Slag queues (ADR 0009)
     // Distinct queue families in use; resources are CONCURRENT across them (ADR 0009).
     uint32_t sharingFamilies[3] = {};
     uint32_t sharingFamilyCount = 0;

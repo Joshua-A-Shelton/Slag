@@ -235,6 +235,51 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
             return status;
         }
     }
+    // The pipeline library, seeded from the previous run's blob; a blob from
+    // another driver or GPU is discarded (ADR 0043).
+    device.pipelineLibraryBlob = Vector<uint8_t>(&instance.allocator);
+    if (!desc.pipelineCacheData.empty())
+    {
+        if (!device.pipelineLibraryBlob.reserve(desc.pipelineCacheData.size()))
+        {
+            shutdownDevice(&device);
+            return Status::OutOfHostMemory;
+        }
+        for (std::byte value : desc.pipelineCacheData)
+        {
+            (void)device.pipelineLibraryBlob.pushBack(static_cast<uint8_t>(value));
+        }
+        // A mismatched blob is expected (another driver or GPU): keep the debug
+        // layer from reporting it as an error; Slag logs it at Info instead.
+        D3D12_MESSAGE_ID mismatches[] = {D3D12_MESSAGE_ID_CREATEPIPELINELIBRARY_INVALIDLIBRARYBLOB,
+                                         D3D12_MESSAGE_ID_CREATEPIPELINELIBRARY_DRIVERVERSIONMISMATCH,
+                                         D3D12_MESSAGE_ID_CREATEPIPELINELIBRARY_ADAPTERVERSIONMISMATCH};
+        D3D12_INFO_QUEUE_FILTER filter = {};
+        filter.DenyList.NumIDs = 3;
+        filter.DenyList.pIDList = mismatches;
+        bool filtered = device.infoQueue && SUCCEEDED(device.infoQueue->PushStorageFilter(&filter));
+        result =
+            device.device->CreatePipelineLibrary(device.pipelineLibraryBlob.data(), device.pipelineLibraryBlob.size(),
+                                                 IID_PPV_ARGS(&device.pipelineLibrary));
+        if (filtered)
+        {
+            device.infoQueue->PopStorageFilter();
+        }
+        if (FAILED(result))
+        {
+            logMessage(messageSink(&instance), MessageSeverity::Info, MessageSource::Slag,
+                       "slag: GraphicsDevice::initialize: the pipeline cache blob doesn't match this device or driver "
+                       "(0x%08lx); starting empty",
+                       static_cast<unsigned long>(result));
+            device.pipelineLibraryBlob.clear();
+        }
+    }
+    if (!device.pipelineLibrary &&
+        FAILED(device.device->CreatePipelineLibrary(nullptr, 0, IID_PPV_ARGS(&device.pipelineLibrary))))
+    {
+        // Pipeline libraries are optional in the OS; pipelines are then just not cached.
+        device.pipelineLibrary = nullptr;
+    }
     initPool(device, device.rtvPool, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1);
     initPool(device, device.dsvPool, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, DsvVariantCount);
     return {};
@@ -259,6 +304,8 @@ void shutdownDevice(GraphicsDeviceCommon* common)
         }
     }
     destroyQueues(device);
+    release(device.pipelineLibrary);
+    device.pipelineLibraryBlob.clear();
     for (ID3D12CommandSignature*& signature : device.commandSignatures)
     {
         release(signature);
@@ -277,6 +324,22 @@ void shutdownDevice(GraphicsDeviceCommon* common)
     }
     release(device.device);
     device.initialized = false;
+}
+
+size_t pipelineCacheData(const GraphicsDeviceCommon* common, std::span<std::byte> data)
+{
+    auto& device = const_cast<GraphicsDeviceImpl&>(*static_cast<const GraphicsDeviceImpl*>(common));
+    if (!device.pipelineLibrary)
+    {
+        return 0;
+    }
+    std::lock_guard<std::mutex> lock(device.pipelineLibraryLock);
+    size_t size = device.pipelineLibrary->GetSerializedSize();
+    if (data.size() >= size && FAILED(device.pipelineLibrary->Serialize(data.data(), size)))
+    {
+        return 0;
+    }
+    return size;
 }
 
 MemoryBudget memoryBudget(const GraphicsDeviceCommon* common)

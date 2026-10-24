@@ -351,7 +351,7 @@ Result<PipelineCommon*> createGraphicsPipeline(GraphicsDeviceCommon* common, con
     pipeline->device = &device;
     pipeline->functions = device.functions;
     pipeline->bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    VkResult result = device.fn.vkCreateGraphicsPipelines(device.device, VK_NULL_HANDLE, 1, &createInfo, nullptr,
+    VkResult result = device.fn.vkCreateGraphicsPipelines(device.device, device.pipelineCache, 1, &createInfo, nullptr,
                                                           &pipeline->pipeline);
     if (result != VK_SUCCESS)
     {
@@ -419,8 +419,8 @@ Result<PipelineCommon*> createComputePipeline(GraphicsDeviceCommon* common, cons
     pipeline->device = &device;
     pipeline->functions = device.functions;
     pipeline->bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
-    VkResult result =
-        device.fn.vkCreateComputePipelines(device.device, VK_NULL_HANDLE, 1, &createInfo, nullptr, &pipeline->pipeline);
+    VkResult result = device.fn.vkCreateComputePipelines(device.device, device.pipelineCache, 1, &createInfo, nullptr,
+                                                         &pipeline->pipeline);
     if (result != VK_SUCCESS)
     {
         device.instance->allocator.destroy(pipeline);

@@ -1,3 +1,4 @@
+#include "common/Hash.h"
 #include "common/Logging.h"
 #include "d3d12/D3D12Backend.h"
 #include "d3d12/D3D12Formats.h"
@@ -102,6 +103,97 @@ bool readInputSignature(const ShaderBinary& binary, Vector<SignatureInput>& inpu
 #ifdef _MSC_VER
 #pragma warning(disable : 4324) // padded for alignas: intended, the stream needs it
 #endif
+
+// The pipeline library key: a hash of everything that defines the pipeline
+// (ADR 0043), as "slag-" plus 16 hex digits.
+void pipelineName(uint64_t hash, wchar_t (&name)[24])
+{
+    static const wchar_t digits[] = L"0123456789abcdef";
+    const wchar_t prefix[] = L"slag-";
+    for (int i = 0; i < 5; ++i)
+    {
+        name[i] = prefix[i];
+    }
+    for (int i = 0; i < 16; ++i)
+    {
+        name[5 + i] = digits[(hash >> (60 - 4 * i)) & 0xF];
+    }
+    name[21] = 0;
+}
+
+void hashStage(Hasher& hasher, const ShaderBinary* binary, const char* entry)
+{
+    hasher.add(binary ? binary->size : 0);
+    if (binary)
+    {
+        hasher.addBytes(binary->data, binary->size);
+    }
+    hasher.addString(entry);
+}
+
+uint64_t hashGraphics(const GraphicsPipelineDesc& desc, const ShaderBinary* vertex, const ShaderBinary* pixel)
+{
+    Hasher hasher;
+    hasher.add(1); // graphics
+    hashStage(hasher, vertex, desc.vertex.entryPoint);
+    hashStage(hasher, pixel, desc.pixel.entryPoint);
+    for (const VertexAttribute& attribute : desc.vertexInput.attributes)
+    {
+        hasher.add(attribute.location);
+        hasher.add(attribute.format);
+        hasher.add(attribute.slot);
+        hasher.add(attribute.offset);
+    }
+    for (VertexStepRate rate : desc.vertexInput.slots)
+    {
+        hasher.add(rate);
+    }
+    hasher.add(desc.topology);
+    const RasterizerState& r = desc.rasterizer;
+    hasher.add(r.fillMode);
+    hasher.add(r.cullMode);
+    hasher.add(r.frontCounterClockwise);
+    hasher.add(r.depthBias);
+    hasher.add(r.depthBiasClamp);
+    hasher.add(r.depthBiasSlopeScale);
+    hasher.add(r.depthClip);
+    hasher.add(r.conservativeRasterization);
+    const DepthStencilState& d = desc.depthStencil;
+    hasher.add(d.depthTest);
+    hasher.add(d.depthWrite);
+    hasher.add(d.depthCompareOp);
+    hasher.add(d.stencilTest);
+    for (const StencilFaceState* face : {&d.front, &d.back})
+    {
+        hasher.add(face->failOp);
+        hasher.add(face->depthFailOp);
+        hasher.add(face->passOp);
+        hasher.add(face->compareOp);
+    }
+    hasher.add(d.stencilReadMask);
+    hasher.add(d.stencilWriteMask);
+    hasher.add(d.depthBoundsTest);
+    hasher.add(desc.blend.alphaToCoverage);
+    for (const ColorTargetBlend& t : desc.blend.targets)
+    {
+        hasher.add(t.blendEnable);
+        hasher.add(t.srcColorFactor);
+        hasher.add(t.destColorFactor);
+        hasher.add(t.colorOp);
+        hasher.add(t.srcAlphaFactor);
+        hasher.add(t.destAlphaFactor);
+        hasher.add(t.alphaOp);
+        hasher.add(t.writeMask);
+    }
+    for (PixelFormat format : desc.colorFormats)
+    {
+        hasher.add(format);
+    }
+    hasher.add(desc.depthStencilFormat);
+    hasher.add(desc.sampleCount);
+    hasher.add(desc.sampleMask);
+    return hasher.finish();
+}
 
 template <D3D12_PIPELINE_STATE_SUBOBJECT_TYPE Type, class T>
 struct alignas(void*) Subobject
@@ -332,7 +424,26 @@ Result<PipelineCommon*> createGraphicsPipeline(GraphicsDeviceCommon* common, con
     pipeline->functions = device.functions;
     pipeline->topology = topology;
     D3D12_PIPELINE_STATE_STREAM_DESC streamDesc = {sizeof(stream), &stream};
-    HRESULT result = device.device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&pipeline->pipeline));
+    // From the pipeline library when it has this pipeline; otherwise compiled
+    // and stored (ADR 0043).
+    wchar_t libraryName[24];
+    pipelineName(hashGraphics(desc, vertex, pixel), libraryName);
+    HRESULT result = E_FAIL;
+    if (device.pipelineLibrary)
+    {
+        std::lock_guard<std::mutex> lock(device.pipelineLibraryLock);
+        result = device.pipelineLibrary->LoadPipeline(libraryName, &streamDesc, IID_PPV_ARGS(&pipeline->pipeline));
+    }
+    if (FAILED(result))
+    {
+        pipeline->pipeline = nullptr;
+        result = device.device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&pipeline->pipeline));
+        if (SUCCEEDED(result) && device.pipelineLibrary)
+        {
+            std::lock_guard<std::mutex> lock(device.pipelineLibraryLock);
+            (void)device.pipelineLibrary->StorePipeline(libraryName, pipeline->pipeline); // E_INVALIDARG: already stored
+        }
+    }
     if (FAILED(result))
     {
         device.instance->allocator.destroy(pipeline);
@@ -367,7 +478,27 @@ Result<PipelineCommon*> createComputePipeline(GraphicsDeviceCommon* common, cons
     stateDesc.pRootSignature = device.rootSignature;
     stateDesc.CS.pShaderBytecode = binary->data;
     stateDesc.CS.BytecodeLength = binary->size;
-    HRESULT result = device.device->CreateComputePipelineState(&stateDesc, IID_PPV_ARGS(&pipeline->pipeline));
+    Hasher hasher;
+    hasher.add(2); // compute
+    hashStage(hasher, binary, desc.compute.entryPoint);
+    wchar_t libraryName[24];
+    pipelineName(hasher.finish(), libraryName);
+    HRESULT result = E_FAIL;
+    if (device.pipelineLibrary)
+    {
+        std::lock_guard<std::mutex> lock(device.pipelineLibraryLock);
+        result = device.pipelineLibrary->LoadComputePipeline(libraryName, &stateDesc, IID_PPV_ARGS(&pipeline->pipeline));
+    }
+    if (FAILED(result))
+    {
+        pipeline->pipeline = nullptr;
+        result = device.device->CreateComputePipelineState(&stateDesc, IID_PPV_ARGS(&pipeline->pipeline));
+        if (SUCCEEDED(result) && device.pipelineLibrary)
+        {
+            std::lock_guard<std::mutex> lock(device.pipelineLibraryLock);
+            (void)device.pipelineLibrary->StorePipeline(libraryName, pipeline->pipeline);
+        }
+    }
     if (FAILED(result))
     {
         device.instance->allocator.destroy(pipeline);

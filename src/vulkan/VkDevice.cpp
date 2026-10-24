@@ -393,6 +393,40 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
         }
     }
 
+    // The pipeline cache, seeded from the previous run's blob when it was made
+    // by this device and driver (ADR 0043).
+    VkPipelineCacheCreateInfo cacheInfo = {VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO};
+    if (!desc.pipelineCacheData.empty())
+    {
+        VkPipelineCacheHeaderVersionOne header = {};
+        bool matches = desc.pipelineCacheData.size() >= sizeof(header);
+        if (matches)
+        {
+            std::memcpy(&header, desc.pipelineCacheData.data(), sizeof(header));
+            matches = header.headerVersion == VK_PIPELINE_CACHE_HEADER_VERSION_ONE &&
+                      header.vendorID == device.properties.vendorID && header.deviceID == device.properties.deviceID &&
+                      std::memcmp(header.pipelineCacheUUID, device.properties.pipelineCacheUUID, VK_UUID_SIZE) == 0;
+        }
+        if (matches)
+        {
+            cacheInfo.initialDataSize = desc.pipelineCacheData.size();
+            cacheInfo.pInitialData = desc.pipelineCacheData.data();
+        }
+        else
+        {
+            logMessage(messageSink(&instance), MessageSeverity::Info, MessageSource::Slag,
+                       "slag: GraphicsDevice::initialize: the pipeline cache blob is from another device or driver; "
+                       "starting empty");
+        }
+    }
+    result = device.fn.vkCreatePipelineCache(device.device, &cacheInfo, nullptr, &device.pipelineCache);
+    if (result != VK_SUCCESS)
+    {
+        Status status = toStatus(device, result);
+        shutdownDevice(&device);
+        return status;
+    }
+
     Status blockStatus = selectBlockMemoryTypes(device);
     if (blockStatus != Status::Ok)
     {
@@ -434,6 +468,11 @@ void shutdownDevice(GraphicsDeviceCommon* common)
         return;
     }
     device.fn.vkDeviceWaitIdle(device.device);
+    if (device.pipelineCache != VK_NULL_HANDLE)
+    {
+        device.fn.vkDestroyPipelineCache(device.device, device.pipelineCache, nullptr);
+        device.pipelineCache = VK_NULL_HANDLE;
+    }
     destroyHeap(device, device.resourceHeap);
     destroyHeap(device, device.samplerHeap);
     destroyQueues(device);
@@ -442,6 +481,18 @@ void shutdownDevice(GraphicsDeviceCommon* common)
     device.fn = {};
     device.sharingFamilyCount = 0;
     device.initialized = false;
+}
+
+size_t pipelineCacheData(const GraphicsDeviceCommon* common, std::span<std::byte> data)
+{
+    auto& device = *static_cast<const GraphicsDeviceImpl*>(common);
+    size_t size = 0;
+    device.fn.vkGetPipelineCacheData(device.device, device.pipelineCache, &size, nullptr);
+    if (data.size() >= size)
+    {
+        device.fn.vkGetPipelineCacheData(device.device, device.pipelineCache, &size, data.data());
+    }
+    return size;
 }
 
 MemoryBudget memoryBudget(const GraphicsDeviceCommon* common)

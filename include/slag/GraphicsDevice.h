@@ -206,6 +206,11 @@ public:
     // CPU wait. Returns Timeout if the timeout passed first. Thread-safe.
     Result<void> waitSemaphores(std::span<const SemaphoreValue> values, WaitMode mode, uint64_t timeoutNs);
 
+    // The pipeline cache blob to save for the next run (ADR 0043): fills
+    // `data` and returns the size (call with an empty span to size it).
+    // Thread-safe.
+    size_t pipelineCacheData(std::span<std::byte> data) const;
+
     // Waits for all queues. No submits or presents may run meanwhile (ADR 0068).
     Result<void> waitIdle();
 

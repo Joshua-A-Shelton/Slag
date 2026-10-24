@@ -30,6 +30,14 @@ const GraphicsDeviceCapabilities& GraphicsDevice::capabilities() const
     return common(this)->capabilities;
 }
 
+size_t GraphicsDevice::pipelineCacheData(std::span<std::byte> data) const
+{
+    const GraphicsDeviceCommon* self = common(this);
+    SLAG_VALIDATE(self->instance, self->initialized, "GraphicsDevice::pipelineCacheData",
+                  "device \"%s\" is not initialized", self->info.name);
+    return self->initialized ? SLAG_DISPATCH(self, pipelineCacheData)(self, data) : 0;
+}
+
 MemoryBudget GraphicsDevice::memoryBudget() const
 {
     const GraphicsDeviceCommon* self = common(this);

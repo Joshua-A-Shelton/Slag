@@ -5,6 +5,7 @@
 #include <slag/GraphicsDevice.h>
 #include <slag/Pipeline.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <fstream>
 #include <iterator>
@@ -127,6 +128,50 @@ void runFillBuffer(TestInstance& test, slag::GraphicsDevice* device, bool indire
     test.checkNoErrors();
 }
 
+// Pipeline cache (ADR 0043): a blob saved after creating a pipeline seeds
+// the next initialize; a blob from elsewhere is discarded without errors.
+void testPipelineCache(slag::Backend backend)
+{
+    TestInstance test(backend);
+    slag::GraphicsDevice* device = test.firstDevice();
+    REQUIRE(device);
+    std::vector<char> spirv = readFile(SLAG_SHADER_DIR "/FillBuffer.main.spv");
+    std::vector<char> dxil = readFile(SLAG_SHADER_DIR "/FillBuffer.main.dxil");
+    std::vector<slag::ShaderBinary> binaries;
+    if (!dxil.empty())
+    {
+        binaries.push_back({slag::ShaderFormat::Dxil, dxil.data(), dxil.size()});
+    }
+    if (!spirv.empty())
+    {
+        binaries.push_back({slag::ShaderFormat::Spirv, spirv.data(), spirv.size()});
+    }
+    auto createAndDestroy = [&] {
+        slag::Result<slag::Pipeline*> pipeline = device->createComputePipeline({.compute = {.binaries = binaries}});
+        REQUIRE(static_cast<bool>(pipeline));
+        device->destroy(pipeline.value());
+    };
+
+    REQUIRE(static_cast<bool>(device->initialize({})));
+    createAndDestroy();
+    size_t size = device->pipelineCacheData({});
+    std::vector<std::byte> blob(size);
+    CHECK(device->pipelineCacheData(blob) == size);
+    MESSAGE("pipeline cache: " << size << " bytes");
+    device->shutdown();
+
+    REQUIRE(static_cast<bool>(device->initialize({.pipelineCacheData = blob})));
+    createAndDestroy();
+    CHECK(device->pipelineCacheData({}) >= size);
+    device->shutdown();
+
+    std::vector<std::byte> garbage(64, std::byte{0xAB});
+    REQUIRE(static_cast<bool>(device->initialize({.pipelineCacheData = garbage})));
+    createAndDestroy();
+    device->shutdown();
+    test.checkNoErrors();
+}
+
 // Every listed device: descriptor sizes differ between GPUs.
 void runFillBufferOnAllDevices(slag::Backend backend)
 {
@@ -153,5 +198,19 @@ TEST_CASE("Vulkan: M1 spike - compute writes through the resource heap, CPU read
 TEST_CASE("D3D12: M1 spike - compute writes through the resource heap, CPU reads it back")
 {
     runFillBufferOnAllDevices(slag::Backend::D3D12);
+}
+#endif
+
+#ifdef SLAG_BACKEND_VULKAN
+TEST_CASE("Vulkan: the pipeline cache blob round-trips and rejects foreign blobs")
+{
+    testPipelineCache(slag::Backend::Vulkan);
+}
+#endif
+
+#ifdef SLAG_BACKEND_D3D12
+TEST_CASE("D3D12: the pipeline cache blob round-trips and rejects foreign blobs")
+{
+    testPipelineCache(slag::Backend::D3D12);
 }
 #endif
