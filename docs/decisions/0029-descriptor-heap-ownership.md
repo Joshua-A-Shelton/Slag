@@ -21,7 +21,7 @@ Raising the resource heap to the maximum, expected to be the most common
 choice, is one line using a public constant (names are placeholders):
 
 ```cpp
-initDesc.resourceHeapSize = slag::kMaxResourceHeapSize;   // 1,000,000
+initDesc.resourceHeapSize = slag::limits::maxResourceHeapSize;   // 1,000,000
 ```
 
 Why the default is lower than the maximum: on Vulkan every slot is

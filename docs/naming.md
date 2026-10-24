@@ -145,7 +145,7 @@ object has `userData()` / `setUserData()` (ADR 0063).
 | Placement | `PlacementOptions` (`movable`); `Placement::automatic(kind, options)`, `Placement::placed(memoryBlock, offset)`; fields `kind`, `movable`, `memoryBlock`, `offset` |
 | Shaders | `ShaderBinary` (`format`, `data`, `size`); `ShaderStage` (`binaries`, `entryPoint`, default `"main"`) |
 | Descriptors | `StructuredBufferDescriptor` (`buffer`, `offset`, `count`, `stride`) |
-| `SubresourceRange` | `baseMip`, `mipCount`, `baseLayer`, `layerCount`, `plane`; counts default to `kRemainingMips` / `kRemainingLayers` (constants, `slag/Barriers.h`) |
+| `SubresourceRange` | `baseMip`, `mipCount`, `baseLayer`, `layerCount`, `plane`; counts default to the static constants `SubresourceRange::remainingMips` / `remainingLayers` |
 
 New names added while implementing go here once confirmed.
 
@@ -218,37 +218,39 @@ Flag enums use a singular name with `SLAG_FLAGS`.
 
 Sample count is a plain `uint32_t` (1, 2, 4, 8), not an enum.
 
-## Constants (`namespace slag`)
+## Constants (`slag/Limits.h`)
+
+Grouped by purpose in lowercase namespaces inside `slag` (`limits`, `alignment`, `defaults`), with camelCase names. A constant tied to one type is a `static constexpr` member of it (`SubresourceRange::remainingMips`). Internal constants are plain camelCase.
 
 | Name | Value | ADR |
 |---|---|---|
-| `kMaxTexture1DSize` | 16384 | 0028 |
-| `kMaxTexture2DSize` | 16384 | 0028 |
-| `kMaxTexture3DSize` | 2048 | 0028 |
-| `kMaxTextureCubeSize` | 16384 | 0028 |
-| `kMaxTextureArrayLayers` | 2048 | 0028 |
-| `kMaxMipLevels` | 15 | 0028 |
-| `kMaxSampleCount` | 8 | 0021 |
-| `kMaxConstantBufferSize` | 65536 | 0028 |
-| `kConstantBufferAlignment` | 256 | 0020 |
-| `kRawBufferAlignment` | 256 | 0030 |
-| `kMaxPushConstantsSize` | 128 | 0003 |
-| `kMaxResourceHeapSize` | 1,000,000 | 0029 |
-| `kDefaultResourceHeapSize` | 262,144 | 0029 |
-| `kMaxSamplerHeapSize` | 2048 (also the default) | 0029 |
-| `kMaxUniqueSamplers` | 4096 | 0033 |
-| `kMaxColorTargets` | 8 | 0041 |
-| `kMaxViewports` | 16 | 0037 |
-| `kMaxVertexAttributes` | 32 | 0038 |
-| `kMaxVertexBufferSlots` | 32 | 0038 |
-| `kMaxAnisotropy` | 16 | 0033 |
-| `kMaxSamplerLodBias` | 14.0f | 0033 |
-| `kTextureCopyOffsetAlignment` | 512 | 0048 |
-| `kTextureCopyRowPitchAlignment` | 256 | 0048 |
-| `kMaxDebugNameLength` | 255 | 0017 |
-| `kMaxTypedBufferElements` | 2^27 | 0028 |
-| `kMaxStructuredBufferElements` | 2^27 | 0028 |
-| `kMaxStorageBufferViewSize` | 1 GiB | 0028 |
+| `limits::maxTexture1DSize` | 16384 | 0028 |
+| `limits::maxTexture2DSize` | 16384 | 0028 |
+| `limits::maxTexture3DSize` | 2048 | 0028 |
+| `limits::maxTextureCubeSize` | 16384 | 0028 |
+| `limits::maxTextureArrayLayers` | 2048 | 0028 |
+| `limits::maxMipLevels` | 15 | 0028 |
+| `limits::maxSampleCount` | 8 | 0021 |
+| `limits::maxConstantBufferSize` | 65536 | 0028 |
+| `alignment::constantBuffer` | 256 | 0020 |
+| `alignment::rawBuffer` | 256 | 0030 |
+| `limits::maxPushConstantsSize` | 128 | 0003 |
+| `limits::maxResourceHeapSize` | 1,000,000 | 0029 |
+| `defaults::resourceHeapSize` | 262,144 | 0029 |
+| `limits::maxSamplerHeapSize` | 2048 (also the default) | 0029 |
+| `limits::maxUniqueSamplers` | 4096 | 0033 |
+| `limits::maxColorTargets` | 8 | 0041 |
+| `limits::maxViewports` | 16 | 0037 |
+| `limits::maxVertexAttributes` | 32 | 0038 |
+| `limits::maxVertexBufferSlots` | 32 | 0038 |
+| `limits::maxAnisotropy` | 16 | 0033 |
+| `limits::maxSamplerLodBias` | 14.0f | 0033 |
+| `alignment::textureCopyOffset` | 512 | 0048 |
+| `alignment::textureCopyRowPitch` | 256 | 0048 |
+| `limits::maxDebugNameLength` | 255 | 0017 |
+| `limits::maxTypedBufferElements` | 2^27 | 0028 |
+| `limits::maxStructuredBufferElements` | 2^27 | 0028 |
+| `limits::maxStorageBufferViewSize` | 1 GiB | 0028 |
 
 ## Macros and build options
 

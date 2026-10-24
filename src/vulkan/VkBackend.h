@@ -48,7 +48,7 @@ struct DescriptorHeap
     VkDeviceSize reservedSize = 0; // driver-reserved range after the user slots
 };
 
-constexpr uint32_t kMaxQueueFamilies = 16;
+constexpr uint32_t maxQueueFamilies = 16;
 
 struct GraphicsDeviceImpl : GraphicsDeviceCommon
 {
@@ -57,8 +57,8 @@ struct GraphicsDeviceImpl : GraphicsDeviceCommon
     VkPhysicalDeviceDescriptorHeapPropertiesEXT heapProperties = {};
     VkPhysicalDeviceMemoryProperties memoryProperties = {};
     uint32_t queueFamilyCount = 0;
-    VkQueueFlags queueFamilyFlags[kMaxQueueFamilies] = {};
-    uint32_t queueFamilyQueueCount[kMaxQueueFamilies] = {};
+    VkQueueFlags queueFamilyFlags[maxQueueFamilies] = {};
+    uint32_t queueFamilyQueueCount[maxQueueFamilies] = {};
 
     // Valid while initialized.
     VkDevice device = VK_NULL_HANDLE;

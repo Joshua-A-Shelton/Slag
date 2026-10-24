@@ -6,7 +6,7 @@
 
 namespace slag::vk {
 
-constexpr uint32_t kNoMemoryType = UINT32_MAX;
+constexpr uint32_t noMemoryType = UINT32_MAX;
 
 // Picks a type allowed by `typeBits` with every `required` flag. Among those,
 // prefers one with every `preferred` flag, then one with no `avoided` flag.
@@ -21,7 +21,7 @@ struct DedicatedBuffer
     VkDeviceMemory memory = VK_NULL_HANDLE;
     void* mapped = nullptr;
     VkDeviceAddress address = 0;
-    uint32_t memoryType = kNoMemoryType;
+    uint32_t memoryType = noMemoryType;
 };
 
 Status createDedicatedBuffer(GraphicsDeviceImpl& device, VkDeviceSize size, VkBufferUsageFlags usage,

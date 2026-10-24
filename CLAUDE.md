@@ -108,7 +108,7 @@ include/slag/
   Slag.h                       umbrella: everything except native/ and util/
   Result.h                     Result, Status
   Flags.h                      SLAG_FLAGS
-  Limits.h                     all k* constants
+  Limits.h                     limits::, alignment::, defaults:: constants
   PixelFormat.h                PixelFormat, FormatSupport
   Instance.h                   Instance, InstanceDesc, backend-options union, debug callback
   GraphicsDevice.h             GraphicsDevice, info, capabilities, init desc, MemoryBudget
@@ -293,8 +293,12 @@ Accepted decisions live in `docs/decisions/`.
 
 - Namespace: `slag`; backend internals in `slag::d3d12`, `slag::vk`, etc.
 - Naming: `PascalCase` types, `camelCase` functions and variables, `m_` not
-  used — members are plain `camelCase`; `kPascalCase` constants;
-  `SLAG_UPPER_CASE` macros (macros only when unavoidable).
+  used — members are plain `camelCase`; `SLAG_UPPER_CASE` macros (macros
+  only when unavoidable).
+- Constants: `camelCase`, no prefix. Public ones are grouped in lowercase
+  namespaces (`limits::maxTexture2DSize`, `alignment::constantBuffer`,
+  `defaults::resourceHeapSize`) or are `static constexpr` members of the
+  type they belong to (`SubresourceRange::remainingMips`).
 - Enums: `enum class`; bitflags via a `SLAG_FLAGS(EnumType)` helper providing
   operators.
 - Enum values are PascalCase. Format values spell out channel bits as in

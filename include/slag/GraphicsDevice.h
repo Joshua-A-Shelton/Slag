@@ -40,8 +40,8 @@ struct GraphicsDeviceInfo
 
 struct GraphicsDeviceInitDesc
 {
-    uint32_t resourceHeapSize = kDefaultResourceHeapSize; // up to kMaxResourceHeapSize (ADR 0029)
-    uint32_t samplerHeapSize = kMaxSamplerHeapSize;
+    uint32_t resourceHeapSize = defaults::resourceHeapSize; // up to limits::maxResourceHeapSize (ADR 0029)
+    uint32_t samplerHeapSize = limits::maxSamplerHeapSize;
     std::span<const std::byte> pipelineCacheData; // from a previous run (ADR 0043)
     uint32_t graphicsQueueCount = 1;              // at least 1 (ADR 0054)
     uint32_t computeQueueCount = 1;

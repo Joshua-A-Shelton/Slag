@@ -8,7 +8,7 @@ namespace slag::vk {
 
 namespace {
 
-constexpr uint32_t kNoFamily = UINT32_MAX;
+constexpr uint32_t noFamily = UINT32_MAX;
 
 VkDeviceSize alignUp(VkDeviceSize value, VkDeviceSize alignment)
 {
@@ -25,7 +25,7 @@ uint32_t findFamily(const GraphicsDeviceImpl& device, VkQueueFlags required, VkQ
             return i;
         }
     }
-    return kNoFamily;
+    return noFamily;
 }
 
 // Dedicated families where they exist; otherwise queues share the graphics
@@ -36,9 +36,9 @@ void selectFamilies(const GraphicsDeviceImpl& device, uint32_t families[3])
     uint32_t compute = findFamily(device, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT);
     uint32_t copy = findFamily(device, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
     families[static_cast<size_t>(CommandQueueType::Graphics)] = graphics;
-    families[static_cast<size_t>(CommandQueueType::Compute)] = compute != kNoFamily ? compute : graphics;
+    families[static_cast<size_t>(CommandQueueType::Compute)] = compute != noFamily ? compute : graphics;
     families[static_cast<size_t>(CommandQueueType::Copy)] =
-        copy != kNoFamily ? copy : families[static_cast<size_t>(CommandQueueType::Compute)];
+        copy != noFamily ? copy : families[static_cast<size_t>(CommandQueueType::Compute)];
 }
 
 bool hasExtension(const Vector<VkExtensionProperties>& extensions, const char* name)
@@ -171,7 +171,7 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
     Vector<Assignment> assignments[3] = {Vector<Assignment>(&instance.allocator),
                                          Vector<Assignment>(&instance.allocator),
                                          Vector<Assignment>(&instance.allocator)};
-    uint32_t used[kMaxQueueFamilies] = {};
+    uint32_t used[maxQueueFamilies] = {};
     for (size_t type = 0; type < 3; ++type)
     {
         uint32_t family = families[type];
@@ -193,7 +193,7 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
     {
         priority = 1.0f;
     }
-    VkDeviceQueueCreateInfo queueInfos[kMaxQueueFamilies] = {};
+    VkDeviceQueueCreateInfo queueInfos[maxQueueFamilies] = {};
     uint32_t queueInfoCount = 0;
     for (uint32_t family = 0; family < device.queueFamilyCount; ++family)
     {

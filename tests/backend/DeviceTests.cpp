@@ -24,7 +24,7 @@ TEST_CASE("Vulkan: initialize gives the requested queues and shutdown undoes it"
     device->shutdown();
 
     // A device can be initialized again, e.g. after device loss (ADR 0054).
-    desc.resourceHeapSize = slag::kMaxResourceHeapSize;
+    desc.resourceHeapSize = slag::limits::maxResourceHeapSize;
     REQUIRE(static_cast<bool>(device->initialize(desc)));
     device->shutdown();
     test.checkNoErrors();

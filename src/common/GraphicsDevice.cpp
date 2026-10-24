@@ -29,10 +29,12 @@ Result<void> GraphicsDevice::initialize(const GraphicsDeviceInitDesc& desc)
     GraphicsDeviceCommon* self = common(this);
     SLAG_VALIDATE(self->instance, !self->initialized, "GraphicsDevice::initialize",
                   "device \"%s\" is already initialized", self->info.name);
-    SLAG_VALIDATE(self->instance, desc.resourceHeapSize <= kMaxResourceHeapSize, "GraphicsDevice::initialize",
-                  "resourceHeapSize %u exceeds kMaxResourceHeapSize (%u)", desc.resourceHeapSize, kMaxResourceHeapSize);
-    SLAG_VALIDATE(self->instance, desc.samplerHeapSize <= kMaxSamplerHeapSize, "GraphicsDevice::initialize",
-                  "samplerHeapSize %u exceeds kMaxSamplerHeapSize (%u)", desc.samplerHeapSize, kMaxSamplerHeapSize);
+    SLAG_VALIDATE(self->instance, desc.resourceHeapSize <= limits::maxResourceHeapSize, "GraphicsDevice::initialize",
+                  "resourceHeapSize %u exceeds limits::maxResourceHeapSize (%u)", desc.resourceHeapSize,
+                  limits::maxResourceHeapSize);
+    SLAG_VALIDATE(self->instance, desc.samplerHeapSize <= limits::maxSamplerHeapSize, "GraphicsDevice::initialize",
+                  "samplerHeapSize %u exceeds limits::maxSamplerHeapSize (%u)", desc.samplerHeapSize,
+                  limits::maxSamplerHeapSize);
     SLAG_VALIDATE(self->instance, desc.graphicsQueueCount >= 1, "GraphicsDevice::initialize",
                   "graphicsQueueCount must be at least 1");
 

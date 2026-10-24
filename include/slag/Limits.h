@@ -7,39 +7,53 @@
 
 namespace slag {
 
-constexpr uint32_t kMaxTexture1DSize = 16384;
-constexpr uint32_t kMaxTexture2DSize = 16384;
-constexpr uint32_t kMaxTexture3DSize = 2048;
-constexpr uint32_t kMaxTextureCubeSize = 16384;
-constexpr uint32_t kMaxTextureArrayLayers = 2048;
-constexpr uint32_t kMaxMipLevels = 15;
-constexpr uint32_t kMaxSampleCount = 8;
+namespace limits {
 
-constexpr uint32_t kMaxConstantBufferSize = 65536;
-constexpr uint32_t kConstantBufferAlignment = 256;
-constexpr uint32_t kRawBufferAlignment = 256;
-constexpr uint32_t kMaxTypedBufferElements = 1u << 27;
-constexpr uint32_t kMaxStructuredBufferElements = 1u << 27;
-constexpr uint64_t kMaxStorageBufferViewSize = 1ull << 30;
+constexpr uint32_t maxTexture1DSize = 16384;
+constexpr uint32_t maxTexture2DSize = 16384;
+constexpr uint32_t maxTexture3DSize = 2048;
+constexpr uint32_t maxTextureCubeSize = 16384;
+constexpr uint32_t maxTextureArrayLayers = 2048;
+constexpr uint32_t maxMipLevels = 15;
+constexpr uint32_t maxSampleCount = 8;
 
-constexpr uint32_t kMaxPushConstantsSize = 128;
+constexpr uint32_t maxConstantBufferSize = 65536;
+constexpr uint32_t maxTypedBufferElements = 1u << 27;
+constexpr uint32_t maxStructuredBufferElements = 1u << 27;
+constexpr uint64_t maxStorageBufferViewSize = 1ull << 30;
 
-constexpr uint32_t kMaxResourceHeapSize = 1000000;
-constexpr uint32_t kDefaultResourceHeapSize = 262144;
-constexpr uint32_t kMaxSamplerHeapSize = 2048;
-constexpr uint32_t kMaxUniqueSamplers = 4096;
+constexpr uint32_t maxPushConstantsSize = 128;
 
-constexpr uint32_t kMaxColorTargets = 8;
-constexpr uint32_t kMaxViewports = 16;
-constexpr uint32_t kMaxVertexAttributes = 32;
-constexpr uint32_t kMaxVertexBufferSlots = 32;
+constexpr uint32_t maxResourceHeapSize = 1000000;
+constexpr uint32_t maxSamplerHeapSize = 2048;
+constexpr uint32_t maxUniqueSamplers = 4096;
 
-constexpr uint32_t kMaxAnisotropy = 16;
-constexpr float kMaxSamplerLodBias = 14.0f;
+constexpr uint32_t maxColorTargets = 8;
+constexpr uint32_t maxViewports = 16;
+constexpr uint32_t maxVertexAttributes = 32;
+constexpr uint32_t maxVertexBufferSlots = 32;
 
-constexpr uint32_t kTextureCopyOffsetAlignment = 512;
-constexpr uint32_t kTextureCopyRowPitchAlignment = 256;
+constexpr uint32_t maxAnisotropy = 16;
+constexpr float maxSamplerLodBias = 14.0f;
 
-constexpr uint32_t kMaxDebugNameLength = 255;
+constexpr uint32_t maxDebugNameLength = 255;
+
+} // namespace limits
+
+// Required alignments, in bytes.
+namespace alignment {
+
+constexpr uint32_t constantBuffer = 256;
+constexpr uint32_t rawBuffer = 256;
+constexpr uint32_t textureCopyOffset = 512;
+constexpr uint32_t textureCopyRowPitch = 256;
+
+} // namespace alignment
+
+namespace defaults {
+
+constexpr uint32_t resourceHeapSize = 262144;
+
+} // namespace defaults
 
 } // namespace slag

@@ -15,14 +15,14 @@ TEST_CASE("Vulkan: copy a buffer on each queue type and read it back")
     REQUIRE(device);
     REQUIRE(static_cast<bool>(device->initialize({})));
 
-    constexpr uint32_t kCount = 1024;
+    constexpr uint32_t elementCount = 1024;
     slag::Buffer* upload = device
-                               ->createBuffer({.size = kCount * 4,
+                               ->createBuffer({.size = elementCount * 4,
                                                .placement = slag::Placement::automatic(slag::MemoryKind::Upload),
                                                .debugName = "upload"})
                                .value();
     slag::Buffer* readback = device
-                                 ->createBuffer({.size = kCount * 4,
+                                 ->createBuffer({.size = elementCount * 4,
                                                  .placement = slag::Placement::automatic(slag::MemoryKind::Readback),
                                                  .debugName = "readback"})
                                  .value();
@@ -36,11 +36,11 @@ TEST_CASE("Vulkan: copy a buffer on each queue type and read it back")
          {slag::CommandQueueType::Graphics, slag::CommandQueueType::Compute, slag::CommandQueueType::Copy})
     {
         auto* source = static_cast<uint32_t*>(upload->mappedData());
-        for (uint32_t i = 0; i < kCount; ++i)
+        for (uint32_t i = 0; i < elementCount; ++i)
         {
             source[i] = i * 3 + static_cast<uint32_t>(type);
         }
-        std::memset(readback->mappedData(), 0, kCount * 4);
+        std::memset(readback->mappedData(), 0, elementCount * 4);
 
         slag::CommandBuffer* commandBuffer =
             device->createCommandBuffer({.queueType = type, .debugName = "copy"}).value();
@@ -50,7 +50,7 @@ TEST_CASE("Vulkan: copy a buffer on each queue type and read it back")
         for (int pass = 0; pass < 2; ++pass)
         {
             REQUIRE(static_cast<bool>(commandBuffer->begin()));
-            commandBuffer->copyBuffer(readback, 0, upload, 0, kCount * 4);
+            commandBuffer->copyBuffer(readback, 0, upload, 0, elementCount * 4);
             REQUIRE(static_cast<bool>(commandBuffer->end()));
 
             slag::SemaphoreValue signal = {semaphore, ++signalValue};
@@ -60,7 +60,7 @@ TEST_CASE("Vulkan: copy a buffer on each queue type and read it back")
             REQUIRE(static_cast<bool>(device->waitSemaphores({&signal, 1}, slag::WaitMode::All, 5'000'000'000)));
 
             const auto* result = static_cast<const uint32_t*>(readback->mappedData());
-            CHECK(std::memcmp(result, source, kCount * 4) == 0);
+            CHECK(std::memcmp(result, source, elementCount * 4) == 0);
             REQUIRE(static_cast<bool>(commandBuffer->reset()));
         }
         device->destroy(commandBuffer);

@@ -41,10 +41,10 @@ baseline checks, like the other limits. Names are final (`docs/naming.md`).
 
 | Descriptor kind | Proposed limit | D3D12 | Vulkan (spec minimum → desktop) |
 |---|---|---|---|
-| Constant buffer | 64 KB (`kMaxConstantBufferSize`) | 4096 × 16 bytes | `maxUniformBufferRange` ≥ 65536 in 1.4 |
-| Typed / RW typed | 2^27 elements (`kMaxTypedBufferElements`) | 2^27 texels | `maxTexelBufferElements` ≥ 65536 → 2^27 or more; baseline check |
-| Structured / RW structured | 2^27 elements **and** ≤ 1 GiB (`kMaxStructuredBufferElements`, `kMaxStorageBufferViewSize`) | 2^27 elements | `maxStorageBufferRange` (bytes) ≥ 2^27 → 1 GiB–4 GiB; baseline check |
-| Raw / RW raw | 1 GiB (`kMaxStorageBufferViewSize`) | 2^31 bytes guaranteed | same as above |
+| Constant buffer | 64 KB (`limits::maxConstantBufferSize`) | 4096 × 16 bytes | `maxUniformBufferRange` ≥ 65536 in 1.4 |
+| Typed / RW typed | 2^27 elements (`limits::maxTypedBufferElements`) | 2^27 texels | `maxTexelBufferElements` ≥ 65536 → 2^27 or more; baseline check |
+| Structured / RW structured | 2^27 elements **and** ≤ 1 GiB (`limits::maxStructuredBufferElements`, `limits::maxStorageBufferViewSize`) | 2^27 elements | `maxStorageBufferRange` (bytes) ≥ 2^27 → 1 GiB–4 GiB; baseline check |
+| Raw / RW raw | 1 GiB (`limits::maxStorageBufferViewSize`) | 2^31 bytes guaranteed | same as above |
 
 - 1 GiB is the conservative choice: some Vulkan drivers report 1 GiB for
   `maxStorageBufferRange`, while others report 4 GiB − 1. Larger data needs

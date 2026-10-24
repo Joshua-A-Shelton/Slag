@@ -43,21 +43,21 @@ void runFillBuffer(TestInstance& test, slag::GraphicsDevice* device)
         {.compute = {.binaries = binaries, .entryPoint = "main"}, .debugName = "FillBuffer"});
     REQUIRE(static_cast<bool>(pipeline));
 
-    constexpr uint32_t kCount = 10000;
-    constexpr uint32_t kSlot = 5;
+    constexpr uint32_t elementCount = 10000;
+    constexpr uint32_t outputSlot = 5;
     slag::Buffer* output = device
-                               ->createBuffer({.size = kCount * 4,
+                               ->createBuffer({.size = elementCount * 4,
                                                .placement = slag::Placement::automatic(slag::MemoryKind::GpuOnly),
                                                .debugName = "output"})
                                .value();
     slag::Buffer* readback = device
-                                 ->createBuffer({.size = kCount * 4,
+                                 ->createBuffer({.size = elementCount * 4,
                                                  .placement = slag::Placement::automatic(slag::MemoryKind::Readback),
                                                  .debugName = "readback"})
                                  .value();
     REQUIRE(output);
     REQUIRE(readback);
-    device->writeRWStructuredBuffer(kSlot, {.buffer = output, .offset = 0, .count = kCount, .stride = 4});
+    device->writeRWStructuredBuffer(outputSlot, {.buffer = output, .offset = 0, .count = elementCount, .stride = 4});
 
     slag::CommandBuffer* commandBuffer =
         device->createCommandBuffer({.queueType = slag::CommandQueueType::Compute, .debugName = "spike"}).value();
@@ -68,16 +68,16 @@ void runFillBuffer(TestInstance& test, slag::GraphicsDevice* device)
     {
         uint32_t bufferIndex;
         uint32_t count;
-    } constants = {kSlot, kCount};
+    } constants = {outputSlot, elementCount};
     commandBuffer->pushConstants(&constants, sizeof(constants));
-    commandBuffer->dispatch((kCount + 63) / 64, 1, 1);
+    commandBuffer->dispatch((elementCount + 63) / 64, 1, 1);
     slag::BufferBarrier toCopy = {.syncBefore = slag::BarrierSync::ComputeShading,
                                   .syncAfter = slag::BarrierSync::Copy,
                                   .accessBefore = slag::BarrierAccess::ShaderWrite,
                                   .accessAfter = slag::BarrierAccess::CopySource,
                                   .buffer = output};
     commandBuffer->barrier({}, {&toCopy, 1});
-    commandBuffer->copyBuffer(readback, 0, output, 0, kCount * 4);
+    commandBuffer->copyBuffer(readback, 0, output, 0, elementCount * 4);
     REQUIRE(static_cast<bool>(commandBuffer->end()));
 
     slag::Semaphore* semaphore = device->createSemaphore({.debugName = "spike done"}).value();
@@ -90,13 +90,13 @@ void runFillBuffer(TestInstance& test, slag::GraphicsDevice* device)
 
     const auto* values = static_cast<const uint32_t*>(readback->mappedData());
     uint32_t mismatches = 0;
-    for (uint32_t i = 0; i < kCount; ++i)
+    for (uint32_t i = 0; i < elementCount; ++i)
     {
         mismatches += values[i] == i * 2 + 1 ? 0 : 1;
     }
     CHECK(mismatches == 0);
     CHECK(values[0] == 1);
-    CHECK(values[kCount - 1] == (kCount - 1) * 2 + 1);
+    CHECK(values[elementCount - 1] == (elementCount - 1) * 2 + 1);
 
     device->destroy(semaphore);
     device->destroy(commandBuffer);

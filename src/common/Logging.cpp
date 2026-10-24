@@ -11,7 +11,7 @@ namespace slag {
 
 namespace {
 
-constexpr size_t kMaxMessageLength = 1024;
+constexpr size_t maxMessageLength = 1024;
 
 void emit(const MessageSink& sink, MessageSeverity severity, MessageSource source, const char* text)
 {
@@ -59,7 +59,7 @@ void logMessage(const MessageSink& sink, MessageSeverity severity, MessageSource
     {
         return;
     }
-    char text[kMaxMessageLength];
+    char text[maxMessageLength];
     va_list args;
     va_start(args, format);
     std::vsnprintf(text, sizeof(text), format, args);
@@ -69,14 +69,14 @@ void logMessage(const MessageSink& sink, MessageSeverity severity, MessageSource
 
 void validationFailure(const InstanceCommon* instance, const char* function, const char* format, ...)
 {
-    char detail[kMaxMessageLength];
+    char detail[maxMessageLength];
     va_list args;
     va_start(args, format);
     std::vsnprintf(detail, sizeof(detail), format, args);
     va_end(args);
 
     // Room for the prefix and function name on top of the detail.
-    char text[kMaxMessageLength + 256];
+    char text[maxMessageLength + 256];
     std::snprintf(text, sizeof(text), "slag: %s: %s", function, detail);
 
     MessageSink sink = messageSink(instance);

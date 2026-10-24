@@ -72,16 +72,16 @@ enum class TexturePlane : uint8_t
     Stencil,
 };
 
-// Counts meaning "from the base to the last mip / layer".
-constexpr uint32_t kRemainingMips = UINT32_MAX;
-constexpr uint32_t kRemainingLayers = UINT32_MAX;
-
 struct SubresourceRange
 {
+    // Counts meaning "from the base to the last mip / layer".
+    static constexpr uint32_t remainingMips = UINT32_MAX;
+    static constexpr uint32_t remainingLayers = UINT32_MAX;
+
     uint32_t baseMip = 0;
-    uint32_t mipCount = kRemainingMips;
+    uint32_t mipCount = remainingMips;
     uint32_t baseLayer = 0;
-    uint32_t layerCount = kRemainingLayers;
+    uint32_t layerCount = remainingLayers;
     TexturePlane plane = TexturePlane::Color;
 };
 

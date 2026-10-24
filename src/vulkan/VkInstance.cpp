@@ -10,7 +10,7 @@ namespace slag::vk {
 
 namespace {
 
-constexpr const char* kValidationLayer = "VK_LAYER_KHRONOS_validation";
+constexpr const char* validationLayerName = "VK_LAYER_KHRONOS_validation";
 
 bool hasExtension(const Vector<VkExtensionProperties>& extensions, const char* name)
 {
@@ -125,8 +125,8 @@ struct DeviceQuery
     bool untypedPointersExtension = false;
     bool graphicsQueue = false;
     uint32_t queueFamilyCount = 0;
-    VkQueueFlags queueFamilyFlags[kMaxQueueFamilies] = {};
-    uint32_t queueFamilyQueueCount[kMaxQueueFamilies] = {};
+    VkQueueFlags queueFamilyFlags[maxQueueFamilies] = {};
+    uint32_t queueFamilyQueueCount[maxQueueFamilies] = {};
 };
 
 bool queryDevice(const InstanceImpl& instance, VkPhysicalDevice device, DeviceQuery& query)
@@ -181,7 +181,7 @@ bool queryDevice(const InstanceImpl& instance, VkPhysicalDevice device, DeviceQu
         (void)families.pushBack({VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2});
     }
     instance.fn.vkGetPhysicalDeviceQueueFamilyProperties2(device, &familyCount, families.data());
-    query.queueFamilyCount = familyCount < kMaxQueueFamilies ? familyCount : kMaxQueueFamilies;
+    query.queueFamilyCount = familyCount < maxQueueFamilies ? familyCount : maxQueueFamilies;
     for (uint32_t i = 0; i < query.queueFamilyCount; ++i)
     {
         query.queueFamilyFlags[i] = families[i].queueFamilyProperties.queueFlags;
@@ -198,7 +198,7 @@ bool queryDevice(const InstanceImpl& instance, VkPhysicalDevice device, DeviceQu
 const char* baselineFailure(const DeviceQuery& query, bool allowSoftwareDevices)
 {
     const VkPhysicalDeviceProperties& properties = query.properties.properties;
-    const VkPhysicalDeviceLimits& limits = properties.limits;
+    const VkPhysicalDeviceLimits& deviceLimits = properties.limits;
     const VkPhysicalDeviceFeatures& features = query.features.features;
 
     if (properties.apiVersion < VK_API_VERSION_1_4)
@@ -260,23 +260,23 @@ const char* baselineFailure(const DeviceQuery& query, bool allowSoftwareDevices)
         const char* name;
     };
     const LimitCheck limitChecks[] = {
-        {limits.maxImageDimension1D >= kMaxTexture1DSize, "maxImageDimension1D"},
-        {limits.maxImageDimension2D >= kMaxTexture2DSize, "maxImageDimension2D"},
-        {limits.maxImageDimension3D >= kMaxTexture3DSize, "maxImageDimension3D"},
-        {limits.maxImageDimensionCube >= kMaxTextureCubeSize, "maxImageDimensionCube"},
-        {limits.maxImageArrayLayers >= kMaxTextureArrayLayers, "maxImageArrayLayers"},
-        {limits.maxTexelBufferElements >= kMaxTypedBufferElements, "maxTexelBufferElements"},
-        {limits.maxStorageBufferRange >= kMaxStorageBufferViewSize, "maxStorageBufferRange"},
-        {limits.maxUniformBufferRange >= kMaxConstantBufferSize, "maxUniformBufferRange"},
-        {limits.maxColorAttachments >= kMaxColorTargets, "maxColorAttachments"},
-        {limits.maxViewports >= kMaxViewports, "maxViewports"},
-        {limits.maxVertexInputAttributes >= kMaxVertexAttributes, "maxVertexInputAttributes"},
-        {limits.maxVertexInputBindings >= kMaxVertexBufferSlots, "maxVertexInputBindings"},
-        {limits.maxSamplerAnisotropy >= static_cast<float>(kMaxAnisotropy), "maxSamplerAnisotropy"},
-        {(limits.framebufferColorSampleCounts & VK_SAMPLE_COUNT_4_BIT) != 0, "4x color MSAA"},
-        {(limits.framebufferDepthSampleCounts & VK_SAMPLE_COUNT_4_BIT) != 0, "4x depth MSAA"},
+        {deviceLimits.maxImageDimension1D >= limits::maxTexture1DSize, "maxImageDimension1D"},
+        {deviceLimits.maxImageDimension2D >= limits::maxTexture2DSize, "maxImageDimension2D"},
+        {deviceLimits.maxImageDimension3D >= limits::maxTexture3DSize, "maxImageDimension3D"},
+        {deviceLimits.maxImageDimensionCube >= limits::maxTextureCubeSize, "maxImageDimensionCube"},
+        {deviceLimits.maxImageArrayLayers >= limits::maxTextureArrayLayers, "maxImageArrayLayers"},
+        {deviceLimits.maxTexelBufferElements >= limits::maxTypedBufferElements, "maxTexelBufferElements"},
+        {deviceLimits.maxStorageBufferRange >= limits::maxStorageBufferViewSize, "maxStorageBufferRange"},
+        {deviceLimits.maxUniformBufferRange >= limits::maxConstantBufferSize, "maxUniformBufferRange"},
+        {deviceLimits.maxColorAttachments >= limits::maxColorTargets, "maxColorAttachments"},
+        {deviceLimits.maxViewports >= limits::maxViewports, "maxViewports"},
+        {deviceLimits.maxVertexInputAttributes >= limits::maxVertexAttributes, "maxVertexInputAttributes"},
+        {deviceLimits.maxVertexInputBindings >= limits::maxVertexBufferSlots, "maxVertexInputBindings"},
+        {deviceLimits.maxSamplerAnisotropy >= static_cast<float>(limits::maxAnisotropy), "maxSamplerAnisotropy"},
+        {(deviceLimits.framebufferColorSampleCounts & VK_SAMPLE_COUNT_4_BIT) != 0, "4x color MSAA"},
+        {(deviceLimits.framebufferDepthSampleCounts & VK_SAMPLE_COUNT_4_BIT) != 0, "4x depth MSAA"},
         // 128 bytes of push constants plus the constant buffer slot's address (ADRs 0003, 0044).
-        {query.heapProperties.maxPushDataSize >= kMaxPushConstantsSize + 8, "maxPushDataSize"},
+        {query.heapProperties.maxPushDataSize >= limits::maxPushConstantsSize + 8, "maxPushDataSize"},
     };
     for (const LimitCheck& check : limitChecks)
     {
@@ -544,20 +544,20 @@ Result<InstanceCommon*> createInstance(const InstanceDesc& desc, const HostAlloc
     bool useLayerSettings = false;
     if (desc.validationFlags != ValidationFlags::None)
     {
-        if (hasLayer(*global, instance->allocator, kValidationLayer))
+        if (hasLayer(*global, instance->allocator, validationLayerName))
         {
-            (void)layers.pushBack(kValidationLayer);
+            (void)layers.pushBack(validationLayerName);
             Vector<VkExtensionProperties> layerExtensions(&instance->allocator);
-            (void)instanceExtensions(*global, kValidationLayer, layerExtensions);
+            (void)instanceExtensions(*global, validationLayerName, layerExtensions);
             bool settingsAvailable = hasExtension(layerExtensions, VK_EXT_LAYER_SETTINGS_EXTENSION_NAME);
             if ((desc.validationFlags & ValidationFlags::Synchronization) != ValidationFlags::None)
             {
-                settings[settingCount++] = {kValidationLayer, "validate_sync", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1,
+                settings[settingCount++] = {validationLayerName, "validate_sync", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1,
                                             &settingTrue};
             }
             if ((desc.validationFlags & ValidationFlags::GpuAssisted) != ValidationFlags::None)
             {
-                settings[settingCount++] = {kValidationLayer, "gpuav_enable", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1,
+                settings[settingCount++] = {validationLayerName, "gpuav_enable", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1,
                                             &settingTrue};
             }
             if (settingCount > 0)
@@ -577,7 +577,7 @@ Result<InstanceCommon*> createInstance(const InstanceDesc& desc, const HostAlloc
         else
         {
             logMessage(sink, MessageSeverity::Warning, MessageSource::Slag,
-                       "slag: createInstance: %s is not installed; Vulkan validation is off", kValidationLayer);
+                       "slag: createInstance: %s is not installed; Vulkan validation is off", validationLayerName);
         }
     }
 

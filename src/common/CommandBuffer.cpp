@@ -124,8 +124,9 @@ void CommandBuffer::pushConstants(const void* data, uint32_t size, uint32_t offs
 {
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_RECORDING(self, "CommandBuffer::pushConstants");
-    SLAG_VALIDATE(self->device->instance, offset + size <= kMaxPushConstantsSize, "CommandBuffer::pushConstants",
-                  "offset %u + size %u exceeds kMaxPushConstantsSize (%u)", offset, size, kMaxPushConstantsSize);
+    SLAG_VALIDATE(self->device->instance, offset + size <= limits::maxPushConstantsSize, "CommandBuffer::pushConstants",
+                  "offset %u + size %u exceeds limits::maxPushConstantsSize (%u)", offset, size,
+                  limits::maxPushConstantsSize);
     SLAG_VALIDATE(self->device->instance, offset % 4 == 0 && size % 4 == 0, "CommandBuffer::pushConstants",
                   "offset and size must be multiples of 4 (offset %u, size %u)", offset, size);
     SLAG_DISPATCH(self, cmdPushConstants)(self, data, size, offset);
@@ -262,8 +263,8 @@ void GraphicsDevice::writeRWStructuredBuffer(uint32_t index, const StructuredBuf
                   descriptor.stride);
     SLAG_VALIDATE(self->instance, descriptor.stride == 0 || descriptor.offset % descriptor.stride == 0,
                   "GraphicsDevice::writeRWStructuredBuffer", "offset must be a multiple of the stride");
-    SLAG_VALIDATE(self->instance, descriptor.count <= kMaxStructuredBufferElements,
-                  "GraphicsDevice::writeRWStructuredBuffer", "count %u exceeds kMaxStructuredBufferElements",
+    SLAG_VALIDATE(self->instance, descriptor.count <= limits::maxStructuredBufferElements,
+                  "GraphicsDevice::writeRWStructuredBuffer", "count %u exceeds limits::maxStructuredBufferElements",
                   descriptor.count);
     SLAG_VALIDATE(self->instance,
                   !buffer || descriptor.offset + uint64_t(descriptor.count) * descriptor.stride <= buffer->size,

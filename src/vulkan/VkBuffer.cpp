@@ -7,7 +7,7 @@ namespace slag::vk {
 namespace {
 
 // Every usage, so any buffer can be used for anything (ADR 0020).
-constexpr VkBufferUsageFlags kAllBufferUsage =
+constexpr VkBufferUsageFlags allBufferUsage =
     VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT |
     VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
     VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
@@ -61,7 +61,7 @@ Result<BufferCommon*> createBuffer(GraphicsDeviceCommon* common, const BufferDes
 
     MemoryFlags flags = memoryFlags(desc.placement.kind);
     DedicatedBuffer allocation;
-    Status status = createDedicatedBuffer(device, desc.size, kAllBufferUsage, flags.required, flags.preferred,
+    Status status = createDedicatedBuffer(device, desc.size, allBufferUsage, flags.required, flags.preferred,
                                           flags.avoided, allocation);
     if (status == Status::Ok && desc.placement.kind == MemoryKind::GpuUpload &&
         !supportsGpuUpload(device, allocation.memoryType))

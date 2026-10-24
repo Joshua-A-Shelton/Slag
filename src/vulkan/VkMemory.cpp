@@ -5,7 +5,7 @@ namespace slag::vk {
 uint32_t findMemoryType(const VkPhysicalDeviceMemoryProperties& properties, uint32_t typeBits,
                         VkMemoryPropertyFlags required, VkMemoryPropertyFlags preferred, VkMemoryPropertyFlags avoided)
 {
-    uint32_t best = kNoMemoryType;
+    uint32_t best = noMemoryType;
     int bestScore = -1;
     for (uint32_t i = 0; i < properties.memoryTypeCount; ++i)
     {
@@ -51,7 +51,7 @@ Status createDedicatedBuffer(GraphicsDeviceImpl& device, VkDeviceSize size, VkBu
     VkMemoryRequirements requirements = {};
     device.fn.vkGetBufferMemoryRequirements(device.device, out.buffer, &requirements);
     out.memoryType = findMemoryType(device.memoryProperties, requirements.memoryTypeBits, required, preferred, avoided);
-    if (out.memoryType == kNoMemoryType)
+    if (out.memoryType == noMemoryType)
     {
         destroyDedicatedBuffer(device, out);
         return Status::Unsupported;
