@@ -1,6 +1,6 @@
 # Hosted CI (CLAUDE.md §12): build, unit tests, format check.
-# The self-hosted GPU runner (Vulkan backend tests on RADV) is added once
-# backend code exists (milestone M1).
+# D3D12 backend tests run on WARP on the Windows runners. The self-hosted GPU
+# runner (Vulkan backend tests on RADV) is not set up yet.
 
 name: CI
 
@@ -87,6 +87,10 @@ jobs:
 
       - name: Test
         run: ctest --preset ${{ matrix.preset }} -LE gpu  # hosted runners have no GPU
+
+      # No GPU, but WARP: the D3D12 backend tests run on it.
+      - name: D3D12 backend tests (WARP)
+        run: ctest --preset ${{ matrix.preset }} -L gpu -R "^D3D12:" --output-on-failure --no-tests=error
 
   format:
     name: Format check

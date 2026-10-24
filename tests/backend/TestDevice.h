@@ -34,6 +34,8 @@ public:
         desc.backend = backend;
         desc.validationFlags = slag::ValidationFlags::Api;
         desc.validationFailureAction = action;
+        // Software devices (WARP) are tested too, and are all hosted CI has.
+        desc.allowSoftwareDevices = true;
         desc.messageCallback = collectTestMessage;
         desc.messageUserData = &messages;
         desc.applicationName = "slag_backend_tests";

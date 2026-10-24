@@ -92,8 +92,17 @@ set(SLAG_BACKEND_NAMES)
 set(_slag_builtin_namespaces)
 
 if(SLAG_BACKEND_D3D12)
-    target_link_libraries(slag PRIVATE slag_agility_sdk)
-    # list(APPEND SLAG_BACKEND_NAMES d3d12) and sources once src/d3d12 exists.
+    target_link_libraries(slag PRIVATE slag_agility_sdk d3d12 dxgi)
+    target_sources(slag PRIVATE
+        src/d3d12/D3D12Backend.cpp
+        src/d3d12/D3D12Buffer.cpp
+        src/d3d12/D3D12CommandBuffer.cpp
+        src/d3d12/D3D12Device.cpp
+        src/d3d12/D3D12Instance.cpp
+        src/d3d12/D3D12Pipeline.cpp
+        src/d3d12/D3D12Semaphore.cpp)
+    list(APPEND SLAG_BACKEND_NAMES d3d12)
+    list(APPEND _slag_builtin_namespaces d3d12)
 endif()
 
 if(SLAG_BACKEND_VULKAN)
