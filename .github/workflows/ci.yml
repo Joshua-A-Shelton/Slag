@@ -96,6 +96,10 @@ jobs:
       - name: D3D12 backend tests (WARP)
         run: ctest --preset ${{ matrix.preset }} -L gpu -R "^D3D12:" --output-on-failure --no-tests=error
 
+      # The samples open a window and present through D3D12 on WARP.
+      - name: Samples (D3D12 on WARP)
+        run: ctest --preset ${{ matrix.preset }} -L sample --output-on-failure --no-tests=error
+
   format:
     name: Format check
     runs-on: ubuntu-24.04
@@ -106,4 +110,4 @@ jobs:
         run: pipx install "clang-format==${CLANG_FORMAT_VERSION}"
 
       - name: Check formatting
-        run: find include src tests \( -name '*.h' -o -name '*.cpp' \) -print0 | xargs -0 clang-format --dry-run --Werror
+        run: find include src tests samples \( -name '*.h' -o -name '*.cpp' \) -print0 | xargs -0 clang-format --dry-run --Werror
