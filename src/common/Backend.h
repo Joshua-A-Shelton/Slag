@@ -4,14 +4,19 @@
 
 #include "common/HostAllocator.h"
 
+#include <slag/GraphicsDevice.h>
 #include <slag/Instance.h>
 #include <slag/Result.h>
+#include <slag/Semaphore.h>
 
 #include <span>
 
 namespace slag {
 
 struct InstanceCommon;
+struct GraphicsDeviceCommon;
+struct CommandQueueCommon;
+struct SemaphoreCommon;
 
 struct BackendFunctions
 {

@@ -145,6 +145,10 @@ Names introduced while implementing; treat as placeholders until confirmed.
 - `ValidationFlags::None`.
 - `GraphicsDeviceInfo` fields: `name`, `driverVersion`, `vendorId`,
   `deviceId`, `type`, `dedicatedMemoryBytes`, `sharedMemoryBytes`, `luid`.
+- `GraphicsDeviceInitDesc` fields: `resourceHeapSize`, `samplerHeapSize`,
+  `pipelineCacheData`, `graphicsQueueCount`, `computeQueueCount`,
+  `copyQueueCount`.
+- `CommandQueue::type()`; `SemaphoreDesc::initialValue`.
 
 ## Nested structs
 

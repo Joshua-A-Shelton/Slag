@@ -124,7 +124,9 @@ struct DeviceQuery
     bool descriptorHeapExtension = false;
     bool untypedPointersExtension = false;
     bool graphicsQueue = false;
-    uint32_t graphicsQueueFamily = 0;
+    uint32_t queueFamilyCount = 0;
+    VkQueueFlags queueFamilyFlags[kMaxQueueFamilies] = {};
+    uint32_t queueFamilyQueueCount[kMaxQueueFamilies] = {};
 };
 
 bool queryDevice(const InstanceImpl& instance, VkPhysicalDevice device, DeviceQuery& query)
@@ -179,13 +181,14 @@ bool queryDevice(const InstanceImpl& instance, VkPhysicalDevice device, DeviceQu
         (void)families.pushBack({VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2});
     }
     instance.fn.vkGetPhysicalDeviceQueueFamilyProperties2(device, &familyCount, families.data());
-    for (uint32_t i = 0; i < familyCount; ++i)
+    query.queueFamilyCount = familyCount < kMaxQueueFamilies ? familyCount : kMaxQueueFamilies;
+    for (uint32_t i = 0; i < query.queueFamilyCount; ++i)
     {
-        if (families[i].queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        query.queueFamilyFlags[i] = families[i].queueFamilyProperties.queueFlags;
+        query.queueFamilyQueueCount[i] = families[i].queueFamilyProperties.queueCount;
+        if (query.queueFamilyFlags[i] & VK_QUEUE_GRAPHICS_BIT)
         {
             query.graphicsQueue = true;
-            query.graphicsQueueFamily = i;
-            break;
         }
     }
     return true;
@@ -402,7 +405,18 @@ Status listDevices(InstanceImpl& instance, const InstanceDesc& desc)
         device->properties = query.properties.properties;
         device->heapProperties = query.heapProperties;
         device->heapProperties.pNext = nullptr;
-        device->graphicsQueueFamily = query.graphicsQueueFamily;
+        device->memoryProperties = query.memory.memoryProperties;
+        device->queueFamilyCount = query.queueFamilyCount;
+        for (uint32_t family = 0; family < query.queueFamilyCount; ++family)
+        {
+            device->queueFamilyFlags[family] = query.queueFamilyFlags[family];
+            device->queueFamilyQueueCount[family] = query.queueFamilyQueueCount[family];
+        }
+        for (Vector<CommandQueue*>& queues : device->queues)
+        {
+            queues = Vector<CommandQueue*>(&instance.allocator);
+        }
+        device->queueLocks = Vector<std::mutex*>(&instance.allocator);
         fillInfo(query, device->info);
 
         // Insert in preference order.
@@ -430,7 +444,12 @@ void destroyImpl(InstanceImpl* instance)
 {
     for (GraphicsDevice* device : instance->devices)
     {
-        instance->allocator.destroy(static_cast<GraphicsDeviceImpl*>(device));
+        auto* impl = static_cast<GraphicsDeviceImpl*>(device);
+        if (impl->initialized)
+        {
+            shutdownDevice(impl); // the user should have shut it down; don't leak the VkDevice
+        }
+        instance->allocator.destroy(impl);
     }
     instance->devices.clear();
     if (instance->messenger != VK_NULL_HANDLE)
@@ -485,7 +504,7 @@ Result<InstanceCommon*> createInstance(const InstanceDesc& desc, const HostAlloc
         return Status::OutOfHostMemory;
     }
 
-    // Extensions: debug utils, and every surface extension that exists (ADRs 0013, 0059).
+    // Extensions: debug utils, and every surface extension that exists (ADRs 0013, 0056, 0059).
     const char* wanted[] = {
         VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
         VK_KHR_SURFACE_EXTENSION_NAME,
@@ -494,7 +513,6 @@ Result<InstanceCommon*> createInstance(const InstanceDesc& desc, const HostAlloc
         "VK_KHR_xcb_surface",
         "VK_KHR_wayland_surface",
         "VK_KHR_get_surface_capabilities2",
-        "VK_EXT_surface_maintenance1",
         "VK_EXT_swapchain_colorspace",
     };
     Vector<const char*> extensions(&instance->allocator);
@@ -505,6 +523,15 @@ Result<InstanceCommon*> createInstance(const InstanceDesc& desc, const HostAlloc
             destroyImpl(instance);
             return Status::OutOfHostMemory;
         }
+    }
+    // Prefer the KHR surface_maintenance1; fall back to the EXT one.
+    if (hasExtension(available, "VK_KHR_surface_maintenance1"))
+    {
+        instance->surfaceMaintenanceKHR = extensions.pushBack("VK_KHR_surface_maintenance1");
+    }
+    else if (hasExtension(available, "VK_EXT_surface_maintenance1"))
+    {
+        instance->surfaceMaintenanceEXT = extensions.pushBack("VK_EXT_surface_maintenance1");
     }
     instance->debugUtils = hasExtension(available, VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 

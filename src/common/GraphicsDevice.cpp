@@ -1,22 +1,215 @@
+#include "common/Logging.h"
 #include "common/Objects.h"
 
 #include <slag/GraphicsDevice.h>
 
 namespace slag {
 
+namespace {
+
+GraphicsDeviceCommon* common(GraphicsDevice* device)
+{
+    return static_cast<GraphicsDeviceCommon*>(device);
+}
+
+const GraphicsDeviceCommon* common(const GraphicsDevice* device)
+{
+    return static_cast<const GraphicsDeviceCommon*>(device);
+}
+
+} // namespace
+
 const GraphicsDeviceInfo& GraphicsDevice::info() const
 {
-    return static_cast<const GraphicsDeviceCommon*>(this)->info;
+    return common(this)->info;
+}
+
+Result<void> GraphicsDevice::initialize(const GraphicsDeviceInitDesc& desc)
+{
+    GraphicsDeviceCommon* self = common(this);
+    SLAG_VALIDATE(self->instance, !self->initialized, "GraphicsDevice::initialize",
+                  "device \"%s\" is already initialized", self->info.name);
+    SLAG_VALIDATE(self->instance, desc.resourceHeapSize <= kMaxResourceHeapSize, "GraphicsDevice::initialize",
+                  "resourceHeapSize %u exceeds kMaxResourceHeapSize (%u)", desc.resourceHeapSize, kMaxResourceHeapSize);
+    SLAG_VALIDATE(self->instance, desc.samplerHeapSize <= kMaxSamplerHeapSize, "GraphicsDevice::initialize",
+                  "samplerHeapSize %u exceeds kMaxSamplerHeapSize (%u)", desc.samplerHeapSize, kMaxSamplerHeapSize);
+    SLAG_VALIDATE(self->instance, desc.graphicsQueueCount >= 1, "GraphicsDevice::initialize",
+                  "graphicsQueueCount must be at least 1");
+
+    Result<void> result = SLAG_DISPATCH(self, initializeDevice)(self, desc);
+    if (result)
+    {
+        self->initialized = true;
+        self->lost = false;
+    }
+    return result;
+}
+
+void GraphicsDevice::shutdown()
+{
+    GraphicsDeviceCommon* self = common(this);
+    SLAG_VALIDATE(self->instance, self->initialized, "GraphicsDevice::shutdown", "device \"%s\" is not initialized",
+                  self->info.name);
+    if (!self->initialized)
+    {
+        return;
+    }
+    SLAG_DISPATCH(self, shutdownDevice)(self);
+    for (Vector<CommandQueue*>& queues : self->queues)
+    {
+        queues.clear();
+    }
+    self->initialized = false;
+}
+
+Status GraphicsDevice::status() const
+{
+    return common(this)->lost ? Status::DeviceLost : Status::Ok;
+}
+
+CommandQueue* GraphicsDevice::commandQueue(CommandQueueType type, uint32_t index) const
+{
+    const GraphicsDeviceCommon* self = common(this);
+    const Vector<CommandQueue*>& queues = self->queues[static_cast<size_t>(type)];
+    SLAG_VALIDATE(self->instance, index < queues.size(), "GraphicsDevice::commandQueue",
+                  "queue index %u is out of range (%zu queues of this type)", index, queues.size());
+    return index < queues.size() ? queues[index] : nullptr;
+}
+
+Result<Semaphore*> GraphicsDevice::createSemaphore(const SemaphoreDesc& desc)
+{
+    GraphicsDeviceCommon* self = common(this);
+    SLAG_VALIDATE(self->instance, self->initialized, "GraphicsDevice::createSemaphore",
+                  "device \"%s\" is not initialized", self->info.name);
+    if (self->lost)
+    {
+        return Status::DeviceLost;
+    }
+    Result<SemaphoreCommon*> semaphore = SLAG_DISPATCH(self, createSemaphore)(self, desc);
+    if (!semaphore)
+    {
+        return semaphore.status();
+    }
+    semaphore.value()->userData = desc.userData;
+    return static_cast<Semaphore*>(semaphore.value());
+}
+
+void GraphicsDevice::destroy(Semaphore* semaphore)
+{
+    if (!semaphore)
+    {
+        return;
+    }
+    GraphicsDeviceCommon* self = common(this);
+    auto* object = static_cast<SemaphoreCommon*>(semaphore);
+    SLAG_VALIDATE(self->instance, object->device == self, "GraphicsDevice::destroy",
+                  "the semaphore belongs to another device");
+    SLAG_DISPATCH(self, destroySemaphore)(self, object);
+}
+
+Result<void> GraphicsDevice::waitSemaphores(std::span<const SemaphoreValue> values, WaitMode mode, uint64_t timeoutNs)
+{
+    GraphicsDeviceCommon* self = common(this);
+#ifdef SLAG_VALIDATION
+    for (const SemaphoreValue& value : values)
+    {
+        SLAG_VALIDATE(self->instance, value.semaphore, "GraphicsDevice::waitSemaphores", "a semaphore is null");
+        SLAG_VALIDATE(self->instance,
+                      !value.semaphore || static_cast<SemaphoreCommon*>(value.semaphore)->device == self,
+                      "GraphicsDevice::waitSemaphores", "a semaphore belongs to another device");
+    }
+#endif
+    if (values.empty())
+    {
+        return {};
+    }
+    if (self->lost)
+    {
+        return Status::DeviceLost;
+    }
+    return SLAG_DISPATCH(self, waitSemaphores)(self, values, mode, timeoutNs);
+}
+
+Result<void> GraphicsDevice::waitIdle()
+{
+    GraphicsDeviceCommon* self = common(this);
+    if (self->lost)
+    {
+        return Status::DeviceLost;
+    }
+    return SLAG_DISPATCH(self, deviceWaitIdle)(self);
 }
 
 uint64_t GraphicsDevice::userData() const
 {
-    return static_cast<const GraphicsDeviceCommon*>(this)->userData;
+    return common(this)->userData;
 }
 
 void GraphicsDevice::setUserData(uint64_t value)
 {
-    static_cast<GraphicsDeviceCommon*>(this)->userData = value;
+    common(this)->userData = value;
+}
+
+Status reportDeviceLost(GraphicsDeviceCommon* device)
+{
+    bool wasLost = device->lost.exchange(true);
+    if (!wasLost)
+    {
+        logMessage(messageSink(device->instance), MessageSeverity::Error, MessageSource::Slag,
+                   "slag: device \"%s\" was lost", device->info.name);
+    }
+    return Status::DeviceLost;
+}
+
+// --- CommandQueue -----------------------------------------------------------
+
+CommandQueueType CommandQueue::type() const
+{
+    return static_cast<const CommandQueueCommon*>(this)->type;
+}
+
+Result<void> CommandQueue::waitIdle()
+{
+    auto* self = static_cast<CommandQueueCommon*>(this);
+    if (self->device->lost)
+    {
+        return Status::DeviceLost;
+    }
+    return SLAG_DISPATCH(self, queueWaitIdle)(self);
+}
+
+// --- Semaphore --------------------------------------------------------------
+
+uint64_t Semaphore::value() const
+{
+    auto* self = static_cast<const SemaphoreCommon*>(this);
+    return SLAG_DISPATCH(self, semaphoreValue)(self);
+}
+
+Result<void> Semaphore::signal(uint64_t value)
+{
+    auto* self = static_cast<SemaphoreCommon*>(this);
+#ifdef SLAG_VALIDATION
+    uint64_t current = SLAG_DISPATCH(self, semaphoreValue)(self);
+    SLAG_VALIDATE(self->device->instance, value > current, "Semaphore::signal",
+                  "values must strictly increase (current %llu, signaled %llu)",
+                  static_cast<unsigned long long>(current), static_cast<unsigned long long>(value));
+#endif
+    if (self->device->lost)
+    {
+        return Status::DeviceLost;
+    }
+    return SLAG_DISPATCH(self, signalSemaphore)(self, value);
+}
+
+uint64_t Semaphore::userData() const
+{
+    return static_cast<const SemaphoreCommon*>(this)->userData;
+}
+
+void Semaphore::setUserData(uint64_t value)
+{
+    static_cast<SemaphoreCommon*>(this)->userData = value;
 }
 
 } // namespace slag

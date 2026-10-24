@@ -3,6 +3,7 @@
 
 add_executable(slag_backend_tests
     BackendTestMain.cpp
+    DeviceTests.cpp
     InstanceTests.cpp)
 target_link_libraries(slag_backend_tests PRIVATE slag::slag doctest::doctest)
 doctest_discover_tests(slag_backend_tests PROPERTIES LABELS gpu)

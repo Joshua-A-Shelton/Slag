@@ -74,9 +74,6 @@ void loadDeviceFunctions(const InstanceFunctions& instanceFunctions, VkDevice de
 #define SLAG_VK_DEVICE_FN(name)                                                                                        \
     functions.name = reinterpret_cast<PFN_##name>(instanceFunctions.vkGetDeviceProcAddr(device, #name));
 #include "vulkan/VkFunctions.inl"
-    (void)instanceFunctions;
-    (void)device;
-    (void)functions;
 }
 
 } // namespace slag::vk

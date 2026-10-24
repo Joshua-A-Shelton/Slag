@@ -98,8 +98,11 @@ if(SLAG_BACKEND_VULKAN)
     target_link_libraries(slag PRIVATE Vulkan::Headers)
     target_sources(slag PRIVATE
         src/vulkan/VkBackend.cpp
+        src/vulkan/VkDevice.cpp
         src/vulkan/VkInstance.cpp
-        src/vulkan/VkLoader.cpp)
+        src/vulkan/VkLoader.cpp
+        src/vulkan/VkMemory.cpp
+        src/vulkan/VkSemaphore.cpp)
     # Slag loads every Vulkan function itself (ADR 0061).
     target_compile_definitions(slag PRIVATE VK_NO_PROTOTYPES)
     if(NOT WIN32)
