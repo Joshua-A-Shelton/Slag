@@ -57,6 +57,7 @@ target_include_directories(slag PUBLIC
 target_include_directories(slag PRIVATE src)
 
 target_sources(slag PRIVATE
+    src/common/AttachmentView.cpp
     src/common/Buffer.cpp
     src/common/CommandBuffer.cpp
     src/common/Formats.cpp
@@ -99,6 +100,7 @@ set(_slag_builtin_namespaces)
 if(SLAG_BACKEND_D3D12)
     target_link_libraries(slag PRIVATE slag_agility_sdk d3d12 dxgi)
     target_sources(slag PRIVATE
+        src/d3d12/D3D12AttachmentView.cpp
         src/d3d12/D3D12Backend.cpp
         src/d3d12/D3D12Buffer.cpp
         src/d3d12/D3D12CommandBuffer.cpp
@@ -115,6 +117,7 @@ endif()
 if(SLAG_BACKEND_VULKAN)
     target_link_libraries(slag PRIVATE Vulkan::Headers)
     target_sources(slag PRIVATE
+        src/vulkan/VkAttachmentView.cpp
         src/vulkan/VkBackend.cpp
         src/vulkan/VkBuffer.cpp
         src/vulkan/VkCommandBuffer.cpp

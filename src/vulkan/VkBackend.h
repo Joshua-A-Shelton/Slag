@@ -122,6 +122,11 @@ struct TextureImpl : TextureCommon
     VkImageAspectFlags aspects = VK_IMAGE_ASPECT_COLOR_BIT;
 };
 
+struct AttachmentViewImpl : AttachmentViewCommon
+{
+    VkImageView view = VK_NULL_HANDLE;
+};
+
 struct SemaphoreImpl : SemaphoreCommon
 {
     VkSemaphore semaphore = VK_NULL_HANDLE;

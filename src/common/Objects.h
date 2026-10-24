@@ -8,6 +8,7 @@
 #include "common/HostAllocator.h"
 #include "common/Vector.h"
 
+#include <slag/AttachmentView.h>
 #include <slag/Buffer.h>
 #include <slag/CommandBuffer.h>
 #include <slag/CommandQueue.h>
@@ -141,6 +142,22 @@ struct TextureCommon : Texture
     TextureUsage usage = TextureUsage::None;
     MemoryBlockCommon* memoryBlock = nullptr; // set when placed by the user
     PoolAllocation allocation;                // set when sub-allocated
+    // For validation.
+    PixelFormat castableFormats[16] = {};
+    uint32_t castableCount = 0;
+    std::atomic<uint32_t> liveViews = 0;
+};
+
+struct AttachmentViewCommon : AttachmentView
+{
+    GraphicsDeviceCommon* device = nullptr;
+    const BackendFunctions* functions = nullptr;
+    uint64_t userData = 0;
+    TextureCommon* texture = nullptr;
+    PixelFormat format = PixelFormat::Undefined; // resolved: never Undefined
+    uint32_t mip = 0;
+    uint32_t baseLayer = 0;
+    uint32_t layerCount = 1;
 };
 
 enum class PipelineKind : uint8_t

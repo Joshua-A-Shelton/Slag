@@ -115,9 +115,9 @@ D3D12_RESOURCE_ALLOCATION_INFO placement(ID3D12Device12* device, ResourceInfo& i
         (info.desc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0;
     if (!target && info.desc.SampleDesc.Count == 1)
     {
-        D3D12_RESOURCE_DESC1 small = info.desc;
-        small.Alignment = D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT;
-        D3D12_RESOURCE_ALLOCATION_INFO result = allocationInfo(device, info, small);
+        D3D12_RESOURCE_DESC1 smallDesc = info.desc; // not "small": a Windows macro
+        smallDesc.Alignment = D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT;
+        D3D12_RESOURCE_ALLOCATION_INFO result = allocationInfo(device, info, smallDesc);
         if (result.Alignment == D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT)
         {
             info.desc.Alignment = D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT;

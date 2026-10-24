@@ -1,5 +1,6 @@
 #include "TestDevice.h"
 
+#include <slag/AttachmentView.h>
 #include <slag/Barriers.h>
 #include <slag/CommandBuffer.h>
 #include <slag/GraphicsDevice.h>
@@ -142,7 +143,97 @@ void testTextureCreation(slag::Backend backend)
     test.checkNoErrors();
 }
 
+// Views of mips, layers, faces, and slices; castable formats; depth/stencil.
+void testAttachmentViews(slag::Backend backend)
+{
+    TestInstance test(backend);
+    slag::GraphicsDevice* device = test.firstDevice();
+    REQUIRE(device);
+    REQUIRE(static_cast<bool>(device->initialize({})));
+
+    const PixelFormat srgb[] = {PixelFormat::R8G8B8A8UnormSrgb};
+    slag::Texture* color = device
+                               ->createTexture2D({.format = PixelFormat::R8G8B8A8Unorm,
+                                                  .width = 256,
+                                                  .height = 256,
+                                                  .mipCount = 4,
+                                                  .usage = TextureUsage::RenderTarget,
+                                                  .castableFormats = srgb})
+                               .value();
+    slag::Texture* depth = device
+                               ->createTexture2DArray({.format = PixelFormat::D32FloatS8Uint,
+                                                       .width = 128,
+                                                       .height = 128,
+                                                       .layerCount = 4,
+                                                       .usage = TextureUsage::DepthStencil})
+                               .value();
+    slag::Texture* msaa = device
+                              ->createTexture2D({.format = PixelFormat::D32Float,
+                                                 .width = 128,
+                                                 .height = 128,
+                                                 .sampleCount = 4,
+                                                 .usage = TextureUsage::DepthStencil})
+                              .value();
+    slag::Texture* volume = device
+                                ->createTexture3D({.format = PixelFormat::R16G16B16A16Float,
+                                                   .width = 32,
+                                                   .height = 32,
+                                                   .depth = 8,
+                                                   .usage = TextureUsage::RenderTarget})
+                                .value();
+    slag::Texture* cube =
+        device
+            ->createTextureCubeArray(
+                {.format = PixelFormat::R8G8B8A8Unorm, .size = 64, .cubeCount = 2, .usage = TextureUsage::RenderTarget})
+            .value();
+    REQUIRE(color);
+    REQUIRE(depth);
+    REQUIRE(msaa);
+    REQUIRE(volume);
+    REQUIRE(cube);
+
+    std::vector<slag::AttachmentView*> views;
+    auto keep = [&](const slag::AttachmentViewDesc& desc) {
+        slag::Result<slag::AttachmentView*> view = device->createAttachmentView(desc);
+        REQUIRE(static_cast<bool>(view));
+        views.push_back(view.value());
+    };
+    keep({.texture = color, .debugName = "mip 0"});
+    keep({.texture = color, .format = PixelFormat::R8G8B8A8UnormSrgb, .mip = 3, .userData = 9});
+    keep({.texture = depth, .baseLayer = 1, .layerCount = 3});
+    keep({.texture = msaa});
+    keep({.texture = volume, .baseLayer = 2, .layerCount = 4}); // depth slices
+    keep({.texture = cube, .baseLayer = 6 + 4});                // second cube, +Z face
+    keep({.texture = cube, .layerCount = 12});
+    CHECK(views[1]->userData() == 9);
+
+    for (slag::AttachmentView* view : views)
+    {
+        device->destroy(view);
+    }
+    for (slag::Texture* texture : {color, depth, msaa, volume, cube})
+    {
+        device->destroy(texture);
+    }
+    device->shutdown();
+    test.checkNoErrors();
+}
+
 } // namespace
+
+#ifdef SLAG_BACKEND_VULKAN
+TEST_CASE("Vulkan: attachment views")
+{
+    testAttachmentViews(slag::Backend::Vulkan);
+}
+#endif
+
+#ifdef SLAG_BACKEND_D3D12
+TEST_CASE("D3D12: attachment views")
+{
+    testAttachmentViews(slag::Backend::D3D12);
+}
+#endif
 
 #ifdef SLAG_BACKEND_VULKAN
 TEST_CASE("Vulkan: every texture type, automatic and placed, with layout transitions")

@@ -36,6 +36,11 @@ SLAG_BACKEND_FN(void, destroyTexture, (GraphicsDeviceCommon * device, TextureCom
 SLAG_BACKEND_FN(PlacementInfo, texturePlacementInfo,
                 (const GraphicsDeviceCommon* device, const TextureCreateInfo& info))
 
+// desc.format is resolved (never Undefined).
+SLAG_BACKEND_FN(Result<AttachmentViewCommon*>, createAttachmentView,
+                (GraphicsDeviceCommon * device, const AttachmentViewDesc& desc))
+SLAG_BACKEND_FN(void, destroyAttachmentView, (GraphicsDeviceCommon * device, AttachmentViewCommon* view))
+
 SLAG_BACKEND_FN(Result<PipelineCommon*>, createComputePipeline,
                 (GraphicsDeviceCommon * device, const ComputePipelineDesc& desc))
 SLAG_BACKEND_FN(void, destroyPipeline, (GraphicsDeviceCommon * device, PipelineCommon* pipeline))

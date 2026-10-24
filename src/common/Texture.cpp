@@ -192,6 +192,7 @@ void validateTexture(GraphicsDeviceCommon* self, const TextureCreateInfo& info, 
                       "%s doesn't support %ux MSAA", format.name, info.sampleCount);
     }
 
+    SLAG_VALIDATE(instance, info.castableFormats.size() <= 16, function, "more than 16 castable formats");
     for (PixelFormat castable : info.castableFormats)
     {
         SLAG_VALIDATE(instance, formatsCastable(info.format, castable), function, "%s can't be cast to %s", format.name,
@@ -276,6 +277,13 @@ Result<Texture*> createTexture(GraphicsDeviceCommon* self, const TextureCreateIn
     object->mipCount = info.mipCount;
     object->sampleCount = info.sampleCount;
     object->usage = info.usage;
+    for (PixelFormat castable : info.castableFormats)
+    {
+        if (object->castableCount < 16)
+        {
+            object->castableFormats[object->castableCount++] = castable;
+        }
+    }
     if (info.placement.memoryBlock)
     {
         object->memoryBlock = static_cast<MemoryBlockCommon*>(info.placement.memoryBlock);
@@ -352,6 +360,8 @@ void GraphicsDevice::destroy(Texture* texture)
     auto* object = static_cast<TextureCommon*>(texture);
     SLAG_VALIDATE(self->instance, object->device == self, "GraphicsDevice::destroy",
                   "the texture belongs to another device");
+    SLAG_VALIDATE(self->instance, object->liveViews == 0, "GraphicsDevice::destroy",
+                  "the texture still has %u attachment views", object->liveViews.load());
     MemoryBlockCommon* block = object->memoryBlock;
     PoolAllocation allocation = object->allocation;
     SLAG_DISPATCH(self, destroyTexture)(self, object);

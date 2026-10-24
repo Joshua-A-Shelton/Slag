@@ -21,6 +21,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <mutex>
 
 namespace slag {
 
@@ -59,6 +60,18 @@ struct DescriptorHeap
     uint32_t slots = 0;
 };
 
+// CPU-only RTV or DSV descriptors for attachment views (ADR 0035), handed out
+// in groups (DSVs: one per read-only variant). Thread-safe.
+struct CpuDescriptorPool
+{
+    D3D12_DESCRIPTOR_HEAP_TYPE type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+    uint32_t groupSize = 1;
+    uint32_t increment = 0;
+    Vector<ID3D12DescriptorHeap*> heaps;
+    Vector<SIZE_T> freeGroups;
+    std::mutex lock;
+};
+
 struct GraphicsDeviceImpl : GraphicsDeviceCommon
 {
     IDXGIAdapter4* adapter = nullptr;
@@ -70,6 +83,8 @@ struct GraphicsDeviceImpl : GraphicsDeviceCommon
     ID3D12RootSignature* rootSignature = nullptr; // the fixed layout (ADR 0003)
     DescriptorHeap resourceHeap;
     DescriptorHeap samplerHeap;
+    CpuDescriptorPool rtvPool;
+    CpuDescriptorPool dsvPool;
 };
 
 struct CommandQueueImpl : CommandQueueCommon
@@ -114,6 +129,22 @@ struct TextureImpl : TextureCommon
     uint32_t planeCount = 1;            // 2 for depth/stencil formats
 };
 
+// The DSV group holds the variants in this order (ADR 0035).
+enum DsvVariant : uint32_t
+{
+    DsvWritable = 0,
+    DsvReadOnlyDepth = 1,
+    DsvReadOnlyStencil = 2,
+    DsvReadOnly = 3,
+    DsvVariantCount = 4,
+};
+
+struct AttachmentViewImpl : AttachmentViewCommon
+{
+    D3D12_CPU_DESCRIPTOR_HANDLE handle = {}; // RTV, or the first DSV variant
+    bool depthStencil = false;
+};
+
 struct SemaphoreImpl : SemaphoreCommon
 {
     ID3D12Fence* fence = nullptr;
@@ -137,6 +168,12 @@ inline D3D12_COMMAND_LIST_TYPE listType(CommandQueueType type)
     }
     return D3D12_COMMAND_LIST_TYPE_DIRECT;
 }
+
+void initPool(GraphicsDeviceImpl& device, CpuDescriptorPool& pool, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t groupSize);
+void destroyPool(CpuDescriptorPool& pool);
+// Ok with the group's first handle.
+Status allocateGroup(GraphicsDeviceImpl& device, CpuDescriptorPool& pool, D3D12_CPU_DESCRIPTOR_HANDLE& handle);
+void freeGroup(CpuDescriptorPool& pool, D3D12_CPU_DESCRIPTOR_HANDLE handle);
 
 // HRESULT to Status; marks the device lost on removal.
 Status toStatus(GraphicsDeviceImpl& device, HRESULT result);

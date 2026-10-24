@@ -4,6 +4,7 @@
 // writes, placement queries, semaphore waits, status, memory budget, and the
 // pipeline cache (ADRs 0008, 0015, 0019, 0023, 0029, 0031, 0043, 0053, 0054).
 
+#include <slag/AttachmentView.h>
 #include <slag/Buffer.h>
 #include <slag/CommandBuffer.h>
 #include <slag/CommandQueue.h>
@@ -112,7 +113,11 @@ public:
     Result<Texture*> createTexture3D(const Texture3DDesc& desc);
     Result<Texture*> createTextureCube(const TextureCubeDesc& desc);
     Result<Texture*> createTextureCubeArray(const TextureCubeArrayDesc& desc);
+    // Every attachment view of the texture must be destroyed first.
     void destroy(Texture* texture);
+
+    Result<AttachmentView*> createAttachmentView(const AttachmentViewDesc& desc);
+    void destroy(AttachmentView* view);
 
     // What a resource needs when placed in a memory block. Creates nothing;
     // the placement field is ignored. Thread-safe.

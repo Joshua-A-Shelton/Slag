@@ -25,6 +25,7 @@ struct MemoryBlockCommon;
 struct BufferCommon;
 struct TextureCommon;
 struct TextureCreateInfo;
+struct AttachmentViewCommon;
 struct PipelineCommon;
 struct CommandBufferCommon;
 

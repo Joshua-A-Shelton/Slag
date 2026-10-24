@@ -206,6 +206,8 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
         shutdownDevice(&device);
         return status;
     }
+    initPool(device, device.rtvPool, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1);
+    initPool(device, device.dsvPool, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, DsvVariantCount);
     return {};
 }
 
@@ -228,6 +230,8 @@ void shutdownDevice(GraphicsDeviceCommon* common)
         }
     }
     destroyQueues(device);
+    destroyPool(device.rtvPool);
+    destroyPool(device.dsvPool);
     release(device.rootSignature);
     release(device.resourceHeap.heap);
     release(device.samplerHeap.heap);
