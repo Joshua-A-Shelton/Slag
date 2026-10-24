@@ -133,6 +133,13 @@ reviewed and settled (`docs/naming.md`).
 **Done when:** both samples run in a window on Windows (both backends) and
 Linux (X11 and Wayland), surviving resize and minimize.
 
+**Status (2026-10-24):** swapchains on both backends (Win32, Xlib, XCB,
+Wayland), with present modes, reconfigure, Occluded, HDR color spaces and
+metadata, and frame latency. Both samples pass `--frames 120` (including
+a resize) on RADV under Wayland, Xlib, and XCB with no validation
+messages. Still to check: D3D12 and Vulkan on Windows by eye, and minimize
+by hand. Names proposed during M4 await review (`docs/naming.md`).
+
 ## M5 — Queues, synchronization, utilities
 
 - Queue counts per type, compute and copy queues, shared-queue handling.

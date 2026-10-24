@@ -186,6 +186,19 @@ New names added while implementing go here once confirmed.
 | Command parameters | `drawIndirect(argumentBuffer, argumentOffset, drawCount)`, `drawIndirectCount(argumentBuffer, argumentOffset, countBuffer, countOffset, maxDrawCount)` (and the indexed pair), `dispatchIndirect(argumentBuffer, argumentOffset)`, `resolveTexture(destination, destinationMip, destinationLayer, source, sourceLayer)` |
 | Behavior | `beginRendering` starts with a full-area viewport and scissor; `StoreOp::Resolve` discards the MSAA samples |
 
+## Proposed during M4 (placeholders, to review)
+
+| Where | Names |
+|---|---|
+| `NativeWindow` | `kind`, `display`, `window` (shape from ADR 0055) |
+| `SwapchainDesc` | `window`, `queue`, `width`, `height`, `imageCount`, `format`, `colorSpace`, `presentMode`, `debugName`, `userData` |
+| `SwapchainReconfigureDesc` | `width`, `height`, `imageCount`, `format`, `colorSpace`, `presentMode` |
+| `SwapchainFormat` | `format`, `colorSpace` |
+| `HdrMetadata` | `redPrimary[2]`, `greenPrimary[2]`, `bluePrimary[2]`, `whitePoint[2]`, `maxMasteringLuminance`, `minMasteringLuminance`, `maxContentLightLevel`, `maxFrameAverageLightLevel` |
+| Device queries | `supportedSwapchainFormats(window, span<SwapchainFormat>)` → count, and new `supportedPresentModes(window, span<PresentMode>)` → count (fill the span, return how many exist) |
+| `Swapchain` | `attachmentView(index, srgb = false)`: the second parameter picks the sRGB view |
+| Capabilities | `frameLatency` |
+
 ## Nested structs
 
 `AllocatorCallbacks` (in `InstanceDesc`; ADR 0066).

@@ -36,7 +36,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ninja-build libx11-dev libx11-xcb-dev libxcb1-dev libxext-dev libxrandr-dev \
-            libxcursor-dev libxi-dev libxfixes-dev libxss-dev libwayland-dev libxkbcommon-dev
+            libxcursor-dev libxi-dev libxfixes-dev libxss-dev libxtst-dev libwayland-dev libxkbcommon-dev
 
       - name: Install Slang
         run: |
