@@ -132,6 +132,18 @@ object has `userData()` / `setUserData()` (ADR 0063).
 | `Buffer` | `mappedData()`, `gpuAddress()` |
 | `SemaphoreValue` | `{ Semaphore* semaphore; uint64_t value; }` |
 
+## Proposed in M1 (confirm or rename)
+
+Names introduced while implementing; treat as placeholders until confirmed.
+
+- `InstanceDesc` fields: `backend`, `validation`, `validationFailureAction`,
+  `debugCallback`, `debugUserData`, `allocator`, `devicePreference`,
+  `allowSoftwareDevices`, `crashDiagnostics`, `applicationName`,
+  `applicationVersion`, `engineName`, `engineVersion`, `backendOptions`,
+  `debugName`, `userData`.
+- `BackendOptions` (union), `D3D12Options`, `VulkanOptions`.
+- `ValidationFlags::None`.
+
 ## Nested structs
 
 `AllocatorCallbacks` (in `InstanceDesc`; ADR 0066).

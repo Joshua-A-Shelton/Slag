@@ -25,6 +25,14 @@ target_link_libraries(slag_header_check PRIVATE slag::slag)
 add_test(NAME header_check COMMAND slag_header_check)
 
 # Unit tests (doctest; tests only, ADR 0061).
-add_executable(slag_unit_tests UnitTestMain.cpp VersionTests.cpp)
+add_executable(slag_unit_tests
+    UnitTestMain.cpp
+    FlagsTests.cpp
+    InstanceTests.cpp
+    ResultTests.cpp
+    VectorTests.cpp
+    VersionTests.cpp)
 target_link_libraries(slag_unit_tests PRIVATE slag::slag doctest::doctest)
+# Unit tests may test internal code directly.
+target_include_directories(slag_unit_tests PRIVATE "${PROJECT_SOURCE_DIR}/src")
 doctest_discover_tests(slag_unit_tests)

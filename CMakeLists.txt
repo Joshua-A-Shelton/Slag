@@ -54,8 +54,13 @@ target_include_directories(slag PUBLIC
     $<BUILD_INTERFACE:${SLAG_GENERATED_INCLUDE_DIR}>
     $<INSTALL_INTERFACE:include>)
 
+target_include_directories(slag PRIVATE src)
+
 target_sources(slag PRIVATE
-    src/common/Slag.cpp)
+    src/common/HostAllocator.cpp
+    src/common/Instance.cpp
+    src/common/Logging.cpp
+    src/common/Platform.cpp)
 
 target_compile_definitions(slag PUBLIC
     $<$<BOOL:${SLAG_BACKEND_D3D12}>:SLAG_BACKEND_D3D12>
@@ -71,18 +76,54 @@ else()
     target_compile_options(slag PRIVATE -Wall -Wextra -Wpedantic -fno-exceptions -fno-rtti)
 endif()
 
-# Backend sources are added here once they exist (src/d3d12, src/vulkan).
+# ---------------------------------------------------------------------------
+# Backends and registry (ADR 0065)
+# ---------------------------------------------------------------------------
+
+# Each backend appends its name to SLAG_BACKEND_NAMES and provides
+# slag::slagBackend_<name>(). External backends do the same from their own
+# CMakeLists.txt (set SLAG_BACKEND_NAMES in PARENT_SCOPE).
+set(SLAG_BACKEND_NAMES)
+set(_slag_builtin_namespaces)
+
 if(SLAG_BACKEND_D3D12)
     target_link_libraries(slag PRIVATE slag_agility_sdk)
+    # list(APPEND SLAG_BACKEND_NAMES d3d12) and sources once src/d3d12 exists.
 endif()
+
 if(SLAG_BACKEND_VULKAN)
     target_link_libraries(slag PRIVATE Vulkan::Headers)
+    target_sources(slag PRIVATE
+        src/vulkan/VkBackend.cpp
+        src/vulkan/VkInstance.cpp)
+    list(APPEND SLAG_BACKEND_NAMES vulkan)
+    list(APPEND _slag_builtin_namespaces vk)
 endif()
 
 foreach(_slag_external_dir IN LISTS SLAG_EXTERNAL_BACKEND_DIRS)
     get_filename_component(_slag_external_name "${_slag_external_dir}" NAME)
     add_subdirectory("${_slag_external_dir}" "${CMAKE_CURRENT_BINARY_DIR}/external/${_slag_external_name}")
 endforeach()
+
+if(NOT SLAG_BACKEND_NAMES)
+    message(FATAL_ERROR "No backend registered itself; check the enabled backends")
+endif()
+
+set(SLAG_BACKEND_DECLARATIONS)
+set(SLAG_BACKEND_ENTRIES)
+foreach(_name IN LISTS SLAG_BACKEND_NAMES)
+    string(APPEND SLAG_BACKEND_DECLARATIONS "const BackendInfo* slagBackend_${_name}();\n")
+    string(APPEND SLAG_BACKEND_ENTRIES "        slagBackend_${_name}(),\n")
+endforeach()
+configure_file(cmake/BackendRegistry.cpp.in "${CMAKE_CURRENT_BINARY_DIR}/src/BackendRegistry.cpp" @ONLY)
+target_sources(slag PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/src/BackendRegistry.cpp")
+
+# Exactly one backend, and it's built in: dispatch directly (ADR 0065).
+list(LENGTH SLAG_BACKEND_NAMES _slag_backend_count)
+list(LENGTH _slag_builtin_namespaces _slag_builtin_count)
+if(_slag_backend_count EQUAL 1 AND _slag_builtin_count EQUAL 1)
+    target_compile_definitions(slag PRIVATE SLAG_DIRECT_BACKEND_NAMESPACE=${_slag_builtin_namespaces})
+endif()
 
 # ---------------------------------------------------------------------------
 # Tests and samples

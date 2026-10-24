@@ -45,7 +45,8 @@ struct AllocatorCallbacks
 
 - **`src/`:** non-allocating headers only — `<cstdint>`, `<cstddef>`,
   `<cstring>`, `<span>`, `<string_view>`, `<type_traits>`, `<utility>`,
-  `<new>`, `<bit>`, `<atomic>`, `<mutex>`, `<algorithm>`. No `std::vector`,
+  `<new>`, `<bit>`, `<atomic>`, `<mutex>`, `<algorithm>`, plus the C
+  headers `<cstdio>` (formatting only), `<cstdarg>`, `<cstdlib>`, `<csignal>`. No `std::vector`,
   `unordered_map`, `string`, `function`, `shared_ptr`, or iostreams. A failed
   `std::mutex` lock terminates (exceptions are off); acceptable, since it
   only happens when the OS is out of resources.
