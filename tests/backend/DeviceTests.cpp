@@ -111,11 +111,11 @@ void testCapabilitiesAndBudget(slag::Backend backend)
         MESSAGE(std::string(device->info().name)
                 << ": unifiedMemory " << capabilities.unifiedMemory << ", gpuUploadMemory "
                 << capabilities.gpuUploadMemory << ", maxBufferSize " << capabilities.maxBufferSize << ", budget "
-                << budget.dedicatedBudgetBytes / (1024 * 1024) << " MiB dedicated (" << budget.dedicatedUsageBytes
-                << " B used), " << budget.sharedBudgetBytes / (1024 * 1024) << " MiB shared");
+                << budget.dedicated.budgetBytes / (1024 * 1024) << " MiB dedicated (" << budget.dedicated.usageBytes
+                << " B used), " << budget.shared.budgetBytes / (1024 * 1024) << " MiB shared");
         // At least the largest structured buffer view (ADR 0028).
         CHECK(capabilities.maxBufferSize >= slag::limits::maxStorageBufferViewSize);
-        CHECK(budget.dedicatedBudgetBytes + budget.sharedBudgetBytes > 0);
+        CHECK(budget.dedicated.budgetBytes + budget.shared.budgetBytes > 0);
 
         // Usage grows with an allocation once the device is initialized.
         REQUIRE(static_cast<bool>(device->initialize({})));
@@ -126,8 +126,8 @@ void testCapabilitiesAndBudget(slag::Backend backend)
                                    .value();
         REQUIRE(buffer);
         slag::MemoryBudget after = device->memoryBudget();
-        CHECK(after.dedicatedUsageBytes + after.sharedUsageBytes >=
-              before.dedicatedUsageBytes + before.sharedUsageBytes);
+        CHECK(after.dedicated.usageBytes + after.shared.usageBytes >=
+              before.dedicated.usageBytes + before.shared.usageBytes);
         device->destroy(buffer);
         device->shutdown();
     }

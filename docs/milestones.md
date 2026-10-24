@@ -79,7 +79,7 @@ sub-allocated (TLSF) resources, all seven texture types, attachment views,
 texture barriers, copies, and `copyFootprint`. Every texture type
 round-trips buffer → texture → texture → buffer byte for byte on RADV (RX
 7900 XT, Raphael iGPU) and WARP. RADV and WARP meet every ◐ entry. Names
-proposed during M2 await review (`docs/naming.md`).
+proposed during M2 were reviewed and settled (`docs/naming.md`).
 
 ## M3 — Off-screen graphics
 

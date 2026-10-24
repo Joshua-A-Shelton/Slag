@@ -89,17 +89,17 @@ enum class FormatSupport : uint32_t
     Sampled = 1u << 0,      // sampled or loaded in shaders
     LinearFilter = 1u << 1, // linear filtering
     RenderTarget = 1u << 2,
-    Blend = 1u << 3,          // blending as a render target
-    Multisample2 = 1u << 4,   // 2x MSAA render or depth target
-    Multisample4 = 1u << 5,   // 4x
-    Multisample8 = 1u << 6,   // 8x
-    RWTexture = 1u << 7,      // shader writes (RWTexture*)
-    RWTextureLoad = 1u << 8,  // shader reads of a writable texture
-    Atomics = 1u << 9,        // atomics on RWTexture* / RWBuffer
-    DepthStencil = 1u << 10,  // depth/stencil target
-    VertexBuffer = 1u << 11,  // vertex attribute
-    TypedBuffer = 1u << 12,   // Buffer<T>
-    RWTypedBuffer = 1u << 13, // RWBuffer<T>
+    Blend = 1u << 3,           // blending as a render target
+    Multisample2 = 1u << 4,    // 2x MSAA render or depth target
+    Multisample4 = 1u << 5,    // 4x
+    Multisample8 = 1u << 6,    // 8x
+    ShaderWrite = 1u << 7,     // RWTexture* stores
+    ShaderWriteLoad = 1u << 8, // shader reads of a writable texture
+    Atomics = 1u << 9,         // atomics on RWTexture* / RWBuffer
+    DepthStencil = 1u << 10,   // depth/stencil target
+    VertexBuffer = 1u << 11,   // vertex attribute
+    TypedBuffer = 1u << 12,    // Buffer<T>
+    RWTypedBuffer = 1u << 13,  // RWBuffer<T>
 };
 SLAG_FLAGS(FormatSupport)
 

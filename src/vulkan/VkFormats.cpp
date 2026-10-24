@@ -130,8 +130,8 @@ void queryFormatSupport(const InstanceImpl& instance, VkPhysicalDevice device, F
         add(has(image, VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT), FormatSupport::LinearFilter);
         add(has(image, VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT), FormatSupport::RenderTarget);
         add(has(image, VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BLEND_BIT), FormatSupport::Blend);
-        add(has(image, VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT), FormatSupport::RWTexture);
-        add(has(image, VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT), FormatSupport::RWTextureLoad);
+        add(has(image, VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT), FormatSupport::ShaderWrite);
+        add(has(image, VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT), FormatSupport::ShaderWriteLoad);
         add(has(image, VK_FORMAT_FEATURE_2_STORAGE_IMAGE_ATOMIC_BIT) &&
                 has(buffer, VK_FORMAT_FEATURE_2_STORAGE_TEXEL_BUFFER_ATOMIC_BIT),
             FormatSupport::Atomics);

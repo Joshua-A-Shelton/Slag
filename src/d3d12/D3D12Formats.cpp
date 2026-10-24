@@ -150,8 +150,8 @@ void queryFormatSupport(ID3D12Device* device, FormatSupport* support)
         add(has1(data, D3D12_FORMAT_SUPPORT1_BLENDABLE), FormatSupport::Blend);
         add(has1(data, D3D12_FORMAT_SUPPORT1_TYPED_UNORDERED_ACCESS_VIEW) &&
                 has2(data, D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE),
-            FormatSupport::RWTexture);
-        add(has2(data, D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD), FormatSupport::RWTextureLoad);
+            FormatSupport::ShaderWrite);
+        add(has2(data, D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD), FormatSupport::ShaderWriteLoad);
         add(has2(data, D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_ADD | D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_BITWISE_OPS |
                            D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_COMPARE_STORE_OR_COMPARE_EXCHANGE |
                            D3D12_FORMAT_SUPPORT2_UAV_ATOMIC_EXCHANGE |

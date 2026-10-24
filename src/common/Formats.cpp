@@ -15,8 +15,8 @@ constexpr FormatSupport msaa = Multisample2 | Multisample4 | Multisample8;
 constexpr FormatSupport anyBuffer = VertexBuffer | TypedBuffer | RWTypedBuffer;
 // Color formats: everything but depth/stencil. Atomics only on R32Uint/R32Sint.
 constexpr FormatSupport floatColor =
-    Sampled | LinearFilter | RenderTarget | Blend | msaa | RWTexture | RWTextureLoad | anyBuffer;
-constexpr FormatSupport intColor = Sampled | RenderTarget | msaa | RWTexture | RWTextureLoad | anyBuffer;
+    Sampled | LinearFilter | RenderTarget | Blend | msaa | ShaderWrite | ShaderWriteLoad | anyBuffer;
+constexpr FormatSupport intColor = Sampled | RenderTarget | msaa | ShaderWrite | ShaderWriteLoad | anyBuffer;
 constexpr FormatSupport srgbColor = Sampled | LinearFilter | RenderTarget | Blend | msaa;
 constexpr FormatSupport depth = Sampled | LinearFilter | msaa | DepthStencil;
 constexpr FormatSupport sampledOnly = Sampled | LinearFilter;
@@ -27,8 +27,8 @@ constexpr FormatSupport F = LinearFilter;
 constexpr FormatSupport R = RenderTarget;
 constexpr FormatSupport B = Blend;
 constexpr FormatSupport M = Multisample4;
-constexpr FormatSupport W = RWTexture;
-constexpr FormatSupport L = RWTextureLoad;
+constexpr FormatSupport W = ShaderWrite;
+constexpr FormatSupport L = ShaderWriteLoad;
 constexpr FormatSupport A = Atomics;
 constexpr FormatSupport D = DepthStencil;
 constexpr FormatSupport V = VertexBuffer;
@@ -199,9 +199,10 @@ bool meetsFormatBaseline(const InstanceCommon& instance, const char* deviceName,
 
 void describeFormatSupport(FormatSupport support, char* out, size_t outSize)
 {
-    static constexpr const char* names[] = {
-        "Sampled",   "LinearFilter",  "RenderTarget", "Blend",        "Multisample2", "Multisample4", "Multisample8",
-        "RWTexture", "RWTextureLoad", "Atomics",      "DepthStencil", "VertexBuffer", "TypedBuffer",  "RWTypedBuffer"};
+    static constexpr const char* names[] = {"Sampled",         "LinearFilter", "RenderTarget", "Blend",
+                                            "Multisample2",    "Multisample4", "Multisample8", "ShaderWrite",
+                                            "ShaderWriteLoad", "Atomics",      "DepthStencil", "VertexBuffer",
+                                            "TypedBuffer",     "RWTypedBuffer"};
     size_t used = 0;
     out[0] = '\0';
     for (size_t bit = 0; bit < sizeof(names) / sizeof(names[0]); ++bit)

@@ -254,13 +254,13 @@ MemoryBudget memoryBudget(const GraphicsDeviceCommon* common)
     DXGI_QUERY_VIDEO_MEMORY_INFO nonLocal = {};
     if (SUCCEEDED(device.adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &local)))
     {
-        result.dedicatedBudgetBytes = local.Budget;
-        result.dedicatedUsageBytes = local.CurrentUsage;
+        result.dedicated.budgetBytes = local.Budget;
+        result.dedicated.usageBytes = local.CurrentUsage;
     }
     if (SUCCEEDED(device.adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL, &nonLocal)))
     {
-        result.sharedBudgetBytes = nonLocal.Budget;
-        result.sharedUsageBytes = nonLocal.CurrentUsage;
+        result.shared.budgetBytes = nonLocal.Budget;
+        result.shared.usageBytes = nonLocal.CurrentUsage;
     }
     return result;
 }

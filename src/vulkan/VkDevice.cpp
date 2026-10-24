@@ -439,13 +439,13 @@ MemoryBudget memoryBudget(const GraphicsDeviceCommon* common)
         uint64_t heapUsage = device.memoryBudgetExtension ? budget.heapUsage[i] : 0;
         if (memory.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
         {
-            result.dedicatedBudgetBytes += heapBudget;
-            result.dedicatedUsageBytes += heapUsage;
+            result.dedicated.budgetBytes += heapBudget;
+            result.dedicated.usageBytes += heapUsage;
         }
         else
         {
-            result.sharedBudgetBytes += heapBudget;
-            result.sharedUsageBytes += heapUsage;
+            result.shared.budgetBytes += heapBudget;
+            result.shared.usageBytes += heapUsage;
         }
     }
     return result;

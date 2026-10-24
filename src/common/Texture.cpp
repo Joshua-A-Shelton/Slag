@@ -169,7 +169,7 @@ void validateTexture(GraphicsDeviceCommon* self, const TextureCreateInfo& info, 
                   "%s can't be a depth/stencil target", format.name);
     SLAG_VALIDATE(instance,
                   !hasUsage(info.usage, TextureUsage::ShaderWrite) ||
-                      supports(self, info.format, FormatSupport::RWTexture),
+                      supports(self, info.format, FormatSupport::ShaderWrite),
                   function, "%s can't be written by shaders", format.name);
     SLAG_VALIDATE(instance,
                   !hasTraits(info.format, FormatTraits::Depth) ||

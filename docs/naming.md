@@ -149,17 +149,17 @@ object has `userData()` / `setUserData()` (ADR 0063).
 
 New names added while implementing go here once confirmed.
 
-## Proposed during M2 (placeholders, to review)
+## Fields and small names (settled after M2)
 
 | Where | Names |
 |---|---|
 | `PixelFormat` | adds `Undefined` (the default in every `Desc`) |
-| `FormatSupport` (flags) | `None`, `Sampled`, `LinearFilter`, `RenderTarget`, `Blend`, `Multisample2`, `Multisample4`, `Multisample8`, `RWTexture`, `RWTextureLoad`, `Atomics`, `DepthStencil`, `VertexBuffer`, `TypedBuffer`, `RWTypedBuffer` |
+| `FormatSupport` (flags) | `None`, `Sampled`, `LinearFilter`, `RenderTarget`, `Blend`, `Multisample2`, `Multisample4`, `Multisample8`, `ShaderWrite`, `ShaderWriteLoad`, `Atomics`, `DepthStencil`, `VertexBuffer`, `TypedBuffer`, `RWTypedBuffer` (shader-write names match `TextureUsage::ShaderWrite`) |
 | `GraphicsDeviceCapabilities` | `unifiedMemory`, `gpuUploadMemory`, `maxBufferSize` |
-| `MemoryBudget` | `dedicatedBudgetBytes`, `dedicatedUsageBytes`, `sharedBudgetBytes`, `sharedUsageBytes` |
+| `MemoryBudget` | `dedicated`, `shared`, each a `MemoryUsage` (`budgetBytes`, `usageBytes`) |
 | `MemoryBlockDesc` | `size`, `kind`, `debugName`, `userData`; `MemoryBlock::size()`, `kind()` |
 | `TextureUsage` | adds `None` |
-| Texture `Desc`s | `format`, `width`, `height`, `depth`, `layerCount`, `size` (cube faces), `cubeCount`, `mipCount`, `sampleCount`, `usage`, `castableFormats`, `clearValue` (pointer: optional), `placement`, `debugName`, `userData` |
+| Texture `Desc`s | `format`, `width`, `height`, `depth`, `layerCount`, `size` (cube faces), `cubeCount`, `mipCount`, `sampleCount`, `usage`, `castableFormats`, `clearValue` (pointer; null means none), `placement`, `debugName`, `userData` |
 | `ClearValue` | `color[4]`, `depth`, `stencil` |
 | `AttachmentViewDesc` | `texture`, `format` (`Undefined`: the texture's), `mip`, `baseLayer`, `layerCount`, `debugName`, `userData` |
 | Copies | `TextureLocation` (`texture`, `mip`, `layer`, `x`, `y`, `z`, `plane`), `BufferLocation` (`buffer`, `offset`, `rowPitch`); `copyTexture(destination, source, width, height, depth)`, `copyBufferToTexture(destination, source, …)`, `copyTextureToBuffer(destination, source, …)` |

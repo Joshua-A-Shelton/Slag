@@ -51,14 +51,19 @@ struct GraphicsDeviceCapabilities
     uint64_t maxBufferSize = 0;   // bytes (ADR 0028)
 };
 
-// Budget and current usage, in bytes (ADR 0019). Dedicated is GPU memory,
-// shared is system memory the GPU can use, as in GraphicsDeviceInfo.
+// This process's usage of one kind of memory against the OS budget, in bytes.
+struct MemoryUsage
+{
+    uint64_t budgetBytes = 0;
+    uint64_t usageBytes = 0;
+};
+
+// ADR 0019. Dedicated is GPU memory, shared is system memory the GPU can use,
+// as in GraphicsDeviceInfo.
 struct MemoryBudget
 {
-    uint64_t dedicatedBudgetBytes = 0;
-    uint64_t dedicatedUsageBytes = 0;
-    uint64_t sharedBudgetBytes = 0;
-    uint64_t sharedUsageBytes = 0;
+    MemoryUsage dedicated;
+    MemoryUsage shared;
 };
 
 // How copyBufferToTexture / copyTextureToBuffer lay out one mip of one layer
