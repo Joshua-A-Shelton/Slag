@@ -36,8 +36,6 @@ D3D12_RENDER_PASS_ENDING_ACCESS_TYPE ending(StoreOp op)
         return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
     case StoreOp::Discard:
         return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
-    case StoreOp::Resolve:
-        return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_RESOLVE;
     }
     return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
 }
@@ -49,8 +47,6 @@ void cmdBeginRendering(CommandBufferCommon* object, const RenderingDesc& desc, u
 {
     ID3D12GraphicsCommandList7* list = listOf(object);
     D3D12_RENDER_PASS_RENDER_TARGET_DESC targets[8] = {};
-    // Resolve parameters live until BeginRenderPass returns.
-    D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS resolves[8] = {};
     UINT targetCount = static_cast<UINT>(desc.colorAttachments.size() < 8 ? desc.colorAttachments.size() : 8);
     for (UINT i = 0; i < targetCount; ++i)
     {
@@ -72,23 +68,6 @@ void cmdBeginRendering(CommandBufferCommon* object, const RenderingDesc& desc, u
             target.BeginningAccess.Clear.ClearValue.Color[c] = attachment.clearValue.color[c];
         }
         target.EndingAccess.Type = ending(attachment.storeOp);
-        if (attachment.storeOp == StoreOp::Resolve && attachment.resolveView)
-        {
-            auto* source = static_cast<TextureImpl*>(view->texture);
-            auto* resolve = static_cast<AttachmentViewImpl*>(attachment.resolveView);
-            auto* destination = static_cast<TextureImpl*>(resolve->texture);
-            resolves[i].SrcSubresource = view->mip + view->baseLayer * source->mipCount;
-            resolves[i].DstSubresource = resolve->mip + resolve->baseLayer * destination->mipCount;
-            resolves[i].SrcRect = {0, 0, static_cast<LONG>(width), static_cast<LONG>(height)};
-            D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS& parameters = target.EndingAccess.Resolve;
-            parameters.pSrcResource = source->resource;
-            parameters.pDstResource = destination->resource;
-            parameters.SubresourceCount = 1;
-            parameters.pSubresourceParameters = &resolves[i];
-            parameters.Format = toDxgiFormat(view->format);
-            parameters.ResolveMode = D3D12_RESOLVE_MODE_AVERAGE;
-            parameters.PreserveResolveSource = FALSE;
-        }
     }
 
     D3D12_RENDER_PASS_DEPTH_STENCIL_DESC depthStencil = {};

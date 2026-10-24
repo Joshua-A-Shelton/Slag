@@ -33,7 +33,6 @@ enum class StoreOp : uint8_t
 {
     Store,
     Discard,
-    Resolve, // average into resolveView, discarding this attachment's samples
 };
 
 // In the RenderTarget layout when the pass begins.
@@ -43,7 +42,6 @@ struct ColorAttachment
     LoadOp loadOp = LoadOp::Load;
     StoreOp storeOp = StoreOp::Store;
     ClearValue clearValue;
-    AttachmentView* resolveView = nullptr; // StoreOp::Resolve: single-sampled, same format, RenderTarget layout
 };
 
 // In DepthStencilWrite, or DepthStencilRead for read-only planes.

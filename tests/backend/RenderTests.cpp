@@ -385,8 +385,9 @@ slag::Texture* renderTarget(slag::GraphicsDevice* device, uint32_t size, uint32_
     return texture;
 }
 
-// 4x MSAA: a render-pass resolve and resolveTexture give the same image, with
-// averaged pixels along the triangle's edge.
+// 4x MSAA resolved with resolveTexture: averaged pixels along the triangle's
+// edge. (Render-pass resolves were cut in M7: D3D12 and Vulkan need the
+// destination in different layouts, ADR 0049.)
 void testResolves(slag::Backend backend)
 {
     TestInstance test(backend);
@@ -399,17 +400,14 @@ void testResolves(slag::Backend backend)
         REQUIRE(pipeline);
         constexpr uint32_t size = 64;
         slag::Texture* msaa = renderTarget(device, size, 4);
-        slag::Texture* passResolved = renderTarget(device, size, 1);
         slag::Texture* commandResolved = renderTarget(device, size, 1);
         slag::AttachmentView* msaaView = device->createAttachmentView({.texture = msaa}).value();
-        slag::AttachmentView* resolveView = device->createAttachmentView({.texture = passResolved}).value();
         REQUIRE(msaaView);
-        REQUIRE(resolveView);
-        slag::CopyFootprint footprint = device->copyFootprint(passResolved, 0);
+        slag::CopyFootprint footprint = device->copyFootprint(commandResolved, 0);
         slag::Buffer* readback =
             device
                 ->createBuffer(
-                    {.size = footprint.size * 2, .placement = slag::Placement::automatic(slag::MemoryKind::Readback)})
+                    {.size = footprint.size, .placement = slag::Placement::automatic(slag::MemoryKind::Readback)})
                 .value();
         REQUIRE(readback);
 
@@ -418,19 +416,12 @@ void testResolves(slag::Backend backend)
         REQUIRE(static_cast<bool>(commandBuffer->begin()));
         slag::TextureBarrier start[] = {
             transition(msaa, slag::TextureLayout::Undefined, slag::TextureLayout::RenderTarget),
-            transition(passResolved, slag::TextureLayout::Undefined, slag::TextureLayout::RenderTarget),
             transition(commandResolved, slag::TextureLayout::Undefined, slag::TextureLayout::ResolveDest)};
         commandBuffer->barrier({}, {}, start);
         slag::ColorAttachment color = {.view = msaaView,
                                        .loadOp = slag::LoadOp::Clear,
-                                       .storeOp = slag::StoreOp::Resolve,
-                                       .clearValue = {.color = {0.0f, 0.0f, 1.0f, 1.0f}},
-                                       .resolveView = resolveView};
-        commandBuffer->beginRendering({.colorAttachments = {&color, 1}});
-        scene.draw(commandBuffer, pipeline, 0);
-        commandBuffer->endRendering();
-        color.storeOp = slag::StoreOp::Store;
-        color.resolveView = nullptr;
+                                       .storeOp = slag::StoreOp::Store,
+                                       .clearValue = {.color = {0.0f, 0.0f, 1.0f, 1.0f}}};
         commandBuffer->beginRendering({.colorAttachments = {&color, 1}});
         scene.draw(commandBuffer, pipeline, 0);
         commandBuffer->endRendering();
@@ -438,19 +429,14 @@ void testResolves(slag::Backend backend)
             transition(msaa, slag::TextureLayout::RenderTarget, slag::TextureLayout::ResolveSource);
         commandBuffer->barrier({}, {}, {&toResolve, 1});
         commandBuffer->resolveTexture(commandResolved, 0, 0, msaa, 0);
-        slag::TextureBarrier toCopy[] = {
-            transition(passResolved, slag::TextureLayout::RenderTarget, slag::TextureLayout::CopySource),
-            transition(commandResolved, slag::TextureLayout::ResolveDest, slag::TextureLayout::CopySource)};
-        commandBuffer->barrier({}, {}, toCopy);
-        commandBuffer->copyTextureToBuffer({readback, 0, footprint.rowPitch}, {.texture = passResolved}, size, size);
-        commandBuffer->copyTextureToBuffer({readback, footprint.size, footprint.rowPitch}, {.texture = commandResolved},
-                                           size, size);
+        slag::TextureBarrier toCopy =
+            transition(commandResolved, slag::TextureLayout::ResolveDest, slag::TextureLayout::CopySource);
+        commandBuffer->barrier({}, {}, {&toCopy, 1});
+        commandBuffer->copyTextureToBuffer({readback, 0, footprint.rowPitch}, {.texture = commandResolved}, size, size);
         REQUIRE(static_cast<bool>(commandBuffer->end()));
         submitAndWait(device, commandBuffer);
 
         const auto* a = static_cast<const uint8_t*>(readback->mappedData());
-        const uint8_t* b = a + footprint.size;
-        CHECK(std::memcmp(a, b, footprint.size) == 0);
         CHECK(a[8 * footprint.rowPitch + 8 * 4] == 255);       // red inside
         CHECK(a[56 * footprint.rowPitch + 56 * 4 + 2] == 255); // blue outside
         uint32_t averaged = 0;
@@ -467,9 +453,7 @@ void testResolves(slag::Backend backend)
         device->destroy(commandBuffer);
         device->destroy(readback);
         device->destroy(msaaView);
-        device->destroy(resolveView);
         device->destroy(msaa);
-        device->destroy(passResolved);
         device->destroy(commandResolved);
         device->destroy(pipeline);
     }
@@ -685,7 +669,7 @@ TEST_CASE("D3D12: read-only depth with writable stencil")
 #endif
 
 #ifdef SLAG_BACKEND_VULKAN
-TEST_CASE("Vulkan: MSAA resolves in a render pass and with resolveTexture")
+TEST_CASE("Vulkan: MSAA resolves with resolveTexture")
 {
     testResolves(slag::Backend::Vulkan);
 }
@@ -697,7 +681,7 @@ TEST_CASE("Vulkan: a render pass split across two command buffers")
 #endif
 
 #ifdef SLAG_BACKEND_D3D12
-TEST_CASE("D3D12: MSAA resolves in a render pass and with resolveTexture")
+TEST_CASE("D3D12: MSAA resolves with resolveTexture")
 {
     testResolves(slag::Backend::D3D12);
 }

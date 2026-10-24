@@ -80,8 +80,9 @@ None right now.
   `register(b1)` (with `-fvk-b-shift 0 0`), `SV_VertexID` / `SV_InstanceID`
   without bases, `SV_StartInstanceLocation`; no semantic names in SPIR-V,
   so vertex attributes go by location → 0034, 0038, 0044, 0047.
-- D3D12 render-pass resolve destination: the RenderTarget layout works
-  (debug layer clean on WARP) → 0049.
+- D3D12 render-pass resolve destination: ~~the RenderTarget layout works
+  (debug layer clean on WARP)~~ it needs `RESOLVE_DEST`, so render-pass
+  resolves were cut in M7 → 0049.
 - Mixed read-only depth / writable stencil: D3D12 uses the read-only DSV
   variant plus `BIND_READ_ONLY_DEPTH`; Vulkan
   `DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL`, with per-plane barriers →

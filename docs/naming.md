@@ -180,11 +180,11 @@ New names added while implementing go here once confirmed.
 | Depth/stencil | `StencilFaceState` (`failOp`, `depthFailOp`, `passOp`, `compareOp`), `DepthStencilState` (`depthTest`, `depthWrite`, `depthCompareOp`, `stencilTest`, `front`, `back`, `stencilReadMask`, `stencilWriteMask`, `depthBoundsTest`) |
 | Blend | `ColorTargetBlend` (`blendEnable`, `srcColorFactor`, `destColorFactor`, `colorOp`, `srcAlphaFactor`, `destAlphaFactor`, `alphaOp`, `writeMask`), `BlendState` (`alphaToCoverage`, `targets[8]`); `ColorWriteMask` adds `None` |
 | `GraphicsPipelineDesc` | `vertex`, `pixel`, `vertexInput`, `topology`, `rasterizer`, `depthStencil`, `blend`, `colorFormats`, `depthStencilFormat`, `sampleCount`, `sampleMask`, `debugName`, `userData` |
-| Render passes | `ColorAttachment` (`view`, `loadOp`, `storeOp`, `clearValue`, `resolveView`), `DepthStencilAttachment` (`view`, `depthLoadOp`, `depthStoreOp`, `stencilLoadOp`, `stencilStoreOp`, `clearValue`, `readOnlyDepth`, `readOnlyStencil`), `RenderingDesc` (`colorAttachments`, `depthStencilAttachment`, `suspending`, `resuming`) |
+| Render passes | `ColorAttachment` (`view`, `loadOp`, `storeOp`, `clearValue`; `resolveView` cut in M7), `DepthStencilAttachment` (`view`, `depthLoadOp`, `depthStoreOp`, `stencilLoadOp`, `stencilStoreOp`, `clearValue`, `readOnlyDepth`, `readOnlyStencil`), `RenderingDesc` (`colorAttachments`, `depthStencilAttachment`, `suspending`, `resuming`) |
 | Small types | `Viewport` (`x`, `y`, `width`, `height`, `minDepth`, `maxDepth`), `Rect` (`x`, `y`, `width`, `height`), `VertexBufferBinding` (`buffer`, `offset`, `size`, `stride`) |
 | Indirect arguments | `DrawArguments` (`vertexCount`, `instanceCount`, `firstVertex`, `firstInstance`), `DrawIndexedArguments` (`indexCount`, `instanceCount`, `firstIndex`, `vertexOffset`, `firstInstance`), `DispatchArguments` (`groupCountX`, `groupCountY`, `groupCountZ`) |
 | Command parameters | `drawIndirect(argumentBuffer, argumentOffset, drawCount)`, `drawIndirectCount(argumentBuffer, argumentOffset, countBuffer, countOffset, maxDrawCount)` (and the indexed pair), `dispatchIndirect(argumentBuffer, argumentOffset)`, `resolveTexture(destination, destinationMip, destinationLayer, source, sourceLayer)` |
-| Behavior | `beginRendering` starts with a full-area viewport and scissor; `StoreOp::Resolve` discards the MSAA samples |
+| Behavior | `beginRendering` starts with a full-area viewport and scissor (`StoreOp::Resolve` cut in M7, ADR 0049) |
 
 ## Fields and small names (settled after M4)
 

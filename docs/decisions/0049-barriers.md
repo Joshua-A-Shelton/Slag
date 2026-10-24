@@ -123,5 +123,12 @@ works in either layout, as on D3D12. Writable texture descriptors use
   `DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL` /
   `DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL`. Clean on both validation
   layers.
-- A render-pass resolve destination stays in RenderTarget on both backends.
+- ~~A render-pass resolve destination stays in RenderTarget on both
+  backends.~~ Wrong: with the D3D12 debug layer reporting it reliably (M7,
+  2026-10-24), `EndRenderPass` needs the destination in `RESOLVE_DEST`
+  (as Mesa's dzn also does), while Vulkan needs `COLOR_ATTACHMENT_OPTIMAL`,
+  and D3D12 allows no barriers inside a render pass. **Render-pass resolves
+  are cut** (owner decision, 2026-10-24): `StoreOp::Resolve` and
+  `ColorAttachment::resolveView` are removed; MSAA is resolved with
+  `CommandBuffer::resolveTexture` (ResolveSource → ResolveDest).
 

@@ -34,7 +34,6 @@ VkAttachmentLoadOp toLoadOp(LoadOp op)
 
 VkAttachmentStoreOp toStoreOp(StoreOp op)
 {
-    // Resolve discards the MSAA samples, as D3D12's resolve ending does.
     return op == StoreOp::Store ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
 }
 
@@ -87,12 +86,6 @@ void cmdBeginRendering(CommandBufferCommon* object, const RenderingDesc& desc, u
         color.loadOp = toLoadOp(attachment.loadOp);
         color.storeOp = toStoreOp(attachment.storeOp);
         color.clearValue.color = clearColor(view->format, attachment.clearValue);
-        if (attachment.storeOp == StoreOp::Resolve && attachment.resolveView)
-        {
-            color.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
-            color.resolveImageView = static_cast<AttachmentViewImpl*>(attachment.resolveView)->view;
-            color.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        }
     }
 
     VkRenderingAttachmentInfo depth = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};

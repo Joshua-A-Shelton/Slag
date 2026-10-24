@@ -77,18 +77,6 @@ void CommandBuffer::beginRendering(const RenderingDesc& desc)
         SLAG_VALIDATE(instance, (view->texture->usage & TextureUsage::RenderTarget) != TextureUsage::None, function,
                       "color attachment %u is not a render target view", i);
         consider(view);
-        [[maybe_unused]] auto* resolve = static_cast<const AttachmentViewCommon*>(attachment.resolveView);
-        SLAG_VALIDATE(instance, (attachment.storeOp == StoreOp::Resolve) == (resolve != nullptr), function,
-                      "color attachment %u: StoreOp::Resolve and a resolve view go together", i);
-        SLAG_VALIDATE(instance,
-                      !resolve || (view->texture->sampleCount > 1 && resolve->texture->sampleCount == 1 &&
-                                   resolve->format == view->format),
-                      function,
-                      "color attachment %u: resolves go from MSAA into a single-sampled view of the same format", i);
-        SLAG_VALIDATE(instance, !resolve || !hasTraits(view->format, FormatTraits::Integer), function,
-                      "color attachment %u: integer formats can't be resolved", i);
-        SLAG_VALIDATE(instance, !resolve || (view->layerCount == 1 && resolve->layerCount == 1), function,
-                      "color attachment %u: resolves in a render pass cover one layer", i);
     }
     self->passDepthStencilFormat = PixelFormat::Undefined;
     self->passReadOnlyDepth = false;
@@ -99,9 +87,6 @@ void CommandBuffer::beginRendering(const RenderingDesc& desc)
         auto* view = static_cast<const AttachmentViewCommon*>(attachment.view);
         SLAG_VALIDATE(instance, (view->texture->usage & TextureUsage::DepthStencil) != TextureUsage::None, function,
                       "the depth/stencil attachment is not a depth/stencil view");
-        SLAG_VALIDATE(instance,
-                      attachment.depthStoreOp != StoreOp::Resolve && attachment.stencilStoreOp != StoreOp::Resolve,
-                      function, "depth and stencil can't be resolved");
         consider(view);
         self->passDepthStencilFormat = view->format;
         self->passReadOnlyDepth = attachment.readOnlyDepth;
