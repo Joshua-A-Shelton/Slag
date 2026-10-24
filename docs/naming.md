@@ -199,23 +199,19 @@ New names added while implementing go here once confirmed.
 | `Swapchain` | `attachmentView(index)` and `srgbAttachmentView(index)` (8-bit formats) |
 | Capabilities | `frameLatency` |
 
-## Proposed during M5 (placeholders, reviewed at the end of M5)
+## Fields and small names (settled after M5)
 
 | Where | Names |
 |---|---|
-| `QueryPoolDesc` | `type`, `count`, `queueType`, `debugName`, `userData` |
+| `QueryPoolDesc` | `type`, `count`, `queueType` (Graphics and Compute pools are interchangeable; Copy pools only on copy queues), `debugName`, `userData` |
 | `CommandQueue` | `calibrateTimestamps()` → `Result<TimestampCalibration>` |
-| `TimestampCalibration` | `gpuTimestamp`, `cpuNanoseconds` |
+| `TimestampCalibration` | `gpuTimestamp` (writeTimestamp ticks), `cpuNanoseconds` |
 | Capabilities | `timestampValidBits`, `copyQueueTimestamps`, `timestampCalibration` |
 | `QueryPool` | `userData()`, `setUserData(value)` |
-| `slag/util/DescriptorAllocator.h` | `DescriptorAllocator(device, DescriptorAllocatorDesc)`, `allocate()` → slot or 0, `free(slot, SemaphoreValue)`, `collect()` |
+| `DescriptorAllocator` | `DescriptorAllocator(device, DescriptorAllocatorDesc)`, `allocate()` → slot or 0, `release(slot, SemaphoreValue)` (not `free`: MSVC's `_CRTDBG_MAP_ALLOC` macro), `collect()` |
 | `DescriptorAllocatorDesc` | `heap`, `firstSlot`, `slotCount` |
-| `DescriptorHeap` (util only) | `Resource`, `Sampler` |
-| `DeferredDestroyer` | overloads for `AttachmentView`, `Buffer`, `Texture`, `QueryPool`, `Pipeline`, `CommandBuffer`, `MemoryBlock`, `Semaphore` |
-
-Note on `free`: MSVC's debug heap (`_CRTDBG_MAP_ALLOC`) defines `free` as a
-function-like macro, which breaks `slots.free(slot, after)` in code that
-turns it on. `release` would avoid it.
+| `DescriptorHeap` | `Resource`, `Sampler` (utility-only for now; moves to the core with the same meaning if heaps are exposed) |
+| `DeferredDestroyer` | `destroyAfter` overloads for `AttachmentView`, `Buffer`, `Texture`, `QueryPool`, `Pipeline`, `CommandBuffer`, `MemoryBlock`, `Semaphore` |
 
 ## Nested structs
 
@@ -226,8 +222,7 @@ turns it on. `release` would avoid it.
 | Name | What it is | ADR |
 |---|---|---|
 | `DeferredDestroyer` | `destroyAfter(object, SemaphoreValue)`, `collect()`, `flush()` | 0069 |
-
-`DescriptorAllocator`'s API is proposed below (ADR 0032).
+| `DescriptorAllocator` | `allocate()`, `release(slot, SemaphoreValue)`, `collect()` | 0032 |
 
 `RasterizerState`, `DepthStencilState`, `BlendState`, `ColorTargetBlend`,
 `VertexInputLayout`, `VertexAttribute`, `ShaderStage`, `ShaderBinary`,

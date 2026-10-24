@@ -177,7 +177,7 @@ Immediate where it can. Overlap with graphics work, measured by the sample:
 
 All five samples pass `--frames 300` on the NVIDIA machine with both
 backends, and `--frames 120` on RADV, with no validation messages. Names
-proposed during M5 are listed in `docs/naming.md` for review.
+proposed during M5 were reviewed and settled (`docs/naming.md`).
 
 ## M6 — Defragmentation
 

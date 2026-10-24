@@ -155,7 +155,7 @@ int main(int argc, char** argv)
         {
             // Earlier frames may still sample the old texture through the old slot.
             destroyer.destroyAfter(entry.texture, frameDone);
-            slots.free(entry.slot, frameDone);
+            slots.release(entry.slot, frameDone);
             ++replaced;
         }
         entry = {texture, slot};

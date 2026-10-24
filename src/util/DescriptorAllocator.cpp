@@ -68,20 +68,20 @@ uint32_t DescriptorAllocator::allocate()
     return state->nextSlot < state->endSlot ? state->nextSlot++ : 0;
 }
 
-void DescriptorAllocator::free(uint32_t slot, SemaphoreValue after)
+void DescriptorAllocator::release(uint32_t slot, SemaphoreValue after)
 {
     if (!state)
     {
         return;
     }
     [[maybe_unused]] InstanceCommon* instance = state->device->instance;
-    SLAG_VALIDATE(instance, slot >= state->firstSlot && slot < state->nextSlot, "DescriptorAllocator::free",
+    SLAG_VALIDATE(instance, slot >= state->firstSlot && slot < state->nextSlot, "DescriptorAllocator::release",
                   "slot %u was not handed out by this allocator", slot);
-    SLAG_VALIDATE(instance, after.semaphore, "DescriptorAllocator::free", "the semaphore is null");
+    SLAG_VALIDATE(instance, after.semaphore, "DescriptorAllocator::release", "the semaphore is null");
     if (!state->pending.pushBack({slot, after}))
     {
         logMessage(messageSink(instance), MessageSeverity::Warning, MessageSource::Slag,
-                   "slag: DescriptorAllocator::free: out of host memory; slot %u is not reused", slot);
+                   "slag: DescriptorAllocator::release: out of host memory; slot %u is not reused", slot);
     }
 }
 

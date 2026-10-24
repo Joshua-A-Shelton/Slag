@@ -38,8 +38,8 @@ public:
     // return freed slots.
     uint32_t allocate();
     // The slot may be handed out again once `after` is reached. A slot whose
-    // free can't be recorded (out of host memory) is not reused.
-    void free(uint32_t slot, SemaphoreValue after);
+    // release can't be recorded (out of host memory) is not reused.
+    void release(uint32_t slot, SemaphoreValue after);
     // Returns slots whose semaphore value has been reached to the free list.
     void collect();
 

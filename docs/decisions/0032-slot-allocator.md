@@ -1,6 +1,6 @@
 # 0032 — Descriptor slot allocator utility
 
-**Status:** Accepted (2026-10-23). Names are placeholders.
+**Status:** Accepted (2026-10-23). Names are final (docs/naming.md).
 
 ## Decision
 
@@ -31,12 +31,16 @@ struct DescriptorAllocatorDesc { DescriptorHeap heap; uint32_t firstSlot; uint32
 
 DescriptorAllocator slots(device, {.heap = DescriptorHeap::Resource, .firstSlot = 1, .slotCount = 100000});
 uint32_t slot = slots.allocate();            // 0 when the range is exhausted
-slots.free(slot, {semaphore, value});        // reusable once the value is reached
+slots.release(slot, {semaphore, value});     // reusable once the value is reached
 slots.collect();                             // returns reached slots to the free list
 ```
 
 Slot 0 is never handed out, so `allocate()` returns 0 when nothing is left;
 no extra `Status` value.
+
+Names settled after M5 (2026-10-24): `release` rather than `free`, because
+MSVC's debug heap (`_CRTDBG_MAP_ALLOC`) defines `free` as a function-like
+macro.
 
 ## Implementation (2026-10-24)
 
@@ -47,7 +51,7 @@ the header needs no containers; state uses the instance's allocator.
 - A range starting at slot 0 starts at 1.
 - Never-used slots are handed out in order; freed slots come back from a free
   list after `collect()`, which reads each semaphore's value once per run.
-- Out of host memory: `allocate()` returns 0, and a slot whose `free()` can't
+- Out of host memory: `allocate()` returns 0, and a slot whose `release()` can't
   be recorded is not reused (a warning is logged).
 - Validation: the range lies inside the heap, freed slots came from this
   allocator.

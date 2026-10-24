@@ -33,7 +33,7 @@ void testDescriptorAllocator(slag::Backend backend)
         CHECK(slots.allocate() == 2);
         CHECK(slots.allocate() == 3);
         CHECK(slots.allocate() == 0);
-        slots.free(2, {semaphore, 1});
+        slots.release(2, {semaphore, 1});
         slots.collect();
         CHECK(slots.allocate() == 0);
         REQUIRE(static_cast<bool>(semaphore->signal(1)));

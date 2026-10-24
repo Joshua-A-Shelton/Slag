@@ -1,7 +1,7 @@
 # 0051 — Queries
 
-**Status:** Accepted (2026-10-23). `QueryPool` is final (docs/naming.md);
-other names are placeholders.
+**Status:** Accepted (2026-10-23). Names are final (docs/naming.md;
+settled after M5).
 
 ## Decision
 
