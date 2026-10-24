@@ -12,6 +12,7 @@ add_executable(slag_backend_tests
     DeviceTests.cpp
     InstanceTests.cpp
     MemoryTests.cpp
+    QueryTests.cpp
     ImageCheck.cpp
     RenderTests.cpp
     SceneTests.cpp

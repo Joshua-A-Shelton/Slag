@@ -10,6 +10,7 @@
 #include <slag/GraphicsDevice.h>
 #include <slag/Instance.h>
 #include <slag/Pipeline.h>
+#include <slag/QueryPool.h>
 #include <slag/Result.h>
 #include <slag/Semaphore.h>
 #include <slag/Swapchain.h>
@@ -32,6 +33,7 @@ struct TextureCommon;
 struct TextureCreateInfo;
 struct AttachmentViewCommon;
 struct SwapchainCommon;
+struct QueryPoolCommon;
 struct BufferDescriptorInfo;
 struct TextureDescriptorInfo;
 struct PipelineCommon;

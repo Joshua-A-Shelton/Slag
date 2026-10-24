@@ -162,6 +162,11 @@ struct AttachmentViewImpl : AttachmentViewCommon
     bool depthStencil = false;
 };
 
+struct QueryPoolImpl : QueryPoolCommon
+{
+    ID3D12QueryHeap* heap = nullptr;
+};
+
 struct SemaphoreImpl : SemaphoreCommon
 {
     ID3D12Fence* fence = nullptr;

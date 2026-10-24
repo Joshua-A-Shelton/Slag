@@ -29,6 +29,7 @@ SLAG_VK_INSTANCE_FN(vkGetPhysicalDeviceMemoryProperties2)
 SLAG_VK_INSTANCE_FN(vkGetPhysicalDeviceFormatProperties2)
 SLAG_VK_INSTANCE_FN(vkGetPhysicalDeviceImageFormatProperties2)
 SLAG_VK_INSTANCE_FN(vkEnumerateDeviceExtensionProperties)
+SLAG_VK_INSTANCE_FN(vkGetPhysicalDeviceCalibrateableTimeDomainsKHR)
 SLAG_VK_INSTANCE_FN(vkCreateDevice)
 SLAG_VK_INSTANCE_FN(vkGetDeviceProcAddr)
 SLAG_VK_INSTANCE_FN(vkCreateDebugUtilsMessengerEXT)
@@ -123,6 +124,15 @@ SLAG_VK_DEVICE_FN(vkCmdCopyImage2)
 SLAG_VK_DEVICE_FN(vkCmdResolveImage2)
 SLAG_VK_DEVICE_FN(vkCmdCopyBufferToImage2)
 SLAG_VK_DEVICE_FN(vkCmdCopyImageToBuffer2)
+
+// Queries (ADR 0051).
+SLAG_VK_DEVICE_FN(vkCreateQueryPool)
+SLAG_VK_DEVICE_FN(vkDestroyQueryPool)
+SLAG_VK_DEVICE_FN(vkResetQueryPool)
+SLAG_VK_DEVICE_FN(vkCmdWriteTimestamp2)
+SLAG_VK_DEVICE_FN(vkCmdCopyQueryPoolResults)
+SLAG_VK_DEVICE_FN(vkCmdResetQueryPool)
+SLAG_VK_DEVICE_FN(vkGetCalibratedTimestampsKHR)
 
 #undef SLAG_VK_GLOBAL_FN
 #undef SLAG_VK_INSTANCE_FN

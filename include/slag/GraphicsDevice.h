@@ -13,6 +13,7 @@
 #include <slag/Limits.h>
 #include <slag/Pipeline.h>
 #include <slag/PixelFormat.h>
+#include <slag/QueryPool.h>
 #include <slag/Result.h>
 #include <slag/Semaphore.h>
 #include <slag/Swapchain.h>
@@ -54,6 +55,10 @@ struct GraphicsDeviceCapabilities
     bool conservativeRasterization = false; // overestimating (ADR 0039)
     bool depthBounds = false;               // depth bounds test (ADR 0040)
     bool frameLatency = false;              // Swapchain::setMaxFrameLatency / waitForNextFrame (ADR 0057)
+    // Timestamps (ADR 0051).
+    uint32_t timestampValidBits = 64;  // per device: 36 to 64
+    bool copyQueueTimestamps = false;  // timestamps on copy queues
+    bool timestampCalibration = false; // CommandQueue::calibrateTimestamps
 };
 
 // This process's usage of one kind of memory against the OS budget, in bytes.
@@ -199,6 +204,9 @@ public:
     uint32_t supportedSwapchainFormats(const NativeWindow& window, std::span<SwapchainFormat> formats) const;
     // Present modes the window supports: Fifo first.
     uint32_t supportedPresentModes(const NativeWindow& window, std::span<PresentMode> modes) const;
+
+    Result<QueryPool*> createQueryPool(const QueryPoolDesc& desc);
+    void destroy(QueryPool* pool);
 
     Result<Semaphore*> createSemaphore(const SemaphoreDesc& desc);
     void destroy(Semaphore* semaphore);

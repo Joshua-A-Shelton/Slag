@@ -28,6 +28,8 @@ uint32_t findFamily(const GraphicsDeviceImpl& device, VkQueueFlags required, VkQ
     return noFamily;
 }
 
+} // namespace
+
 // Dedicated families where they exist; otherwise queues share the graphics
 // family, and beyond its queue count share hardware queues (ADR 0009).
 void selectFamilies(const GraphicsDeviceImpl& device, uint32_t families[3])
@@ -40,6 +42,8 @@ void selectFamilies(const GraphicsDeviceImpl& device, uint32_t families[3])
     families[static_cast<size_t>(CommandQueueType::Copy)] =
         copy != noFamily ? copy : families[static_cast<size_t>(CommandQueueType::Compute)];
 }
+
+namespace {
 
 bool hasExtension(const Vector<VkExtensionProperties>& extensions, const char* name)
 {
@@ -236,6 +240,7 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
     bool latency = device.capabilities.frameLatency;
     const char* optional[] = {presentation ? VK_KHR_SWAPCHAIN_EXTENSION_NAME : nullptr,
                               VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
+                              device.calibratedTimestamps ? VK_KHR_CALIBRATED_TIMESTAMPS_EXTENSION_NAME : nullptr,
                               presentation ? swapchainMaintenance : nullptr,
                               presentation ? VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME : nullptr,
                               latency ? VK_KHR_PRESENT_ID_EXTENSION_NAME : nullptr,
@@ -289,6 +294,7 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
     features11.pNext = &features12;
     features11.shaderDrawParameters = VK_TRUE;
     features12.timelineSemaphore = VK_TRUE;
+    features12.hostQueryReset = VK_TRUE; // query pools are reset at creation (ADR 0051)
     features12.bufferDeviceAddress = VK_TRUE;
     features12.drawIndirectCount = VK_TRUE;
     features12.samplerMirrorClampToEdge = VK_TRUE;

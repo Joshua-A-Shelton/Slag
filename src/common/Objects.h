@@ -17,6 +17,7 @@
 #include <slag/Instance.h>
 #include <slag/MemoryBlock.h>
 #include <slag/Pipeline.h>
+#include <slag/QueryPool.h>
 #include <slag/Semaphore.h>
 #include <slag/Swapchain.h>
 #include <slag/Texture.h>
@@ -281,6 +282,16 @@ struct SwapchainCommon : Swapchain
     // Validation: the acquired, not yet presented image, or none.
     static constexpr uint32_t noImage = UINT32_MAX;
     uint32_t acquiredImage = noImage;
+};
+
+struct QueryPoolCommon : QueryPool
+{
+    GraphicsDeviceCommon* device = nullptr;
+    const BackendFunctions* functions = nullptr;
+    uint64_t userData = 0;
+    QueryType type = QueryType::Timestamp;
+    uint32_t count = 0;
+    CommandQueueType queueType = CommandQueueType::Graphics;
 };
 
 struct SemaphoreCommon : Semaphore

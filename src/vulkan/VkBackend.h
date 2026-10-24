@@ -68,7 +68,8 @@ struct GraphicsDeviceImpl : GraphicsDeviceCommon
     VkQueueFlags queueFamilyFlags[maxQueueFamilies] = {};
     uint32_t queueFamilyQueueCount[maxQueueFamilies] = {};
     bool memoryBudgetExtension = false;
-    bool presentation = false; // swapchain + swapchain_maintenance1 + mutable format
+    bool calibratedTimestamps = false; // VK_KHR_calibrated_timestamps with the host clock (ADR 0051)
+    bool presentation = false;         // swapchain + swapchain_maintenance1 + mutable format
     bool hdrMetadata = false;
 
     // Valid while initialized.
@@ -164,6 +165,11 @@ struct AttachmentViewImpl : AttachmentViewCommon
     VkImageView view = VK_NULL_HANDLE;
 };
 
+struct QueryPoolImpl : QueryPoolCommon
+{
+    VkQueryPool pool = VK_NULL_HANDLE;
+};
+
 struct SemaphoreImpl : SemaphoreCommon
 {
     VkSemaphore semaphore = VK_NULL_HANDLE;
@@ -175,6 +181,15 @@ inline InstanceImpl& instanceOf(const GraphicsDeviceImpl& device)
 }
 
 VkCompareOp toCompareOp(CompareOp op);
+
+// The queue family each CommandQueueType uses, indexed by type (ADR 0009).
+void selectFamilies(const GraphicsDeviceImpl& device, uint32_t families[3]);
+
+#ifdef _WIN32
+constexpr VkTimeDomainKHR hostTimeDomain = VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR;
+#else
+constexpr VkTimeDomainKHR hostTimeDomain = VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR;
+#endif
 
 // The semaphore the swapchain's acquired image was acquired with; submits that
 // list the swapchain wait on it (ADR 0057).

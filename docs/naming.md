@@ -199,6 +199,16 @@ New names added while implementing go here once confirmed.
 | `Swapchain` | `attachmentView(index)` and `srgbAttachmentView(index)` (8-bit formats) |
 | Capabilities | `frameLatency` |
 
+## Proposed during M5 (placeholders, reviewed at the end of M5)
+
+| Where | Names |
+|---|---|
+| `QueryPoolDesc` | `type`, `count`, `queueType`, `debugName`, `userData` |
+| `CommandQueue` | `calibrateTimestamps()` → `Result<TimestampCalibration>` |
+| `TimestampCalibration` | `gpuTimestamp`, `cpuNanoseconds` |
+| Capabilities | `timestampValidBits`, `copyQueueTimestamps`, `timestampCalibration` |
+| `QueryPool` | `userData()`, `setUserData(value)` |
+
 ## Nested structs
 
 `AllocatorCallbacks` (in `InstanceDesc`; ADR 0066).

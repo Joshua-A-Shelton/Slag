@@ -135,6 +135,7 @@ struct DeviceQuery
     bool presentIdExtension = false;
     bool presentWaitExtension = false;
     bool hdrMetadataExtension = false;
+    bool calibratedTimestampsExtension = false;
     VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR swapchainMaintenance = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_KHR};
     VkPhysicalDevicePresentIdFeaturesKHR presentId = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR};
@@ -143,6 +144,7 @@ struct DeviceQuery
     uint32_t queueFamilyCount = 0;
     VkQueueFlags queueFamilyFlags[maxQueueFamilies] = {};
     uint32_t queueFamilyQueueCount[maxQueueFamilies] = {};
+    uint32_t queueFamilyTimestampBits[maxQueueFamilies] = {};
 };
 
 bool queryDevice(const InstanceImpl& instance, VkPhysicalDevice device, DeviceQuery& query)
@@ -172,6 +174,7 @@ bool queryDevice(const InstanceImpl& instance, VkPhysicalDevice device, DeviceQu
     query.presentIdExtension = hasExtension(extensions, VK_KHR_PRESENT_ID_EXTENSION_NAME);
     query.presentWaitExtension = hasExtension(extensions, VK_KHR_PRESENT_WAIT_EXTENSION_NAME);
     query.hdrMetadataExtension = hasExtension(extensions, VK_EXT_HDR_METADATA_EXTENSION_NAME);
+    query.calibratedTimestampsExtension = hasExtension(extensions, VK_KHR_CALIBRATED_TIMESTAMPS_EXTENSION_NAME);
 
     // Extension structs may only be chained when the extension exists.
     query.properties.pNext = &query.properties11;
@@ -230,6 +233,7 @@ bool queryDevice(const InstanceImpl& instance, VkPhysicalDevice device, DeviceQu
     {
         query.queueFamilyFlags[i] = families[i].queueFamilyProperties.queueFlags;
         query.queueFamilyQueueCount[i] = families[i].queueFamilyProperties.queueCount;
+        query.queueFamilyTimestampBits[i] = families[i].queueFamilyProperties.timestampValidBits;
         if (query.queueFamilyFlags[i] & VK_QUEUE_GRAPHICS_BIT)
         {
             query.graphicsQueue = true;
@@ -275,6 +279,8 @@ const char* baselineFailure(const DeviceQuery& query, bool allowSoftwareDevices)
         {query.features13.dynamicRendering, "dynamicRendering"},
         {query.features13.synchronization2, "synchronization2"},
         {query.features12.timelineSemaphore, "timelineSemaphore"},
+        {query.features12.hostQueryReset, "hostQueryReset"},
+        {deviceLimits.timestampComputeAndGraphics, "timestampComputeAndGraphics"}, // ADR 0051
         {query.features11.shaderDrawParameters, "shaderDrawParameters"}, // SV_StartInstanceLocation (ADR 0047)
         {query.features12.bufferDeviceAddress, "bufferDeviceAddress"},
         {query.features12.drawIndirectCount, "drawIndirectCount"},
@@ -416,6 +422,49 @@ void fillCapabilities(const DeviceQuery& query, const GraphicsDeviceInfo& info,
                                 query.presentWait.presentWait;
 }
 
+// ADR 0051: valid bits of the families the queues use (timestampComputeAndGraphics
+// covers graphics and compute); calibration needs the device and host clocks.
+void fillTimestampCapabilities(const InstanceImpl& instance, const DeviceQuery& query, GraphicsDeviceImpl& device)
+{
+    uint32_t families[3] = {};
+    selectFamilies(device, families);
+    GraphicsDeviceCapabilities& capabilities = device.capabilities;
+    uint32_t bits = 64;
+    for (CommandQueueType type : {CommandQueueType::Graphics, CommandQueueType::Compute})
+    {
+        uint32_t familyBits = query.queueFamilyTimestampBits[families[static_cast<size_t>(type)]];
+        bits = familyBits < bits ? familyBits : bits;
+    }
+    // Copying and resetting queries needs a graphics or compute family, so a
+    // dedicated transfer family (NVIDIA's) can't resolve them.
+    uint32_t copyFamily = families[static_cast<size_t>(CommandQueueType::Copy)];
+    uint32_t copyBits = query.queueFamilyTimestampBits[copyFamily];
+    capabilities.copyQueueTimestamps =
+        copyBits > 0 && (query.queueFamilyFlags[copyFamily] & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)) != 0;
+    if (capabilities.copyQueueTimestamps && copyBits < bits)
+    {
+        bits = copyBits;
+    }
+    capabilities.timestampValidBits = bits;
+
+    if (query.calibratedTimestampsExtension && instance.fn.vkGetPhysicalDeviceCalibrateableTimeDomainsKHR)
+    {
+        VkTimeDomainKHR domains[8] = {};
+        uint32_t count = 8;
+        VkResult result =
+            instance.fn.vkGetPhysicalDeviceCalibrateableTimeDomainsKHR(device.physicalDevice, &count, domains);
+        bool deviceDomain = false;
+        bool hostDomain = false;
+        for (uint32_t i = 0; (result == VK_SUCCESS || result == VK_INCOMPLETE) && i < count; ++i)
+        {
+            deviceDomain = deviceDomain || domains[i] == VK_TIME_DOMAIN_DEVICE_KHR;
+            hostDomain = hostDomain || domains[i] == hostTimeDomain;
+        }
+        device.calibratedTimestamps = deviceDomain && hostDomain;
+    }
+    capabilities.timestampCalibration = device.calibratedTimestamps;
+}
+
 // Lower sorts first (ADR 0008).
 uint32_t typeRank(GraphicsDeviceType type, DevicePreference preference)
 {
@@ -512,6 +561,7 @@ Status listDevices(InstanceImpl& instance, const InstanceDesc& desc)
                                query.swapchainMaintenance.swapchainMaintenance1 && query.mutableFormatExtension;
         device->capabilities.frameLatency = device->capabilities.frameLatency && device->presentation;
         device->hdrMetadata = query.hdrMetadataExtension;
+        fillTimestampCapabilities(instance, query, *device);
         for (size_t format = 0; format < pixelFormatCount; ++format)
         {
             device->formatSupport[format] = formatSupport[format];

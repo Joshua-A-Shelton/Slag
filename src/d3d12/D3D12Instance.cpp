@@ -93,6 +93,13 @@ void fillCapabilities(ID3D12Device* device, GraphicsDeviceCapabilities& capabili
     capabilities.samplerReduction =
         SUCCEEDED(device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options))) &&
         options.TiledResourcesTier >= D3D12_TILED_RESOURCES_TIER_2;
+    // Timestamps (ADR 0051): 64 bits everywhere; calibration per queue.
+    capabilities.timestampValidBits = 64;
+    capabilities.timestampCalibration = true;
+    D3D12_FEATURE_DATA_D3D12_OPTIONS3 options3 = {};
+    capabilities.copyQueueTimestamps =
+        SUCCEEDED(device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS3, &options3, sizeof(options3))) &&
+        options3.CopyQueueTimestampQueriesSupported;
     // No documented fixed limit: the per-resource GPU address space (ADR 0028).
     D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT addressing = {};
     if (SUCCEEDED(

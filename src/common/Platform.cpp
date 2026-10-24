@@ -58,4 +58,17 @@ void writeDebugOutput(const char* text)
     std::fprintf(stderr, "%s\n", text);
 }
 
+uint64_t hostTicksToNanoseconds(uint64_t ticks)
+{
+#ifdef _WIN32
+    LARGE_INTEGER frequency = {};
+    QueryPerformanceFrequency(&frequency);
+    uint64_t perSecond = static_cast<uint64_t>(frequency.QuadPart);
+    // Split, so the multiplication doesn't overflow.
+    return ticks / perSecond * 1'000'000'000 + ticks % perSecond * 1'000'000'000 / perSecond;
+#else
+    return ticks;
+#endif
+}
+
 } // namespace slag

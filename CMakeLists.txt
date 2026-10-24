@@ -68,6 +68,7 @@ target_sources(slag PRIVATE
     src/common/Logging.cpp
     src/common/MemoryBlock.cpp
     src/common/Platform.cpp
+    src/common/QueryPool.cpp
     src/common/Rendering.cpp
     src/common/SubAllocator.cpp
     src/common/Swapchain.cpp
@@ -112,6 +113,7 @@ if(SLAG_BACKEND_D3D12)
         src/d3d12/D3D12Formats.cpp
         src/d3d12/D3D12Instance.cpp
         src/d3d12/D3D12Pipeline.cpp
+        src/d3d12/D3D12QueryPool.cpp
         src/d3d12/D3D12Rendering.cpp
         src/d3d12/D3D12Semaphore.cpp
         src/d3d12/D3D12Swapchain.cpp
@@ -134,6 +136,7 @@ if(SLAG_BACKEND_VULKAN)
         src/vulkan/VkLoader.cpp
         src/vulkan/VkMemory.cpp
         src/vulkan/VkPipeline.cpp
+        src/vulkan/VkQueryPool.cpp
         src/vulkan/VkRendering.cpp
         src/vulkan/VkSemaphore.cpp
         src/vulkan/VkSwapchain.cpp

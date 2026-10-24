@@ -21,6 +21,12 @@ enum class CommandQueueType : uint8_t
     Copy,
 };
 
+struct TimestampCalibration
+{
+    uint64_t gpuTimestamp = 0;   // ticks, as written by writeTimestamp
+    uint64_t cpuNanoseconds = 0; // see CommandQueue::calibrateTimestamps
+};
+
 struct SubmitDesc
 {
     std::span<const SemaphoreValue> waits; // before the command buffers run
@@ -42,6 +48,15 @@ public:
     // Suboptimal or OutOfDate (reconfigure), Occluded (the window isn't
     // visible: skip rendering), or DeviceLost (ADRs 0057, 0058).
     Result<void> present(Swapchain* swapchain, PresentMode mode);
+
+    // Timestamp ticks per second on this queue (ADR 0051).
+    uint64_t timestampFrequency() const;
+    // A GPU timestamp and the CPU time taken at the same moment, to put this
+    // queue's timestamps on the CPU clock: nanoseconds on the platform's
+    // monotonic clock (QueryPerformanceCounter on Windows, CLOCK_MONOTONIC on
+    // Linux; std::chrono::steady_clock on MSVC and libstdc++). Needs
+    // GraphicsDeviceCapabilities::timestampCalibration.
+    Result<TimestampCalibration> calibrateTimestamps() const;
 
     // Waits until all work submitted to this queue has finished. One thread at
     // a time per queue (ADR 0068).

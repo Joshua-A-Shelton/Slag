@@ -13,6 +13,15 @@ SLAG_BACKEND_FN(MemoryBudget, memoryBudget, (const GraphicsDeviceCommon* device)
 SLAG_BACKEND_FN(Result<void>, deviceWaitIdle, (GraphicsDeviceCommon * device))
 SLAG_BACKEND_FN(Result<void>, queueWaitIdle, (CommandQueueCommon * queue))
 
+SLAG_BACKEND_FN(Result<QueryPoolCommon*>, createQueryPool, (GraphicsDeviceCommon * device, const QueryPoolDesc& desc))
+SLAG_BACKEND_FN(void, destroyQueryPool, (GraphicsDeviceCommon * device, QueryPoolCommon* pool))
+SLAG_BACKEND_FN(void, cmdWriteTimestamp, (CommandBufferCommon * commandBuffer, QueryPoolCommon* pool, uint32_t index))
+SLAG_BACKEND_FN(void, cmdResolveQueries,
+                (CommandBufferCommon * commandBuffer, QueryPoolCommon* pool, uint32_t first, uint32_t count,
+                 BufferCommon* buffer, uint64_t offset))
+SLAG_BACKEND_FN(uint64_t, timestampFrequency, (const CommandQueueCommon* queue))
+SLAG_BACKEND_FN(Result<TimestampCalibration>, calibrateTimestamps, (const CommandQueueCommon* queue))
+
 SLAG_BACKEND_FN(Result<SemaphoreCommon*>, createSemaphore, (GraphicsDeviceCommon * device, const SemaphoreDesc& desc))
 SLAG_BACKEND_FN(void, destroySemaphore, (GraphicsDeviceCommon * device, SemaphoreCommon* semaphore))
 SLAG_BACKEND_FN(uint64_t, semaphoreValue, (const SemaphoreCommon* semaphore))

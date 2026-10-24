@@ -17,6 +17,7 @@ namespace slag {
 class AttachmentView;
 class Buffer;
 class Pipeline;
+class QueryPool;
 class Texture;
 
 // --- Render passes (ADR 0046) -------------------------------------------------
@@ -206,6 +207,12 @@ public:
     // Averages an MSAA layer into one mip and layer of a single-sampled
     // texture of the same size and format. Graphics queue only; textures in
     // ResolveSource / ResolveDest; no integer formats (ADR 0048).
+    // Writes the GPU time once all earlier work on the queue has finished.
+    void writeTimestamp(QueryPool* pool, uint32_t index);
+    // Writes `count` 64-bit results to the buffer (offset a multiple of 8),
+    // which is in the CopyDest access. Outside render passes.
+    void resolveQueries(QueryPool* pool, uint32_t first, uint32_t count, Buffer* buffer, uint64_t offset);
+
     void resolveTexture(Texture* destination, uint32_t destinationMip, uint32_t destinationLayer, Texture* source,
                         uint32_t sourceLayer);
 
