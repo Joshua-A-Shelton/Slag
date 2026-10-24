@@ -147,6 +147,9 @@ struct CommandBufferDesc
 class CommandBuffer
 {
 public:
+    // begin() starts recording and binds the descriptor heaps; end() makes it
+    // submittable; reset() returns it to the initial state once the GPU is
+    // done with it, keeping its memory for the next recording.
     Result<void> begin();
     Result<void> end();
     Result<void> reset();
@@ -156,6 +159,8 @@ public:
     void beginRendering(const RenderingDesc& desc);
     void endRendering();
 
+    // Graphics pipelines inside a render pass whose formats they match;
+    // compute pipelines outside one (ADRs 0040, 0042).
     void bindPipeline(Pipeline* pipeline);
     void bindVertexBuffers(uint32_t firstSlot, std::span<const VertexBufferBinding> bindings);
     void bindIndexBuffer(Buffer* buffer, uint64_t offset, uint64_t size, IndexFormat format);
@@ -179,6 +184,8 @@ public:
     void drawIndexedIndirectCount(Buffer* argumentBuffer, uint64_t argumentOffset, Buffer* countBuffer,
                                   uint64_t countOffset, uint32_t maxDrawCount);
     void dispatchIndirect(Buffer* argumentBuffer, uint64_t argumentOffset);
+    // Up to limits::maxPushConstantsSize bytes shared by every stage (ADR 0003);
+    // offset and size are multiples of 4.
     void pushConstants(const void* data, uint32_t size, uint32_t offset = 0);
     // The root constant buffer (ADR 0044): shaders declare it as
     // `ConstantBuffer<T> name : register(b1);`. address and size are
@@ -186,8 +193,11 @@ public:
     // limits::maxConstantBufferSize. Not bounds-checked on the GPU.
     void setConstantBuffer(uint64_t address, uint32_t size);
 
+    // Outside render passes, with a compute pipeline bound.
     void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
 
+    // Enhanced-Barriers-style sync, access, and layout transitions (ADR 0049),
+    // outside render passes. Slag inserts no barriers of its own.
     void barrier(std::span<const GlobalBarrier> globalBarriers, std::span<const BufferBarrier> bufferBarriers = {},
                  std::span<const TextureBarrier> textureBarriers = {});
 
@@ -202,9 +212,6 @@ public:
                              uint32_t height, uint32_t depth = 1);
     void copyTextureToBuffer(const BufferLocation& destination, const TextureLocation& source, uint32_t width,
                              uint32_t height, uint32_t depth = 1);
-    // Averages an MSAA layer into one mip and layer of a single-sampled
-    // texture of the same size and format. Graphics queue only; textures in
-    // ResolveSource / ResolveDest; no integer formats (ADR 0048).
     // Occlusion queries (ADR 0051): inside one render pass, in this command
     // buffer, one at a time.
     void beginQuery(QueryPool* pool, uint32_t index);
@@ -223,6 +230,9 @@ public:
     void endLabel();
     void insertLabel(const char* name, const float* color = nullptr);
 
+    // Averages an MSAA layer into one mip and layer of a single-sampled
+    // texture of the same size and format. Graphics queue only; textures in
+    // ResolveSource / ResolveDest; no integer formats (ADR 0048).
     void resolveTexture(Texture* destination, uint32_t destinationMip, uint32_t destinationLayer, Texture* source,
                         uint32_t sourceLayer);
 

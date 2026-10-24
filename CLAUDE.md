@@ -102,7 +102,7 @@ doesn't ship. Never weaken or complicate the API design to accommodate 1.3.
 ### 4.2 Layout
 
 ```
-CMakeLists.txt  CMakePresets.json  .clang-format  CLAUDE.md  LICENSE
+CMakeLists.txt  CMakePresets.json  .clang-format  CLAUDE.md  LICENSE  README.md  CHANGELOG.md
 cmake/                         Version.h.in, SlagDependencies.cmake, SlagShaders.cmake
 include/slag/
   Slag.h                       umbrella: everything except native/ and util/
