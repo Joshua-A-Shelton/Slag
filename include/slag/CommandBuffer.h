@@ -7,15 +7,83 @@
 #include <slag/Barriers.h>
 #include <slag/CommandQueue.h>
 #include <slag/Result.h>
+#include <slag/Types.h>
 
 #include <cstdint>
 #include <span>
 
 namespace slag {
 
+class AttachmentView;
 class Buffer;
 class Pipeline;
 class Texture;
+
+// --- Render passes (ADR 0046) -------------------------------------------------
+
+enum class LoadOp : uint8_t
+{
+    Load,
+    Clear,
+    Discard,
+};
+
+enum class StoreOp : uint8_t
+{
+    Store,
+    Discard,
+    Resolve, // average into resolveView, discarding this attachment's samples
+};
+
+// In the RenderTarget layout when the pass begins.
+struct ColorAttachment
+{
+    AttachmentView* view = nullptr;
+    LoadOp loadOp = LoadOp::Load;
+    StoreOp storeOp = StoreOp::Store;
+    ClearValue clearValue;
+    AttachmentView* resolveView = nullptr; // StoreOp::Resolve: single-sampled, same format, RenderTarget layout
+};
+
+// In DepthStencilWrite, or DepthStencilRead for read-only planes.
+struct DepthStencilAttachment
+{
+    AttachmentView* view = nullptr;
+    LoadOp depthLoadOp = LoadOp::Load;
+    StoreOp depthStoreOp = StoreOp::Store;
+    LoadOp stencilLoadOp = LoadOp::Load; // ignored without a stencil plane
+    StoreOp stencilStoreOp = StoreOp::Store;
+    ClearValue clearValue;
+    bool readOnlyDepth = false;
+    bool readOnlyStencil = false;
+};
+
+// Always the full attachments; use scissors to restrict. A pass split across
+// command buffers suspends in one and resumes in the next, submitted
+// consecutively in one submit.
+struct RenderingDesc
+{
+    std::span<const ColorAttachment> colorAttachments; // up to 8; null views leave gaps
+    const DepthStencilAttachment* depthStencilAttachment = nullptr;
+    bool suspending = false;
+    bool resuming = false;
+};
+
+// --- Draw state (ADRs 0038, 0047) -------------------------------------------
+
+struct VertexBufferBinding
+{
+    Buffer* buffer = nullptr;
+    uint64_t offset = 0;
+    uint64_t size = 0;
+    uint32_t stride = 0;
+};
+
+enum class IndexFormat : uint8_t
+{
+    Uint16,
+    Uint32,
+};
 
 // One mip and layer of a texture, and a texel offset in it (ADR 0048). Depth
 // and stencil are copied separately: textures with both name a plane.
@@ -57,7 +125,23 @@ public:
     Result<void> end();
     Result<void> reset();
 
+    // Every attachment is cleared, loaded, or discarded; the viewport and
+    // scissor start as the full render area.
+    void beginRendering(const RenderingDesc& desc);
+    void endRendering();
+
     void bindPipeline(Pipeline* pipeline);
+    void bindVertexBuffers(uint32_t firstSlot, std::span<const VertexBufferBinding> bindings);
+    void bindIndexBuffer(Buffer* buffer, uint64_t offset, uint64_t size, IndexFormat format);
+    void setViewports(std::span<const Viewport> viewports);
+    void setScissors(std::span<const Rect> scissors);
+    void setBlendConstant(const float constant[4]);
+    void setStencilReference(uint8_t reference);
+    void setDepthBounds(float minDepth, float maxDepth); // needs GraphicsDeviceCapabilities::depthBounds
+
+    void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex = 0, uint32_t firstInstance = 0);
+    void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex = 0, int32_t vertexOffset = 0,
+                     uint32_t firstInstance = 0);
     void pushConstants(const void* data, uint32_t size, uint32_t offset = 0);
 
     void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);

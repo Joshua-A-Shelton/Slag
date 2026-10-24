@@ -61,6 +61,27 @@ SLAG_BACKEND_FN(Result<void>, beginCommandBuffer, (CommandBufferCommon * command
 SLAG_BACKEND_FN(Result<void>, endCommandBuffer, (CommandBufferCommon * commandBuffer))
 SLAG_BACKEND_FN(Result<void>, resetCommandBuffer, (CommandBufferCommon * commandBuffer))
 SLAG_BACKEND_FN(void, cmdBindPipeline, (CommandBufferCommon * commandBuffer, PipelineCommon* pipeline))
+// width, height, and layerCount: the attachments' shared extent.
+SLAG_BACKEND_FN(void, cmdBeginRendering,
+                (CommandBufferCommon * commandBuffer, const RenderingDesc& desc, uint32_t width, uint32_t height,
+                 uint32_t layerCount))
+SLAG_BACKEND_FN(void, cmdEndRendering, (CommandBufferCommon * commandBuffer))
+SLAG_BACKEND_FN(void, cmdBindVertexBuffers,
+                (CommandBufferCommon * commandBuffer, uint32_t firstSlot, std::span<const VertexBufferBinding> bindings))
+SLAG_BACKEND_FN(void, cmdBindIndexBuffer,
+                (CommandBufferCommon * commandBuffer, BufferCommon* buffer, uint64_t offset, uint64_t size,
+                 IndexFormat format))
+SLAG_BACKEND_FN(void, cmdSetViewports, (CommandBufferCommon * commandBuffer, std::span<const Viewport> viewports))
+SLAG_BACKEND_FN(void, cmdSetScissors, (CommandBufferCommon * commandBuffer, std::span<const Rect> scissors))
+SLAG_BACKEND_FN(void, cmdSetBlendConstant, (CommandBufferCommon * commandBuffer, const float constant[4]))
+SLAG_BACKEND_FN(void, cmdSetStencilReference, (CommandBufferCommon * commandBuffer, uint8_t reference))
+SLAG_BACKEND_FN(void, cmdSetDepthBounds, (CommandBufferCommon * commandBuffer, float minDepth, float maxDepth))
+SLAG_BACKEND_FN(void, cmdDraw,
+                (CommandBufferCommon * commandBuffer, uint32_t vertexCount, uint32_t instanceCount,
+                 uint32_t firstVertex, uint32_t firstInstance))
+SLAG_BACKEND_FN(void, cmdDrawIndexed,
+                (CommandBufferCommon * commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
+                 int32_t vertexOffset, uint32_t firstInstance))
 SLAG_BACKEND_FN(void, cmdPushConstants,
                 (CommandBufferCommon * commandBuffer, const void* data, uint32_t size, uint32_t offset))
 SLAG_BACKEND_FN(void, cmdDispatch, (CommandBufferCommon * commandBuffer, uint32_t x, uint32_t y, uint32_t z))

@@ -35,6 +35,10 @@ CommandBufferCommon* common(CommandBuffer* commandBuffer)
     SLAG_VALIDATE((self)->device->instance, (self)->state == CommandBufferState::Recording, function,                  \
                   "the command buffer is %s, not recording", stateName((self)->state))
 
+// Barriers, copies, and dispatches stay outside render passes (ADR 0046).
+#define SLAG_VALIDATE_OUTSIDE_PASS(self, function)                                                                     \
+    SLAG_VALIDATE((self)->device->instance, !(self)->inRenderPass, function, "not allowed inside a render pass")
+
 // --- Creation (GraphicsDevice) ----------------------------------------------
 
 Result<CommandBuffer*> GraphicsDevice::createCommandBuffer(const CommandBufferDesc& desc)
@@ -83,6 +87,7 @@ Result<void> CommandBuffer::begin()
     {
         self->state = CommandBufferState::Recording;
         self->boundPipeline = nullptr;
+        self->inRenderPass = false;
     }
     return result;
 }
@@ -91,6 +96,7 @@ Result<void> CommandBuffer::end()
 {
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_RECORDING(self, "CommandBuffer::end");
+    SLAG_VALIDATE(self->device->instance, !self->inRenderPass, "CommandBuffer::end", "a render pass is still open");
     Result<void> result = SLAG_DISPATCH(self, endCommandBuffer)(self);
     if (result)
     {
@@ -137,6 +143,7 @@ void CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_
 {
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_RECORDING(self, "CommandBuffer::dispatch");
+    SLAG_VALIDATE_OUTSIDE_PASS(self, "CommandBuffer::dispatch");
     SLAG_VALIDATE(self->device->instance, self->boundPipeline && self->boundPipeline->kind == PipelineKind::Compute,
                   "CommandBuffer::dispatch", "no compute pipeline is bound");
     SLAG_DISPATCH(self, cmdDispatch)(self, groupCountX, groupCountY, groupCountZ);
@@ -148,6 +155,7 @@ void CommandBuffer::barrier(std::span<const GlobalBarrier> globalBarriers,
 {
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_RECORDING(self, "CommandBuffer::barrier");
+    SLAG_VALIDATE_OUTSIDE_PASS(self, "CommandBuffer::barrier");
 #ifdef SLAG_VALIDATION
     InstanceCommon* instance = self->device->instance;
     for (const BufferBarrier& barrier : bufferBarriers)
@@ -198,6 +206,7 @@ void CommandBuffer::copyBuffer(Buffer* destination, uint64_t destinationOffset, 
     auto* dst = static_cast<BufferCommon*>(destination);
     auto* src = static_cast<BufferCommon*>(source);
     SLAG_VALIDATE_RECORDING(self, "CommandBuffer::copyBuffer");
+    SLAG_VALIDATE_OUTSIDE_PASS(self, "CommandBuffer::copyBuffer");
     SLAG_VALIDATE(self->device->instance, dst && src, "CommandBuffer::copyBuffer", "a buffer is null");
     SLAG_VALIDATE(self->device->instance, !dst || destinationOffset + size <= dst->size, "CommandBuffer::copyBuffer",
                   "the destination range ends past the buffer");
@@ -290,6 +299,7 @@ void CommandBuffer::copyTexture(const TextureLocation& destination, const Textur
 {
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_RECORDING(self, "CommandBuffer::copyTexture");
+    SLAG_VALIDATE_OUTSIDE_PASS(self, "CommandBuffer::copyTexture");
 #ifdef SLAG_VALIDATION
     InstanceCommon* instance = self->device->instance;
     validateTextureRegion(instance, destination, width, height, depth, "CommandBuffer::copyTexture");
@@ -308,6 +318,7 @@ void CommandBuffer::copyBufferToTexture(const TextureLocation& destination, cons
 {
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_RECORDING(self, "CommandBuffer::copyBufferToTexture");
+    SLAG_VALIDATE_OUTSIDE_PASS(self, "CommandBuffer::copyBufferToTexture");
 #ifdef SLAG_VALIDATION
     validateTextureRegion(self->device->instance, destination, width, height, depth,
                           "CommandBuffer::copyBufferToTexture");
@@ -322,6 +333,7 @@ void CommandBuffer::copyTextureToBuffer(const BufferLocation& destination, const
 {
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_RECORDING(self, "CommandBuffer::copyTextureToBuffer");
+    SLAG_VALIDATE_OUTSIDE_PASS(self, "CommandBuffer::copyTextureToBuffer");
 #ifdef SLAG_VALIDATION
     validateTextureRegion(self->device->instance, source, width, height, depth, "CommandBuffer::copyTextureToBuffer");
     validateBufferRegion(self->device->instance, destination, source, width, height, depth,

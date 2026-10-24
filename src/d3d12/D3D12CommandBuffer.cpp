@@ -227,7 +227,12 @@ Result<void> resetCommandBuffer(CommandBufferCommon* object)
 void cmdBindPipeline(CommandBufferCommon* object, PipelineCommon* pipelineObject)
 {
     auto* commandBuffer = static_cast<CommandBufferImpl*>(object);
-    commandBuffer->list->SetPipelineState(static_cast<PipelineImpl*>(pipelineObject)->pipeline);
+    auto* pipeline = static_cast<PipelineImpl*>(pipelineObject);
+    commandBuffer->list->SetPipelineState(pipeline->pipeline);
+    if (pipeline->topology != D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)
+    {
+        commandBuffer->list->IASetPrimitiveTopology(pipeline->topology); // graphics pipelines (ADR 0042)
+    }
 }
 
 void cmdPushConstants(CommandBufferCommon* object, const void* data, uint32_t size, uint32_t offset)

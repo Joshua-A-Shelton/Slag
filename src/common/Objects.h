@@ -239,6 +239,14 @@ struct CommandBufferCommon : CommandBuffer
     // Validation state.
     CommandBufferState state = CommandBufferState::Initial;
     const PipelineCommon* boundPipeline = nullptr;
+    // The open render pass, for validation.
+    bool inRenderPass = false;
+    PixelFormat passColorFormats[8] = {};
+    uint32_t passColorCount = 0;
+    PixelFormat passDepthStencilFormat = PixelFormat::Undefined;
+    uint32_t passSampleCount = 1;
+    bool passReadOnlyDepth = false;
+    bool passReadOnlyStencil = false;
 };
 
 struct SemaphoreCommon : Semaphore

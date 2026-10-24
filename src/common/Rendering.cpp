@@ -1,0 +1,246 @@
+#include "common/Logging.h"
+#include "common/Objects.h"
+
+#include <slag/CommandBuffer.h>
+#include <slag/Limits.h>
+
+namespace slag {
+
+namespace {
+
+CommandBufferCommon* common(CommandBuffer* commandBuffer)
+{
+    return static_cast<CommandBufferCommon*>(commandBuffer);
+}
+
+uint32_t mipSize(uint32_t size, uint32_t mip)
+{
+    return size >> mip ? size >> mip : 1;
+}
+
+void viewExtent(const AttachmentViewCommon& view, uint32_t& width, uint32_t& height)
+{
+    width = mipSize(view.texture->width, view.mip);
+    height = mipSize(view.texture->height, view.mip);
+}
+
+} // namespace
+
+#define SLAG_VALIDATE_IN_PASS(self, function)                                                                          \
+    SLAG_VALIDATE((self)->device->instance, (self)->state == CommandBufferState::Recording && (self)->inRenderPass,    \
+                  function, "not inside a render pass")
+
+void CommandBuffer::beginRendering(const RenderingDesc& desc)
+{
+    CommandBufferCommon* self = common(this);
+    [[maybe_unused]] InstanceCommon* instance = self->device->instance;
+    const char* function = "CommandBuffer::beginRendering";
+    SLAG_VALIDATE(instance, self->state == CommandBufferState::Recording && !self->inRenderPass, function,
+                  "not recording, or a render pass is already open");
+    SLAG_VALIDATE(instance, self->queueType == CommandQueueType::Graphics, function,
+                  "render passes need a graphics command buffer");
+    SLAG_VALIDATE(instance, desc.colorAttachments.size() <= limits::maxColorTargets, function,
+                  "%zu color attachments exceed limits::maxColorTargets", desc.colorAttachments.size());
+
+    // The pass covers the attachments' shared extent (ADR 0046).
+    uint32_t width = 0;
+    uint32_t height = 0;
+    uint32_t layers = 0;
+    uint32_t samples = 0;
+    self->passColorCount = static_cast<uint32_t>(desc.colorAttachments.size() < 8 ? desc.colorAttachments.size() : 8);
+    auto consider = [&](const AttachmentViewCommon* view) {
+        uint32_t viewWidth = 0;
+        uint32_t viewHeight = 0;
+        viewExtent(*view, viewWidth, viewHeight);
+        if (layers == 0)
+        {
+            width = viewWidth;
+            height = viewHeight;
+            layers = view->layerCount;
+            samples = view->texture->sampleCount;
+        }
+        SLAG_VALIDATE(instance, viewWidth == width && viewHeight == height && view->layerCount == layers, function,
+                      "attachments differ in size or layer count");
+        SLAG_VALIDATE(instance, view->texture->sampleCount == samples, function, "attachments differ in sample count");
+    };
+    for (uint32_t i = 0; i < self->passColorCount; ++i)
+    {
+        const ColorAttachment& attachment = desc.colorAttachments[i];
+        auto* view = static_cast<const AttachmentViewCommon*>(attachment.view);
+        self->passColorFormats[i] = view ? view->format : PixelFormat::Undefined;
+        if (!view)
+        {
+            continue;
+        }
+        SLAG_VALIDATE(instance, (view->texture->usage & TextureUsage::RenderTarget) != TextureUsage::None, function,
+                      "color attachment %u is not a render target view", i);
+        consider(view);
+        auto* resolve = static_cast<const AttachmentViewCommon*>(attachment.resolveView);
+        SLAG_VALIDATE(instance, (attachment.storeOp == StoreOp::Resolve) == (resolve != nullptr), function,
+                      "color attachment %u: StoreOp::Resolve and a resolve view go together", i);
+        SLAG_VALIDATE(instance,
+                      !resolve || (view->texture->sampleCount > 1 && resolve->texture->sampleCount == 1 &&
+                                   resolve->format == view->format),
+                      function,
+                      "color attachment %u: resolves go from MSAA into a single-sampled view of the same format", i);
+        SLAG_VALIDATE(instance, !resolve || hasTraits(view->format, FormatTraits::Integer) == false, function,
+                      "color attachment %u: integer formats can't be resolved", i);
+    }
+    self->passDepthStencilFormat = PixelFormat::Undefined;
+    self->passReadOnlyDepth = false;
+    self->passReadOnlyStencil = false;
+    if (desc.depthStencilAttachment && desc.depthStencilAttachment->view)
+    {
+        const DepthStencilAttachment& attachment = *desc.depthStencilAttachment;
+        auto* view = static_cast<const AttachmentViewCommon*>(attachment.view);
+        SLAG_VALIDATE(instance, (view->texture->usage & TextureUsage::DepthStencil) != TextureUsage::None, function,
+                      "the depth/stencil attachment is not a depth/stencil view");
+        SLAG_VALIDATE(instance,
+                      attachment.depthStoreOp != StoreOp::Resolve && attachment.stencilStoreOp != StoreOp::Resolve,
+                      function, "depth and stencil can't be resolved");
+        consider(view);
+        self->passDepthStencilFormat = view->format;
+        self->passReadOnlyDepth = attachment.readOnlyDepth;
+        self->passReadOnlyStencil = attachment.readOnlyStencil;
+    }
+    SLAG_VALIDATE(instance, layers > 0, function, "a render pass needs at least one attachment");
+    self->passSampleCount = samples ? samples : 1;
+    self->inRenderPass = true;
+    if (layers == 0)
+    {
+        return;
+    }
+    SLAG_DISPATCH(self, cmdBeginRendering)(self, desc, width, height, layers);
+}
+
+void CommandBuffer::endRendering()
+{
+    CommandBufferCommon* self = common(this);
+    SLAG_VALIDATE_IN_PASS(self, "CommandBuffer::endRendering");
+    self->inRenderPass = false;
+    SLAG_DISPATCH(self, cmdEndRendering)(self);
+}
+
+void CommandBuffer::bindVertexBuffers(uint32_t firstSlot, std::span<const VertexBufferBinding> bindings)
+{
+    CommandBufferCommon* self = common(this);
+    SLAG_VALIDATE(self->device->instance, self->state == CommandBufferState::Recording,
+                  "CommandBuffer::bindVertexBuffers", "not recording");
+    SLAG_VALIDATE(self->device->instance, firstSlot + bindings.size() <= limits::maxVertexBufferSlots,
+                  "CommandBuffer::bindVertexBuffers", "slots beyond limits::maxVertexBufferSlots");
+#ifdef SLAG_VALIDATION
+    for (const VertexBufferBinding& binding : bindings)
+    {
+        auto* buffer = static_cast<const BufferCommon*>(binding.buffer);
+        SLAG_VALIDATE(self->device->instance, buffer && binding.offset + binding.size <= buffer->size,
+                      "CommandBuffer::bindVertexBuffers", "a binding is null or ends past its buffer");
+    }
+#endif
+    SLAG_DISPATCH(self, cmdBindVertexBuffers)(self, firstSlot, bindings);
+}
+
+void CommandBuffer::bindIndexBuffer(Buffer* buffer, uint64_t offset, uint64_t size, IndexFormat format)
+{
+    CommandBufferCommon* self = common(this);
+    auto* object = static_cast<BufferCommon*>(buffer);
+    SLAG_VALIDATE(self->device->instance, self->state == CommandBufferState::Recording,
+                  "CommandBuffer::bindIndexBuffer", "not recording");
+    SLAG_VALIDATE(self->device->instance, object && offset + size <= object->size, "CommandBuffer::bindIndexBuffer",
+                  "the buffer is null or the range ends past it");
+    SLAG_VALIDATE(self->device->instance, offset % (format == IndexFormat::Uint16 ? 2 : 4) == 0,
+                  "CommandBuffer::bindIndexBuffer", "the offset isn't a multiple of the index size");
+    SLAG_DISPATCH(self, cmdBindIndexBuffer)(self, object, offset, size, format);
+}
+
+void CommandBuffer::setViewports(std::span<const Viewport> viewports)
+{
+    CommandBufferCommon* self = common(this);
+    SLAG_VALIDATE(self->device->instance, !viewports.empty() && viewports.size() <= limits::maxViewports,
+                  "CommandBuffer::setViewports", "1 to %u viewports", limits::maxViewports);
+    SLAG_DISPATCH(self, cmdSetViewports)(self, viewports);
+}
+
+void CommandBuffer::setScissors(std::span<const Rect> scissors)
+{
+    CommandBufferCommon* self = common(this);
+    SLAG_VALIDATE(self->device->instance, !scissors.empty() && scissors.size() <= limits::maxViewports,
+                  "CommandBuffer::setScissors", "1 to %u scissors", limits::maxViewports);
+    SLAG_DISPATCH(self, cmdSetScissors)(self, scissors);
+}
+
+void CommandBuffer::setBlendConstant(const float constant[4])
+{
+    CommandBufferCommon* self = common(this);
+    SLAG_DISPATCH(self, cmdSetBlendConstant)(self, constant);
+}
+
+void CommandBuffer::setStencilReference(uint8_t reference)
+{
+    CommandBufferCommon* self = common(this);
+    SLAG_DISPATCH(self, cmdSetStencilReference)(self, reference);
+}
+
+void CommandBuffer::setDepthBounds(float minDepth, float maxDepth)
+{
+    CommandBufferCommon* self = common(this);
+    SLAG_VALIDATE(self->device->instance, self->device->capabilities.depthBounds, "CommandBuffer::setDepthBounds",
+                  "the depth bounds test is not supported");
+    SLAG_VALIDATE(self->device->instance, 0.0f <= minDepth && minDepth <= maxDepth && maxDepth <= 1.0f,
+                  "CommandBuffer::setDepthBounds", "bounds must satisfy 0 <= min <= max <= 1");
+    SLAG_DISPATCH(self, cmdSetDepthBounds)(self, minDepth, maxDepth);
+}
+
+namespace {
+
+// The bound pipeline fits the open pass (ADRs 0040, 0042).
+[[maybe_unused]] void validateDraw(CommandBufferCommon* self, const char* function)
+{
+#ifdef SLAG_VALIDATION
+    InstanceCommon* instance = self->device->instance;
+    SLAG_VALIDATE_IN_PASS(self, function);
+    const PipelineCommon* pipeline = self->boundPipeline;
+    SLAG_VALIDATE(instance, pipeline && pipeline->kind == PipelineKind::Graphics, function,
+                  "no graphics pipeline is bound");
+    if (!pipeline || pipeline->kind != PipelineKind::Graphics)
+    {
+        return;
+    }
+    bool formatsMatch =
+        pipeline->depthStencilFormat == self->passDepthStencilFormat && pipeline->sampleCount == self->passSampleCount;
+    uint32_t count = pipeline->colorCount > self->passColorCount ? pipeline->colorCount : self->passColorCount;
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        PixelFormat a = i < pipeline->colorCount ? pipeline->colorFormats[i] : PixelFormat::Undefined;
+        PixelFormat b = i < self->passColorCount ? self->passColorFormats[i] : PixelFormat::Undefined;
+        formatsMatch = formatsMatch && a == b;
+    }
+    SLAG_VALIDATE(instance, formatsMatch, function,
+                  "the pipeline's target formats or sample count don't match the render pass");
+    SLAG_VALIDATE(instance, !(pipeline->writesDepth && self->passReadOnlyDepth), function,
+                  "the pipeline writes depth, but the pass's depth is read-only");
+    SLAG_VALIDATE(instance, !(pipeline->writesStencil && self->passReadOnlyStencil), function,
+                  "the pipeline writes stencil, but the pass's stencil is read-only");
+#else
+    (void)self;
+    (void)function;
+#endif
+}
+
+} // namespace
+
+void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
+{
+    CommandBufferCommon* self = common(this);
+    validateDraw(self, "CommandBuffer::draw");
+    SLAG_DISPATCH(self, cmdDraw)(self, vertexCount, instanceCount, firstVertex, firstInstance);
+}
+
+void CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset,
+                                uint32_t firstInstance)
+{
+    CommandBufferCommon* self = common(this);
+    validateDraw(self, "CommandBuffer::drawIndexed");
+    SLAG_DISPATCH(self, cmdDrawIndexed)(self, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+}
+
+} // namespace slag

@@ -97,7 +97,7 @@ struct CommandBufferImpl : CommandBufferCommon
     VkCommandPool pool = VK_NULL_HANDLE;
     VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
     bool bindsHeaps = false; // graphics/compute families only
-    // Reused by barrier.
+    // Reused by barrier and draw state.
     Vector<VkBufferMemoryBarrier2> bufferBarriers;
     Vector<VkImageMemoryBarrier2> imageBarriers;
     Vector<VkMemoryBarrier2> memoryBarriers;
