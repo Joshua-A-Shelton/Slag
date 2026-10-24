@@ -106,6 +106,7 @@ include/slag/
   Barriers.h                   BarrierSync/Access, TextureLayout, barrier structs
   QueryPool.h  Semaphore.h
   Swapchain.h                  Swapchain, NativeWindow, PresentMode, ColorSpace, HDR metadata
+  Types.h                      shared small value types: CompareOp, Viewport, Rect, ClearValue
   native/D3D12.h               opt-in interop; includes d3d12.h
   native/Vulkan.h              opt-in interop; includes vulkan.h
   native/D3D12Agility.h        SLAG_D3D12_AGILITY_SDK_EXPORTS (no Windows headers)
@@ -301,8 +302,8 @@ Presets: `debug` (validation on) and `release`, Ninja, output in
 `build/<preset>/`. CMake options: `SLAG_BACKEND_D3D12` (default on for
 Windows), `SLAG_BACKEND_VULKAN`, `SLAG_VALIDATION`, `SLAG_DISABLE_LABELS`,
 `SLAG_BUILD_TESTS`, `SLAG_BUILD_SAMPLES`, `SLAG_EXTERNAL_BACKEND_DIRS`.
-The `header_check` test compiles every public header (except `native/`) on
-its own.
+The `header_check` test compiles every public header on its own, except
+`native/D3D12.h` and `native/Vulkan.h`.
 
 ## 12. Testing
 

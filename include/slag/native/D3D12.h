@@ -1,4 +1,4 @@
 #pragma once
 
-// Opt-in D3D12 interop: native() accessors. Will include d3d12.h; never included by other public headers (CLAUDE.md
-// §6).
+// Opt-in D3D12 interop: native() accessors (CLAUDE.md §6).
+// Will include d3d12.h, so no other public header may include this one.

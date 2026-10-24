@@ -20,3 +20,4 @@
 #include <slag/Semaphore.h>
 #include <slag/Swapchain.h>
 #include <slag/Texture.h>
+#include <slag/Types.h>
