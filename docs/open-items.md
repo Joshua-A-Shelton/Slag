@@ -50,6 +50,10 @@ None right now.
   view → 0028.
 - Slang 2026.18.2 compiles `ResourceDescriptorHeap[...]` to
   `SPV_EXT_descriptor_heap` SPIR-V that passes `spirv-val` (M0) → 0034.
+- M1 spike on RADV: the heap slot stride Slag uses matches Slang's
+  `-spirv-unified-descriptor-heap-stride` indexing, and `[[vk::push_constant]]`
+  blocks are fed by `vkCmdPushDataEXT`, on both a 32-byte-image-descriptor
+  GPU and a 64-byte one → 0029, 0034.
 - All names settled: types, functions, structs, enums, constants, macros,
   files → docs/naming.md.
 - Driver-reserved heap range exists; Slag hides it → 0032.

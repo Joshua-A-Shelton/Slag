@@ -23,7 +23,7 @@ Finish the groundwork the first real code needs.
 **Done when:** a test shader compiles to DXIL and SPIR-V in the build, and a
 trivial unit test runs in CI.
 
-## M1 — Risk spike: compute and readback
+## M1 — Risk spike: compute and readback (Vulkan done; D3D12 pending)
 
 The smallest program that exercises the riskiest assumptions: a compute
 shader writes a buffer through a heap descriptor, and the CPU reads it back.
@@ -42,6 +42,10 @@ shader writes a buffer through a heap descriptor, and the CPU reads it back.
 
 **Done when:** the same shader produces identical bytes on D3D12 (hardware
 and WARP) and Vulkan (NVIDIA and RADV).
+
+**Status (2026-10-23):** Vulkan side done and tested on RADV (RX 7900 XT and
+Raphael iGPU): `tests/backend/ComputeTests.cpp` passes with no validation
+errors. Remaining: the D3D12 backend (needs Windows or CI), NVIDIA Vulkan.
 
 **Settles:** Slang descriptor-heap targeting and version (open items 1, 13),
 descriptor sizes (19), WARP support (22), heap address-range limits (23),

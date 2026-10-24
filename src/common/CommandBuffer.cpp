@@ -14,7 +14,7 @@ CommandBufferCommon* common(CommandBuffer* commandBuffer)
     return static_cast<CommandBufferCommon*>(commandBuffer);
 }
 
-const char* stateName(CommandBufferState state)
+[[maybe_unused]] const char* stateName(CommandBufferState state)
 {
     switch (state)
     {
@@ -142,7 +142,7 @@ void CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_
 
 void CommandBuffer::barrier(std::span<const GlobalBarrier> globalBarriers,
                             std::span<const BufferBarrier> bufferBarriers,
-                            std::span<const TextureBarrier> textureBarriers)
+                            [[maybe_unused]] std::span<const TextureBarrier> textureBarriers)
 {
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_RECORDING(self, "CommandBuffer::barrier");
@@ -253,7 +253,7 @@ void Pipeline::setUserData(uint64_t value)
 void GraphicsDevice::writeRWStructuredBuffer(uint32_t index, const StructuredBufferDescriptor& descriptor)
 {
     auto* self = static_cast<GraphicsDeviceCommon*>(this);
-    const auto* buffer = static_cast<const BufferCommon*>(descriptor.buffer);
+    [[maybe_unused]] const auto* buffer = static_cast<const BufferCommon*>(descriptor.buffer);
     SLAG_VALIDATE(self->instance, index < self->resourceHeapSize, "GraphicsDevice::writeRWStructuredBuffer",
                   "slot %u is outside the resource heap (%u slots)", index, self->resourceHeapSize);
     SLAG_VALIDATE(self->instance, buffer, "GraphicsDevice::writeRWStructuredBuffer", "buffer is null");
