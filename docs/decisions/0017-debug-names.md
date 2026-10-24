@@ -11,8 +11,10 @@
 - Names are applied **whenever given**, regardless of validation level, so
   they show up in capture tools (PIX, RenderDoc, Nsight). `nullptr` costs
   nothing. Naming happens once at creation, never on hot paths.
-- Validation builds keep a copy of each name for Slag's own messages.
-  Other builds keep none.
+- **Every build keeps a copy** of each name (decided 2026-10-24, M7): one
+  allocation per named object at creation, none for unnamed ones. Slag's
+  messages use it, and defragmentation (ADR 0062) names the native objects
+  it recreates. This replaces "validation builds only".
 
 ## Mapping
 

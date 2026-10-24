@@ -129,7 +129,8 @@ include/slag/
   util/DescriptorAllocator.h   slot allocator utility (ADR 0032)
   util/DeferredDestroyer.h     delayed destruction utility (ADR 0069)
 src/
-  common/                      dispatch tables, validation, stale-pointer quarantine, format tables
+  common/                      public functions with their validation checks, dispatch tables, format tables
+  common/validation/           validation bookkeeping: stale-pointer quarantine, descriptor-slot tracking
   d3d12/                       D3D12*.cpp
   vulkan/                      Vk*.cpp
   util/                        the slag/util/ utilities, built on public functions
@@ -263,8 +264,9 @@ Accepted decisions live in `docs/decisions/`.
   incl. `Suboptimal`/`Timeout`, error group) plus a value on success (ADR
   0060). Defined in `slag/Result.h`; no dependency on `std::expected`.
 - Programmer errors (invalid usage) are caught by Slag validation (ADR
-  0067): compiled in with `SLAG_VALIDATION` and then always on, written once
-  in `src/common/validation/`, reported through the debug callback, with
+  0067): compiled in with `SLAG_VALIDATION` and then always on, written
+  inline in each public function in `src/common/` (shared bookkeeping in
+  `src/common/validation/`), reported through the debug callback, with
   `ValidationFailureAction` (`Break` by default, `Continue`, `Abort`). The
   failing call still proceeds. Release builds pay nothing.
 - Slag doesn't track texture layouts or barrier correctness in v1; backend

@@ -30,4 +30,8 @@ that is allowed under "undefined" but can hide bugs. Mitigations:
 - **Poison descriptors (Accepted):** in validation builds on D3D12, fill
   unwritten and freed slots with descriptors pointing at a debug resource
   full of poison values, so bad reads show up as visibly wrong output
-  instead of silent zeros.
+  instead of silent zeros. Scope (decided 2026-10-24, M7): **cleared slots
+  and slots whose resource was destroyed**, with a poison view of the slot's
+  last kind (buffer kind with its stride or format; texture view type and
+  format class). Never-written slots stay null, since filling the whole heap
+  at initialize is slow.

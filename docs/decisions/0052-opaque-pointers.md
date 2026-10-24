@@ -40,6 +40,8 @@ reliably: a stale pointer may point at freed or reused memory.
 - On destroy, Slag releases the native object and GPU memory immediately,
   but keeps its own small object record, marked destroyed, in a quarantine
   with a fixed size budget; the oldest records are freed when it fills.
+  The budget is the last **4096** destroyed objects of all types (decided
+  2026-10-24, M7).
 - Every Slag call checks incoming pointers and reports "use of a destroyed
   <type>", with the debug name if there is one.
 - Detection is very likely, not guaranteed: a pointer used long after its

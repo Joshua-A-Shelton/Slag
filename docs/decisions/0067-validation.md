@@ -19,7 +19,10 @@ layers.
 ## Where checks live
 
 Every public function runs `SLAG_VALIDATE(...)` before dispatching (ADR
-0065). Checks live in `src/common/validation/`. Without `SLAG_VALIDATION`
+0065). Checks are written inline in that function, next to the call they
+guard (decided 2026-10-24, M7); `src/common/validation/` holds the shared
+bookkeeping: the stale-pointer quarantine and descriptor-slot tracking.
+Without `SLAG_VALIDATION`
 the macro and all bookkeeping compile to nothing.
 
 ## Failures

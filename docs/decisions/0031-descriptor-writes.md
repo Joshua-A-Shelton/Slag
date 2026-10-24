@@ -16,8 +16,10 @@
   builds it marks the slot empty, and on D3D12 writes a poison descriptor
   (ADR 0016).
 - **Slot tracking** in validation builds: each slot's kind and resource.
-  Destroying a resource still referenced by slots produces a warning, and
-  those slots are poisoned on D3D12.
+  Destroying a resource still referenced by slots is logged at **Info**
+  (decided 2026-10-24, M7: apps usually overwrite slots rather than clear
+  them, so a Warning would fire on almost every destroy), and those slots
+  are poisoned on D3D12.
 - **No descriptor copies** in v1.
 
 ## Why no copies
