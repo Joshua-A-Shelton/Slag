@@ -57,6 +57,7 @@ target_include_directories(slag PUBLIC
 target_include_directories(slag PRIVATE src)
 
 target_sources(slag PRIVATE
+    src/common/Buffer.cpp
     src/common/GraphicsDevice.cpp
     src/common/HostAllocator.cpp
     src/common/Instance.cpp
@@ -98,6 +99,7 @@ if(SLAG_BACKEND_VULKAN)
     target_link_libraries(slag PRIVATE Vulkan::Headers)
     target_sources(slag PRIVATE
         src/vulkan/VkBackend.cpp
+        src/vulkan/VkBuffer.cpp
         src/vulkan/VkDevice.cpp
         src/vulkan/VkInstance.cpp
         src/vulkan/VkLoader.cpp

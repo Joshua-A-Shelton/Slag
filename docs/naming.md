@@ -149,6 +149,10 @@ Names introduced while implementing; treat as placeholders until confirmed.
   `pipelineCacheData`, `graphicsQueueCount`, `computeQueueCount`,
   `copyQueueCount`.
 - `CommandQueue::type()`; `SemaphoreDesc::initialValue`.
+- `MemoryKind` values (`GpuOnly`, `Upload`, `Readback`, `GpuUpload`) were
+  already decided; new: `PlacementOptions` (`movable`), `Placement` fields
+  (`kind`, `movable`, `block`, `offset`), `Placement::automatic` /
+  `Placement::placed`, `BufferDesc::size`.
 
 ## Nested structs
 

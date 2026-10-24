@@ -74,7 +74,7 @@ Status createHeap(GraphicsDeviceImpl& device, uint32_t slots, VkDeviceSize descr
     DedicatedBuffer buffer;
     Status status = createDedicatedBuffer(device, heapSize + heapAlignment, VK_BUFFER_USAGE_DESCRIPTOR_HEAP_BIT_EXT,
                                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, buffer);
+                                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0, buffer);
     if (status != Status::Ok)
     {
         return status;

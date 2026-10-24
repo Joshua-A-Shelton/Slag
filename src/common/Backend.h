@@ -17,6 +17,7 @@ struct InstanceCommon;
 struct GraphicsDeviceCommon;
 struct CommandQueueCommon;
 struct SemaphoreCommon;
+struct BufferCommon;
 
 struct BackendFunctions
 {

@@ -4,6 +4,7 @@
 // writes, placement queries, semaphore waits, status, memory budget, and the
 // pipeline cache (ADRs 0008, 0015, 0019, 0023, 0029, 0031, 0043, 0053, 0054).
 
+#include <slag/Buffer.h>
 #include <slag/CommandQueue.h>
 #include <slag/Limits.h>
 #include <slag/Result.h>
@@ -61,6 +62,9 @@ public:
 
     // index < the count requested for that type in initialize.
     CommandQueue* commandQueue(CommandQueueType type, uint32_t index = 0) const;
+
+    Result<Buffer*> createBuffer(const BufferDesc& desc);
+    void destroy(Buffer* buffer);
 
     Result<Semaphore*> createSemaphore(const SemaphoreDesc& desc);
     void destroy(Semaphore* semaphore);

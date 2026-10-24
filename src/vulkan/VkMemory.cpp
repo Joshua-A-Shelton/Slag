@@ -3,34 +3,30 @@
 namespace slag::vk {
 
 uint32_t findMemoryType(const VkPhysicalDeviceMemoryProperties& properties, uint32_t typeBits,
-                        VkMemoryPropertyFlags required, VkMemoryPropertyFlags preferred)
+                        VkMemoryPropertyFlags required, VkMemoryPropertyFlags preferred, VkMemoryPropertyFlags avoided)
 {
-    uint32_t fallback = kNoMemoryType;
+    uint32_t best = kNoMemoryType;
+    int bestScore = -1;
     for (uint32_t i = 0; i < properties.memoryTypeCount; ++i)
     {
-        if (!(typeBits & (1u << i)))
-        {
-            continue;
-        }
         VkMemoryPropertyFlags flags = properties.memoryTypes[i].propertyFlags;
-        if ((flags & required) != required)
+        if (!(typeBits & (1u << i)) || (flags & required) != required)
         {
             continue;
         }
-        if ((flags & preferred) == preferred)
+        int score = ((flags & preferred) == preferred ? 2 : 0) + ((flags & avoided) == 0 ? 1 : 0);
+        if (score > bestScore)
         {
-            return i;
-        }
-        if (fallback == kNoMemoryType)
-        {
-            fallback = i;
+            best = i;
+            bestScore = score;
         }
     }
-    return fallback;
+    return best;
 }
 
 Status createDedicatedBuffer(GraphicsDeviceImpl& device, VkDeviceSize size, VkBufferUsageFlags usage,
-                             VkMemoryPropertyFlags required, VkMemoryPropertyFlags preferred, DedicatedBuffer& out)
+                             VkMemoryPropertyFlags required, VkMemoryPropertyFlags preferred,
+                             VkMemoryPropertyFlags avoided, DedicatedBuffer& out)
 {
     VkBufferCreateInfo bufferInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     bufferInfo.size = size;
@@ -44,7 +40,7 @@ Status createDedicatedBuffer(GraphicsDeviceImpl& device, VkDeviceSize size, VkBu
 
     VkMemoryRequirements requirements = {};
     device.fn.vkGetBufferMemoryRequirements(device.device, out.buffer, &requirements);
-    out.memoryType = findMemoryType(device.memoryProperties, requirements.memoryTypeBits, required, preferred);
+    out.memoryType = findMemoryType(device.memoryProperties, requirements.memoryTypeBits, required, preferred, avoided);
     if (out.memoryType == kNoMemoryType)
     {
         destroyDedicatedBuffer(device, out);

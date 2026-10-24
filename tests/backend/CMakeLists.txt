@@ -3,6 +3,7 @@
 
 add_executable(slag_backend_tests
     BackendTestMain.cpp
+    BufferTests.cpp
     DeviceTests.cpp
     InstanceTests.cpp)
 target_link_libraries(slag_backend_tests PRIVATE slag::slag doctest::doctest)

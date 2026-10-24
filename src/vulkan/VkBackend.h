@@ -75,6 +75,12 @@ struct CommandQueueImpl : CommandQueueCommon
     std::mutex* sharedLock = nullptr; // set when the VkQueue is shared
 };
 
+struct BufferImpl : BufferCommon
+{
+    VkBuffer buffer = VK_NULL_HANDLE;
+    VkDeviceMemory memory = VK_NULL_HANDLE; // dedicated until the M2 sub-allocator
+};
+
 struct SemaphoreImpl : SemaphoreCommon
 {
     VkSemaphore semaphore = VK_NULL_HANDLE;

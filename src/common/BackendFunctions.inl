@@ -19,3 +19,6 @@ SLAG_BACKEND_FN(Result<void>, signalSemaphore, (SemaphoreCommon * semaphore, uin
 SLAG_BACKEND_FN(Result<void>, waitSemaphores,
                 (GraphicsDeviceCommon * device, std::span<const SemaphoreValue> values, WaitMode mode,
                  uint64_t timeoutNs))
+
+SLAG_BACKEND_FN(Result<BufferCommon*>, createBuffer, (GraphicsDeviceCommon * device, const BufferDesc& desc))
+SLAG_BACKEND_FN(void, destroyBuffer, (GraphicsDeviceCommon * device, BufferCommon* buffer))

@@ -7,6 +7,7 @@
 #include "common/HostAllocator.h"
 #include "common/Vector.h"
 
+#include <slag/Buffer.h>
 #include <slag/CommandQueue.h>
 #include <slag/GraphicsDevice.h>
 #include <slag/Instance.h>
@@ -47,6 +48,17 @@ struct CommandQueueCommon : CommandQueue
     GraphicsDeviceCommon* device = nullptr;
     const BackendFunctions* functions = nullptr;
     CommandQueueType type = CommandQueueType::Graphics;
+};
+
+struct BufferCommon : Buffer
+{
+    GraphicsDeviceCommon* device = nullptr;
+    const BackendFunctions* functions = nullptr;
+    uint64_t userData = 0;
+    uint64_t size = 0;
+    MemoryKind kind = MemoryKind::GpuOnly;
+    void* mapped = nullptr;
+    uint64_t gpuAddress = 0;
 };
 
 struct SemaphoreCommon : Semaphore
