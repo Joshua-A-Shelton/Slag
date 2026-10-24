@@ -238,6 +238,10 @@ Result<Texture*> createTexture(GraphicsDeviceCommon* self, const TextureCreateIn
                       static_cast<unsigned long long>(info.placement.offset));
     }
 #endif
+    if (!self->initialized)
+    {
+        return Status::Unsupported; // reported above; nothing to create it on
+    }
     if (self->lost)
     {
         return Status::DeviceLost;
@@ -308,7 +312,7 @@ Result<Texture*> createTexture(GraphicsDeviceCommon* self, const TextureCreateIn
 PlacementInfo placementInfo(const GraphicsDeviceCommon* self, const TextureCreateInfo& info)
 {
     validateTexture(const_cast<GraphicsDeviceCommon*>(self), info, "GraphicsDevice::placementInfo");
-    return SLAG_DISPATCH(self, texturePlacementInfo)(self, info);
+    return self->initialized ? SLAG_DISPATCH(self, texturePlacementInfo)(self, info) : PlacementInfo{};
 }
 
 GraphicsDeviceCommon* common(GraphicsDevice* device)
@@ -362,6 +366,12 @@ void GraphicsDevice::destroy(Texture* texture)
 {
     SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, TextureCommon, texture, "Texture",
                     "GraphicsDevice::destroy");
+#ifdef SLAG_VALIDATION
+    if (texture && static_cast<const TextureCommon*>(texture)->destroyed)
+    {
+        return; // reported above: destroying it again would free it twice
+    }
+#endif
     if (!texture)
     {
         return;
@@ -370,6 +380,10 @@ void GraphicsDevice::destroy(Texture* texture)
     auto* object = static_cast<TextureCommon*>(texture);
     SLAG_VALIDATE(self->instance, object->device == self, "GraphicsDevice::destroy",
                   "the texture belongs to another device");
+    if (object->device != self)
+    {
+        return; // the other device's state isn't this one's to change
+    }
     SLAG_VALIDATE(self->instance, object->liveViews == 0, "GraphicsDevice::destroy",
                   "the texture still has %u attachment views", object->liveViews.load());
     SLAG_VALIDATE(self->instance, !object->movePass, "GraphicsDevice::destroy",

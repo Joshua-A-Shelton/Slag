@@ -109,6 +109,10 @@ Result<Swapchain*> GraphicsDevice::createSwapchain(const SwapchainDesc& desc)
     validateSize(instance, desc.width, desc.height, desc.minImageCount, function);
     validateFormat(instance, desc.format, desc.colorSpace, function);
 #endif
+    if (!self->initialized)
+    {
+        return Status::Unsupported; // reported above; nothing to create it on
+    }
     if (self->lost)
     {
         return Status::DeviceLost;
@@ -140,6 +144,12 @@ void GraphicsDevice::destroy(Swapchain* swapchain)
 {
     SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, SwapchainCommon, swapchain, "Swapchain",
                     "GraphicsDevice::destroy");
+#ifdef SLAG_VALIDATION
+    if (swapchain && static_cast<const SwapchainCommon*>(swapchain)->destroyed)
+    {
+        return; // reported above: destroying it again would free it twice
+    }
+#endif
     if (!swapchain)
     {
         return;
@@ -148,6 +158,10 @@ void GraphicsDevice::destroy(Swapchain* swapchain)
     SwapchainCommon* object = common(swapchain);
     SLAG_VALIDATE(self->instance, object->device == self, "GraphicsDevice::destroy",
                   "the swapchain belongs to another device");
+    if (object->device != self)
+    {
+        return; // the other device's state isn't this one's to change
+    }
     destroyViews(object);
     SLAG_DISPATCH(self, destroySwapchain)(self, object);
 }
@@ -157,7 +171,7 @@ uint32_t GraphicsDevice::supportedSwapchainFormats(const NativeWindow& window, s
     auto* self = static_cast<const GraphicsDeviceCommon*>(this);
     SLAG_VALIDATE(self->instance, self->initialized, "GraphicsDevice::supportedSwapchainFormats",
                   "device \"%s\" is not initialized", self->info.name);
-    return SLAG_DISPATCH(self, swapchainFormats)(self, window, formats);
+    return self->initialized ? SLAG_DISPATCH(self, swapchainFormats)(self, window, formats) : 0;
 }
 
 uint32_t GraphicsDevice::supportedPresentModes(const NativeWindow& window, std::span<PresentMode> modes) const
@@ -165,7 +179,7 @@ uint32_t GraphicsDevice::supportedPresentModes(const NativeWindow& window, std::
     auto* self = static_cast<const GraphicsDeviceCommon*>(this);
     SLAG_VALIDATE(self->instance, self->initialized, "GraphicsDevice::supportedPresentModes",
                   "device \"%s\" is not initialized", self->info.name);
-    return SLAG_DISPATCH(self, presentModes)(self, window, modes);
+    return self->initialized ? SLAG_DISPATCH(self, presentModes)(self, window, modes) : 0;
 }
 
 Result<uint32_t> Swapchain::acquire()
@@ -239,6 +253,10 @@ Result<void> Swapchain::reconfigure(const SwapchainReconfigureDesc& desc)
                   "image %u is acquired but not presented", self->acquiredImage);
     validateSize(instance, desc.width, desc.height, desc.minImageCount, function);
     validateFormat(instance, desc.format, desc.colorSpace, function);
+    if (self->destroyed)
+    {
+        return Status::Unsupported; // reported above; its views and images are gone
+    }
 #endif
     if (self->device->lost)
     {

@@ -19,6 +19,10 @@ Result<QueryPool*> GraphicsDevice::createQueryPool(const QueryPoolDesc& desc)
                   desc.type != QueryType::Timestamp || desc.queueType != CommandQueueType::Copy ||
                       self->capabilities.copyQueueTimestamps,
                   function, "copy-queue timestamps are not supported on \"%s\"", self->info.name);
+    if (!self->initialized)
+    {
+        return Status::Unsupported; // reported above; nothing to create it on
+    }
     if (self->lost)
     {
         return Status::DeviceLost;
@@ -40,6 +44,12 @@ void GraphicsDevice::destroy(QueryPool* pool)
 {
     SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, QueryPoolCommon, pool, "QueryPool",
                     "GraphicsDevice::destroy");
+#ifdef SLAG_VALIDATION
+    if (pool && static_cast<const QueryPoolCommon*>(pool)->destroyed)
+    {
+        return; // reported above: destroying it again would free it twice
+    }
+#endif
     if (!pool)
     {
         return;
@@ -48,6 +58,10 @@ void GraphicsDevice::destroy(QueryPool* pool)
     auto* object = static_cast<QueryPoolCommon*>(pool);
     SLAG_VALIDATE(self->instance, object->device == self, "GraphicsDevice::destroy",
                   "the query pool belongs to another device");
+    if (object->device != self)
+    {
+        return; // the other device's state isn't this one's to change
+    }
     SLAG_DISPATCH(self, destroyQueryPool)(self, object);
 }
 

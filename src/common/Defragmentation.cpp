@@ -132,6 +132,10 @@ Result<DefragmentationPass*> GraphicsDevice::beginDefragmentation(const Defragme
     SLAG_VALIDATE(self->instance, !self->activePass, function, "a defragmentation pass is already active");
     SLAG_VALIDATE(self->instance, desc.kind == MemoryKind::GpuOnly || desc.kind == MemoryKind::GpuUpload, function,
                   "only GpuOnly and GpuUpload memory is defragmented");
+    if (!self->initialized)
+    {
+        return Status::Unsupported; // reported above; nothing to create it on
+    }
     if (self->lost)
     {
         return Status::DeviceLost;

@@ -66,6 +66,10 @@ Result<void> GraphicsDevice::initialize(const GraphicsDeviceInitDesc& desc)
                   limits::maxSamplerHeapSize);
     SLAG_VALIDATE(self->instance, desc.graphicsQueueCount >= 1, "GraphicsDevice::initialize",
                   "graphicsQueueCount must be at least 1");
+    if (self->initialized)
+    {
+        return Status::Unsupported; // reported above; initializing again would leak the first
+    }
 
     Result<void> result = SLAG_DISPATCH(self, initializeDevice)(self, desc);
     if (result)
@@ -146,6 +150,10 @@ Result<Semaphore*> GraphicsDevice::createSemaphore(const SemaphoreDesc& desc)
     GraphicsDeviceCommon* self = common(this);
     SLAG_VALIDATE(self->instance, self->initialized, "GraphicsDevice::createSemaphore",
                   "device \"%s\" is not initialized", self->info.name);
+    if (!self->initialized)
+    {
+        return Status::Unsupported; // reported above; nothing to create it on
+    }
     if (self->lost)
     {
         return Status::DeviceLost;
@@ -164,6 +172,12 @@ void GraphicsDevice::destroy(Semaphore* semaphore)
 {
     SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, SemaphoreCommon, semaphore, "Semaphore",
                     "GraphicsDevice::destroy");
+#ifdef SLAG_VALIDATION
+    if (semaphore && static_cast<const SemaphoreCommon*>(semaphore)->destroyed)
+    {
+        return; // reported above: destroying it again would free it twice
+    }
+#endif
     if (!semaphore)
     {
         return;
@@ -172,6 +186,10 @@ void GraphicsDevice::destroy(Semaphore* semaphore)
     auto* object = static_cast<SemaphoreCommon*>(semaphore);
     SLAG_VALIDATE(self->instance, object->device == self, "GraphicsDevice::destroy",
                   "the semaphore belongs to another device");
+    if (object->device != self)
+    {
+        return; // the other device's state isn't this one's to change
+    }
     SLAG_DISPATCH(self, destroySemaphore)(self, object);
 }
 
@@ -192,6 +210,13 @@ Result<void> GraphicsDevice::waitSemaphores(std::span<const SemaphoreValue> valu
     if (values.empty())
     {
         return {};
+    }
+    for (const SemaphoreValue& value : values)
+    {
+        if (!value.semaphore)
+        {
+            return Status::Unsupported; // reported above
+        }
     }
     if (self->lost)
     {

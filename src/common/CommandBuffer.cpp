@@ -48,6 +48,10 @@ Result<CommandBuffer*> GraphicsDevice::createCommandBuffer(const CommandBufferDe
                   "device \"%s\" is not initialized", self->info.name);
     SLAG_VALIDATE(self->instance, !self->queues[static_cast<size_t>(desc.queueType)].empty(),
                   "GraphicsDevice::createCommandBuffer", "the device has no queue of this type");
+    if (!self->initialized)
+    {
+        return Status::Unsupported; // reported above; nothing to create it on
+    }
     if (self->lost)
     {
         return Status::DeviceLost;
@@ -67,6 +71,12 @@ void GraphicsDevice::destroy(CommandBuffer* commandBuffer)
 {
     SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, CommandBufferCommon, commandBuffer,
                     "CommandBuffer", "GraphicsDevice::destroy");
+#ifdef SLAG_VALIDATION
+    if (commandBuffer && static_cast<const CommandBufferCommon*>(commandBuffer)->destroyed)
+    {
+        return; // reported above: destroying it again would free it twice
+    }
+#endif
     if (!commandBuffer)
     {
         return;
@@ -75,6 +85,10 @@ void GraphicsDevice::destroy(CommandBuffer* commandBuffer)
     CommandBufferCommon* object = common(commandBuffer);
     SLAG_VALIDATE(self->instance, object->device == self, "GraphicsDevice::destroy",
                   "the command buffer belongs to another device");
+    if (object->device != self)
+    {
+        return; // the other device's state isn't this one's to change
+    }
     SLAG_DISPATCH(self, destroyCommandBuffer)(self, object);
 }
 
@@ -384,8 +398,9 @@ void CommandBuffer::resolveTexture(Texture* destination, uint32_t destinationMip
                       "resolves go from an MSAA texture into a single-sampled one");
         SLAG_VALIDATE(instance, dst->format == src->format || formatsCastable(dst->format, src->format), function,
                       "the formats differ");
-        SLAG_VALIDATE(instance, !hasTraits(src->format, FormatTraits::Integer | FormatTraits::Depth), function,
-                      "integer and depth formats can't be resolved");
+        SLAG_VALIDATE(instance,
+                      !hasTraits(src->format, FormatTraits::Integer) && !hasTraits(src->format, FormatTraits::Depth),
+                      function, "integer and depth formats can't be resolved");
         SLAG_VALIDATE(instance,
                       destinationMip < dst->mipCount && destinationLayer < dst->layerCount &&
                           sourceLayer < src->layerCount,
@@ -615,6 +630,10 @@ Result<Pipeline*> GraphicsDevice::createGraphicsPipeline(const GraphicsPipelineD
 #ifdef SLAG_VALIDATION
     validateGraphicsPipeline(self, desc);
 #endif
+    if (!self->initialized)
+    {
+        return Status::Unsupported; // reported above; nothing to create it on
+    }
     if (self->lost)
     {
         return Status::DeviceLost;
@@ -648,6 +667,10 @@ Result<Pipeline*> GraphicsDevice::createComputePipeline(const ComputePipelineDes
                   "device \"%s\" is not initialized", self->info.name);
     SLAG_VALIDATE(self->instance, !desc.compute.binaries.empty(), "GraphicsDevice::createComputePipeline",
                   "no shader binaries");
+    if (!self->initialized)
+    {
+        return Status::Unsupported; // reported above; nothing to create it on
+    }
     if (self->lost)
     {
         return Status::DeviceLost;
@@ -667,6 +690,12 @@ void GraphicsDevice::destroy(Pipeline* pipeline)
 {
     SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, PipelineCommon, pipeline, "Pipeline",
                     "GraphicsDevice::destroy");
+#ifdef SLAG_VALIDATION
+    if (pipeline && static_cast<const PipelineCommon*>(pipeline)->destroyed)
+    {
+        return; // reported above: destroying it again would free it twice
+    }
+#endif
     if (!pipeline)
     {
         return;
@@ -675,6 +704,10 @@ void GraphicsDevice::destroy(Pipeline* pipeline)
     auto* object = static_cast<PipelineCommon*>(pipeline);
     SLAG_VALIDATE(self->instance, object->device == self, "GraphicsDevice::destroy",
                   "the pipeline belongs to another device");
+    if (object->device != self)
+    {
+        return; // the other device's state isn't this one's to change
+    }
     SLAG_DISPATCH(self, destroyPipeline)(self, object);
 }
 

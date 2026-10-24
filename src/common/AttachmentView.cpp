@@ -63,6 +63,10 @@ Result<AttachmentView*> GraphicsDevice::createAttachmentView(const AttachmentVie
                   "GraphicsDevice::createAttachmentView", "layers %u..%u are outside the texture (%u)", desc.baseLayer,
                   desc.baseLayer + desc.layerCount, layers);
 #endif
+    if (!self->initialized)
+    {
+        return Status::Unsupported; // reported above; nothing to create it on
+    }
     if (self->lost)
     {
         return Status::DeviceLost;
@@ -98,6 +102,12 @@ void GraphicsDevice::destroy(AttachmentView* view)
 {
     SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, AttachmentViewCommon, view,
                     "AttachmentView", "GraphicsDevice::destroy");
+#ifdef SLAG_VALIDATION
+    if (view && static_cast<const AttachmentViewCommon*>(view)->destroyed)
+    {
+        return; // reported above: destroying it again would free it twice
+    }
+#endif
     if (!view)
     {
         return;
@@ -106,6 +116,10 @@ void GraphicsDevice::destroy(AttachmentView* view)
     auto* object = static_cast<AttachmentViewCommon*>(view);
     SLAG_VALIDATE(self->instance, object->device == self, "GraphicsDevice::destroy",
                   "the attachment view belongs to another device");
+    if (object->device != self)
+    {
+        return; // the other device's state isn't this one's to change
+    }
     TextureCommon* texture = object->texture;
     {
         std::lock_guard<std::mutex> lock(self->viewListLock);

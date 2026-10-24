@@ -41,6 +41,12 @@ the macro and all bookkeeping compile to nothing.
   `Break` (default) breaks into the debugger if attached, then continues.
 - **The failing call still proceeds**, so validation and release builds do
   the same thing. Use `Abort` to stop at the first error.
+- **Exception (M7):** a call returns right after its report where going on
+  would corrupt Slag's own state rather than hand invalid input to the
+  driver: destroying an object again (it would be freed twice), destroying
+  another device's object, creating on a device that isn't initialized,
+  initializing twice, waiting on a null semaphore, and reconfiguring a
+  destroyed swapchain.
 
 ## What is checked
 
@@ -66,3 +72,18 @@ validation and D3D12 GPU-based validation; revisit later.
 
 Unit tests set `Continue`, capture messages through the debug callback, and
 assert that each check fires.
+
+Implemented in M7 (`tests/validation/`, decided 2026-10-24): Slag's common
+code is built a second time, always with validation, around a **null test
+backend** that only creates plain Slag objects, so every check can be
+triggered without a GPU, on hosted CI too. In that build each failing check
+records its source line; the `validation_coverage` test runs every
+validation test, finds every check in `src/common/` and `src/util/`, and
+fails if one never fired (398 of 398 at the end of M7). Writing the tests
+found one bug: `resolveTexture` never rejected integer or depth formats
+(`hasTraits` with two flags needs both).
+
+Not built: the "resetting an in-flight command buffer" check listed above.
+Slag can't know when GPU work finishes without tracking each submit's
+semaphore values; the Vulkan validation layers and the D3D12 debug layer
+report it.

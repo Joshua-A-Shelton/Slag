@@ -39,11 +39,24 @@ void validationFailure(const InstanceCommon* instance, const char* function, con
 } // namespace slag
 
 #ifdef SLAG_VALIDATION
+#ifdef SLAG_VALIDATION_COVERAGE
+// tests/validation only: which checks fired, by source location.
+namespace slag {
+void recordValidationSite(const char* file, int line);
+}
+#define SLAG_VALIDATION_SITE() ::slag::recordValidationSite(__FILE__, __LINE__)
+#else
+#define SLAG_VALIDATION_SITE()                                                                                         \
+    do                                                                                                                 \
+    {                                                                                                                  \
+    } while (false)
+#endif
 #define SLAG_VALIDATE(instance, condition, function, ...)                                                              \
     do                                                                                                                 \
     {                                                                                                                  \
         if (!(condition))                                                                                              \
         {                                                                                                              \
+            SLAG_VALIDATION_SITE();                                                                                    \
             ::slag::validationFailure((instance), (function), __VA_ARGS__);                                            \
         }                                                                                                              \
     } while (false)

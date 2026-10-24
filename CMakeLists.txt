@@ -56,7 +56,9 @@ target_include_directories(slag PUBLIC
 
 target_include_directories(slag PRIVATE src)
 
-target_sources(slag PRIVATE
+# Backend-independent code. tests/validation builds it again around a null
+# test backend.
+set(SLAG_COMMON_SOURCES
     src/common/AttachmentView.cpp
     src/common/Buffer.cpp
     src/common/CommandBuffer.cpp
@@ -81,6 +83,8 @@ target_sources(slag PRIVATE
     src/common/validation/SlotTracking.cpp
     src/util/DeferredDestroyer.cpp
     src/util/DescriptorAllocator.cpp)
+list(TRANSFORM SLAG_COMMON_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
+target_sources(slag PRIVATE ${SLAG_COMMON_SOURCES})
 
 target_compile_definitions(slag PUBLIC
     $<$<BOOL:${SLAG_BACKEND_D3D12}>:SLAG_BACKEND_D3D12>

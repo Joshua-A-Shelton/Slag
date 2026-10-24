@@ -15,6 +15,10 @@ Result<MemoryBlock*> GraphicsDevice::createMemoryBlock(const MemoryBlockDesc& de
                   desc.debugName ? desc.debugName : "");
     SLAG_VALIDATE(self->instance, desc.kind != MemoryKind::GpuUpload || self->capabilities.gpuUploadMemory,
                   "GraphicsDevice::createMemoryBlock", "GpuUpload memory is not supported on \"%s\"", self->info.name);
+    if (!self->initialized)
+    {
+        return Status::Unsupported; // reported above; nothing to create it on
+    }
     if (self->lost)
     {
         return Status::DeviceLost;
@@ -33,6 +37,12 @@ void GraphicsDevice::destroy(MemoryBlock* memoryBlock)
 {
     SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, MemoryBlockCommon, memoryBlock,
                     "MemoryBlock", "GraphicsDevice::destroy");
+#ifdef SLAG_VALIDATION
+    if (memoryBlock && static_cast<const MemoryBlockCommon*>(memoryBlock)->destroyed)
+    {
+        return; // reported above: destroying it again would free it twice
+    }
+#endif
     if (!memoryBlock)
     {
         return;
@@ -41,6 +51,10 @@ void GraphicsDevice::destroy(MemoryBlock* memoryBlock)
     auto* object = static_cast<MemoryBlockCommon*>(memoryBlock);
     SLAG_VALIDATE(self->instance, object->device == self, "GraphicsDevice::destroy",
                   "the memory block belongs to another device");
+    if (object->device != self)
+    {
+        return; // the other device's state isn't this one's to change
+    }
     SLAG_VALIDATE(self->instance, object->liveResources == 0, "GraphicsDevice::destroy",
                   "the memory block still holds %u placed resources", object->liveResources.load());
     SLAG_DISPATCH(self, destroyMemoryBlock)(self, object);

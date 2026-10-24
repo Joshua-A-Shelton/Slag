@@ -41,6 +41,10 @@ Result<Buffer*> GraphicsDevice::createBuffer(const BufferDesc& desc)
             static_cast<unsigned long long>(placement.size), static_cast<unsigned long long>(desc.placement.offset));
     }
 #endif
+    if (!self->initialized)
+    {
+        return Status::Unsupported; // reported above; nothing to create it on
+    }
     if (self->lost)
     {
         return Status::DeviceLost;
@@ -99,6 +103,12 @@ void GraphicsDevice::destroy(Buffer* buffer)
 {
     SLAG_CHECK_LIVE(static_cast<const GraphicsDeviceCommon*>(this)->instance, BufferCommon, buffer, "Buffer",
                     "GraphicsDevice::destroy");
+#ifdef SLAG_VALIDATION
+    if (buffer && static_cast<const BufferCommon*>(buffer)->destroyed)
+    {
+        return; // reported above: destroying it again would free it twice
+    }
+#endif
     if (!buffer)
     {
         return;
@@ -107,6 +117,10 @@ void GraphicsDevice::destroy(Buffer* buffer)
     auto* object = static_cast<BufferCommon*>(buffer);
     SLAG_VALIDATE(self->instance, object->device == self, "GraphicsDevice::destroy",
                   "the buffer belongs to another device");
+    if (object->device != self)
+    {
+        return; // the other device's state isn't this one's to change
+    }
     SLAG_VALIDATE(self->instance, !object->movePass, "GraphicsDevice::destroy",
                   "the buffer is being moved by the active defragmentation pass; its move is dropped");
     if (object->movePass)
@@ -131,7 +145,7 @@ PlacementInfo GraphicsDevice::placementInfo(const BufferDesc& desc) const
     auto* self = static_cast<const GraphicsDeviceCommon*>(this);
     SLAG_VALIDATE(self->instance, self->initialized, "GraphicsDevice::placementInfo",
                   "device \"%s\" is not initialized", self->info.name);
-    return SLAG_DISPATCH(self, bufferPlacementInfo)(self, desc);
+    return self->initialized ? SLAG_DISPATCH(self, bufferPlacementInfo)(self, desc) : PlacementInfo{};
 }
 
 uint64_t Buffer::gpuAddress() const
