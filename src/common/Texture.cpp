@@ -407,6 +407,33 @@ PlacementInfo GraphicsDevice::placementInfo(const TextureCubeArrayDesc& desc) co
     return slag::placementInfo(common(this), toInfo(desc));
 }
 
+CopyFootprint GraphicsDevice::copyFootprint(const Texture* texture, uint32_t mip, TexturePlane plane) const
+{
+    const GraphicsDeviceCommon* self = common(this);
+    auto* object = static_cast<const TextureCommon*>(texture);
+    SLAG_VALIDATE(self->instance, object, "GraphicsDevice::copyFootprint", "texture is null");
+    if (!object)
+    {
+        return {};
+    }
+    SLAG_VALIDATE(self->instance, mip < object->mipCount, "GraphicsDevice::copyFootprint",
+                  "mip %u is outside the texture (%u mips)", mip, object->mipCount);
+    SLAG_VALIDATE(self->instance, !hasTraits(object->format, FormatTraits::Stencil) || plane != TexturePlane::Color,
+                  "GraphicsDevice::copyFootprint", "depth/stencil textures are copied one plane at a time");
+    CopyFootprint footprint;
+    footprint.width = object->width >> mip ? object->width >> mip : 1;
+    footprint.height = object->height >> mip ? object->height >> mip : 1;
+    footprint.depth = object->type == TextureType::Texture3D ? (object->depth >> mip ? object->depth >> mip : 1) : 1;
+    uint32_t block = blockDimension(object->format);
+    uint32_t blocksWide = (footprint.width + block - 1) / block;
+    footprint.rowCount = (footprint.height + block - 1) / block;
+    uint32_t rowBytes = blocksWide * copyBlockBytes(object->format, plane);
+    footprint.rowPitch = (rowBytes + alignment::textureCopyRowPitch - 1) / alignment::textureCopyRowPitch *
+                         alignment::textureCopyRowPitch;
+    footprint.size = uint64_t(footprint.rowPitch) * footprint.rowCount * footprint.depth;
+    return footprint;
+}
+
 uint64_t Texture::userData() const
 {
     return static_cast<const TextureCommon*>(this)->userData;

@@ -103,6 +103,12 @@ void fillResourceInfo(const TextureCreateInfo& info, ResourceInfo& out)
 D3D12_RESOURCE_ALLOCATION_INFO allocationInfo(ID3D12Device12* device, const ResourceInfo& info,
                                               D3D12_RESOURCE_DESC1 desc)
 {
+    // No list at all without castable formats: the debug layer rejects even an
+    // empty one on planar (depth/stencil) formats.
+    if (info.castableCount == 0)
+    {
+        return device->GetResourceAllocationInfo3(0, 1, &desc, nullptr, nullptr, nullptr);
+    }
     const DXGI_FORMAT* castable = info.castable;
     return device->GetResourceAllocationInfo3(0, 1, &desc, &info.castableCount, &castable, nullptr);
 }

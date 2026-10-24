@@ -205,6 +205,130 @@ void CommandBuffer::copyBuffer(Buffer* destination, uint64_t destinationOffset, 
     SLAG_DISPATCH(self, cmdCopyBuffer)(self, dst, destinationOffset, src, sourceOffset, size);
 }
 
+namespace {
+
+#ifdef SLAG_VALIDATION
+uint32_t mipSize(uint32_t size, uint32_t mip)
+{
+    return size >> mip ? size >> mip : 1;
+}
+
+// A texture region of a copy (ADR 0048).
+void validateTextureRegion(InstanceCommon* instance, const TextureLocation& location, uint32_t width, uint32_t height,
+                           uint32_t depth, const char* function)
+{
+    auto* texture = static_cast<const TextureCommon*>(location.texture);
+    SLAG_VALIDATE(instance, texture, function, "a texture is null");
+    if (!texture)
+    {
+        return;
+    }
+    SLAG_VALIDATE(instance, texture->sampleCount == 1, function, "MSAA textures can't be copied");
+    SLAG_VALIDATE(instance, location.mip < texture->mipCount, function, "mip %u is outside the texture (%u mips)",
+                  location.mip, texture->mipCount);
+    uint32_t layers = texture->type == TextureType::Texture3D ? 1 : texture->layerCount;
+    SLAG_VALIDATE(instance, location.layer < layers, function, "layer %u is outside the texture (%u layers)",
+                  location.layer, layers);
+    uint32_t mipWidth = mipSize(texture->width, location.mip);
+    uint32_t mipHeight = mipSize(texture->height, location.mip);
+    uint32_t mipDepth = texture->type == TextureType::Texture3D ? mipSize(texture->depth, location.mip) : 1;
+    SLAG_VALIDATE(instance,
+                  width >= 1 && height >= 1 && depth >= 1 && location.x + width <= mipWidth &&
+                      location.y + height <= mipHeight && location.z + depth <= mipDepth,
+                  function, "the region (%u,%u,%u)+(%ux%ux%u) is outside the mip (%ux%ux%u)", location.x, location.y,
+                  location.z, width, height, depth, mipWidth, mipHeight, mipDepth);
+    if (hasTraits(texture->format, FormatTraits::Compressed))
+    {
+        // Whole blocks, except where the region reaches the mip's edge.
+        SLAG_VALIDATE(instance,
+                      location.x % 4 == 0 && location.y % 4 == 0 &&
+                          (width % 4 == 0 || location.x + width == mipWidth) &&
+                          (height % 4 == 0 || location.y + height == mipHeight),
+                      function, "block-compressed regions cover whole 4x4 blocks");
+    }
+    bool depthStencil = hasTraits(texture->format, FormatTraits::Depth);
+    bool stencil = hasTraits(texture->format, FormatTraits::Stencil);
+    SLAG_VALIDATE(instance,
+                  (location.plane == TexturePlane::Color && !stencil) ||
+                      (location.plane == TexturePlane::Depth && depthStencil) ||
+                      (location.plane == TexturePlane::Stencil && stencil),
+                  function, "the plane doesn't fit the format (depth/stencil textures copy one plane at a time)");
+}
+
+void validateBufferRegion(InstanceCommon* instance, const BufferLocation& location, const TextureLocation& texture,
+                          uint32_t width, uint32_t height, uint32_t depth, const char* function)
+{
+    auto* buffer = static_cast<const BufferCommon*>(location.buffer);
+    auto* textureObject = static_cast<const TextureCommon*>(texture.texture);
+    SLAG_VALIDATE(instance, buffer, function, "the buffer is null");
+    if (!buffer || !textureObject)
+    {
+        return;
+    }
+    SLAG_VALIDATE(instance, location.offset % alignment::textureCopyOffset == 0, function,
+                  "the buffer offset %llu is not a multiple of %u", static_cast<unsigned long long>(location.offset),
+                  alignment::textureCopyOffset);
+    SLAG_VALIDATE(instance, location.rowPitch % alignment::textureCopyRowPitch == 0, function,
+                  "the row pitch %u is not a multiple of %u", location.rowPitch, alignment::textureCopyRowPitch);
+    uint32_t block = blockDimension(textureObject->format);
+    uint64_t rowBytes = uint64_t((width + block - 1) / block) * copyBlockBytes(textureObject->format, texture.plane);
+    uint64_t rows = (height + block - 1) / block;
+    SLAG_VALIDATE(instance, location.rowPitch >= rowBytes, function, "the row pitch %u is smaller than a row (%llu)",
+                  location.rowPitch, static_cast<unsigned long long>(rowBytes));
+    uint64_t end = location.offset + uint64_t(location.rowPitch) * rows * depth;
+    SLAG_VALIDATE(instance, end <= buffer->size, function, "the region ends past the buffer (%llu > %llu bytes)",
+                  static_cast<unsigned long long>(end), static_cast<unsigned long long>(buffer->size));
+}
+
+#endif
+
+} // namespace
+
+void CommandBuffer::copyTexture(const TextureLocation& destination, const TextureLocation& source, uint32_t width,
+                                uint32_t height, uint32_t depth)
+{
+    CommandBufferCommon* self = common(this);
+    SLAG_VALIDATE_RECORDING(self, "CommandBuffer::copyTexture");
+#ifdef SLAG_VALIDATION
+    InstanceCommon* instance = self->device->instance;
+    validateTextureRegion(instance, destination, width, height, depth, "CommandBuffer::copyTexture");
+    validateTextureRegion(instance, source, width, height, depth, "CommandBuffer::copyTexture");
+    auto* dst = static_cast<const TextureCommon*>(destination.texture);
+    auto* src = static_cast<const TextureCommon*>(source.texture);
+    SLAG_VALIDATE(instance, !dst || !src || dst->format == src->format || formatsCastable(dst->format, src->format),
+                  "CommandBuffer::copyTexture", "%s and %s are neither the same nor castable",
+                  dst ? formatInfo(dst->format).name : "", src ? formatInfo(src->format).name : "");
+#endif
+    SLAG_DISPATCH(self, cmdCopyTexture)(self, destination, source, width, height, depth);
+}
+
+void CommandBuffer::copyBufferToTexture(const TextureLocation& destination, const BufferLocation& source,
+                                        uint32_t width, uint32_t height, uint32_t depth)
+{
+    CommandBufferCommon* self = common(this);
+    SLAG_VALIDATE_RECORDING(self, "CommandBuffer::copyBufferToTexture");
+#ifdef SLAG_VALIDATION
+    validateTextureRegion(self->device->instance, destination, width, height, depth,
+                          "CommandBuffer::copyBufferToTexture");
+    validateBufferRegion(self->device->instance, source, destination, width, height, depth,
+                         "CommandBuffer::copyBufferToTexture");
+#endif
+    SLAG_DISPATCH(self, cmdCopyBufferTexture)(self, true, destination, source, width, height, depth);
+}
+
+void CommandBuffer::copyTextureToBuffer(const BufferLocation& destination, const TextureLocation& source,
+                                        uint32_t width, uint32_t height, uint32_t depth)
+{
+    CommandBufferCommon* self = common(this);
+    SLAG_VALIDATE_RECORDING(self, "CommandBuffer::copyTextureToBuffer");
+#ifdef SLAG_VALIDATION
+    validateTextureRegion(self->device->instance, source, width, height, depth, "CommandBuffer::copyTextureToBuffer");
+    validateBufferRegion(self->device->instance, destination, source, width, height, depth,
+                         "CommandBuffer::copyTextureToBuffer");
+#endif
+    SLAG_DISPATCH(self, cmdCopyBufferTexture)(self, false, source, destination, width, height, depth);
+}
+
 uint64_t CommandBuffer::userData() const
 {
     return static_cast<const CommandBufferCommon*>(this)->userData;

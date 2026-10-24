@@ -2,6 +2,7 @@
 
 // Backend-independent facts about each PixelFormat (ADR 0022).
 
+#include <slag/Barriers.h>
 #include <slag/PixelFormat.h>
 
 #include <cstddef>
@@ -40,6 +41,17 @@ inline bool hasTraits(PixelFormat format, FormatTraits traits)
 {
     return (formatInfo(format).traits & traits) == traits;
 }
+
+// 4 for block-compressed formats, else 1.
+inline uint32_t blockDimension(PixelFormat format)
+{
+    return hasTraits(format, FormatTraits::Compressed) ? 4 : 1;
+}
+
+// Bytes per texel (or block) of one plane in a buffer copy: depth/stencil
+// formats copy depth as 2 or 4 bytes and stencil as 1 (ADR 0048). Color
+// means the only plane of a single-plane format.
+uint32_t copyBlockBytes(PixelFormat format, TexturePlane plane);
 
 // Same texel size and type family, for castable formats (ADR 0022): sRGB and
 // linear variants, or uncompressed formats with the same bits per texel.

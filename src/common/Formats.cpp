@@ -136,6 +136,21 @@ const FormatInfo& formatInfo(PixelFormat format)
     return formats[index < pixelFormatCount ? index : 0];
 }
 
+uint32_t copyBlockBytes(PixelFormat format, TexturePlane plane)
+{
+    switch (format)
+    {
+    case PixelFormat::D16Unorm:
+        return 2;
+    case PixelFormat::D32Float:
+        return 4;
+    case PixelFormat::D32FloatS8Uint:
+        return plane == TexturePlane::Stencil ? 1 : 4;
+    default:
+        return formatInfo(format).blockBytes;
+    }
+}
+
 bool formatsCastable(PixelFormat a, PixelFormat b)
 {
     if (linearOf(a) == linearOf(b))

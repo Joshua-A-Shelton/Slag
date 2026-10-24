@@ -7,6 +7,7 @@ add_executable(slag_backend_tests
     BufferTests.cpp
     CommandTests.cpp
     ComputeTests.cpp
+    CopyTests.cpp
     DeviceTests.cpp
     InstanceTests.cpp
     MemoryTests.cpp

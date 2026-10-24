@@ -79,6 +79,9 @@ SLAG_VK_DEVICE_FN(vkCmdPushDataEXT)
 SLAG_VK_DEVICE_FN(vkCmdDispatch)
 SLAG_VK_DEVICE_FN(vkCmdPipelineBarrier2)
 SLAG_VK_DEVICE_FN(vkCmdCopyBuffer)
+SLAG_VK_DEVICE_FN(vkCmdCopyImage2)
+SLAG_VK_DEVICE_FN(vkCmdCopyBufferToImage2)
+SLAG_VK_DEVICE_FN(vkCmdCopyImageToBuffer2)
 
 #undef SLAG_VK_GLOBAL_FN
 #undef SLAG_VK_INSTANCE_FN

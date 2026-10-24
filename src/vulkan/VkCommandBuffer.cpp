@@ -394,6 +394,90 @@ void cmdCopyBuffer(CommandBufferCommon* object, BufferCommon* destination, uint6
                                         static_cast<BufferImpl*>(destination)->buffer, 1, &region);
 }
 
+namespace {
+
+VkImageSubresourceLayers subresource(const TextureLocation& location)
+{
+    auto* texture = static_cast<const TextureImpl*>(location.texture);
+    VkImageSubresourceLayers layers = {};
+    layers.aspectMask = aspectsOf(*texture, location.plane);
+    layers.mipLevel = location.mip;
+    layers.baseArrayLayer = location.layer;
+    layers.layerCount = 1;
+    return layers;
+}
+
+// Copies need CopySource / CopyDest, or Common on copy queues (ADR 0049).
+VkImageLayout copyLayout(const CommandBufferImpl& commandBuffer, bool source)
+{
+    if (commandBuffer.queueType == CommandQueueType::Copy)
+    {
+        return VK_IMAGE_LAYOUT_GENERAL;
+    }
+    return source ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+}
+
+} // namespace
+
+void cmdCopyTexture(CommandBufferCommon* object, const TextureLocation& destination, const TextureLocation& source,
+                    uint32_t width, uint32_t height, uint32_t depth)
+{
+    auto* commandBuffer = static_cast<CommandBufferImpl*>(object);
+    VkImageCopy2 region = {VK_STRUCTURE_TYPE_IMAGE_COPY_2};
+    region.srcSubresource = subresource(source);
+    region.srcOffset = {static_cast<int32_t>(source.x), static_cast<int32_t>(source.y), static_cast<int32_t>(source.z)};
+    region.dstSubresource = subresource(destination);
+    region.dstOffset = {static_cast<int32_t>(destination.x), static_cast<int32_t>(destination.y),
+                        static_cast<int32_t>(destination.z)};
+    region.extent = {width, height, depth};
+    VkCopyImageInfo2 info = {VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2};
+    info.srcImage = static_cast<TextureImpl*>(source.texture)->image;
+    info.srcImageLayout = copyLayout(*commandBuffer, true);
+    info.dstImage = static_cast<TextureImpl*>(destination.texture)->image;
+    info.dstImageLayout = copyLayout(*commandBuffer, false);
+    info.regionCount = 1;
+    info.pRegions = &region;
+    deviceOf(object).fn.vkCmdCopyImage2(commandBuffer->commandBuffer, &info);
+}
+
+void cmdCopyBufferTexture(CommandBufferCommon* object, bool toTexture, const TextureLocation& texture,
+                          const BufferLocation& buffer, uint32_t width, uint32_t height, uint32_t depth)
+{
+    auto* commandBuffer = static_cast<CommandBufferImpl*>(object);
+    auto* textureObject = static_cast<TextureImpl*>(texture.texture);
+    // Vulkan counts the buffer row length in texels; Slag's row pitch is in bytes.
+    uint32_t block = blockDimension(textureObject->format);
+    VkBufferImageCopy2 region = {VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2};
+    region.bufferOffset = buffer.offset;
+    region.bufferRowLength = buffer.rowPitch / copyBlockBytes(textureObject->format, texture.plane) * block;
+    region.bufferImageHeight = (height + block - 1) / block * block;
+    region.imageSubresource = subresource(texture);
+    region.imageOffset = {static_cast<int32_t>(texture.x), static_cast<int32_t>(texture.y),
+                          static_cast<int32_t>(texture.z)};
+    region.imageExtent = {width, height, depth};
+    VkBuffer vkBuffer = static_cast<BufferImpl*>(buffer.buffer)->buffer;
+    if (toTexture)
+    {
+        VkCopyBufferToImageInfo2 info = {VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2};
+        info.srcBuffer = vkBuffer;
+        info.dstImage = textureObject->image;
+        info.dstImageLayout = copyLayout(*commandBuffer, false);
+        info.regionCount = 1;
+        info.pRegions = &region;
+        deviceOf(object).fn.vkCmdCopyBufferToImage2(commandBuffer->commandBuffer, &info);
+    }
+    else
+    {
+        VkCopyImageToBufferInfo2 info = {VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2};
+        info.srcImage = textureObject->image;
+        info.srcImageLayout = copyLayout(*commandBuffer, true);
+        info.dstBuffer = vkBuffer;
+        info.regionCount = 1;
+        info.pRegions = &region;
+        deviceOf(object).fn.vkCmdCopyImageToBuffer2(commandBuffer->commandBuffer, &info);
+    }
+}
+
 Result<void> submit(CommandQueueCommon* object, const SubmitDesc& desc)
 {
     auto* queue = static_cast<CommandQueueImpl*>(object);

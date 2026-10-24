@@ -1,4 +1,5 @@
 #include "d3d12/D3D12Backend.h"
+#include "d3d12/D3D12Formats.h"
 
 namespace slag::d3d12 {
 
@@ -329,6 +330,78 @@ void cmdCopyBuffer(CommandBufferCommon* object, BufferCommon* destination, uint6
     static_cast<CommandBufferImpl*>(object)->list->CopyBufferRegion(
         static_cast<BufferImpl*>(destination)->resource, destinationOffset, static_cast<BufferImpl*>(source)->resource,
         sourceOffset, size);
+}
+
+namespace {
+
+D3D12_TEXTURE_COPY_LOCATION subresourceLocation(const TextureLocation& location)
+{
+    auto* texture = static_cast<const TextureImpl*>(location.texture);
+    uint32_t arraySize = texture->type == TextureType::Texture3D ? 1 : texture->layerCount;
+    uint32_t plane = location.plane == TexturePlane::Stencil ? 1 : 0;
+    D3D12_TEXTURE_COPY_LOCATION result = {};
+    result.pResource = texture->resource;
+    result.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    result.SubresourceIndex = location.mip + location.layer * texture->mipCount + plane * texture->mipCount * arraySize;
+    return result;
+}
+
+// The format a plane is copied as: depth textures are typeless (D3D12Texture.cpp).
+DXGI_FORMAT copyFormat(PixelFormat format, TexturePlane plane)
+{
+    switch (format)
+    {
+    case PixelFormat::D16Unorm:
+        return DXGI_FORMAT_R16_TYPELESS;
+    case PixelFormat::D32Float:
+        return DXGI_FORMAT_R32_TYPELESS;
+    case PixelFormat::D32FloatS8Uint:
+        return plane == TexturePlane::Stencil ? DXGI_FORMAT_R8_TYPELESS : DXGI_FORMAT_R32_TYPELESS;
+    default:
+        return toDxgiFormat(format);
+    }
+}
+
+} // namespace
+
+void cmdCopyTexture(CommandBufferCommon* object, const TextureLocation& destination, const TextureLocation& source,
+                    uint32_t width, uint32_t height, uint32_t depth)
+{
+    auto* commandBuffer = static_cast<CommandBufferImpl*>(object);
+    D3D12_TEXTURE_COPY_LOCATION dst = subresourceLocation(destination);
+    D3D12_TEXTURE_COPY_LOCATION src = subresourceLocation(source);
+    D3D12_BOX box = {source.x, source.y, source.z, source.x + width, source.y + height, source.z + depth};
+    commandBuffer->list->CopyTextureRegion(&dst, destination.x, destination.y, destination.z, &src, &box);
+}
+
+void cmdCopyBufferTexture(CommandBufferCommon* object, bool toTexture, const TextureLocation& texture,
+                          const BufferLocation& buffer, uint32_t width, uint32_t height, uint32_t depth)
+{
+    auto* commandBuffer = static_cast<CommandBufferImpl*>(object);
+    auto* textureObject = static_cast<TextureImpl*>(texture.texture);
+    // Block-compressed footprints and boxes cover whole blocks.
+    uint32_t block = blockDimension(textureObject->format);
+    uint32_t blockWidth = (width + block - 1) / block * block;
+    uint32_t blockHeight = (height + block - 1) / block * block;
+
+    D3D12_TEXTURE_COPY_LOCATION footprint = {};
+    footprint.pResource = static_cast<BufferImpl*>(buffer.buffer)->resource;
+    footprint.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+    footprint.PlacedFootprint.Offset = buffer.offset;
+    footprint.PlacedFootprint.Footprint = {copyFormat(textureObject->format, texture.plane), blockWidth, blockHeight,
+                                           depth, buffer.rowPitch};
+    D3D12_TEXTURE_COPY_LOCATION subresource = subresourceLocation(texture);
+    if (toTexture)
+    {
+        D3D12_BOX box = {0, 0, 0, blockWidth, blockHeight, depth};
+        commandBuffer->list->CopyTextureRegion(&subresource, texture.x, texture.y, texture.z, &footprint, &box);
+    }
+    else
+    {
+        D3D12_BOX box = {texture.x,        texture.y, texture.z, texture.x + blockWidth, texture.y + blockHeight,
+                         texture.z + depth};
+        commandBuffer->list->CopyTextureRegion(&footprint, 0, 0, 0, &subresource, &box);
+    }
 }
 
 Result<void> submit(CommandQueueCommon* object, const SubmitDesc& desc)

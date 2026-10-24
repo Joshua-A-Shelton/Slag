@@ -5,6 +5,7 @@
 // pipeline cache (ADRs 0008, 0015, 0019, 0023, 0029, 0031, 0043, 0053, 0054).
 
 #include <slag/AttachmentView.h>
+#include <slag/Barriers.h>
 #include <slag/Buffer.h>
 #include <slag/CommandBuffer.h>
 #include <slag/CommandQueue.h>
@@ -58,6 +59,18 @@ struct MemoryBudget
     uint64_t dedicatedUsageBytes = 0;
     uint64_t sharedBudgetBytes = 0;
     uint64_t sharedUsageBytes = 0;
+};
+
+// How copyBufferToTexture / copyTextureToBuffer lay out one mip of one layer
+// (all depth slices of a 3D texture) in a buffer. Same on every backend.
+struct CopyFootprint
+{
+    uint64_t size = 0;     // bytes: rowPitch * rowCount * depth
+    uint32_t rowPitch = 0; // bytes between rows, a multiple of 256
+    uint32_t rowCount = 0; // rows of texels, or of 4x4 blocks when block-compressed
+    uint32_t width = 0;    // the mip's size in texels
+    uint32_t height = 0;
+    uint32_t depth = 0;
 };
 
 struct GraphicsDeviceInitDesc
@@ -129,6 +142,10 @@ public:
     PlacementInfo placementInfo(const Texture3DDesc& desc) const;
     PlacementInfo placementInfo(const TextureCubeDesc& desc) const;
     PlacementInfo placementInfo(const TextureCubeArrayDesc& desc) const;
+
+    // Buffer layout of one mip (ADR 0048). Textures with depth and stencil
+    // name a plane. Thread-safe.
+    CopyFootprint copyFootprint(const Texture* texture, uint32_t mip, TexturePlane plane = TexturePlane::Color) const;
 
     Result<Pipeline*> createComputePipeline(const ComputePipelineDesc& desc);
     void destroy(Pipeline* pipeline);
