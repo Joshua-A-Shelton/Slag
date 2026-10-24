@@ -185,7 +185,7 @@ struct ColorTargetBlend
 struct BlendState
 {
     bool alphaToCoverage = false;
-    ColorTargetBlend targets[8] = {};
+    ColorTargetBlend targets[8];
 };
 
 // A vertex shader and an optional pixel shader (no binaries: depth-only).
