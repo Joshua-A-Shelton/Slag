@@ -558,6 +558,15 @@ Result<void> submit(CommandQueueCommon* object, const SubmitDesc& desc)
             return Status::OutOfHostMemory;
         }
     }
+    if (!desc.commandBuffers.empty())
+    {
+        VkCommandBufferSubmitInfo info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO};
+        info.commandBuffer = queue->boundary; // ADR 0049
+        if (!queue->commandBufferInfos.pushBack(info))
+        {
+            return Status::OutOfHostMemory;
+        }
+    }
     for (CommandBuffer* commandBuffer : desc.commandBuffers)
     {
         VkCommandBufferSubmitInfo info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO};

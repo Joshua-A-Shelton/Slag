@@ -204,7 +204,9 @@ Accepted decisions live in `docs/decisions/`.
   access + layout, split into global, buffer, and texture barriers). Vulkan
   maps these onto synchronization2 (`vkCmdPipelineBarrier2`). The Enhanced
   Barriers model is the reference: if the two APIs disagree, follow D3D12's
-  semantics and document how Vulkan is mapped.
+  semantics and document how Vulkan is mapped. A submit starts after all
+  earlier work on its queue has finished and is visible, as at D3D12's
+  `ExecuteCommandLists` boundaries (ADR 0049).
 - **Timeline fences** are the only CPU/GPU and cross-queue sync primitive
   exposed (D3D12 fences, Vulkan timeline semaphores). Binary semaphores are an
   internal detail of the Vulkan swapchain.

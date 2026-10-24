@@ -172,6 +172,69 @@ void testPipelineCache(slag::Backend backend)
     test.checkNoErrors();
 }
 
+// Submit boundaries (ADR 0049): a submit starts after every earlier submit on
+// the queue has finished, with its writes visible, as at D3D12's
+// ExecuteCommandLists boundaries. The second copy reads what the first wrote,
+// with no barrier and no semaphore in between; synchronization validation
+// reports the hazard on Vulkan otherwise. (Copies, because validation can't
+// see shader accesses through the descriptor heap.)
+void testSubmitBoundary(slag::Backend backend)
+{
+    TestInstance test(backend, slag::ValidationFailureAction::Continue,
+                      slag::ValidationFlags::Api | slag::ValidationFlags::Synchronization);
+    slag::GraphicsDevice* device = test.firstDevice();
+    REQUIRE(device);
+    REQUIRE(static_cast<bool>(device->initialize({})));
+    constexpr uint32_t count = 4096;
+    auto buffer = [&](slag::MemoryKind kind) {
+        return device->createBuffer({.size = count * 4, .placement = slag::Placement::automatic(kind)}).value();
+    };
+    slag::Buffer* upload = buffer(slag::MemoryKind::Upload);
+    slag::Buffer* middle = buffer(slag::MemoryKind::GpuOnly);
+    slag::Buffer* readback = buffer(slag::MemoryKind::Readback);
+    slag::CommandBuffer* first = device->createCommandBuffer({.queueType = slag::CommandQueueType::Copy}).value();
+    slag::CommandBuffer* second = device->createCommandBuffer({.queueType = slag::CommandQueueType::Copy}).value();
+    slag::Semaphore* done = device->createSemaphore({}).value();
+    REQUIRE((upload && middle && readback && first && second && done));
+    auto* words = static_cast<uint32_t*>(upload->mappedData());
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        words[i] = i * 2 + 1;
+    }
+
+    REQUIRE(static_cast<bool>(first->begin()));
+    first->copyBuffer(middle, 0, upload, 0, count * 4);
+    REQUIRE(static_cast<bool>(first->end()));
+    REQUIRE(static_cast<bool>(second->begin()));
+    second->copyBuffer(readback, 0, middle, 0, count * 4);
+    REQUIRE(static_cast<bool>(second->end()));
+
+    slag::CommandQueue* queue = device->commandQueue(slag::CommandQueueType::Copy);
+    slag::CommandBuffer* firstList[] = {first};
+    slag::CommandBuffer* secondList[] = {second};
+    slag::SemaphoreValue signal = {done, 1};
+    REQUIRE(static_cast<bool>(queue->submit({.commandBuffers = firstList})));
+    REQUIRE(static_cast<bool>(queue->submit({.commandBuffers = secondList, .signals = {&signal, 1}})));
+    REQUIRE(static_cast<bool>(done->wait(1, 5'000'000'000)));
+
+    const auto* values = static_cast<const uint32_t*>(readback->mappedData());
+    uint32_t mismatches = 0;
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        mismatches += values[i] == i * 2 + 1 ? 0 : 1;
+    }
+    CHECK(mismatches == 0);
+
+    device->destroy(done);
+    device->destroy(second);
+    device->destroy(first);
+    device->destroy(readback);
+    device->destroy(middle);
+    device->destroy(upload);
+    device->shutdown();
+    test.checkNoErrors();
+}
+
 // Every listed device: descriptor sizes differ between GPUs.
 void runFillBufferOnAllDevices(slag::Backend backend)
 {
@@ -198,6 +261,20 @@ TEST_CASE("Vulkan: M1 spike - compute writes through the resource heap, CPU read
 TEST_CASE("D3D12: M1 spike - compute writes through the resource heap, CPU reads it back")
 {
     runFillBufferOnAllDevices(slag::Backend::D3D12);
+}
+#endif
+
+#ifdef SLAG_BACKEND_VULKAN
+TEST_CASE("Vulkan: a submit sees the finished work of earlier submits on its queue")
+{
+    testSubmitBoundary(slag::Backend::Vulkan);
+}
+#endif
+
+#ifdef SLAG_BACKEND_D3D12
+TEST_CASE("D3D12: a submit sees the finished work of earlier submits on its queue")
+{
+    testSubmitBoundary(slag::Backend::D3D12);
 }
 #endif
 

@@ -80,4 +80,4 @@ says a name is final. Names are chosen in a separate, explicit step.
 | [0069](0069-deferred-destroyer.md) | Delayed destruction utility | Accepted |
 | [0070](0070-platforms-and-versioning.md) | Platforms, CPU architectures, versioning | Accepted |
 | [0071](0071-native-interop.md) | Native interop accessors | Accepted |
-| [0072](0072-render-graph-module.md) | Render graph module | Accepted in part |
+| [0072](0072-render-graph-module.md) | Render graph module | Accepted |

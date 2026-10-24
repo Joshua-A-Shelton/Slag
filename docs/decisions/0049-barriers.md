@@ -69,9 +69,31 @@ CopySource, CopyDest, ResolveSource, ResolveDest. ShaderRead →
   layout.
 - Copy queue: textures must be in `Common`, and copy queues can't perform
   layout transitions (verified against the Enhanced Barriers spec).
-  Graphics/compute: all other layouts. Validated.
+- Compute queue: `Common`, `ShaderRead`, `ShaderWrite`, `CopySource`,
+  `CopyDest` (and `Undefined` as the layout before), the layouts D3D12
+  compute lists support (corrected 2026-10-24; earlier text said "all other
+  layouts"). Graphics: every layout. Validated.
 - D3D12 queue-specific layouts (`DIRECT_QUEUE_*`, `COMPUTE_QUEUE_*`) cut;
   possible later optimization.
+
+## Submit boundaries (decided 2026-10-24)
+
+D3D12 "requires a full finish and flush of all GPU work at
+`ExecuteCommandLists` completion" (Enhanced Barriers spec), and one Slag
+submit is one `ExecuteCommandLists` call. So a submit starts after every
+earlier submit on its queue has finished, with their writes visible, on
+both backends: a resource last used in an earlier submit needs at most a
+layout transition, from `syncBefore = None`. Within a submit, command
+buffers are one scope; barriers order them as usual. Work on other queues
+is ordered by semaphore waits, which use `ALL_COMMANDS` on Vulkan.
+
+Vulkan has no such boundary (a barrier from `NONE` doesn't depend on
+earlier submits), so each queue records one command buffer at
+initialization holding a single global barrier (all commands, memory
+writes → all commands, memory reads and writes) and puts it first in every
+submit with command buffers. Tested by "a submit sees the finished work of
+earlier submits on its queue", which synchronization validation fails
+without it.
 
 ## GPU → CPU visibility (resolves ADR 0024's open question)
 

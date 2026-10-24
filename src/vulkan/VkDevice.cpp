@@ -102,13 +102,58 @@ void destroyHeap(GraphicsDeviceImpl& device, DescriptorHeap& heap)
     heap = {};
 }
 
+// A full barrier ordering every submit after all earlier work on the queue,
+// with its writes visible: the Vulkan side of D3D12's ExecuteCommandLists
+// boundary (ADR 0049). Semaphore waits already cover work on other queues.
+VkResult recordSubmitBoundary(GraphicsDeviceImpl& device, CommandQueueImpl& queue)
+{
+    VkCommandPoolCreateInfo poolInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
+    poolInfo.queueFamilyIndex = queue.family;
+    VkResult result = device.fn.vkCreateCommandPool(device.device, &poolInfo, nullptr, &queue.boundaryPool);
+    if (result != VK_SUCCESS)
+    {
+        return result;
+    }
+    VkCommandBufferAllocateInfo allocateInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+    allocateInfo.commandPool = queue.boundaryPool;
+    allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocateInfo.commandBufferCount = 1;
+    result = device.fn.vkAllocateCommandBuffers(device.device, &allocateInfo, &queue.boundary);
+    if (result != VK_SUCCESS)
+    {
+        return result;
+    }
+    VkCommandBufferBeginInfo beginInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT; // pending in several submits at once
+    result = device.fn.vkBeginCommandBuffer(queue.boundary, &beginInfo);
+    if (result != VK_SUCCESS)
+    {
+        return result;
+    }
+    VkMemoryBarrier2 barrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER_2};
+    barrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+    barrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
+    barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+    barrier.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT;
+    VkDependencyInfo dependency = {VK_STRUCTURE_TYPE_DEPENDENCY_INFO};
+    dependency.memoryBarrierCount = 1;
+    dependency.pMemoryBarriers = &barrier;
+    device.fn.vkCmdPipelineBarrier2(queue.boundary, &dependency);
+    return device.fn.vkEndCommandBuffer(queue.boundary);
+}
+
 void destroyQueues(GraphicsDeviceImpl& device)
 {
     for (Vector<CommandQueue*>& queues : device.queues)
     {
         for (CommandQueue* queue : queues)
         {
-            device.instance->allocator.destroy(static_cast<CommandQueueImpl*>(queue));
+            auto* impl = static_cast<CommandQueueImpl*>(queue);
+            if (impl->boundaryPool != VK_NULL_HANDLE)
+            {
+                device.fn.vkDestroyCommandPool(device.device, impl->boundaryPool, nullptr);
+            }
+            device.instance->allocator.destroy(impl);
         }
         queues.clear();
     }
@@ -366,6 +411,12 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
             queue->signalInfos = Vector<VkSemaphoreSubmitInfo>(&instance.allocator);
             queue->commandBufferInfos = Vector<VkCommandBufferSubmitInfo>(&instance.allocator);
             device.fn.vkGetDeviceQueue(device.device, assignment.family, assignment.index, &queue->queue);
+            VkResult boundaryResult = recordSubmitBoundary(device, *queue);
+            if (boundaryResult != VK_SUCCESS)
+            {
+                shutdownDevice(&device);
+                return toStatus(device, boundaryResult);
+            }
             bool known = false;
             for (uint32_t i = 0; i < device.sharingFamilyCount; ++i)
             {

@@ -93,6 +93,11 @@ struct CommandQueueImpl : CommandQueueCommon
     VkQueue queue = VK_NULL_HANDLE;
     uint32_t family = 0;
     std::mutex* sharedLock = nullptr; // set when the VkQueue is shared
+    // Recorded once and put first in every submit: D3D12 finishes and flushes
+    // all work at ExecuteCommandLists boundaries, and Slag's barriers rely on
+    // it (ADR 0049).
+    VkCommandPool boundaryPool = VK_NULL_HANDLE;
+    VkCommandBuffer boundary = VK_NULL_HANDLE;
     // Reused by submit, so submitting doesn't allocate after warm-up.
     Vector<VkSemaphoreSubmitInfo> waitInfos;
     Vector<VkSemaphoreSubmitInfo> signalInfos;

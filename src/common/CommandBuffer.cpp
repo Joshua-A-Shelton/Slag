@@ -241,6 +241,18 @@ void CommandBuffer::barrier(std::span<const GlobalBarrier> globalBarriers,
                       self->queueType != CommandQueueType::Copy || (barrier.layoutBefore == TextureLayout::Common &&
                                                                     barrier.layoutAfter == TextureLayout::Common),
                       "CommandBuffer::barrier", "textures stay in the Common layout on copy queues");
+        // D3D12 compute lists support only these layouts (ADR 0049).
+        auto computeLayout = [](TextureLayout layout) {
+            return layout == TextureLayout::Common || layout == TextureLayout::ShaderRead ||
+                   layout == TextureLayout::ShaderWrite || layout == TextureLayout::CopySource ||
+                   layout == TextureLayout::CopyDest;
+        };
+        SLAG_VALIDATE(instance,
+                      self->queueType != CommandQueueType::Compute ||
+                          ((barrier.layoutBefore == TextureLayout::Undefined || computeLayout(barrier.layoutBefore)) &&
+                           computeLayout(barrier.layoutAfter)),
+                      "CommandBuffer::barrier",
+                      "compute queues use only the Common, ShaderRead, ShaderWrite, CopySource, and CopyDest layouts");
     }
 #endif
     if (globalBarriers.empty() && bufferBarriers.empty() && textureBarriers.empty())

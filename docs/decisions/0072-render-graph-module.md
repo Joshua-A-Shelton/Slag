@@ -1,8 +1,6 @@
 # 0072 — Render graph module
 
-**Status:** Accepted in part (2026-10-24): placement, timing, scope, and the
-ADR 0007 exemption are decided; the design is proposed and still open. Names
-are placeholders.
+**Status:** Accepted (2026-10-24). Names are placeholders.
 
 ## Decided
 
@@ -24,9 +22,36 @@ are placeholders.
   through `AllocatorCallbacks`, so callables are stored in memory the graph
   allocates, not in `std::function`.
 
-## Open
+## Design (accepted 2026-10-24)
 
-The design (pass declaration, resource handles, ordering, queue scheduling,
-transient aliasing, recording model, frame lifetime, defragmentation
-support), and two core questions the graph depends on: barrier ordering
-across submits on Vulkan, and per-queue layout validation (ADR 0049).
+- **Declaration order is execution order.** The graph works out barriers,
+  semaphores, and memory aliasing; it never reorders or culls passes.
+- **State per whole resource** in the first version; per-mip tracking (mip
+  generation) later.
+- **The graph begins and ends rendering** for passes that declare
+  attachments, with their load and store ops.
+- **One command buffer per pass**; grouping passes into one command buffer
+  later.
+- **No thread pool:** `recordPass(i)` may be called from any thread for
+  different passes; the user's job system runs them.
+- **Pass code is stored through templates** in memory the graph allocates
+  (`AllocatorCallbacks`), not in `std::function`.
+- **Passes refer to resources through small handles**, since transient
+  resources don't exist until `compile`.
+- **Rebuilt every frame**; caching `compile` results comes later.
+- Barriers for a pass are recorded at the start of its command buffer, so
+  every barrier is known before recording starts and passes record in
+  parallel. One timeline semaphore per queue; a dependency between queues
+  splits submits and adds a wait. Textures used on a copy queue are moved to
+  `Common` on the queue they come from; compute queues get only the layouts
+  D3D12 allows there.
+- Transient resources live in memory blocks the graph owns, placed by
+  lifetime and reused when lifetimes don't overlap; a placed resource's first
+  use starts from `Undefined`, after a barrier from the previous resource's
+  last use. Their `Texture` / `Buffer` objects are cached across frames by
+  description and placement.
+
+## Core prerequisites
+
+- Barrier ordering across submits on Vulkan (ADR 0049).
+- Per-queue layout validation (ADR 0049).

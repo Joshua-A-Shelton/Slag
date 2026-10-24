@@ -74,6 +74,11 @@ TEST_CASE("barriers")
     CommandBuffer* copy = f.recording(CommandQueueType::Copy);
     TextureBarrier transition = {.layoutAfter = TextureLayout::CopyDest, .texture = texture};
     CHECK_VALIDATION(f, "textures stay in the Common layout on copy queues", copy->barrier({}, {}, {&transition, 1}));
+    CommandBuffer* compute = f.recording(CommandQueueType::Compute);
+    TextureBarrier toTarget = {.layoutAfter = TextureLayout::RenderTarget, .texture = texture};
+    CHECK_VALIDATION(f, "compute queues use only the Common, ShaderRead", compute->barrier({}, {}, {&toTarget, 1}));
+    TextureBarrier toShader = {.layoutAfter = TextureLayout::ShaderWrite, .texture = texture};
+    CHECK_NO_VALIDATION(f, compute->barrier({}, {}, {&toShader, 1}));
 
     Buffer* buffer = f.buffer();
     f.device->destroy(buffer);

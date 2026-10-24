@@ -34,11 +34,12 @@ class TestInstance
 {
 public:
     explicit TestInstance(slag::Backend backend,
-                          slag::ValidationFailureAction action = slag::ValidationFailureAction::Continue)
+                          slag::ValidationFailureAction action = slag::ValidationFailureAction::Continue,
+                          slag::ValidationFlags validationFlags = slag::ValidationFlags::Api)
     {
         slag::InstanceDesc desc;
         desc.backend = backend;
-        desc.validationFlags = slag::ValidationFlags::Api;
+        desc.validationFlags = validationFlags;
         desc.validationFailureAction = action;
         // Software devices (WARP) are tested too, and are all hosted CI has.
         desc.allowSoftwareDevices = true;
