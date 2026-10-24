@@ -75,3 +75,4 @@ says a name is final. Names are chosen in a separate, explicit step.
 | [0064](0064-license.md) | License (zlib) | Accepted |
 | [0065](0065-dispatch-and-registration.md) | Dispatch and backend registration | Accepted |
 | [0066](0066-cpu-allocator-and-containers.md) | CPU allocator and containers | Accepted |
+| [0067](0067-validation.md) | How validation is built | Accepted |

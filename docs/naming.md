@@ -154,6 +154,7 @@ Flag enums use a singular name with `SLAG_FLAGS`.
 |---|---|
 | `Backend` | `D3D12`, `Vulkan` (0x80+ reserved for external backends) |
 | `ValidationFlags` (flags) | `Api`, `GpuAssisted`, `Synchronization` |
+| `ValidationFailureAction` | `Break`, `Continue`, `Abort` (ADR 0067) |
 | `MessageSeverity` | `Error`, `Warning`, `Info` |
 | `MessageSource` | `Slag`, `Backend` |
 | `GraphicsDeviceType` | `Discrete`, `Integrated`, `Software` |

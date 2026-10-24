@@ -245,13 +245,18 @@ Accepted decisions live in `docs/decisions/`.
   `-fno-exceptions -fno-rtti` / `/EHs-c- /GR-`.
 - Fallible operations return `slag::Result<T>`: a `Status` (success group
   incl. `Suboptimal`/`Timeout`, error group) plus a value on success (ADR
-  0060). Defined in `slag/core`; no dependency on `std::expected`.
-- Programmer errors (invalid usage) are **asserts** routed through a
-  user-replaceable handler, compiled in under `SLAG_VALIDATION`. Release builds
-  pay nothing for validation.
+  0060). Defined in `slag/Result.h`; no dependency on `std::expected`.
+- Programmer errors (invalid usage) are caught by Slag validation (ADR
+  0067): compiled in with `SLAG_VALIDATION` and then always on, written once
+  in `src/common/validation/`, reported through the debug callback, with
+  `ValidationFailureAction` (`Break` by default, `Continue`, `Abort`). The
+  failing call still proceeds. Release builds pay nothing.
+- Slag doesn't track texture layouts or barrier correctness in v1; backend
+  synchronization / GPU-based validation covers that.
 - Device lost / out-of-memory are reported as results, never asserts.
-- Debug builds should enable native validation layers (D3D12 debug layer + GPU-
-  based validation optional, Vulkan validation layers) via device-creation flags.
+- Backend validation layers (D3D12 debug layer, GPU-based validation, Vulkan
+  validation layers) are a separate, runtime choice: `ValidationFlags` in
+  `InstanceDesc`.
 
 ## 9. Memory & allocation
 
