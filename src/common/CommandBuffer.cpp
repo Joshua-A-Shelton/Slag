@@ -96,6 +96,7 @@ Result<void> CommandBuffer::begin()
         self->suspendsPass = false;
         self->recordedPass = false;
         self->labelDepth = 0;
+        self->activeQueryPool = nullptr;
     }
     return result;
 }

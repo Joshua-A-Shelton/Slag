@@ -16,7 +16,7 @@ Result<QueryPoolCommon*> createQueryPool(GraphicsDeviceCommon* common, const Que
     pool->device = &device;
     pool->functions = device.functions;
     VkQueryPoolCreateInfo createInfo = {VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO};
-    createInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
+    createInfo.queryType = desc.type == QueryType::Occlusion ? VK_QUERY_TYPE_OCCLUSION : VK_QUERY_TYPE_TIMESTAMP;
     createInfo.queryCount = desc.count;
     VkResult result = device.fn.vkCreateQueryPool(device.device, &createInfo, nullptr, &pool->pool);
     if (result != VK_SUCCESS)
@@ -37,6 +37,22 @@ void destroyQueryPool(GraphicsDeviceCommon* common, QueryPoolCommon* object)
     auto* pool = static_cast<QueryPoolImpl*>(object);
     device.fn.vkDestroyQueryPool(device.device, pool->pool, nullptr);
     destroyObject(device.instance, pool);
+}
+
+// PRECISE: exact sample counts, as D3D12's OCCLUSION (ADR 0051).
+void cmdBeginQuery(CommandBufferCommon* object, QueryPoolCommon* poolObject, uint32_t index)
+{
+    auto* commandBuffer = static_cast<CommandBufferImpl*>(object);
+    auto& device = *static_cast<GraphicsDeviceImpl*>(commandBuffer->device);
+    device.fn.vkCmdBeginQuery(commandBuffer->commandBuffer, static_cast<QueryPoolImpl*>(poolObject)->pool, index,
+                              VK_QUERY_CONTROL_PRECISE_BIT);
+}
+
+void cmdEndQuery(CommandBufferCommon* object, QueryPoolCommon* poolObject, uint32_t index)
+{
+    auto* commandBuffer = static_cast<CommandBufferImpl*>(object);
+    auto& device = *static_cast<GraphicsDeviceImpl*>(commandBuffer->device);
+    device.fn.vkCmdEndQuery(commandBuffer->commandBuffer, static_cast<QueryPoolImpl*>(poolObject)->pool, index);
 }
 
 void cmdWriteTimestamp(CommandBufferCommon* object, QueryPoolCommon* poolObject, uint32_t index)

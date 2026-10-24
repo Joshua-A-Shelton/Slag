@@ -114,6 +114,8 @@ void CommandBuffer::endRendering()
     CommandBufferCommon* self = common(this);
     SLAG_VALIDATE_IN_PASS(self, "CommandBuffer::endRendering");
     self->inRenderPass = false;
+    SLAG_VALIDATE(self->device->instance, !self->activeQueryPool, "CommandBuffer::endRendering",
+                  "an occlusion query is still open");
     SLAG_DISPATCH(self, cmdEndRendering)(self);
 }
 

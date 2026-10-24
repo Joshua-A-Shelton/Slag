@@ -5,6 +5,7 @@
 #include <slag/CommandBuffer.h>
 #include <slag/GraphicsDevice.h>
 #include <slag/Pipeline.h>
+#include <slag/QueryPool.h>
 #include <slag/Semaphore.h>
 #include <slag/Texture.h>
 
@@ -541,6 +542,91 @@ void testSplitPass(slag::Backend backend)
     test.checkNoErrors();
 }
 
+// Occlusion queries count exactly the samples drawn (ADR 0051): one around
+// triangle 0, an empty one, and one around both triangles, checked against
+// the pixels in the image.
+void testOcclusion(slag::Backend backend)
+{
+    TestInstance test(backend);
+    slag::GraphicsDevice* device = test.firstDevice();
+    REQUIRE(device);
+    REQUIRE(static_cast<bool>(device->initialize({})));
+    {
+        TriangleScene scene(device);
+        slag::Pipeline* pipeline = scene.pipeline(1);
+        REQUIRE(pipeline);
+        constexpr uint32_t size = 64;
+        slag::Texture* target = renderTarget(device, size, 1);
+        slag::AttachmentView* view = device->createAttachmentView({.texture = target}).value();
+        slag::QueryPool* pool =
+            device->createQueryPool({.type = slag::QueryType::Occlusion, .count = 3, .debugName = "occlusion"}).value();
+        slag::CopyFootprint footprint = device->copyFootprint(target, 0);
+        slag::Buffer* readback =
+            device
+                ->createBuffer({.size = footprint.size + 3 * sizeof(uint64_t),
+                                .placement = slag::Placement::automatic(slag::MemoryKind::Readback)})
+                .value();
+        REQUIRE((view && pool && readback));
+
+        slag::CommandBuffer* commandBuffer =
+            device->createCommandBuffer({.queueType = slag::CommandQueueType::Graphics}).value();
+        REQUIRE(static_cast<bool>(commandBuffer->begin()));
+        slag::TextureBarrier toTarget =
+            transition(target, slag::TextureLayout::Undefined, slag::TextureLayout::RenderTarget);
+        commandBuffer->barrier({}, {}, {&toTarget, 1});
+        const slag::ColorAttachment color = {
+            .view = view, .loadOp = slag::LoadOp::Clear, .clearValue = {.color = {0.0f, 0.0f, 1.0f, 1.0f}}};
+        commandBuffer->beginRendering({.colorAttachments = {&color, 1}});
+        commandBuffer->beginQuery(pool, 0);
+        scene.draw(commandBuffer, pipeline, 0);
+        commandBuffer->endQuery(pool, 0);
+        commandBuffer->beginQuery(pool, 1);
+        commandBuffer->endQuery(pool, 1);
+        commandBuffer->beginQuery(pool, 2);
+        scene.draw(commandBuffer, pipeline, 0);
+        scene.draw(commandBuffer, pipeline, 1);
+        commandBuffer->endQuery(pool, 2);
+        commandBuffer->endRendering();
+        commandBuffer->resolveQueries(pool, 0, 3, readback, footprint.size);
+        slag::TextureBarrier toCopy =
+            transition(target, slag::TextureLayout::RenderTarget, slag::TextureLayout::CopySource);
+        commandBuffer->barrier({}, {}, {&toCopy, 1});
+        commandBuffer->copyTextureToBuffer({readback, 0, footprint.rowPitch}, {.texture = target}, size, size);
+        REQUIRE(static_cast<bool>(commandBuffer->end()));
+        submitAndWait(device, commandBuffer);
+
+        const auto* pixels = static_cast<const uint8_t*>(readback->mappedData());
+        uint64_t red = 0;
+        uint64_t green = 0;
+        for (uint32_t y = 0; y < size; ++y)
+        {
+            for (uint32_t x = 0; x < size; ++x)
+            {
+                const uint8_t* pixel = pixels + y * footprint.rowPitch + x * 4;
+                red += pixel[0] == 255 ? 1 : 0;
+                green += pixel[1] == 255 ? 1 : 0;
+            }
+        }
+        uint64_t counts[3] = {};
+        std::memcpy(counts, pixels + footprint.size, sizeof(counts));
+        MESSAGE("samples: " << counts[0] << ", " << counts[1] << ", " << counts[2] << "; pixels: " << red << " red, "
+                            << green << " green");
+        CHECK(red > 0);
+        CHECK(counts[0] == red);
+        CHECK(counts[1] == 0);
+        CHECK(counts[2] == red + green);
+
+        device->destroy(commandBuffer);
+        device->destroy(readback);
+        device->destroy(pool);
+        device->destroy(view);
+        device->destroy(target);
+        device->destroy(pipeline);
+    }
+    device->shutdown();
+    test.checkNoErrors();
+}
+
 // Read-only depth with writable stencil (open item 11): a depth-only
 // pipeline tests depth (0.25 < 0.5 passes) without writing it, and replaces
 // stencil with 7. The depth plane is in DepthStencilRead, stencil in
@@ -722,5 +808,19 @@ TEST_CASE("Vulkan: a triangle renders with +Y up into a cleared target")
 TEST_CASE("D3D12: a triangle renders with +Y up into a cleared target")
 {
     testTriangle(slag::Backend::D3D12);
+}
+#endif
+
+#ifdef SLAG_BACKEND_VULKAN
+TEST_CASE("Vulkan: occlusion queries count the samples drawn")
+{
+    testOcclusion(slag::Backend::Vulkan);
+}
+#endif
+
+#ifdef SLAG_BACKEND_D3D12
+TEST_CASE("D3D12: occlusion queries count the samples drawn")
+{
+    testOcclusion(slag::Backend::D3D12);
 }
 #endif

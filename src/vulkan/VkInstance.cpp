@@ -297,6 +297,7 @@ const char* baselineFailure(const DeviceQuery& query, bool allowSoftwareDevices)
         {features.textureCompressionBC, "textureCompressionBC"},
         {features.samplerAnisotropy, "samplerAnisotropy"},
         {features.imageCubeArray, "imageCubeArray"},
+        {features.occlusionQueryPrecise, "occlusionQueryPrecise"}, // exact counts (ADR 0051)
     };
     for (const FeatureCheck& check : featureChecks)
     {

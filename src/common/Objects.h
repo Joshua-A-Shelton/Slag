@@ -321,6 +321,8 @@ struct CommandBufferCommon : CommandBuffer, ObjectRecord
     bool suspendsPass = false;
     bool recordedPass = false;
     int32_t labelDepth = 0; // open labels (ADR 0050); below 0 when closing ones a split pass opened
+    const QueryPoolCommon* activeQueryPool = nullptr; // the open occlusion query (ADR 0051)
+    uint32_t activeQueryIndex = 0;
 };
 
 struct SwapchainCommon : Swapchain, ObjectRecord

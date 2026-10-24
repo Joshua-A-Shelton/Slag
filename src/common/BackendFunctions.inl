@@ -22,6 +22,8 @@ SLAG_BACKEND_FN(void, cmdRecordMoves, (CommandBufferCommon * commandBuffer, cons
 
 SLAG_BACKEND_FN(Result<QueryPoolCommon*>, createQueryPool, (GraphicsDeviceCommon * device, const QueryPoolDesc& desc))
 SLAG_BACKEND_FN(void, destroyQueryPool, (GraphicsDeviceCommon * device, QueryPoolCommon* pool))
+SLAG_BACKEND_FN(void, cmdBeginQuery, (CommandBufferCommon * commandBuffer, QueryPoolCommon* pool, uint32_t index))
+SLAG_BACKEND_FN(void, cmdEndQuery, (CommandBufferCommon * commandBuffer, QueryPoolCommon* pool, uint32_t index))
 SLAG_BACKEND_FN(void, cmdWriteTimestamp, (CommandBufferCommon * commandBuffer, QueryPoolCommon* pool, uint32_t index))
 SLAG_BACKEND_FN(void, cmdResolveQueries,
                 (CommandBufferCommon * commandBuffer, QueryPoolCommon* pool, uint32_t first, uint32_t count,

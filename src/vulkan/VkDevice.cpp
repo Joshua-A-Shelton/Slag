@@ -315,6 +315,7 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
     core.textureCompressionBC = VK_TRUE;
     core.samplerAnisotropy = VK_TRUE;
     core.imageCubeArray = VK_TRUE;
+    core.occlusionQueryPrecise = VK_TRUE;
     core.depthBounds = device.capabilities.depthBounds ? VK_TRUE : VK_FALSE;
 
     VkDeviceCreateInfo createInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};

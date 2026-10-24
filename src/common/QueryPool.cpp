@@ -13,14 +13,12 @@ Result<QueryPool*> GraphicsDevice::createQueryPool(const QueryPoolDesc& desc)
     [[maybe_unused]] const char* function = "GraphicsDevice::createQueryPool";
     SLAG_VALIDATE(self->instance, self->initialized, function, "device \"%s\" is not initialized", self->info.name);
     SLAG_VALIDATE(self->instance, desc.count > 0, function, "count is 0");
-    SLAG_VALIDATE(self->instance, desc.type == QueryType::Timestamp, function,
-                  "occlusion queries arrive in milestone M7");
-    SLAG_VALIDATE(self->instance, desc.queueType != CommandQueueType::Copy || self->capabilities.copyQueueTimestamps,
+    SLAG_VALIDATE(self->instance, desc.type != QueryType::Occlusion || desc.queueType == CommandQueueType::Graphics,
+                  function, "occlusion pools are for graphics queues");
+    SLAG_VALIDATE(self->instance,
+                  desc.type != QueryType::Timestamp || desc.queueType != CommandQueueType::Copy ||
+                      self->capabilities.copyQueueTimestamps,
                   function, "copy-queue timestamps are not supported on \"%s\"", self->info.name);
-    if (desc.type != QueryType::Timestamp)
-    {
-        return Status::Unsupported;
-    }
     if (self->lost)
     {
         return Status::DeviceLost;
@@ -77,6 +75,8 @@ void CommandBuffer::writeTimestamp(QueryPool* pool, uint32_t index)
                   "not recording");
     SLAG_VALIDATE(instance, object && index < object->count, "CommandBuffer::writeTimestamp",
                   "the pool is null or index %u is out of range", index);
+    SLAG_VALIDATE(instance, !object || object->type == QueryType::Timestamp, "CommandBuffer::writeTimestamp",
+                  "the pool doesn't hold timestamps");
     SLAG_VALIDATE(instance,
                   !object ||
                       (object->queueType == CommandQueueType::Copy) == (self->queueType == CommandQueueType::Copy),
@@ -107,6 +107,37 @@ void CommandBuffer::resolveQueries(QueryPool* pool, uint32_t first, uint32_t cou
     SLAG_VALIDATE(instance, destination && offset % 8 == 0 && offset + uint64_t(count) * 8 <= destination->size,
                   function, "the buffer is null, the offset isn't a multiple of 8, or the results don't fit");
     SLAG_DISPATCH(self, cmdResolveQueries)(self, object, first, count, destination, offset);
+}
+
+void CommandBuffer::beginQuery(QueryPool* pool, uint32_t index)
+{
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::beginQuery");
+    auto* self = static_cast<CommandBufferCommon*>(this);
+    auto* object = static_cast<QueryPoolCommon*>(pool);
+    [[maybe_unused]] InstanceCommon* instance = self->device->instance;
+    [[maybe_unused]] const char* function = "CommandBuffer::beginQuery";
+    SLAG_VALIDATE_LIVE(instance, object, "QueryPool", function);
+    SLAG_VALIDATE(instance, self->state == CommandBufferState::Recording && self->inRenderPass, function,
+                  "not inside a render pass");
+    SLAG_VALIDATE(instance, object && object->type == QueryType::Occlusion && index < object->count, function,
+                  "the pool is null, not an occlusion pool, or index %u is out of range", index);
+    SLAG_VALIDATE(instance, !self->activeQueryPool, function, "another occlusion query is still open");
+    self->activeQueryPool = object;
+    self->activeQueryIndex = index;
+    SLAG_DISPATCH(self, cmdBeginQuery)(self, object, index);
+}
+
+void CommandBuffer::endQuery(QueryPool* pool, uint32_t index)
+{
+    SLAG_CHECK_LIVE_THIS(CommandBufferCommon, "CommandBuffer", "CommandBuffer::endQuery");
+    auto* self = static_cast<CommandBufferCommon*>(this);
+    auto* object = static_cast<QueryPoolCommon*>(pool);
+    [[maybe_unused]] InstanceCommon* instance = self->device->instance;
+    SLAG_VALIDATE_LIVE(instance, object, "QueryPool", "CommandBuffer::endQuery");
+    SLAG_VALIDATE(instance, object && self->activeQueryPool == object && self->activeQueryIndex == index,
+                  "CommandBuffer::endQuery", "query %u of this pool isn't the open one", index);
+    self->activeQueryPool = nullptr;
+    SLAG_DISPATCH(self, cmdEndQuery)(self, object, index);
 }
 
 uint64_t CommandQueue::timestampFrequency() const

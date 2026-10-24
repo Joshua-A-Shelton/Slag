@@ -205,6 +205,10 @@ public:
     // Averages an MSAA layer into one mip and layer of a single-sampled
     // texture of the same size and format. Graphics queue only; textures in
     // ResolveSource / ResolveDest; no integer formats (ADR 0048).
+    // Occlusion queries (ADR 0051): inside one render pass, in this command
+    // buffer, one at a time.
+    void beginQuery(QueryPool* pool, uint32_t index);
+    void endQuery(QueryPool* pool, uint32_t index);
     // Writes the GPU time once all earlier work on the queue has finished.
     void writeTimestamp(QueryPool* pool, uint32_t index);
     // Writes `count` 64-bit results to the buffer (offset a multiple of 8),

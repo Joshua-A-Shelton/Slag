@@ -8,7 +8,9 @@
 
 namespace slag {
 
-// Occlusion queries arrive in milestone M7.
+// Timestamps: writeTimestamp. Occlusion: beginQuery / endQuery around draws
+// in one render pass on a graphics queue, counting the samples that pass the
+// depth and stencil tests exactly (ADR 0051).
 enum class QueryType : uint8_t
 {
     Timestamp,
@@ -21,7 +23,8 @@ struct QueryPoolDesc
 {
     QueryType type = QueryType::Timestamp;
     uint32_t count = 0;
-    // Timestamps: the queue type the pool is written and resolved on. Graphics
+    // Timestamps: the queue type the pool is written and resolved on;
+    // occlusion pools are Graphics. Graphics
     // and compute pools work on either; D3D12 keeps copy-queue timestamps in
     // their own heap type, so copy pools only work on copy queues. Copy needs
     // GraphicsDeviceCapabilities::copyQueueTimestamps.

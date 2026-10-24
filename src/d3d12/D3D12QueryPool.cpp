@@ -15,8 +15,9 @@ Result<QueryPoolCommon*> createQueryPool(GraphicsDeviceCommon* common, const Que
     pool->functions = device.functions;
     // Copy queues have their own timestamp heap type; graphics and compute share one.
     D3D12_QUERY_HEAP_DESC heapDesc = {};
-    heapDesc.Type = desc.queueType == CommandQueueType::Copy ? D3D12_QUERY_HEAP_TYPE_COPY_QUEUE_TIMESTAMP
-                                                             : D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
+    heapDesc.Type = desc.type == QueryType::Occlusion          ? D3D12_QUERY_HEAP_TYPE_OCCLUSION
+                    : desc.queueType == CommandQueueType::Copy ? D3D12_QUERY_HEAP_TYPE_COPY_QUEUE_TIMESTAMP
+                                                               : D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
     heapDesc.Count = desc.count;
     HRESULT result = device.device->CreateQueryHeap(&heapDesc, IID_PPV_ARGS(&pool->heap));
     if (FAILED(result))
@@ -36,6 +37,19 @@ void destroyQueryPool(GraphicsDeviceCommon* common, QueryPoolCommon* object)
     destroyObject(device.instance, pool);
 }
 
+// Exact sample counts: OCCLUSION, not BINARY_OCCLUSION (ADR 0051).
+void cmdBeginQuery(CommandBufferCommon* object, QueryPoolCommon* poolObject, uint32_t index)
+{
+    static_cast<CommandBufferImpl*>(object)->list->BeginQuery(static_cast<QueryPoolImpl*>(poolObject)->heap,
+                                                              D3D12_QUERY_TYPE_OCCLUSION, index);
+}
+
+void cmdEndQuery(CommandBufferCommon* object, QueryPoolCommon* poolObject, uint32_t index)
+{
+    static_cast<CommandBufferImpl*>(object)->list->EndQuery(static_cast<QueryPoolImpl*>(poolObject)->heap,
+                                                            D3D12_QUERY_TYPE_OCCLUSION, index);
+}
+
 void cmdWriteTimestamp(CommandBufferCommon* object, QueryPoolCommon* poolObject, uint32_t index)
 {
     static_cast<CommandBufferImpl*>(object)->list->EndQuery(static_cast<QueryPoolImpl*>(poolObject)->heap,
@@ -45,8 +59,10 @@ void cmdWriteTimestamp(CommandBufferCommon* object, QueryPoolCommon* poolObject,
 void cmdResolveQueries(CommandBufferCommon* object, QueryPoolCommon* poolObject, uint32_t first, uint32_t count,
                        BufferCommon* buffer, uint64_t offset)
 {
-    static_cast<CommandBufferImpl*>(object)->list->ResolveQueryData(static_cast<QueryPoolImpl*>(poolObject)->heap,
-                                                                    D3D12_QUERY_TYPE_TIMESTAMP, first, count,
+    D3D12_QUERY_TYPE type =
+        poolObject->type == QueryType::Occlusion ? D3D12_QUERY_TYPE_OCCLUSION : D3D12_QUERY_TYPE_TIMESTAMP;
+    static_cast<CommandBufferImpl*>(object)->list->ResolveQueryData(static_cast<QueryPoolImpl*>(poolObject)->heap, type,
+                                                                    first, count,
                                                                     static_cast<BufferImpl*>(buffer)->resource, offset);
 }
 

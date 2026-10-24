@@ -20,7 +20,10 @@ settled after M5).
     Vulkan devices also need `timestampComputeAndGraphics` and
     `hostQueryReset` (baseline).
   - **Occlusion**, exact sample count. Begin/end inside a render pass,
-    graphics queue only. D3D12 `OCCLUSION`; Vulkan `OCCLUSION` + `PRECISE`.
+    graphics queue only. D3D12 `OCCLUSION`; Vulkan `OCCLUSION` + `PRECISE`
+    (`occlusionQueryPrecise` joins the Vulkan baseline). Implemented in M7:
+    `beginQuery` and `endQuery` in the same command buffer and render pass,
+    one open query at a time (Vulkan allows one active query per type).
 - **Results** go only into a buffer, as 64-bit values (D3D12
   `ResolveQueryData`; Vulkan `vkCmdCopyQueryPoolResults`). CPU reads go
   through a readback buffer and a fence.
