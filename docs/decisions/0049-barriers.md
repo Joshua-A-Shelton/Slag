@@ -113,3 +113,15 @@ when shaders read it. Slag maps both ShaderRead and DepthStencilRead to
 `VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL` (core 1.3), so one texture descriptor
 works in either layout, as on D3D12. Writable texture descriptors use
 `GENERAL` (ShaderWrite).
+
+## Mixed depth/stencil and resolves (confirmed 2026-10-24)
+
+- Read-only depth with writable stencil (and the reverse): transition each
+  plane to its layout (DepthStencilRead / DepthStencilWrite) and set the
+  attachment's read-only flags. D3D12 binds the read-only DSV variant with
+  `D3D12_RENDER_PASS_FLAG_BIND_READ_ONLY_DEPTH` / `_STENCIL`; Vulkan uses
+  `DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL` /
+  `DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL`. Clean on both validation
+  layers.
+- A render-pass resolve destination stays in RenderTarget on both backends.
+

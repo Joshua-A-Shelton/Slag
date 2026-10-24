@@ -112,7 +112,7 @@ and samplers, graphics pipelines, render passes (clears, resolves,
 read-only and mixed depth/stencil, split passes), draw state, direct and
 indirect draws with draw IDs, dispatchIndirect, the root constant buffer,
 and resolveTexture. The textured, depth-tested scene passes the exact check
-and its golden on RADV. Changed on the way: vertex attributes are matched
+and its golden on RADV and WARP (golden recorded on RADV). Changed on the way: vertex attributes are matched
 by location (ADR 0038); Vulkan now requires `shaderDrawParameters` and
 `separateDepthStencilLayouts` (ADR 0012). Names proposed during M3 await
 review (`docs/naming.md`).

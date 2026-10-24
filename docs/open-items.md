@@ -13,9 +13,6 @@ None right now.
 
 | # | Check | ADR |
 |---|---|---|
-| 1 | Slang behavior on both targets, tested when shaders are first built (find flags if defaults differ): buffer layout, push constants, semantic names in SPIR-V, `SV_VertexID`/`SV_InstanceID` base behavior, start-instance mapping, root constant buffer register | 0034, 0038, 0044, 0047 |
-| 10 | D3D12 layout required for a render-pass resolve destination (debug layer test) | 0049 |
-| 11 | D3D12 mapping for mixed read-only depth / writable stencil (proposed: `DEPTH_STENCIL_WRITE` + read-only DSV variant) | 0049 |
 | 12 | D3D12 GPU-based validation coverage for reads of uninitialized descriptors | 0016 |
 | 13 | Oldest Slang version that emits descriptor-heap SPIR-V (2026.18.2 is confirmed to work) | 0034 |
 | 14 | Intel Windows Vulkan driver support for `VK_EXT_descriptor_heap` | CLAUDE.md §3 |
@@ -76,6 +73,19 @@ None right now.
 
 - ◐ format entries: met by RADV (RX 7900 XT, Raphael iGPU) and WARP;
   NVIDIA and Intel still unchecked (item 16 stays open for them).
+
+## Resolved on 2026-10-24 (M3)
+
+- Slang behavior on both targets: push constants, root constant buffer at
+  `register(b1)` (with `-fvk-b-shift 0 0`), `SV_VertexID` / `SV_InstanceID`
+  without bases, `SV_StartInstanceLocation`; no semantic names in SPIR-V,
+  so vertex attributes go by location → 0034, 0038, 0044, 0047.
+- D3D12 render-pass resolve destination: the RenderTarget layout works
+  (debug layer clean on WARP) → 0049.
+- Mixed read-only depth / writable stencil: D3D12 uses the read-only DSV
+  variant plus `BIND_READ_ONLY_DEPTH`; Vulkan
+  `DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL`, with per-plane barriers →
+  0049.
 
 ## Deferred past v1 (for reference, not blocking)
 
