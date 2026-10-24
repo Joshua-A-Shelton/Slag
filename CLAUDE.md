@@ -1,0 +1,352 @@
+# CLAUDE.md — Slag
+
+Slag is a thin, low-level C++ abstraction over modern explicit graphics APIs.
+Primary backends: **Direct3D 12** and **Vulkan**. The architecture must leave
+room for NDA-gated console backends (PlayStation, Nintendo Switch 2), which are
+**not** a priority and must never be referenced by name in public code beyond
+the backend enum and build options.
+
+The primary focus is games; tools and other applications are valid use
+cases too, and design decisions shouldn't rule them out.
+
+This file is the source of truth for project goals, constraints, and
+conventions. If a request conflicts with it, point out the conflict before
+writing code.
+
+---
+
+## 1. Goals
+
+- **Thin.** A Slag call should map to one (or a small, predictable number of)
+  native API calls. No hidden render graphs, no automatic resource tracking, no
+  implicit barriers, no hidden allocations on hot paths.
+- **Explicit.** The user owns synchronization, memory residency, lifetime, and
+  command recording. Slag exposes concepts that exist in both D3D12 and Vulkan
+  and picks the *intersection* that can be expressed without emulation.
+- **Zero/low overhead.** No virtual dispatch on hot paths (command recording,
+  descriptor writes). Per-call overhead should be comparable to calling the
+  native API directly.
+- **Portable by construction.** Anything expressible in the common interface
+  must work on every shipping backend. Backend-specific features go through an
+  explicit escape hatch (§6), never through silent divergence.
+- **Escape hatches everywhere.** Every Slag object can hand back its native
+  handle(s), and native objects can be wrapped/imported.
+
+## 2. Non-goals
+
+- Not a renderer, scene graph, material system, or render graph. (A render
+  graph may be built *on top of* Slag in a separate module later.)
+- No legacy API support: no D3D11, OpenGL, Vulkan < 1.3 (1.3 itself only
+  under the fallback policy in §3), or D3D12 without Enhanced Barriers.
+- No automatic state tracking or barrier inference in the core.
+- No shader language of our own. No runtime shader cross-compilation in the core.
+- Not thread-safe by default (see §7) — the user synchronizes access.
+
+## 3. Platform & API baseline
+
+| Backend | Minimum | Required features |
+|---|---|---|
+| D3D12 | Agility SDK 1.7xx+ (app exports `D3D12SDKVersion`/`D3D12SDKPath` via a Slag macro), Shader Model 6.8 (ADR 0047) | **Enhanced Barriers** (required, no legacy resource-state fallback), `ResourceDescriptorHeap`/`SamplerDescriptorHeap` (SM 6.6 dynamic resources), DXGI 1.6 |
+| Vulkan | **1.4** | **`VK_EXT_descriptor_heap`** (required), plus the 1.3/1.4 core features: dynamic rendering, synchronization2, timeline semaphores, buffer device address. Known driver support (2026-10): NVIDIA 610+; AMD Windows 25.30.17.02+ (RX 7000/9000 class only); Mesa 26.2+ RADV and ANV; lavapipe unconfirmed. Older AMD GPUs on Windows use the D3D12 backend; revisit with the 1.3 fallback evaluation |
+| Vulkan fallback (maybe) | 1.3 | Only if it fits the existing API unchanged — see below |
+| Console (future) | TBD | Private repos only |
+
+**Vulkan 1.3 fallback policy.** The common interface is designed against
+Vulkan 1.4 + `VK_EXT_descriptor_heap` and D3D12 only. A Vulkan 1.3 fallback
+(e.g. without descriptor heaps) is evaluated **only after** that design is
+settled, and is accepted only if it can implement the API **without changing
+it** — no extra types, parameters, caps, or semantics leaking into the
+common interface for its sake. If the fallback can't meet that bar, it
+doesn't ship. Never weaken or complicate the API design to accommodate 1.3.
+
+- Target OSes: Windows (D3D12, Vulkan), Linux (Vulkan). Android/macOS are out
+  of scope for now (no MoltenVK target).
+- Compilers: MSVC (latest), Clang 17+, GCC 13+.
+- Language: **C++20**. Avoid features with poor MSVC/console-toolchain support
+  (modules, `<format>` in public headers, coroutines).
+
+## 4. Architecture
+
+### 4.1 Backend selection
+
+- Backends are selected at **build time** via CMake options
+  (`SLAG_BACKEND_D3D12`, `SLAG_BACKEND_VULKAN`, ...). More than one may be
+  compiled in at once (e.g. Windows builds with both).
+- The active backend is chosen at **instance creation time** (ADR 0008). The
+  instance lists graphics devices; a listed device carries info only until
+  it is initialized. Every object created from it belongs to that one
+  backend; mixing is UB and asserted in debug.
+- Backend-specific options are a union in the instance description, using
+  plain types only (ADR 0010). In v1 the D3D12 and Vulkan members are empty.
+- Dispatch (ADR 0001): each device picks a per-backend function table at
+  creation; public wrappers forward through it. With a single backend
+  compiled in, wrappers call the backend directly. No per-object vtables.
+- Object references (ADR 0052, superseding 0002): every object (buffers,
+  textures, attachment views, pipelines, memory blocks, query pools, fences,
+  queues, command lists, swapchains, devices) is a pointer to an opaque
+  object. No generational handles. Lifetime is explicit create/destroy.
+
+### 4.2 Layout
+
+```
+CMakeLists.txt  CMakePresets.json  .clang-format  CLAUDE.md
+include/slag/
+  slag.h                       umbrella: everything except native/ and util/
+  result.h                     Result, Status
+  flags.h                      SLAG_FLAGS
+  limits.h                     all k* constants
+  pixel_format.h               PixelFormat, FormatSupport
+  instance.h                   Instance, InstanceDesc, backend-options union, debug callback
+  graphics_device.h            GraphicsDevice, info, capabilities, init desc, MemoryBudget
+  command_queue.h              CommandQueue, SubmitDesc
+  command_buffer.h             CommandBuffer, RenderingDesc, draw/copy argument structs
+  buffer.h  texture.h  attachment_view.h  memory_block.h
+  descriptors.h                all ...Descriptor structs, samplers
+  pipeline.h                   pipeline Descs, state structs, ShaderStage, VertexInputLayout
+  barriers.h                   BarrierSync/Access, TextureLayout, barrier structs
+  query_pool.h  semaphore.h
+  swapchain.h                  Swapchain, NativeWindow, PresentMode, ColorSpace, HDR metadata
+  native/d3d12.h               opt-in interop; includes d3d12.h
+  native/vulkan.h              opt-in interop; includes vulkan.h
+  native/d3d12_agility.h       SLAG_D3D12_AGILITY_SDK_EXPORTS (no Windows headers)
+  util/descriptor_allocator.h  slot allocator utility (ADR 0032)
+src/
+  common/                      dispatch tables, validation, stale-pointer quarantine, format tables
+  d3d12/                       d3d12_*.cpp
+  vulkan/                      vk_*.cpp
+tests/
+  unit/                        no GPU needed
+  backend/                     runs on every compiled backend
+samples/                       triangle, textured_quad, compute, bindless, multi_queue
+third_party/                   pinned: Vulkan-Headers, volk, VMA, D3D12MA, Agility SDK
+docs/                          decisions/, naming.md, open-items.md
+```
+
+External (console) backends live outside the repository, in the directories
+listed in `SLAG_EXTERNAL_BACKEND_DIRS`.
+
+- Public headers must **never** include `d3d12.h`, `vulkan.h`, `windows.h`, or
+  any console SDK header. Native interop lives in opt-in headers
+  (`slag/native/d3d12.h`, `slag/native/vulkan.h`).
+- Backend code may only depend on the public headers, `src/common/`, and
+  its own native API.
+
+### 4.3 Console backends
+
+- Live out-of-tree; discovered via `SLAG_EXTERNAL_BACKEND_DIRS` in CMake.
+- The public repo contains only the backend enum value and a generic
+  registration hook — no console-specific types, comments, or code paths.
+- Design the common interface so that console constraints (unified memory,
+  fixed-function differences, different descriptor models) are *possible* to
+  implement, but don't speculate beyond publicly known information.
+
+## 5. Core design principles for the common interface
+
+These guide the interface design phase; refine them as decisions are made.
+Accepted decisions live in `docs/decisions/`.
+
+- **Hardware, not spec.** Expose what current target hardware actually
+  implements well, not everything the specs allow. Spec features that are
+  rarely implemented, emulated by drivers, or irrelevant to shipping GPUs
+  are cut, even if both APIs technically have them. Each feature's inclusion
+  is decided with the project owner (§13).
+- **Fixed pipeline layout** (ADR 0003): every pipeline implicitly uses the
+  resource heap, the sampler heap, 128 bytes of push constants, and one
+  constant buffer slot set by address and size (ADR 0044). No user-defined layouts, no pipeline-layout object.
+- **Descriptor slots, not views** (ADR 0004): heaps have opaque,
+  index-addressed slots written from a descriptor description; raw
+  descriptor memory isn't exposed. There are no SRV/UAV view objects — the
+  only view object is an attachment view for render/depth targets.
+- **Feature staging** (ADR 0005): v1 core is graphics (VS + PS), compute,
+  indirect, multi-queue. Mesh shaders then ray tracing follow as optional
+  capabilities; work graphs stay native-only.
+- **Placed resources and aliasing in v1** (ADR 0006), alongside committed
+  creation.
+- **C-shaped C++ API** (ADR 0007): no C API yet, but no templates,
+  `std::function`, or other constructs that would block one.
+- **Descriptor heaps, bindless-only.** Both backends use the same model: a
+  resource heap and a sampler heap, with shaders indexing into them
+  (D3D12 `ResourceDescriptorHeap`/`SamplerDescriptorHeap`, Vulkan
+  `VK_EXT_descriptor_heap`). There are no descriptor sets, descriptor tables,
+  or per-draw binding objects in the common interface. Each device owns
+  exactly one heap of each kind, bound automatically on every command list
+  (ADR 0029; preferred, not a hard rule — revisit if exposing heap objects
+  serves another part of the API better). Slag exposes per-kind descriptor writes at an index (ADR 0031);
+  slot allocation within a heap is the user's job.
+- **Explicit barriers** modeled directly on D3D12 Enhanced Barriers (sync +
+  access + layout, split into global, buffer, and texture barriers). Vulkan
+  maps these onto synchronization2 (`vkCmdPipelineBarrier2`). The Enhanced
+  Barriers model is the reference: if the two APIs disagree, follow D3D12's
+  semantics and document how Vulkan is mapped.
+- **Timeline fences** are the only CPU/GPU and cross-queue sync primitive
+  exposed (D3D12 fences, Vulkan timeline semaphores). Binary semaphores are an
+  internal detail of the Vulkan swapchain.
+- **Dynamic rendering** (begin/end rendering with attachments) — no render
+  pass / framebuffer objects.
+- **Explicit memory.** Users can allocate heaps and place resources, or use a
+  convenience "committed" path. Integrate with D3D12MA / VMA internally rather
+  than reinventing allocators.
+- **Shaders are pre-compiled bytecode.** Slag accepts DXIL and SPIR-V blobs
+  (plus future console formats). The supported toolchain is **Slang**,
+  compiling one source to DXIL and SPIR-V with output flags that make both
+  targets behave the same (ADR 0034). Vulkan SPIR-V requires
+  `-capability spvDescriptorHeapEXT` and
+  `-spirv-unified-descriptor-heap-stride`. The shader compiler is a
+  separate, optional tool/module.
+- **Queues** (ADRs 0009, 0054): graphics, compute, and copy queues, with a
+  count per type chosen at initialization (default one each); they may
+  share hardware. Vulkan resources use
+  `CONCURRENT` sharing, so there are no queue-family ownership transfers.
+- **Descriptors of create-info structs**, not builder chains or long
+  constructor argument lists. Designated initializers should read well.
+- **Features as capabilities** (ADR 0015). Optional features are enabled
+  automatically when supported and queried on the listed graphics device;
+  using an unsupported feature is a validation error, never silent
+  emulation.
+- **D3D12's feature set is the reference.** An optional feature is only
+  exposed if D3D12 has it and Vulkan can map it. Vulkan-only features are
+  neither exposed nor enabled. Exception: out-of-bounds access and null
+  descriptors follow Vulkan — both are undefined behavior, robustness stays
+  off (ADR 0016). Exception: buffer GPU addresses may be used in shaders,
+  gated by a capability that is false on D3D12 until it supports them
+  (ADR 0025).
+
+## 6. Escape hatches / native interop
+
+- Every object exposes `native()` via the interop headers, returning the
+  underlying handle(s) (`ID3D12Resource*`, `VkImage` + `VmaAllocation`, ...).
+- Command lists expose their native command buffer so users can record native
+  commands mid-stream. Document any state Slag assumes is preserved.
+- Import paths exist for external native resources (e.g. interop with other
+  libraries, video decode, XR runtimes).
+
+## 7. Threading model
+
+- Objects are **externally synchronized** unless documented otherwise
+  (Vulkan-style rules).
+- Thread-safe by contract: resource creation/destruction on a device, descriptor
+  allocation from distinct ranges, recording *different* command lists on
+  different threads.
+- No internal global locks on hot paths. If a lock is required, document it.
+
+## 8. Error handling & validation
+
+- **No exceptions** and **no RTTI** required. Library must build with
+  `-fno-exceptions -fno-rtti` / `/EHs-c- /GR-`.
+- Fallible operations return `slag::Result<T>`: a `Status` (success group
+  incl. `Suboptimal`/`Timeout`, error group) plus a value on success (ADR
+  0060). Defined in `slag/core`; no dependency on `std::expected`.
+- Programmer errors (invalid usage) are **asserts** routed through a
+  user-replaceable handler, compiled in under `SLAG_VALIDATION`. Release builds
+  pay nothing for validation.
+- Device lost / out-of-memory are reported as results, never asserts.
+- Debug builds should enable native validation layers (D3D12 debug layer + GPU-
+  based validation optional, Vulkan validation layers) via device-creation flags.
+
+## 9. Memory & allocation
+
+- All CPU allocations go through a user-supplied allocator interface (default:
+  `malloc`/`free`, aligned). No `new`/`delete` or STL containers with the
+  default allocator in backend code paths that the user can't redirect.
+- No allocations in command recording hot paths after warm-up.
+- Object lifetime is explicit: `create*` / `destroy*` (or RAII wrappers that
+  call them). Slag does **not** defer destruction automatically; a helper for
+  frame-based deferred deletion may be offered as a utility, not as core behavior.
+
+## 10. Coding conventions
+
+- Namespace: `slag`; backend internals in `slag::d3d12`, `slag::vk`, etc.
+- Naming: `PascalCase` types, `camelCase` functions and variables, `m_` not
+  used — members are plain `camelCase`; `kPascalCase` constants;
+  `SLAG_UPPER_CASE` macros (macros only when unavoidable).
+- Enums: `enum class`; bitflags via a `SLAG_FLAGS(EnumType)` helper providing
+  operators.
+- Enum values are PascalCase. Format values spell out channel bits as in
+  DXGI with a PascalCase type suffix (`R8G8B8A8UnormSrgb`, `D32FloatS8Uint`,
+  `BC7UnormSrgb`) — ADR 0022.
+- Files: `snake_case.h` / `snake_case.cpp`. Public headers are flat under
+  `include/slag/`, one per object or topic. Backend sources carry a `d3d12_`
+  or `vk_` prefix. Includes are always `#include <slag/...>`, inside Slag
+  too.
+- Formatting: `.clang-format` in repo root is authoritative. Run it before
+  committing.
+- Header hygiene: public headers are self-contained, minimal includes, forward
+  declare where possible. Keep compile times low.
+- Prefer `std::span`, `std::string_view`, and plain structs in the public API.
+  Avoid `std::function`, `std::shared_ptr`, and heavy templates in public headers.
+- Comments explain *why* and any D3D12/Vulkan mapping subtleties, not *what*.
+
+## 11. Build & tooling
+
+- **CMake** (3.25+) with presets (`CMakePresets.json`). Library target
+  `slag`, alias `slag::slag`. Slag builds as a static library by default;
+  shared library support is optional.
+- Third-party dependencies are vendored or fetched at pinned versions:
+  Vulkan headers + volk, D3D12 Agility SDK, D3D12MA, VMA. Nothing else in core
+  without discussion.
+- Do not load Vulkan via the static loader; use volk (or equivalent) so the
+  library works without a link-time dependency on `vulkan-1`.
+
+```bash
+cmake --preset debug && cmake --build --preset debug
+```
+
+```bash
+ctest --preset debug
+```
+
+Presets: `debug` (validation on) and `release`, Ninja, output in
+`build/<preset>/`. CMake options: `SLAG_BACKEND_D3D12` (default on for
+Windows), `SLAG_BACKEND_VULKAN`, `SLAG_VALIDATION`, `SLAG_DISABLE_LABELS`,
+`SLAG_BUILD_TESTS`, `SLAG_BUILD_SAMPLES`, `SLAG_EXTERNAL_BACKEND_DIRS`.
+The `header_check` test compiles every public header (except `native/`) on
+its own.
+
+## 12. Testing
+
+- Unit tests for backend-agnostic code (formats, flag helpers, validation
+  logic) run without a GPU.
+- **CI is split:**
+  - Hosted CI, on every change: builds, GPU-free unit tests, and D3D12
+    backend tests on WARP.
+  - A self-hosted GPU runner (Linux, AMD, RADV / Mesa 26.2+), on every merge
+    or nightly: Vulkan backend tests.
+  - No software Vulkan driver supports `VK_EXT_descriptor_heap` yet; re-check
+    lavapipe periodically and move Vulkan tests to hosted CI once it does.
+- Every common-interface feature needs a test that runs on **all** compiled
+  backends and ideally compares output images across them.
+- Samples (`samples/`) double as smoke tests: triangle, textured quad,
+  compute, bindless, multi-queue.
+
+## 13. Working with Claude on this repo
+
+- **Ask before naming.** Propose names for public types, functions, enums,
+  enum values, and files, but don't settle them — the project owner decides.
+  Until then, mark names as placeholders. Final names are recorded in
+  `docs/naming.md`.
+- **Ask before choosing features.** For any API surface (formats, usage
+  flags, pipeline state, sampler options, barrier sync/access values, query
+  types, etc.), present what both specs offer, recommend a hardware-relevant
+  subset, and wait for a decision. Default to cutting, not including.
+- When adding a common-interface feature, state how it maps to **both** D3D12
+  and Vulkan before implementing. If one side needs emulation, flag it — it
+  may not belong in the common interface.
+- Never add a public-header dependency on a native API or console SDK.
+- Keep changes minimal and consistent with existing code; don't introduce new
+  dependencies or abstractions without asking.
+- Record design decisions in `docs/decisions/` (short ADR-style notes) and
+  update this file when a decision changes a rule here.
+
+## 14. Open questions
+
+Questions 1–7 from the first design pass are resolved; see
+`docs/decisions/0001`–`0007`.
+
+The per-draw root constant buffer question was resolved by ADR 0044, and
+static samplers were cut in ADR 0033. Everything else still open (owner
+decisions, spec/driver checks, deliverables) is tracked in
+`docs/open-items.md`.
+
+1. *(After the interface is settled.)* Can a Vulkan 1.3 backend implement the
+   API unchanged (§3 fallback policy)? If not, drop it. A fallback would also
+   cover older AMD GPUs on Windows Vulkan, which lack `VK_EXT_descriptor_heap`.
