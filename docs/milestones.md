@@ -147,7 +147,16 @@ minimize by hand. Names proposed during M4 were reviewed and settled (`docs/nami
 - Queue counts per type, compute and copy queues, shared-queue handling.
 - Pipeline cache blob (with hashed D3D12 keys).
 - `DescriptorAllocator` and `DeferredDestroyer` utilities.
-- Samples: `compute`, `bindless`, `multi_queue`.
+- Timestamp queries (moved from M7, decided 2026-10-24): `QueryPool`,
+  `writeTimestamp`, `resolveQueries`, timestamp frequency, CPU/GPU clock
+  calibration, so the multi-queue sample can measure overlap.
+- Samples: `compute` (a compute shader animates a RWTexture drawn
+  full-screen), `bindless` (about 1000 quads, each picking its texture by
+  index, with textures streamed in and out through `DescriptorAllocator`
+  and `DeferredDestroyer`), `multi_queue` (particles on the compute queue,
+  texture uploads on the copy queue, rendering on the graphics queue,
+  chained by semaphores; prints how much compute and copy work overlapped
+  graphics work, from timestamps).
 
 **Done when:** the multi-queue sample overlaps compute and copy work with
 graphics on both backends.
@@ -170,7 +179,8 @@ backends.
 
 - Stale-pointer quarantine, descriptor-slot tracking, D3D12 poison
   descriptors.
-- Debug names, labels, queries (timestamps, occlusion), crash diagnostics.
+- Debug names, labels, occlusion queries (timestamps moved to M5), crash
+  diagnostics.
 - Validation tests for every check.
 
 **Done when:** every check in ADR 0067 has a test that triggers it, and a
