@@ -91,29 +91,29 @@ doesn't ship. Never weaken or complicate the API design to accommodate 1.3.
 ```
 CMakeLists.txt  CMakePresets.json  .clang-format  CLAUDE.md
 include/slag/
-  slag.h                       umbrella: everything except native/ and util/
-  result.h                     Result, Status
-  flags.h                      SLAG_FLAGS
-  limits.h                     all k* constants
-  pixel_format.h               PixelFormat, FormatSupport
-  instance.h                   Instance, InstanceDesc, backend-options union, debug callback
-  graphics_device.h            GraphicsDevice, info, capabilities, init desc, MemoryBudget
-  command_queue.h              CommandQueue, SubmitDesc
-  command_buffer.h             CommandBuffer, RenderingDesc, draw/copy argument structs
-  buffer.h  texture.h  attachment_view.h  memory_block.h
-  descriptors.h                all ...Descriptor structs, samplers
-  pipeline.h                   pipeline Descs, state structs, ShaderStage, VertexInputLayout
-  barriers.h                   BarrierSync/Access, TextureLayout, barrier structs
-  query_pool.h  semaphore.h
-  swapchain.h                  Swapchain, NativeWindow, PresentMode, ColorSpace, HDR metadata
-  native/d3d12.h               opt-in interop; includes d3d12.h
-  native/vulkan.h              opt-in interop; includes vulkan.h
-  native/d3d12_agility.h       SLAG_D3D12_AGILITY_SDK_EXPORTS (no Windows headers)
-  util/descriptor_allocator.h  slot allocator utility (ADR 0032)
+  Slag.h                       umbrella: everything except native/ and util/
+  Result.h                     Result, Status
+  Flags.h                      SLAG_FLAGS
+  Limits.h                     all k* constants
+  PixelFormat.h                PixelFormat, FormatSupport
+  Instance.h                   Instance, InstanceDesc, backend-options union, debug callback
+  GraphicsDevice.h             GraphicsDevice, info, capabilities, init desc, MemoryBudget
+  CommandQueue.h               CommandQueue, SubmitDesc
+  CommandBuffer.h              CommandBuffer, RenderingDesc, draw/copy argument structs
+  Buffer.h  Texture.h  AttachmentView.h  MemoryBlock.h
+  Descriptors.h                all ...Descriptor structs, samplers
+  Pipeline.h                   pipeline Descs, state structs, ShaderStage, VertexInputLayout
+  Barriers.h                   BarrierSync/Access, TextureLayout, barrier structs
+  QueryPool.h  Semaphore.h
+  Swapchain.h                  Swapchain, NativeWindow, PresentMode, ColorSpace, HDR metadata
+  native/D3D12.h               opt-in interop; includes d3d12.h
+  native/Vulkan.h              opt-in interop; includes vulkan.h
+  native/D3D12Agility.h        SLAG_D3D12_AGILITY_SDK_EXPORTS (no Windows headers)
+  util/DescriptorAllocator.h   slot allocator utility (ADR 0032)
 src/
   common/                      dispatch tables, validation, stale-pointer quarantine, format tables
-  d3d12/                       d3d12_*.cpp
-  vulkan/                      vk_*.cpp
+  d3d12/                       D3D12*.cpp
+  vulkan/                      Vk*.cpp
 tests/
   unit/                        no GPU needed
   backend/                     runs on every compiled backend
@@ -127,7 +127,7 @@ listed in `SLAG_EXTERNAL_BACKEND_DIRS`.
 
 - Public headers must **never** include `d3d12.h`, `vulkan.h`, `windows.h`, or
   any console SDK header. Native interop lives in opt-in headers
-  (`slag/native/d3d12.h`, `slag/native/vulkan.h`).
+  (`slag/native/D3D12.h`, `slag/native/Vulkan.h`).
 - Backend code may only depend on the public headers, `src/common/`, and
   its own native API.
 
@@ -264,10 +264,12 @@ Accepted decisions live in `docs/decisions/`.
 - Enum values are PascalCase. Format values spell out channel bits as in
   DXGI with a PascalCase type suffix (`R8G8B8A8UnormSrgb`, `D32FloatS8Uint`,
   `BC7UnormSrgb`) — ADR 0022.
-- Files: `snake_case.h` / `snake_case.cpp`. Public headers are flat under
-  `include/slag/`, one per object or topic. Backend sources carry a `d3d12_`
-  or `vk_` prefix. Includes are always `#include <slag/...>`, inside Slag
-  too.
+- Files: `PascalCase.h` / `PascalCase.cpp`, named after the type or topic
+  they hold (`CommandBuffer.h`). Folders stay lowercase (`include/slag/`,
+  `native/`, `util/`, `src/common/`). Public headers are flat under
+  `include/slag/`, one per object or topic. Backend sources carry a `D3D12`
+  or `Vk` prefix (`D3D12CommandBuffer.cpp`, `VkCommandBuffer.cpp`).
+  Includes are always `#include <slag/...>`, inside Slag too.
 - Formatting: `.clang-format` in repo root is authoritative. Run it before
   committing.
 - Header hygiene: public headers are self-contained, minimal includes, forward

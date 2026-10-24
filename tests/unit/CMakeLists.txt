@@ -16,6 +16,6 @@ foreach(_header IN LISTS _slag_public_headers)
     list(APPEND _slag_header_test_sources "${_tu}")
 endforeach()
 
-add_executable(slag_header_check header_check_main.cpp ${_slag_header_test_sources})
+add_executable(slag_header_check HeaderCheckMain.cpp ${_slag_header_test_sources})
 target_link_libraries(slag_header_check PRIVATE slag::slag)
 add_test(NAME header_check COMMAND slag_header_check)

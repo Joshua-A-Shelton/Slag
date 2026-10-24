@@ -46,7 +46,7 @@ target_include_directories(slag PUBLIC
     $<INSTALL_INTERFACE:include>)
 
 target_sources(slag PRIVATE
-    src/common/slag.cpp)
+    src/common/Slag.cpp)
 
 target_compile_definitions(slag PUBLIC
     $<$<BOOL:${SLAG_BACKEND_D3D12}>:SLAG_BACKEND_D3D12>

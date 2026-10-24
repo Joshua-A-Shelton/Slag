@@ -238,9 +238,10 @@ Sample count is a plain `uint32_t` (1, 2, 4, 8), not an enum.
 ## Files
 
 See CLAUDE.md §4.2 for the full layout. Public headers are flat under
-`include/slag/` with `.h`, plus an umbrella `slag/slag.h`; `native/` and
-`util/` are opt-in. Backend sources: `src/d3d12/d3d12_*.cpp`,
-`src/vulkan/vk_*.cpp`; shared code in `src/common/`. CMake target `slag`,
+`include/slag/` with `.h`, plus an umbrella `slag/Slag.h`; `native/` and
+`util/` are opt-in. File names are PascalCase, folders lowercase. Backend
+sources: `src/d3d12/D3D12*.cpp`, `src/vulkan/Vk*.cpp`; shared code in
+`src/common/`. CMake target `slag`,
 alias `slag::slag`.
 
 ## Enum value style

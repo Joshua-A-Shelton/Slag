@@ -2,4 +2,4 @@
 // Shared implementation (dispatch tables, validation, stale-pointer
 // quarantine, format tables) goes in src/common/.
 
-#include <slag/slag.h>
+#include <slag/Slag.h>

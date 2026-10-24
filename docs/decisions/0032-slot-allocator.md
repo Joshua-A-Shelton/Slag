@@ -5,7 +5,7 @@
 ## Decision
 
 An optional utility outside the core API (e.g.
-`slag/util/descriptor_allocator.h`), built only on public Slag functions.
+`slag/util/DescriptorAllocator.h`), built only on public Slag functions.
 
 - Allocates **single slots** within a user-chosen range of a heap; the rest
   of the heap stays user-managed.
