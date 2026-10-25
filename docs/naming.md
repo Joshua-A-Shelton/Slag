@@ -395,7 +395,7 @@ sample `samples/render_graph` (ADR 0072).
 | `transientMemorySize()` | Bytes the frame's transients share |
 | `importTexture(Texture*, ImportedTextureDesc)`, `importBuffer(Buffer*)` | Resources the graph doesn't own |
 | `ImportedTextureDesc` | `initialLayout`, `finalLayout`, `attachmentView`, `swapchain` |
-| `createTransientTexture2D(Texture2DDesc)` (and per type, proposed below), `createTransientBuffer(BufferDesc)` | Graph-owned, one frame |
+| `createTransientTexture2D(Texture2DDesc)` (and per type, below), `createTransientBuffer(BufferDesc)` | Graph-owned, one frame |
 | `addPass(name, queue, setup, record)` | Setup runs now; record is stored |
 | `PassBuilder`: `use(handle, Usage)`, `renderTarget(...)`, `depthStencil(...)` | Declares a pass's uses |
 | `PassContext`: `texture(handle)`, `buffer(handle)`, `frameSlot()` | Given to record functions |
@@ -405,7 +405,7 @@ sample `samples/render_graph` (ADR 0072).
 | `defragment(DefragmentationDesc, layoutOf)` | Requests a defragmentation pass after the frame (ADR 0072) |
 | `movedResources()` | What the last `execute`'s defragmentation pass moved |
 
-Proposed after the review (placeholders, pending review):
+Settled after the render graph improvements (all kept in review):
 
 | Name | Notes |
 |---|---|
