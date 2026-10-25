@@ -217,6 +217,8 @@ D3D12_COMPARISON_FUNC toComparisonFunc(CompareOp op);
 
 // HRESULT to Status; marks the device lost on removal.
 Status toStatus(GraphicsDeviceImpl& device, HRESULT result);
+// ADR 0049's layout mapping, for barriers Slag records itself.
+D3D12_BARRIER_LAYOUT barrierLayout(TextureLayout layout);
 
 void setObjectName(ID3D12Object* object, const char* name);
 

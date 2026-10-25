@@ -1,3 +1,4 @@
+#include "common/Formats.h"
 #include "common/Logging.h"
 #include "common/Objects.h"
 #include "common/SubAllocator.h"
@@ -34,32 +35,6 @@ TextureCreateInfo recreateInfo(const TextureCommon& texture, MemoryBlockCommon* 
 void destroyPass(GraphicsDeviceCommon* device, DefragmentationPassCommon* pass)
 {
     device->instance->allocator.destroy(pass);
-}
-
-// The new native objects of every attachment view of a moved texture.
-Status rebuildViews(GraphicsDeviceCommon* device, TextureCommon* texture)
-{
-    Status status = Status::Ok;
-    std::lock_guard<std::mutex> lock(device->viewListLock);
-    for (AttachmentViewCommon* view = texture->views; view; view = view->nextView)
-    {
-        AttachmentViewDesc desc;
-        desc.texture = texture;
-        desc.format = view->format;
-        desc.mip = view->mip;
-        desc.baseLayer = view->baseLayer;
-        desc.layerCount = view->layerCount;
-        desc.debugName = view->debugName;
-        Result<AttachmentViewCommon*> rebuilt = SLAG_DISPATCH(device, createAttachmentView)(device, desc);
-        if (!rebuilt)
-        {
-            status = rebuilt.status();
-            continue;
-        }
-        SLAG_DISPATCH(device, swapAttachmentViewNative)(view, rebuilt.value());
-        SLAG_DISPATCH(device, destroyAttachmentView)(device, rebuilt.value());
-    }
-    return status;
 }
 
 #ifdef SLAG_VALIDATION
@@ -230,20 +205,66 @@ std::span<const DefragmentationMove> DefragmentationPass::moves() const
     return {self->moves.data(), self->moves.size()};
 }
 
-void DefragmentationPass::recordCopies(CommandBuffer* commandBuffer)
+void DefragmentationPass::recordCopies(CommandBuffer* commandBuffer, std::span<const TextureLayout> layouts)
 {
     SLAG_CHECK_LIVE(static_cast<const DefragmentationPassCommon*>(this)->device->instance, CommandBufferCommon,
                     commandBuffer, "CommandBuffer", "DefragmentationPass::recordCopies");
     auto* self = static_cast<DefragmentationPassCommon*>(this);
     auto* object = static_cast<CommandBufferCommon*>(commandBuffer);
     [[maybe_unused]] const char* function = "DefragmentationPass::recordCopies";
-    SLAG_VALIDATE(self->device->instance, object && object->state == CommandBufferState::Recording, function,
+    [[maybe_unused]] const InstanceCommon* instance = self->device->instance;
+    SLAG_VALIDATE(instance, object && object->state == CommandBufferState::Recording, function,
                   "the command buffer is not recording");
-    SLAG_VALIDATE(self->device->instance, !object || !object->inRenderPass, function, "inside a render pass");
-    SLAG_VALIDATE(self->device->instance, !self->recorded, function, "the copies are already recorded");
-    if (!object)
+    SLAG_VALIDATE(instance, !object || !object->inRenderPass, function, "inside a render pass");
+    SLAG_VALIDATE(instance, layouts.size() == self->moves.size(), function, "%zu layouts for %zu moves", layouts.size(),
+                  self->moves.size());
+    if (!object || layouts.size() != self->moves.size())
     {
         return;
+    }
+#ifdef SLAG_VALIDATION
+    for (size_t i = 0; i < self->entries.size(); ++i)
+    {
+        const TextureCommon* texture = self->entries[i].texture;
+        if (!texture)
+        {
+            continue;
+        }
+        TextureLayout layout = layouts[i];
+        // The layouts each queue type can change (ADR 0049); swapchain images never move.
+        bool queueAllows = false;
+        switch (object->queueType)
+        {
+        case CommandQueueType::Graphics:
+            queueAllows = layout != TextureLayout::Present;
+            break;
+        case CommandQueueType::Compute:
+            queueAllows = layout == TextureLayout::Undefined || layout == TextureLayout::Common ||
+                          layout == TextureLayout::ShaderRead || layout == TextureLayout::ShaderWrite ||
+                          layout == TextureLayout::CopySource || layout == TextureLayout::CopyDest;
+            break;
+        case CommandQueueType::Copy:
+            queueAllows = layout == TextureLayout::Common;
+            break;
+        }
+        SLAG_VALIDATE(instance, queueAllows, function,
+                      "move %zu: this queue type can't copy a texture from that layout (copy queues: Common; "
+                      "compute queues: Common, ShaderRead, ShaderWrite, CopySource, CopyDest)",
+                      i);
+        bool depth = hasTraits(texture->format, FormatTraits::Depth);
+        bool fits =
+            (layout != TextureLayout::RenderTarget ||
+             (texture->usage & TextureUsage::RenderTarget) != TextureUsage::None) &&
+            (layout != TextureLayout::ShaderWrite ||
+             (texture->usage & TextureUsage::ShaderWrite) != TextureUsage::None) &&
+            ((layout != TextureLayout::DepthStencilWrite && layout != TextureLayout::DepthStencilRead) || depth);
+        SLAG_VALIDATE(instance, fits, function, "move %zu: the texture can't be in that layout (usage or format)", i);
+    }
+#endif
+    SLAG_VALIDATE(instance, !self->recorded, function, "the copies are already recorded");
+    for (size_t i = 0; i < self->entries.size(); ++i)
+    {
+        self->entries[i].layout = layouts[i];
     }
     SLAG_DISPATCH(object, cmdRecordMoves)(object, self->entries.data(), self->entries.size());
     self->recorded = true;
@@ -274,8 +295,48 @@ Result<void> GraphicsDevice::endDefragmentation(DefragmentationPass* pass, [[may
     Vector<const void*> moved(&self->instance->allocator);
 #endif
 
+    // New native views for every attachment view of a moved texture first,
+    // so running out of memory changes nothing: the pass stays active.
+    struct Rebuilt
+    {
+        AttachmentViewCommon* view;
+        AttachmentViewCommon* replacement;
+    };
+    Vector<Rebuilt> rebuilt(&self->instance->allocator);
+    {
+        std::lock_guard<std::mutex> lock(self->viewListLock);
+        for (MoveEntry& entry : object->entries)
+        {
+            for (AttachmentViewCommon* view = entry.texture ? entry.texture->views : nullptr; view;
+                 view = view->nextView)
+            {
+                AttachmentViewDesc desc;
+                desc.texture = entry.newTexture;
+                desc.format = view->format;
+                desc.mip = view->mip;
+                desc.baseLayer = view->baseLayer;
+                desc.layerCount = view->layerCount;
+                desc.debugName = view->debugName;
+                Result<AttachmentViewCommon*> replacement = SLAG_DISPATCH(self, createAttachmentView)(self, desc);
+                Status failure = !replacement ? replacement.status() : Status::Ok;
+                if (replacement && !rebuilt.pushBack({view, replacement.value()}))
+                {
+                    SLAG_DISPATCH(self, destroyAttachmentView)(self, replacement.value());
+                    failure = Status::OutOfHostMemory;
+                }
+                if (failure != Status::Ok)
+                {
+                    for (Rebuilt& done : rebuilt)
+                    {
+                        SLAG_DISPATCH(self, destroyAttachmentView)(self, done.replacement);
+                    }
+                    return failure;
+                }
+            }
+        }
+    }
+
     // Swap the new native objects in; the temporaries then hold the old ones.
-    Status status = Status::Ok;
     for (MoveEntry& entry : object->entries)
     {
         if (entry.buffer)
@@ -304,12 +365,15 @@ Result<void> GraphicsDevice::endDefragmentation(DefragmentationPass* pass, [[may
             self->subAllocator->setOwner(entry.to, entry.texture, true);
             entry.texture->movePass = nullptr;
             ++entry.texture->moveCount;
-            Status viewStatus = rebuildViews(self, entry.texture);
-            status = status == Status::Ok ? viewStatus : status;
 #ifdef SLAG_VALIDATION
             (void)moved.pushBack(entry.texture);
 #endif
         }
+    }
+    for (Rebuilt& done : rebuilt)
+    {
+        SLAG_DISPATCH(self, swapAttachmentViewNative)(done.view, done.replacement);
+        SLAG_DISPATCH(self, destroyAttachmentView)(self, done.replacement);
     }
     self->subAllocator->endDefragmentation(object->kind);
     self->activePass = nullptr;
@@ -329,7 +393,7 @@ Result<void> GraphicsDevice::endDefragmentation(DefragmentationPass* pass, [[may
     }
     findStaleSlots(self, moved);
 #endif
-    return status;
+    return {};
 }
 
 #ifdef SLAG_VALIDATION

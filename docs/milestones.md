@@ -310,6 +310,13 @@ shows about the core API can still change.
   X11; Windows (RTX 2070 SUPER) debug and release suites and every sample on
   D3D12 and Vulkan.
 - Names proposed during M9 were reviewed and settled (`docs/naming.md`).
+- After M9, the defragmentation contract was revised (ADR 0062):
+  `recordCopies` takes each texture's layout and runs at a submit boundary;
+  the documentation gaps are closed; a failed end leaves the pass active.
+  Vulkan layout changes from `syncBefore = None` now chain to the submit
+  boundary and semaphore waits (ADR 0049). Vulkan acquire semaphores are
+  recycled through present fences, so acquiring before the frame wait is
+  safe (ADR 0057). 403 validation checks.
 
 ## After v1.0
 

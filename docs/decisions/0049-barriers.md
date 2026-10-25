@@ -95,6 +95,18 @@ submit with command buffers. Tested by "a submit sees the finished work of
 earlier submits on its queue", which synchronization validation fails
 without it.
 
+On Vulkan, a texture barrier that changes layout from `syncBefore = None`
+starts at its own `syncAfter` stages (all commands when that is `None`
+too). A layout transition belongs to the barrier, and a Vulkan dependency
+chain needs the second barrier's first scope to overlap the earlier one's
+second scope; from `NONE` it would chain neither to the boundary barrier nor
+to a semaphore wait (the usual swapchain-acquire case). D3D12 allows
+`SYNC_NONE` only when nothing earlier in the submit used the resource, so
+the extra wait covers only unrelated earlier work in those stages.
+Synchronization validation doesn't report the missing chain, so the test
+("a layout change from syncBefore None waits for earlier submits") checks
+results, not the mapping.
+
 ## GPU → CPU visibility (resolves ADR 0024's open question)
 
 On Vulkan, Slag appends one global barrier at the end of every command

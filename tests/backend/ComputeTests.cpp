@@ -4,6 +4,7 @@
 #include <slag/CommandBuffer.h>
 #include <slag/GraphicsDevice.h>
 #include <slag/Pipeline.h>
+#include <slag/Texture.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -235,6 +236,86 @@ void testSubmitBoundary(slag::Backend backend)
     test.checkNoErrors();
 }
 
+// A layout change from syncBefore = None after a submit boundary waits for
+// the earlier submit's writes (ADR 0049): a clear in one submit, then
+// RenderTarget -> CopySource and a copy out in the next. On Vulkan the
+// transition starts at its own later stages so it chains to the boundary.
+void testLayoutChangeAfterBoundary(slag::Backend backend)
+{
+    TestInstance test(backend, slag::ValidationFailureAction::Continue,
+                      slag::ValidationFlags::Api | slag::ValidationFlags::Synchronization);
+    slag::GraphicsDevice* device = test.firstDevice();
+    REQUIRE(device);
+    REQUIRE(static_cast<bool>(device->initialize({})));
+    constexpr uint32_t size = 64;
+    slag::Texture* texture = device
+                                 ->createTexture2D({.format = slag::PixelFormat::R8G8B8A8Unorm,
+                                                    .width = size,
+                                                    .height = size,
+                                                    .usage = slag::TextureUsage::RenderTarget})
+                                 .value();
+    slag::AttachmentView* view = device->createAttachmentView({.texture = texture}).value();
+    slag::Buffer* readback =
+        device->createBuffer({.size = 256 * size, .placement = slag::Placement::automatic(slag::MemoryKind::Readback)})
+            .value();
+    slag::CommandBuffer* clear = device->createCommandBuffer({}).value();
+    slag::CommandBuffer* copy = device->createCommandBuffer({}).value();
+    slag::Semaphore* done = device->createSemaphore({}).value();
+    REQUIRE((texture && view && readback && clear && copy && done));
+
+    REQUIRE(static_cast<bool>(clear->begin()));
+    slag::TextureBarrier toTarget = {.syncAfter = slag::BarrierSync::RenderTarget,
+                                     .accessAfter = slag::BarrierAccess::RenderTarget,
+                                     .layoutBefore = slag::TextureLayout::Undefined,
+                                     .layoutAfter = slag::TextureLayout::RenderTarget,
+                                     .texture = texture};
+    clear->barrier({}, {}, {&toTarget, 1});
+    const slag::ColorAttachment color = {
+        .view = view, .loadOp = slag::LoadOp::Clear, .clearValue = {.color = {0.0f, 1.0f, 0.0f, 1.0f}}};
+    clear->beginRendering({.colorAttachments = {&color, 1}});
+    clear->endRendering();
+    REQUIRE(static_cast<bool>(clear->end()));
+
+    REQUIRE(static_cast<bool>(copy->begin()));
+    slag::TextureBarrier toSource = {.syncBefore = slag::BarrierSync::None,
+                                     .syncAfter = slag::BarrierSync::Copy,
+                                     .accessAfter = slag::BarrierAccess::CopySource,
+                                     .layoutBefore = slag::TextureLayout::RenderTarget,
+                                     .layoutAfter = slag::TextureLayout::CopySource,
+                                     .texture = texture};
+    copy->barrier({}, {}, {&toSource, 1});
+    copy->copyTextureToBuffer({.buffer = readback, .rowPitch = 256}, {.texture = texture}, size, size);
+    REQUIRE(static_cast<bool>(copy->end()));
+
+    slag::CommandQueue* queue = device->commandQueue(slag::CommandQueueType::Graphics);
+    slag::CommandBuffer* first[] = {clear};
+    slag::CommandBuffer* second[] = {copy};
+    slag::SemaphoreValue signal = {done, 1};
+    REQUIRE(static_cast<bool>(queue->submit({.commandBuffers = first})));
+    REQUIRE(static_cast<bool>(queue->submit({.commandBuffers = second, .signals = {&signal, 1}})));
+    REQUIRE(static_cast<bool>(done->wait(1, 5'000'000'000)));
+    const auto* bytes = static_cast<const uint8_t*>(readback->mappedData());
+    uint32_t wrong = 0;
+    for (uint32_t y = 0; y < size; ++y)
+    {
+        for (uint32_t x = 0; x < size; ++x)
+        {
+            const uint8_t* pixel = bytes + y * 256 + x * 4;
+            wrong += pixel[0] == 0 && pixel[1] == 255 && pixel[2] == 0 && pixel[3] == 255 ? 0 : 1;
+        }
+    }
+    CHECK(wrong == 0);
+
+    device->destroy(done);
+    device->destroy(copy);
+    device->destroy(clear);
+    device->destroy(readback);
+    device->destroy(view);
+    device->destroy(texture);
+    device->shutdown();
+    test.checkNoErrors();
+}
+
 // Every listed device: descriptor sizes differ between GPUs.
 void runFillBufferOnAllDevices(slag::Backend backend)
 {
@@ -275,6 +356,20 @@ TEST_CASE("Vulkan: a submit sees the finished work of earlier submits on its que
 TEST_CASE("D3D12: a submit sees the finished work of earlier submits on its queue")
 {
     testSubmitBoundary(slag::Backend::D3D12);
+}
+#endif
+
+#ifdef SLAG_BACKEND_VULKAN
+TEST_CASE("Vulkan: a layout change from syncBefore None waits for earlier submits")
+{
+    testLayoutChangeAfterBoundary(slag::Backend::Vulkan);
+}
+#endif
+
+#ifdef SLAG_BACKEND_D3D12
+TEST_CASE("D3D12: a layout change from syncBefore None waits for earlier submits")
+{
+    testLayoutChangeAfterBoundary(slag::Backend::D3D12);
 }
 #endif
 

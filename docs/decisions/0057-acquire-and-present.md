@@ -34,6 +34,16 @@ r = queue->present(swapchain, PresentMode::Fifo);
   signals the render-done binary semaphore, then `vkQueuePresentKHR`;
   semaphores are recycled with present fences (`swapchain_maintenance1`).
 - Returns `Ok`, `Suboptimal`, `OutOfDate`, or `DeviceLost`.
+- Vulkan acquire semaphores (fixed 2026-10-24): an image's acquire
+  semaphore moves to its present slot at present and is reused only after
+  that slot's present fence signals. The present waited for all earlier work
+  on its queue, which the work that used the image is ordered before, so the
+  submit that waited on the semaphore has finished. Recycling it when its
+  image was acquired again, as before, wasn't enough: mailbox and immediate
+  modes hand an image back after one frame, so acquiring before waiting for
+  frames in flight reused a semaphore with a pending wait (seen on NVIDIA by
+  the `render_graph` sample). Acquiring before or after the frame wait now
+  both work; the pool grows when every semaphore is still in flight.
 
 ## User responsibilities
 

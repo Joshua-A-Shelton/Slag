@@ -242,38 +242,17 @@ void testDefragmentation(slag::Backend backend)
         CHECK(moves.size() <= (passes == 0 ? 64u : moves.size()));
         slag::CommandQueueType queue =
             passes % 2 == 0 ? slag::CommandQueueType::Graphics : slag::CommandQueueType::Copy;
-        slag::CommandBuffer* commandBuffer = submitter.begin(queue);
-        std::vector<slag::TextureBarrier> toSource;
+        // Every texture rests in Common, and comes back in Common.
+        std::vector<slag::TextureLayout> layouts(moves.size(), slag::TextureLayout::Common);
         for (const slag::DefragmentationMove& move : moves)
         {
             movedBuffers += move.buffer ? 1 : 0;
             movedTextures += move.texture ? 1 : 0;
-            if (move.texture && queue != slag::CommandQueueType::Copy)
-            {
-                toSource.push_back({.syncAfter = slag::BarrierSync::Copy,
-                                    .accessAfter = slag::BarrierAccess::CopySource,
-                                    .layoutBefore = slag::TextureLayout::Common,
-                                    .layoutAfter = slag::TextureLayout::CopySource,
-                                    .texture = move.texture});
-            }
         }
-        commandBuffer->barrier({}, {}, toSource);
-        pass->recordCopies(commandBuffer);
+        slag::CommandBuffer* commandBuffer = submitter.begin(queue);
+        pass->recordCopies(commandBuffer, layouts);
         slag::SemaphoreValue done = submitter.submit(commandBuffer, queue);
         REQUIRE(static_cast<bool>(device->endDefragmentation(pass, done)));
-        // The textures now hold the new copies, in CopySource: back to Common.
-        if (!toSource.empty())
-        {
-            for (slag::TextureBarrier& barrier : toSource)
-            {
-                barrier = {.layoutBefore = slag::TextureLayout::CopySource,
-                           .layoutAfter = slag::TextureLayout::Common,
-                           .texture = barrier.texture};
-            }
-            slag::CommandBuffer* toCommon = submitter.begin(slag::CommandQueueType::Graphics);
-            toCommon->barrier({}, {}, toSource);
-            submitter.submit(toCommon, slag::CommandQueueType::Graphics);
-        }
     }
     uint64_t after = usage(device);
     MESSAGE(passes << " passes moved " << movedBuffers << " buffers and " << movedTextures << " textures; usage "
@@ -447,7 +426,8 @@ void testStaleSlots(slag::Backend backend)
     device->writeRawBuffer(3, {.buffer = first, .offset = 0, .size = bufferSize});
     device->writeRawBuffer(4, {.buffer = second, .offset = 0, .size = bufferSize});
     slag::CommandBuffer* commandBuffer = submitter.begin(slag::CommandQueueType::Graphics);
-    pass->recordCopies(commandBuffer);
+    std::vector<slag::TextureLayout> layouts(pass->moves().size(), slag::TextureLayout::Common);
+    pass->recordCopies(commandBuffer, layouts);
     slag::SemaphoreValue done = submitter.submit(commandBuffer, slag::CommandQueueType::Graphics);
     REQUIRE(static_cast<bool>(device->endDefragmentation(pass, done)));
     test.checkNoErrors();
@@ -510,7 +490,8 @@ void testPassValidation(slag::Backend backend)
 
     slag::CommandBuffer* commandBuffer = device->createCommandBuffer({}).value();
     REQUIRE(static_cast<bool>(commandBuffer->begin()));
-    pass->recordCopies(commandBuffer);
+    std::vector<slag::TextureLayout> layouts(pass->moves().size(), slag::TextureLayout::Common);
+    pass->recordCopies(commandBuffer, layouts);
     REQUIRE(static_cast<bool>(commandBuffer->end()));
     (void)device->endDefragmentation(pass, {semaphore, 1}); // never submitted
     REQUIRE(test.messages.errors.size() == 2);

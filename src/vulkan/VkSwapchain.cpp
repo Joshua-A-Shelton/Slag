@@ -352,6 +352,10 @@ void destroyImpl(GraphicsDeviceImpl& device, SwapchainImpl* swapchain)
     }
     for (PresentSlot& slot : swapchain->presentSlots)
     {
+        if (slot.acquireSemaphore != VK_NULL_HANDLE)
+        {
+            device.fn.vkDestroySemaphore(device.device, slot.acquireSemaphore, nullptr);
+        }
         device.fn.vkDestroySemaphore(device.device, slot.semaphore, nullptr);
         device.fn.vkDestroyFence(device.device, slot.fence, nullptr);
     }
@@ -453,7 +457,31 @@ Result<uint32_t> acquireImage(SwapchainCommon* object)
     GraphicsDeviceImpl& device = deviceOf(object);
     if (swapchain->freeAcquireSemaphores.empty())
     {
-        return Status::OutOfHostMemory; // more acquires than images + 1 without presenting
+        // Take back the semaphores of presents that have finished.
+        for (PresentSlot& slot : swapchain->presentSlots)
+        {
+            if (slot.acquireSemaphore != VK_NULL_HANDLE &&
+                device.fn.vkGetFenceStatus(device.device, slot.fence) == VK_SUCCESS &&
+                swapchain->freeAcquireSemaphores.pushBack(slot.acquireSemaphore))
+            {
+                slot.acquireSemaphore = VK_NULL_HANDLE;
+            }
+        }
+    }
+    if (swapchain->freeAcquireSemaphores.empty())
+    {
+        VkSemaphoreCreateInfo semaphoreInfo = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+        VkSemaphore semaphore = VK_NULL_HANDLE;
+        VkResult created = device.fn.vkCreateSemaphore(device.device, &semaphoreInfo, nullptr, &semaphore);
+        if (created != VK_SUCCESS)
+        {
+            return toStatus(device, created);
+        }
+        if (!swapchain->freeAcquireSemaphores.pushBack(semaphore))
+        {
+            device.fn.vkDestroySemaphore(device.device, semaphore, nullptr);
+            return Status::OutOfHostMemory;
+        }
     }
     VkSemaphore semaphore = swapchain->freeAcquireSemaphores[swapchain->freeAcquireSemaphores.size() - 1];
     uint32_t index = 0;
@@ -498,6 +526,20 @@ Result<void> presentImage(CommandQueueCommon* queueObject, SwapchainCommon* obje
         device.fn.vkResetFences(device.device, 1, &slot.fence);
     }
     slot.used = true;
+    if (slot.acquireSemaphore != VK_NULL_HANDLE)
+    {
+        // That present has finished (the fence above): its semaphore is free.
+        if (!swapchain->freeAcquireSemaphores.pushBack(slot.acquireSemaphore))
+        {
+            device.fn.vkDestroySemaphore(device.device, slot.acquireSemaphore, nullptr);
+        }
+        slot.acquireSemaphore = VK_NULL_HANDLE;
+    }
+    if (object->acquiredImage < swapchain->imageAcquireSemaphores.size())
+    {
+        slot.acquireSemaphore = swapchain->imageAcquireSemaphores[object->acquiredImage];
+        swapchain->imageAcquireSemaphores[object->acquiredImage] = VK_NULL_HANDLE;
+    }
 
     // An empty submit signals the render-done semaphore after all earlier work
     // on the queue (ADR 0057).

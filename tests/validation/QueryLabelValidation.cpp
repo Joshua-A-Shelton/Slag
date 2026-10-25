@@ -3,6 +3,7 @@
 #include "ValidationFixture.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <vector>
 
 using namespace slag;
@@ -160,18 +161,19 @@ TEST_CASE("defragmentation passes")
     REQUIRE_FALSE(pass->moves().empty());
     CHECK_VALIDATION(f, "not this device's active pass", (void)f.device->endDefragmentation(nullptr, {}));
     CommandBuffer* idle = f.device->createCommandBuffer({}).value();
-    CHECK_VALIDATION(f, "the command buffer is not recording", pass->recordCopies(idle));
+    std::vector<TextureLayout> layouts(pass->moves().size(), TextureLayout::Common);
+    CHECK_VALIDATION(f, "the command buffer is not recording", pass->recordCopies(idle, layouts));
     CommandBuffer* commandBuffer = f.recording();
     Texture* target = f.texture(TextureUsage::RenderTarget);
     AttachmentView* view = f.device->createAttachmentView({.texture = target}).value();
     const ColorAttachment color = {.view = view};
     commandBuffer->beginRendering({.colorAttachments = {&color, 1}});
     // The failed call above still recorded, so this reports both.
-    CHECK_VALIDATIONS(f, 2, "inside a render pass", pass->recordCopies(commandBuffer));
+    CHECK_VALIDATIONS(f, 2, "inside a render pass", pass->recordCopies(commandBuffer, layouts));
     commandBuffer->endRendering();
-    CHECK_VALIDATION(f, "the copies are already recorded", pass->recordCopies(commandBuffer));
+    CHECK_VALIDATION(f, "the copies are already recorded", pass->recordCopies(commandBuffer, layouts));
     f.device->destroy(idle);
-    CHECK_VALIDATIONS(f, 3, "use of a destroyed CommandBuffer", pass->recordCopies(idle));
+    CHECK_VALIDATIONS(f, 3, "use of a destroyed CommandBuffer", pass->recordCopies(idle, layouts));
     Semaphore* semaphore = f.device->createSemaphore({}).value();
     CHECK_VALIDATION(f, "hasn't been reached", (void)f.device->endDefragmentation(pass, {semaphore, 1}));
 
@@ -207,4 +209,65 @@ TEST_CASE("defragmentation passes")
     f.device->destroy(view);
     f.device->destroy(target);
     f.device->destroy(semaphore);
+}
+
+TEST_CASE("defragmentation copy layouts")
+{
+    ValidationFixture f;
+    // Fragmented GpuOnly memory with movable textures in every block.
+    std::vector<Buffer*> buffers;
+    std::vector<Texture*> textures;
+    for (uint32_t i = 0; i < 512; ++i)
+    {
+        buffers.push_back(
+            f.device
+                ->createBuffer(
+                    {.size = 1 << 20, .placement = Placement::automatic(MemoryKind::GpuOnly, {.movable = true})})
+                .value());
+        if (i % 8 == 0)
+        {
+            textures.push_back(
+                f.device
+                    ->createTexture2D({.format = PixelFormat::R8G8B8A8Unorm,
+                                       .width = 64,
+                                       .height = 64,
+                                       .placement = Placement::automatic(MemoryKind::GpuOnly, {.movable = true})})
+                    .value());
+        }
+    }
+    for (size_t i = 0; i < buffers.size(); ++i)
+    {
+        if (i % 4 != 0)
+        {
+            f.device->destroy(buffers[i]);
+            buffers[i] = nullptr;
+        }
+    }
+    DefragmentationPass* pass = f.device->beginDefragmentation({}).value();
+    REQUIRE(pass);
+    size_t textureMove = SIZE_MAX;
+    for (size_t i = 0; i < pass->moves().size(); ++i)
+    {
+        textureMove = pass->moves()[i].texture && textureMove == SIZE_MAX ? i : textureMove;
+    }
+    REQUIRE(textureMove != SIZE_MAX);
+    std::vector<TextureLayout> layouts(pass->moves().size(), TextureLayout::Common);
+    CommandBuffer* graphics = f.recording();
+    CHECK_VALIDATION(f, "layouts for", pass->recordCopies(graphics, {layouts.data(), layouts.size() - 1}));
+    layouts[textureMove] = TextureLayout::RenderTarget; // the texture has no RenderTarget usage
+    CHECK_VALIDATION(f, "the texture can't be in that layout", pass->recordCopies(graphics, layouts));
+    CommandBuffer* copy = f.recording(CommandQueueType::Copy);
+    layouts[textureMove] = TextureLayout::ShaderRead;
+    CHECK_VALIDATIONS(f, 2, "this queue type can't copy a texture from that layout",
+                      pass->recordCopies(copy, layouts)); // and already recorded
+    (void)f.device->endDefragmentation(pass, {});
+    f.messages.errors.clear();
+    for (Buffer* buffer : buffers)
+    {
+        f.device->destroy(buffer);
+    }
+    for (Texture* texture : textures)
+    {
+        f.device->destroy(texture);
+    }
 }

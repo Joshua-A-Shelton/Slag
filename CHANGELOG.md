@@ -29,7 +29,8 @@ The first release: a thin C++20 abstraction over Direct3D 12 (Agility SDK
   (ADR 0019).
 - Formats with a guaranteed support table and per-device queries (ADR 0022,
   `docs/format-support.md`).
-- Defragmentation passes for movable resources, with stable pointers
+- Defragmentation passes for movable resources, with stable pointers:
+  `recordCopies` takes each moved texture's layout and records the barriers
   (ADR 0062).
 
 ### Descriptors and pipelines
@@ -66,7 +67,7 @@ The first release: a thin C++20 abstraction over Direct3D 12 (Agility SDK
 
 - Slag validation of every call in validation builds, with a stale-pointer
   quarantine and descriptor-slot tracking (D3D12 poison descriptors); all
-  400 checks are tested without a GPU (ADRs 0016, 0031, 0052, 0067).
+  403 checks are tested without a GPU (ADRs 0016, 0031, 0052, 0067).
 - Debug names on every object, in every build (ADR 0017).
 - Crash diagnostics: D3D12 DRED and Vulkan `VK_EXT_device_fault` reports on
   device loss (ADR 0014).

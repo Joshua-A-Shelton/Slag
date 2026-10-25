@@ -206,12 +206,17 @@ public:
     // Present modes the window supports: Fifo first.
     uint32_t supportedPresentModes(const NativeWindow& window, std::span<PresentMode> modes) const;
 
-    // Defragmentation (ADR 0062): plans moves and creates their new native
-    // objects; one pass per device at a time. Nothing waits: `completed` is
-    // a value the user has seen reached after the pass's copies, and other
-    // queues that use moved resources afterwards wait on it too. End swaps
-    // the native objects in, frees the old memory, and rebuilds attachment
-    // views; resource and view pointers stay valid.
+    // Defragmentation (ADR 0062): begin plans moves and creates their new
+    // native objects; one pass per device at a time. Nothing waits:
+    // `completed` is a semaphore value the CPU has seen reached after the
+    // pass's copies and after all other GPU work that used a moved resource,
+    // on every queue. End swaps the native objects in, destroys the old ones
+    // and frees their memory, and rebuilds attachment views; resource and view
+    // pointers stay valid. Command buffers recorded before it that use a moved
+    // resource must not be submitted after it. Other queues that use moved
+    // resources afterwards wait on `completed`. If end fails (out of memory
+    // rebuilding views), nothing has changed and the pass is still active:
+    // call it again.
     Result<DefragmentationPass*> beginDefragmentation(const DefragmentationDesc& desc);
     Result<void> endDefragmentation(DefragmentationPass* pass, SemaphoreValue completed);
 

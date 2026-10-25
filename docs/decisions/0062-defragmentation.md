@@ -32,8 +32,8 @@ space can be returned and large allocations still fit after long runs.
 ```cpp
 DefragmentationPass* pass = device->beginDefragmentation(desc);   // budget: max bytes / moves
 std::span<const DefragmentationMove> moves = pass->moves();       // resource, old/new location
-pass->recordCopies(commandBuffer);   // Slag records the copies
-// user submits, and keeps every moved resource unused by other GPU work until it completes
+pass->recordCopies(commandBuffer, layouts);   // Slag records barriers and copies
+// user submits, and keeps every moved resource unused until the pass ends
 device->endDefragmentation(pass, /*completed*/ semaphoreValue);   // swaps native objects, frees old space
 ```
 
@@ -45,15 +45,65 @@ device->endDefragmentation(pass, /*completed*/ semaphoreValue);   // swaps nativ
   stable, repeating the original descriptor write works unchanged. Slag
   does not track or rewrite slots (it tracks them only in validation builds,
   where it reports slots still pointing at a moved resource's old location).
-- Textures are copied in their current layout; the pass's move list states
-  the layout the user must have them in (`CopySource` / after the copy the
-  same layout as before).
+- Textures are copied from the layouts the user passes and come back in
+  them (see "Contract" below).
 - Mapped pointers of moved buffers change; the move list flags them.
 - **Attachment views of moved textures are rebuilt by Slag** in
   `endDefragmentation` (they are Slag objects); `AttachmentView*` pointers
   keep working. So the user only fixes descriptor slots, GPU addresses, and
   mapped pointers.
 - `userData` (ADR 0063) gets from a moved resource back to its owner.
+
+## Contract (revised 2026-10-24, before v1.0)
+
+The first contract had the user move textures into `CopySource` before
+`recordCopies` and back afterwards, said "record nothing else on them in
+between" without saying when "between" started, and left several rules
+unstated. Reviewed after M9; replaced by:
+
+- **Layouts, not transitions.** `recordCopies(commandBuffer, layouts)`:
+  `layouts[i]` is the layout of `moves()[i]`'s texture on every subresource
+  (ignored for buffers). Slag records the barriers: the old texture from its
+  layout to `CopySource`, the new one to `CopyDest`, the copy, then the new
+  one to that same layout with no access pending. Copy queues use `Common`
+  throughout; compute queues accept D3D12's compute layouts. `Undefined`
+  means the contents don't matter: that texture isn't copied and its next
+  barrier starts from `Undefined` (transient render targets).
+- **At a submit boundary.** Nothing earlier in the copies' submit may use a
+  moved resource, so every last use is in an earlier submit, finished and
+  visible (ADR 0049), and every barrier starts from `syncBefore = None`.
+  This is also what makes the layout knowable with multithreaded recording:
+  it is the layout at the end of the previous submit, not something another
+  thread may still change. After `endDefragmentation`, the next barrier on a
+  moved texture is in a later submit, from `syncBefore = None`.
+- **Frozen from begin to end.** Record nothing on moved resources, don't
+  write a moved GpuUpload buffer through its mapped pointer (writes after
+  the copy are lost), don't use moved resources from other threads
+  (`gpuAddress()` and `mappedData()` included), and don't destroy them.
+- **`completed` covers all work.** It is a value the CPU has seen reached
+  after the copies and after all other GPU work that used a moved resource,
+  on every queue: end destroys the old native objects at once. Command
+  buffers recorded before end that use a moved resource must not be
+  submitted after it.
+- **After end:** descriptors, GPU addresses, mapped pointers of GpuUpload
+  buffers, and native handles (`slag/native/`) are stale; pointers and
+  attachment views stay valid.
+- **Failure leaves the pass intact.** End creates every rebuilt attachment
+  view before swapping anything; if that runs out of memory it returns the
+  error with nothing changed, and the pass stays active to end again.
+- Validation: `layouts` has one entry per move; each layout suits the queue
+  and the texture (usage and format).
+
+Mapping: the old texture `LayoutBefore = layouts[i]` → `COPY_SOURCE` from
+`SYNC_NONE` (D3D12) / that layout → `TRANSFER_SRC_OPTIMAL` from the copy
+stage, chained to the submit-boundary barrier (Vulkan, ADR 0049); the new
+texture `COMMON` → `COPY_DEST` (D3D12, created in `COMMON`) / `UNDEFINED`
+→ `TRANSFER_DST_OPTIMAL`; after the copy `COPY_DEST` → `layouts[i]` with
+`SyncAfter = NONE`.
+
+Spreading a pass over frames (moved resources still usable until a later
+switch) is not part of v1.0; it would come as a new, additive way to end a
+pass.
 
 ## Decided
 
@@ -67,7 +117,8 @@ device->endDefragmentation(pass, /*completed*/ semaphoreValue);   // swaps nativ
   Readback is a validation error (and ignored). Moved GpuUpload buffers get
   a new mapped pointer: `mappedData()` returns it after `endDefragmentation`.
   Textures only live in GpuOnly memory.
-- **Textures are copy-ready, on any queue.** Before `recordCopies`, moved
+- **Textures are copy-ready, on any queue** (superseded by "Contract"
+  above). Before `recordCopies`, moved
   textures are in `CopySource` (graphics or compute command buffer) or
   `Common` (copy queue, ADR 0049), and moved buffers' earlier writes are
   visible to copies. Slag initializes each new texture, copies, and leaves it

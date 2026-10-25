@@ -406,6 +406,7 @@ struct MoveEntry
     PoolAllocation to;
     MemoryBlockCommon* toBlock = nullptr; // `to` as a block and offset
     uint64_t toOffset = 0;
+    TextureLayout layout = TextureLayout::Common; // the texture's layout, from recordCopies
 };
 
 struct DefragmentationPassCommon : DefragmentationPass

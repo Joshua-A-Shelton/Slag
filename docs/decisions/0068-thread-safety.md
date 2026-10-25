@@ -23,7 +23,7 @@
 | `Semaphore` | `value()`, `wait()`, and the free `waitSemaphores()` | `signal()` |
 | `Buffer` | `gpuAddress()`, `mappedData()` (CPU access to the memory is the user's to synchronize) | — |
 | Every object | `userData()` while no `setUserData()` runs | `setUserData()` |
-| Defragmentation pass | — | the whole pass; resources in an active pass must not be destroyed |
+| Defragmentation pass | — | the whole pass; from begin to end no thread may use a moved resource (`gpuAddress()` and `mappedData()` included) or destroy it (ADR 0062) |
 
 Callbacks may be invoked from any thread, concurrently: the debug callback
 (ADR 0011) and `AllocatorCallbacks` (ADR 0066).

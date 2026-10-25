@@ -195,6 +195,11 @@ VkBindHeapInfoEXT bindInfo(const DescriptorHeap& heap)
 
 } // namespace
 
+VkImageLayout imageLayout(TextureLayout layout)
+{
+    return toLayout(layout);
+}
+
 Result<CommandBufferCommon*> createCommandBuffer(GraphicsDeviceCommon* common, const CommandBufferDesc& desc)
 {
     auto& device = *static_cast<GraphicsDeviceImpl*>(common);
@@ -353,6 +358,16 @@ void cmdBarrier(CommandBufferCommon* object, std::span<const GlobalBarrier> glob
         vkBarrier.dstAccessMask = toAccess(barrier.accessAfter);
         vkBarrier.oldLayout = toLayout(barrier.layoutBefore);
         vkBarrier.newLayout = toLayout(barrier.layoutAfter);
+        // D3D12's SYNC_NONE before follows work in earlier submits or behind
+        // a semaphore wait. A Vulkan layout transition from NONE chains to
+        // neither (the boundary barrier, ADR 0049; acquire and timeline
+        // waits), so it starts at the barrier's own later stages instead.
+        if (vkBarrier.srcStageMask == VK_PIPELINE_STAGE_2_NONE && vkBarrier.oldLayout != vkBarrier.newLayout)
+        {
+            vkBarrier.srcStageMask = vkBarrier.dstStageMask != VK_PIPELINE_STAGE_2_NONE
+                                         ? vkBarrier.dstStageMask
+                                         : VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+        }
         vkBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         vkBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         vkBarrier.image = texture->image;

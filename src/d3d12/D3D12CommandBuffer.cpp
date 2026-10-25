@@ -150,6 +150,11 @@ GraphicsDeviceImpl& deviceOf(CommandBufferCommon* commandBuffer)
 
 } // namespace
 
+D3D12_BARRIER_LAYOUT barrierLayout(TextureLayout layout)
+{
+    return toLayout(layout);
+}
+
 Result<CommandBufferCommon*> createCommandBuffer(GraphicsDeviceCommon* common, const CommandBufferDesc& desc)
 {
     auto& device = *static_cast<GraphicsDeviceImpl*>(common);

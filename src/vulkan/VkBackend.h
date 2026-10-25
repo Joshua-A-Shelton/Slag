@@ -148,15 +148,20 @@ struct PresentSlot
     VkSemaphore semaphore = VK_NULL_HANDLE;
     VkFence fence = VK_NULL_HANDLE;
     bool used = false;
+    VkSemaphore acquireSemaphore = VK_NULL_HANDLE; // the presented image's, free once the fence signals
 };
 
 struct SwapchainImpl : SwapchainCommon
 {
     VkSurfaceKHR surface = VK_NULL_HANDLE;
     VkSwapchainKHR swapchain = VK_NULL_HANDLE;
-    // Acquire semaphores: a free pool, and the one each image was acquired with.
-    // An image acquired again has been presented, so its previous semaphore's
-    // wait has executed and it can be reused.
+    // Acquire semaphores: a free pool, and the one each image was acquired
+    // with until it is presented. A presented image's semaphore moves to its
+    // present slot and is reused once the slot's present fence signals: the
+    // present waited for all earlier work on its queue, which the work that
+    // used the image (and waited on the semaphore) is ordered before. An image
+    // acquired again doesn't prove that by itself (mailbox and immediate modes
+    // hand images back early).
     Vector<VkSemaphore> freeAcquireSemaphores;
     Vector<VkSemaphore> imageAcquireSemaphores; // per image; may be null
     Vector<PresentSlot> presentSlots;
@@ -203,6 +208,8 @@ VkSemaphore acquireSemaphore(SwapchainCommon* swapchain);
 
 // VkResult to Status; marks the device lost on VK_ERROR_DEVICE_LOST.
 Status toStatus(GraphicsDeviceImpl& device, VkResult result);
+// ADR 0049's layout mapping, for barriers Slag records itself.
+VkImageLayout imageLayout(TextureLayout layout);
 
 void setObjectName(GraphicsDeviceImpl& device, VkObjectType type, uint64_t handle, const char* name);
 

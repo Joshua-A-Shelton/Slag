@@ -238,7 +238,7 @@ New names added while implementing go here once confirmed.
 | `GraphicsDevice` | `beginDefragmentation(DefragmentationDesc)` → `Result<DefragmentationPass*>`, `endDefragmentation(pass, SemaphoreValue completed)` → `Result<void>` |
 | `DefragmentationDesc` | `kind`, `maxBytes`, `maxMoves` |
 | `DefragmentationMove` | `buffer`, `texture` (one set) |
-| `DefragmentationPass` | `moves()`, `recordCopies(commandBuffer)` |
+| `DefragmentationPass` | `moves()`, `recordCopies(commandBuffer, layouts)` |
 | `PlacementOptions` | `movable` (from ADR 0062, never reviewed) |
 
 ## Nested structs

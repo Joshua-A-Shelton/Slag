@@ -3,6 +3,7 @@
 // Defragmentation passes (ADR 0062): compact movable, automatically placed
 // resources into fewer memory blocks.
 
+#include <slag/Barriers.h>
 #include <slag/MemoryBlock.h>
 
 #include <cstdint>
@@ -22,8 +23,9 @@ struct DefragmentationDesc
 };
 
 // One moved resource: exactly one of the two is set. After the pass, its
-// descriptors and GPU address are stale and must be written again; a moved
-// GpuUpload buffer also has a new mappedData().
+// descriptors, GPU address, and native handles (slag/native/) are stale and
+// must be fetched or written again; a moved GpuUpload buffer also has a new
+// mappedData().
 struct DefragmentationMove
 {
     Buffer* buffer = nullptr;
@@ -31,7 +33,10 @@ struct DefragmentationMove
 };
 
 // From GraphicsDevice::beginDefragmentation until endDefragmentation. Not
-// thread-safe; moved resources must not be destroyed while it is active.
+// thread-safe. While it is active, moved resources are frozen: record
+// nothing on them, don't write a moved GpuUpload buffer through its mapped
+// pointer (writes after the copy are lost), don't use them from other threads
+// (gpuAddress() and mappedData() included), and don't destroy them.
 class DefragmentationPass
 {
 public:
@@ -39,13 +44,16 @@ public:
     std::span<const DefragmentationMove> moves() const;
 
     // Records every move's copy, outside render passes, on any queue type.
-    // Before: moved textures are in CopySource (Common on copy queues), and
-    // earlier writes to moved resources are visible to copies. Until
-    // endDefragmentation, the Buffer and Texture objects still refer to the
-    // old copies, so record nothing else on them in between; after it, they
-    // are the new copies, textures in that same layout with no access
-    // pending (the next barrier starts from syncBefore = None).
-    void recordCopies(CommandBuffer* commandBuffer);
+    // layouts[i] is the layout of moves()[i]'s texture on every subresource
+    // (ignored for buffers); Undefined means its contents don't matter, so it
+    // isn't copied. The layouts suit the queue: Common on copy queues;
+    // Common, ShaderRead, ShaderWrite, CopySource, or CopyDest on compute
+    // queues. Nothing earlier in the same submit may use a moved resource:
+    // their last uses are in earlier submits, finished and visible
+    // (ADR 0049). After endDefragmentation each moved texture is in its layout
+    // with no access pending; its next barrier, in a later submit, starts from
+    // syncBefore = None (and from Undefined for those passed as Undefined).
+    void recordCopies(CommandBuffer* commandBuffer, std::span<const TextureLayout> layouts);
 
     DefragmentationPass(const DefragmentationPass&) = delete;
     DefragmentationPass& operator=(const DefragmentationPass&) = delete;
