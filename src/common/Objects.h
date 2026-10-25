@@ -373,6 +373,8 @@ struct SwapchainCommon : Swapchain, ObjectRecord
     uint32_t height = 0;
     PixelFormat format = PixelFormat::B8G8R8A8Unorm;
     ColorSpace colorSpace = ColorSpace::SrgbNonlinear;
+    uint32_t minImageCount = 3; // as requested, for resize
+    PresentMode presentMode = PresentMode::Fifo;
     // Filled by the backend at create and reconfigure; common code makes the views.
     Vector<TextureCommon*> textures;
     Vector<AttachmentView*> views;     // one per image, in the swapchain format

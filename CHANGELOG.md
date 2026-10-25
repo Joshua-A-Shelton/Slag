@@ -15,7 +15,10 @@ The first release: a thin C++20 abstraction over Direct3D 12 (Agility SDK
   compute, and copy queues (ADRs 0008, 0012, 0054).
 - One function table per backend, called directly when one backend is
   compiled in; no virtual dispatch (ADRs 0001, 0065).
-- `Result<T>` and `Status` everywhere; no exceptions, no RTTI (ADR 0060).
+- `Result<T>` and `Status` everywhere, `[[nodiscard]]`; no exceptions, no
+  RTTI (ADR 0060).
+- The debug callback receives a `DebugMessage` struct, so fields can be
+  added later (ADR 0011).
 - CPU allocations through `AllocatorCallbacks` (ADR 0066).
 - Capabilities for optional features, never silent emulation (ADR 0015).
 
@@ -60,14 +63,14 @@ The first release: a thin C++20 abstraction over Direct3D 12 (Agility SDK
 ### Presentation
 
 - Swapchains on Win32, Xlib, XCB, and Wayland windows, with switchable present
-  modes, resizing, HDR color spaces and metadata, tearing, and frame latency
+  modes, resizing (`resize` keeps every other setting), HDR color spaces and metadata, tearing, and frame latency
   control (ADRs 0055–0059).
 
 ### Debugging
 
 - Slag validation of every call in validation builds, with a stale-pointer
   quarantine and descriptor-slot tracking (D3D12 poison descriptors); all
-  403 checks are tested without a GPU (ADRs 0016, 0031, 0052, 0067).
+  404 checks are tested without a GPU (ADRs 0016, 0031, 0052, 0067).
 - Debug names on every object, in every build (ADR 0017).
 - Crash diagnostics: D3D12 DRED and Vulkan `VK_EXT_device_fault` reports on
   device loss (ADR 0014).

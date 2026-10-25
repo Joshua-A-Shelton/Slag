@@ -57,9 +57,17 @@ enum class DevicePreference : uint8_t
     LowPower,
 };
 
-// May be called from any thread, concurrently. `message` is valid only during
-// the call.
-using DebugMessageFn = void (*)(MessageSeverity severity, MessageSource source, const char* message, void* userData);
+// One message for the debug callback. A struct so fields can be added
+// without changing the callback's type.
+struct DebugMessage
+{
+    MessageSeverity severity = MessageSeverity::Error;
+    MessageSource source = MessageSource::Slag;
+    const char* text = nullptr; // valid only during the call
+};
+
+// May be called from any thread, concurrently.
+using DebugMessageFn = void (*)(const DebugMessage& message, void* userData);
 
 // Slag's own CPU allocations (ADR 0066). Must be thread-safe. Null callbacks
 // mean aligned malloc/free.

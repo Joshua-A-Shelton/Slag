@@ -62,7 +62,7 @@ int main(int argc, char** argv)
         commandBuffer->endRendering();
     });
 
-    app.queue->waitIdle();
+    (void)app.queue->waitIdle();
     device->destroy(vertexBuffer);
     device->destroy(pipeline);
     return result;

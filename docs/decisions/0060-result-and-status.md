@@ -26,6 +26,9 @@ enum class Status : int32_t {
 template <class T> class Result {
 public:
     explicit operator bool() const;   // true for every success status
+    // Result and Result<void> are [[nodiscard]] (added before v1.0,
+    // 2026-10-24): ignoring one warns; (void) ignores it on purpose. Adding
+    // it after 1.0 would break builds that treat warnings as errors.
     Status status() const;
     T& value();                       // only valid when true
 };

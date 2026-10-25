@@ -116,7 +116,10 @@ public:
 
     // The GPU must be done with every image and none may be acquired but not
     // presented (ADR 0058). Earlier texture and view pointers become invalid.
+    // reconfigure sets every field of the desc (unset ones take their
+    // defaults); resize changes only the size and keeps the rest.
     Result<void> reconfigure(const SwapchainReconfigureDesc& desc);
+    Result<void> resize(uint32_t width, uint32_t height);
 
     // Skipped (and logged) where the platform has no HDR metadata support.
     void setHdrMetadata(const HdrMetadata& metadata);

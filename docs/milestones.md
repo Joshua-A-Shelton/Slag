@@ -319,6 +319,9 @@ shows about the core API can still change.
   safe (ADR 0057). 403 validation checks.
 - The render graph runs defragmentation passes: `defragment(desc, layoutOf)`
   after the frame, with a CPU wait (ADR 0072).
+- Pre-tag fixes: the debug callback takes a `DebugMessage` struct (ADR
+  0011); `Swapchain::resize` keeps every other setting (ADR 0058); `Result`
+  is `[[nodiscard]]` (ADR 0060). 404 validation checks.
 
 ## After v1.0
 

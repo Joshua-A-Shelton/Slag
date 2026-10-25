@@ -22,8 +22,9 @@ enum class Status : int32_t
     Unsupported = -5,
 };
 
+// [[nodiscard]]: ignoring a result warns; write (void) to ignore one on purpose.
 template <class T>
-class Result
+class [[nodiscard]] Result
 {
 public:
     Result(T value)
@@ -69,7 +70,7 @@ private:
 };
 
 template <>
-class Result<void>
+class [[nodiscard]] Result<void>
 {
 public:
     Result()

@@ -14,6 +14,15 @@ image-count question in ADR 0056.
   shown (D3D12 shows it scaled); on Wayland no mismatch is detected and the
   user drives size from compositor configure events.
 
+## `swapchain->resize(width, height)` (added before v1.0, 2026-10-24)
+
+Changes only the size; the image count, format, color space, and present
+mode stay as they are. Same preconditions and mapping as `reconfigure`. It
+exists because `reconfigure({.width = w, .height = h})` sets every field,
+so the unset ones took their defaults: an HDR swapchain silently went back
+to `B8G8R8A8Unorm` / sRGB on a resize. `reconfigure` keeps that meaning (it
+sets everything) and is for changing settings.
+
 ## `swapchain->reconfigure(desc)`
 
 - Changes width, height, image count, format, and present mode (needed for

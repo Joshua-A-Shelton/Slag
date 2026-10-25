@@ -264,7 +264,7 @@ int main(int argc, char** argv)
         fillContent(static_cast<uint8_t*>(staging->mappedData()) + i * footprint.size, footprint.rowPitch, i);
     }
     slag::CommandBuffer* setup = device->createCommandBuffer({}).value();
-    setup->begin();
+    (void)setup->begin();
     setup->copyBuffer(particles[1], 0, particleStaging, 0, particleCount * sizeof(Particle));
     slag::TextureBarrier toCommon[2];
     for (uint32_t i = 0; i < 2; ++i)
@@ -279,7 +279,7 @@ int main(int argc, char** argv)
                                          .layoutAfter = slag::TextureLayout::ShaderRead,
                                          .texture = target};
     setup->barrier({}, {}, {&targetToRead, 1});
-    setup->end();
+    (void)setup->end();
     if (!app.submitAndWait(setup))
     {
         return 1;
@@ -322,7 +322,7 @@ int main(int argc, char** argv)
         if (frame >= framesInFlight)
         {
             slag::SemaphoreValue done[] = {{computeDone, frame - 1}, {copyDone, frame - 1}};
-            slag::waitSemaphores(done, slag::WaitMode::All, UINT64_MAX);
+            (void)slag::waitSemaphores(done, slag::WaitMode::All, UINT64_MAX);
             for (uint32_t q = 0; q < QueueCount; ++q)
             {
                 collect(q, frame - framesInFlight);
@@ -333,8 +333,8 @@ int main(int argc, char** argv)
 
         // Compute: buffer `previous` -> buffer `current`.
         slag::CommandBuffer* compute = computeLists[slot];
-        compute->reset();
-        compute->begin();
+        (void)compute->reset();
+        (void)compute->begin();
         timestamp(ComputeQueue, compute, 0);
         // Compute frame - 1 wrote the input on this queue, in an earlier submit.
         slag::GlobalBarrier afterUpdate = {.syncBefore = slag::BarrierSync::ComputeShading,
@@ -355,33 +355,33 @@ int main(int argc, char** argv)
         compute->dispatch(particleCount / 64, 1, 1);
         timestamp(ComputeQueue, compute, 1);
         resolve(ComputeQueue, compute);
-        compute->end();
+        (void)compute->end();
         slag::SemaphoreValue computeSignal = {computeDone, frame + 1};
         slag::CommandBuffer* computeList[] = {compute};
-        queues[ComputeQueue]->submit(
+        (void)queues[ComputeQueue]->submit(
             {.waits = {&previousDraw, 1}, .commandBuffers = computeList, .signals = {&computeSignal, 1}});
 
         // Copy: a staging content -> texture `current`, in Common.
         slag::CommandBuffer* copy = copyLists[slot];
-        copy->reset();
-        copy->begin();
+        (void)copy->reset();
+        (void)copy->begin();
         timestamp(CopyQueue, copy, 0);
         uint64_t content = (frame / framesPerContent) % stagingCount;
         copy->copyBufferToTexture({.texture = textures[current]},
                                   {staging, content * footprint.size, footprint.rowPitch}, textureSize, textureSize);
         timestamp(CopyQueue, copy, 1);
         resolve(CopyQueue, copy);
-        copy->end();
+        (void)copy->end();
         slag::SemaphoreValue copySignal = {copyDone, frame + 1};
         slag::CommandBuffer* copyList[] = {copy};
-        queues[CopyQueue]->submit(
+        (void)queues[CopyQueue]->submit(
             {.waits = {&previousDraw, 1}, .commandBuffers = copyList, .signals = {&copySignal, 1}});
 
         // Particle pass, its own graphics submit: draws what compute and copy
         // made in frame - 1.
         slag::CommandBuffer* draw = drawLists[slot];
-        draw->reset();
-        draw->begin();
+        (void)draw->reset();
+        (void)draw->begin();
         timestamp(GraphicsQueue, draw, 0);
         slag::TextureBarrier before[] = {{.syncAfter = slag::BarrierSync::VertexShading,
                                           .accessAfter = slag::BarrierAccess::ShaderRead,
@@ -433,11 +433,11 @@ int main(int argc, char** argv)
         draw->barrier({}, {}, after);
         timestamp(GraphicsQueue, draw, 1);
         resolve(GraphicsQueue, draw);
-        draw->end();
+        (void)draw->end();
         slag::SemaphoreValue waits[] = {{computeDone, frame}, {copyDone, frame}};
         slag::SemaphoreValue drawSignal = {particlesDrawn, frame + 1};
         slag::CommandBuffer* drawList[] = {draw};
-        queues[GraphicsQueue]->submit({.waits = waits, .commandBuffers = drawList, .signals = {&drawSignal, 1}});
+        (void)queues[GraphicsQueue]->submit({.waits = waits, .commandBuffers = drawList, .signals = {&drawSignal, 1}});
 
         // The swapchain pass, submitted after the particle pass on the same queue.
         const slag::ColorAttachment color = {.view = swapchainView, .loadOp = slag::LoadOp::Discard};
@@ -455,7 +455,7 @@ int main(int argc, char** argv)
         ++frame;
     });
 
-    device->waitIdle();
+    (void)device->waitIdle();
     for (uint64_t f = frame >= framesInFlight ? frame - framesInFlight : 0; f < frame; ++f)
     {
         for (uint32_t q = 0; q < QueueCount; ++q)

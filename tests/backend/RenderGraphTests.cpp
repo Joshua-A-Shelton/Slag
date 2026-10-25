@@ -57,8 +57,9 @@ struct GraphTest
         return graph;
     }
 
-    static void collect(slag::MessageSeverity, slag::MessageSource, const char* message, void* userData)
+    static void collect(const slag::DebugMessage& debugMessage, void* userData)
     {
+        const char* message = debugMessage.text;
         static_cast<std::vector<std::string>*>(userData)->push_back(message);
     }
 
@@ -496,15 +497,15 @@ void testDefragmentation(slag::Backend backend)
         CHECK(static_cast<bool>(graph->recordPass(0)));
         CHECK(static_cast<bool>(graph->execute()));
         size_t others = 0;
-        for (const slag::DefragmentationMove& move : graph->defragmentationMoves())
+        for (const slag::DefragmentationMove& move : graph->movedResources())
         {
             movedImported += move.texture && imported(move.texture) ? 1 : 0;
             others += move.texture && !imported(move.texture) ? 1 : 0;
         }
         CHECK(asked == others);
         movedOthers += others;
-        movedTotal += graph->defragmentationMoves().size();
-        if (graph->defragmentationMoves().empty())
+        movedTotal += graph->movedResources().size();
+        if (graph->movedResources().empty())
         {
             break;
         }
@@ -618,7 +619,7 @@ void testErrors(slag::Backend backend)
     graph->defragment({}, common);
     REQUIRE(static_cast<bool>(graph->compile()));
     CHECK(static_cast<bool>(graph->execute())); // nothing movable: an empty pass
-    CHECK(graph->defragmentationMoves().empty());
+    CHECK(graph->movedResources().empty());
     t.finish();
 }
 

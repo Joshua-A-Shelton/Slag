@@ -17,8 +17,10 @@ struct ValidationMessages
     std::vector<std::string> errors;
 };
 
-inline void collectValidation(slag::MessageSeverity severity, slag::MessageSource, const char* message, void* userData)
+inline void collectValidation(const slag::DebugMessage& debugMessage, void* userData)
 {
+    slag::MessageSeverity severity = debugMessage.severity;
+    const char* message = debugMessage.text;
     if (severity == slag::MessageSeverity::Error)
     {
         static_cast<ValidationMessages*>(userData)->errors.push_back(message);

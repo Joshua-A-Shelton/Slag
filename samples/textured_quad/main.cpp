@@ -122,7 +122,7 @@ int main(int argc, char** argv)
     std::memcpy(bytes, vertices, sizeof(vertices));
     std::memcpy(bytes + 128, indices, sizeof(indices));
     slag::CommandBuffer* upload = device->createCommandBuffer({.queueType = slag::CommandQueueType::Graphics}).value();
-    upload->begin();
+    (void)upload->begin();
     slag::BufferBarrier geometryToCopy = {
         .syncAfter = slag::BarrierSync::Copy, .accessAfter = slag::BarrierAccess::CopyDest, .buffer = geometry};
     slag::TextureBarrier textureToCopy = {.syncAfter = slag::BarrierSync::Copy,
@@ -166,7 +166,7 @@ int main(int argc, char** argv)
                                             .layoutAfter = slag::TextureLayout::ShaderRead,
                                             .texture = texture};
     upload->barrier({}, {&geometryToDraw, 1}, {&textureToSample, 1});
-    upload->end();
+    (void)upload->end();
     if (!app.submitAndWait(upload))
     {
         return 1;
@@ -204,7 +204,7 @@ int main(int argc, char** argv)
             commandBuffer->endRendering();
         });
 
-    app.queue->waitIdle();
+    (void)app.queue->waitIdle();
     device->destroy(geometry);
     device->destroy(constants);
     device->destroy(texture);

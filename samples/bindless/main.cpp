@@ -206,7 +206,7 @@ int main(int argc, char** argv)
             ++frame;
         });
 
-    app.queue->waitIdle();
+    (void)app.queue->waitIdle();
     destroyer.flush();
     for (StreamedTexture& entry : textures)
     {

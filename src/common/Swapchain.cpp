@@ -131,6 +131,8 @@ Result<Swapchain*> GraphicsDevice::createSwapchain(const SwapchainDesc& desc)
     swapchain->height = desc.height;
     swapchain->format = desc.format;
     swapchain->colorSpace = desc.colorSpace;
+    swapchain->minImageCount = desc.minImageCount;
+    swapchain->presentMode = desc.presentMode;
     Status status = createViews(swapchain);
     if (status != Status::Ok)
     {
@@ -242,11 +244,11 @@ std::span<const PresentMode> Swapchain::switchablePresentModes() const
     return {self->switchableModes, self->switchableCount};
 }
 
-Result<void> Swapchain::reconfigure(const SwapchainReconfigureDesc& desc)
+namespace {
+
+Result<void> applyReconfigure(SwapchainCommon* self, const SwapchainReconfigureDesc& desc,
+                              [[maybe_unused]] const char* function)
 {
-    SLAG_CHECK_LIVE_THIS(SwapchainCommon, "Swapchain", "Swapchain::reconfigure");
-    SwapchainCommon* self = common(this);
-    [[maybe_unused]] const char* function = "Swapchain::reconfigure";
 #ifdef SLAG_VALIDATION
     InstanceCommon* instance = self->device->instance;
     SLAG_VALIDATE(instance, self->acquiredImage == SwapchainCommon::noImage, function,
@@ -271,9 +273,33 @@ Result<void> Swapchain::reconfigure(const SwapchainReconfigureDesc& desc)
         self->height = desc.height;
         self->format = desc.format;
         self->colorSpace = desc.colorSpace;
+        self->minImageCount = desc.minImageCount;
+        self->presentMode = desc.presentMode;
     }
     Status views = createViews(self); // the old images on failure, which stay valid
     return result ? Result<void>(views) : result;
+}
+
+} // namespace
+
+Result<void> Swapchain::reconfigure(const SwapchainReconfigureDesc& desc)
+{
+    SLAG_CHECK_LIVE_THIS(SwapchainCommon, "Swapchain", "Swapchain::reconfigure");
+    return applyReconfigure(common(this), desc, "Swapchain::reconfigure");
+}
+
+Result<void> Swapchain::resize(uint32_t width, uint32_t height)
+{
+    SLAG_CHECK_LIVE_THIS(SwapchainCommon, "Swapchain", "Swapchain::resize");
+    SwapchainCommon* self = common(this);
+    SwapchainReconfigureDesc desc;
+    desc.width = width;
+    desc.height = height;
+    desc.minImageCount = self->minImageCount;
+    desc.format = self->format;
+    desc.colorSpace = self->colorSpace;
+    desc.presentMode = self->presentMode;
+    return applyReconfigure(self, desc, "Swapchain::resize");
 }
 
 void Swapchain::setHdrMetadata(const HdrMetadata& metadata)

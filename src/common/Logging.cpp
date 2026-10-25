@@ -17,7 +17,11 @@ void emit(const MessageSink& sink, MessageSeverity severity, MessageSource sourc
 {
     if (sink.callback)
     {
-        sink.callback(severity, source, text, sink.userData);
+        DebugMessage message;
+        message.severity = severity;
+        message.source = source;
+        message.text = text;
+        sink.callback(message, sink.userData);
         return;
     }
     // Without a callback, only errors and warnings are printed (ADR 0011).

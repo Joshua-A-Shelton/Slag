@@ -158,7 +158,7 @@ public:
     // at loading screens or now and then. A moved texture the frame imported
     // is copied in its final layout; `layoutOf(Texture*)` returns the layout
     // of any other moved texture. GPU work outside the graph must not be
-    // using a moved resource. Afterwards defragmentationMoves() lists what
+    // using a moved resource. Afterwards movedResources() lists what
     // moved, so descriptors, GPU addresses, and mapped pointers can be fetched
     // or written again.
     template <class LayoutOf>
@@ -175,7 +175,7 @@ public:
 
     // What the last execute's defragmentation pass moved, until the next
     // beginFrame.
-    std::span<const DefragmentationMove> defragmentationMoves() const;
+    std::span<const DefragmentationMove> movedResources() const;
 
     // Works out barriers, submits, and transient placement; creates the
     // transient resources and command buffers it needs. Usage errors are

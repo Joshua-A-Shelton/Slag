@@ -17,8 +17,10 @@ struct Messages
     std::vector<std::string> other;
 };
 
-void collect(slag::MessageSeverity severity, slag::MessageSource, const char* message, void* userData)
+void collect(const slag::DebugMessage& debugMessage, void* userData)
 {
+    slag::MessageSeverity severity = debugMessage.severity;
+    const char* message = debugMessage.text;
     auto* messages = static_cast<Messages*>(userData);
     (severity == slag::MessageSeverity::Error ? messages->errors : messages->other).push_back(message);
 }

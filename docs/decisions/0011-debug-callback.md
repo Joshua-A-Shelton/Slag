@@ -10,8 +10,14 @@ user data. It carries both backend messages and Slag's own messages.
 ```cpp
 enum class MessageSeverity : uint8_t { Error, Warning, Info };
 enum class MessageSource   : uint8_t { Slag, Backend };
-using DebugMessageFn = void (*)(MessageSeverity, MessageSource, const char* message, void* userData);
+struct DebugMessage { MessageSeverity severity; MessageSource source; const char* text; };
+using DebugMessageFn = void (*)(const DebugMessage& message, void* userData);
 ```
+
+Changed before v1.0 (2026-10-24): the callback took `(severity, source,
+message, userData)`. A struct lets fields be added later (message IDs for
+filtering, the object involved) without changing the callback's type, which
+would break every user.
 
 | Part | D3D12 (`ID3D12InfoQueue1`) | Vulkan (`VK_EXT_debug_utils`) |
 |---|---|---|
@@ -20,7 +26,7 @@ using DebugMessageFn = void (*)(MessageSeverity, MessageSource, const char* mess
 | Info | Info | Info |
 | Not delivered | Message | Verbose |
 
-- `message` is valid only for the duration of the call.
+- `text` is valid only for the duration of the call.
 - Not exposed: message IDs, categories/types, object lists, abort return
   (Slag always returns false), native filtering. Users filter in the callback.
 

@@ -22,8 +22,9 @@ struct Vertex
     float r, g, b;
 };
 
-void printError(slag::MessageSeverity, slag::MessageSource, const char* message, void* userData)
+void printError(const slag::DebugMessage& debugMessage, void* userData)
 {
+    const char* message = debugMessage.text;
     std::fprintf(stderr, "%s\n", message);
     ++*static_cast<uint32_t*>(userData);
 }

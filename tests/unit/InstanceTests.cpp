@@ -17,8 +17,11 @@ struct CapturedMessage
     std::string text;
 };
 
-void captureMessage(slag::MessageSeverity severity, slag::MessageSource source, const char* message, void* userData)
+void captureMessage(const slag::DebugMessage& debugMessage, void* userData)
 {
+    slag::MessageSeverity severity = debugMessage.severity;
+    slag::MessageSource source = debugMessage.source;
+    const char* message = debugMessage.text;
     static_cast<std::vector<CapturedMessage>*>(userData)->push_back({severity, source, message});
 }
 

@@ -116,7 +116,7 @@ settled after M9).
   graph can't choose which resources move, so a texture used every frame
   would break the frames in between. A moved texture the frame imported is
   copied in its final layout; `layoutOf(Texture*)` gives the layout of any
-  other (engines track this). `defragmentationMoves()` lists the moves until
+  other (engines track this). `movedResources()` lists the moves until
   the next `beginFrame`, for rewriting descriptors and GPU addresses. If the
   copies or the end run out of memory, the pass stays pending and
   `beginFrame` finishes it. GPU work outside the graph must not be using a

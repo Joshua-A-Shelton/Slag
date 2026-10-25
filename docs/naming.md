@@ -402,17 +402,21 @@ sample `samples/render_graph` (ADR 0072).
 | `TextureHandle`, `BufferHandle` | Frame-local handles |
 | `Usage`: `ShaderRead`, `ShaderWrite`, `CopySource`, `CopyDest`, `VertexBuffer`, `IndexBuffer`, `ConstantBuffer`, `IndirectArgument` | How a pass uses a resource |
 
-Proposed after the M9 review (placeholders, pending review):
+| `defragment(DefragmentationDesc, layoutOf)` | Requests a defragmentation pass after the frame (ADR 0072) |
+| `movedResources()` | What the last `execute`'s defragmentation pass moved |
+
+Proposed before tagging v1.0 (placeholders, pending review):
 
 | Name | Notes |
 |---|---|
-| `defragment(DefragmentationDesc, layoutOf)` | Requests a defragmentation pass after the frame (ADR 0072) |
-| `defragmentationMoves()` | What the last `execute` moved |
+| `DebugMessage` { `severity`, `source`, `text` } | What the debug callback receives (ADR 0011); `DebugMessageFn` now takes `(const DebugMessage&, void* userData)` |
+| `swapchain->resize(width, height)` | Changes only the size (ADR 0058) |
 
 Decided in the M9 review: the namespace is spelled out (not `rg`); `Usage`
 rather than `Access`, so it isn't confused with `BarrierAccess`; `Handle`
 rather than `Ref`; `execute` rather than `submit`; transients say so in
-their create functions.
+their create functions. Reviewed afterwards: `defragment` kept,
+`movedResources` rather than `defragmentationMoves`.
 
 ## Enum value style
 

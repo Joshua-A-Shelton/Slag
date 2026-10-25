@@ -23,8 +23,10 @@ struct Messages
     bool crashReport = false;
 };
 
-void printMessage(slag::MessageSeverity severity, slag::MessageSource, const char* message, void* userData)
+void printMessage(const slag::DebugMessage& debugMessage, void* userData)
 {
+    slag::MessageSeverity severity = debugMessage.severity;
+    const char* message = debugMessage.text;
     if (severity == slag::MessageSeverity::Info)
     {
         return; // the Vulkan loader is chatty
@@ -110,7 +112,7 @@ int main(int argc, char** argv)
     device->destroy(buffer);
     device->destroy(block);
 
-    commandBuffer->begin();
+    (void)commandBuffer->begin();
     commandBuffer->beginLabel("crash sample");
     commandBuffer->insertLabel("writing to freed memory");
     commandBuffer->bindPipeline(pipeline);
@@ -118,7 +120,7 @@ int main(int argc, char** argv)
     commandBuffer->pushConstants(push, sizeof(push));
     commandBuffer->dispatch(count / stride / 64, 1, 1);
     commandBuffer->endLabel();
-    commandBuffer->end();
+    (void)commandBuffer->end();
     slag::SemaphoreValue done = {semaphore, 1};
     slag::CommandBuffer* list[] = {commandBuffer};
     slag::Result<void> submitted =

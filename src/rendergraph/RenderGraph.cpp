@@ -184,7 +184,9 @@ struct RenderGraphImpl : RenderGraph
         va_end(args);
         if (callback)
         {
-            callback(MessageSeverity::Error, MessageSource::Slag, text, callbackUserData);
+            DebugMessage message;
+            message.text = text;
+            callback(message, callbackUserData);
         }
         else
         {
@@ -1501,7 +1503,7 @@ void RenderGraph::requestDefragmentation(const DefragmentationDesc& desc, void* 
     self->layoutDestroy = destroy;
 }
 
-std::span<const DefragmentationMove> RenderGraph::defragmentationMoves() const
+std::span<const DefragmentationMove> RenderGraph::movedResources() const
 {
     const RenderGraphImpl* self = impl(this);
     return {self->defragmentMoves.data(), self->defragmentMoves.size()};

@@ -25,8 +25,10 @@ std::vector<char> readFile(const std::string& path)
     return {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
 }
 
-void printMessage(slag::MessageSeverity severity, slag::MessageSource, const char* message, void* userData)
+void printMessage(const slag::DebugMessage& debugMessage, void* userData)
 {
+    slag::MessageSeverity severity = debugMessage.severity;
+    const char* message = debugMessage.text;
     if (severity == slag::MessageSeverity::Info)
     {
         return;
@@ -185,7 +187,7 @@ SampleApp::~SampleApp()
 {
     if (device)
     {
-        queue->waitIdle();
+        (void)queue->waitIdle();
         device->destroy(swapchain);
         for (slag::CommandBuffer* commandBuffer : commandBuffers)
         {
@@ -237,10 +239,10 @@ bool SampleApp::reconfigure()
     {
         return false; // minimized: try again once it has a size
     }
-    queue->waitIdle();
+    (void)queue->waitIdle();
     width = static_cast<uint32_t>(pixelWidth);
     height = static_cast<uint32_t>(pixelHeight);
-    bool ok = static_cast<bool>(swapchain->reconfigure({.width = width, .height = height, .minImageCount = 3}));
+    bool ok = static_cast<bool>(swapchain->resize(width, height));
     std::printf("reconfigured: %ux%u (%s)\n", width, height, ok ? "ok" : "failed");
     return ok;
 }
@@ -252,12 +254,17 @@ int SampleApp::run(const RecordFn& record)
         uint32_t slot = static_cast<uint32_t>(frameNumber % framesInFlight);
         if (frameNumber >= framesInFlight)
         {
-            frameSemaphore->wait(frameNumber - framesInFlight + 1, UINT64_MAX);
+            if (!frameSemaphore->wait(frameNumber - framesInFlight + 1, UINT64_MAX))
+            {
+                return false;
+            }
         }
 
         slag::CommandBuffer* commandBuffer = commandBuffers[slot];
-        commandBuffer->reset();
-        commandBuffer->begin();
+        if (!commandBuffer->reset() || !commandBuffer->begin())
+        {
+            return false;
+        }
         slag::TextureBarrier toTarget = {.syncBefore = slag::BarrierSync::None,
                                          .syncAfter = slag::BarrierSync::RenderTarget,
                                          .accessAfter = slag::BarrierAccess::RenderTarget,
@@ -274,14 +281,17 @@ int SampleApp::run(const RecordFn& record)
                                           .layoutAfter = slag::TextureLayout::Present,
                                           .texture = swapchain->texture(image)};
         commandBuffer->barrier({}, {}, {&toPresent, 1});
-        commandBuffer->end();
+        if (!commandBuffer->end())
+        {
+            return false;
+        }
 
         ++frameNumber;
         slag::SemaphoreValue signal = {frameSemaphore, frameNumber};
         slag::Swapchain* acquiredSwapchains[] = {swapchain};
         slag::CommandBuffer* list[] = {commandBuffer};
-        queue->submit({.commandBuffers = list, .signals = {&signal, 1}, .acquiredSwapchains = acquiredSwapchains});
-        return true;
+        return static_cast<bool>(
+            queue->submit({.commandBuffers = list, .signals = {&signal, 1}, .acquiredSwapchains = acquiredSwapchains}));
     });
 }
 
@@ -386,7 +396,7 @@ int SampleApp::runFrames(const FrameFn& frame)
             }
         }
     }
-    queue->waitIdle();
+    (void)queue->waitIdle();
     std::printf("%u frames, %u errors\n", presented, errors);
     return errors == 0 ? 0 : 1;
 }

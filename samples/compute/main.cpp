@@ -94,7 +94,7 @@ int main(int argc, char** argv)
             commandBuffer->endRendering();
         });
 
-    app.queue->waitIdle();
+    (void)app.queue->waitIdle();
     device->destroy(texture);
     device->destroy(drawPipeline);
     device->destroy(computePipeline);

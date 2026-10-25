@@ -16,6 +16,26 @@ Swapchain* swapchain(ValidationFixture& f, SwapchainDesc desc = {})
 
 } // namespace
 
+TEST_CASE("resize keeps every other setting")
+{
+    ValidationFixture f;
+    Swapchain* chain = swapchain(f, {.minImageCount = 2,
+                                     .format = PixelFormat::R10G10B10A2Unorm,
+                                     .colorSpace = ColorSpace::Hdr10,
+                                     .presentMode = PresentMode::Mailbox});
+    REQUIRE(chain);
+    CHECK_NO_VALIDATION(f, REQUIRE(static_cast<bool>(chain->resize(128, 96))));
+    auto* state = static_cast<SwapchainCommon*>(chain);
+    CHECK(state->width == 128);
+    CHECK(state->height == 96);
+    CHECK(state->minImageCount == 2);
+    CHECK(state->format == PixelFormat::R10G10B10A2Unorm);
+    CHECK(state->colorSpace == ColorSpace::Hdr10);
+    CHECK(state->presentMode == PresentMode::Mailbox);
+    CHECK_VALIDATION(f, "the size is 0", (void)chain->resize(0, 96));
+    f.device->destroy(chain);
+}
+
 TEST_CASE("swapchain creation and reconfiguration")
 {
     ValidationFixture f;
@@ -82,6 +102,7 @@ TEST_CASE("destroyed swapchains")
     CHECK_VALIDATION(f, "use of a destroyed Swapchain", (void)chain->acquire());
     // acquire() above went ahead, so an image counts as acquired.
     CHECK_VALIDATIONS(f, 2, "use of a destroyed Swapchain", (void)chain->reconfigure({.width = 64, .height = 64}));
+    CHECK_VALIDATIONS(f, 2, "use of a destroyed Swapchain", (void)chain->resize(64, 64));
     CHECK_VALIDATION(f, "use of a destroyed Swapchain", (void)chain->imageCount());
     CHECK_VALIDATION(f, "use of a destroyed Swapchain", (void)chain->texture(0));
     CHECK_VALIDATIONS(f, 2, "use of a destroyed Swapchain", (void)chain->attachmentView(0));     // its views are gone
