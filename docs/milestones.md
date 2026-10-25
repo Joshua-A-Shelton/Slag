@@ -270,8 +270,9 @@ deliberately crashing sample produces a crash report on both backends.
 - API documentation pass (README and header comments), `CHANGELOG.md`, tag
   `v1.0.0`.
 
-**Status (2026-10-24):** ready to tag; `v1.0.0` is not tagged yet (owner
-decision).
+**Status (2026-10-24):** done; tagged `v1.0.0` after M9 and the pre-tag
+fixes, with hosted CI green and every suite and sample passing on RADV
+(Linux) and the RTX 2070 SUPER (Windows, D3D12 and Vulkan).
 
 - Native interop accessors for every object, with mid-stream native
   recording, tested on both backends (ADR 0071).
