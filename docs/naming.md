@@ -402,6 +402,13 @@ sample `samples/render_graph` (ADR 0072).
 | `TextureHandle`, `BufferHandle` | Frame-local handles |
 | `Usage`: `ShaderRead`, `ShaderWrite`, `CopySource`, `CopyDest`, `VertexBuffer`, `IndexBuffer`, `ConstantBuffer`, `IndirectArgument` | How a pass uses a resource |
 
+Proposed after the M9 review (placeholders, pending review):
+
+| Name | Notes |
+|---|---|
+| `defragment(DefragmentationDesc, layoutOf)` | Requests a defragmentation pass after the frame (ADR 0072) |
+| `defragmentationMoves()` | What the last `execute` moved |
+
 Decided in the M9 review: the namespace is spelled out (not `rg`); `Usage`
 rather than `Access`, so it isn't confused with `BarrierAccess`; `Handle`
 rather than `Ref`; `execute` rather than `submit`; transients say so in

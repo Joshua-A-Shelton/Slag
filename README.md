@@ -148,7 +148,9 @@ Slag takes precompiled DXIL and SPIR-V. Compile one Slang source to both; for
 use textures and buffers; the graph records every barrier, splits passes into
 submits with semaphores between queues, begins and ends rendering for passes
 with attachments, and places transient resources in shared memory. It never
-reorders passes, and passes may be recorded on several threads.
+reorders passes, and passes may be recorded on several threads. It can also
+run a defragmentation pass after a frame (`graph->defragment(...)`), supplying
+the layouts and submit boundary the pass needs.
 
 ```cpp
 graph->beginFrame();

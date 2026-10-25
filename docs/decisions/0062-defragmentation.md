@@ -103,7 +103,8 @@ texture `COMMON` → `COPY_DEST` (D3D12, created in `COMMON`) / `UNDEFINED`
 
 Spreading a pass over frames (moved resources still usable until a later
 switch) is not part of v1.0; it would come as a new, additive way to end a
-pass.
+pass. The render graph runs passes for its users (`RenderGraph::defragment`,
+ADR 0072), supplying the layouts and the submit boundary itself.
 
 ## Decided
 

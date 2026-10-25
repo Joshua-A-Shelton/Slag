@@ -151,6 +151,32 @@ public:
         setup(builder);
     }
 
+    // Runs a defragmentation pass (ADR 0062) after this frame's work, at most
+    // one per frame: execute() submits the frame, then the copies in their own
+    // submit on the graphics queue after all of the graph's work, waits for
+    // them on the CPU, and ends the pass. The wait drains the GPU, so use it
+    // at loading screens or now and then. A moved texture the frame imported
+    // is copied in its final layout; `layoutOf(Texture*)` returns the layout
+    // of any other moved texture. GPU work outside the graph must not be
+    // using a moved resource. Afterwards defragmentationMoves() lists what
+    // moved, so descriptors, GPU addresses, and mapped pointers can be fetched
+    // or written again.
+    template <class LayoutOf>
+    void defragment(const DefragmentationDesc& desc, LayoutOf&& layoutOf)
+    {
+        using Stored = std::decay_t<LayoutOf>;
+        void* memory = allocatePassData(sizeof(Stored), alignof(Stored));
+        Stored* stored = memory ? new (memory) Stored(std::forward<LayoutOf>(layoutOf)) : nullptr;
+        requestDefragmentation(
+            desc, stored,
+            [](void* data, Texture* texture) -> TextureLayout { return (*static_cast<Stored*>(data))(texture); },
+            [](void* data) { static_cast<Stored*>(data)->~Stored(); });
+    }
+
+    // What the last execute's defragmentation pass moved, until the next
+    // beginFrame.
+    std::span<const DefragmentationMove> defragmentationMoves() const;
+
     // Works out barriers, submits, and transient placement; creates the
     // transient resources and command buffers it needs. Usage errors are
     // reported and return Unsupported.
@@ -178,7 +204,9 @@ private:
     friend class PassContext;
     using RecordFn = void (*)(void* data, PassContext& context, CommandBuffer* commandBuffer);
     using DestroyFn = void (*)(void* data);
+    using LayoutFn = TextureLayout (*)(void* data, Texture* texture);
     void* allocatePassData(size_t size, size_t alignment);
+    void requestDefragmentation(const DefragmentationDesc& desc, void* data, LayoutFn layoutOf, DestroyFn destroy);
     PassBuilder beginPass(const char* name, CommandQueueType queue, void* data, RecordFn record, DestroyFn destroy);
 };
 

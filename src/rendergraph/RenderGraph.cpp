@@ -167,6 +167,8 @@ struct RenderGraphImpl : RenderGraph
         , submitCommandBuffers(&allocator)
         , submitWaits(&allocator)
         , submitSwapchains(&allocator)
+        , defragmentMoves(&allocator)
+        , defragmentLayouts(&allocator)
     {
         queues[0] = desc.graphicsQueue ? desc.graphicsQueue : device->commandQueue(CommandQueueType::Graphics);
         queues[1] = desc.computeQueue ? desc.computeQueue : device->commandQueue(CommandQueueType::Compute);
@@ -594,6 +596,113 @@ struct RenderGraphImpl : RenderGraph
         return true;
     }
 
+    void releaseDefragmentRequest()
+    {
+        if (layoutData && layoutDestroy)
+        {
+            layoutDestroy(layoutData);
+        }
+        layoutData = nullptr;
+        layoutOf = nullptr;
+        layoutDestroy = nullptr;
+        defragmentRequested = false;
+    }
+
+    // Records the pending pass's copies in their own submit on the graphics
+    // queue, after all of the graph's work, waits for them, and ends the pass.
+    // Either step may fail (out of memory); the pass then stays pending and
+    // beginFrame continues it.
+    Result<void> continueDefragmentation()
+    {
+        if (!pendingRecorded)
+        {
+            std::span<const DefragmentationMove> moves = pendingPass->moves();
+            defragmentMoves.clear();
+            defragmentLayouts.clear();
+            if (!defragmentMoves.reserve(moves.size()) || !defragmentLayouts.reserve(moves.size()))
+            {
+                return Status::OutOfHostMemory;
+            }
+            for (const DefragmentationMove& move : moves)
+            {
+                (void)defragmentMoves.pushBack(move);
+                TextureLayout layout = TextureLayout::Common; // ignored for buffers
+                if (move.texture)
+                {
+                    bool imported = false;
+                    for (const ResourceEntry& entry : resources)
+                    {
+                        if (!imported && entry.texture && !entry.transient && entry.textureObject == move.texture)
+                        {
+                            layout = entry.import.finalLayout; // where this frame left it
+                            imported = true;
+                        }
+                    }
+                    layout = imported ? layout : layoutOf(layoutData, move.texture);
+                }
+                (void)defragmentLayouts.pushBack(layout);
+            }
+            pendingCompleted = {};
+            if (!moves.empty())
+            {
+                CommandBuffer* commandBuffer = takeCommandBuffer(CommandQueueType::Graphics);
+                if (!commandBuffer)
+                {
+                    return Status::OutOfHostMemory;
+                }
+                Result<void> begun = commandBuffer->begin();
+                if (!begun)
+                {
+                    return begun;
+                }
+                commandBuffer->beginLabel("defragmentation");
+                pendingPass->recordCopies(commandBuffer, {defragmentLayouts.data(), defragmentLayouts.size()});
+                commandBuffer->endLabel();
+                Result<void> ended = commandBuffer->end();
+                if (!ended)
+                {
+                    return ended;
+                }
+                // After every queue's graph work: nothing earlier in this
+                // submit uses a moved resource (ADR 0062).
+                submitWaits.clear();
+                for (size_t q = 1; q < 3; ++q)
+                {
+                    if (semaphoreValues[q] != 0 && !submitWaits.pushBack({semaphores[q], semaphoreValues[q]}))
+                    {
+                        return Status::OutOfHostMemory;
+                    }
+                }
+                uint64_t value = semaphoreValues[0] + 1;
+                SemaphoreValue signal = {semaphores[0], value};
+                CommandBuffer* list[] = {commandBuffer};
+                Result<void> submitted = queues[0]->submit({.waits = {submitWaits.data(), submitWaits.size()},
+                                                            .commandBuffers = list,
+                                                            .signals = {&signal, 1}});
+                if (!submitted)
+                {
+                    return submitted;
+                }
+                semaphoreValues[0] = value;
+                slots[slot].waitValues[0] = value;
+                pendingCompleted = signal;
+                Result<void> waited = semaphores[0]->wait(value, UINT64_MAX);
+                if (!waited)
+                {
+                    return waited;
+                }
+            }
+            pendingRecorded = true;
+        }
+        Result<void> ended = device->endDefragmentation(pendingPass, pendingCompleted);
+        if (!ended)
+        {
+            return ended;
+        }
+        pendingPass = nullptr;
+        return {};
+    }
+
     void destroyPassData()
     {
         for (PassEntry& pass : passes)
@@ -641,6 +750,19 @@ struct RenderGraphImpl : RenderGraph
     Vector<CommandBuffer*> submitCommandBuffers;
     Vector<SemaphoreValue> submitWaits;
     Vector<Swapchain*> submitSwapchains;
+
+    // Defragmentation (ADR 0062): the request for this frame, and a pass whose
+    // copies or end ran out of memory.
+    bool defragmentRequested = false;
+    DefragmentationDesc defragmentDesc;
+    void* layoutData = nullptr;
+    TextureLayout (*layoutOf)(void*, Texture*) = nullptr;
+    void (*layoutDestroy)(void*) = nullptr;
+    DefragmentationPass* pendingPass = nullptr;
+    bool pendingRecorded = false;
+    SemaphoreValue pendingCompleted;
+    Vector<DefragmentationMove> defragmentMoves;
+    Vector<TextureLayout> defragmentLayouts;
 };
 
 namespace {
@@ -762,6 +884,16 @@ Result<void> RenderGraph::beginFrame()
         }
         frame.usedCommandBuffers[q] = 0;
     }
+    if (self->pendingPass)
+    {
+        Result<void> continued = self->continueDefragmentation();
+        if (!continued)
+        {
+            return continued;
+        }
+    }
+    self->releaseDefragmentRequest();
+    self->defragmentMoves.clear();
     self->destroyPassData();
     self->resources.clear();
     self->declaredUses.clear();
@@ -1320,7 +1452,59 @@ Result<void> RenderGraph::execute()
         frame.waitValues[q] = self->batchValues[b];
     }
     self->compiled = false;
+    if (self->defragmentRequested)
+    {
+        Result<DefragmentationPass*> begun = self->device->beginDefragmentation(self->defragmentDesc);
+        if (!begun)
+        {
+            self->releaseDefragmentRequest();
+            return begun.status();
+        }
+        self->pendingPass = begun.value();
+        self->pendingRecorded = false;
+        Result<void> finished = self->continueDefragmentation();
+        if (!finished)
+        {
+            return finished; // the request stays for beginFrame to continue
+        }
+        self->releaseDefragmentRequest();
+    }
     return {};
+}
+
+void RenderGraph::requestDefragmentation(const DefragmentationDesc& desc, void* data, LayoutFn layoutOf,
+                                         DestroyFn destroy)
+{
+    RenderGraphImpl* self = impl(this);
+    bool open = self->declaring("RenderGraph::defragment");
+    if (open && (self->defragmentRequested || self->pendingPass))
+    {
+        self->report("slag::rendergraph: RenderGraph::defragment: one defragmentation pass per frame");
+    }
+    if (!open || self->defragmentRequested || self->pendingPass)
+    {
+        if (data)
+        {
+            destroy(data);
+        }
+        return;
+    }
+    if (!data)
+    {
+        self->outOfMemory = true;
+        return;
+    }
+    self->defragmentRequested = true;
+    self->defragmentDesc = desc;
+    self->layoutData = data;
+    self->layoutOf = layoutOf;
+    self->layoutDestroy = destroy;
+}
+
+std::span<const DefragmentationMove> RenderGraph::defragmentationMoves() const
+{
+    const RenderGraphImpl* self = impl(this);
+    return {self->defragmentMoves.data(), self->defragmentMoves.size()};
 }
 
 uint64_t RenderGraph::transientMemorySize() const
@@ -1387,6 +1571,11 @@ void destroy(RenderGraph* graph)
             (void)self->semaphores[q]->wait(self->semaphoreValues[q], UINT64_MAX);
         }
     }
+    if (self->pendingPass)
+    {
+        (void)self->continueDefragmentation();
+    }
+    self->releaseDefragmentRequest();
     self->destroyPassData();
     for (FrameSlot& frame : self->slots)
     {

@@ -104,5 +104,25 @@ settled after M9).
 - Tests: `RenderGraphPlanTests.cpp` (unit), `RenderGraphTests.cpp` (every
   backend, synchronization validation on), and `samples/render_graph`. Run
   on RADV, and on the RTX 2070 SUPER with D3D12 and Vulkan.
+- **Defragmentation** (added 2026-10-24, decided with the owner):
+  `defragment(desc, layoutOf)` requests a pass for the frame, at most one.
+  `execute()` submits the frame, then begins the pass and records its copies
+  in their own submit on the graphics queue (every layout is allowed there),
+  waiting on the graph's semaphores for the other queues, so nothing earlier
+  in that submit uses a moved resource and `completed` covers all of the
+  graph's work. It waits on the CPU and ends the pass at once, so moved
+  resources are never frozen across frames; the cost is a stall, for loading
+  screens or now and then. Spreading the pass over frames was rejected: the
+  graph can't choose which resources move, so a texture used every frame
+  would break the frames in between. A moved texture the frame imported is
+  copied in its final layout; `layoutOf(Texture*)` gives the layout of any
+  other (engines track this). `defragmentationMoves()` lists the moves until
+  the next `beginFrame`, for rewriting descriptors and GPU addresses. If the
+  copies or the end run out of memory, the pass stays pending and
+  `beginFrame` finishes it. GPU work outside the graph must not be using a
+  moved resource. Tested on every backend: memory fragmented with movable
+  buffers and 1 MB textures, passes until nothing moves, half the textures
+  imported (final `ShaderRead`) and half reported by `layoutOf` (`Common`),
+  every stamp read back afterwards.
 - The public header also includes `<new>`, `<type_traits>`, and `<utility>`
   (non-allocating), beyond ADR 0066's list, for storing lambdas.

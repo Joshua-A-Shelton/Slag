@@ -317,6 +317,8 @@ shows about the core API can still change.
   boundary and semaphore waits (ADR 0049). Vulkan acquire semaphores are
   recycled through present fences, so acquiring before the frame wait is
   safe (ADR 0057). 403 validation checks.
+- The render graph runs defragmentation passes: `defragment(desc, layoutOf)`
+  after the frame, with a CPU wait (ADR 0072).
 
 ## After v1.0
 

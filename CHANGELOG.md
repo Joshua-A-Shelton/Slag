@@ -78,8 +78,9 @@ The first release: a thin C++20 abstraction over Direct3D 12 (Agility SDK
 
 - `slag::rendergraph`: passes declare resource uses; the graph records
   barriers, splits submits with semaphores between queues, begins and ends
-  rendering, places transient resources in shared memory, and lets passes
-  record on several threads (ADR 0072).
+  rendering, places transient resources in shared memory, lets passes
+  record on several threads, and runs defragmentation passes after a frame
+  (ADR 0072).
 
 ### Utilities and samples
 

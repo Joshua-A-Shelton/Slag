@@ -319,6 +319,275 @@ void testQueuesAndThreads(slag::Backend backend)
     }
 }
 
+// A defragmentation pass run by the graph (ADR 0062, 0072): movable buffers
+// and textures, three quarters freed. One frame uses a texture and leaves it
+// in ShaderRead; the rest rest in Common, which layoutOf reports. Afterwards
+// every buffer and texture still holds its stamp.
+void testDefragmentation(slag::Backend backend)
+{
+    GraphTest t(backend);
+    slag::GraphicsDevice* device = t.device;
+    slag::rendergraph::RenderGraph* graph = t.createGraph();
+    constexpr uint32_t bufferCount = 1024;
+    constexpr uint64_t bufferSize = 1 << 20;
+    constexpr uint32_t stamp = 256;
+    constexpr uint32_t side = 512; // 1 MB textures spread across blocks like the buffers
+    constexpr uint32_t texels = side * side * 4;
+    auto byteOf = [](uint32_t id, uint32_t i) {
+        return static_cast<uint8_t>(id * 31 + i * 7 + 1);
+    };
+    std::vector<slag::Buffer*> buffers;
+    std::vector<slag::Texture*> textures;
+    for (uint32_t i = 0; i < bufferCount; ++i)
+    {
+        buffers.push_back(
+            device
+                ->createBuffer({.size = bufferSize,
+                                .placement = slag::Placement::automatic(slag::MemoryKind::GpuOnly, {.movable = true})})
+                .value());
+        if (i % 32 == 0)
+        {
+            textures.push_back(device
+                                   ->createTexture2D({.format = slag::PixelFormat::R8G8B8A8Unorm,
+                                                      .width = side,
+                                                      .height = side,
+                                                      .placement = slag::Placement::automatic(slag::MemoryKind::GpuOnly,
+                                                                                              {.movable = true})})
+                                   .value());
+        }
+    }
+    slag::Buffer* staging = device
+                                ->createBuffer({.size = uint64_t(bufferCount) * stamp + textures.size() * texels,
+                                                .placement = slag::Placement::automatic(slag::MemoryKind::Upload)})
+                                .value();
+    REQUIRE(staging);
+    t.buffers.push_back(staging);
+    auto* bytes = static_cast<uint8_t*>(staging->mappedData());
+    for (uint32_t id = 0; id < bufferCount; ++id)
+    {
+        for (uint32_t i = 0; i < stamp; ++i)
+        {
+            bytes[uint64_t(id) * stamp + i] = byteOf(id, i);
+        }
+    }
+    const uint64_t textureStaging = uint64_t(bufferCount) * stamp;
+    for (size_t k = 0; k < textures.size(); ++k)
+    {
+        for (uint32_t i = 0; i < texels; ++i)
+        {
+            bytes[textureStaging + k * texels + i] = byteOf(10'000 + static_cast<uint32_t>(k), i);
+        }
+    }
+
+    // Frame 0: upload every stamp; textures end in Common.
+    REQUIRE(static_cast<bool>(graph->beginFrame()));
+    {
+        slag::rendergraph::BufferHandle source = graph->importBuffer(staging);
+        std::vector<slag::rendergraph::BufferHandle> bufferHandles;
+        std::vector<slag::rendergraph::TextureHandle> textureHandles;
+        for (slag::Buffer* buffer : buffers)
+        {
+            bufferHandles.push_back(graph->importBuffer(buffer));
+        }
+        for (slag::Texture* texture : textures)
+        {
+            textureHandles.push_back(graph->importTexture(texture));
+        }
+        graph->addPass(
+            "upload", slag::CommandQueueType::Graphics,
+            [&](slag::rendergraph::PassBuilder& pass) {
+                pass.use(source, slag::rendergraph::Usage::CopySource);
+                for (auto handle : bufferHandles)
+                {
+                    pass.use(handle, slag::rendergraph::Usage::CopyDest);
+                }
+                for (auto handle : textureHandles)
+                {
+                    pass.use(handle, slag::rendergraph::Usage::CopyDest);
+                }
+            },
+            [=](slag::rendergraph::PassContext&, slag::CommandBuffer* commandBuffer) {
+                for (uint32_t id = 0; id < bufferCount; ++id)
+                {
+                    commandBuffer->copyBuffer(buffers[id], 0, staging, uint64_t(id) * stamp, stamp);
+                }
+                for (size_t k = 0; k < textures.size(); ++k)
+                {
+                    commandBuffer->copyBufferToTexture({.texture = textures[k]},
+                                                       {staging, textureStaging + k * texels, side * 4}, side, side);
+                }
+            });
+        REQUIRE(static_cast<bool>(graph->compile()));
+        CHECK(static_cast<bool>(graph->recordPass(0)));
+        CHECK(static_cast<bool>(graph->execute()));
+    }
+
+    // Keep a quarter of the buffers and half the textures.
+    std::vector<uint32_t> keptBuffers;
+    std::vector<uint32_t> keptTextures;
+    REQUIRE(static_cast<bool>(device->waitIdle()));
+    for (uint32_t id = 0; id < bufferCount; ++id)
+    {
+        if (id % 4 == 0)
+        {
+            keptBuffers.push_back(id);
+        }
+        else
+        {
+            device->destroy(buffers[id]);
+        }
+    }
+    for (uint32_t k = 0; k < textures.size(); ++k)
+    {
+        if (k % 2 == 0)
+        {
+            keptTextures.push_back(k);
+        }
+        else
+        {
+            device->destroy(textures[k]);
+        }
+    }
+
+    // Frames with a pass each, until nothing moves. Half the kept textures
+    // are used and left in ShaderRead (the graph knows their layout); the
+    // rest rest in Common, which layoutOf reports.
+    auto imported = [&](slag::Texture* texture) {
+        for (size_t i = 0; i < keptTextures.size(); i += 2)
+        {
+            if (textures[keptTextures[i]] == texture)
+            {
+                return true;
+            }
+        }
+        return false;
+    };
+    size_t movedImported = 0;
+    size_t movedOthers = 0;
+    size_t movedTotal = 0;
+    for (uint32_t frame = 0;; ++frame)
+    {
+        REQUIRE(frame < 32);
+        REQUIRE(static_cast<bool>(graph->beginFrame()));
+        std::vector<slag::rendergraph::TextureHandle> handles;
+        for (size_t i = 0; i < keptTextures.size(); i += 2)
+        {
+            handles.push_back(graph->importTexture(
+                textures[keptTextures[i]],
+                {.initialLayout = frame == 0 ? slag::TextureLayout::Common : slag::TextureLayout::ShaderRead,
+                 .finalLayout = slag::TextureLayout::ShaderRead}));
+        }
+        graph->addPass(
+            "sample", slag::CommandQueueType::Graphics,
+            [&](slag::rendergraph::PassBuilder& pass) {
+                for (auto handle : handles)
+                {
+                    pass.use(handle, slag::rendergraph::Usage::ShaderRead);
+                }
+            },
+            [](slag::rendergraph::PassContext&, slag::CommandBuffer*) {});
+        uint32_t asked = 0;
+        graph->defragment({}, [&](slag::Texture* texture) {
+            ++asked;
+            CHECK_FALSE(imported(texture)); // the graph knows those
+            return slag::TextureLayout::Common;
+        });
+        REQUIRE(static_cast<bool>(graph->compile()));
+        CHECK(static_cast<bool>(graph->recordPass(0)));
+        CHECK(static_cast<bool>(graph->execute()));
+        size_t others = 0;
+        for (const slag::DefragmentationMove& move : graph->defragmentationMoves())
+        {
+            movedImported += move.texture && imported(move.texture) ? 1 : 0;
+            others += move.texture && !imported(move.texture) ? 1 : 0;
+        }
+        CHECK(asked == others);
+        movedOthers += others;
+        movedTotal += graph->defragmentationMoves().size();
+        if (graph->defragmentationMoves().empty())
+        {
+            break;
+        }
+    }
+    MESSAGE(movedTotal << " moves; textures: " << movedImported << " imported, " << movedOthers << " not");
+    CHECK(movedTotal > 0);
+    CHECK(movedImported + movedOthers > 0);
+
+    // Frame 2: read every stamp back.
+    slag::Buffer* readback = t.readback(keptBuffers.size() * stamp + keptTextures.size() * texels);
+    REQUIRE(static_cast<bool>(graph->beginFrame()));
+    {
+        slag::rendergraph::BufferHandle output = graph->importBuffer(readback);
+        std::vector<slag::rendergraph::BufferHandle> bufferHandles;
+        std::vector<slag::rendergraph::TextureHandle> textureHandles;
+        for (uint32_t id : keptBuffers)
+        {
+            bufferHandles.push_back(graph->importBuffer(buffers[id]));
+        }
+        for (uint32_t k : keptTextures)
+        {
+            slag::TextureLayout initial =
+                imported(textures[k]) ? slag::TextureLayout::ShaderRead : slag::TextureLayout::Common;
+            textureHandles.push_back(graph->importTexture(textures[k], {.initialLayout = initial}));
+        }
+        graph->addPass(
+            "read back", slag::CommandQueueType::Graphics,
+            [&](slag::rendergraph::PassBuilder& pass) {
+                pass.use(output, slag::rendergraph::Usage::CopyDest);
+                for (auto handle : bufferHandles)
+                {
+                    pass.use(handle, slag::rendergraph::Usage::CopySource);
+                }
+                for (auto handle : textureHandles)
+                {
+                    pass.use(handle, slag::rendergraph::Usage::CopySource);
+                }
+            },
+            [=](slag::rendergraph::PassContext&, slag::CommandBuffer* commandBuffer) {
+                for (size_t i = 0; i < keptBuffers.size(); ++i)
+                {
+                    commandBuffer->copyBuffer(readback, i * stamp, buffers[keptBuffers[i]], 0, stamp);
+                }
+                uint64_t base = keptBuffers.size() * stamp;
+                for (size_t i = 0; i < keptTextures.size(); ++i)
+                {
+                    commandBuffer->copyTextureToBuffer({readback, base + i * texels, side * 4},
+                                                       {.texture = textures[keptTextures[i]]}, side, side);
+                }
+            });
+        REQUIRE(static_cast<bool>(graph->compile()));
+        CHECK(static_cast<bool>(graph->recordPass(0)));
+        CHECK(static_cast<bool>(graph->execute()));
+    }
+    t.finish();
+    const auto* result = static_cast<const uint8_t*>(readback->mappedData());
+    uint32_t bad = 0;
+    for (size_t i = 0; i < keptBuffers.size(); ++i)
+    {
+        for (uint32_t b = 0; b < stamp; ++b)
+        {
+            bad += result[i * stamp + b] == byteOf(keptBuffers[i], b) ? 0 : 1;
+        }
+    }
+    uint64_t base = keptBuffers.size() * stamp;
+    for (size_t i = 0; i < keptTextures.size(); ++i)
+    {
+        for (uint32_t b = 0; b < texels; ++b)
+        {
+            bad += result[base + i * texels + b] == byteOf(10'000 + keptTextures[i], b) ? 0 : 1;
+        }
+    }
+    CHECK(bad == 0);
+    for (uint32_t id : keptBuffers)
+    {
+        device->destroy(buffers[id]);
+    }
+    for (uint32_t k : keptTextures)
+    {
+        device->destroy(textures[k]);
+    }
+}
+
 // Usage errors are reported and fail compile.
 void testErrors(slag::Backend backend)
 {
@@ -334,6 +603,22 @@ void testErrors(slag::Backend backend)
     REQUIRE(t.graphErrors.size() == 1);
     CHECK(t.graphErrors[0].find("read before anything writes it") != std::string::npos);
     t.graphErrors.clear();
+
+    REQUIRE(static_cast<bool>(graph->beginFrame()));
+    auto common = [](slag::Texture*) {
+        return slag::TextureLayout::Common;
+    };
+    graph->defragment({}, common);
+    graph->defragment({}, common);
+    REQUIRE(t.graphErrors.size() == 1);
+    CHECK(t.graphErrors[0].find("one defragmentation pass per frame") != std::string::npos);
+    CHECK(graph->compile().status() == slag::Status::Unsupported); // a usage error fails the frame
+    t.graphErrors.clear();
+    REQUIRE(static_cast<bool>(graph->beginFrame()));
+    graph->defragment({}, common);
+    REQUIRE(static_cast<bool>(graph->compile()));
+    CHECK(static_cast<bool>(graph->execute())); // nothing movable: an empty pass
+    CHECK(graph->defragmentationMoves().empty());
     t.finish();
 }
 
@@ -351,6 +636,10 @@ TEST_CASE("Vulkan: render graph - transients share memory in one submit")
 TEST_CASE("Vulkan: render graph - three queues, frames in flight, recorded on threads")
 {
     testQueuesAndThreads(slag::Backend::Vulkan);
+}
+TEST_CASE("Vulkan: render graph - a defragmentation pass after the frame")
+{
+    testDefragmentation(slag::Backend::Vulkan);
 }
 TEST_CASE("Vulkan: render graph - usage errors fail compile")
 {
@@ -370,6 +659,10 @@ TEST_CASE("D3D12: render graph - transients share memory in one submit")
 TEST_CASE("D3D12: render graph - three queues, frames in flight, recorded on threads")
 {
     testQueuesAndThreads(slag::Backend::D3D12);
+}
+TEST_CASE("D3D12: render graph - a defragmentation pass after the frame")
+{
+    testDefragmentation(slag::Backend::D3D12);
 }
 TEST_CASE("D3D12: render graph - usage errors fail compile")
 {
