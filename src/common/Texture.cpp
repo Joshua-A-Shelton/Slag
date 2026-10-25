@@ -471,6 +471,54 @@ CopyFootprint GraphicsDevice::copyFootprint(const Texture* texture, uint32_t mip
     return footprint;
 }
 
+PixelFormat Texture::format() const
+{
+    SLAG_CHECK_LIVE_THIS(TextureCommon, "Texture", "Texture::format");
+    return static_cast<const TextureCommon*>(this)->format;
+}
+
+uint32_t Texture::width() const
+{
+    SLAG_CHECK_LIVE_THIS(TextureCommon, "Texture", "Texture::width");
+    return static_cast<const TextureCommon*>(this)->width;
+}
+
+uint32_t Texture::height() const
+{
+    SLAG_CHECK_LIVE_THIS(TextureCommon, "Texture", "Texture::height");
+    return static_cast<const TextureCommon*>(this)->height;
+}
+
+uint32_t Texture::depth() const
+{
+    SLAG_CHECK_LIVE_THIS(TextureCommon, "Texture", "Texture::depth");
+    return static_cast<const TextureCommon*>(this)->depth;
+}
+
+uint32_t Texture::layerCount() const
+{
+    SLAG_CHECK_LIVE_THIS(TextureCommon, "Texture", "Texture::layerCount");
+    return static_cast<const TextureCommon*>(this)->layerCount;
+}
+
+uint32_t Texture::mipCount() const
+{
+    SLAG_CHECK_LIVE_THIS(TextureCommon, "Texture", "Texture::mipCount");
+    return static_cast<const TextureCommon*>(this)->mipCount;
+}
+
+uint32_t Texture::sampleCount() const
+{
+    SLAG_CHECK_LIVE_THIS(TextureCommon, "Texture", "Texture::sampleCount");
+    return static_cast<const TextureCommon*>(this)->sampleCount;
+}
+
+TextureUsage Texture::usage() const
+{
+    SLAG_CHECK_LIVE_THIS(TextureCommon, "Texture", "Texture::usage");
+    return static_cast<const TextureCommon*>(this)->usage;
+}
+
 uint64_t Texture::userData() const
 {
     SLAG_CHECK_LIVE_THIS(TextureCommon, "Texture", "Texture::userData");

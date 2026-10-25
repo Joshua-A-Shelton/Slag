@@ -62,14 +62,21 @@ class RenderGraph;
 class PassBuilder
 {
 public:
-    void use(TextureHandle texture, Usage usage);
+    // Textures are tracked per mip and layer: `range` names the subresources
+    // used (all by default; its plane is ignored). One pass's uses of a
+    // texture either cover the same subresources or none in common.
+    void use(TextureHandle texture, Usage usage, const SubresourceRange& range = {});
     void use(BufferHandle buffer, Usage usage);
     // Graphics passes only; the graph begins and ends rendering around the
-    // pass with these attachments, in the order declared.
+    // pass with these attachments, in the order declared. One mip and
+    // `layerCount` layers (depth slices of a 3D texture) from `baseLayer`; an
+    // imported texture's attachment view must cover the same ones.
     void renderTarget(TextureHandle texture, LoadOp loadOp = LoadOp::Load, StoreOp storeOp = StoreOp::Store,
-                      const ClearValue& clearValue = {});
+                      const ClearValue& clearValue = {}, uint32_t mip = 0, uint32_t baseLayer = 0,
+                      uint32_t layerCount = 1);
     void depthStencil(TextureHandle texture, LoadOp loadOp = LoadOp::Load, StoreOp storeOp = StoreOp::Store,
-                      const ClearValue& clearValue = {}, bool readOnly = false);
+                      const ClearValue& clearValue = {}, bool readOnly = false, uint32_t mip = 0,
+                      uint32_t baseLayer = 0, uint32_t layerCount = 1);
 
 private:
     friend class RenderGraph;
@@ -131,7 +138,11 @@ public:
     // uses don't overlap. Contents start undefined: the first use writes (or
     // clears) it. The placement field is ignored; castable formats aren't
     // supported.
-    TextureHandle createTransientTexture(const Texture2DDesc& desc);
+    TextureHandle createTransientTexture2D(const Texture2DDesc& desc);
+    TextureHandle createTransientTexture2DArray(const Texture2DArrayDesc& desc);
+    TextureHandle createTransientTextureCube(const TextureCubeDesc& desc);
+    TextureHandle createTransientTextureCubeArray(const TextureCubeArrayDesc& desc);
+    TextureHandle createTransientTexture3D(const Texture3DDesc& desc);
     BufferHandle createTransientBuffer(const BufferDesc& desc);
 
     // `setup(PassBuilder&)` runs now; `record(PassContext&, CommandBuffer*)` is

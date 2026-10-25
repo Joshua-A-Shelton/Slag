@@ -95,11 +95,11 @@ int main(int argc, char** argv)
                                             .attachmentView = app.swapchain->srgbAttachmentView(image),
                                             .swapchain = app.swapchain});
         slag::rendergraph::TextureHandle texture =
-            graph->createTransientTexture({.format = slag::PixelFormat::R8G8B8A8Unorm,
-                                           .width = textureSize,
-                                           .height = textureSize,
-                                           .usage = slag::TextureUsage::ShaderWrite,
-                                           .debugName = "plasma"});
+            graph->createTransientTexture2D({.format = slag::PixelFormat::R8G8B8A8Unorm,
+                                             .width = textureSize,
+                                             .height = textureSize,
+                                             .usage = slag::TextureUsage::ShaderWrite,
+                                             .debugName = "plasma"});
         float time = static_cast<float>(frame++) / 60.0f;
 
         graph->addPass(

@@ -395,7 +395,7 @@ sample `samples/render_graph` (ADR 0072).
 | `transientMemorySize()` | Bytes the frame's transients share |
 | `importTexture(Texture*, ImportedTextureDesc)`, `importBuffer(Buffer*)` | Resources the graph doesn't own |
 | `ImportedTextureDesc` | `initialLayout`, `finalLayout`, `attachmentView`, `swapchain` |
-| `createTransientTexture(Texture2DDesc)`, `createTransientBuffer(BufferDesc)` | Graph-owned, one frame |
+| `createTransientTexture2D(Texture2DDesc)` (and per type, proposed below), `createTransientBuffer(BufferDesc)` | Graph-owned, one frame |
 | `addPass(name, queue, setup, record)` | Setup runs now; record is stored |
 | `PassBuilder`: `use(handle, Usage)`, `renderTarget(...)`, `depthStencil(...)` | Declares a pass's uses |
 | `PassContext`: `texture(handle)`, `buffer(handle)`, `frameSlot()` | Given to record functions |
@@ -404,6 +404,15 @@ sample `samples/render_graph` (ADR 0072).
 
 | `defragment(DefragmentationDesc, layoutOf)` | Requests a defragmentation pass after the frame (ADR 0072) |
 | `movedResources()` | What the last `execute`'s defragmentation pass moved |
+
+Proposed after the review (placeholders, pending review):
+
+| Name | Notes |
+|---|---|
+| `texture->format()`, `width()`, `height()`, `depth()`, `layerCount()`, `mipCount()`, `sampleCount()`, `usage()` | Texture getters (ADR 0021) |
+| `createTransientTexture2D`, `createTransientTexture2DArray`, `createTransientTextureCube`, `createTransientTextureCubeArray`, `createTransientTexture3D` | Transient textures (ADR 0072); replace `createTransientTexture` |
+| `use(handle, usage, SubresourceRange range = {})` | The subresources a pass uses |
+| `renderTarget(..., mip, baseLayer, layerCount)`, `depthStencil(..., readOnly, mip, baseLayer, layerCount)` | Attachment subresources |
 
 Settled before tagging v1.0 (all kept in review):
 

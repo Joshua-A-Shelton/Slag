@@ -206,6 +206,29 @@ TEST_CASE("texture placement and lifetime")
     CHECK_VALIDATION(f, "use of a destroyed MemoryBlock", placed(doomed, 0, 4));
     f.device->destroy(block);
 
+    Texture* cube = f.device
+                        ->createTextureCubeArray({.format = PixelFormat::R16G16B16A16Float,
+                                                  .size = 32,
+                                                  .cubeCount = 2,
+                                                  .mipCount = 3,
+                                                  .usage = TextureUsage::ShaderWrite})
+                        .value();
+    CHECK(cube->format() == PixelFormat::R16G16B16A16Float);
+    CHECK((cube->width() == 32 && cube->height() == 32 && cube->depth() == 1));
+    CHECK(cube->layerCount() == 12);
+    CHECK(cube->mipCount() == 3);
+    CHECK(cube->sampleCount() == 1);
+    CHECK(cube->usage() == TextureUsage::ShaderWrite);
+    f.device->destroy(cube);
+    CHECK_VALIDATION(f, "use of a destroyed Texture", (void)cube->format());
+    CHECK_VALIDATION(f, "use of a destroyed Texture", (void)cube->width());
+    CHECK_VALIDATION(f, "use of a destroyed Texture", (void)cube->height());
+    CHECK_VALIDATION(f, "use of a destroyed Texture", (void)cube->depth());
+    CHECK_VALIDATION(f, "use of a destroyed Texture", (void)cube->layerCount());
+    CHECK_VALIDATION(f, "use of a destroyed Texture", (void)cube->mipCount());
+    CHECK_VALIDATION(f, "use of a destroyed Texture", (void)cube->sampleCount());
+    CHECK_VALIDATION(f, "use of a destroyed Texture", (void)cube->usage());
+
     Texture* target = f.texture(TextureUsage::RenderTarget);
     AttachmentView* view = f.device->createAttachmentView({.texture = target}).value();
     CHECK_VALIDATION(f, "still has 1 attachment views", f.device->destroy(target));

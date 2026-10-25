@@ -154,7 +154,7 @@ the layouts and submit boundary the pass needs.
 
 ```cpp
 graph->beginFrame();
-slag::rendergraph::TextureHandle target = graph->createTransientTexture({.format = ..., .width = w, .height = h,
+slag::rendergraph::TextureHandle target = graph->createTransientTexture2D({.format = ..., .width = w, .height = h,
                                                     .usage = slag::TextureUsage::RenderTarget});
 graph->addPass("scene", slag::CommandQueueType::Graphics,
     [&](slag::rendergraph::PassBuilder& pass) { pass.renderTarget(target, slag::LoadOp::Clear); },

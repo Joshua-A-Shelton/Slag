@@ -4,7 +4,7 @@
 // in declaration order, works out the submits ("batches") and the semaphore
 // waits between queues, the barriers at the start and end of every pass, and
 // where transient resources sit in shared memory. Plain data in and out, so
-// it is tested without a GPU.
+// it is tested without a GPU. Textures are tracked per mip and layer.
 
 #include "common/HostAllocator.h"
 #include "common/Vector.h"
@@ -28,6 +28,8 @@ struct PlanResource
     TextureLayout finalLayout = TextureLayout::Common;      // imported textures
     uint64_t size = 0;                                      // transients
     uint64_t alignment = 1;
+    uint32_t mipCount = 1; // textures
+    uint32_t layerCount = 1;
 };
 
 // One resource's use by one pass (merged: at most one per resource per pass).
@@ -38,6 +40,12 @@ struct PlanUse
     BarrierAccess access = BarrierAccess::NoAccess;
     TextureLayout layout = TextureLayout::Common; // textures
     bool write = false;
+    // Textures: the subresources used, resolved (no "remaining" counts). Uses
+    // of one texture in one pass are disjoint.
+    uint32_t baseMip = 0;
+    uint32_t mipCount = 1;
+    uint32_t baseLayer = 0;
+    uint32_t layerCount = 1;
 };
 
 struct PlanPass
@@ -56,6 +64,10 @@ struct PlanBarrier
     BarrierAccess accessAfter = BarrierAccess::NoAccess;
     TextureLayout layoutBefore = TextureLayout::Undefined; // textures
     TextureLayout layoutAfter = TextureLayout::Undefined;
+    uint32_t baseMip = 0; // textures: the subresources
+    uint32_t mipCount = 1;
+    uint32_t baseLayer = 0;
+    uint32_t layerCount = 1;
 };
 
 struct PlanPassBarriers

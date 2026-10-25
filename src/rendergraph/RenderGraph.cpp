@@ -27,6 +27,7 @@ struct DeclaredUse
     uint32_t resource = 0;
     UseKind kind = UseKind::Usage;
     Usage usage = Usage::ShaderRead;
+    SubresourceRange range; // textures
 };
 
 struct Attachment
@@ -35,7 +36,150 @@ struct Attachment
     LoadOp loadOp = LoadOp::Load;
     StoreOp storeOp = StoreOp::Store;
     ClearValue clearValue;
+    uint32_t mip = 0;
+    uint32_t baseLayer = 0;
+    uint32_t layerCount = 1;
+    AttachmentView* view = nullptr; // resolved by compile
 };
+
+enum class TransientKind : uint8_t
+{
+    Texture2D,
+    Texture2DArray,
+    Cube,
+    CubeArray,
+    Texture3D,
+};
+
+// A transient texture's description, whichever create function made it.
+struct TransientTexture
+{
+    TransientKind kind = TransientKind::Texture2D;
+    PixelFormat format = PixelFormat::Undefined;
+    uint32_t width = 1; // cubes: the face size
+    uint32_t height = 1;
+    uint32_t depth = 1;
+    uint32_t count = 1; // array layers, or cubes
+    uint32_t mipCount = 1;
+    uint32_t sampleCount = 1;
+    TextureUsage usage = TextureUsage::None;
+    const char* debugName = nullptr;
+
+    uint32_t layerCount() const
+    {
+        switch (kind)
+        {
+        case TransientKind::Texture2DArray:
+            return count;
+        case TransientKind::Cube:
+            return 6;
+        case TransientKind::CubeArray:
+            return 6 * count;
+        default:
+            return 1;
+        }
+    }
+
+    bool operator==(const TransientTexture& other) const
+    {
+        return kind == other.kind && format == other.format && width == other.width && height == other.height &&
+               depth == other.depth && count == other.count && mipCount == other.mipCount &&
+               sampleCount == other.sampleCount && usage == other.usage;
+    }
+};
+
+PlacementInfo placementOf(GraphicsDevice* device, const TransientTexture& t)
+{
+    switch (t.kind)
+    {
+    case TransientKind::Texture2D:
+        return device->placementInfo(Texture2DDesc{.format = t.format,
+                                                   .width = t.width,
+                                                   .height = t.height,
+                                                   .mipCount = t.mipCount,
+                                                   .sampleCount = t.sampleCount,
+                                                   .usage = t.usage});
+    case TransientKind::Texture2DArray:
+        return device->placementInfo(Texture2DArrayDesc{.format = t.format,
+                                                        .width = t.width,
+                                                        .height = t.height,
+                                                        .layerCount = t.count,
+                                                        .mipCount = t.mipCount,
+                                                        .sampleCount = t.sampleCount,
+                                                        .usage = t.usage});
+    case TransientKind::Cube:
+        return device->placementInfo(
+            TextureCubeDesc{.format = t.format, .size = t.width, .mipCount = t.mipCount, .usage = t.usage});
+    case TransientKind::CubeArray:
+        return device->placementInfo(TextureCubeArrayDesc{
+            .format = t.format, .size = t.width, .cubeCount = t.count, .mipCount = t.mipCount, .usage = t.usage});
+    case TransientKind::Texture3D:
+        return device->placementInfo(Texture3DDesc{.format = t.format,
+                                                   .width = t.width,
+                                                   .height = t.height,
+                                                   .depth = t.depth,
+                                                   .mipCount = t.mipCount,
+                                                   .usage = t.usage});
+    }
+    return {};
+}
+
+Result<Texture*> createTransient(GraphicsDevice* device, const TransientTexture& t, const ClearValue* clearValue,
+                                 const Placement& placement)
+{
+    switch (t.kind)
+    {
+    case TransientKind::Texture2D:
+        return device->createTexture2D({.format = t.format,
+                                        .width = t.width,
+                                        .height = t.height,
+                                        .mipCount = t.mipCount,
+                                        .sampleCount = t.sampleCount,
+                                        .usage = t.usage,
+                                        .clearValue = clearValue,
+                                        .placement = placement,
+                                        .debugName = t.debugName});
+    case TransientKind::Texture2DArray:
+        return device->createTexture2DArray({.format = t.format,
+                                             .width = t.width,
+                                             .height = t.height,
+                                             .layerCount = t.count,
+                                             .mipCount = t.mipCount,
+                                             .sampleCount = t.sampleCount,
+                                             .usage = t.usage,
+                                             .clearValue = clearValue,
+                                             .placement = placement,
+                                             .debugName = t.debugName});
+    case TransientKind::Cube:
+        return device->createTextureCube({.format = t.format,
+                                          .size = t.width,
+                                          .mipCount = t.mipCount,
+                                          .usage = t.usage,
+                                          .clearValue = clearValue,
+                                          .placement = placement,
+                                          .debugName = t.debugName});
+    case TransientKind::CubeArray:
+        return device->createTextureCubeArray({.format = t.format,
+                                               .size = t.width,
+                                               .cubeCount = t.count,
+                                               .mipCount = t.mipCount,
+                                               .usage = t.usage,
+                                               .clearValue = clearValue,
+                                               .placement = placement,
+                                               .debugName = t.debugName});
+    case TransientKind::Texture3D:
+        return device->createTexture3D({.format = t.format,
+                                        .width = t.width,
+                                        .height = t.height,
+                                        .depth = t.depth,
+                                        .mipCount = t.mipCount,
+                                        .usage = t.usage,
+                                        .clearValue = clearValue,
+                                        .placement = placement,
+                                        .debugName = t.debugName});
+    }
+    return Status::Unsupported;
+}
 
 struct ResourceEntry
 {
@@ -45,7 +189,10 @@ struct ResourceEntry
     Buffer* bufferObject = nullptr;
     AttachmentView* view = nullptr;
     ImportedTextureDesc import;
-    Texture2DDesc textureDesc; // transients
+    TransientTexture shape; // transient textures
+    uint32_t mipCount = 1;  // textures, set by compile
+    uint32_t layerCount = 1;
+    uint32_t depth = 1;
     ClearValue clearValue;
     bool hasClearValue = false;
     BufferDesc bufferDesc;
@@ -73,13 +220,22 @@ struct PassEntry
 
 struct CachedTexture
 {
-    Texture2DDesc desc;
+    TransientTexture shape;
     ClearValue clearValue;
     bool hasClearValue = false;
     uint64_t offset = 0;
     Texture* texture = nullptr;
-    AttachmentView* view = nullptr;
     bool used = false;
+};
+
+// An attachment view of a cached transient texture: one mip, some layers.
+struct CachedView
+{
+    Texture* texture = nullptr;
+    uint32_t mip = 0;
+    uint32_t baseLayer = 0;
+    uint32_t layerCount = 1;
+    AttachmentView* view = nullptr;
 };
 
 struct CachedBuffer
@@ -96,6 +252,7 @@ struct FrameSlot
     MemoryBlock* block = nullptr;
     uint64_t blockSize = 0;
     Vector<CachedTexture> textures;
+    Vector<CachedView> views;
     Vector<CachedBuffer> buffers;
     Vector<CommandBuffer*> commandBuffers[3];
     uint32_t usedCommandBuffers[3] = {};
@@ -130,8 +287,6 @@ const char* queueName(CommandQueueType queue)
 
 bool sameTransient(const CachedTexture& cached, const ResourceEntry& entry)
 {
-    const Texture2DDesc& a = cached.desc;
-    const Texture2DDesc& b = entry.textureDesc;
     bool clearMatches = cached.hasClearValue == entry.hasClearValue;
     for (int i = 0; clearMatches && entry.hasClearValue && i < 4; ++i)
     {
@@ -139,8 +294,7 @@ bool sameTransient(const CachedTexture& cached, const ResourceEntry& entry)
     }
     clearMatches = clearMatches && (!entry.hasClearValue || (cached.clearValue.depth == entry.clearValue.depth &&
                                                              cached.clearValue.stencil == entry.clearValue.stencil));
-    return clearMatches && a.format == b.format && a.width == b.width && a.height == b.height &&
-           a.mipCount == b.mipCount && a.sampleCount == b.sampleCount && a.usage == b.usage;
+    return clearMatches && cached.shape == entry.shape;
 }
 
 } // namespace
@@ -215,7 +369,8 @@ struct RenderGraphImpl : RenderGraph
         return static_cast<uint32_t>(resources.size() - 1);
     }
 
-    void addUse(uint32_t pass, uint32_t resource, bool texture, UseKind kind, Usage usage, const char* function)
+    void addUse(uint32_t pass, uint32_t resource, bool texture, UseKind kind, Usage usage,
+                const SubresourceRange& range, const char* function)
     {
         if (resource >= resources.size() || resources[resource].texture != texture)
         {
@@ -228,6 +383,7 @@ struct RenderGraphImpl : RenderGraph
         use.resource = resource;
         use.kind = kind;
         use.usage = usage;
+        use.range = range;
         outOfMemory = outOfMemory || !declaredUses.pushBack(use);
     }
 
@@ -339,6 +495,34 @@ struct RenderGraphImpl : RenderGraph
             {
                 continue;
             }
+            const ResourceEntry& entry = resources[use.resource];
+            if (entry.texture)
+            {
+                SubresourceRange range = declared.range;
+                if (declared.kind != UseKind::Usage && entry.depth > 1)
+                {
+                    range.baseLayer = 0; // 3D: attachment layers are depth slices, tracked with their mip
+                    range.layerCount = 1;
+                }
+                uint32_t mips = range.mipCount == SubresourceRange::remainingMips && range.baseMip < entry.mipCount
+                                    ? entry.mipCount - range.baseMip
+                                    : range.mipCount;
+                uint32_t layers =
+                    range.layerCount == SubresourceRange::remainingLayers && range.baseLayer < entry.layerCount
+                        ? entry.layerCount - range.baseLayer
+                        : range.layerCount;
+                if (range.baseMip >= entry.mipCount || mips == 0 || mips > entry.mipCount - range.baseMip ||
+                    range.baseLayer >= entry.layerCount || layers == 0 || layers > entry.layerCount - range.baseLayer)
+                {
+                    report("slag::rendergraph: pass \"%s\": a range is outside its texture (%u mips, %u layers)",
+                           pass.name, entry.mipCount, entry.layerCount);
+                    continue;
+                }
+                use.baseMip = range.baseMip;
+                use.mipCount = mips;
+                use.baseLayer = range.baseLayer;
+                use.layerCount = layers;
+            }
             bool merged = false;
             for (uint32_t i = planPass.firstUse; i < planUses.size(); ++i)
             {
@@ -346,6 +530,22 @@ struct RenderGraphImpl : RenderGraph
                 if (existing.resource != use.resource)
                 {
                     continue;
+                }
+                if (entry.texture && (existing.baseMip != use.baseMip || existing.mipCount != use.mipCount ||
+                                      existing.baseLayer != use.baseLayer || existing.layerCount != use.layerCount))
+                {
+                    bool overlap = use.baseMip < existing.baseMip + existing.mipCount &&
+                                   existing.baseMip < use.baseMip + use.mipCount &&
+                                   use.baseLayer < existing.baseLayer + existing.layerCount &&
+                                   existing.baseLayer < use.baseLayer + use.layerCount;
+                    if (overlap)
+                    {
+                        report("slag::rendergraph: pass \"%s\": two uses of a texture overlap without covering the "
+                               "same subresources",
+                               pass.name);
+                        return false;
+                    }
+                    continue; // disjoint: a use of its own
                 }
                 merged = true;
                 if (resources[use.resource].texture && existing.layout != use.layout)
@@ -410,7 +610,21 @@ struct RenderGraphImpl : RenderGraph
                 frame.textures[kept++] = cached;
                 continue;
             }
-            device->destroy(cached.view);
+            // Its views go first (Slag requires it).
+            size_t keptViews = 0;
+            for (size_t v = 0; v < frame.views.size(); ++v)
+            {
+                if (frame.views[v].texture == cached.texture)
+                {
+                    device->destroy(frame.views[v].view);
+                    continue;
+                }
+                frame.views[keptViews++] = frame.views[v];
+            }
+            while (frame.views.size() > keptViews)
+            {
+                frame.views.popBack();
+            }
             device->destroy(cached.texture);
         }
         while (frame.textures.size() > kept)
@@ -485,32 +699,20 @@ struct RenderGraphImpl : RenderGraph
                 if (!match)
                 {
                     CachedTexture cached;
-                    cached.desc = entry.textureDesc;
+                    cached.shape = entry.shape;
                     cached.clearValue = entry.clearValue;
                     cached.hasClearValue = entry.hasClearValue;
                     cached.offset = offset;
-                    Texture2DDesc desc = entry.textureDesc;
-                    desc.clearValue = entry.hasClearValue ? &entry.clearValue : nullptr;
-                    desc.placement = Placement::placed(frame.block, offset);
-                    Result<Texture*> texture = device->createTexture2D(desc);
+                    Result<Texture*> texture =
+                        createTransient(device, entry.shape, entry.hasClearValue ? &entry.clearValue : nullptr,
+                                        Placement::placed(frame.block, offset));
                     if (!texture)
                     {
                         return texture.status();
                     }
                     cached.texture = texture.value();
-                    if ((desc.usage & (TextureUsage::RenderTarget | TextureUsage::DepthStencil)) != TextureUsage::None)
-                    {
-                        Result<AttachmentView*> view = device->createAttachmentView({.texture = cached.texture});
-                        if (!view)
-                        {
-                            device->destroy(cached.texture);
-                            return view.status();
-                        }
-                        cached.view = view.value();
-                    }
                     if (!frame.textures.pushBack(cached))
                     {
-                        device->destroy(cached.view);
                         device->destroy(cached.texture);
                         return Status::OutOfHostMemory;
                     }
@@ -518,7 +720,6 @@ struct RenderGraphImpl : RenderGraph
                 }
                 match->used = true;
                 entry.textureObject = match->texture;
-                entry.view = match->view;
             }
             else
             {
@@ -561,6 +762,41 @@ struct RenderGraphImpl : RenderGraph
         return Status::Ok;
     }
 
+    // The attachment view of one mip and some layers of a texture: the
+    // user's for an imported one, a cached one for a transient.
+    Result<AttachmentView*> attachmentView(const Attachment& attachment)
+    {
+        const ResourceEntry& entry = resources[attachment.resource];
+        if (!entry.transient)
+        {
+            return entry.view;
+        }
+        FrameSlot& frame = slots[slot];
+        for (const CachedView& cached : frame.views)
+        {
+            if (cached.texture == entry.textureObject && cached.mip == attachment.mip &&
+                cached.baseLayer == attachment.baseLayer && cached.layerCount == attachment.layerCount)
+            {
+                return cached.view;
+            }
+        }
+        Result<AttachmentView*> view = device->createAttachmentView({.texture = entry.textureObject,
+                                                                     .mip = attachment.mip,
+                                                                     .baseLayer = attachment.baseLayer,
+                                                                     .layerCount = attachment.layerCount});
+        if (!view)
+        {
+            return view;
+        }
+        if (!frame.views.pushBack(
+                {entry.textureObject, attachment.mip, attachment.baseLayer, attachment.layerCount, view.value()}))
+        {
+            device->destroy(view.value());
+            return Status::OutOfHostMemory;
+        }
+        return view;
+    }
+
     bool convert(const Vector<PlanBarrier>& barriers, Vector<TextureBarrier>& textures, Vector<BufferBarrier>& buffers)
     {
         textures.clear();
@@ -576,7 +812,11 @@ struct RenderGraphImpl : RenderGraph
                                             .accessAfter = barrier.accessAfter,
                                             .layoutBefore = barrier.layoutBefore,
                                             .layoutAfter = barrier.layoutAfter,
-                                            .texture = entry.textureObject};
+                                            .texture = entry.textureObject,
+                                            .range = {.baseMip = barrier.baseMip,
+                                                      .mipCount = barrier.mipCount,
+                                                      .baseLayer = barrier.baseLayer,
+                                                      .layerCount = barrier.layerCount}};
                 if (!textures.pushBack(converted))
                 {
                     return false;
@@ -783,13 +1023,13 @@ const RenderGraphImpl* impl(const RenderGraph* graph)
 
 // --- PassBuilder / PassContext ------------------------------------------------
 
-void PassBuilder::use(TextureHandle texture, Usage usage)
+void PassBuilder::use(TextureHandle texture, Usage usage, const SubresourceRange& range)
 {
     if (!graph)
     {
         return; // addPass failed and reported
     }
-    impl(graph)->addUse(pass, texture.index, true, UseKind::Usage, usage, "PassBuilder::use");
+    impl(graph)->addUse(pass, texture.index, true, UseKind::Usage, usage, range, "PassBuilder::use");
 }
 
 void PassBuilder::use(BufferHandle buffer, Usage usage)
@@ -798,10 +1038,11 @@ void PassBuilder::use(BufferHandle buffer, Usage usage)
     {
         return;
     }
-    impl(graph)->addUse(pass, buffer.index, false, UseKind::Usage, usage, "PassBuilder::use");
+    impl(graph)->addUse(pass, buffer.index, false, UseKind::Usage, usage, {}, "PassBuilder::use");
 }
 
-void PassBuilder::renderTarget(TextureHandle texture, LoadOp loadOp, StoreOp storeOp, const ClearValue& clearValue)
+void PassBuilder::renderTarget(TextureHandle texture, LoadOp loadOp, StoreOp storeOp, const ClearValue& clearValue,
+                               uint32_t mip, uint32_t baseLayer, uint32_t layerCount)
 {
     if (!graph)
     {
@@ -816,12 +1057,14 @@ void PassBuilder::renderTarget(TextureHandle texture, LoadOp loadOp, StoreOp sto
                                                                : "too many render targets");
         return;
     }
-    entry.colors[entry.colorCount++] = {texture.index, loadOp, storeOp, clearValue};
-    self->addUse(pass, texture.index, true, UseKind::RenderTarget, Usage::ShaderRead, "PassBuilder::renderTarget");
+    entry.colors[entry.colorCount++] = {texture.index, loadOp, storeOp, clearValue, mip, baseLayer, layerCount};
+    self->addUse(pass, texture.index, true, UseKind::RenderTarget, Usage::ShaderRead,
+                 {.baseMip = mip, .mipCount = 1, .baseLayer = baseLayer, .layerCount = layerCount},
+                 "PassBuilder::renderTarget");
 }
 
 void PassBuilder::depthStencil(TextureHandle texture, LoadOp loadOp, StoreOp storeOp, const ClearValue& clearValue,
-                               bool readOnly)
+                               bool readOnly, uint32_t mip, uint32_t baseLayer, uint32_t layerCount)
 {
     if (!graph)
     {
@@ -836,9 +1079,10 @@ void PassBuilder::depthStencil(TextureHandle texture, LoadOp loadOp, StoreOp sto
                                                                : "only one depth-stencil attachment");
         return;
     }
-    entry.depth = {texture.index, loadOp, storeOp, clearValue};
+    entry.depth = {texture.index, loadOp, storeOp, clearValue, mip, baseLayer, layerCount};
     entry.depthReadOnly = readOnly;
     self->addUse(pass, texture.index, true, readOnly ? UseKind::DepthRead : UseKind::DepthWrite, Usage::ShaderRead,
+                 {.baseMip = mip, .mipCount = 1, .baseLayer = baseLayer, .layerCount = layerCount},
                  "PassBuilder::depthStencil");
 }
 
@@ -946,30 +1190,101 @@ BufferHandle RenderGraph::importBuffer(Buffer* buffer)
     return {self->addResource(std::move(entry))};
 }
 
-TextureHandle RenderGraph::createTransientTexture(const Texture2DDesc& desc)
+namespace {
+
+TextureHandle addTransient(RenderGraphImpl* self, const TransientTexture& shape,
+                           std::span<const PixelFormat> castableFormats, const ClearValue* clearValue)
 {
-    RenderGraphImpl* self = impl(this);
-    if (!self->declaring("RenderGraph::createTransientTexture"))
+    if (!self->declaring("RenderGraph::createTransientTexture*"))
     {
         return {};
     }
-    if (desc.format == PixelFormat::Undefined || !desc.castableFormats.empty())
+    if (shape.format == PixelFormat::Undefined || !castableFormats.empty())
     {
-        self->report("slag::rendergraph: RenderGraph::createTransientTexture: %s",
-                     desc.format == PixelFormat::Undefined ? "the format is Undefined"
-                                                           : "transient textures have no castable formats");
+        self->report("slag::rendergraph: RenderGraph::createTransientTexture*: %s",
+                     shape.format == PixelFormat::Undefined ? "the format is Undefined"
+                                                            : "transient textures have no castable formats");
         return {};
     }
     ResourceEntry entry;
     entry.texture = true;
     entry.transient = true;
-    entry.textureDesc = desc;
-    entry.textureDesc.castableFormats = {};
-    entry.textureDesc.placement = {};
-    entry.hasClearValue = desc.clearValue != nullptr;
-    entry.clearValue = desc.clearValue ? *desc.clearValue : ClearValue{};
-    entry.textureDesc.clearValue = nullptr;
+    entry.shape = shape;
+    entry.hasClearValue = clearValue != nullptr;
+    entry.clearValue = clearValue ? *clearValue : ClearValue{};
     return {self->addResource(std::move(entry))};
+}
+
+} // namespace
+
+TextureHandle RenderGraph::createTransientTexture2D(const Texture2DDesc& desc)
+{
+    return addTransient(impl(this),
+                        {.kind = TransientKind::Texture2D,
+                         .format = desc.format,
+                         .width = desc.width,
+                         .height = desc.height,
+                         .mipCount = desc.mipCount,
+                         .sampleCount = desc.sampleCount,
+                         .usage = desc.usage,
+                         .debugName = desc.debugName},
+                        desc.castableFormats, desc.clearValue);
+}
+
+TextureHandle RenderGraph::createTransientTexture2DArray(const Texture2DArrayDesc& desc)
+{
+    return addTransient(impl(this),
+                        {.kind = TransientKind::Texture2DArray,
+                         .format = desc.format,
+                         .width = desc.width,
+                         .height = desc.height,
+                         .count = desc.layerCount,
+                         .mipCount = desc.mipCount,
+                         .sampleCount = desc.sampleCount,
+                         .usage = desc.usage,
+                         .debugName = desc.debugName},
+                        desc.castableFormats, desc.clearValue);
+}
+
+TextureHandle RenderGraph::createTransientTextureCube(const TextureCubeDesc& desc)
+{
+    return addTransient(impl(this),
+                        {.kind = TransientKind::Cube,
+                         .format = desc.format,
+                         .width = desc.size,
+                         .height = desc.size,
+                         .mipCount = desc.mipCount,
+                         .usage = desc.usage,
+                         .debugName = desc.debugName},
+                        desc.castableFormats, desc.clearValue);
+}
+
+TextureHandle RenderGraph::createTransientTextureCubeArray(const TextureCubeArrayDesc& desc)
+{
+    return addTransient(impl(this),
+                        {.kind = TransientKind::CubeArray,
+                         .format = desc.format,
+                         .width = desc.size,
+                         .height = desc.size,
+                         .count = desc.cubeCount,
+                         .mipCount = desc.mipCount,
+                         .usage = desc.usage,
+                         .debugName = desc.debugName},
+                        desc.castableFormats, desc.clearValue);
+}
+
+TextureHandle RenderGraph::createTransientTexture3D(const Texture3DDesc& desc)
+{
+    return addTransient(impl(this),
+                        {.kind = TransientKind::Texture3D,
+                         .format = desc.format,
+                         .width = desc.width,
+                         .height = desc.height,
+                         .depth = desc.depth,
+                         .mipCount = desc.mipCount,
+                         .usage = desc.usage,
+                         .debugName = desc.debugName},
+                        desc.castableFormats, desc.clearValue);
 }
 
 BufferHandle RenderGraph::createTransientBuffer(const BufferDesc& desc)
@@ -1084,19 +1399,33 @@ Result<void> RenderGraph::compile()
         return Status::OutOfHostMemory;
     }
 
-    // Resources, with the placement needs of transients.
+    // Resources: subresource counts, and the placement needs of transients.
     self->planResources.clear();
-    for (const ResourceEntry& entry : self->resources)
+    for (ResourceEntry& entry : self->resources)
     {
+        if (entry.texture && entry.transient)
+        {
+            entry.mipCount = entry.shape.mipCount;
+            entry.layerCount = entry.shape.layerCount();
+            entry.depth = entry.shape.depth;
+        }
+        else if (entry.texture)
+        {
+            entry.mipCount = entry.textureObject->mipCount();
+            entry.layerCount = entry.textureObject->layerCount();
+            entry.depth = entry.textureObject->depth();
+        }
         PlanResource resource;
         resource.texture = entry.texture;
         resource.transient = entry.transient;
         resource.initialLayout = entry.import.initialLayout;
         resource.finalLayout = entry.import.finalLayout;
+        resource.mipCount = entry.mipCount;
+        resource.layerCount = entry.layerCount;
         if (entry.transient)
         {
-            PlacementInfo info = entry.texture ? self->device->placementInfo(entry.textureDesc)
-                                               : self->device->placementInfo(entry.bufferDesc);
+            PlacementInfo info =
+                entry.texture ? placementOf(self->device, entry.shape) : self->device->placementInfo(entry.bufferDesc);
             resource.size = info.size;
             resource.alignment = info.alignment ? info.alignment : 1;
         }
@@ -1143,7 +1472,7 @@ Result<void> RenderGraph::compile()
                 }
                 if (entry.transient && entry.texture)
                 {
-                    TextureUsage usage = entry.textureDesc.usage;
+                    TextureUsage usage = entry.shape.usage;
                     bool target = use.layout == TextureLayout::RenderTarget;
                     bool depth =
                         use.layout == TextureLayout::DepthStencilWrite || use.layout == TextureLayout::DepthStencilRead;
@@ -1248,6 +1577,25 @@ Result<void> RenderGraph::compile()
         {
             return Status::OutOfHostMemory;
         }
+        Attachment* attachments[limits::maxColorTargets + 1];
+        uint32_t attachmentCount = 0;
+        for (uint32_t c = 0; c < pass.colorCount; ++c)
+        {
+            attachments[attachmentCount++] = &pass.colors[c];
+        }
+        if (pass.depth.resource != none)
+        {
+            attachments[attachmentCount++] = &pass.depth;
+        }
+        for (uint32_t a = 0; a < attachmentCount; ++a)
+        {
+            Result<AttachmentView*> view = self->attachmentView(*attachments[a]);
+            if (!view)
+            {
+                return view.status();
+            }
+            attachments[a]->view = view.value();
+        }
     }
     Vector<BufferBarrier> noBuffers(&self->allocator);
     if (!self->plan.epilogue.empty())
@@ -1334,7 +1682,7 @@ Result<void> RenderGraph::recordPass(uint32_t index)
         ColorAttachment colors[limits::maxColorTargets];
         for (uint32_t c = 0; c < pass.colorCount; ++c)
         {
-            colors[c] = {.view = self->resources[pass.colors[c].resource].view,
+            colors[c] = {.view = pass.colors[c].view,
                          .loadOp = pass.colors[c].loadOp,
                          .storeOp = pass.colors[c].storeOp,
                          .clearValue = pass.colors[c].clearValue};
@@ -1342,7 +1690,7 @@ Result<void> RenderGraph::recordPass(uint32_t index)
         DepthStencilAttachment depth;
         if (pass.depth.resource != none)
         {
-            depth = {.view = self->resources[pass.depth.resource].view,
+            depth = {.view = pass.depth.view,
                      .depthLoadOp = pass.depth.loadOp,
                      .depthStoreOp = pass.depth.storeOp,
                      .stencilLoadOp = pass.depth.loadOp,
@@ -1530,6 +1878,7 @@ Result<RenderGraph*> createRenderGraph(const RenderGraphDesc& desc)
     {
         FrameSlot frame;
         frame.textures = Vector<CachedTexture>(&self->allocator);
+        frame.views = Vector<CachedView>(&self->allocator);
         frame.buffers = Vector<CachedBuffer>(&self->allocator);
         for (size_t q = 0; q < 3; ++q)
         {

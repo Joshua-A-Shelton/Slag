@@ -135,6 +135,18 @@ struct TextureCubeArrayDesc
 class Texture
 {
 public:
+    // What the texture was created with. Cubes count six layers per cube;
+    // 3D textures have one layer and `depth` slices; 1D textures a height of
+    // one. Thread-safe.
+    PixelFormat format() const;
+    uint32_t width() const;
+    uint32_t height() const;
+    uint32_t depth() const;
+    uint32_t layerCount() const;
+    uint32_t mipCount() const;
+    uint32_t sampleCount() const;
+    TextureUsage usage() const;
+
     uint64_t userData() const;
     void setUserData(uint64_t value);
 

@@ -24,8 +24,8 @@ The first release: a thin C++20 abstraction over Direct3D 12 (Agility SDK
 
 ### Resources and memory
 
-- Buffers and textures (1D, 2D, 3D, cube, arrays, MSAA) with automatic
-  placement in Slag's TLSF sub-allocator, placement in user memory blocks,
+- Buffers and textures (1D, 2D, 3D, cube, arrays, MSAA; textures report
+  what they were created with), with automatic placement in Slag's TLSF sub-allocator, placement in user memory blocks,
   aliasing, and dedicated allocations for large resources (ADRs 0006, 0023,
   0061).
 - Memory kinds GpuOnly, Upload, Readback, and GpuUpload; memory budgets
@@ -70,7 +70,7 @@ The first release: a thin C++20 abstraction over Direct3D 12 (Agility SDK
 
 - Slag validation of every call in validation builds, with a stale-pointer
   quarantine and descriptor-slot tracking (D3D12 poison descriptors); all
-  404 checks are tested without a GPU (ADRs 0016, 0031, 0052, 0067).
+  412 checks are tested without a GPU (ADRs 0016, 0031, 0052, 0067).
 - Debug names on every object, in every build (ADR 0017).
 - Crash diagnostics: D3D12 DRED and Vulkan `VK_EXT_device_fault` reports on
   device loss (ADR 0014).
@@ -82,8 +82,9 @@ The first release: a thin C++20 abstraction over Direct3D 12 (Agility SDK
 - `slag::rendergraph`: passes declare resource uses; the graph records
   barriers, splits submits with semaphores between queues, begins and ends
   rendering, places transient resources in shared memory, lets passes
-  record on several threads, and runs defragmentation passes after a frame
-  (ADR 0072).
+  record on several threads, tracks textures per mip and layer, creates
+  transient 2D, array, cube, cube-array, and 3D textures, and runs
+  defragmentation passes after a frame (ADR 0072).
 
 ### Utilities and samples
 

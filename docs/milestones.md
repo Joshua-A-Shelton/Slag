@@ -322,6 +322,9 @@ shows about the core API can still change.
 - Pre-tag fixes: the debug callback takes a `DebugMessage` struct (ADR
   0011); `Swapchain::resize` keeps every other setting (ADR 0058); `Result`
   is `[[nodiscard]]` (ADR 0060). 404 validation checks.
+- Render graph: per-mip and per-layer state, and transient 2D-array, cube,
+  cube-array, and 3D textures; `Texture` getters in core for imported
+  textures' counts (ADRs 0021, 0072). 412 validation checks.
 
 ## After v1.0
 

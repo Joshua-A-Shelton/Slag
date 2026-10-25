@@ -27,8 +27,9 @@ settled after M9).
 
 - **Declaration order is execution order.** The graph works out barriers,
   semaphores, and memory aliasing; it never reorders or culls passes.
-- **State per whole resource** in the first version; per-mip tracking (mip
-  generation) later.
+- **State per mip and layer** (added 2026-10-24; the first version tracked
+  whole resources). Passes name subresources with `SubresourceRange`;
+  attachments take a mip and layers.
 - **The graph begins and ends rendering** for passes that declare
   attachments, with their load and store ops.
 - **One command buffer per pass**; grouping passes into one command buffer
@@ -124,5 +125,20 @@ settled after M9).
   buffers and 1 MB textures, passes until nothing moves, half the textures
   imported (final `ShaderRead`) and half reported by `layoutOf` (`Common`),
   every stamp read back afterwards.
+- **Subresources** (2026-10-24): states, last uses, and barriers are per
+  mip and layer; barriers are merged back into ranges (runs of mips, then of
+  layers). One pass's uses of a texture cover the same subresources or none
+  in common. A transient's first use activates all of it in one barrier
+  call, each subresource straight to the layout of the pass's use covering
+  it (others to the first use's layout), since Vulkan allows no second
+  transition of a subresource in the same call. Deactivating an aliased
+  transient is per subresource, as its layouts may differ. Imported
+  textures' counts come from the new `Texture` getters (ADR 0021). 3D
+  attachments take depth slices, tracked with their mip.
+- **Transient texture types** (2026-10-24): `createTransientTexture2D`,
+  `...2DArray`, `...Cube`, `...CubeArray`, `...3D`, after core's create
+  functions; designated initializers made one overloaded name ambiguous.
+  Attachment views of transients are cached per mip and layer range with
+  the texture.
 - The public header also includes `<new>`, `<type_traits>`, and `<utility>`
   (non-allocating), beyond ADR 0066's list, for storing lambdas.

@@ -158,7 +158,7 @@ void testHandoff(slag::Backend backend)
     const slag::ClearValue clear = {.color = {0.25f, 0.5f, 0.75f, 1.0f}};
 
     REQUIRE(static_cast<bool>(graph->beginFrame()));
-    slag::rendergraph::TextureHandle target = graph->createTransientTexture(targetDesc);
+    slag::rendergraph::TextureHandle target = graph->createTransientTexture2D(targetDesc);
     slag::rendergraph::BufferHandle output = graph->importBuffer(readback);
     graph->addPass(
         "clear", slag::CommandQueueType::Graphics,
@@ -198,8 +198,8 @@ void testAliasing(slag::Backend backend)
     slag::GraphicsDevice* device = t.device;
 
     REQUIRE(static_cast<bool>(graph->beginFrame()));
-    slag::rendergraph::TextureHandle a = graph->createTransientTexture(targetDesc);
-    slag::rendergraph::TextureHandle b = graph->createTransientTexture(targetDesc);
+    slag::rendergraph::TextureHandle a = graph->createTransientTexture2D(targetDesc);
+    slag::rendergraph::TextureHandle b = graph->createTransientTexture2D(targetDesc);
     slag::rendergraph::BufferHandle outA = graph->importBuffer(first);
     slag::rendergraph::BufferHandle outB = graph->importBuffer(second);
     auto clearPass = [&](const char* name, slag::rendergraph::TextureHandle target, const slag::ClearValue& clear) {
@@ -591,13 +591,158 @@ void testDefragmentation(slag::Backend backend)
     }
 }
 
+// Per-subresource state and every transient texture type: each mip of a
+// chain (each pass reading the mip before), each cube face, three array
+// layers in one pass, and two 3D slices are cleared to their own color, then
+// copied out and checked.
+void testSubresources(slag::Backend backend)
+{
+    GraphTest t(backend);
+    slag::rendergraph::RenderGraph* graph = t.createGraph();
+    slag::GraphicsDevice* device = t.device;
+    constexpr uint64_t slot = 64 * 1024; // readback bytes per image
+    constexpr uint32_t images = 4 + 6 + 3 + 1;
+    slag::Buffer* readback = t.readback(slot * images);
+    auto colorOf = [](uint32_t i) {
+        float v = static_cast<float>(i * 16 + 8) / 255.0f;
+        return slag::ClearValue{.color = {v, 1.0f - v, v * 0.5f, 1.0f}};
+    };
+    auto rgba = colorOf; // the bytes each image should hold, from the same values
+    REQUIRE(static_cast<bool>(graph->beginFrame()));
+    constexpr slag::TextureUsage target = slag::TextureUsage::RenderTarget;
+    constexpr slag::PixelFormat format = slag::PixelFormat::R8G8B8A8Unorm;
+    slag::rendergraph::TextureHandle chain =
+        graph->createTransientTexture2D({.format = format, .width = 64, .height = 64, .mipCount = 4, .usage = target});
+    slag::rendergraph::TextureHandle cube =
+        graph->createTransientTextureCube({.format = format, .size = 16, .usage = target});
+    slag::rendergraph::TextureHandle array = graph->createTransientTexture2DArray(
+        {.format = format, .width = 16, .height = 16, .layerCount = 3, .usage = target});
+    slag::rendergraph::TextureHandle volume =
+        graph->createTransientTexture3D({.format = format, .width = 16, .height = 16, .depth = 2, .usage = target});
+    slag::rendergraph::BufferHandle output = graph->importBuffer(readback);
+    auto nothing = [](slag::rendergraph::PassContext&, slag::CommandBuffer*) {
+    };
+    uint32_t image = 0;
+    for (uint32_t mip = 0; mip < 4; ++mip, ++image)
+    {
+        graph->addPass(
+            "mip", slag::CommandQueueType::Graphics,
+            [&](slag::rendergraph::PassBuilder& pass) {
+                if (mip > 0)
+                {
+                    pass.use(chain, slag::rendergraph::Usage::ShaderRead, {.baseMip = mip - 1, .mipCount = 1});
+                }
+                pass.renderTarget(chain, slag::LoadOp::Clear, slag::StoreOp::Store, colorOf(image), mip);
+            },
+            nothing);
+    }
+    for (uint32_t face = 0; face < 6; ++face, ++image)
+    {
+        graph->addPass(
+            "face", slag::CommandQueueType::Graphics,
+            [&](slag::rendergraph::PassBuilder& pass) {
+                pass.renderTarget(cube, slag::LoadOp::Clear, slag::StoreOp::Store, colorOf(image), 0, face);
+            },
+            nothing);
+    }
+    graph->addPass(
+        "layers", slag::CommandQueueType::Graphics,
+        [&](slag::rendergraph::PassBuilder& pass) {
+            for (uint32_t layer = 0; layer < 3; ++layer)
+            {
+                pass.renderTarget(array, slag::LoadOp::Clear, slag::StoreOp::Store, colorOf(image + layer), 0, layer);
+            }
+        },
+        nothing);
+    image += 3;
+    for (uint32_t slice = 0; slice < 2; ++slice)
+    {
+        graph->addPass(
+            "slice", slag::CommandQueueType::Graphics,
+            [&](slag::rendergraph::PassBuilder& pass) {
+                // Both slices clear to one color, each through its own view.
+                pass.renderTarget(volume, slag::LoadOp::Clear, slag::StoreOp::Store, colorOf(image), 0, slice);
+            },
+            nothing);
+    }
+    std::vector<uint32_t> pitches(images, 0);
+    graph->addPass(
+        "copy out", slag::CommandQueueType::Graphics,
+        [&](slag::rendergraph::PassBuilder& pass) {
+            for (auto texture : {chain, cube, array, volume})
+            {
+                pass.use(texture, slag::rendergraph::Usage::CopySource);
+            }
+            pass.use(output, slag::rendergraph::Usage::CopyDest);
+        },
+        [&](slag::rendergraph::PassContext& context, slag::CommandBuffer* commandBuffer) {
+            uint32_t at = 0;
+            auto copy = [&](slag::Texture* texture, uint32_t mip, uint32_t layer) {
+                slag::CopyFootprint footprint = device->copyFootprint(texture, mip);
+                pitches[at] = footprint.rowPitch;
+                commandBuffer->copyTextureToBuffer(
+                    {.buffer = context.buffer(output), .offset = at * slot, .rowPitch = footprint.rowPitch},
+                    {.texture = texture, .mip = mip, .layer = layer}, footprint.width, footprint.height,
+                    footprint.depth);
+                ++at;
+            };
+            for (uint32_t mip = 0; mip < 4; ++mip)
+            {
+                copy(context.texture(chain), mip, 0);
+            }
+            for (uint32_t face = 0; face < 6; ++face)
+            {
+                copy(context.texture(cube), 0, face);
+            }
+            for (uint32_t layer = 0; layer < 3; ++layer)
+            {
+                copy(context.texture(array), 0, layer);
+            }
+            copy(context.texture(volume), 0, 0);
+        });
+    REQUIRE(static_cast<bool>(graph->compile()));
+    for (uint32_t i = 0; i < graph->passCount(); ++i)
+    {
+        CHECK(static_cast<bool>(graph->recordPass(i)));
+    }
+    CHECK(static_cast<bool>(graph->execute()));
+    t.finish();
+
+    const auto* bytes = static_cast<const uint8_t*>(readback->mappedData());
+    const uint32_t sizes[images] = {64, 32, 16, 8, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16};
+    uint32_t wrong = 0;
+    for (uint32_t i = 0; i < images; ++i)
+    {
+        slag::ClearValue color = rgba(i);
+        uint8_t expected[4];
+        for (int c = 0; c < 4; ++c)
+        {
+            expected[c] = static_cast<uint8_t>(color.color[c] * 255.0f + 0.5f);
+        }
+        uint32_t rows = sizes[i] * (i == images - 1 ? 2 : 1); // the volume's two slices
+        for (uint32_t row = 0; row < rows; ++row)
+        {
+            for (uint32_t x = 0; x < sizes[i]; ++x)
+            {
+                const uint8_t* pixel = bytes + i * slot + uint64_t(row) * pitches[i] + x * 4;
+                for (int c = 0; c < 4; ++c)
+                {
+                    int difference = pixel[c] - expected[c];
+                    wrong += difference > 1 || difference < -1 ? 1 : 0;
+                }
+            }
+        }
+        CHECK_MESSAGE(wrong == 0, "image " << i);
+    }
+}
+
 // Usage errors are reported and fail compile.
 void testErrors(slag::Backend backend)
 {
     GraphTest t(backend);
     slag::rendergraph::RenderGraph* graph = t.createGraph();
     REQUIRE(static_cast<bool>(graph->beginFrame()));
-    slag::rendergraph::TextureHandle target = graph->createTransientTexture(targetDesc);
+    slag::rendergraph::TextureHandle target = graph->createTransientTexture2D(targetDesc);
     graph->addPass(
         "reads garbage", slag::CommandQueueType::Graphics,
         [&](slag::rendergraph::PassBuilder& pass) { pass.use(target, slag::rendergraph::Usage::ShaderRead); },
@@ -644,6 +789,10 @@ TEST_CASE("Vulkan: render graph - a defragmentation pass after the frame")
 {
     testDefragmentation(slag::Backend::Vulkan);
 }
+TEST_CASE("Vulkan: render graph - mips, faces, layers, and slices")
+{
+    testSubresources(slag::Backend::Vulkan);
+}
 TEST_CASE("Vulkan: render graph - usage errors fail compile")
 {
     testErrors(slag::Backend::Vulkan);
@@ -666,6 +815,10 @@ TEST_CASE("D3D12: render graph - three queues, frames in flight, recorded on thr
 TEST_CASE("D3D12: render graph - a defragmentation pass after the frame")
 {
     testDefragmentation(slag::Backend::D3D12);
+}
+TEST_CASE("D3D12: render graph - mips, faces, layers, and slices")
+{
+    testSubresources(slag::Backend::D3D12);
 }
 TEST_CASE("D3D12: render graph - usage errors fail compile")
 {

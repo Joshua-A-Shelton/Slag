@@ -265,3 +265,115 @@ TEST_CASE("render graph plan: transients on unordered queues don't share memory"
     CHECK(ordered.plan.offsets[x] == ordered.plan.offsets[y]); // the wait orders them
     CHECK(ordered.plan.passes[1].begin.empty());               // and makes barriers unnecessary
 }
+
+namespace {
+
+PlanUse onMips(PlanUse use, uint32_t baseMip, uint32_t mipCount, uint32_t baseLayer = 0, uint32_t layerCount = 1)
+{
+    use.baseMip = baseMip;
+    use.mipCount = mipCount;
+    use.baseLayer = baseLayer;
+    use.layerCount = layerCount;
+    return use;
+}
+
+} // namespace
+
+TEST_CASE("render graph plan: a mip chain, one mip at a time")
+{
+    Graph g;
+    g.resources.push_back({.transient = true, .size = 4096, .alignment = 256, .mipCount = 4});
+    uint32_t chain = 0;
+    g.pass(CommandQueueType::Graphics, {onMips(renderTarget(chain), 0, 1)});
+    for (uint32_t mip = 1; mip < 4; ++mip)
+    {
+        g.pass(CommandQueueType::Graphics,
+               {onMips(shaderRead(chain), mip - 1, 1), onMips(renderTarget(chain), mip, 1)});
+    }
+    g.build();
+    // Activated whole, in one merged barrier.
+    REQUIRE(g.plan.passes[0].begin.size() == 1);
+    CHECK(g.plan.passes[0].begin[0].layoutBefore == TextureLayout::Undefined);
+    CHECK(g.plan.passes[0].begin[0].mipCount == 4);
+    for (uint32_t mip = 1; mip < 4; ++mip)
+    {
+        const Vector<PlanBarrier>& begin = g.plan.passes[mip].begin;
+        bool readBarrier = false;
+        for (const PlanBarrier& barrier : begin)
+        {
+            CHECK(barrier.mipCount == 1);
+            if (barrier.baseMip == mip - 1)
+            {
+                readBarrier = barrier.layoutBefore == TextureLayout::RenderTarget &&
+                              barrier.layoutAfter == TextureLayout::ShaderRead &&
+                              barrier.syncBefore == BarrierSync::RenderTarget;
+            }
+            else
+            {
+                CHECK(barrier.baseMip == mip); // the written mip waits for earlier writes
+                CHECK(barrier.layoutAfter == TextureLayout::RenderTarget);
+            }
+        }
+        CHECK(readBarrier);
+    }
+}
+
+TEST_CASE("render graph plan: one face of an imported cube")
+{
+    Graph g;
+    g.resources.push_back({.initialLayout = TextureLayout::ShaderRead,
+                           .finalLayout = TextureLayout::ShaderRead,
+                           .mipCount = 2,
+                           .layerCount = 6});
+    g.pass(CommandQueueType::Graphics, {onMips(renderTarget(0), 0, 1, 2, 1)});
+    g.build();
+    REQUIRE(g.plan.passes[0].begin.size() == 1);
+    const PlanBarrier& in = g.plan.passes[0].begin[0];
+    CHECK((in.baseMip == 0 && in.mipCount == 1 && in.baseLayer == 2 && in.layerCount == 1));
+    CHECK(in.layoutBefore == TextureLayout::ShaderRead);
+    REQUIRE(g.plan.passes[0].end.size() == 1); // back to its final layout, that face only
+    const PlanBarrier& out = g.plan.passes[0].end[0];
+    CHECK((out.baseLayer == 2 && out.layerCount == 1 && out.mipCount == 1));
+    CHECK(out.layoutAfter == TextureLayout::ShaderRead);
+}
+
+TEST_CASE("render graph plan: different mips on two queues don't wait on each other")
+{
+    Graph g;
+    g.resources.push_back(
+        {.initialLayout = TextureLayout::Common, .finalLayout = TextureLayout::Common, .mipCount = 2});
+    g.pass(CommandQueueType::Graphics, {onMips(shaderWrite(0, BarrierSync::AllShading), 0, 1)});
+    g.pass(CommandQueueType::Compute, {onMips(shaderWrite(0), 1, 1)});
+    g.pass(CommandQueueType::Compute, {onMips(shaderRead(0, BarrierSync::ComputeShading), 0, 1)});
+    g.build();
+    CHECK(g.batchOf(1).waits.empty());
+    REQUIRE(g.batchOf(2).waits.size() == 1); // mip 0 came from graphics
+    CHECK(g.batchOf(2).waits[0] == g.plan.passBatch[0]);
+}
+
+TEST_CASE("render graph plan: a whole-texture use after per-mip uses gets ranged barriers")
+{
+    Graph g;
+    g.resources.push_back(
+        {.initialLayout = TextureLayout::Common, .finalLayout = TextureLayout::Common, .mipCount = 4, .layerCount = 2});
+    // Mip 1 of both layers becomes a render target; then everything is read.
+    g.pass(CommandQueueType::Graphics, {onMips(renderTarget(0), 1, 1, 0, 2)});
+    g.pass(CommandQueueType::Graphics, {onMips(shaderRead(0), 0, 4, 0, 2)});
+    g.build();
+    const Vector<PlanBarrier>& begin = g.plan.passes[1].begin;
+    // Mips 0, 2, 3 (Common -> ShaderRead) and mip 1 (RenderTarget -> ShaderRead),
+    // each across both layers.
+    uint32_t covered = 0;
+    for (const PlanBarrier& barrier : begin)
+    {
+        CHECK(barrier.layerCount == 2);
+        covered += barrier.mipCount * barrier.layerCount;
+        if (barrier.baseMip == 1)
+        {
+            CHECK(barrier.layoutBefore == TextureLayout::RenderTarget);
+            CHECK(barrier.mipCount == 1);
+        }
+    }
+    CHECK(covered == 8);
+    CHECK(begin.size() == 3); // mip 0; mip 1; mips 2-3
+}

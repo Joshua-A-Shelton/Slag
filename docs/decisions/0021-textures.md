@@ -69,3 +69,12 @@ levels; MSAA with ShaderWrite; linear / row-major / standard-swizzle layouts;
 simultaneous access; cross-adapter; sampler feedback; `PREINITIALIZED`;
 remaining Vulkan creation flags (Slag sets `CUBE_COMPATIBLE` and
 `2D_ARRAY_COMPATIBLE` internally where needed).
+
+## Getters (added before v1.0, 2026-10-24)
+
+`texture->format()`, `width()`, `height()`, `depth()`, `layerCount()`,
+`mipCount()`, `sampleCount()`, `usage()`: what the texture was created with
+(cubes count six layers per cube; 3D textures one layer and `depth`
+slices). Read-only and thread-safe. Added for the render graph, which
+tracks imported textures per mip and layer through the public API; the
+texture type isn't exposed (it would need a new public enum).
