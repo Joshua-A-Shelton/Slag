@@ -1,6 +1,7 @@
 # 0011 — Debug message callback
 
-**Status:** Accepted (2026-10-22). Names are placeholders.
+**Status:** Accepted (2026-10-22). Names are final (docs/naming.md;
+`DebugMessage` settled 2026-10-24).
 
 ## Decision
 

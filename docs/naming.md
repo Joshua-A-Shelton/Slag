@@ -405,7 +405,7 @@ sample `samples/render_graph` (ADR 0072).
 | `defragment(DefragmentationDesc, layoutOf)` | Requests a defragmentation pass after the frame (ADR 0072) |
 | `movedResources()` | What the last `execute`'s defragmentation pass moved |
 
-Proposed before tagging v1.0 (placeholders, pending review):
+Settled before tagging v1.0 (all kept in review):
 
 | Name | Notes |
 |---|---|
