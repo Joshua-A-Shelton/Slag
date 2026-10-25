@@ -97,7 +97,8 @@ The first release: a thin C++20 abstraction over Direct3D 12 (Agility SDK
 
 Native object import, mesh shaders, ray tracing, sparse resources, external
 memory and OpenXR, transparent windows, render-pass resolves (cut, ADR
-0049), and the Vulkan 1.3 fallback (`docs/open-items.md`).
+0049), and the Vulkan 1.3 fallback. The planned work after 1.0 is listed in
+`docs/milestones.md` ("After v1.0").
 
 ### Tested on
 

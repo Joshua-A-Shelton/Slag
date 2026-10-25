@@ -328,7 +328,47 @@ shows about the core API can still change.
 
 ## After v1.0
 
-Mesh shaders and ray tracing (ADR 0005),
-sparse resources (0026), external memory and OpenXR (0027), native device
-import (0018), transparent windows (0056), the Vulkan 1.3 fallback
-evaluation (CLAUDE.md §3), ARM64 support (0070).
+Everything here can be added without breaking the 1.0 API (minor
+releases), unless marked otherwise. Order isn't decided.
+
+**Features** (each decided with the owner before work starts, CLAUDE.md §13)
+
+- Mesh shaders, then ray tracing, as optional capabilities (ADR 0005). Ray
+  tracing needs a buffer usage for acceleration-structure storage (a new
+  `BufferDesc` field defaulting to today's behavior).
+- Sparse resources (ADR 0026); external memory, native resource and device
+  import, and OpenXR hooks (ADRs 0018, 0027); transparent windows (ADR 0056).
+- Indirect draws with an argument stride (a trailing parameter defaulting to
+  tightly packed).
+- Defragmentation spread over frames, as a new way to end a pass (ADR 0062).
+
+**Render graph** (ADR 0072)
+
+- Reads of a resource on several queues at once; today any change of queue
+  is ordered by a semaphore, even read after read.
+- Descriptor slots for transient (and imported) resources, managed per
+  frame.
+- Caching `compile` results across frames; pass culling; grouping passes
+  into fewer command buffers.
+- A texture first used on a copy queue imported in a layout other than
+  `Common`.
+- Hosting the graph's defragmentation without a CPU wait, if core gains a
+  frame-spread pass.
+
+**Checks that need hardware or toolchains** (`docs/open-items.md`)
+
+- Intel on D3D12 and Vulkan; AMD D3D12 on RDNA2 (RX 6000); which GPUs
+  RADV's `VK_EXT_descriptor_heap` covers; descriptor-heap address limits;
+  the oldest Slang that works; ARM64 on Windows and Linux (ADR 0070).
+
+**Evaluations**
+
+- The Vulkan 1.3 fallback (CLAUDE.md §3): accepted only if it implements the
+  API unchanged.
+
+**Would need a major version** (accepted for 1.0, listed so they're known)
+
+- More than one descriptor heap per device, or heap objects (ADR 0029).
+- A different shader contract than `VK_EXT_descriptor_heap` with Slang's
+  flags (ADR 0034).
+- Tightening any promise in the thread-safety table (ADR 0068).
