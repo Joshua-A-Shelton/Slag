@@ -342,6 +342,12 @@ releases), unless marked otherwise. Order isn't decided.
 - Indirect draws with an argument stride (a trailing parameter defaulting to
   tightly packed).
 - Defragmentation spread over frames, as a new way to end a pass (ADR 0062).
+- Present timing: when a present actually reached the display
+  (`VK_EXT_present_timing`, or `VK_GOOGLE_display_timing` where that's all
+  there is; DXGI `GetFrameStatistics`), so applications can measure
+  input-to-display latency instead of approximating it with
+  `waitForNextFrame`. Asked for by Crucible's latency harness (2026-10-26);
+  Vulkan driver support is still patchy.
 
 **Render graph** (ADR 0072)
 
