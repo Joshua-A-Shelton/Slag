@@ -14,6 +14,10 @@
 
 - Width/height are always explicit.
 - Image count is a minimum (2 or 3); the actual count is read after creation.
+- Vulkan raises it to the surface's minimum for every present mode the
+  swapchain can switch to, queried per mode (surface_maintenance1): the
+  minimum can differ by mode (RADV on Wayland: 4 for Mailbox, 3 without a
+  mode). Fixed in 1.0.1.
 
 ## Present modes
 

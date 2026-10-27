@@ -223,10 +223,37 @@ Status buildSwapchain(GraphicsDeviceImpl& device, SwapchainImpl& swapchain, uint
     presentModes.presentModeCount = modeCount;
     presentModes.pPresentModes = vkModes;
 
-    uint32_t minImages = imageCount < caps.minImageCount ? caps.minImageCount : imageCount;
-    if (caps.maxImageCount != 0 && minImages > caps.maxImageCount)
+    // The image count limits depend on the present mode (surface_maintenance1):
+    // RADV on Wayland needs 4 images for Mailbox but reports 3 without a mode.
+    // The swapchain can switch between all compatible modes, so the count must
+    // satisfy each of them.
+    uint32_t minLimit = caps.minImageCount;
+    uint32_t maxLimit = caps.maxImageCount; // 0: no limit
+    for (uint32_t i = 0; i < modeCount; ++i)
     {
-        minImages = caps.maxImageCount;
+        VkSurfacePresentModeKHR modeInfo = {VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_KHR};
+        modeInfo.presentMode = vkModes[i];
+        VkPhysicalDeviceSurfaceInfo2KHR modeSurfaceInfo = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR};
+        modeSurfaceInfo.pNext = &modeInfo;
+        modeSurfaceInfo.surface = swapchain.surface;
+        VkSurfaceCapabilities2KHR modeCapabilities = {VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR};
+        result = instance.fn.vkGetPhysicalDeviceSurfaceCapabilities2KHR(device.physicalDevice, &modeSurfaceInfo,
+                                                                        &modeCapabilities);
+        if (result != VK_SUCCESS)
+        {
+            return toStatus(device, result);
+        }
+        const VkSurfaceCapabilitiesKHR& modeCaps = modeCapabilities.surfaceCapabilities;
+        minLimit = modeCaps.minImageCount > minLimit ? modeCaps.minImageCount : minLimit;
+        if (modeCaps.maxImageCount != 0 && (maxLimit == 0 || modeCaps.maxImageCount < maxLimit))
+        {
+            maxLimit = modeCaps.maxImageCount;
+        }
+    }
+    uint32_t minImages = imageCount < minLimit ? minLimit : imageCount;
+    if (maxLimit != 0 && minImages > maxLimit)
+    {
+        minImages = maxLimit;
     }
     VkSwapchainCreateInfoKHR createInfo = {VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR};
     createInfo.pNext = &presentModes;

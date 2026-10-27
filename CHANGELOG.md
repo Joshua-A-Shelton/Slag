@@ -2,6 +2,15 @@
 
 Slag follows semantic versioning (ADR 0070). There is no stable ABI.
 
+## 1.0.1 — 2026-10-26
+
+### Fixed
+
+- Vulkan swapchains raise `minImageCount` to the surface's minimum for each
+  present mode they can switch to, not only the minimum reported without a
+  mode. RADV on Wayland needs 4 images for Mailbox; asking for 3 was a
+  validation error (VUID-VkSwapchainCreateInfoKHR-presentMode-02839).
+
 ## 1.0.0 — 2026-10-24
 
 The first release: a thin C++20 abstraction over Direct3D 12 (Agility SDK
