@@ -20,15 +20,19 @@
 namespace slag::rendergraph {
 
 // Handles to the graph's resources, valid for the frame they were made in.
-struct TextureHandle
+struct RenderGraphTexture
 {
     uint32_t index = UINT32_MAX;
 };
 
-struct BufferHandle
+struct RenderGraphBuffer
 {
     uint32_t index = UINT32_MAX;
 };
+
+// The names before 1.1.0, kept until 2.0 (ADR 0070).
+using TextureHandle [[deprecated("renamed RenderGraphTexture")]] = RenderGraphTexture;
+using BufferHandle [[deprecated("renamed RenderGraphBuffer")]] = RenderGraphBuffer;
 
 // How a pass uses a resource. Shader accesses cover every shader stage of the
 // pass's queue type. VertexBuffer, IndexBuffer, ConstantBuffer, and
@@ -65,16 +69,16 @@ public:
     // Textures are tracked per mip and layer: `range` names the subresources
     // used (all by default; its plane is ignored). One pass's uses of a
     // texture either cover the same subresources or none in common.
-    void use(TextureHandle texture, Usage usage, const SubresourceRange& range = {});
-    void use(BufferHandle buffer, Usage usage);
+    void use(RenderGraphTexture texture, Usage usage, const SubresourceRange& range = {});
+    void use(RenderGraphBuffer buffer, Usage usage);
     // Graphics passes only; the graph begins and ends rendering around the
     // pass with these attachments, in the order declared. One mip and
     // `layerCount` layers (depth slices of a 3D texture) from `baseLayer`; an
     // imported texture's attachment view must cover the same ones.
-    void renderTarget(TextureHandle texture, LoadOp loadOp = LoadOp::Load, StoreOp storeOp = StoreOp::Store,
+    void renderTarget(RenderGraphTexture texture, LoadOp loadOp = LoadOp::Load, StoreOp storeOp = StoreOp::Store,
                       const ClearValue& clearValue = {}, uint32_t mip = 0, uint32_t baseLayer = 0,
                       uint32_t layerCount = 1);
-    void depthStencil(TextureHandle texture, LoadOp loadOp = LoadOp::Load, StoreOp storeOp = StoreOp::Store,
+    void depthStencil(RenderGraphTexture texture, LoadOp loadOp = LoadOp::Load, StoreOp storeOp = StoreOp::Store,
                       const ClearValue& clearValue = {}, bool readOnly = false, uint32_t mip = 0,
                       uint32_t baseLayer = 0, uint32_t layerCount = 1);
 
@@ -93,8 +97,8 @@ private:
 class PassContext
 {
 public:
-    Texture* texture(TextureHandle texture) const;
-    Buffer* buffer(BufferHandle buffer) const;
+    Texture* texture(RenderGraphTexture texture) const;
+    Buffer* buffer(RenderGraphBuffer buffer) const;
     // 0 to framesInFlight - 1: which copy of per-frame data (descriptor
     // slots, constants) the pass may write.
     uint32_t frameSlot() const;
@@ -132,18 +136,18 @@ public:
     // then starts declaring a new frame.
     Result<void> beginFrame();
 
-    TextureHandle importTexture(Texture* texture, const ImportedTextureDesc& desc = {});
-    BufferHandle importBuffer(Buffer* buffer);
+    RenderGraphTexture importTexture(Texture* texture, const ImportedTextureDesc& desc = {});
+    RenderGraphBuffer importBuffer(Buffer* buffer);
     // Transient: lives for this frame, in memory shared with transients whose
     // uses don't overlap. Contents start undefined: the first use writes (or
     // clears) it. The placement field is ignored; castable formats aren't
     // supported.
-    TextureHandle createTransientTexture2D(const Texture2DDesc& desc);
-    TextureHandle createTransientTexture2DArray(const Texture2DArrayDesc& desc);
-    TextureHandle createTransientTextureCube(const TextureCubeDesc& desc);
-    TextureHandle createTransientTextureCubeArray(const TextureCubeArrayDesc& desc);
-    TextureHandle createTransientTexture3D(const Texture3DDesc& desc);
-    BufferHandle createTransientBuffer(const BufferDesc& desc);
+    RenderGraphTexture createTransientTexture2D(const Texture2DDesc& desc);
+    RenderGraphTexture createTransientTexture2DArray(const Texture2DArrayDesc& desc);
+    RenderGraphTexture createTransientTextureCube(const TextureCubeDesc& desc);
+    RenderGraphTexture createTransientTextureCubeArray(const TextureCubeArrayDesc& desc);
+    RenderGraphTexture createTransientTexture3D(const Texture3DDesc& desc);
+    RenderGraphBuffer createTransientBuffer(const BufferDesc& desc);
 
     // `setup(PassBuilder&)` runs now; `record(PassContext&, CommandBuffer*)` is
     // stored (in the graph's memory) and runs in recordPass.

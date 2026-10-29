@@ -89,12 +89,12 @@ int main(int argc, char** argv)
         {
             return false;
         }
-        slag::rendergraph::TextureHandle backbuffer = graph->importTexture(
+        slag::rendergraph::RenderGraphTexture backbuffer = graph->importTexture(
             app.swapchain->texture(image), {.initialLayout = slag::TextureLayout::Undefined,
                                             .finalLayout = slag::TextureLayout::Present,
                                             .attachmentView = app.swapchain->srgbAttachmentView(image),
                                             .swapchain = app.swapchain});
-        slag::rendergraph::TextureHandle texture =
+        slag::rendergraph::RenderGraphTexture texture =
             graph->createTransientTexture2D({.format = slag::PixelFormat::R8G8B8A8Unorm,
                                              .width = textureSize,
                                              .height = textureSize,

@@ -2,6 +2,15 @@
 
 Slag follows semantic versioning (ADR 0070). There is no stable ABI.
 
+## 1.1.0 — 2026-10-29
+
+### Changed
+
+- The render graph's handles are renamed `RenderGraphTexture` and
+  `RenderGraphBuffer`, so engines can name their own handles freely.
+  `TextureHandle` and `BufferHandle` remain as `[[deprecated]]` aliases
+  until 2.0 (ADR 0070, 0072).
+
 ## 1.0.2 — 2026-10-28
 
 ### Changed

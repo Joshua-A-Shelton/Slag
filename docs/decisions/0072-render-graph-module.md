@@ -142,3 +142,10 @@ settled after M9).
   the texture.
 - The public header also includes `<new>`, `<type_traits>`, and `<utility>`
   (non-allocating), beyond ADR 0066's list, for storing lambdas.
+
+## Renamed handles (1.1.0, 2026-10-29)
+
+`TextureHandle` and `BufferHandle` became `RenderGraphTexture` and
+`RenderGraphBuffer`, at the owner's request: Crucible names its own loaded
+textures `TextureHandle`, and render steps use both. The old names remain
+`[[deprecated]]` aliases until 2.0 (ADR 0070).

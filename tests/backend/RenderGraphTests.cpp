@@ -11,7 +11,24 @@
 #include <iterator>
 #include <string>
 #include <thread>
+#include <type_traits>
 #include <vector>
+
+// The names before 1.1.0 still compile, deprecated, until 2.0 (ADR 0070).
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+static_assert(std::is_same_v<slag::rendergraph::TextureHandle, slag::rendergraph::RenderGraphTexture>);
+static_assert(std::is_same_v<slag::rendergraph::BufferHandle, slag::rendergraph::RenderGraphBuffer>);
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#else
+#pragma GCC diagnostic pop
+#endif
 
 namespace {
 
@@ -158,8 +175,8 @@ void testHandoff(slag::Backend backend)
     const slag::ClearValue clear = {.color = {0.25f, 0.5f, 0.75f, 1.0f}};
 
     REQUIRE(static_cast<bool>(graph->beginFrame()));
-    slag::rendergraph::TextureHandle target = graph->createTransientTexture2D(targetDesc);
-    slag::rendergraph::BufferHandle output = graph->importBuffer(readback);
+    slag::rendergraph::RenderGraphTexture target = graph->createTransientTexture2D(targetDesc);
+    slag::rendergraph::RenderGraphBuffer output = graph->importBuffer(readback);
     graph->addPass(
         "clear", slag::CommandQueueType::Graphics,
         [&](slag::rendergraph::PassBuilder& pass) {
@@ -198,11 +215,12 @@ void testAliasing(slag::Backend backend)
     slag::GraphicsDevice* device = t.device;
 
     REQUIRE(static_cast<bool>(graph->beginFrame()));
-    slag::rendergraph::TextureHandle a = graph->createTransientTexture2D(targetDesc);
-    slag::rendergraph::TextureHandle b = graph->createTransientTexture2D(targetDesc);
-    slag::rendergraph::BufferHandle outA = graph->importBuffer(first);
-    slag::rendergraph::BufferHandle outB = graph->importBuffer(second);
-    auto clearPass = [&](const char* name, slag::rendergraph::TextureHandle target, const slag::ClearValue& clear) {
+    slag::rendergraph::RenderGraphTexture a = graph->createTransientTexture2D(targetDesc);
+    slag::rendergraph::RenderGraphTexture b = graph->createTransientTexture2D(targetDesc);
+    slag::rendergraph::RenderGraphBuffer outA = graph->importBuffer(first);
+    slag::rendergraph::RenderGraphBuffer outB = graph->importBuffer(second);
+    auto clearPass = [&](const char* name, slag::rendergraph::RenderGraphTexture target,
+                         const slag::ClearValue& clear) {
         graph->addPass(
             name, slag::CommandQueueType::Graphics,
             [&](slag::rendergraph::PassBuilder& pass) {
@@ -210,8 +228,8 @@ void testAliasing(slag::Backend backend)
             },
             [](slag::rendergraph::PassContext&, slag::CommandBuffer*) {});
     };
-    auto copyPass = [&](const char* name, slag::rendergraph::TextureHandle source,
-                        slag::rendergraph::BufferHandle destination) {
+    auto copyPass = [&](const char* name, slag::rendergraph::RenderGraphTexture source,
+                        slag::rendergraph::RenderGraphBuffer destination) {
         graph->addPass(
             name, slag::CommandQueueType::Graphics,
             [&](slag::rendergraph::PassBuilder& pass) {
@@ -256,9 +274,9 @@ void testQueuesAndThreads(slag::Backend backend)
     for (uint32_t frame = 0; frame < 4; ++frame)
     {
         REQUIRE(static_cast<bool>(graph->beginFrame()));
-        slag::rendergraph::BufferHandle filled = graph->createTransientBuffer({.size = count * 4});
-        slag::rendergraph::BufferHandle copied = graph->createTransientBuffer({.size = count * 4});
-        slag::rendergraph::BufferHandle output = graph->importBuffer(readbacks[frame % 2]);
+        slag::rendergraph::RenderGraphBuffer filled = graph->createTransientBuffer({.size = count * 4});
+        slag::rendergraph::RenderGraphBuffer copied = graph->createTransientBuffer({.size = count * 4});
+        slag::rendergraph::RenderGraphBuffer output = graph->importBuffer(readbacks[frame % 2]);
         graph->addPass(
             "fill", slag::CommandQueueType::Compute,
             [&](slag::rendergraph::PassBuilder& pass) { pass.use(filled, slag::rendergraph::Usage::ShaderWrite); },
@@ -383,9 +401,9 @@ void testDefragmentation(slag::Backend backend)
     // Frame 0: upload every stamp; textures end in Common.
     REQUIRE(static_cast<bool>(graph->beginFrame()));
     {
-        slag::rendergraph::BufferHandle source = graph->importBuffer(staging);
-        std::vector<slag::rendergraph::BufferHandle> bufferHandles;
-        std::vector<slag::rendergraph::TextureHandle> textureHandles;
+        slag::rendergraph::RenderGraphBuffer source = graph->importBuffer(staging);
+        std::vector<slag::rendergraph::RenderGraphBuffer> bufferHandles;
+        std::vector<slag::rendergraph::RenderGraphTexture> textureHandles;
         for (slag::Buffer* buffer : buffers)
         {
             bufferHandles.push_back(graph->importBuffer(buffer));
@@ -470,7 +488,7 @@ void testDefragmentation(slag::Backend backend)
     {
         REQUIRE(frame < 32);
         REQUIRE(static_cast<bool>(graph->beginFrame()));
-        std::vector<slag::rendergraph::TextureHandle> handles;
+        std::vector<slag::rendergraph::RenderGraphTexture> handles;
         for (size_t i = 0; i < keptTextures.size(); i += 2)
         {
             handles.push_back(graph->importTexture(
@@ -520,9 +538,9 @@ void testDefragmentation(slag::Backend backend)
     slag::Buffer* readback = t.readback(keptBuffers.size() * stamp + keptTextures.size() * texels);
     REQUIRE(static_cast<bool>(graph->beginFrame()));
     {
-        slag::rendergraph::BufferHandle output = graph->importBuffer(readback);
-        std::vector<slag::rendergraph::BufferHandle> bufferHandles;
-        std::vector<slag::rendergraph::TextureHandle> textureHandles;
+        slag::rendergraph::RenderGraphBuffer output = graph->importBuffer(readback);
+        std::vector<slag::rendergraph::RenderGraphBuffer> bufferHandles;
+        std::vector<slag::rendergraph::RenderGraphTexture> textureHandles;
         for (uint32_t id : keptBuffers)
         {
             bufferHandles.push_back(graph->importBuffer(buffers[id]));
@@ -611,15 +629,15 @@ void testSubresources(slag::Backend backend)
     REQUIRE(static_cast<bool>(graph->beginFrame()));
     constexpr slag::TextureUsage target = slag::TextureUsage::RenderTarget;
     constexpr slag::PixelFormat format = slag::PixelFormat::R8G8B8A8Unorm;
-    slag::rendergraph::TextureHandle chain =
+    slag::rendergraph::RenderGraphTexture chain =
         graph->createTransientTexture2D({.format = format, .width = 64, .height = 64, .mipCount = 4, .usage = target});
-    slag::rendergraph::TextureHandle cube =
+    slag::rendergraph::RenderGraphTexture cube =
         graph->createTransientTextureCube({.format = format, .size = 16, .usage = target});
-    slag::rendergraph::TextureHandle array = graph->createTransientTexture2DArray(
+    slag::rendergraph::RenderGraphTexture array = graph->createTransientTexture2DArray(
         {.format = format, .width = 16, .height = 16, .layerCount = 3, .usage = target});
-    slag::rendergraph::TextureHandle volume =
+    slag::rendergraph::RenderGraphTexture volume =
         graph->createTransientTexture3D({.format = format, .width = 16, .height = 16, .depth = 2, .usage = target});
-    slag::rendergraph::BufferHandle output = graph->importBuffer(readback);
+    slag::rendergraph::RenderGraphBuffer output = graph->importBuffer(readback);
     auto nothing = [](slag::rendergraph::PassContext&, slag::CommandBuffer*) {
     };
     uint32_t image = 0;
@@ -742,7 +760,7 @@ void testErrors(slag::Backend backend)
     GraphTest t(backend);
     slag::rendergraph::RenderGraph* graph = t.createGraph();
     REQUIRE(static_cast<bool>(graph->beginFrame()));
-    slag::rendergraph::TextureHandle target = graph->createTransientTexture2D(targetDesc);
+    slag::rendergraph::RenderGraphTexture target = graph->createTransientTexture2D(targetDesc);
     graph->addPass(
         "reads garbage", slag::CommandQueueType::Graphics,
         [&](slag::rendergraph::PassBuilder& pass) { pass.use(target, slag::rendergraph::Usage::ShaderRead); },

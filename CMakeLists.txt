@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 
 project(Slag
-    VERSION 1.0.2
+    VERSION 1.1.0
     DESCRIPTION "Thin, low-level abstraction over D3D12 and Vulkan"
     LANGUAGES CXX)
 

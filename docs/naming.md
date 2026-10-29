@@ -399,7 +399,7 @@ sample `samples/render_graph` (ADR 0072).
 | `addPass(name, queue, setup, record)` | Setup runs now; record is stored |
 | `PassBuilder`: `use(handle, Usage)`, `renderTarget(...)`, `depthStencil(...)` | Declares a pass's uses |
 | `PassContext`: `texture(handle)`, `buffer(handle)`, `frameSlot()` | Given to record functions |
-| `TextureHandle`, `BufferHandle` | Frame-local handles |
+| `RenderGraphTexture`, `RenderGraphBuffer` | Frame-local handles (renamed in 1.1.0 from `TextureHandle`, `BufferHandle`, which stay as deprecated aliases until 2.0) |
 | `Usage`: `ShaderRead`, `ShaderWrite`, `CopySource`, `CopyDest`, `VertexBuffer`, `IndexBuffer`, `ConstantBuffer`, `IndirectArgument` | How a pass uses a resource |
 
 | `defragment(DefragmentationDesc, layoutOf)` | Requests a defragmentation pass after the frame (ADR 0072) |
@@ -423,7 +423,9 @@ Settled before tagging v1.0 (all kept in review):
 
 Decided in the M9 review: the namespace is spelled out (not `rg`); `Usage`
 rather than `Access`, so it isn't confused with `BarrierAccess`; `Handle`
-rather than `Ref`; `execute` rather than `submit`; transients say so in
+rather than `Ref` (the handles were renamed `RenderGraphTexture` and
+`RenderGraphBuffer` in 1.1.0, so engines can have texture handles of their
+own; Crucible asked); `execute` rather than `submit`; transients say so in
 their create functions. Reviewed afterwards: `defragment` kept,
 `movedResources` rather than `defragmentationMoves`.
 

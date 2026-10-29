@@ -1023,7 +1023,7 @@ const RenderGraphImpl* impl(const RenderGraph* graph)
 
 // --- PassBuilder / PassContext ------------------------------------------------
 
-void PassBuilder::use(TextureHandle texture, Usage usage, const SubresourceRange& range)
+void PassBuilder::use(RenderGraphTexture texture, Usage usage, const SubresourceRange& range)
 {
     if (!graph)
     {
@@ -1032,7 +1032,7 @@ void PassBuilder::use(TextureHandle texture, Usage usage, const SubresourceRange
     impl(graph)->addUse(pass, texture.index, true, UseKind::Usage, usage, range, "PassBuilder::use");
 }
 
-void PassBuilder::use(BufferHandle buffer, Usage usage)
+void PassBuilder::use(RenderGraphBuffer buffer, Usage usage)
 {
     if (!graph)
     {
@@ -1041,7 +1041,7 @@ void PassBuilder::use(BufferHandle buffer, Usage usage)
     impl(graph)->addUse(pass, buffer.index, false, UseKind::Usage, usage, {}, "PassBuilder::use");
 }
 
-void PassBuilder::renderTarget(TextureHandle texture, LoadOp loadOp, StoreOp storeOp, const ClearValue& clearValue,
+void PassBuilder::renderTarget(RenderGraphTexture texture, LoadOp loadOp, StoreOp storeOp, const ClearValue& clearValue,
                                uint32_t mip, uint32_t baseLayer, uint32_t layerCount)
 {
     if (!graph)
@@ -1063,7 +1063,7 @@ void PassBuilder::renderTarget(TextureHandle texture, LoadOp loadOp, StoreOp sto
                  "PassBuilder::renderTarget");
 }
 
-void PassBuilder::depthStencil(TextureHandle texture, LoadOp loadOp, StoreOp storeOp, const ClearValue& clearValue,
+void PassBuilder::depthStencil(RenderGraphTexture texture, LoadOp loadOp, StoreOp storeOp, const ClearValue& clearValue,
                                bool readOnly, uint32_t mip, uint32_t baseLayer, uint32_t layerCount)
 {
     if (!graph)
@@ -1086,13 +1086,13 @@ void PassBuilder::depthStencil(TextureHandle texture, LoadOp loadOp, StoreOp sto
                  "PassBuilder::depthStencil");
 }
 
-Texture* PassContext::texture(TextureHandle texture) const
+Texture* PassContext::texture(RenderGraphTexture texture) const
 {
     const RenderGraphImpl* self = impl(graph);
     return texture.index < self->resources.size() ? self->resources[texture.index].textureObject : nullptr;
 }
 
-Buffer* PassContext::buffer(BufferHandle buffer) const
+Buffer* PassContext::buffer(RenderGraphBuffer buffer) const
 {
     const RenderGraphImpl* self = impl(graph);
     return buffer.index < self->resources.size() ? self->resources[buffer.index].bufferObject : nullptr;
@@ -1151,7 +1151,7 @@ Result<void> RenderGraph::beginFrame()
     return {};
 }
 
-TextureHandle RenderGraph::importTexture(Texture* texture, const ImportedTextureDesc& desc)
+RenderGraphTexture RenderGraph::importTexture(Texture* texture, const ImportedTextureDesc& desc)
 {
     RenderGraphImpl* self = impl(this);
     if (!self->declaring("RenderGraph::importTexture"))
@@ -1172,7 +1172,7 @@ TextureHandle RenderGraph::importTexture(Texture* texture, const ImportedTexture
     return {self->addResource(std::move(entry))};
 }
 
-BufferHandle RenderGraph::importBuffer(Buffer* buffer)
+RenderGraphBuffer RenderGraph::importBuffer(Buffer* buffer)
 {
     RenderGraphImpl* self = impl(this);
     if (!self->declaring("RenderGraph::importBuffer"))
@@ -1192,8 +1192,8 @@ BufferHandle RenderGraph::importBuffer(Buffer* buffer)
 
 namespace {
 
-TextureHandle addTransient(RenderGraphImpl* self, const TransientTexture& shape,
-                           std::span<const PixelFormat> castableFormats, const ClearValue* clearValue)
+RenderGraphTexture addTransient(RenderGraphImpl* self, const TransientTexture& shape,
+                                std::span<const PixelFormat> castableFormats, const ClearValue* clearValue)
 {
     if (!self->declaring("RenderGraph::createTransientTexture*"))
     {
@@ -1217,7 +1217,7 @@ TextureHandle addTransient(RenderGraphImpl* self, const TransientTexture& shape,
 
 } // namespace
 
-TextureHandle RenderGraph::createTransientTexture2D(const Texture2DDesc& desc)
+RenderGraphTexture RenderGraph::createTransientTexture2D(const Texture2DDesc& desc)
 {
     return addTransient(impl(this),
                         {.kind = TransientKind::Texture2D,
@@ -1231,7 +1231,7 @@ TextureHandle RenderGraph::createTransientTexture2D(const Texture2DDesc& desc)
                         desc.castableFormats, desc.clearValue);
 }
 
-TextureHandle RenderGraph::createTransientTexture2DArray(const Texture2DArrayDesc& desc)
+RenderGraphTexture RenderGraph::createTransientTexture2DArray(const Texture2DArrayDesc& desc)
 {
     return addTransient(impl(this),
                         {.kind = TransientKind::Texture2DArray,
@@ -1246,7 +1246,7 @@ TextureHandle RenderGraph::createTransientTexture2DArray(const Texture2DArrayDes
                         desc.castableFormats, desc.clearValue);
 }
 
-TextureHandle RenderGraph::createTransientTextureCube(const TextureCubeDesc& desc)
+RenderGraphTexture RenderGraph::createTransientTextureCube(const TextureCubeDesc& desc)
 {
     return addTransient(impl(this),
                         {.kind = TransientKind::Cube,
@@ -1259,7 +1259,7 @@ TextureHandle RenderGraph::createTransientTextureCube(const TextureCubeDesc& des
                         desc.castableFormats, desc.clearValue);
 }
 
-TextureHandle RenderGraph::createTransientTextureCubeArray(const TextureCubeArrayDesc& desc)
+RenderGraphTexture RenderGraph::createTransientTextureCubeArray(const TextureCubeArrayDesc& desc)
 {
     return addTransient(impl(this),
                         {.kind = TransientKind::CubeArray,
@@ -1273,7 +1273,7 @@ TextureHandle RenderGraph::createTransientTextureCubeArray(const TextureCubeArra
                         desc.castableFormats, desc.clearValue);
 }
 
-TextureHandle RenderGraph::createTransientTexture3D(const Texture3DDesc& desc)
+RenderGraphTexture RenderGraph::createTransientTexture3D(const Texture3DDesc& desc)
 {
     return addTransient(impl(this),
                         {.kind = TransientKind::Texture3D,
@@ -1287,7 +1287,7 @@ TextureHandle RenderGraph::createTransientTexture3D(const Texture3DDesc& desc)
                         desc.castableFormats, desc.clearValue);
 }
 
-BufferHandle RenderGraph::createTransientBuffer(const BufferDesc& desc)
+RenderGraphBuffer RenderGraph::createTransientBuffer(const BufferDesc& desc)
 {
     RenderGraphImpl* self = impl(this);
     if (!self->declaring("RenderGraph::createTransientBuffer"))
