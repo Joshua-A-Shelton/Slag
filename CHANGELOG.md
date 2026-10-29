@@ -2,6 +2,15 @@
 
 Slag follows semantic versioning (ADR 0070). There is no stable ABI.
 
+## 1.0.2 — 2026-10-28
+
+### Changed
+
+- Vulkan devices enable `scalarBlockLayout` (core 1.2, mandatory in 1.4)
+  and the baseline checks it, so SPIR-V compiled with
+  `-fvk-use-dx-layout` can use D3D12's packed structured-buffer layout
+  (ADRs 0012, 0034).
+
 ## 1.0.1 — 2026-10-26
 
 ### Fixed
