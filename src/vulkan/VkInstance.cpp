@@ -294,6 +294,7 @@ const char* baselineFailure(const DeviceQuery& query, bool allowSoftwareDevices)
         {query.features12.drawIndirectCount, "drawIndirectCount"},
         {query.features12.samplerMirrorClampToEdge, "samplerMirrorClampToEdge"},
         {query.features12.separateDepthStencilLayouts, "separateDepthStencilLayouts"},
+        {query.features12.scalarBlockLayout, "scalarBlockLayout"}, // D3D12's buffer layouts (ADR 0034)
         {features.multiViewport, "multiViewport"},
         {features.fillModeNonSolid, "fillModeNonSolid"},
         {features.depthBiasClamp, "depthBiasClamp"},

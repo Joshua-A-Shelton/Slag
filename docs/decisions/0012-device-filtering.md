@@ -44,5 +44,7 @@ again (roughly tens of milliseconds).
 - Vulkan: `shaderDrawParameters` (core 1.1 feature): Slang reads
   `SV_StartInstanceLocation` and keeps `SV_InstanceID` / `SV_VertexID` at
   D3D12 values through `BaseInstance` / `BaseVertex` (ADR 0047). Added in M3.
+- Vulkan: `scalarBlockLayout` (core 1.2, required by 1.4): SPIR-V buffers
+  laid out by D3D12's rules (ADR 0034). Added in Crucible's M5 (2026-10-28).
 - Both backends: every guaranteed (● and ◐) entry of
   `docs/format-support.md`, checked per format when devices are listed.

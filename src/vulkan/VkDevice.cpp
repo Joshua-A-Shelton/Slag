@@ -356,6 +356,7 @@ Result<void> initializeDevice(GraphicsDeviceCommon* common, const GraphicsDevice
     features12.drawIndirectCount = VK_TRUE;
     features12.samplerMirrorClampToEdge = VK_TRUE;
     features12.separateDepthStencilLayouts = VK_TRUE;
+    features12.scalarBlockLayout = VK_TRUE; // D3D12's buffer layouts in SPIR-V (ADR 0034)
     features12.samplerFilterMinmax =
         device.capabilities.samplerReduction ? VK_TRUE : VK_FALSE; // per-plane depth/stencil barriers (ADR 0049)
     VkPhysicalDeviceFeatures2 features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};

@@ -66,3 +66,12 @@ SPIR-V for D3D12): pipeline design.
   needs `shaderDrawParameters` (ADR 0012). `SV_StartInstanceLocation` reads
   `BaseInstance`.
 
+## Buffer layout (2026-10-28)
+
+`-fvk-use-dx-layout` gives SPIR-V the layouts D3D12 uses: constant-buffer
+packing rules, and packed structured buffers (a struct of a `float3` and a
+`float` has a 16-byte stride; a 104-byte struct keeps its 104-byte stride).
+Packed strides need Vulkan's `scalarBlockLayout`, which Vulkan 1.4 makes
+mandatory; Slag enables it on every device (ADR 0012). Found by Crucible's
+shader toolchain (its ADR 0047), which builds with this flag.
+
